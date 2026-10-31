@@ -17,6 +17,8 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-10-31.
 
+- Queued moves show no local-save or offline reassurance line. The board, word, drawing or story stays visible and sends automatically. Failed sends on a working connection keep their warning and retry action. Held reveals still wait for the server before showing the hidden result.
+
 - Game hub cards use `PaeoniaIllustratedCard` for the shared artwork, title, action and compact layout. `GameHubCardFrame` adds presence, scores and Not now. Daily questions use the shared card directly. Topic cards and illustrated cards share their waiting-content border and glow through `paeoniaCardSurface`.
 
 - Story Chain skips the arrival animation for a line watched live during this visit and for the writer's own line. A pause in typing does not replay a watched line. A partner's line missed while away still writes itself in. The story and title fields explicitly enable system autocorrect.

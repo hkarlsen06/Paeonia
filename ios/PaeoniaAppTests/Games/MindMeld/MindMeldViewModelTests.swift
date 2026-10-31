@@ -39,8 +39,8 @@ struct MindMeldViewModelTests {
         #expect(payload.gameID == game.id)
         #expect(viewModel.phase == .waiting(isQueued: true))
         #expect(viewModel.round?.myWord == "ocean")
-        // The first send has not failed, so the screen does not say the word is only on the phone.
-        #expect(!viewModel.showsOfflineLine)
+        // The first send has not failed.
+        #expect(!viewModel.isHeldOnPhone)
     }
 
     @Test func aReadBeforeTheQueueHasTheWordKeepsItLockedIn() async {

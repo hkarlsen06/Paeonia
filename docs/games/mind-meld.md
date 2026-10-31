@@ -88,7 +88,7 @@ Round 1 only. The button fills the field with a random word from a hand-written 
 
 - Lock in is final. A locked word cannot change. Until then the person can edit freely.
 - The partner learns only that a word is locked in, never the word, until both have locked in. This holds on the server: the read returns the partner's word only for a revealed round.
-- A lock-in made offline is saved on the phone and sent later. The screen shows it as locked, with "Saved on this phone. We'll send it when you're online."
+- A lock-in made offline is saved on the phone and sent later. The screen shows it as locked without a save-status line.
 
 ### Ending
 
@@ -251,7 +251,6 @@ When the partner locks in while this screen is open, the reveal starts at once.
 | `wait.hintLater` | We'll tell you when %@ locks in. | Vi sier fra når %@ har låst inn. |
 | `wait.yourWord.a11y` | Your word, %@, locked in | Ordet ditt, %@, er låst inn |
 | `wait.partnerCard.a11y` | %@'s word, hidden until you both lock in | Ordet til %@, skjult til dere begge har låst inn |
-| `offline` | Saved on this phone. We'll send it when you're online. | Lagret på telefonen. Vi sender det når du er på nett. |
 
 ### 3. Reveal
 

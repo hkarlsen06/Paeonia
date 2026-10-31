@@ -197,11 +197,6 @@ final class MindMeldViewModel {
         phase == .write && draftIssue == nil && !MindMeldWord.normalized(draft).isEmpty
     }
 
-    /// The lock-in is only saved on this phone, and a try to send it did not get through.
-    var showsOfflineLine: Bool {
-        isHeldOnPhone
-    }
-
     var revealOutcome: MindMeldRevealOutcome? {
         resolution.displayOutcome
     }

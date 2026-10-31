@@ -190,7 +190,7 @@ struct ThreadChatView: View {
         .dateHeaderBuilder { ThreadChatDateSeparator(date: $0) }
         .appliesFocusModifierToCustomInputView(false)
         .animateMessageUpdates(false)
-        .betweenListAndInputViewBuilder { footerAccessory }
+        .betweenListAndInputViewBuilder { Color.clear.frame(height: 0) }
         .showMessageTimeView(false)
         .showMessageMenuOnLongPress(true)
         .showScrollToBottomButton(false)
@@ -236,26 +236,6 @@ struct ThreadChatView: View {
             messageFrame: messageFrame
         )
         .id(row.id)
-    }
-
-    /// Floats above the composer at zero height. ExyteChat sizes the list's inset
-    /// from this view, so a note with height would move the list each time it showed.
-    private var footerAccessory: some View {
-        Color.clear
-            .frame(height: 0)
-            .overlay(alignment: .bottom) {
-                if viewModel.hasHeldMessages {
-                    Text(.dailyChatSendingReassurance)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .padding(.horizontal, PaeoniaSpacing.space12)
-                        .padding(.vertical, PaeoniaSpacing.space4)
-                        .glassEffect(.regular, in: Capsule())
-                        .padding(.bottom, PaeoniaSpacing.space4)
-                        .transition(.opacity)
-                }
-            }
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.hasHeldMessages)
     }
 
     // MARK: - Waiting

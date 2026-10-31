@@ -238,8 +238,7 @@ struct GuessMySpotRevealView: View {
         Group {
             if isHeld {
                 if viewModel.isHeldOnPhone {
-                    GuessMySpotHeldCard(viewModel: viewModel)
-                        .allowsHitTesting(false)
+                    GuessMySpotHeldLine(viewModel: viewModel)
                 }
             } else if let plan {
                 GuessMySpotResultCard(

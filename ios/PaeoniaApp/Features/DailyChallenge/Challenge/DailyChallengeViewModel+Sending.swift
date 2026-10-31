@@ -66,8 +66,7 @@ extension DailyChallengeViewModel {
         )
     }
 
-    /// A still-sending answer failed to send at least once. Only then does the
-    /// screen say it is saved on this phone, so a normal send never flashes that line.
+    /// A still-sending answer failed to send at least once.
     func isHeldOnPhone(_ instanceID: UUID) -> Bool {
         isSending(instanceID) && sendingAnswers[instanceID]?.isHeldOnPhone == true
     }

@@ -62,12 +62,6 @@ struct DailySendingAnswerView: View {
     var voiceDurationMs: Int?
     var partnerChoiceName: String?
     var text: String?
-    /// Whether to show the "saved on this phone, sending" line under the answer. Pass
-    /// true only once a try to send it failed, so a normal send never flashes the line.
-    /// The partner-answer reveal flow passes false so the just-sent answer reads as
-    /// the settled answered state while it holds for the reveal.
-    let showsSendingStatus: Bool
-
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 
     var body: some View {
@@ -85,10 +79,6 @@ struct DailySendingAnswerView: View {
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if showsSendingStatus {
-                DailySendingStatusLine()
             }
         }
         .paeoniaImageViewer(selection: $imageViewerSelection)
@@ -124,22 +114,6 @@ struct DailySendingAnswerView: View {
             } failure: {
                 EmptyView()
             }
-        }
-    }
-}
-
-/// The shared "saved on this phone, sending" line under every still-sending answer.
-private struct DailySendingStatusLine: View {
-    var body: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            Image(systemName: "arrow.up.circle")
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .accessibilityHidden(true)
-
-            Text(.dailyChallengeSendingMessage)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

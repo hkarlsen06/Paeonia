@@ -1,37 +1,15 @@
 import SwiftUI
 
-/// What the pinned bottom says while a move waits to leave the phone. Offline,
-/// it is a calm "Saved on this phone" line. When the last try reached the server
-/// and failed there, it says so and offers "Try again". It takes no space when
-/// nothing waits.
+/// A failed move and its retry action. Routine queued moves show no status.
 struct BoardGameOfflineLine: View {
     let isWaiting: Bool
     let failedWhileOnline: Bool
     let onRetry: () -> Void
 
     var body: some View {
-        if isWaiting {
-            if failedWhileOnline {
-                failed
-            } else {
-                saved
-            }
+        if isWaiting, failedWhileOnline {
+            failed
         }
-    }
-
-    /// "Saved on this phone. We'll send it when you're online."
-    private var saved: some View {
-        Label {
-            Text(.gamesPendingSavedOnPhone)
-                .fixedSize(horizontal: false, vertical: true)
-        } icon: {
-            Image(systemName: "clock")
-                .accessibilityHidden(true)
-        }
-        .font(PaeoniaTypography.caption)
-        .foregroundStyle(.paeoniaSyncPending)
-        .multilineTextAlignment(.center)
-        .accessibilityIdentifier("boardGames.pending")
     }
 
     private var failed: some View {

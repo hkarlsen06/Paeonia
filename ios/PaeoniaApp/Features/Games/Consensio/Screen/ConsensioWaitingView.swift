@@ -32,13 +32,8 @@ struct ConsensioWaitingView: View {
                     avatar
                 }
                 text
-                if viewModel.isHeldOnPhone {
-                    ConsensioHeldLine(viewModel: viewModel) {
-                        GameOfflineLine(identifier: "consensio.pending")
-                            .multilineTextAlignment(.center)
-                    }
+                ConsensioHeldLine(viewModel: viewModel)
                     .transition(.opacity)
-                }
                 Spacer(minLength: PaeoniaSpacing.space16)
             }
             .frame(maxWidth: .infinity)

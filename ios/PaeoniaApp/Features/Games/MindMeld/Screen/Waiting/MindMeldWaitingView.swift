@@ -28,11 +28,6 @@ struct MindMeldWaitingView: View {
                 Spacer(minLength: PaeoniaSpacing.space16)
                 cards
                 text
-                if viewModel.showsOfflineLine {
-                    GameOfflineLine(identifier: "mindMeld.pending")
-                        .multilineTextAlignment(.center)
-                        .transition(.opacity)
-                }
                 Spacer(minLength: PaeoniaSpacing.space16)
             }
             .frame(maxWidth: .infinity)
@@ -46,7 +41,6 @@ struct MindMeldWaitingView: View {
         // The partner's phone changes the title, the hint and presence while this
         // screen is open. Everything moves to its new place together.
         .animation(stateChange, value: viewModel.partnerStatus)
-        .animation(stateChange, value: viewModel.showsOfflineLine)
         .onChange(of: viewModel.isPartnerHere) { old, new in
             if !old, new {
                 PaeoniaHaptics.partnerDrawingReceived()

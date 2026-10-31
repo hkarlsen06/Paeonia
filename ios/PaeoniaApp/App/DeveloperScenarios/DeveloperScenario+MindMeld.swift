@@ -32,7 +32,7 @@
     )
     static let mindMeldWaitingOffline = mindMeldScreen(
       "mind-meld-waiting-offline", "Mind Meld · waiting, saved on the phone",
-      "Your word is only queued on the phone and a send failed: saved on this phone, sent later"
+      "Your word stays locked while a failed send waits for the connection"
     )
     static let mindMeldRevealMiss = mindMeldScreen(
       "mind-meld-reveal-miss", "Mind Meld · reveal, miss",

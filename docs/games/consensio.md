@@ -250,7 +250,7 @@ Layout, centered.
 3. One quiet line under it: "Be honest. [Name] won't see it until they've guessed."
 4. Pinned bottom: primary "Lock it in" (`lock.fill`), Back in the toolbar returns to the topic list without sending.
 
-"Lock it in" fires `drawingSent()` and `send`, and the phase moves to waiting. Offline, the spot is saved on this phone and the waiting screen shows the offline line.
+"Lock it in" fires `drawingSent()` and `send`, and the phase moves to waiting. Offline, the spot is saved on this phone and the waiting screen shows no save-status line.
 
 | Key | English | Norwegian |
 |---|---|---|
@@ -341,7 +341,7 @@ Everything is tappable from 2.30. A tap on the screen jumps to the settled state
 
 Buttons. The guesser gets the primary "Your turn to place". The placer gets "Continue", which goes to the guess when the partner already placed the next marker, and to waiting otherwise. Leaving the reveal marks it seen once its title has shown. A reveal left before the verdict plays again next time.
 
-Held reveal. While the guess is on its way, the reveal holds at 0.00 with only the guesser's own pin on the dimmed line. Normally the server answers within a moment and the reveal plays. Once a send of the guess has failed, the line "Saved on this phone. We'll show where [Name] is when you're online." shows (or, after a failure on a working connection, "We couldn't send your move yet" with Try again), with "Your turn to place" under it, so the guesser can go on. Stepping past a held reveal does not mark it seen, so it plays on the next visit. If the server refuses the guess because the round already has one, as when a second phone guessed first, the screen plays the reveal of the guess the server has. Only another refusal shows the shared "Your move wasn't sent" banner and returns to the guess.
+Held reveal. While the guess is on its way, the reveal holds at 0.00 with only the guesser's own pin on the dimmed line. Normally the server answers within a moment and the reveal plays. Routine queued guesses show no save-status line. After a failure on a working connection, "We couldn't send your move yet" and Try again appear, with "Your turn to place" under them, so the guesser can go on. Stepping past a held reveal does not mark it seen, so it plays on the next visit. If the server refuses the guess because the round already has one, as when a second phone guessed first, the screen plays the reveal of the guess the server has. Only another refusal shows the shared "Your move wasn't sent" banner and returns to the guess.
 
 VoiceOver. On the verdict, one announcement: "Robin is 70 percent of the way to book it now. You guessed 62 percent of the way to book it now. So close. Points: 4." Focus moves to the title. The bloom and thread are hidden. Positions read as "62 percent of the way to" the nearer end, or "in the middle" from 45 to 55.
 
@@ -366,7 +366,6 @@ VoiceOver. On the verdict, one announcement: "Robin is 70 percent of the way to 
 | `reveal.spotOn.placer` | %@ knows you well. | %@ kjenner deg godt. |
 | `reveal.spotOn.title` | Spot on! | Midt i blinken! |
 | `reveal.stage.a11y` | The real spot is %1$@. The guess is %2$@. | Den riktige plassen er %1$@. Gjetningen er %2$@. |
-| `reveal.waitingServer` | Saved on this phone. We'll show where %@ is when you're online. | Lagret på telefonen. Vi viser hvor %@ står når du er på nett. |
 | `reveal.you` | You | Du |
 
 ### 6. What we know

@@ -20,8 +20,7 @@ struct DailyChatSendingAnswerRow: View {
                 mediaData: answer.mediaData,
                 voiceDurationMs: answer.voiceDurationMs,
                 partnerChoiceName: answer.partnerChoiceName,
-                text: answer.text,
-                showsSendingStatus: answer.isHeldOnPhone
+                text: answer.text
             )
         }
         .padding(.horizontal, ThreadChatBubbleMetrics.horizontalInset)

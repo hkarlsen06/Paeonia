@@ -237,7 +237,7 @@
 
     /// Puts the scenario's unsent line in the queue before the screen reads it.
     /// The line went through the normal queue and its first try failed for lack of
-    /// a connection, so the page says "Saved on this phone".
+    /// a connection, while the page keeps the queued line.
     private func seed() async {
       if scenario == .storyChainReadingReactions {
         await hub.game.start()

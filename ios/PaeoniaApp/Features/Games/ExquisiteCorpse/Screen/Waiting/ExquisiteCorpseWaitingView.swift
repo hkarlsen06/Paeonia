@@ -120,7 +120,7 @@ struct ExquisiteCorpseAwayView: View {
 }
 
 /// This person's legs are queued. The reveal opens once the server has them, and
-/// until then this says where the legs are.
+/// until then the folded figure waits.
 struct ExquisiteCorpseSyncingView: View {
     let viewModel: ExquisiteCorpseViewModel
 
@@ -132,8 +132,6 @@ struct ExquisiteCorpseSyncingView: View {
                     ExquisiteCorpseMiniFold(partsDone: ExquisiteCorpsePartKind.allCases.count, openPart: nil)
                     if viewModel.isSendFailing {
                         ExquisiteCorpseSendFailure(viewModel: viewModel)
-                    } else if viewModel.isHeldOnPhone {
-                        offlineLine
                     } else {
                         opening
                     }
@@ -146,20 +144,6 @@ struct ExquisiteCorpseSyncingView: View {
         }
         .animation(PaeoniaMotion.stateChange, value: viewModel.isHeldOnPhone)
         .animation(PaeoniaMotion.stateChange, value: viewModel.isSendFailing)
-    }
-
-    private var offlineLine: some View {
-        Label {
-            Text(.exquisiteCorpseRevealOffline)
-                .fixedSize(horizontal: false, vertical: true)
-        } icon: {
-            Image(systemName: "clock")
-                .accessibilityHidden(true)
-        }
-        .font(PaeoniaTypography.body)
-        .foregroundStyle(.paeoniaSyncPending)
-        .multilineTextAlignment(.center)
-        .accessibilityIdentifier("corpse.pending")
     }
 
     private var opening: some View {

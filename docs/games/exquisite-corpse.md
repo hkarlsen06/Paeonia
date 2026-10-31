@@ -91,7 +91,7 @@ Live runs whenever both partners have the game screen open. Without the partner 
 Purpose. The best ten seconds of the game. Neither partner has seen the whole figure.
 
 Who sees it when.
-- The legs drawer sees the reveal right after Done, once the server has the part. Offline, the phone keeps the part and shows "Saved on this phone. You'll both see the whole figure when it's sent."
+- The legs drawer sees the reveal right after Done, once the server has the part. Offline, the phone keeps the part and the folded figure waits for the upload without a save-status line.
 - The partner sees it the next time they open the game, or at once when they watch live.
 - A figure's reveal shows until this person taps Continue. The server keeps a "reveal seen" time for each partner, so a second phone or a fresh install doesn't show it again. Like Draw & Guess, the latest unseen reveal comes before a new turn.
 - Once the unfolding finishes or is skipped, reopening shows the finished creature and its buttons at once. Reduce Motion counts as shown too. The phone keeps this separately from Continue, so watching the reveal does not start the next turn. Leaving during the unfolding does not mark it finished.
@@ -218,7 +218,7 @@ Toolbar trailing: the `…` menu with "Our creatures", and "Clear", with the Dra
 
 First figure. The first head of a new game shows one extra line under the part line in `.paeoniaTextSecondary`: "[Name] draws the body next, and only sees the bottom of yours." That line is the only teaching.
 
-Done. `drawingSent()`, then the waiting screen with "Sent to [Name]". Offline, the part is stored on this phone and the waiting screen shows "Saved on this phone. We'll send it when you're online."
+Done. `drawingSent()`, then the waiting screen with "Sent to [Name]". Offline, the part stays queued and the waiting screen shows no save-status line.
 
 | Key | English | Norwegian |
 |---|---|---|
@@ -284,7 +284,6 @@ See "The reveal" for the beats.
 | `reveal.showAll` | Show the whole figure | Vis hele figuren |
 | `reveal.nextHead` | Draw the next head | Tegn neste hode |
 | `reveal.continue` | Continue | Fortsett |
-| `reveal.offline` | Saved on this phone. You'll both see the whole figure when it's sent. | Lagret på telefonen. Dere ser hele figuren når den er sendt. |
 | `reveal.loading` | Opening… | Åpner … |
 
 ### 4. Our creatures
@@ -331,7 +330,7 @@ As Draw & Guess. Wide layouts put the strip and canvas on the left and everythin
 
 Code map in `docs/implementation-map.md`. Decisions the sections above leave open:
 
-- **Local first.** Sending a part, the reveal seen mark and a favorite go into the pending operations before anything is sent. The screen applies those queued moves on top of the server's state, so a sent part moves the turn on at once and shows "Saved on this phone" while it waits.
+- **Local first.** Sending a part, the reveal seen mark and a favorite go into the pending operations before anything is sent. The screen applies those queued moves on top of the server's state, so a sent part moves the turn on at once without a save-status line while it waits.
 - **Sending a part.** One pending operation holds the canonical drawing, the strip, the idea, and the client operations for both uploads and the submit, made up front so a retry replays the same requests. The handler uploads the drawing and the strip, then calls `submit_exquisite_corpse_part`. A refused part goes back on the canvas with a notice. An upload the server deleted after a week is renewed with a new upload, as Draw & Guess does. The refusal counting and the backoff after an accepted move follow Draw & Guess.
 - **Order.** A reveal seen mark waits for this person's part of that figure. A favorite waits for an earlier favorite write of the same figure and for this person's queued part of it (`ExquisiteCorpseFavoriteGate`).
 - **One drawing size.** Parts and strips are stored at the canonical 320 pt side. The strip file holds the clipped strokes in the part's own coordinates (y from 281.6 to 320).

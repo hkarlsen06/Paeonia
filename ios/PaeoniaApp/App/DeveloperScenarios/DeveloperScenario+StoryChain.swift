@@ -41,7 +41,7 @@
     )
     static let storyChainSavedOffline = storyChainGame(
       "story-chain-saved-offline", "Story Chain · line sent offline",
-      "Your line is queued after a failed try, so the page says it is saved on this phone"
+      "Your line is queued after a failed try and sends when the connection returns"
     )
     static let storyChainNaming = storyChainGame(
       "story-chain-naming", "Story Chain · name the story", "Robin wrote the last line and you give the story a title"

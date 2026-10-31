@@ -69,7 +69,7 @@ final class DrawAndGuessViewModel {
     /// A move is saved on this phone and not sent yet. It may be on its way.
     var isWaitingToSend = false
     /// A waiting move has failed to send at least once, so it really is held on
-    /// this phone. Show `.gamesPendingSavedOnPhone`.
+    /// this phone.
     var isHeldOnPhone = false
     /// A move that waits could not be sent although the phone is online. The
     /// waiting screen then says so and offers `retrySending()`.

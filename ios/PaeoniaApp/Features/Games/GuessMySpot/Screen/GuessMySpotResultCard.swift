@@ -249,28 +249,3 @@ struct GuessMySpotDistanceCapsule: View {
         .accessibilityIdentifier("guessMySpot.reveal.distance")
     }
 }
-
-/// The reveal's card while the guess waits on this phone for the real spot.
-struct GuessMySpotHeldCard: View {
-    let viewModel: GuessMySpotViewModel
-
-    var body: some View {
-        GuessMySpotHeldLine(viewModel: viewModel) {
-            Label {
-                Text(.guessMySpotRevealWaitingServer)
-            } icon: {
-                Image(systemName: "clock").accessibilityHidden(true)
-            }
-            .font(PaeoniaTypography.caption)
-            .foregroundStyle(.paeoniaSyncPending)
-            .multilineTextAlignment(.center)
-            .accessibilityIdentifier("guessMySpot.reveal.held")
-        }
-        .padding(PaeoniaSpacing.space16)
-        .frame(maxWidth: .infinity)
-        .background(
-            .paeoniaSurfaceSecondary,
-            in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-        )
-    }
-}

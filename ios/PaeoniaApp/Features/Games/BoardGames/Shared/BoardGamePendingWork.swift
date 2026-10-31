@@ -21,8 +21,7 @@ nonisolated enum BoardGamePendingWork {
 
     /// A waiting action of this game was tried again and the attempt failed for
     /// a reason other than having no connection, such as the server refusing
-    /// it. The waiting line then says "We couldn't send your move yet" instead
-    /// of "Saved on this phone". False when the queue cannot be read.
+    /// it. The waiting line then offers a retry. False when the queue cannot be read.
     static func failedWhileOnline(
         kind: GameKind,
         from store: any PendingSyncOperationPersisting,

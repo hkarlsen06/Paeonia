@@ -25,17 +25,13 @@ extension View {
     }
 }
 
-/// What happened to the part this person sent, under the waiting title: it went
-/// through, it waits on this phone, or it could not be sent although the phone is
-/// online. A part that is on its way says nothing.
+/// Confirms a delivered part or offers a retry after a failed send.
 struct ExquisiteCorpseSendStatus: View {
     let viewModel: ExquisiteCorpseViewModel
 
     var body: some View {
         if viewModel.isSendFailing {
             ExquisiteCorpseSendFailure(viewModel: viewModel)
-        } else if viewModel.isHeldOnPhone {
-            GameOfflineLine()
         } else if viewModel.didSendPreviousPart, !viewModel.isWaitingToSend {
             Label {
                 Text(.exquisiteCorpseWaitSent(viewModel.partnerName))

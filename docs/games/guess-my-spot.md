@@ -367,7 +367,7 @@ Camera buttons. Once the reveal settles, three buttons in one glass capsule sit 
 
 Buttons. A secondary "Chat" button sits beside the primary "Your turn" button. The sender gets "Continue" instead of "Your turn", which goes to the guess when the partner already sent the next photo, and to waiting otherwise. Leaving the reveal marks it seen once its verdict has shown. A reveal left before the verdict plays again next time.
 
-Held reveal. While the guess is on its way, the reveal holds at 0.00 with only the guess pin on the map. Once a send of the guess has failed, the line "Saved on this phone. We'll show where it was when you're online." shows (or, after a failure on a working connection, "We couldn't send your move yet" with Try again), with "Your turn" under it. Stepping past a held reveal does not mark it seen. If the server refuses the guess because the round already has one, the screen plays the reveal of the guess the server has.
+Held reveal. While the guess is on its way, the reveal holds at 0.00 with only the guess pin on the map. Routine queued guesses show no save-status line. After a failure on a working connection, "We couldn't send your move yet" and Try again appear, with "Your turn" under them. Stepping past a held reveal does not mark it seen. If the server refuses the guess because the round already has one, the screen plays the reveal of the guess the server has.
 
 VoiceOver. On the verdict, one announcement: "Taken in Bergen, Norway. Your guess was 3.2 km off. So close. Points: 3,215." On the sender's phone: "Robin's guess was 3.2 km off. ..." Focus moves to the title. The bloom and line are hidden.
 
@@ -389,7 +389,6 @@ VoiceOver. On the verdict, one announcement: "Taken in Bergen, Norway. Your gues
 | `reveal.spotOn.guesser` | You found it. | Du fant det. |
 | `reveal.spotOn.sender` | %@ found it. | %@ fant det. |
 | `reveal.spotOn.title` | Spot on! | Midt i blinken! |
-| `reveal.waitingServer` | Saved on this phone. We'll show where it was when you're online. | Lagret på telefonen. Vi viser hvor det var når du er på nett. |
 
 ### 6. Our guesses
 

@@ -266,15 +266,7 @@ private extension WidgetDrawingView {
                         .accessibilityHidden(true)
                 }
             case .waiting:
-                Label {
-                    Text(.widgetDrawingWaitingButton)
-                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                        .minimumScaleFactor(0.8)
-                } icon: {
-                    Image(systemName: "wifi.slash")
-                        .accessibilityHidden(true)
-                }
-                .accessibilityLabel(Text(.widgetDrawingWaitingMessage(partnerName)))
+                Text(.widgetDrawingSaveButton)
             case .idle:
                 Text(.widgetDrawingSaveButton)
             }

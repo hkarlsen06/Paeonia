@@ -22,7 +22,7 @@
     )
     static let drawSavedOffline = drawRound(
       "draw-saved-offline", "Draw & Guess · drawing sent offline",
-      "A drawing queued on the phone: saved on this phone, sent later"
+      "A queued drawing sends when the connection returns"
     )
     static let drawWaitingForGuess = drawRound(
       "draw-waiting-for-guess", "Draw & Guess · partner is guessing", "The sent drawing and Robin's wrong guesses"

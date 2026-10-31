@@ -190,37 +190,13 @@ Required elements:
 
 Avoid manipulative countdowns or fake urgency.
 
-## Sync Status
+## Sync status
 
-Sync status should be visible only where useful.
+Visible content is saved. Routine local saves and queued uploads show no status line, including while offline. The queue sends them automatically when the connection returns.
 
-States:
+Show a failed-send warning and retry action when the person can take action. A drawing that has not been submitted can say "Not sent yet", and a delivered drawing can confirm "Sent".
 
-- saved locally
-- syncing
-- synced
-- sync failed
-- offline
-
-Do not make normal offline use feel broken.
-
-Sync copy must describe user impact, not implementation state.
-
-Use:
-
-```text
-Saved on this phone
-Sending when you're online
-Sent to your partner
-```
-
-Avoid:
-
-```text
-Pending sync
-Queued mutation
-Remote write failed
-```
+Keep errors in plain language. Do not expose pending operations or other implementation terms.
 
 ## Navigation Shell
 

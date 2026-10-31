@@ -177,10 +177,7 @@ struct GuessMySpotWaitingView: View {
     @ViewBuilder
     private var heldLine: some View {
         if viewModel.isHeldOnPhone {
-            GuessMySpotHeldLine(viewModel: viewModel) {
-                GameOfflineLine(identifier: "guessMySpot.pending")
-                    .multilineTextAlignment(.center)
-            }
+            GuessMySpotHeldLine(viewModel: viewModel)
             .transition(.opacity)
         }
     }

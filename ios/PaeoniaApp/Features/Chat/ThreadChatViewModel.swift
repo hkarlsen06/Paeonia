@@ -155,12 +155,6 @@ final class ThreadChatViewModel {
         DailyChatRounds.openingScroll(rounds: rounds, focusing: focusedInstanceID, messages: messages)
     }
 
-    /// A message failed to send at least once. Only then does the screen say it is
-    /// saved on this phone, so a normal send never flashes that line.
-    var hasHeldMessages: Bool {
-        messages.contains { $0.isSending && $0.isHeldOnPhone }
-    }
-
     func refreshParticipants(_ participants: DailyChallengeParticipants) {
         self.participants = participants
     }

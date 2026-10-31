@@ -2302,13 +2302,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sign in again to pick up where you left off. What you saved on this phone is kept."
+            "value" : "Sign in again to pick up where you left off."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Logg inn igjen for å fortsette der du slapp. Det du har lagret på denne telefonen, blir tatt vare på."
+            "value" : "Logg inn igjen for å fortsette der du slapp."
           }
         }
       }
@@ -6519,24 +6519,6 @@
         }
       }
     },
-    "consensio.reveal.waitingServer" : {
-      "comment" : "Shown while a guess saved on the phone hasn't reached the server. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. We'll show where %@ is when you're online."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på telefonen. Vi viser hvor %@ står når du er på nett."
-          }
-        }
-      }
-    },
     "consensio.reveal.you" : {
       "comment" : "Label for this person on the reveal and in the records.",
       "extractionState" : "manual",
@@ -8397,24 +8379,6 @@
         }
       }
     },
-    "dailyChallenge.sending.message" : {
-      "comment" : "Shown under a photo answer that is saved locally and uploading in the background",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. We'll send it when you're online."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på denne telefonen. Vi sender det når du er på nett."
-          }
-        }
-      }
-    },
     "dailyChallenge.shuffleFailed.message" : {
       "comment" : "Message shown when swapping a daily question did not work",
       "extractionState" : "manual",
@@ -10215,24 +10179,6 @@
         }
       }
     },
-    "dailyChat.sending.reassurance" : {
-      "comment" : "Reassurance shown while chat messages wait to finish sending",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. We'll send it when you're online."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på denne telefonen. Vi sender det når du er på nett."
-          }
-        }
-      }
-    },
     "dailyChat.status.edited" : {
       "comment" : "Small mark under a chat message whose text the sender changed after sending.",
       "extractionState" : "manual",
@@ -11681,24 +11627,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skapning %lld"
-          }
-        }
-      }
-    },
-    "exquisiteCorpse.reveal.offline" : {
-      "comment" : "Line on the reveal when the legs are saved on this phone but not sent yet. The whole figure is the finished creature.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. You'll both see the whole figure when it's sent."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på telefonen. Dere ser hele figuren når den er sendt."
           }
         }
       }
@@ -15195,24 +15123,6 @@
         }
       }
     },
-    "games.drawAndGuess.waitingToSync.message" : {
-      "comment" : "Second line when the player's last move waits on the phone to be sent.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Then you can draw back."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Så kan du tegne tilbake."
-          }
-        }
-      }
-    },
     "games.drawing.clear.action" : {
       "comment" : "Button that clears the drawing.",
       "extractionState" : "manual",
@@ -16397,24 +16307,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dette valgte %@"
-          }
-        }
-      }
-    },
-    "games.pending.savedOnPhone" : {
-      "comment" : "Shown when a game move is saved on the phone and will be sent later",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. We'll send it when you're online."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på telefonen. Vi sender det når du er på nett."
           }
         }
       }
@@ -18803,24 +18695,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Midt i blinken!"
-          }
-        }
-      }
-    },
-    "guessMySpot.reveal.waitingServer" : {
-      "comment" : "The guess is saved on the phone and waits for a connection before the reveal can play.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. We'll show where it was when you're online."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på telefonen. Vi viser hvor det var når du er på nett."
           }
         }
       }
@@ -36446,24 +36320,6 @@
         }
       }
     },
-    "storyChain.waitingToSync.message" : {
-      "comment" : "Under the line that says the move is saved on this phone.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Then the story can go on."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Så kan historien fortsette."
-          }
-        }
-      }
-    },
     "storyChain.write.count.a11y" : {
       "comment" : "Accessibility label of the character counter. %1$lld is the count, %2$lld the limit.",
       "extractionState" : "manual",
@@ -37918,24 +37774,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dere fikk den tilbake"
-          }
-        }
-      }
-    },
-    "sync.status.savedLocally" : {
-      "comment" : "Short sync status label for content saved only on this phone.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på denne telefonen"
           }
         }
       }
@@ -40423,42 +40261,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Angre"
-          }
-        }
-      }
-    },
-    "widgetDrawing.waiting.button" : {
-      "comment" : "Label on the send button after sending while offline. The drawing goes out automatically when the phone is online.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sends when online"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sendes når du er på nett"
-          }
-        }
-      }
-    },
-    "widgetDrawing.waiting.message" : {
-      "comment" : "Note under the drawing canvas after sending while offline. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. It will reach %@ when you're online."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på denne telefonen. Den kommer frem til %@ når du er på nett."
           }
         }
       }

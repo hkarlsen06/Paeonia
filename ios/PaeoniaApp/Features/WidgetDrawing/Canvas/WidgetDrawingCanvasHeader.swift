@@ -98,12 +98,10 @@ struct WidgetDrawingCanvasHeader: View {
         }
     }
 
-    /// The canvas has strokes that differ from the widgets, or the last send has
-    /// not reached the partner. An empty canvas cannot be sent, so it is not
-    /// "not sent".
+    /// The canvas has strokes that the person has not chosen to send yet.
+    /// An empty canvas cannot be sent.
     private var isNotSentYet: Bool {
-        (viewModel.hasUnsavedEdits && !viewModel.drawing.strokes.isEmpty && !viewModel.isPublishing)
-            || viewModel.delivery == .waiting
+        viewModel.hasUnsavedEdits && !viewModel.drawing.strokes.isEmpty && !viewModel.isPublishing
     }
 
     private var headerAccessibilityLabel: Text {
@@ -120,12 +118,8 @@ struct WidgetDrawingCanvasHeader: View {
                 Self.attributionTimestamp(createdAt)
             )))
         }
-        if showsSendStatus {
-            if viewModel.delivery == .waiting {
-                parts.append(String(localized: .widgetDrawingWaitingMessage(partnerName)))
-            } else if isNotSentYet {
-                parts.append(String(localized: .widgetDrawingNotSent))
-            }
+        if showsSendStatus, isNotSentYet {
+            parts.append(String(localized: .widgetDrawingNotSent))
         }
         // A line break makes VoiceOver pause between the parts.
         return Text(verbatim: parts.joined(separator: "\n"))

@@ -227,7 +227,7 @@ The page is the heart of the game, so it gets the care a book would.
 - A compact toolbar sits directly under the draft, above the keyboard. Its quiet filled chips are "+ Give a word", or the chosen word with a remove button, and a checkable "Last line?" from line 8. The selected last-line chip has a pink check and fill. The counter appears immediately before the round Send arrow from 200 characters, turning `.paeoniaErrorText` past 240. All controls keep at least 44 pt hit targets. Long words and larger text sizes wrap the controls into more rows, with Send at the right. VoiceOver keeps the full partner-specific word instruction and last-line instruction.
 - The dare picker is a sheet at `.medium` detent: title "Give [Name] a word", subtitle "Their next line has to use it.", three word rows, and "Your own word" with a field. Choosing closes the sheet.
 - Send is off with a hint line under the field: "Use LIGHTHOUSE to send." when the dare is missing, nothing otherwise.
-- A line sent offline shows in the page with the offline line "Saved on this phone. We'll send it when you're online."
+- A line sent offline stays visible in the page and sends automatically without a save-status line.
 
 | Key | English | Norwegian |
 |---|---|---|

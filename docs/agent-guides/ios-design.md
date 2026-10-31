@@ -52,6 +52,8 @@ Every row in a list or settings screen uses primary text and tints its icon with
 
 ### Error Presentation
 
+Routine local saves and queued uploads show no status message. Visible content is saved, and the queue sends it when the connection returns. Keep failed-send warnings and retry controls when the person can take action. A drawing that the person has not chosen to send can still say "Not sent yet".
+
 - Present transient user-facing errors through the app-level top dropdown banner.
 - Mount the shared banner once at the root and send feature errors into that shared surface.
 - Do not add new inline red error panels or system alerts for ordinary recoverable errors.

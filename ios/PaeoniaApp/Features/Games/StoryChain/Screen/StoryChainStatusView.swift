@@ -40,13 +40,11 @@ struct StoryChainStatusView: View {
                 .buttonStyle(PaeoniaSecondaryButtonStyle())
                 .accessibilityIdentifier("storyChain.retryStart")
             }
-        case .waitingToSync where viewModel.isHeldOnPhone:
+        case .waitingToSync where viewModel.isSendFailing:
             PaeoniaEmptyStateView(
-                title: viewModel.isSendFailing ? .storyChainWaitingToSyncFailedTitle : .gamesPendingSavedOnPhone,
-                message: viewModel.isSendFailing
-                    ? .storyChainWaitingToSyncFailedMessage
-                    : .storyChainWaitingToSyncMessage,
-                systemImage: viewModel.isSendFailing ? "exclamationmark.triangle" : "clock"
+                title: .storyChainWaitingToSyncFailedTitle,
+                message: .storyChainWaitingToSyncFailedMessage,
+                systemImage: "exclamationmark.triangle"
             ) {
                 Button {
                     Task { await viewModel.retrySend() }

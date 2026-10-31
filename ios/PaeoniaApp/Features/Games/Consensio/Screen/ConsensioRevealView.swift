@@ -185,17 +185,7 @@ struct ConsensioRevealView: View {
     @ViewBuilder
     private var result: some View {
         if isHeld, viewModel.isHeldOnPhone {
-            ConsensioHeldLine(viewModel: viewModel) {
-                Label {
-                    Text(.consensioRevealWaitingServer(viewModel.partnerName))
-                } icon: {
-                    Image(systemName: "clock").accessibilityHidden(true)
-                }
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaSyncPending)
-                .multilineTextAlignment(.center)
-                .accessibilityIdentifier("consensio.reveal.held")
-            }
+            ConsensioHeldLine(viewModel: viewModel)
         } else if let plan {
             // Laid out from the start and faded in, so the line above never moves.
             VStack(spacing: PaeoniaSpacing.space16) {

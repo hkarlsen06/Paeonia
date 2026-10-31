@@ -83,11 +83,9 @@ nonisolated struct ExquisiteCorpsePendingWork: Equatable, Sendable {
     var revealsSeen: [ExquisiteCorpseRevealSeenPayload] = []
     /// A waiting part was tried again and the attempt failed for a reason other
     /// than having no connection, such as the server refusing it. The waiting
-    /// screen then says so instead of "saved on this phone".
+    /// screen then offers a retry.
     var lastSendFailedWhileOnline = false
     /// A waiting part has had a try that did not get through, for any reason.
-    /// Until then the part is on its first send, and the screen says nothing about
-    /// it being on this phone, so a normal send never flashes that line.
     var hasFailedMoveAttempt = false
 
     static let none = ExquisiteCorpsePendingWork()

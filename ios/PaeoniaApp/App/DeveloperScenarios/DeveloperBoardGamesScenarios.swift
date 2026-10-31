@@ -33,7 +33,7 @@
     }
 
     /// Queues a move the way a phone keeps it after a try without a connection,
-    /// so the screen says "Saved on this phone".
+    /// while the board keeps the queued move.
     private static func enqueueFailedMove(
       _ payload: BoardGameMovePayload,
       dependencies: GamesDependencies

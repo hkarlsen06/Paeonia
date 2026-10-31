@@ -123,8 +123,7 @@ struct DailyChallengeReadCard: View {
                     mediaData: sending.mediaData,
                     voiceDurationMs: sending.voiceDurationMs,
                     partnerChoiceName: sending.partnerChoiceName,
-                    text: sending.text,
-                    showsSendingStatus: sending.isHeldOnPhone
+                    text: sending.text
                 )
             } else {
                 statusRow

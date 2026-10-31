@@ -50,8 +50,8 @@ Technical terms must be translated into human outcomes.
 
 | Avoid | Use |
 | --- | --- |
-| Pending sync mutation | Saved on this phone. We'll send it when you're online. |
-| Upload queued | Your partner will see this when it finishes sending. |
+| Pending sync mutation | Show no message. The content stays visible and sends automatically. |
+| Upload queued | Show no message. The upload continues automatically. |
 | Entitlement removed | You no longer have access to this relationship. |
 | Subscription validation failed | We could not confirm your subscription. Try restoring purchases. |
 | Relationship deletion scheduled | This relationship will be deleted after the waiting period. |

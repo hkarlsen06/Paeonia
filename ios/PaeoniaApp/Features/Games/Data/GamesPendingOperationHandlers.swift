@@ -103,7 +103,7 @@ nonisolated enum GameServerRejection {
 /// record of the operation, and reads again.
 ///
 /// That next try comes after a few seconds instead of the usual minute, so the
-/// screen stops saying "Saved on this phone" soon after the network is fine.
+/// accepted move settles soon after the network recovers.
 /// The wait grows with each try. A phone that went offline fails on the replay
 /// itself, which then waits the usual time, so this never loops fast offline.
 func readStateAfterAcceptedMove(

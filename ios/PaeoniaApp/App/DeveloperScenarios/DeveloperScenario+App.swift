@@ -247,7 +247,7 @@
     )
     static let memoriesCards = pairedApp(
       "memories-cards", "Memories · timeline cards",
-      "Short, long and extreme titles, square photos, notes, a place and a memory saved on this phone", .memories
+      "Short, long and extreme titles, photos, notes, a place and a queued memory", .memories
     )
     static let memoryEditor = DeveloperScenario(
       "memory-editor", "Memory · editor", "New-memory form without opening the timeline first", .memories

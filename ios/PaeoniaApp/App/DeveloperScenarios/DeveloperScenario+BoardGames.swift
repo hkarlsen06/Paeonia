@@ -40,7 +40,7 @@
     )
     static let connectFourOffline = boardGameScreen(
       "connect-four-offline", "Four in a Row · move saved offline",
-      "Your move is on the board and waits on this phone: Saved on this phone"
+      "Your move is on the board and sends when the connection returns"
     )
     static let dotsAndBoxesPhoto = boardGameScreen(
       "dots-and-boxes-photo", "Dots and Boxes · hidden photo",

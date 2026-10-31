@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The part of the page under the text, which changes with the phase: the
 /// writer's field, the waiting status, the title field, or the end of a
-/// finished story. The offline line sits last in every phase.
+/// finished story. A failed-send warning sits last in every phase.
 ///
 /// The slot holds one of the first three. When the story finishes, the slot keeps
 /// the bottom the person had until the reveal scrolls to the top, so the page

@@ -177,9 +177,6 @@ struct DrawAndGuessDrawerResultView: View {
 
     private var footer: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            if viewModel.isHeldOnPhone, !isRevealed {
-                GameOfflineLine(identifier: "draw.pending")
-            }
             if !isRevealed, let word = viewModel.round?.word, !word.isEmpty {
                 DrawAndGuessDrawerSlots(word: word, guess: partnerGuess, partnerName: viewModel.partnerName)
                     .transition(.opacity)

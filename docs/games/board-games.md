@@ -113,7 +113,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 - **Presence.** The open board screen sends the game's presence heartbeat, as Draw & Guess does. While the partner has the same game open, the shared green presence ring surrounds their avatar. The status row stays empty then, unless the game shows a hint there.
 - **Invite.** While the partner is not in the game, the board shows "Tell [Name] you want to play" (see `docs/games-plan.md`).
 - **The partner's moves arrive animated.** A move that arrives while the board is open plays its animation. When the board opens after the partner moved, it first shows the board as this phone left it for 0.6 seconds, so the person sees where things stood. Then the moves since this phone last showed the board play in order, each one after the last one's animation. A tap on the board skips to the end.
-- **Offline.** A move made offline shows on the board at once and is saved on the phone as a pending operation. The screen says "Saved on this phone. We'll send it when you're online." Moves leave in order. A move the server refuses as stale or illegal is dropped with "Your move wasn't sent", and the board shows the server's state again.
+- **Offline.** A move made offline shows on the board at once and is saved on the phone as a pending operation. The screen shows no routine save status. Moves leave in order. A move the server refuses as stale or illegal is dropped with "Your move wasn't sent", and the board shows the server's state again.
 - **Notifications.**
   - "Your turn in Four in a Row" when the turn passes to you, skipped while you have that game open.
   - "[Name] finished your game of Four in a Row" when the partner's move ends the game, skipped while you have it open.

@@ -45,7 +45,7 @@ final class ExquisiteCorpseViewModel {
     /// A part is saved on this phone and not sent yet. It may be on its way.
     var isWaitingToSend = false
     /// A waiting part has failed to send at least once, so it really is held on
-    /// this phone. Show `.gamesPendingSavedOnPhone`.
+    /// this phone.
     var isHeldOnPhone = false
     /// A waiting part could not be sent although the phone is online. The waiting
     /// screen then says so and offers `retrySending()`.

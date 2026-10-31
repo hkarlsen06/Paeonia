@@ -23,37 +23,24 @@ struct MemoryCardView: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(verbatim: contentAccessibilityLabel))
 
-                if let place = record.snapshot.place {
-                    Text(place.shortName)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaMemory)
-                }
-
-                if record.syncStatus == .dirty {
-                    savedHint
-                }
-
                 StoredReactionBadge(target: .memory(record.snapshot.memoryID))
             }
-            // In the iPad grid, cards in one row grow to the tallest card's height.
-            .frame(maxHeight: .infinity, alignment: .top)
         }
         .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
+    @ViewBuilder
     private var content: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            date
-                .frame(maxWidth: .infinity, alignment: .trailing)
-            if !photoAssetIDs.isEmpty, !dynamicTypeSize.isAccessibilitySize {
-                HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
-                    textContent
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    photo
-                        .frame(maxWidth: .infinity)
-                }
-            } else {
+        if !photoAssetIDs.isEmpty, !dynamicTypeSize.isAccessibilitySize {
+            HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
+                textContent
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                photo
+                    .frame(maxWidth: .infinity)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
                 textContent
                 if !photoAssetIDs.isEmpty { photo }
             }
@@ -69,6 +56,15 @@ struct MemoryCardView: View {
                 note
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            if let place = record.snapshot.place {
+                Text(place.shortName)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaMemory)
+            }
+            if photoAssetIDs.isEmpty {
+                date
+                    .foregroundStyle(.paeoniaMemory)
             }
         }
     }
@@ -89,7 +85,6 @@ struct MemoryCardView: View {
     private var date: some View {
         Text(dayStartUTC, format: MemoryDateStyle.short)
             .font(PaeoniaTypography.caption)
-            .foregroundStyle(.paeoniaMemory)
             .multilineTextAlignment(.trailing)
     }
 
@@ -103,6 +98,22 @@ struct MemoryCardView: View {
             )
         }
         .aspectRatio(1, contentMode: .fit)
+        .overlay {
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0.8), location: 0),
+                    .init(color: .clear, location: 0.5),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+        .overlay(alignment: .topTrailing) {
+            date
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+                .padding(PaeoniaSpacing.space4)
+        }
         .overlay(alignment: .bottomTrailing) {
             if photoAssetIDs.count > 1 {
                 Text("+\(photoAssetIDs.count - 1)")
@@ -113,6 +124,7 @@ struct MemoryCardView: View {
                     .padding(PaeoniaSpacing.space8)
             }
         }
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
         .accessibilityHidden(true)
     }
 
@@ -127,20 +139,10 @@ struct MemoryCardView: View {
                 : String(localized: .memoriesCardPhotoCount(photoAssetIDs.count.formatted()))
             parts.append(count)
         }
-        return parts.joined(separator: ", ")
-    }
-
-    private var savedHint: some View {
-        Label {
-            Text(.syncStatusSavedLocally)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-        } icon: {
-            Image(systemName: "checkmark.circle")
-                .foregroundStyle(.paeoniaSuccess)
-                .accessibilityHidden(true)
+        if let place = record.snapshot.place {
+            parts.append(place.shortName)
         }
-        .labelStyle(.titleAndIcon)
+        return parts.joined(separator: ", ")
     }
 
     private var dayStartUTC: Date {
