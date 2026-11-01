@@ -45,9 +45,9 @@ struct ProfilePhotoFramingSheet: View {
                     Text(.imageCropZoom)
                     Text(framing.zoom, format: .number.precision(.fractionLength(2)))
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                 }
             }
-            .accessibilityLabel(Text(.imageCropZoom))
             .accessibilityValue(Text(framing.zoom, format: .number.precision(.fractionLength(2))))
             .accessibilityIdentifier("imageCrop.zoom")
             positionControl(
@@ -104,9 +104,9 @@ struct ProfilePhotoFramingSheet: View {
                 Text(title)
                 Text(value.wrappedValue, format: .percent.precision(.fractionLength(0)))
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
             }
         }
-        .accessibilityLabel(Text(title))
         .accessibilityValue(Text(value.wrappedValue, format: .percent.precision(.fractionLength(0))))
         .disabled(disabled)
         .accessibilityIdentifier(identifier)

@@ -162,7 +162,7 @@ extension ProfileHeaderEditorView {
                 ProfilePhotoActionLabel(
                     title: .settingsProfilePhotoRemove,
                     systemImage: "trash",
-                    tint: .paeoniaError
+                    tint: .paeoniaErrorText
                 )
             }
             .buttonStyle(.plain)

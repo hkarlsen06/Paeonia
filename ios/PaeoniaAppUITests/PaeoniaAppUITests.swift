@@ -70,7 +70,7 @@ final class PaeoniaAppUITests: XCTestCase {
         XCTAssertTrue(cropDone.waitForExistence(timeout: 5))
         app.buttons["imageCrop.adjustFraming"].tap()
         let zoom = app.steppers["imageCrop.zoom"]
-        for _ in 0..<8 where !zoom.exists || !zoom.isHittable { app.swipeUp() }
+        for _ in 0..<8 where !zoom.exists { app.swipeUp() }
         XCTAssertTrue(zoom.waitForExistence(timeout: 5))
         let initialZoom = zoom.value as? String
         let increase = zoom.buttons["imageCrop.zoom-Increment"]

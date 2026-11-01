@@ -21,8 +21,12 @@ final class ProfileAccessibilityJourneyUITests: XCTestCase {
         scrollTo(field, in: app)
         let savedName = field.value as? String
         field.tap()
-        field.typeText("andria")
+        field.typeText("andria\n")
         XCTAssertTrue((field.value as? String)?.contains("andria") == true)
+        let keyboardHidden = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == false"), object: app.keyboards.firstMatch
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [keyboardHidden], timeout: 5), .completed)
         let save = app.buttons["settings.profile.save"]
         scrollTo(save, in: app)
         XCTAssertTrue(save.isEnabled)
