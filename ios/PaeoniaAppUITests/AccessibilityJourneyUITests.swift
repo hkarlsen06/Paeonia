@@ -25,6 +25,10 @@ final class AccessibilityJourneyUITests: XCTestCase {
 
     @MainActor func testDrawingAudit() throws { try audit("widget-drawing") }
 
+    @MainActor func testDrawingAtAX5InNorwegian() throws {
+        try audit("widget-drawing", largestText: true, norwegian: true)
+    }
+
     @MainActor func testWelcomeAtAX5InNorwegian() throws {
         try audit("welcome", largestText: true, norwegian: true)
     }
