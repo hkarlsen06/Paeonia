@@ -6,9 +6,13 @@ extension PairedHomeView {
     /// streak's free save day.
     @ViewBuilder
     var notices: some View {
-        if let accessNotice {
-            HomeAccessNoticeCard(notice: accessNotice)
-                .transition(.opacity)
+        if let accessNotice, accessNotice.id != dismissedAccessNoticeID {
+            HomeAccessNoticeCard(notice: accessNotice) {
+                withAnimation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange) {
+                    dismissedAccessNoticeID = accessNotice.id
+                }
+            }
+            .transition(.opacity)
         }
         if dailyChallengeStreak.isSavable {
             HomeStreakSaveCard(streak: dailyChallengeStreak, onTap: onTapStreak)

@@ -33,8 +33,8 @@ struct AccessNoticeTests {
             now: endsAt - 10 * day
         )
 
-        #expect(payer == .paymentProblem)
-        #expect(bothFailed == .paymentProblem)
+        #expect(payer == .paymentProblem(graceEndsAt: endsAt))
+        #expect(bothFailed == .paymentProblem(graceEndsAt: endsAt))
         #expect(partnerView == nil)
         #expect(recovered == nil)
     }
@@ -60,6 +60,29 @@ struct AccessNoticeTests {
         let renewing = couple(payer: me, status: "active", accessEndsAt: nil)
 
         #expect(AccessNotice(user: own(paying: true, status: "active"), couple: renewing, now: endsAt - day) == nil)
+    }
+
+    @Test func closingANoticeHidesOnlyThatNotice() {
+        let ending = AccessNotice(
+            user: own(paying: false, status: nil),
+            couple: couple(payer: partner, status: "active", accessEndsAt: endsAt),
+            now: endsAt - day
+        )
+        let endingAgain = AccessNotice(
+            user: own(paying: false, status: nil),
+            couple: couple(payer: partner, status: "active", accessEndsAt: endsAt),
+            now: endsAt - 2 * day
+        )
+        let paymentProblem = AccessNotice(
+            user: own(paying: true, status: "grace"),
+            couple: couple(payer: me, status: "grace", accessEndsAt: nil),
+            now: endsAt - 10 * day
+        )
+
+        #expect(ending?.id == endingAgain?.id)
+        #expect(ending?.id != AccessNotice.ending(endsAt: endsAt + day, canRenew: false).id)
+        #expect(paymentProblem?.id == AccessNotice.paymentProblem(graceEndsAt: endsAt).id)
+        #expect(paymentProblem?.id != AccessNotice.paymentProblem(graceEndsAt: endsAt + 30 * day).id)
     }
 
     private func own(paying: Bool, status: String?) -> RemoteUserEntitlement {

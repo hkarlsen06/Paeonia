@@ -28,7 +28,8 @@
     /// The notice Home shows in this scenario, from the entitlements the server would send.
     var accessNotice: AccessNotice? {
       let now = Date.now
-      let periodEnd = now.addingTimeInterval(4 * 86_400)
+      // Counted from the start of today, so the notice keeps its id and stays closed once closed.
+      let periodEnd = Calendar.current.startOfDay(for: now).addingTimeInterval(4 * 86_400)
       let me = DeveloperScenarioFixture.currentUserID
       let partner = DeveloperScenarioFixture.partnerUserID
       func entitlements(

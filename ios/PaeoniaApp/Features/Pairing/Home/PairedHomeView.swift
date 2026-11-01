@@ -48,6 +48,8 @@ struct PairedHomeView: View {
     var stories: StoriesViewModel?
     var storyPeople: StoryPeople?
     var onRefresh: () async -> Void = {}
+    /// The access notice this person closed (`AccessNotice.id`). A new notice shows again.
+    @AppStorage("home.accessNotice.dismissed") var dismissedAccessNoticeID = ""
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.dynamicTypeSize) var dynamicTypeSize
