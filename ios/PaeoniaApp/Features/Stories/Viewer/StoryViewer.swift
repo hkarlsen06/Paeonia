@@ -51,6 +51,7 @@ struct StoryViewer: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityEnabled) private var assistiveTechnologyEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AccessibilityPresentation(.controls) private var showsControls
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
 
     private static let storyDuration: Double = 6
@@ -175,7 +176,7 @@ struct StoryViewer: View {
                 onShare: { shareable = StoryShare.shareable(for: story, people: people) },
                 onClose: { dismiss() }
             )
-            navigationControls
+            if showsControls { navigationControls }
             MediaAlternativeReadout(
                 text: story.accessibilityText, isVoice: false,
                 editingTarget: people.isOwn(story) ? .story(storyID: story.id) : nil,

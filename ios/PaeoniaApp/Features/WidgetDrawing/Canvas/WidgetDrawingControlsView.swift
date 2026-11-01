@@ -43,33 +43,50 @@ struct WidgetDrawingColorControlsView: View {
     private static let swatchSize: CGFloat = 30
     private static let hitTarget: CGFloat = 44
 
-    var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: Self.hitTarget), spacing: 0)], spacing: 0) {
-            ForEach(viewModel.colorChoices) { choice in
-                Button {
-                    guard viewModel.selectedColorChoiceID != choice.id else { return }
-                    viewModel.selectColorChoice(choice)
-                    PaeoniaHaptics.selection()
-                } label: {
-                    colorSwatch(choice)
-                        .frame(maxWidth: .infinity, minHeight: Self.hitTarget)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(!viewModel.isColorSelectionEnabled)
-                .accessibilityLabel(Text(choice.accessibilityLabel))
-                .accessibilityAddTraits(
-                    viewModel.selectedColorChoiceID == choice.id ? .isSelected : []
-                )
-            }
+    /// Extra controls wrap the swatches and enlarge the color well. Otherwise
+    /// they stay on one row.
+    @AccessibilityPresentation(.controls) private var showsControls
 
-            customColorPicker
-                .frame(maxWidth: .infinity, minHeight: Self.hitTarget)
+    var body: some View {
+        Group {
+            if showsControls {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: Self.hitTarget), spacing: 0)], spacing: 0) {
+                    swatches
+                }
+            } else {
+                HStack(spacing: 0) { swatches }
+            }
         }
         .padding(.horizontal, PaeoniaSpacing.space8)
         .background(.paeoniaSurfaceSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+        .clipShape(showsControls
+            ? AnyShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+            : AnyShape(Capsule(style: .continuous)))
         .opacity(viewModel.isColorSelectionEnabled ? 1 : 0.52)
+    }
+
+    @ViewBuilder
+    private var swatches: some View {
+        ForEach(viewModel.colorChoices) { choice in
+            Button {
+                guard viewModel.selectedColorChoiceID != choice.id else { return }
+                viewModel.selectColorChoice(choice)
+                PaeoniaHaptics.selection()
+            } label: {
+                colorSwatch(choice)
+                    .frame(maxWidth: .infinity, minHeight: Self.hitTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!viewModel.isColorSelectionEnabled)
+            .accessibilityLabel(Text(choice.accessibilityLabel))
+            .accessibilityAddTraits(
+                viewModel.selectedColorChoiceID == choice.id ? .isSelected : []
+            )
+        }
+
+        customColorPicker
+            .frame(maxWidth: .infinity, minHeight: Self.hitTarget)
     }
 
     // The system color well is the custom-color control; show it bare while
@@ -84,8 +101,8 @@ struct WidgetDrawingColorControlsView: View {
             supportsOpacity: false
         )
         .labelsHidden()
-        .scaleEffect(44.0 / 28.0)
-        .frame(width: 44, height: 44)
+        .scaleEffect(showsControls ? 44.0 / 28.0 : 1)
+        .frame(width: showsControls ? 44 : nil, height: showsControls ? 44 : nil)
         .disabled(!viewModel.isColorSelectionEnabled)
         .opacity(viewModel.isColorSelectionEnabled ? 1 : 0.34)
     }
