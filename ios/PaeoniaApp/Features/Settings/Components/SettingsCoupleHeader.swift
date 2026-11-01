@@ -19,6 +19,7 @@ struct SettingsCoupleHeader: View {
     var onOpenPartner: (() -> Void)?
 
     @Environment(\.avatarStyling) private var avatarStyling
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @ScaledMetric(relativeTo: .title) private var scaledAvatarSize: CGFloat = 76
     /// Nothing else re-renders the header overnight, so the day count refreshes this.
@@ -41,7 +42,7 @@ struct SettingsCoupleHeader: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            HStack(alignment: .top, spacing: 0) {
+            peopleLayout {
                 tappable(
                     person(
                         name: currentName, photo: currentProfilePhotoAssetID,
@@ -51,7 +52,13 @@ struct SettingsCoupleHeader: View {
                     label: Text(.settingsProfileSectionTitle),
                     identifier: "settings.coupleHeader.profile"
                 )
-                connector
+                if dynamicTypeSize.isAccessibilitySize {
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .accessibilityHidden(true)
+                } else {
+                    connector
+                }
                 tappable(
                     person(
                         name: partnerName, photo: partnerProfilePhotoAssetID,
@@ -70,6 +77,12 @@ struct SettingsCoupleHeader: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, PaeoniaSpacing.space8)
         .onCalendarDayChange { now = Date() }
+    }
+
+    private var peopleLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: 0))
     }
 
     @ViewBuilder
@@ -106,10 +119,10 @@ struct SettingsCoupleHeader: View {
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(width: columnWidth)
+        .frame(width: dynamicTypeSize.isAccessibilitySize ? nil : columnWidth)
+        .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : nil)
     }
 
     /// Sits on the photo's edge, like the edit badge on a contact card.

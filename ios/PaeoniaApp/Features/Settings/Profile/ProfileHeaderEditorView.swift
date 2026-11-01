@@ -19,6 +19,7 @@ struct ProfileHeaderEditorView: View {
 
     @Environment(\.avatarStyling) private var avatarStyling
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var selectedItem: PhotosPickerItem?
 
@@ -125,10 +126,15 @@ extension ProfileHeaderEditorView {
     }
 
     /// Side by side when they fit, stacked at large text sizes.
+    @ViewBuilder
     private var photoActions: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: PaeoniaSpacing.space8) { photoActionButtons }
+        if dynamicTypeSize.isAccessibilitySize {
             VStack(spacing: PaeoniaSpacing.space8) { photoActionButtons }
+        } else {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: PaeoniaSpacing.space8) { photoActionButtons }
+                VStack(spacing: PaeoniaSpacing.space8) { photoActionButtons }
+            }
         }
     }
 
@@ -235,7 +241,7 @@ private struct ProfilePhotoActionLabel: View {
         }
         .font(PaeoniaTypography.caption.weight(.semibold))
         .foregroundStyle(tint)
-        .lineLimit(1)
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.horizontal, PaeoniaSpacing.space12)
         .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
         .background(.paeoniaSurfaceSecondary, in: Capsule(style: .continuous))

@@ -40,7 +40,16 @@ struct ProfilePhotoFramingSheet: View {
 
     private var framingControls: some View {
         Section {
-            Text(.imageCropFramingInstructions)
+            Stepper(value: $framing.zoom, in: 1...framing.maximumZoom, step: 0.25) {
+                VStack(alignment: .leading) {
+                    Text(.imageCropZoom)
+                    Text(framing.zoom, format: .number.precision(.fractionLength(2)))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityLabel(Text(.imageCropZoom))
+            .accessibilityValue(Text(framing.zoom, format: .number.precision(.fractionLength(2))))
+            .accessibilityIdentifier("imageCrop.zoom")
             positionControl(
                 .imageCropHorizontalPosition,
                 value: $framing.horizontalPosition,
@@ -53,19 +62,13 @@ struct ProfilePhotoFramingSheet: View {
                 disabled: framing.crop.height >= image.size.height,
                 identifier: "imageCrop.verticalPosition"
             )
-            Stepper(value: $framing.zoom, in: 1...framing.maximumZoom, step: 0.25) {
-                VStack(alignment: .leading) {
-                    Text(.imageCropZoom)
-                    Text(framing.zoom, format: .number.precision(.fractionLength(2)))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .accessibilityLabel(Text(.imageCropZoom))
-            .accessibilityValue(Text(framing.zoom, format: .number.precision(.fractionLength(2))))
-            .accessibilityIdentifier("imageCrop.zoom")
             Button(.imageCropResetFraming) { framing.reset() }
                 .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
                 .accessibilityIdentifier("imageCrop.resetFraming")
+        } footer: {
+            Text(.imageCropFramingInstructions)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
         }
     }
 
