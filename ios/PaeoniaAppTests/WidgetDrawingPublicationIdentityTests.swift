@@ -6,6 +6,38 @@ import Testing
 
 @MainActor
 struct WidgetDrawingPublicationIdentityTests {
+    @Test func unreadablePendingMarkerBlocksWidgetReplacementWithoutBeingDiscarded() throws {
+        let environment = try PublicationEnvironment()
+        defer { environment.removeFiles() }
+        let unreadable = Data([0xff, 0x00])
+        environment.defaults.set(unreadable, forKey: WidgetPendingPublication.storageKey)
+        #expect(!WidgetPendingPublication.canPublishRemoteDrawing(in: environment.defaults))
+        #expect(!WidgetPendingPublication.keepsFirstDayDrawing(in: environment.defaults))
+        #expect(environment.defaults.data(forKey: WidgetPendingPublication.storageKey) == unreadable)
+    }
+
+    @Test func widgetRefreshCannotCompleteAPendingSendByMatchingAnOlderDrawingsContent() async throws {
+        let environment = try PublicationEnvironment()
+        defer { environment.removeFiles() }
+        let gateway = WidgetCanvasGatewaySpy()
+        let uploader = environment.uploader(gateway: gateway)
+        let hosted = makePayload(description: "An earlier sun")
+        let pending = widgetPublicationTestPayload(copying: hosted, description: hosted.accessibilityText)
+        #expect(pending.publicationID != hosted.publicationID)
+        _ = await uploader.markPending(pending)
+        try await environment.publish(pending)
+        let before = try #require(environment.pending.pendingSnapshot)
+        // The shared policy is used before rendering and again under the widget's file lock.
+        #expect(!WidgetPendingPublication.canPublishRemoteDrawing(in: environment.defaults))
+        #expect(environment.pending.pendingSnapshot == before)
+        environment.pending.clearPending(hosted.publicationID)
+        #expect(!WidgetPendingPublication.canPublishRemoteDrawing(in: environment.defaults))
+        #expect(await uploader.send(pending) == .delivered)
+        #expect(WidgetPendingPublication.canPublishRemoteDrawing(in: environment.defaults))
+        #expect(try environment.files.decodePayload().revisionID
+            == gateway.reserveCalls.last?.revisionID.uuidString.lowercased())
+    }
+
     @Test func uploadedLocalDrawingAcceptsCorrectionsUsingItsServerRevision() async throws {
         let environment = try PublicationEnvironment()
         defer { environment.removeFiles() }

@@ -14,7 +14,6 @@ enum PaeoniaWidgetRefreshService {
     // file system is case-sensitive, and the app only cleans up (and purges for
     // privacy) the lowercase directory.
     private static let previewsDirectory = "Widget/previews"
-    private static let pendingUploadKey = "paeonia.widgetCanvas.pendingUpload"
     // The app bumps this integer before it deletes the widget files, so a
     // refresh that started earlier can tell that it must not publish.
     private static let privacyEpochKey = "paeonia.widget.privacyEpoch"
@@ -69,9 +68,7 @@ enum PaeoniaWidgetRefreshService {
             try await refreshFirstDayDrawing(client: client, epoch: epoch)
             return
         }
-        guard let remoteDrawing, shouldPublish(
-            remoteContentHash: remoteDrawing.contentHash, accessibilityText: remoteDrawing.accessibilityText
-        ) else {
+        guard let remoteDrawing, shouldPublish() else {
             return
         }
         try publish(remoteDrawing, epoch: epoch)
@@ -89,6 +86,7 @@ enum PaeoniaWidgetRefreshService {
         guard !isPublished(revisionID: revisionID) else {
             // The drawing is on screen already. The server may name its author differently now,
             // for example after the person set a nickname for their partner on another device.
+            guard shouldPublish() else { return nil }
             try relabelPublishedPayload(authorName: state.activeRevisionAuthorName,
                                         accessibilityText: state.bounds?.accessibilityText,
                                         descriptionVersion: state.descriptionVersion,
@@ -260,8 +258,7 @@ enum PaeoniaWidgetRefreshService {
         )
         try WidgetPayloadFileLock.withExclusiveAccess(in: containerURL) {
             try requireUnchangedPrivacy(since: epoch)
-            guard shouldPublish(remoteContentHash: remoteDrawing.contentHash,
-                                accessibilityText: remoteDrawing.accessibilityText) else {
+            guard shouldPublish() else {
                 throw RefreshError.superseded
             }
             var current = payload
@@ -338,9 +335,7 @@ extension PaeoniaWidgetRefreshService {
             createdAt: drawing.savedAt,
             accessibilityText: drawing.bounds?.accessibilityText
         )
-        guard shouldPublish(
-            remoteContentHash: remoteDrawing.contentHash, accessibilityText: remoteDrawing.accessibilityText
-        ) else {
+        guard shouldPublish() else {
             return
         }
         try publish(remoteDrawing, epoch: epoch)
@@ -360,7 +355,7 @@ extension PaeoniaWidgetRefreshService {
         }
         _ = try WidgetSharePayload.updateFile(in: containerURL) { stored in
             try requireUnchangedPrivacy(since: epoch)
-            guard !stored.isRedacted, stored.privacyMode == .normal,
+            guard shouldPublish(), !stored.isRedacted, stored.privacyMode == .normal,
                   stored.revisionID.lowercased() == revisionID.uuidString.lowercased() else { return }
             let name = authorName?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
             // A description update never changes author identity or drawing attribution.
@@ -409,45 +404,11 @@ extension PaeoniaWidgetRefreshService {
     }
 
     private static func hasPendingFirstDayUpload() -> Bool {
-        guard let pendingData = UserDefaults(suiteName: appGroupIdentifier)?.data(forKey: pendingUploadKey),
-              let pending = try? JSONDecoder().decode(PendingUpload.self, from: pendingData)
-        else {
-            return false
-        }
-        return pending.isFirstDay
+        WidgetPendingPublication.keepsFirstDayDrawing(in: UserDefaults(suiteName: appGroupIdentifier))
     }
 
-    private static func shouldPublish(remoteContentHash: String, accessibilityText: String?) -> Bool {
-        let defaults = UserDefaults(suiteName: appGroupIdentifier)
-        if let pendingData = defaults?.data(forKey: pendingUploadKey) {
-            guard let pending = try? JSONDecoder().decode(PendingUpload.self, from: pendingData),
-                  remoteContentHash == "sha256-\(pending.contentHash)",
-                  pending.accessibilityText == accessibilityText
-            else {
-                return false
-            }
-
-            // Matching server bytes confirm the host app's pending upload even
-            // when the interactive widget performed the first successful read.
-            clearPendingUploadIfMatching(pending.contentHash, defaults: defaults)
-            return true
-        }
-
-        // With no unsent local save, the server read is authoritative. Avoid
-        // client/server timestamp comparisons: clock skew previously made a
-        // real partner revision look older indefinitely.
-        return true
-    }
-
-    private static func clearPendingUploadIfMatching(
-        _ contentHash: String,
-        defaults: UserDefaults?
-    ) {
-        if let pendingData = defaults?.data(forKey: pendingUploadKey),
-           let pending = try? JSONDecoder().decode(PendingUpload.self, from: pendingData),
-           pending.contentHash == contentHash {
-            defaults?.removeObject(forKey: pendingUploadKey)
-        }
+    private static func shouldPublish() -> Bool {
+        WidgetPendingPublication.canPublishRemoteDrawing(in: UserDefaults(suiteName: appGroupIdentifier))
     }
 }
 

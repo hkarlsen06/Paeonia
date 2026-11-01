@@ -334,7 +334,6 @@ final class WidgetDrawingHistoryViewModel {
         page.compactMap { summary -> WidgetDrawingHistoryItem? in
             guard let mediaAssetID = summary.payloadMediaAssetID else { return nil }
             if let index = items.firstIndex(where: { $0.id == summary.revisionID }) {
-                guard pendingDescriptionOperations[summary.revisionID] == nil else { return nil }
                 if items[index].descriptionVersion == nil || summary.descriptionVersion.map({ version in
                     items[index].descriptionVersion.map { version >= $0 } ?? true
                 }) == true {

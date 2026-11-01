@@ -17,13 +17,6 @@ extension PaeoniaWidgetRefreshService {
         case superseded
     }
 
-    struct PendingUpload: Decodable {
-        let contentHash: String
-        let accessibilityText: String?
-        /// The inviter's own first drawing, which belongs to no couple yet.
-        let isFirstDay: Bool
-    }
-
     /// The fields of `Widget/current.json` needed to tell whether the widget
     /// already shows a revision.
     struct StoredPayload: Decodable {

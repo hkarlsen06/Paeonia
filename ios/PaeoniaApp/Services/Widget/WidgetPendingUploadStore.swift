@@ -79,7 +79,7 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
 
     init(
         defaults: UserDefaults? = nil,
-        key: String = "paeonia.widgetCanvas.pendingUpload",
+        key: String = WidgetPendingPublication.storageKey,
         // Short enough that a reconnect soon after a failed send retries it.
         retryDelay: TimeInterval = 20
     ) {

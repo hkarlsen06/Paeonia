@@ -15,8 +15,15 @@ struct WidgetDrawingHistoryLoadingTests {
         let revision = UUID()
         let summary = makeSummary(createdAt: date(100), revisionID: revision, description: newerText,
                                   version: 1_002, authorUserID: owner)
+        let arrivingText = newerText.map { _ in "An even newer server description" }
+        let arriving = WidgetDrawingRevisionSummary(
+            revisionID: revision, authorUserID: owner, payloadMediaAssetID: summary.payloadMediaAssetID,
+            bounds: WidgetDrawingBounds(x: 0, y: 0, width: 10, height: 10, canvasSide: 320,
+                                        accessibilityText: arrivingText),
+            createdAt: summary.createdAt, descriptionVersion: 1_003
+        )
         let gateway = GatedListGateway(canvasState: makeState(coupleID: couple), heldCall: Int.max,
-                                      otherPages: [[summary]])
+                                      otherPages: [[summary], [arriving]])
         let history = WidgetDrawingHistoryViewModel(
             gateway: gateway,
             identity: WidgetSyncIdentity(currentUserID: owner, currentDisplayName: "Alex", partnerDisplayName: "Robin")
@@ -44,15 +51,18 @@ struct WidgetDrawingHistoryLoadingTests {
         await reader.prepare()
         await history.refreshDescriptions(service: service, context: context)
         #expect(history.items.first?.accessibilityText == newerText)
+        await history.refreshNewest()
+        #expect(history.items.first?.accessibilityText == arrivingText)
+        #expect(history.items.first?.descriptionVersion == 1_003)
         try await cache.apply(edit, ownerUserID: owner, operation: operation,
                               stamp: stamp, widgetRevisionVersion: 1_001)
         try await pending.markSucceeded(clientOperationID: operation.id, at: Date())
         await history.refreshDescriptions(service: service, context: context)
         await reader.reloadPending()
         let item = try #require(history.items.first)
-        #expect(item.accessibilityText == newerText)
-        #expect(item.descriptionVersion == 1_002)
-        #expect(reader.displayedText(source: item.accessibilityText, version: item.descriptionVersion) == newerText)
+        #expect(item.accessibilityText == arrivingText)
+        #expect(item.descriptionVersion == 1_003)
+        #expect(reader.displayedText(source: item.accessibilityText, version: item.descriptionVersion) == arrivingText)
     }
 
     // MARK: - Newest page
