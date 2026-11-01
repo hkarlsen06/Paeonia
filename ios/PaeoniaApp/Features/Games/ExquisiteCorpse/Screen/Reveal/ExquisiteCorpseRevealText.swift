@@ -40,7 +40,10 @@ struct ExquisiteCorpseRevealCredits: View {
                             DrawingGeometryDescription.text($0, side: GameCanvas.canonicalSide)
                         } ?? ""))
                     MediaAlternativeReadout(text: part.accessibilityText, isVoice: false, isDrawing: true,
-                        editingTarget: part.editingTarget, isCompact: true)
+                        editingTarget: part.editingTarget, isCompact: true,
+                        titleOverride: .mediaAccessibilityPartDescription(
+                            String(localized: partLabel(part.kind)).localizedLowercase
+                        ))
                 }
             }
         }

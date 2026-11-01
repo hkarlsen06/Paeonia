@@ -7,6 +7,7 @@ struct MediaAlternativeReadout: View {
     var isDrawing = false
     var editingTarget: MediaAlternativeTarget?
     var isCompact = false
+    var titleOverride: LocalizedStringResource?
     var onPresentationChanged: ((Bool) -> Void)?
     @Environment(\.threadChatContext) private var context
     @Environment(\.mediaAlternativeEditingService) private var service
@@ -29,7 +30,11 @@ struct MediaAlternativeReadout: View {
         .sheet(isPresented: Binding(
             get: { model?.isPresented == true }, set: { model?.isPresented = $0 }
         )) {
-            if let model { MediaAlternativeEditor(model: model, isVoice: isVoice, isDrawing: isDrawing) }
+            if let model {
+                MediaAlternativeEditor(
+                    model: model, isVoice: isVoice, isDrawing: isDrawing, titleOverride: titleOverride
+                )
+            }
         }
     }
 
@@ -85,6 +90,7 @@ struct MediaAlternativeReadout: View {
         editingTarget != nil && service != nil && model?.hasReadPending != true && model?.pendingReadFailed != true
     }
     private var title: LocalizedStringResource {
+        if let titleOverride { return titleOverride }
         if isVoice { return .mediaAccessibilityTranscript }
         return isDrawing ? .mediaAccessibilityDrawingDescription : .mediaAccessibilityPhotoDescription
     }

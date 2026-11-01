@@ -24081,6 +24081,24 @@
         }
       }
     },
+    "media.accessibility.partDescription" : {
+      "comment" : "Button and sheet title for one finished creature part, such as Description of head. The placeholder is the localized lowercase body-part name. Distinguishes the three description actions without relying on their neighboring headings.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Description of %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskrivelse av %@"
+          }
+        }
+      }
+    },
     "media.accessibility.photoDescription" : {
       "comment" : "Heading for an authored photo accessibility description",
       "extractionState" : "manual",

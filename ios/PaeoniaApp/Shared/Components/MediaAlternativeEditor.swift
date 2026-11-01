@@ -119,6 +119,7 @@ struct MediaAlternativeEditor: View {
     @Bindable var model: MediaAlternativeEditorModel
     let isVoice: Bool
     var isDrawing = false
+    var titleOverride: LocalizedStringResource?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     var body: some View {
@@ -140,6 +141,7 @@ struct MediaAlternativeEditor: View {
     }
 
     private var title: LocalizedStringResource {
+        if let titleOverride { return titleOverride }
         if isVoice { return .mediaAccessibilityTranscript }
         return isDrawing ? .mediaAccessibilityDrawingDescription : .mediaAccessibilityPhotoDescription
     }
