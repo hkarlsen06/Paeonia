@@ -73,7 +73,7 @@ struct PartnerNicknameView: View {
                     Text(.settingsPartnerNicknameTooLong(PartnerName.maxNicknameLength))
                         .foregroundStyle(.paeoniaWarning)
                 }
-                Text(.settingsPartnerNicknameFooter(partnerNameForCopy))
+                Text(.settingsPartnerNicknameFooter)
             }
         }
         .listRowBackground(Color.paeoniaSurfacePrimary)

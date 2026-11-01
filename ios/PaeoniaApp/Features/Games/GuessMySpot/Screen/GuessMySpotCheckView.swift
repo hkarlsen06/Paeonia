@@ -76,9 +76,6 @@ struct GuessMySpotCheckView: View {
                 .lineLimit(1)
                 .accessibilityAddTraits(.isHeader)
             placeLine
-            Text(.guessMySpotCheckPrivate(viewModel.partnerName))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)

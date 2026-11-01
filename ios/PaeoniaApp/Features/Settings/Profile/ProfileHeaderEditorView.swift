@@ -1,9 +1,9 @@
 import PhotosUI
 import SwiftUI
 
-/// The name and photo editor on the profile screen. The avatar is the anchor, two
-/// small round buttons on its bottom corners change or remove the photo, and the
-/// name is edited in a centered field right below it.
+/// The name and photo editor on the profile screen. The avatar is the anchor, with
+/// its decoration left uncovered. A row of labelled buttons below it changes or
+/// removes the photo, and the name field sits under that row at the same width.
 ///
 /// Nothing leaves the device until the user taps Save. `ProfileEditorViewModel`
 /// owns the edits and the async work; this view only draws them.
@@ -11,7 +11,6 @@ struct ProfileHeaderEditorView: View {
     let editor: ProfileEditorViewModel
 
     @ScaledMetric(relativeTo: .title) private var avatarSize: CGFloat = 104
-    @ScaledMetric(relativeTo: .caption) private var photoActionSize: CGFloat = 34
     /// Keeps the centered field visually tied to the avatar instead of stretching
     /// the full screen width.
     @ScaledMetric(relativeTo: .body) private var nameFieldWidth: CGFloat = 260
@@ -23,8 +22,18 @@ struct ProfileHeaderEditorView: View {
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             avatar
-            nameField
-            supportingCopy
+            VStack(spacing: PaeoniaSpacing.space12) {
+                photoActions
+                nameField
+                if draft.showsFirstNameHint {
+                    Text(.authOnboardingDisplayNameFirstNameHint)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaWarning)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: nameFieldWidth)
         }
         .frame(maxWidth: .infinity)
         .onChange(of: selectedItem) { _, item in
@@ -75,12 +84,6 @@ extension ProfileHeaderEditorView {
                         .accessibilityLabel(Text(.settingsProfilePhotoLoading))
                 }
             }
-            .overlay(alignment: .bottomLeading) {
-                changePhotoButton
-            }
-            .overlay(alignment: .bottomTrailing) {
-                removePhotoButton
-            }
             .padding(resolvedAvatarSize * decoration.outset)
     }
 
@@ -113,44 +116,42 @@ extension ProfileHeaderEditorView {
         }
     }
 
-    private var changePhotoButton: some View {
+    /// Side by side when they fit, stacked at large text sizes.
+    private var photoActions: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: PaeoniaSpacing.space8) { photoActionButtons }
+            VStack(spacing: PaeoniaSpacing.space8) { photoActionButtons }
+        }
+    }
+
+    @ViewBuilder
+    private var photoActionButtons: some View {
         // The picker's label closure is not on the main actor, so it gets a ready-made view.
-        let badge = ProfilePhotoActionBadge(
-            systemName: draft.hasVisiblePhoto ? "camera.fill" : "plus",
-            foreground: .paeoniaTextInverse,
-            background: .paeoniaAccentPrimary,
-            size: resolvedPhotoActionSize
+        let pickLabel = ProfilePhotoActionLabel(
+            title: draft.hasVisiblePhoto ? .settingsProfilePhotoChange : .settingsProfilePhotoAdd,
+            systemImage: draft.hasVisiblePhoto ? "camera.fill" : "plus",
+            tint: .paeoniaAccentPrimary
         )
-        return PhotosPicker(
+        PhotosPicker(
             selection: $selectedItem,
             matching: .images,
             photoLibrary: .shared()
         ) {
-            badge
+            pickLabel
         }
         .buttonStyle(.plain)
         .disabled(editor.isSaving)
-        .offset(x: -PaeoniaSpacing.space8, y: PaeoniaSpacing.space8)
-        .accessibilityLabel(
-            Text(draft.hasVisiblePhoto ? .settingsProfilePhotoChange : .settingsProfilePhotoAdd)
-        )
-    }
 
-    @ViewBuilder
-    private var removePhotoButton: some View {
         if draft.hasRemovablePhoto {
             Button(action: editor.removePhoto) {
-                ProfilePhotoActionBadge(
-                    systemName: "trash.fill",
-                    foreground: .paeoniaError,
-                    background: .paeoniaSurfaceSecondary,
-                    size: resolvedPhotoActionSize
+                ProfilePhotoActionLabel(
+                    title: .settingsProfilePhotoRemove,
+                    systemImage: "trash",
+                    tint: .paeoniaError
                 )
             }
             .buttonStyle(.plain)
             .disabled(editor.isSaving || editor.isLoadingPhoto)
-            .offset(x: PaeoniaSpacing.space8, y: PaeoniaSpacing.space8)
-            .accessibilityLabel(Text(.settingsProfilePhotoRemove))
         }
     }
 
@@ -159,18 +160,13 @@ extension ProfileHeaderEditorView {
         min(avatarSize, 132)
     }
 
-    /// Cap the badge at the touch target so it never outgrows its own hit area.
-    private var resolvedPhotoActionSize: CGFloat {
-        min(photoActionSize, PaeoniaSpacing.compactButtonHeight)
-    }
-
     /// Initials need something to draw before the account has a name.
     private var avatarName: String {
         draft.name.trimmedNonEmpty ?? String(localized: .settingsProfileFallbackName)
     }
 }
 
-// MARK: - Name and supporting copy
+// MARK: - Name
 
 extension ProfileHeaderEditorView {
     private var draft: ProfileEditorDraft {
@@ -196,55 +192,31 @@ extension ProfileHeaderEditorView {
         .padding(.vertical, PaeoniaSpacing.space12)
         .background(.paeoniaSurfaceSecondary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12))
-        .frame(maxWidth: nameFieldWidth)
         .disabled(editor.isSaving)
         .accessibilityIdentifier("settings.profile.displayName")
     }
-
-    private var supportingCopy: some View {
-        VStack(spacing: PaeoniaSpacing.space4) {
-            if draft.showsFirstNameHint {
-                Text(.authOnboardingDisplayNameFirstNameHint)
-                    .foregroundStyle(.paeoniaWarning)
-            }
-
-            Text(.settingsProfilePhotoMessage)
-                .foregroundStyle(.paeoniaTextSecondary)
-        }
-        .font(PaeoniaTypography.caption)
-        .multilineTextAlignment(.center)
-        .fixedSize(horizontal: false, vertical: true)
-    }
 }
 
-/// A small round action sitting on the avatar's edge. The ring in the screen
-/// background keeps it from merging into the photo behind it.
-private struct ProfilePhotoActionBadge: View {
-    let systemName: String
-    let foreground: Color
-    let background: Color
-    let size: CGFloat
+/// A capsule with an icon and a short label, sized to its text so the two
+/// actions read as a pair under the avatar.
+private struct ProfilePhotoActionLabel: View {
+    let title: LocalizedStringResource
+    let systemImage: String
+    let tint: Color
 
     var body: some View {
-        Image(systemName: systemName)
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(foreground)
-            .frame(width: size, height: size)
-            .background(background)
-            .clipShape(Circle())
-            .overlay {
-                Circle()
-                    .stroke(.paeoniaBackgroundPrimary, lineWidth: 2)
-            }
-            // The badge stays visually small, but the tap area keeps the platform
-            // 44-point touch target.
-            .frame(
-                width: PaeoniaSpacing.compactButtonHeight,
-                height: PaeoniaSpacing.compactButtonHeight
-            )
-            .contentShape(Circle())
-            // The surrounding control carries the label.
-            .accessibilityHidden(true)
+        HStack(spacing: PaeoniaSpacing.space4) {
+            Image(systemName: systemImage)
+                .accessibilityHidden(true)
+            Text(title)
+        }
+        .font(PaeoniaTypography.caption.weight(.semibold))
+        .foregroundStyle(tint)
+        .lineLimit(1)
+        .padding(.horizontal, PaeoniaSpacing.space12)
+        .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+        .background(.paeoniaSurfaceSecondary, in: Capsule(style: .continuous))
+        .contentShape(Capsule(style: .continuous))
     }
 }
 

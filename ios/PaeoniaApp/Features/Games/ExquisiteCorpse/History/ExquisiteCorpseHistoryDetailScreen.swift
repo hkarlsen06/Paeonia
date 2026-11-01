@@ -100,15 +100,8 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
                 VStack(spacing: PaeoniaSpacing.space16) {
                     figure(side: side(in: proxy.size))
                     replayRow
-                    VStack(spacing: PaeoniaSpacing.space16) {
-                        details
-                        Text(.favoritesPrivacyHint)
-                            .font(PaeoniaTypography.caption)
-                            .foregroundStyle(.paeoniaTextTertiary)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
+                    details
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
                 }
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.vertical, PaeoniaSpacing.space16)

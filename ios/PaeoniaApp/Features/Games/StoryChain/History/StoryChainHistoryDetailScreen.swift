@@ -146,12 +146,6 @@ struct StoryChainHistoryDetailScreen: View {
             StoryChainOrnament(isShown: true)
             StoryChainStatsLine(lineCount: story.lines.count, dareCount: story.usedDareCount)
             ReactionSection(target: .storyChainStory(story.id), alignment: .center)
-            Text(.favoritesPrivacyHint)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.top, PaeoniaSpacing.space8)
         }
         .frame(maxWidth: .infinity)
     }

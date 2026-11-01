@@ -12046,7 +12046,7 @@
       }
     },
     "favorites.privacyHint" : {
-      "comment" : "Quiet banner the first time a person stars something, and a note on a finished drawing. Stars are private and the partner is never told.",
+      "comment" : "Quiet banner the first time a person stars something.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -17643,24 +17643,6 @@
         }
       }
     },
-    "guessMySpot.check.private" : {
-      "comment" : "Quiet line on the check screen: the place and time are removed from the photo before it is sent. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We take the place and time out of the photo. %@ only sees the picture."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi tar sted og tid ut av bildet. %@ ser bare selve bildet."
-          }
-        }
-      }
-    },
     "guessMySpot.check.send" : {
       "comment" : "Button that sends the photo and its spot. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -19972,19 +19954,19 @@
       }
     },
     "home.map.currentUnknown.message" : {
-      "comment" : "Message shown in the Home map tile when this user must share location before seeing the couple map.",
+      "comment" : "Message shown in the Home map tile when this user must share location before the map appears",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia shares only your latest location. We never keep a location history."
+            "value" : "Then you can see each other on the map."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia deler bare den nyeste posisjonen din. Vi lagrer aldri posisjonshistorikk."
+            "value" : "Da kan dere se hverandre på kartet."
           }
         }
       }
@@ -21736,19 +21718,19 @@
       }
     },
     "location.permissionPrimer.message" : {
-      "comment" : "Privacy explanation shown before iOS asks for location access. %@ is the partner name.",
+      "comment" : "Shown before iOS asks for location access. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Share your latest location with %@. iOS will also ask if it can update while Paeonia is closed. That's up to you. Paeonia never saves a location history, and you can turn sharing off anytime in Settings."
+            "value" : "Share your latest location with %@. iOS will also ask if it can update while Paeonia is closed. That's up to you."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Del den nyeste posisjonen din med %@. iOS spør også om den kan oppdateres når Paeonia er lukket. Det bestemmer du. Paeonia lagrer aldri posisjonshistorikk, og du kan slå av deling når som helst i Innstillinger."
+            "value" : "Del den nyeste posisjonen din med %@. iOS spør også om den kan oppdateres når Paeonia er lukket. Det bestemmer du."
           }
         }
       }
@@ -29418,13 +29400,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We delete each copy after three days to keep your data safe. You can prepare a new one."
+            "value" : "We delete each copy after three days. You can prepare a new one."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi sletter hver kopi etter tre dager for å holde dataene dine trygge. Du kan gjøre en ny klar."
+            "value" : "Vi sletter hver kopi etter tre dager. Du kan gjøre en ny klar."
           }
         }
       }
@@ -31734,19 +31716,19 @@
       }
     },
     "settings.location.sharing.subtitle" : {
-      "comment" : "Location sharing toggle subtitle. %@ is the partner's name.",
+      "comment" : "Location sharing toggle subtitle.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ sees only your latest location, never a history. The map shows up when you both turn this on."
+            "value" : "The map shows up when you both turn this on."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ ser bare den nyeste posisjonen din, aldri en historikk. Kartet vises når dere begge har slått dette på."
+            "value" : "Kartet vises når dere begge har slått dette på."
           }
         }
       }
@@ -32436,19 +32418,19 @@
       }
     },
     "settings.partnerNickname.footer" : {
-      "comment" : "Explains the nickname screen. %@ is the partner's own name.",
+      "comment" : "Footer under the nickname field.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Only you see this. %@ won't be told. You'll see it in the app, on your widgets and in notifications."
+            "value" : "Only you see this."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bare du ser dette. %@ får ikke vite det. Du ser det i appen, på widgetene dine og i varsler."
+            "value" : "Bare du ser dette."
           }
         }
       }
@@ -32568,13 +32550,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You'll see %@ now. Only you can see this."
+            "value" : "You'll see %@ now."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nå ser du %@. Bare du kan se dette."
+            "value" : "Nå ser du %@."
           }
         }
       }
@@ -32772,24 +32754,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Åpner bildet"
-          }
-        }
-      }
-    },
-    "settings.profile.photo.message" : {
-      "comment" : "Your photo is private and only shown inside Paeonia to your partner.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your photo is private and only shown inside Paeonia to your partner."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bildet ditt er privat og vises bare til partneren din i Paeonia."
           }
         }
       }
@@ -33639,19 +33603,19 @@
       }
     },
     "settings.signInMethods.footerOne" : {
-      "comment" : "Footer under the sign-in methods when only one is linked. %@ is the brand name of the one that is not linked yet",
+      "comment" : "Footer under the sign-in methods when only one is linked. %@ is the brand name of the method that isn't linked.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Link %@ too, so either one opens this account. A method can only be unlinked while another one stays linked."
+            "value" : "Link %@ too, so you can sign in with either one."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koble til %@ også, så åpner begge denne kontoen. En påloggingsmåte kan bare kobles fra mens en annen er koblet til."
+            "value" : "Koble til %@ også, så kan du logge inn med begge."
           }
         }
       }
@@ -33861,13 +33825,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your account and everything in it is as before. You can still sign in with the other one."
+            "value" : "You can still sign in with the other one."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kontoen og alt i den er som før. Du kan fortsatt logge inn med den andre."
+            "value" : "Du kan fortsatt logge inn med den andre."
           }
         }
       }

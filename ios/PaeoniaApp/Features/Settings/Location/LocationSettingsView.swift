@@ -40,7 +40,7 @@ struct LocationSettingsView: View {
         Section {
             Toggle(isOn: sharingBinding) {
                 Text(.settingsLocationSharingTitle)
-                Text(.settingsLocationSharingSubtitle(partnerName))
+                Text(.settingsLocationSharingSubtitle)
             }
             // A choice that is still saving cannot be flipped again, so a
             // second tap is never silently dropped.
