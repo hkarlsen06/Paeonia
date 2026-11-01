@@ -17,7 +17,7 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-11-01.
 
-- More > Accessibility controls the optional visible tools. Extra controls and media descriptions each default to Automatic, which follows the system's assistive-technology state, or can be set to Always show. Board-control buttons, native scale inputs, place picking, shape creation and description panels use these preferences. Labels, native board semantics, text scaling, contrast, motion preferences and private game-state rules remain active. Hiding an authoring field preserves its draft and validation; invalid input and failed saves retain a recovery action.
+- More > Accessibility controls the optional visible tools. Extra controls and media descriptions are switches that default to off. Paeonia still shows them while the system reports an active assistive technology. Board-control buttons, native scale inputs, place picking, shape creation and description panels use these preferences. Labels, native board semantics, text scaling, contrast, motion preferences and private game-state rules remain active. Hiding an authoring field preserves its draft and validation; invalid input and failed saves retain a recovery action.
 
 - Mind Meld, Consensio and Guess my spot open history through their toolbar score capsules. Their adjacent menus omit history, and Mind Meld has no second history button on the result.
 
@@ -297,7 +297,7 @@ Draw & Guess comes first. It builds the turn engine, the drawing replay and the 
 
 ### Accessibility participation and send safety
 
-Board pieces retain each person's custom mark and add a fixed owner symbol, a circle for player one and a diamond for player two. Player headers show the same symbol beside the resolved name. SwiftUI boards and Ludo cap textures share this rendering, so matching names or custom marks do not leave color as the only distinction.
+With iOS Differentiate Without Color, iOS Increase Contrast or Paeonia's High contrast switch on, SwiftUI board pieces add an owner symbol, a circle for player one and a diamond for player two. The mark shrinks toward one corner and the symbol sits in the free corner, in the mark's own color. Player headers show the same symbol beside the name. Otherwise pieces show only the mark. Ludo cap textures render without the environment and never show the symbol.
 
 Both drawing games lock canvas edits, native shape controls, undo, redo, fill and clear while the captured drawing is being queued. A failed queue unlocks the same drawing for recovery. A successful queue cannot silently drop edits made after capture because mutating controls refuse them during that interval.
 
