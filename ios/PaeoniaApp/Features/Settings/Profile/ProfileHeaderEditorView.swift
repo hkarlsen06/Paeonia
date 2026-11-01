@@ -155,6 +155,7 @@ extension ProfileHeaderEditorView {
         }
         .buttonStyle(.plain)
         .disabled(editor.isSaving)
+        .accessibilityIdentifier("settings.profile.photo.change")
 
         if draft.hasRemovablePhoto {
             Button(action: editor.removePhoto) {
@@ -166,6 +167,7 @@ extension ProfileHeaderEditorView {
             }
             .buttonStyle(.plain)
             .disabled(editor.isSaving || editor.isLoadingPhoto)
+            .accessibilityIdentifier("settings.profile.photo.remove")
         }
     }
 
@@ -223,6 +225,7 @@ extension ProfileHeaderEditorView {
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: editor.isSaving))
         .disabled(!editor.canSave)
+        .accessibilityIdentifier("settings.profile.save")
     }
 }
 

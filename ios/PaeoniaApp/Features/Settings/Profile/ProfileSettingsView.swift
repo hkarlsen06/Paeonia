@@ -46,6 +46,7 @@ struct ProfileSettingsView: View {
                     } label: {
                         Text(.commonCancel)
                     }
+                    .accessibilityIdentifier("settings.profile.cancel")
                 }
             }
         }
