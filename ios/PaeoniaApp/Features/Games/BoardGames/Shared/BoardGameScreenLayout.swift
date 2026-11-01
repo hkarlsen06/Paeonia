@@ -102,8 +102,6 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
 
     private var statusRow: some View {
         BoardGameStatusRow(
-            partnerName: content.partner.name,
-            status: content.partnerStatus,
             extraTurnCount: content.extraTurnCount,
             hint: content.hint
         )

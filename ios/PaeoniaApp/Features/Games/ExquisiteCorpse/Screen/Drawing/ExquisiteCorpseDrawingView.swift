@@ -141,9 +141,6 @@ struct ExquisiteCorpseDrawingView: View {
 
     /// The partner came into the game, or their phone said what they are doing.
     private func partnerPresenceChanged(from old: ExquisiteCorpsePartnerPresence) {
-        AccessibilityNotification.Announcement(
-            String(localized: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName))
-        ).post()
         guard !old.isHere else { return }
         if !board.isStrokeInProgress {
             PaeoniaHaptics.partnerDrawingReceived()

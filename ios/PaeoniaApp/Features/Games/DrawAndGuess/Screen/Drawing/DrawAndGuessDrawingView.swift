@@ -132,9 +132,6 @@ struct DrawAndGuessDrawingView: View {
 
     /// The partner came into the game, or their phone said what they are doing.
     private func partnerPresenceChanged(from old: DrawAndGuessPartnerPresence) {
-        AccessibilityNotification.Announcement(
-            String(localized: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName))
-        ).post()
         guard !old.isHere else { return }
         PaeoniaHaptics.partnerDrawingReceived()
         GameSound.nudge.play(volume: 0.7)

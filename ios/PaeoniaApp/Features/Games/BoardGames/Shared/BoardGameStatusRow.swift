@@ -2,14 +2,12 @@ import SwiftUI
 
 /// A centered line under the board with the game's own hint while it has one
 /// (Ludo's "Roll again"). Whether the partner is here shows elsewhere: the steady green ring
-/// on their avatar, or `BoardGameAwayLine` under the bottom content. VoiceOver hears
-/// both changes from here.
+/// on their avatar, or `BoardGameAwayLine` under the bottom content. Both remain
+/// readable without interrupting VoiceOver for changes in partner activity.
 /// Without a hint, an "Another turn" chip that pops in each time the extra turn
 /// count goes up and fades after 1.5 seconds. The chip's space is always
 /// reserved, so nothing around the row moves when it shows.
 struct BoardGameStatusRow: View {
-    let partnerName: String
-    let status: BoardGamePartnerStatus
     /// Goes up with each extra turn of mine (Dots and Boxes).
     let extraTurnCount: Int
     var hint: LocalizedStringResource?
@@ -30,11 +28,7 @@ struct BoardGameStatusRow: View {
                 chipSlot
             }
         }
-        .animation(PaeoniaMotion.stateChange, value: status)
         .animation(PaeoniaMotion.stateChange, value: hint)
-        .onChange(of: status) { _, newStatus in
-            AccessibilityNotification.Announcement(String(localized: text(for: newStatus))).post()
-        }
         .onChange(of: extraTurnCount) { old, new in
             if new > old {
                 popChip(for: new)
@@ -53,13 +47,6 @@ struct BoardGameStatusRow: View {
                 .foregroundStyle(.paeoniaTextSecondary)
                 .transition(.opacity)
                 .accessibilityIdentifier("boardGames.hint")
-        }
-    }
-
-    private func text(for status: BoardGamePartnerStatus) -> LocalizedStringResource {
-        switch status {
-        case .here: .boardGamesStatusHere(partnerName)
-        case .away: .boardGamesStatusAway(partnerName)
         }
     }
 
@@ -111,7 +98,7 @@ struct BoardGameStatusRow: View {
 }
 
 /// "[Name] isn't here right now", under the bottom content while the partner is away.
-/// `BoardGameStatusRow` announces the change, so VoiceOver doesn't hear it twice.
+/// The partner's avatar identifies their presence while they are here.
 struct BoardGameAwayLine: View {
     let partnerName: String
 
@@ -126,10 +113,10 @@ struct BoardGameAwayLine: View {
 }
 
 #if DEBUG
-#Preview("Presence") {
+#Preview("Hint and presence") {
     VStack(spacing: PaeoniaSpacing.space24) {
-        BoardGameStatusRow(partnerName: "Robin", status: .here, extraTurnCount: 0)
-        BoardGameStatusRow(partnerName: "Robin", status: .away, extraTurnCount: 0)
+        BoardGameStatusRow(extraTurnCount: 0, hint: .boardGamesStatusAnotherTurn)
+        BoardGameAwayLine(partnerName: "Robin")
     }
     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
     .frame(maxHeight: .infinity)
@@ -140,7 +127,7 @@ struct BoardGameAwayLine: View {
 #Preview("Another turn") {
     @Previewable @State var count = 0
     VStack(spacing: PaeoniaSpacing.space24) {
-        BoardGameStatusRow(partnerName: "Robin", status: .here, extraTurnCount: count)
+        BoardGameStatusRow(extraTurnCount: count)
         Button { count += 1 } label: { Text(verbatim: "Extra turn") }
     }
     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
