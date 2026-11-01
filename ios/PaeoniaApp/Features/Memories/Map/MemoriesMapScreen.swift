@@ -64,6 +64,7 @@ struct MemoriesMapScreen: View {
                     fitRequest: fitRequest,
                     emptyRegion: homeRegion,
                     overlayInsets: overlayInsets(content, safeArea: proxy.safeAreaInsets, height: proxy.size.height),
+                    onOpen: { open($0, in: content) },
                     onOpenCluster: { cluster = MemoriesMapCluster(ids: $0.map(\.id)) },
                     initialFocusIDs: initialFocusIDs
                 )

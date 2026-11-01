@@ -44,8 +44,8 @@ struct MemoriesMapCarousel: View {
 
     /// The title, then the place without its city (the map shows where it is), then
     /// the date. A Guess my spot round shows its place, then "From Guess my spot", then
-    /// the date. Nothing is cut off: long text wraps, and at the largest text sizes the
-    /// photo moves above the text.
+    /// the date. Titles and places stay on one line at standard text sizes. At
+    /// accessibility sizes they wrap and the photo moves above the text.
     private func card(_ entry: MemoryMapEntry) -> some View {
         let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
         let layout = dynamicTypeSize.isAccessibilitySize
@@ -60,9 +60,11 @@ struct MemoriesMapCarousel: View {
                     Text(entry.title)
                         .font(PaeoniaTypography.bodyEmphasis)
                         .foregroundStyle(.paeoniaTextPrimary)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                     Text(entry.kind == .memory ? entry.place.name : String(localized: .memoriesMapFromGuessMySpot))
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaMemory)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                     if let date = MemoryMapText.date(entry.memoryDate) {
                         Text(date)
                             .font(PaeoniaTypography.caption)

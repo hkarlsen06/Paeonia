@@ -15,6 +15,7 @@ struct MemoriesMapView: UIViewRepresentable {
     let emptyRegion: MKCoordinateRegion?
     /// Room the screen's own controls take at the top and bottom.
     let overlayInsets: UIEdgeInsets
+    let onOpen: (UUID) -> Void
     /// Several memories at about the same spot, which zooming can't separate.
     let onOpenCluster: ([MemoryMapEntry]) -> Void
     /// When set, the first fit frames only these memories instead of all of them.
