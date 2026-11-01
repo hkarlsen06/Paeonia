@@ -1,0 +1,554 @@
+{
+  "testIdentifier" : "GamesBoardAccessibilityUITests/testConsensioNativeStepsChangeTheValueAndCanLockPlacement()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests/testConsensioNativeStepsChangeTheValueAndCanLockPlacement",
+  "testName" : "testConsensioNativeStepsChangeTheValueAndCanLockPlacement()",
+  "testRuns" : [
+    {
+      "activities" : [
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498569.131,
+          "title" : "Start Test at 2026-11-01 03:02:49.131"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498569.181,
+          "title" : "Set Up"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793498569.391,
+                  "title" : "Setting up automation session"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793498571.856,
+                  "title" : "Wait for no.paeonia.app to idle"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498569.185,
+              "title" : "Launch no.paeonia.app"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498569.183,
+          "title" : "Open no.paeonia.app"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793498574.436,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793498574.573,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498574.435,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793498575.418,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793498575.465,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498575.418,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498575.465,
+              "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498573.413,
+          "title" : "Waiting 2.0s for \"games.tutorial.next\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498575.491,
+              "title" : "Requesting snapshot of accessibility hierarchy for app with pid 7482"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498575.491,
+          "title" : "Collecting debug information to assist test failure triage"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793498576.535,
+                  "title" : "Checking existence of `\"consensio.position.slider\" Slider`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498576.534,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"consensio.position.slider\" Slider`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498575.526,
+          "title" : "Waiting 5.0s for \"consensio.position.slider\" Slider to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498576.557,
+          "title" : "Find the \"consensio.position.slider\" Slider"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498576.577,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498576.58,
+              "title" : "Find the \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498576.601,
+              "title" : "Check for interrupting elements affecting \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498576.623,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498576.944,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498576.577,
+          "title" : "Tap \"consensio.position.stepper-Increment\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498576.954,
+          "title" : "Find the \"consensio.position.slider\" Slider"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498576.988,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498576.991,
+              "title" : "Find the \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.016,
+              "title" : "Check for interrupting elements affecting \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.037,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.334,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498576.988,
+          "title" : "Tap \"consensio.position.stepper-Increment\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498577.345,
+          "title" : "Find the \"consensio.position.slider\" Slider"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.384,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.387,
+              "title" : "Find the \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.413,
+              "title" : "Check for interrupting elements affecting \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.435,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.732,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498577.384,
+          "title" : "Tap \"consensio.position.stepper-Increment\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498577.744,
+          "title" : "Find the \"consensio.position.slider\" Slider"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.781,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.784,
+              "title" : "Find the \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.809,
+              "title" : "Check for interrupting elements affecting \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498577.831,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.128,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498577.781,
+          "title" : "Tap \"consensio.position.stepper-Increment\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498578.137,
+          "title" : "Find the \"consensio.position.slider\" Slider"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.165,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.168,
+              "title" : "Find the \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.193,
+              "title" : "Check for interrupting elements affecting \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.219,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.518,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498578.165,
+          "title" : "Tap \"consensio.position.stepper-Increment\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498578.528,
+          "title" : "Find the \"consensio.position.slider\" Slider"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.55,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.553,
+              "title" : "Find the \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.575,
+              "title" : "Check for interrupting elements affecting \"consensio.position.stepper-Increment\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.598,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.894,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498578.55,
+          "title" : "Tap \"consensio.position.stepper-Increment\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498578.903,
+          "title" : "Find the \"consensio.position.slider\" Slider"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498578.943,
+          "title" : "Find the \"consensio.position.slider\" Slider"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.97,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.973,
+              "title" : "Find the \"consensio.position.stepper-Decrement\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498578.996,
+              "title" : "Check for interrupting elements affecting \"consensio.position.stepper-Decrement\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498579.021,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498579.317,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498578.97,
+          "title" : "Tap \"consensio.position.stepper-Decrement\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498580.34,
+              "title" : "Find the \"consensio.position.slider\" Slider"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498580.339,
+          "title" : "Checking `Expect predicate `value == \"in the middle\"` for object \"consensio.position.slider\" Slider`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498580.392,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498580.395,
+              "title" : "Find the \"consensio.place.lock\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498580.42,
+              "title" : "Check for interrupting elements affecting \"consensio.place.lock\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498580.442,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498580.737,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498580.392,
+          "title" : "Tap \"consensio.place.lock\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793498581.965,
+                  "title" : "Checking existence of `\"consensio.waiting.guess\" Any`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793498581.964,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"consensio.waiting.guess\" Any`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498580.946,
+          "title" : "Waiting 5.0s for \"consensio.waiting.guess\" Any to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498582.003,
+          "title" : "Terminate no.paeonia.app:7482"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793498583.045,
+          "title" : "Tear Down"
+        }
+      ],
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "24A434",
+        "osVersion" : "27.0",
+        "platform" : "iOS Simulator"
+      },
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+/tmp/paeonia-widget-description-isolation.swift:5:36: error: call to main actor-isolated static method 'updateFile(in:_:)' in a synchronous actor-isolated context [#ActorIsolatedCall]
+ 3 | actor WidgetDescriptionIsolationProbe {
+ 4 |     func merge(in root: URL, update: WidgetDrawingDescriptionUpdate) throws {
+ 5 |         _ = try WidgetSharePayload.updateFile(in: root) { payload in
+   |                                    `- error: call to main actor-isolated static method 'updateFile(in:_:)' in a synchronous actor-isolated context [#ActorIsolatedCall]
+ 6 |             payload.applyDescription(update)
+ 7 |         }
+
+ios/PaeoniaShared/WidgetSharePayload.swift:80:17: note: calls to static method 'updateFile(in:_:)' from outside of its actor context are implicitly asynchronous
+ 78 | extension WidgetSharePayload {
+ 79 |     /// Re-read under the publication lock. Never write a caller's earlier snapshot back.
+ 80 |     static func updateFile(in containerURL: URL, _ update: (inout Self) throws -> Void) throws -> Bool {
+    |                 `- note: calls to static method 'updateFile(in:_:)' from outside of its actor context are implicitly asynchronous
+ 81 |         try WidgetPayloadFileLock.withExclusiveAccess(in: containerURL) {
+ 82 |             let url = containerURL.appendingPathComponent("Widget/current.json")
+
+/tmp/paeonia-widget-description-isolation.swift:6:21: error: call to main actor-isolated instance method 'applyDescription' in a synchronous nonisolated context [#ActorIsolatedCall]
+ 4 |     func merge(in root: URL, update: WidgetDrawingDescriptionUpdate) throws {
+ 5 |         _ = try WidgetSharePayload.updateFile(in: root) { payload in
+ 6 |             payload.applyDescription(update)
+   |                     `- error: call to main actor-isolated instance method 'applyDescription' in a synchronous nonisolated context [#ActorIsolatedCall]
+ 7 |         }
+ 8 |     }
+
+ios/PaeoniaShared/WidgetSharePayload.swift:98:19: note: calls to instance method 'applyDescription' from outside of its actor context are implicitly asynchronous
+ 96 |     }
+ 97 | 
+ 98 |     mutating func applyDescription(_ update: WidgetDrawingDescriptionUpdate) {
+    |                   `- note: calls to instance method 'applyDescription' from outside of its actor context are implicitly asynchronous
+ 99 |         switch update {
+100 |         case let .queued(text, operationID):
+
+[#ActorIsolatedCall]: <https://docs.swift.org/compiler/documentation/diagnostics/actor-isolated-call>

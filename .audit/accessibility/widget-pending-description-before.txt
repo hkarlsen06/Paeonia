@@ -1,0 +1,4 @@
+Signed source29d5d2c0. Foundation-only executable, no simulator.
+Actual shared payload merge. Durable enqueue/failure path also confirmed in source; application regression pending.
+Old optimistic ID remains after latest durable correction B accepted: true
+Visible description after acceptance: Correction A

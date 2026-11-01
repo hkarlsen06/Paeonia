@@ -1,0 +1,1689 @@
+[
+  {
+    "test": "NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithKeyboardToolbar()",
+    "kind": "warningSummaries",
+    "attachments": {},
+    "fileName": "",
+    "issueType": "Runtime Issue",
+    "isTopLevel": "false",
+    "lineNumber": "1",
+    "message": "Invalid frame dimension (negative or non-finite).",
+    "sourceCodeContext": {
+      "callStack": [
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        }
+      ]
+    },
+    "timestamp": "2026-11-01T04:16:51.631+0100",
+    "uuid": "8875B008-B4A0-429B-B36C-E678CC048BD0"
+  },
+  {
+    "test": "DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures()",
+    "kind": "failureSummaries",
+    "attachments": {},
+    "fileName": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/DrawingCompositionUITests.swift",
+    "isPerformanceFailure": "false",
+    "issueType": "Assertion Failure",
+    "isTopLevelFailure": "true",
+    "lineNumber": "45",
+    "message": "XCTAssertTrue failed",
+    "sourceCodeContext": {
+      "callStack": [
+        {
+          "addressString": "4355117076"
+        },
+        {
+          "addressString": "4354724923"
+        },
+        {
+          "addressString": "4354726079"
+        },
+        {
+          "addressString": "4354726007"
+        },
+        {
+          "addressString": "4440598099"
+        },
+        {
+          "addressString": "4423424803"
+        },
+        {
+          "addressString": "4423423011"
+        },
+        {
+          "addressString": "7518873663"
+        },
+        {
+          "addressString": "7518861839"
+        },
+        {
+          "addressString": "4354719107"
+        },
+        {
+          "addressString": "4354719043"
+        },
+        {
+          "addressString": "4354717199"
+        },
+        {
+          "addressString": "4354658215"
+        },
+        {
+          "addressString": "4355122235"
+        },
+        {
+          "addressString": "4355122319"
+        },
+        {
+          "addressString": "4354657995"
+        },
+        {
+          "addressString": "4354716691"
+        },
+        {
+          "addressString": "4354718391"
+        },
+        {
+          "addressString": "4354719235"
+        },
+        {
+          "addressString": "4354794747"
+        },
+        {
+          "addressString": "4354796247"
+        },
+        {
+          "addressString": "4354817407"
+        },
+        {
+          "addressString": "4354795271"
+        },
+        {
+          "addressString": "4354801267"
+        },
+        {
+          "addressString": "4354817407"
+        },
+        {
+          "addressString": "4354800971"
+        },
+        {
+          "addressString": "4354799683"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354798659"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354841315"
+        },
+        {
+          "addressString": "4354840859"
+        },
+        {
+          "addressString": "4354838563"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354838435"
+        },
+        {
+          "addressString": "4354839643"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354841315"
+        },
+        {
+          "addressString": "4354840859"
+        },
+        {
+          "addressString": "4354838563"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354838435"
+        },
+        {
+          "addressString": "4354839643"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354841315"
+        },
+        {
+          "addressString": "4354840859"
+        },
+        {
+          "addressString": "4354838563"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354838435"
+        },
+        {
+          "addressString": "4354839643"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354946555"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354946235"
+        },
+        {
+          "addressString": "4354908807"
+        },
+        {
+          "addressString": "4354912407"
+        },
+        {
+          "addressString": "4354912771"
+        },
+        {
+          "addressString": "4354908447"
+        },
+        {
+          "addressString": "4354907907"
+        },
+        {
+          "addressString": "4354909079"
+        },
+        {
+          "addressString": "4354900971"
+        },
+        {
+          "addressString": "4354965711"
+        },
+        {
+          "addressString": "4354899751"
+        },
+        {
+          "addressString": "4354907163"
+        },
+        {
+          "addressString": "4337802859"
+        },
+        {
+          "addressString": "4337802487"
+        },
+        {
+          "addressString": "7518176631"
+        },
+        {
+          "addressString": "7518174467"
+        },
+        {
+          "addressString": "7518171259"
+        },
+        {
+          "addressString": "7518150719"
+        },
+        {
+          "addressString": "9153124779"
+        },
+        {
+          "addressString": "7605542447"
+        },
+        {
+          "addressString": "4337803663"
+        },
+        {
+          "addressString": "4340269903"
+        },
+        {
+          "addressString": "4338212219"
+        }
+      ],
+      "location": {
+        "filePath": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/DrawingCompositionUITests.swift",
+        "lineNumber": "45"
+      }
+    },
+    "timestamp": "2026-11-01T04:10:12.327+0100",
+    "uuid": "8C74657A-765A-4EF1-AC9A-C2801EEE220B"
+  },
+  {
+    "test": "DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures()",
+    "kind": "failureSummaries",
+    "attachments": [
+      {
+        "filename": "App UI hierarchy for no.paeonia_0_50FE006C-97FE-45D3-A0CA-86170D6B1DC3.app",
+        "inActivityIdentifier": "0",
+        "lifetime": "deleteOnSuccess",
+        "name": "App UI hierarchy for no.paeonia.app",
+        "payloadRef": {
+          "id": "0~2vfK8YtrWv0lNTrM7zr9xdqBm4vLcBX0Od0wElCr7uSRdOjOgKksETUjxi2OFt4Wl4rkSZP27vthKsvCvVNc_Q=="
+        },
+        "payloadSize": "17465",
+        "timestamp": "2026-11-01T04:10:14.745+0100",
+        "uniformTypeIdentifier": "public.plain-text",
+        "uuid": "C6613B7C-5A40-498E-B63D-B4E1EA78102E"
+      },
+      {
+        "filename": "Snapshot_1_CBC4DB72-D343-4EA1-8C40-DB0E183626F9",
+        "inActivityIdentifier": "1",
+        "lifetime": "deleteOnSuccess",
+        "name": "kXCTAttachmentLegacySnapshot",
+        "payloadRef": {
+          "id": "0~deDPB2jlWPevPInwGqJKZ6BsY2NKXlsFM-Kk1evZohGHtePmw4R_3N1jPJhmB_AOob3wN6V7N1FuC-tlN98MCQ=="
+        },
+        "payloadSize": "74440",
+        "timestamp": "2026-11-01T04:10:14.745+0100",
+        "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+        "uuid": "EE3733C9-AC6A-4187-BD41-CFA0292DA53A"
+      }
+    ],
+    "fileName": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/DrawingCompositionUITests.swift",
+    "isPerformanceFailure": "false",
+    "issueType": "UI Automation Failure",
+    "isTopLevelFailure": "false",
+    "lineNumber": "31",
+    "message": "Failed to get matching snapshot: No matches found for Elements matching predicate '\"drawing.compose.undo\" IN identifiers' from input {(\n    Button, identifier: 'widgetDrawing.share', label: 'Share',\n    Button, identifier: 'arrow.counterclockwise', label: 'Go back to the sent drawing', Disabled,\n    Button, identifier: 'photo.on.rectangle.angled', label: 'Drawing history',\n    Button, identifier: 'drawing.compose.done', label: 'Done',\n    Button, identifier: 'drawing.compose', label: 'Build with shapes',\n    Button, label: 'Pen', Selected,\n    Button, label: 'Pencil',\n    Button, label: 'Fill',\n    Button, label: 'Eraser',\n    Button, identifier: 'widgetDrawing.undo', label: 'Undo',\n    Button, identifier: 'widgetDrawing.redo', label: 'Redo', Disabled,\n    Button, identifier: 'widgetDrawing.lineStyle', label: 'Line style', value: Solid,\n    Button, label: 'Clear',\n    Button, identifier: 'widgetDrawing.send', label: 'Send',\n    Button, label: 'Blush', Selected,\n    Button, label: 'Petal pink',\n    Button, label: 'Pink',\n    Button, label: 'Warm pink',\n    Button, label: 'Green',\n    Button, label: 'Gold',\n    Button, label: 'Blue',\n    Button, label: 'Lavender',\n    Button, label: 'Custom color', value: very light gray\n)}\nPossibly caused by runtime issues:\nAutomation type mismatch: computed Button from legacy attributes vs ColorWell from modern attribute. Input attributes and values: {\n    \"XC_kAXXCAttributeAutomationType\" = 67;\n    \"XC_kAXXCAttributeElementBaseType\" = UIColorWell;\n    \"XC_kAXXCAttributeElementType\" = UIColorWell;\n    \"XC_kAXXCAttributeTraits\" = 8589934593;\n}\nSee test report attachments for more detail.",
+    "sourceCodeContext": {
+      "callStack": [
+        {
+          "addressString": "4355117196"
+        },
+        {
+          "addressString": "4356944007"
+        },
+        {
+          "addressString": "4357043919"
+        },
+        {
+          "addressString": "4354645447"
+        },
+        {
+          "addressString": "4354640839"
+        },
+        {
+          "addressString": "4357041963"
+        },
+        {
+          "addressString": "4357045079"
+        },
+        {
+          "addressString": "4440621111"
+        },
+        {
+          "addressString": "4440598175"
+        },
+        {
+          "addressString": "4440590099"
+        },
+        {
+          "addressString": "4440553567"
+        },
+        {
+          "addressString": "4440627223"
+        },
+        {
+          "addressString": "4354710031"
+        },
+        {
+          "addressString": "4440589915"
+        },
+        {
+          "addressString": "4440597335"
+        },
+        {
+          "addressString": "4423423099"
+        },
+        {
+          "addressString": "7518873663"
+        },
+        {
+          "addressString": "7518861839"
+        },
+        {
+          "addressString": "4354719107"
+        },
+        {
+          "addressString": "4354719043"
+        },
+        {
+          "addressString": "4354717199"
+        },
+        {
+          "addressString": "4354658215"
+        },
+        {
+          "addressString": "4355122235"
+        },
+        {
+          "addressString": "4355122319"
+        },
+        {
+          "addressString": "4354657995"
+        },
+        {
+          "addressString": "4354716691"
+        },
+        {
+          "addressString": "4354718391"
+        },
+        {
+          "addressString": "4354719235"
+        },
+        {
+          "addressString": "4354794747"
+        },
+        {
+          "addressString": "4354796247"
+        },
+        {
+          "addressString": "4354817407"
+        },
+        {
+          "addressString": "4354795271"
+        },
+        {
+          "addressString": "4354801267"
+        },
+        {
+          "addressString": "4354817407"
+        },
+        {
+          "addressString": "4354800971"
+        },
+        {
+          "addressString": "4354799683"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354798659"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354841315"
+        },
+        {
+          "addressString": "4354840859"
+        },
+        {
+          "addressString": "4354838563"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354838435"
+        },
+        {
+          "addressString": "4354839643"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354841315"
+        },
+        {
+          "addressString": "4354840859"
+        },
+        {
+          "addressString": "4354838563"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354838435"
+        },
+        {
+          "addressString": "4354839643"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354841315"
+        },
+        {
+          "addressString": "4354840859"
+        },
+        {
+          "addressString": "4354838563"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354838435"
+        },
+        {
+          "addressString": "4354839643"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354946555"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354946235"
+        },
+        {
+          "addressString": "4354908807"
+        },
+        {
+          "addressString": "4354912407"
+        },
+        {
+          "addressString": "4354912771"
+        },
+        {
+          "addressString": "4354908447"
+        },
+        {
+          "addressString": "4354907907"
+        },
+        {
+          "addressString": "4354909079"
+        },
+        {
+          "addressString": "4354900971"
+        },
+        {
+          "addressString": "4354965711"
+        },
+        {
+          "addressString": "4354899751"
+        },
+        {
+          "addressString": "4354907163"
+        },
+        {
+          "addressString": "4337802859"
+        },
+        {
+          "addressString": "4337802487"
+        },
+        {
+          "addressString": "7518176631"
+        },
+        {
+          "addressString": "7518174467"
+        },
+        {
+          "addressString": "7518171259"
+        },
+        {
+          "addressString": "7518150719"
+        },
+        {
+          "addressString": "9153124779"
+        },
+        {
+          "addressString": "7605542447"
+        },
+        {
+          "addressString": "4337803663"
+        },
+        {
+          "addressString": "4340269903"
+        },
+        {
+          "addressString": "4338212219"
+        }
+      ],
+      "location": {
+        "filePath": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/DrawingCompositionUITests.swift",
+        "lineNumber": "31"
+      }
+    },
+    "timestamp": "2026-11-01T04:10:14.745+0100",
+    "uuid": "3BD02868-C406-44C2-8071-E1F3754C3077"
+  },
+  {
+    "test": "DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures()",
+    "kind": "warningSummaries",
+    "attachments": {},
+    "fileName": "",
+    "issueType": "Runtime Issue",
+    "isTopLevel": "false",
+    "lineNumber": "1",
+    "message": "Invalid frame dimension (negative or non-finite).",
+    "sourceCodeContext": {
+      "callStack": [
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        }
+      ]
+    },
+    "timestamp": "2026-11-01T04:09:43.719+0100",
+    "uuid": "09BD6E21-7E44-46F1-9BC1-381E66631086"
+  },
+  {
+    "test": "GameDrawingDescriptionUITests/testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation()",
+    "kind": "warningSummaries",
+    "attachments": {},
+    "fileName": "",
+    "issueType": "Runtime Issue",
+    "isTopLevel": "false",
+    "lineNumber": "1",
+    "message": "Invalid frame dimension (negative or non-finite).",
+    "sourceCodeContext": {
+      "callStack": [
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        }
+      ]
+    },
+    "timestamp": "2026-11-01T04:12:15.766+0100",
+    "uuid": "5F80130D-159F-409B-A429-F3A2CAD4EE2B"
+  },
+  {
+    "test": "GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn()",
+    "kind": "failureSummaries",
+    "attachments": [
+      {
+        "filename": "App UI hierarchy for no.paeonia_0_3A6D05B3-3108-4160-ADA5-26B385470B68.app",
+        "inActivityIdentifier": "0",
+        "lifetime": "deleteOnSuccess",
+        "name": "App UI hierarchy for no.paeonia.app",
+        "payloadRef": {
+          "id": "0~Iucg9JH5BmcUud_cby0Ohk0HQhVOOh83H9rsupzmeQjr56WfnmmVauvLM__m3iY8Y_XVnrkQIyYVrLF-yPGezQ=="
+        },
+        "payloadSize": "18136",
+        "timestamp": "2026-11-01T04:14:31.886+0100",
+        "uniformTypeIdentifier": "public.plain-text",
+        "uuid": "00D3A97E-CC80-4E3F-B9F3-7A30C36CED61"
+      },
+      {
+        "filename": "Snapshot_1_9B1760E6-4230-439E-89A7-DF4981B31D27",
+        "inActivityIdentifier": "1",
+        "lifetime": "deleteOnSuccess",
+        "name": "kXCTAttachmentLegacySnapshot",
+        "payloadRef": {
+          "id": "0~V5GwmTVr6ip_ygPq15RC_XZ4zGL7tafRG0yHaIB32Qwe1RKzY8hSHGbFUm5NzEcqmPnt_ZAbNzL2MXpOgSJ41A=="
+        },
+        "payloadSize": "75634",
+        "timestamp": "2026-11-01T04:14:31.886+0100",
+        "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+        "uuid": "78368524-549A-4A24-B95C-9D25060B14EA"
+      }
+    ],
+    "fileName": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/GamesBoardAccessibilityUITests.swift",
+    "isPerformanceFailure": "false",
+    "issueType": "UI Automation Failure",
+    "isTopLevelFailure": "false",
+    "lineNumber": "22",
+    "message": "Failed to get matching snapshot: No matches found for Elements matching predicate '\"dotsAndBoxes.box.0.side.0\" IN identifiers' from input {(\n    Button, identifier: 'games.menu', label: 'More options',\n    Button,\n    Button, identifier: 'games.board.controls.close', label: 'Done',\n    Button, identifier: 'boardGames.score', label: 'You 4 wins, Robin 3 wins',\n    Button, identifier: 'games.board.controls', label: 'Board controls',\n    Button, identifier: 'dotsAndBoxes.native.box', label: 'Choose a box', value: Box row 1, column ...\n)}\nPossibly caused by runtime issues:\nAutomation type mismatch: computed Button from legacy attributes vs PopUpButton from modern attribute. Input attributes and values: {\n    \"XC_kAXXCAttributeAutomationType\" = 14;\n    \"XC_kAXXCAttributeElementBaseType\" = NSObject;\n    \"XC_kAXXCAttributeElementType\" = \"SwiftUI.AccessibilityNode\";\n    \"XC_kAXXCAttributeTraits\" = 1108101562369;\n}\nSee test report attachments for more detail.",
+    "sourceCodeContext": {
+      "callStack": [
+        {
+          "addressString": "4355117196"
+        },
+        {
+          "addressString": "4356944007"
+        },
+        {
+          "addressString": "4357043919"
+        },
+        {
+          "addressString": "4354645447"
+        },
+        {
+          "addressString": "4354640839"
+        },
+        {
+          "addressString": "4357041963"
+        },
+        {
+          "addressString": "4357045079"
+        },
+        {
+          "addressString": "4440621111"
+        },
+        {
+          "addressString": "4440598175"
+        },
+        {
+          "addressString": "4440621755"
+        },
+        {
+          "addressString": "4440590099"
+        },
+        {
+          "addressString": "4440553567"
+        },
+        {
+          "addressString": "4440627223"
+        },
+        {
+          "addressString": "4354710031"
+        },
+        {
+          "addressString": "4440589915"
+        },
+        {
+          "addressString": "4440598251"
+        },
+        {
+          "addressString": "4423479603"
+        },
+        {
+          "addressString": "7518873663"
+        },
+        {
+          "addressString": "7518861839"
+        },
+        {
+          "addressString": "4354718611"
+        },
+        {
+          "addressString": "4354718519"
+        },
+        {
+          "addressString": "4354717199"
+        },
+        {
+          "addressString": "4354658215"
+        },
+        {
+          "addressString": "4355122235"
+        },
+        {
+          "addressString": "4355122319"
+        },
+        {
+          "addressString": "4354657995"
+        },
+        {
+          "addressString": "4354716691"
+        },
+        {
+          "addressString": "4354718139"
+        },
+        {
+          "addressString": "4354719235"
+        },
+        {
+          "addressString": "4354794747"
+        },
+        {
+          "addressString": "4354796247"
+        },
+        {
+          "addressString": "4354817407"
+        },
+        {
+          "addressString": "4354795271"
+        },
+        {
+          "addressString": "4354801267"
+        },
+        {
+          "addressString": "4354817407"
+        },
+        {
+          "addressString": "4354800971"
+        },
+        {
+          "addressString": "4354799683"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354798659"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354841315"
+        },
+        {
+          "addressString": "4354840859"
+        },
+        {
+          "addressString": "4354838563"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354838435"
+        },
+        {
+          "addressString": "4354839643"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354841315"
+        },
+        {
+          "addressString": "4354840859"
+        },
+        {
+          "addressString": "4354838563"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354838435"
+        },
+        {
+          "addressString": "4354839643"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354841315"
+        },
+        {
+          "addressString": "4354840859"
+        },
+        {
+          "addressString": "4354838563"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354838435"
+        },
+        {
+          "addressString": "4354839643"
+        },
+        {
+          "addressString": "4354784091"
+        },
+        {
+          "addressString": "4354946555"
+        },
+        {
+          "addressString": "4354647091"
+        },
+        {
+          "addressString": "4354646871"
+        },
+        {
+          "addressString": "4354946235"
+        },
+        {
+          "addressString": "4354908807"
+        },
+        {
+          "addressString": "4354912407"
+        },
+        {
+          "addressString": "4354912771"
+        },
+        {
+          "addressString": "4354908447"
+        },
+        {
+          "addressString": "4354907907"
+        },
+        {
+          "addressString": "4354909079"
+        },
+        {
+          "addressString": "4354900971"
+        },
+        {
+          "addressString": "4354965711"
+        },
+        {
+          "addressString": "4354899751"
+        },
+        {
+          "addressString": "4354907163"
+        },
+        {
+          "addressString": "4337802859"
+        },
+        {
+          "addressString": "4337802487"
+        },
+        {
+          "addressString": "7518176631"
+        },
+        {
+          "addressString": "7518174467"
+        },
+        {
+          "addressString": "7518171259"
+        },
+        {
+          "addressString": "7518150719"
+        },
+        {
+          "addressString": "9153124779"
+        },
+        {
+          "addressString": "7605542447"
+        },
+        {
+          "addressString": "4337803663"
+        },
+        {
+          "addressString": "4340269903"
+        },
+        {
+          "addressString": "4338212219"
+        }
+      ],
+      "location": {
+        "filePath": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/GamesBoardAccessibilityUITests.swift",
+        "lineNumber": "22"
+      }
+    },
+    "timestamp": "2026-11-01T04:14:31.886+0100",
+    "uuid": "ABB1ED16-5BFB-479B-9886-5C115BBEC893"
+  },
+  {
+    "test": "MediaAlternativeEditingUITests/testOwnStoryDescriptionCanBeCorrectedCancelledAndCleared()",
+    "kind": "warningSummaries",
+    "attachments": {},
+    "fileName": "",
+    "issueType": "Runtime Issue",
+    "isTopLevel": "false",
+    "lineNumber": "1",
+    "message": "Invalid frame dimension (negative or non-finite).",
+    "sourceCodeContext": {
+      "callStack": [
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        },
+        {
+          "addressString": "0"
+        }
+      ]
+    },
+    "timestamp": "2026-11-01T04:16:26.884+0100",
+    "uuid": "6D62D494-673F-4E60-A2EE-FE97ED43C084"
+  }
+]

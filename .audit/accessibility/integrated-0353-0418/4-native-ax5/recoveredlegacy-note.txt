@@ -1,0 +1,1 @@
+INCOMPLETE. Wrapper exit 124 after 600 seconds. Original lacks Info.plist. Evidence copy only received the completed build bundle Info.plist to permit explicit-ID legacy object reads. Its donor rootId is not a test root and must not be treated as a finalized result. Original bundle untouched. No wrapper success.

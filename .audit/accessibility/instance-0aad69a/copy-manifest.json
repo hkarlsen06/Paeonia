@@ -1,0 +1,452 @@
+[
+  {
+    "path": "verification.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/verification.txt",
+    "bytes": 7384,
+    "sha256": "22ae9f32602e1467a0402d12244a4ff027c15641e6185dfe4aca95c2d76daedb"
+  },
+  {
+    "path": "head-before.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/head-before.txt",
+    "bytes": 41,
+    "sha256": "9e77d490d05c6cca98293684c130b6b2c16b0e2e148be6a9b4ceb6eaca4e2748"
+  },
+  {
+    "path": "head-after.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/head-after.txt",
+    "bytes": 41,
+    "sha256": "9e77d490d05c6cca98293684c130b6b2c16b0e2e148be6a9b4ceb6eaca4e2748"
+  },
+  {
+    "path": "main-before.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/main-before.txt",
+    "bytes": 41,
+    "sha256": "98199ea90dd94fe17e389a860cb23c67023922f9dd65909b645216d4e905aa80"
+  },
+  {
+    "path": "main-after.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/main-after.txt",
+    "bytes": 41,
+    "sha256": "98199ea90dd94fe17e389a860cb23c67023922f9dd65909b645216d4e905aa80"
+  },
+  {
+    "path": "signature-before.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/signature-before.txt",
+    "bytes": 113,
+    "sha256": "bd67e0a74b3e2ef6bbc7caed8ac525839edd8fac7c6deb22f1bff4e0981db388"
+  },
+  {
+    "path": "hashes-before.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/hashes-before.json",
+    "bytes": 591944,
+    "sha256": "1c4b6cc030da94d26ff818fab1a9b23bdf5ab69d04b4f9a47ace5871dc3ce92e"
+  },
+  {
+    "path": "hashes-after.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/hashes-after.json",
+    "bytes": 591944,
+    "sha256": "1c4b6cc030da94d26ff818fab1a9b23bdf5ab69d04b4f9a47ace5871dc3ce92e"
+  },
+  {
+    "path": "source-proof.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/source-proof.json",
+    "bytes": 80,
+    "sha256": "08486938217e693079973950d4d751233ab9b7c6e2d213b02e7d079fce26daf3"
+  },
+  {
+    "path": "large-readback.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/large-readback.json",
+    "bytes": 19,
+    "sha256": "2b8e430ccb265a2acc7fbf788187a8c0005df52e8d84ba863bd46c0afc3be9ba"
+  },
+  {
+    "path": "ax5-readback.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/ax5-readback.txt",
+    "bytes": 51,
+    "sha256": "2c75773cbd84c5d4ea24a895f74b2a7edd6744f2714aacc9bfc7020b7b6f739c"
+  },
+  {
+    "path": "final-large-readback.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/final-large-readback.txt",
+    "bytes": 19,
+    "sha256": "2b8e430ccb265a2acc7fbf788187a8c0005df52e8d84ba863bd46c0afc3be9ba"
+  },
+  {
+    "path": "final-large-set.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/final-large-set.txt",
+    "bytes": 23,
+    "sha256": "e8974f92195cbebf67d6a56275244c4293249055ea09222ccc5efb7ccc0bd752"
+  },
+  {
+    "path": "group1/summary.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group1/summary.json",
+    "bytes": 1290,
+    "sha256": "e4cdd5861c6ec0cc90af943349f1114085182f5d7a040a1be4d7de269149bd90"
+  },
+  {
+    "path": "group1/completion.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group1/completion.json",
+    "bytes": 73,
+    "sha256": "d0f2c2c500a494fed04d9a5893faa641113d2fdecc602d42a07f5cbf42393e4d"
+  },
+  {
+    "path": "group1/original-bundles.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group1/original-bundles.json",
+    "bytes": 201,
+    "sha256": "2136aea55e841f565ee7a2bdb6a4572d12bb2419a3b55711212cfe36d5fa5d93"
+  },
+  {
+    "path": "group1/provenance.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group1/provenance.json",
+    "bytes": 150,
+    "sha256": "1ff90ba1a8de9bbcce600ee4de5b0d0be75085de7a599d86aa0cd61ff240fad7"
+  },
+  {
+    "path": "group1/build-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group1/build-issues.json",
+    "bytes": 435,
+    "sha256": "17c4b1be08912fc84b29b65f8c3bec2029ec7b45e16e4e3452b33adee92e420e"
+  },
+  {
+    "path": "group1/build-legacy.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group1/build-legacy.json",
+    "bytes": 16302,
+    "sha256": "ad7ce9f076360911bf6994f460fe2d963bf02a128eb1b8a31ed04f93205d7b8d"
+  },
+  {
+    "path": "group1/test-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group1/test-issues.json",
+    "bytes": 435,
+    "sha256": "17c4b1be08912fc84b29b65f8c3bec2029ec7b45e16e4e3452b33adee92e420e"
+  },
+  {
+    "path": "group1/all-legacy-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group1/all-legacy-issues.json",
+    "bytes": 1193,
+    "sha256": "fa1516728abbc9130d9a1fbb0d5832a899b44b2ec849232c1bc48b3676af0223"
+  },
+  {
+    "path": "group2/summary.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/summary.json",
+    "bytes": 1353,
+    "sha256": "24ef8cf2e09d68f850b125f340700a02743112d56938a465cc124259d9b1e19a"
+  },
+  {
+    "path": "group2/completion.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/completion.json",
+    "bytes": 72,
+    "sha256": "76b7a71e406af5f4d2263560cbedfee38357c9b5a684f18c1a6b32b919528b82"
+  },
+  {
+    "path": "group2/original-bundles.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/original-bundles.json",
+    "bytes": 201,
+    "sha256": "3ff8e86d993f14dba09497a159f546e73eeadc12dca7d0f9f6f434401419da8c"
+  },
+  {
+    "path": "group2/provenance.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/provenance.json",
+    "bytes": 372,
+    "sha256": "6bdb13bfd0e4767a68dc9c14c91dd14dd5bfc8fb5b3a5303c2e50ec0ea9ea15a"
+  },
+  {
+    "path": "group2/build-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/build-issues.json",
+    "bytes": 435,
+    "sha256": "17c4b1be08912fc84b29b65f8c3bec2029ec7b45e16e4e3452b33adee92e420e"
+  },
+  {
+    "path": "group2/build-legacy.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/build-legacy.json",
+    "bytes": 16302,
+    "sha256": "0115721e3d4549ef83dc32ae8eac970b7f2a613baf3a91c0ee49dc8f40c05794"
+  },
+  {
+    "path": "group2/test-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/test-issues.json",
+    "bytes": 3767,
+    "sha256": "45445eddd6a62c2b9ef1c808ef24cb32e4144bb57cc962033eca50495e3c70de"
+  },
+  {
+    "path": "group2/all-legacy-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/all-legacy-issues.json",
+    "bytes": 5049,
+    "sha256": "bcc0817debb670f225b1b3b0cbab5bab177825ed403209197cd619d6eccf5a1b"
+  },
+  {
+    "path": "group2/tests.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/tests.json",
+    "bytes": 4415,
+    "sha256": "30c4585356e7c48f09e84b969ab0188b4dccd1152b3606b747143a899e3ac307"
+  },
+  {
+    "path": "group2/case-index.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/case-index.json",
+    "bytes": 1965,
+    "sha256": "2c10f97eab6ef1ad035ba065a58e6c516701dccc5ab1d94db5ecd2089cf84e50"
+  },
+  {
+    "path": "group2/case-002-details.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/case-002-details.json",
+    "bytes": 2042,
+    "sha256": "8afa17ddbc3dad8326a29763beba38ef6f64fdd0d0da8e0831c6c9fbab40a1a8"
+  },
+  {
+    "path": "group2/case-001-details.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/case-001-details.json",
+    "bytes": 2038,
+    "sha256": "9e766233c2c0c77f2b2158f826b329c8fd7b53b874234f8005fc095ac3c87ddb"
+  },
+  {
+    "path": "group2/case-000-details.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/case-000-details.json",
+    "bytes": 1954,
+    "sha256": "61aabdf24c1f3562acf742f7941f634bd4b1c5dd4944d8e7db6185eb8c02ec82"
+  },
+  {
+    "path": "group2/case-002-activities.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/case-002-activities.json",
+    "bytes": 86224,
+    "sha256": "754bdb3e6f935cec1ec326e84b18377e056cfea85769452e7f74c23a67254d61"
+  },
+  {
+    "path": "group2/case-001-activities.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/case-001-activities.json",
+    "bytes": 49332,
+    "sha256": "decdae93c1971d9a6bb8a690d5589d2fb3f4780c3b30d1407b8d6c0dcef3e81f"
+  },
+  {
+    "path": "group2/case-000-activities.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/case-000-activities.json",
+    "bytes": 40097,
+    "sha256": "b7680195fc02cc52f5efab954fd37070b8f9e38c6c4a6e042d87c84deda5c98c"
+  },
+  {
+    "path": "group2/attachments-manifest.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/attachments/manifest.json",
+    "bytes": 818,
+    "sha256": "95a962592d8049f005990b567b24a5dee5fb2251b5c261b5d430f7134d32ab47"
+  },
+  {
+    "path": "group2/attachments/02E862D2-084A-4891-A46F-4BC99457DB39.png",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group2/attachments/02E862D2-084A-4891-A46F-4BC99457DB39.png",
+    "bytes": 150356,
+    "sha256": "e15a30a1d91ed48b4d86e51fffb51b6a16033ee776c0b865d202c0fa32216155"
+  },
+  {
+    "path": "group3/summary.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/summary.json",
+    "bytes": 1109,
+    "sha256": "53ed1a558c4e7acb39fd3f0d737b5e370759f15ff9a95150e894cc6d369fe5a4"
+  },
+  {
+    "path": "group3/completion.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/completion.json",
+    "bytes": 72,
+    "sha256": "ac239b8f45e4fdb56e8f757111a886cf7f5454f7f1e01a53e491eabd8525b4ba"
+  },
+  {
+    "path": "group3/original-bundles.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/original-bundles.json",
+    "bytes": 201,
+    "sha256": "2a13ee9dd619d396a0a2413bc99a706d65b51ffafb199e61e99d545dc32bbdf5"
+  },
+  {
+    "path": "group3/provenance.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/provenance.json",
+    "bytes": 447,
+    "sha256": "e2b00b7ab9a32e3604d9c7362f2c632a7a345d326748aa2cd7f59c479e17c08a"
+  },
+  {
+    "path": "group3/build-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/build-issues.json",
+    "bytes": 435,
+    "sha256": "17c4b1be08912fc84b29b65f8c3bec2029ec7b45e16e4e3452b33adee92e420e"
+  },
+  {
+    "path": "group3/build-legacy.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/build-legacy.json",
+    "bytes": 16302,
+    "sha256": "b6f43684a00b4fadcaa4fa36d5774fc4ea2f0e715b7a5a414dfa61f19f60a76c"
+  },
+  {
+    "path": "group3/test-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/test-issues.json",
+    "bytes": 1568,
+    "sha256": "666b66b9cf5f2be6d8dc919d0626feb7cf969a2b207e633726075d4910e2b885"
+  },
+  {
+    "path": "group3/all-legacy-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/all-legacy-issues.json",
+    "bytes": 2506,
+    "sha256": "8e0f44dfba7a971ad8c2024f1ea029c243ffa7ae5705ec73870a67ae0868eee7"
+  },
+  {
+    "path": "group3/tests.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/tests.json",
+    "bytes": 3791,
+    "sha256": "19fd4a97710788f2f00bee62ba8efe9870b4f6506366a1d1672288faf6c0d7cc"
+  },
+  {
+    "path": "group3/case-index.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/case-index.json",
+    "bytes": 1539,
+    "sha256": "aaf1e237de17614f910c02ce2bf1f57d0f5a4a39eb243e6d80a0168106e5cecc"
+  },
+  {
+    "path": "group3/case-002-details.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/case-002-details.json",
+    "bytes": 2038,
+    "sha256": "421308d567e83dbbeaa756515faa1bc04a3645ad5fca742f7b96f90869cc7a49"
+  },
+  {
+    "path": "group3/case-001-details.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/case-001-details.json",
+    "bytes": 1777,
+    "sha256": "c8ad2d99e9730231620975db532b6fe3650f700b15f766fe94f87ba0a5950fcb"
+  },
+  {
+    "path": "group3/case-000-details.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/case-000-details.json",
+    "bytes": 1674,
+    "sha256": "259db03520380cd1268b4ef07f53e3a20651d510e0831433cdd79d52b57fba7b"
+  },
+  {
+    "path": "group3/case-002-activities.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/case-002-activities.json",
+    "bytes": 49341,
+    "sha256": "215fbfe18a9bfcb0894772dba9efc29b772192634741407e6a2dc3bd9547568e"
+  },
+  {
+    "path": "group3/case-001-activities.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/case-001-activities.json",
+    "bytes": 67960,
+    "sha256": "ac1628347bea90f21e969909f1e28854c19485fd3bbe88bad3c62c89936c80ad"
+  },
+  {
+    "path": "group3/case-000-activities.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/case-000-activities.json",
+    "bytes": 7270,
+    "sha256": "51aff24b77314e88703657c14540577eff3dd14649df0cd1e27e6d5ffe908041"
+  },
+  {
+    "path": "group3/attachments-manifest.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/attachments/manifest.json",
+    "bytes": 2399,
+    "sha256": "e4107bd7ffc1cdeff31ed8a0697927d4bd8c80be99041683e768465935c1285b"
+  },
+  {
+    "path": "group3/attachments/23873534-927C-4CF1-8FFC-48DBDF94E5DB.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/attachments/23873534-927C-4CF1-8FFC-48DBDF94E5DB.txt",
+    "bytes": 106,
+    "sha256": "2af1cc8c7246ad3be554c6b118da6046700cf6953386411ce0f81091fbcdac3b"
+  },
+  {
+    "path": "group3/attachments/AA1A1EBC-8F18-4479-862E-79D36EF2A024.png",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group3/attachments/AA1A1EBC-8F18-4479-862E-79D36EF2A024.png",
+    "bytes": 191653,
+    "sha256": "411ac909bcce9cc90fb040c3d8249c449f1acefdf8c15298572a1ce3bc376d48"
+  },
+  {
+    "path": "group4/summary.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/summary.json",
+    "bytes": 1230,
+    "sha256": "3c3b52b956921e4ce2ac5fe805912df8a0c765de96d4643b307026cf12b198fa"
+  },
+  {
+    "path": "group4/completion.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/completion.json",
+    "bytes": 72,
+    "sha256": "cc20e516bdd0c61d3cfbb38833b9c5acb6df1b71d4d059d96e31e3810d9debad"
+  },
+  {
+    "path": "group4/original-bundles.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/original-bundles.json",
+    "bytes": 201,
+    "sha256": "e98cdece562aeb4acee5027743e6d28fdf66450c4fbd4a61d7349d6deda86650"
+  },
+  {
+    "path": "group4/provenance.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/provenance.json",
+    "bytes": 394,
+    "sha256": "6ea83504ba1bb1e07c816983a3399f8a2f3562a25bb9710e2ad8e6f6ef9369ad"
+  },
+  {
+    "path": "group4/build-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/build-issues.json",
+    "bytes": 435,
+    "sha256": "17c4b1be08912fc84b29b65f8c3bec2029ec7b45e16e4e3452b33adee92e420e"
+  },
+  {
+    "path": "group4/build-legacy.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/build-legacy.json",
+    "bytes": 16302,
+    "sha256": "ba560d74ae909546d2546a8686f81c489bcb664c2c91695d496e8d19e28904c8"
+  },
+  {
+    "path": "group4/test-issues.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/test-issues.json",
+    "bytes": 2657,
+    "sha256": "2c5acc23ba2f4ed1cabc0b779f89a776b3306fbbe5157ae135be4b45162e5c0c"
+  },
+  {
+    "path": "group4/tests.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/tests.json",
+    "bytes": 4042,
+    "sha256": "9969c9a0ffb96ea1a3a23efee7c3340a8b9abcaefcecd78a8ba0c2e0a8de5402"
+  },
+  {
+    "path": "group4/case-index.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/case-index.json",
+    "bytes": 1693,
+    "sha256": "362c172936507fbf7ecf40cd28d1518a7b139b0a9d8186e2c11ddcf67aca0a40"
+  },
+  {
+    "path": "group4/case-002-details.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/case-002-details.json",
+    "bytes": 2042,
+    "sha256": "8ed7498b1948a9b84200377d7d21f787a42ba41d15d2bab53ff75b183878afb4"
+  },
+  {
+    "path": "group4/case-001-details.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/case-001-details.json",
+    "bytes": 1961,
+    "sha256": "8d2143a089d2fc23535372f692dc3411119c01e2b107092c4dbf119c84e2a9f5"
+  },
+  {
+    "path": "group4/case-000-details.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/case-000-details.json",
+    "bytes": 1682,
+    "sha256": "3b90c42b911107987fa421259a0ee036b60d9b00ddc92ed1ae1d7a73dbf1db5d"
+  },
+  {
+    "path": "group4/case-002-activities.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/case-002-activities.json",
+    "bytes": 86499,
+    "sha256": "a83c6c660d5a81673145302550872b6a563c3a9eebddbb827b38fbb66a928b63"
+  },
+  {
+    "path": "group4/case-001-activities.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/case-001-activities.json",
+    "bytes": 47068,
+    "sha256": "b627da7e998f917c0ba2fbc2d633a952b9299067189cca62e50b03395cb5bce3"
+  },
+  {
+    "path": "group4/case-000-activities.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/case-000-activities.json",
+    "bytes": 7203,
+    "sha256": "06b237e42c59dc95305e60e1a96ca4af0828bdd6314164af7ff1e9c0de143b95"
+  },
+  {
+    "path": "group4/attachments-manifest.json",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/attachments/manifest.json",
+    "bytes": 1563,
+    "sha256": "5862e5859ea2a797b4129c3c3e40b2dcb8e390d59e2914a04adee7b6780827e2"
+  },
+  {
+    "path": "group4/attachments/A2799FA7-598E-4092-9429-5A56E2EB7BC6.txt",
+    "source": "/tmp/paeonia-accessibility-instance-0aad69a/group4/attachments/A2799FA7-598E-4092-9429-5A56E2EB7BC6.txt",
+    "bytes": 106,
+    "sha256": "2af1cc8c7246ad3be554c6b118da6046700cf6953386411ce0f81091fbcdac3b"
+  }
+]

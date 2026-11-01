@@ -14,14 +14,14 @@ export const legalNo = {
         heading: 'Innstillingene på enheten',
         paragraphs: [
           'Appen har et mørkt plommefarget grensesnitt og bruker vanlige iOS-kontroller. Teksten følger systemets tekststørrelse på mange skjermer. Mange animasjoner tar hensyn til Reduser bevegelse. Vi sjekker hele appen med de største tekststørrelsene og økt kontrast.',
-          'Du finner disse valgene under Tilgjengelighet i Innstillinger på enheten. Du trenger ingen egen konto eller eget abonnement for tilgjengelighet.',
+          'Du finner disse valgene under Tilgjengelighet i Innstillinger på enheten.',
         ],
       },
       {
         heading: 'Stemme og tastatur',
         paragraphs: [
           'Historier har synlige knapper for pause, forrige og neste. På spillbrett, kart og ved beskjæring av profilbilder finnes det knapper eller skjemaer som alternativer til å dra. Disse kontrollene trenger fortsatt full testing med hjelpemidler.',
-          'Hele brukerreisen med VoiceOver, Talekontroll, Bryterkontroll og Full tastaturtilgang er ennå ikke testet på både iPhone og iPad. Vi hevder derfor ikke at disse funksjonene er fullt støttet.',
+          'Vi har ennå ikke testet hele brukerreiser med VoiceOver, Talekontroll, Bryterkontroll eller Full tastaturtilgang på iPhone eller iPad. Vi hevder derfor ikke at disse funksjonene er fullt støttet.',
         ],
       },
       {
@@ -35,7 +35,7 @@ export const legalNo = {
         heading: 'Kjente begrensninger',
         paragraphs: [
           'Frihåndstegninger og tegnede ledetråder kan fortsatt være vanskelige å forstå uten syn. Vi må fortsatt teste om former og skrevne beskrivelser gir deltakelse på like vilkår. Tidsbonusen når dere spiller mot hverandre i Tegn og gjett, kan starte før tegningen har en ferdig beskrivelse. Alternativene for kart, tegning og beskjæring av bilder trenger fortsatt full testing.',
-          'Beskrivelser og tekstversjoner avhenger av hva avsenderen skriver, og kan mangle. I chat, dagens spørsmål, historier og spill kan du rette dine egne beskrivelser eller tekstversjoner etter deling. Beskrivelser i tegningshistorikken kan ennå ikke redigeres. Vi har ikke testet hele redigeringsflyten på begge enhetstyper. Chat lagrer usendte bilder, beskrivelser og taleutkast på enheten din. Vi tester fortsatt avbrudd og gjenoppretting.',
+          'Beskrivelser og tekstversjoner avhenger av hva avsenderen skriver, og kan mangle. Du kan rette beskrivelser og tekstversjoner for dine egne delte medier, også tegninger i historikken. Vi har ennå ikke testet hele redigeringsflyten på begge enhetstyper. Chat lagrer usendte bilder, beskrivelser og taleutkast på enheten din. Vi tester fortsatt avbrudd og gjenoppretting.',
           'Noen oppsett, widgeter og skjermene for innlogging og kjøp fra andre leverandører trenger mer testing. Appen har foreløpig ikke videoinnhold som krever synstolking.',
         ],
       },

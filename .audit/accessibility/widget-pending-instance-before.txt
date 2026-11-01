@@ -1,0 +1,4 @@
+Signed source29d5d2c0. Foundation-only executable, no simulator.
+Actual WidgetPendingUploadStore source with boundary DTO stubs and real UserDefaults.
+Distinct user publications received equal IDs: true
+Old upload progress entered the post-purge marker: true

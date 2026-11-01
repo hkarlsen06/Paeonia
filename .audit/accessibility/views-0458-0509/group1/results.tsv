@@ -1,0 +1,4 @@
+identifier	result	duration_seconds
+GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord()	Passed	63.15404796600342
+GameConversationJourneyUITests/testEmptyGameChatAndReturnToUnfinishedStory()	Passed	48.14370000362396
+GameDrawingDescriptionUITests/testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation()	Passed	50.04274594783783

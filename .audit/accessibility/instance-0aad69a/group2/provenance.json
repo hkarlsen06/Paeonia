@@ -1,0 +1,14 @@
+{
+  "wrapperPID": 67144,
+  "start": 1793509510.997333,
+  "argv": [
+    "--ui",
+    "--",
+    "-collect-test-diagnostics",
+    "never",
+    "-only-testing:PaeoniaAppUITests/DrawingCompositionUITests",
+    "-only-testing:PaeoniaAppUITests/WidgetHistoryDescriptionUITests",
+    "-only-testing:PaeoniaAppUITests/ProfileAccessibilityJourneyUITests"
+  ],
+  "consolePID": 67143
+}

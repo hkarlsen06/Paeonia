@@ -1,0 +1,62 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "91DA0470-DC65-4F08-B1BF-BC19D6B241FC.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Native Form after dismissal hierarchy_0_84A90D77-053D-42A0-8D0C-3C23C2CC1FA0.txt",
+        "timestamp" : 1793504904.048
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "DDE95ED3-37FB-4D3D-97A8-7CD3A2080595.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Native Form after dismissal_0_46558EE5-70BC-462C-8A8A-8C3B7B081FD8.png",
+        "timestamp" : 1793504904.013
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "1484AE1D-2015-4DFD-81FB-74CFA3F0C00B.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Native Form while editing hierarchy_0_2D205A66-C0AF-41D1-8B1B-F40AE417C88E.txt",
+        "timestamp" : 1793504901.458
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "53268BA0-BDCE-4BA7-9400-366F19BBEA55.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Native Form while editing_0_D3A1B1F6-F7FB-461F-B229-3C75560A2584.png",
+        "timestamp" : 1793504901.245
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "F31F1E78-687B-4C9C-98A1-5EF57972FEB0.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Native Form before keyboard hierarchy_0_9357E8DC-4A7D-4FCD-ACC0-534841B60A69.txt",
+        "timestamp" : 1793504899.181
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "32B1297E-881D-481A-8365-D997C0AEAB8B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Native Form before keyboard_0_46584D01-455B-4F5C-A407-8393D7DFBE18.png",
+        "timestamp" : 1793504899.079
+      }
+    ],
+    "testIdentifier" : "NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithSingleKeyboardItem()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithSingleKeyboardItem"
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "pid": 29180,
+  "command": [
+    "./scripts/xcode-test-agent.sh",
+    "--ui",
+    "--",
+    "-collect-test-diagnostics",
+    "never",
+    "-only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian",
+    "-only-testing:PaeoniaAppUITests/PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing",
+    "-only-testing:PaeoniaAppUITests/ProfileAccessibilityJourneyUITests"
+  ],
+  "start": 1793507752.671731,
+  "consolePID": 29179,
+  "timeoutSeconds": 600
+}

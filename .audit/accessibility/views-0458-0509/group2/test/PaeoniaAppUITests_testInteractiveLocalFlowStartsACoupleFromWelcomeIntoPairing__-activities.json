@@ -1,0 +1,2129 @@
+{
+  "testIdentifier" : "PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing",
+  "testName" : "testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+  "testRuns" : [
+    {
+      "activities" : [
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Screen Recording 2026-11-01 at 05.05.16 am.mp4",
+              "payloadId" : "0~Ku8zTPr0f9lXU3XqE61YE0opHfbpYKD2-hwdA3l-r7Xp2F-X7inTXACSNlSqfMXoliNmBynOwKPcvNy7en4ISw==",
+              "timestamp" : 1793505916.954,
+              "uuid" : "80FA694C-CBD1-44AC-9602-E02220152265"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505916.954,
+              "title" : "kXCTAttachmentScreenRecording"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505916.939,
+          "title" : "Start Test at 2026-11-01 05:05:16.939"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505916.956,
+          "title" : "Set Up"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505917.169,
+                  "title" : "Setting up automation session"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505920.082,
+                  "title" : "Wait for no.paeonia.app to idle"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505916.959,
+              "title" : "Launch no.paeonia.app"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505916.957,
+          "title" : "Open no.paeonia.app"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505923.112,
+                  "title" : "Checking existence of `\"welcome.start\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505923.111,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"welcome.start\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505922.076,
+          "title" : "Waiting 8.0s for \"welcome.start\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505923.2,
+          "title" : "Checking existence of `\"welcome.invited\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505923.222,
+          "title" : "Checking existence of `\"welcome.returning\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.23 am",
+              "payloadId" : "0~Rnb5iF4rGNthpxUIEAy0yGJVyQP59KKILZEZGqjimMnQmWsgAE15RgIK7vXSbSRdYC57DIaf6AWnhAAulXTL5w==",
+              "timestamp" : 1793505923.717,
+              "uuid" : "45169F5A-0ED9-48B3-9921-2D31D3FD8007"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505923.248,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505923.265,
+              "title" : "Find the \"welcome.start\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505923.284,
+              "title" : "Check for interrupting elements affecting \"welcome.start\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.23 am",
+                  "payloadId" : "0~Rnb5iF4rGNthpxUIEAy0yGJVyQP59KKILZEZGqjimMnQmWsgAE15RgIK7vXSbSRdYC57DIaf6AWnhAAulXTL5w==",
+                  "timestamp" : 1793505923.717,
+                  "uuid" : "45169F5A-0ED9-48B3-9921-2D31D3FD8007"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505923.394,
+                  "title" : "Scroll element to visible"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505923.398,
+                  "title" : "Find the \"welcome.start\" Button"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505923.43,
+                  "title" : "Computed hit point {201, 645.33333333333337} after scrolling to visible"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505923.717,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505923.313,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505923.717,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505923.248,
+          "title" : "Tap \"welcome.start\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505924.882,
+                  "title" : "Checking existence of `\"welcome.startDate.continue\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505924.881,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"welcome.startDate.continue\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505923.841,
+          "title" : "Waiting 5.0s for \"welcome.startDate.continue\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.25 am",
+              "payloadId" : "0~Sk_J6FT3xyUgefaM4pxZCyu08qLa5T6FsW5tWFDVJR8u7KoMTKTjrTqXgF3QbyniuwJ6hfwDqfD4hs3FAAdeFw==",
+              "timestamp" : 1793505925.332,
+              "uuid" : "02D15EBC-70EF-4FEC-BD68-FA79F7ED2658"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505924.956,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505924.959,
+              "title" : "Find the \"welcome.startDate.continue\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505925.007,
+              "title" : "Check for interrupting elements affecting \"welcome.startDate.continue\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.25 am",
+                  "payloadId" : "0~Sk_J6FT3xyUgefaM4pxZCyu08qLa5T6FsW5tWFDVJR8u7KoMTKTjrTqXgF3QbyniuwJ6hfwDqfD4hs3FAAdeFw==",
+                  "timestamp" : 1793505925.332,
+                  "uuid" : "02D15EBC-70EF-4FEC-BD68-FA79F7ED2658"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505925.332,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505925.042,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505925.333,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505924.956,
+          "title" : "Tap \"welcome.startDate.continue\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Debug description for `\"widgetDrawing.canvas\" Other`_0_9C260B2D-F6EA-407D-B25B-65BE59CED7A5.txt",
+              "payloadId" : "0~MfoSs1Hc1sjGBCyJprP_9tI8SM1gUYcC7wAJa8ALMtAF2kyQe83eEtHHqwrOkxsbDzgXj_ItFDkq9O08xzhs8Q==",
+              "timestamp" : 1793505926.426,
+              "uuid" : "CCFC4E36-512C-4F5D-B402-5B04DEEC023B"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Debug description for `\"widgetDrawing.canvas\" Other`_0_9C260B2D-F6EA-407D-B25B-65BE59CED7A5.txt",
+                  "payloadId" : "0~MfoSs1Hc1sjGBCyJprP_9tI8SM1gUYcC7wAJa8ALMtAF2kyQe83eEtHHqwrOkxsbDzgXj_ItFDkq9O08xzhs8Q==",
+                  "timestamp" : 1793505926.426,
+                  "uuid" : "CCFC4E36-512C-4F5D-B402-5B04DEEC023B"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505926.379,
+                  "title" : "Checking existence of `\"widgetDrawing.canvas\" Other`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505926.425,
+                  "title" : "Capturing element debug description"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505926.426,
+                  "title" : "Debug description for `\"widgetDrawing.canvas\" Other`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505926.377,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"widgetDrawing.canvas\" Other`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505927.361,
+                  "title" : "Checking existence of `\"widgetDrawing.canvas\" Other`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505927.361,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"widgetDrawing.canvas\" Other`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505925.335,
+          "title" : "Waiting 10.0s for \"widgetDrawing.canvas\" Other to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.28 am",
+              "payloadId" : "0~3LznA5SUghDn2vnpTkyIJ2XKbbn6oHy4J4gZoLjQV5skJWhCgIKHUtBG1dy5nFbXnMe0qule6LbKBed-LIlP5Q==",
+              "timestamp" : 1793505928.465,
+              "uuid" : "D35C64E4-B40D-4DD3-9713-A4CCBE9B1838"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505927.578,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505927.588,
+              "title" : "Find the \"widgetDrawing.canvas\" Other"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505927.617,
+              "title" : "Check for interrupting elements affecting \"widgetDrawing.canvas\" Other"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.28 am",
+                  "payloadId" : "0~3LznA5SUghDn2vnpTkyIJ2XKbbn6oHy4J4gZoLjQV5skJWhCgIKHUtBG1dy5nFbXnMe0qule6LbKBed-LIlP5Q==",
+                  "timestamp" : 1793505928.465,
+                  "uuid" : "D35C64E4-B40D-4DD3-9713-A4CCBE9B1838"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505927.655,
+                  "title" : "Find the \"widgetDrawing.canvas\" Other"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505927.705,
+                  "title" : "Find the \"widgetDrawing.canvas\" Other"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505927.752,
+                  "title" : "Find the \"widgetDrawing.canvas\" Other"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505927.799,
+                  "title" : "Find the \"widgetDrawing.canvas\" Other"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505927.848,
+                  "title" : "Find the \"widgetDrawing.canvas\" Other"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505928.465,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505927.654,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505928.465,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505927.578,
+          "title" : "Press \"widgetDrawing.canvas\" Other[0.30, 0.30] for 0.1 seconds, then drag to \"widgetDrawing.canvas\" Other[0.70, 0.60] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505929.511,
+                  "title" : "Checking existence of `\"widgetDrawing.send\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505929.511,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"widgetDrawing.send\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505928.47,
+          "title" : "Waiting 5.0s for \"widgetDrawing.send\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.29 am",
+              "payloadId" : "0~Pz-P4gmxTNmDDV7Cnsh6nu2tvdtmGGO-FGiPi5T1IUPsQ4Y6spnsP4WJ_o6R58_BKBEy62FHqlzAn2eAe36nyg==",
+              "timestamp" : 1793505929.946,
+              "uuid" : "25ED6B69-B229-4B73-8CDE-7C32B4FFC8DF"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505929.554,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505929.557,
+              "title" : "Find the \"widgetDrawing.send\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505929.584,
+              "title" : "Check for interrupting elements affecting \"widgetDrawing.send\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.29 am",
+                  "payloadId" : "0~Pz-P4gmxTNmDDV7Cnsh6nu2tvdtmGGO-FGiPi5T1IUPsQ4Y6spnsP4WJ_o6R58_BKBEy62FHqlzAn2eAe36nyg==",
+                  "timestamp" : 1793505929.946,
+                  "uuid" : "25ED6B69-B229-4B73-8CDE-7C32B4FFC8DF"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505929.618,
+                  "title" : "Scroll element to visible"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505929.62,
+                  "title" : "Find the \"widgetDrawing.send\" Button"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505929.66,
+                  "title" : "Computed hit point {201, 780.33333333333314} after scrolling to visible"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505929.946,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505929.608,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505929.947,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505929.554,
+          "title" : "Tap \"widgetDrawing.send\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505930.981,
+                  "title" : "Checking existence of `\"Continue\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505930.981,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"Continue\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505929.95,
+          "title" : "Waiting 5.0s for \"Continue\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.31 am",
+              "payloadId" : "0~PxbNw0zOe326M2P5hp7ODC3KPGF0ZnBoEuKC8h8yU4w9SStmoXPbSHS4YEieuer893RIO-YSUocNay9CUU84uA==",
+              "timestamp" : 1793505931.319,
+              "uuid" : "6ADAB86D-35D7-4F44-894C-37FAF9A17581"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505930.994,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505930.997,
+              "title" : "Find the \"Continue\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505931.009,
+              "title" : "Check for interrupting elements affecting \"Continue\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.31 am",
+                  "payloadId" : "0~PxbNw0zOe326M2P5hp7ODC3KPGF0ZnBoEuKC8h8yU4w9SStmoXPbSHS4YEieuer893RIO-YSUocNay9CUU84uA==",
+                  "timestamp" : 1793505931.319,
+                  "uuid" : "6ADAB86D-35D7-4F44-894C-37FAF9A17581"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505931.319,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505931.027,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505931.32,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505930.994,
+          "title" : "Tap \"Continue\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505932.371,
+                  "title" : "Checking existence of `\"welcome.signIn.title\" StaticText`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505932.369,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"welcome.signIn.title\" StaticText`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505931.325,
+          "title" : "Waiting 5.0s for \"welcome.signIn.title\" StaticText to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505932.397,
+          "title" : "Find the \"welcome.signIn.title\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505932.448,
+          "title" : "Checking existence of `\"welcome.signIn.back\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505933.503,
+                  "title" : "Checking existence of `\"auth.signIn.apple\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505933.502,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"auth.signIn.apple\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505932.466,
+          "title" : "Waiting 5.0s for \"auth.signIn.apple\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.33 am",
+              "payloadId" : "0~8HSvDV6XlK0CiKA03wqQudiSQP2UR82e-1oxfEF7LzPw1B1h7g1NiRPDQNeMyVjI1NJ6PFhweioW-J6rCeOzvg==",
+              "timestamp" : 1793505933.885,
+              "uuid" : "77D5F88F-3584-466F-8BC9-D8ABAAAB44E8"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505933.53,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505933.533,
+              "title" : "Find the \"auth.signIn.apple\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505933.549,
+              "title" : "Check for interrupting elements affecting \"auth.signIn.apple\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.33 am",
+                  "payloadId" : "0~8HSvDV6XlK0CiKA03wqQudiSQP2UR82e-1oxfEF7LzPw1B1h7g1NiRPDQNeMyVjI1NJ6PFhweioW-J6rCeOzvg==",
+                  "timestamp" : 1793505933.885,
+                  "uuid" : "77D5F88F-3584-466F-8BC9-D8ABAAAB44E8"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505933.575,
+                  "title" : "Scroll element to visible"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505933.576,
+                  "title" : "Find the \"auth.signIn.apple\" Button"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505933.6,
+                  "title" : "Computed hit point {201, 641.33333333333326} after scrolling to visible"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505933.885,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505933.566,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505933.886,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505933.53,
+          "title" : "Tap \"auth.signIn.apple\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505934.921,
+                  "title" : "Checking existence of `\"auth.onboarding.profilePhoto\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505934.921,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"auth.onboarding.profilePhoto\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505933.889,
+          "title" : "Waiting 5.0s for \"auth.onboarding.profilePhoto\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.35 am",
+              "payloadId" : "0~I_0drVO-rxbxpzx6dNk8OsmiRhoiGvUYM6jAjhETy1Pxd51rdFKwHagSywU2W1-KYd4dbV0YsB38F69h4jvRPA==",
+              "timestamp" : 1793505935.256,
+              "uuid" : "80ABACD5-1771-40E5-99DD-C96471F7DEB9"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505934.934,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505934.936,
+              "title" : "Find the \"auth.onboarding.profilePhoto\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505934.949,
+              "title" : "Check for interrupting elements affecting \"auth.onboarding.profilePhoto\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.35 am",
+                  "payloadId" : "0~I_0drVO-rxbxpzx6dNk8OsmiRhoiGvUYM6jAjhETy1Pxd51rdFKwHagSywU2W1-KYd4dbV0YsB38F69h4jvRPA==",
+                  "timestamp" : 1793505935.256,
+                  "uuid" : "80ABACD5-1771-40E5-99DD-C96471F7DEB9"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505935.256,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505934.965,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505935.257,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505934.934,
+          "title" : "Tap \"auth.onboarding.profilePhoto\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505935.707,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.35 am",
+              "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+              "timestamp" : 1793505935.796,
+              "uuid" : "4725D7DC-59F2-4A18-B9BD-2222E15B41E2"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.36 am",
+              "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+              "timestamp" : 1793505936.216,
+              "uuid" : "ECFCEA4E-33C7-454A-893B-215772350468"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505935.752,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505935.755,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505935.773,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.35 am",
+                  "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+                  "timestamp" : 1793505935.796,
+                  "uuid" : "4725D7DC-59F2-4A18-B9BD-2222E15B41E2"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.36 am",
+                  "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+                  "timestamp" : 1793505936.216,
+                  "uuid" : "ECFCEA4E-33C7-454A-893B-215772350468"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505935.796,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505936.216,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505935.793,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505936.216,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505935.752,
+          "title" : "Swipe up Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505936.221,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.36 am",
+              "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+              "timestamp" : 1793505936.345,
+              "uuid" : "5535EE42-69AD-4451-906E-28DE6E5D8346"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.36 am",
+              "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+              "timestamp" : 1793505936.766,
+              "uuid" : "576E0324-66D1-4AF0-8673-A185075BDEF1"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505936.297,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505936.301,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505936.32,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.36 am",
+                  "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+                  "timestamp" : 1793505936.345,
+                  "uuid" : "5535EE42-69AD-4451-906E-28DE6E5D8346"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.36 am",
+                  "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+                  "timestamp" : 1793505936.766,
+                  "uuid" : "576E0324-66D1-4AF0-8673-A185075BDEF1"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505936.345,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505936.766,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505936.341,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505936.766,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505936.297,
+          "title" : "Swipe up Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505937.334,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.37 am",
+              "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+              "timestamp" : 1793505937.431,
+              "uuid" : "901245C0-EA99-474E-AF7E-44EDCC69624F"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.37 am",
+              "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+              "timestamp" : 1793505937.854,
+              "uuid" : "ABBC8E2E-1DD6-41FA-BCCB-B3F39A5E8047"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505937.383,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505937.385,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505937.403,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.37 am",
+                  "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+                  "timestamp" : 1793505937.431,
+                  "uuid" : "901245C0-EA99-474E-AF7E-44EDCC69624F"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.37 am",
+                  "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+                  "timestamp" : 1793505937.854,
+                  "uuid" : "ABBC8E2E-1DD6-41FA-BCCB-B3F39A5E8047"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505937.431,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505937.854,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505937.427,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505937.857,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505937.383,
+          "title" : "Swipe up Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505937.866,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.38 am",
+              "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+              "timestamp" : 1793505938.039,
+              "uuid" : "635B677B-0ECC-41CC-9638-DBA94B8F031A"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.38 am",
+              "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+              "timestamp" : 1793505938.462,
+              "uuid" : "8E80012A-4AE4-4D45-A604-D45F53D88B8C"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505937.967,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505937.974,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505938.008,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.38 am",
+                  "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+                  "timestamp" : 1793505938.039,
+                  "uuid" : "635B677B-0ECC-41CC-9638-DBA94B8F031A"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.38 am",
+                  "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+                  "timestamp" : 1793505938.462,
+                  "uuid" : "8E80012A-4AE4-4D45-A604-D45F53D88B8C"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505938.039,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505938.462,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505938.033,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505938.462,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505937.967,
+          "title" : "Swipe up Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505938.465,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.38 am",
+              "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+              "timestamp" : 1793505938.639,
+              "uuid" : "74CD5AB9-3963-4B4D-BA84-F0F2E5C864F1"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.39 am",
+              "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+              "timestamp" : 1793505939.062,
+              "uuid" : "6EEE9910-54AE-419B-AEE1-998E863B2363"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505938.57,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505938.573,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505938.601,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.38 am",
+                  "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+                  "timestamp" : 1793505938.639,
+                  "uuid" : "74CD5AB9-3963-4B4D-BA84-F0F2E5C864F1"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.39 am",
+                  "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+                  "timestamp" : 1793505939.062,
+                  "uuid" : "6EEE9910-54AE-419B-AEE1-998E863B2363"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505938.639,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505939.062,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505938.634,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505939.063,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505938.57,
+          "title" : "Swipe up Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505939.068,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.39 am",
+              "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+              "timestamp" : 1793505939.484,
+              "uuid" : "77AAB8EF-024E-4B38-B658-731E102860A4"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.39 am",
+              "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+              "timestamp" : 1793505939.913,
+              "uuid" : "B2C0C66A-E6B9-4B41-99A5-2324DA5CDB21"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505939.405,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505939.41,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505939.434,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.39 am",
+                  "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+                  "timestamp" : 1793505939.484,
+                  "uuid" : "77AAB8EF-024E-4B38-B658-731E102860A4"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.39 am",
+                  "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+                  "timestamp" : 1793505939.913,
+                  "uuid" : "B2C0C66A-E6B9-4B41-99A5-2324DA5CDB21"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505939.484,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505939.913,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505939.48,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505939.914,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505939.404,
+          "title" : "Swipe up Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505939.916,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.40 am",
+              "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+              "timestamp" : 1793505940.382,
+              "uuid" : "0509CD83-2FCE-401D-A77B-8EB31E0DF799"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.40 am",
+              "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+              "timestamp" : 1793505940.822,
+              "uuid" : "ECCE94C2-13E8-4AD3-8065-C11EF0319365"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505940.126,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505940.134,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505940.287,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.40 am",
+                  "payloadId" : "0~_b3PcXaGZhQdI7OnZo2oD6tA-fBkbNq23beCsfrNdUd5m8hXN-s0n6gW_MAK9tV5IJu44BoKawOK97usfDIJ2w==",
+                  "timestamp" : 1793505940.382,
+                  "uuid" : "0509CD83-2FCE-401D-A77B-8EB31E0DF799"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.40 am",
+                  "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+                  "timestamp" : 1793505940.822,
+                  "uuid" : "ECCE94C2-13E8-4AD3-8065-C11EF0319365"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505940.382,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505940.822,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505940.378,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505940.822,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505940.126,
+          "title" : "Swipe up Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505940.825,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.41 am",
+              "payloadId" : "0~YvymOzDrrb2NOWBcRpvybDn0EYRWKoVgoJA9JBKGzxfarTBgi-qrHvmJWWJ0aT35o_95LcSxWDxmlVSfQy5RTQ==",
+              "timestamp" : 1793505941.236,
+              "uuid" : "3600EF14-8B2C-4A46-BF9F-11505797B3E2"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.41 am",
+              "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+              "timestamp" : 1793505941.666,
+              "uuid" : "D79BFED1-0BAF-44DC-A90B-2316A205097A"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505940.968,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505941.036,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505941.182,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.41 am",
+                  "payloadId" : "0~YvymOzDrrb2NOWBcRpvybDn0EYRWKoVgoJA9JBKGzxfarTBgi-qrHvmJWWJ0aT35o_95LcSxWDxmlVSfQy5RTQ==",
+                  "timestamp" : 1793505941.236,
+                  "uuid" : "3600EF14-8B2C-4A46-BF9F-11505797B3E2"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.41 am",
+                  "payloadId" : "0~RyVj5x01IL9TL85kmuhWaRVlaGVN7821ZxbY8Fir3iNqoWrCzVlGrrpskalWYgIYeUirOsvAxvHzWxG_0tRIuQ==",
+                  "timestamp" : 1793505941.666,
+                  "uuid" : "D79BFED1-0BAF-44DC-A90B-2316A205097A"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505941.236,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505941.666,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505941.231,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505941.667,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505940.968,
+          "title" : "Swipe up Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505941.673,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505941.911,
+          "title" : "Find the \"PXGGridLayout-Info\" Image"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505942.05,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505942.127,
+          "title" : "Find the \"PXGGridLayout-Info\" Image"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505942.211,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505942.345,
+          "title" : "Find the \"PXGGridLayout-Info\" Image"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505942.514,
+          "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505942.593,
+          "title" : "Find the \"PXGGridLayout-Info\" Image"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505943.746,
+                  "title" : "Checking existence of `\"PXGGridLayout-Info\" Image`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505943.745,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"PXGGridLayout-Info\" Image`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505942.708,
+          "title" : "Waiting 5.0s for \"PXGGridLayout-Info\" Image to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.43 am",
+              "payloadId" : "0~UbK5ivo1uoQI9j2DznGKf6XFDrsIqOwxNe7sMV_oEJGX7St_2aKQkd1I-P4XQLEoH5_6PChE-r-mBYa8mBtLCw==",
+              "timestamp" : 1793505943.949,
+              "uuid" : "CD645CC2-38BA-4795-B742-24F95DBDD663"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.44 am",
+              "payloadId" : "0~KhC2CdeAne6iE5uPUdsSHHrQe2Chz_i8VqgvV7B397ITEnrOb2SX9xVriHXpXFPYr3ttKLTbL52SOQtZ92U80A==",
+              "timestamp" : 1793505944.262,
+              "uuid" : "BA3ECF99-BCC5-47F6-8CB2-35AF2357292C"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505943.803,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505943.807,
+              "title" : "Find the \"PXGGridLayout-Info\" Image"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505943.869,
+              "title" : "Check for interrupting elements affecting \"PXGGridLayout-Info\" Image"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.43 am",
+                  "payloadId" : "0~UbK5ivo1uoQI9j2DznGKf6XFDrsIqOwxNe7sMV_oEJGX7St_2aKQkd1I-P4XQLEoH5_6PChE-r-mBYa8mBtLCw==",
+                  "timestamp" : 1793505943.949,
+                  "uuid" : "CD645CC2-38BA-4795-B742-24F95DBDD663"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.44 am",
+                  "payloadId" : "0~KhC2CdeAne6iE5uPUdsSHHrQe2Chz_i8VqgvV7B397ITEnrOb2SX9xVriHXpXFPYr3ttKLTbL52SOQtZ92U80A==",
+                  "timestamp" : 1793505944.262,
+                  "uuid" : "BA3ECF99-BCC5-47F6-8CB2-35AF2357292C"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505943.949,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505944.262,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505943.944,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505944.263,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505943.803,
+          "title" : "Tap \"PXGGridLayout-Info\" Image"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Debug description for `\"imageCrop.done\" Button`_0_21BFA9C3-7B93-4CF1-B3B3-A6729B7F0D31.txt",
+              "payloadId" : "0~oM3Ucbp7mPdslj2QibcGOmd_at4zV-UifOS2fGrf6HFA6JwBlDKzxkQ6-49eiDfilCqKAGyT7NPUYQfCyXf08g==",
+              "timestamp" : 1793505945.35,
+              "uuid" : "0B6F95DF-937E-4F4E-81AE-E126C288B511"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Debug description for `\"imageCrop.done\" Button`_0_21BFA9C3-7B93-4CF1-B3B3-A6729B7F0D31.txt",
+                  "payloadId" : "0~oM3Ucbp7mPdslj2QibcGOmd_at4zV-UifOS2fGrf6HFA6JwBlDKzxkQ6-49eiDfilCqKAGyT7NPUYQfCyXf08g==",
+                  "timestamp" : 1793505945.35,
+                  "uuid" : "0B6F95DF-937E-4F4E-81AE-E126C288B511"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505945.323,
+                  "title" : "Checking existence of `\"imageCrop.done\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505945.349,
+                  "title" : "Capturing element debug description"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505945.35,
+                  "title" : "Debug description for `\"imageCrop.done\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505945.308,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"imageCrop.done\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505946.275,
+                  "title" : "Checking existence of `\"imageCrop.done\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505946.274,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"imageCrop.done\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505944.27,
+          "title" : "Waiting 5.0s for \"imageCrop.done\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.46 am",
+              "payloadId" : "0~UbK5ivo1uoQI9j2DznGKf6XFDrsIqOwxNe7sMV_oEJGX7St_2aKQkd1I-P4XQLEoH5_6PChE-r-mBYa8mBtLCw==",
+              "timestamp" : 1793505946.445,
+              "uuid" : "98664E69-95AB-4161-B3C7-51B8BE8EB138"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Synthesized Event 2026-11-01 at 05.05.46 am",
+              "payloadId" : "0~7StNB1ZUbNBL036QZ5GuPY4O5v6_EPxTWAds3wyIlXbEjaG01WirhGYi-495oo1iTxmSkCGCE1FGdpUAWJ8epg==",
+              "timestamp" : 1793505946.757,
+              "uuid" : "F7135F8C-BD51-40F5-9564-DC76EC6EBB6A"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505946.35,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505946.355,
+              "title" : "Find the \"imageCrop.adjustFraming\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505946.397,
+              "title" : "Check for interrupting elements affecting \"imageCrop.adjustFraming\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "UI Snapshot 2026-11-01 at 05.05.46 am",
+                  "payloadId" : "0~UbK5ivo1uoQI9j2DznGKf6XFDrsIqOwxNe7sMV_oEJGX7St_2aKQkd1I-P4XQLEoH5_6PChE-r-mBYa8mBtLCw==",
+                  "timestamp" : 1793505946.445,
+                  "uuid" : "98664E69-95AB-4161-B3C7-51B8BE8EB138"
+                },
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Synthesized Event 2026-11-01 at 05.05.46 am",
+                  "payloadId" : "0~7StNB1ZUbNBL036QZ5GuPY4O5v6_EPxTWAds3wyIlXbEjaG01WirhGYi-495oo1iTxmSkCGCE1FGdpUAWJ8epg==",
+                  "timestamp" : 1793505946.757,
+                  "uuid" : "F7135F8C-BD51-40F5-9564-DC76EC6EBB6A"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505946.445,
+                  "title" : "kXCTAttachmentLegacySnapshot"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505946.757,
+                  "title" : "kXCTAttachmentLegacySynthesizedEvent"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505946.441,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505946.758,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505946.349,
+          "title" : "Tap \"imageCrop.adjustFraming\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_021A34F6-DDAC-4177-88AD-925CB4F6BEC9.txt",
+              "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+              "timestamp" : 1793505948.191,
+              "uuid" : "9F8971FA-9A2E-41BA-AD85-5D10BFDC94CD"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_5138BBF4-EBBE-440D-B703-F5F7DB44F4DA.txt",
+              "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+              "timestamp" : 1793505949.204,
+              "uuid" : "9D568142-7EBB-41FD-84FD-9EF14E5E00A6"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_460629DE-9B99-48C8-9D3F-B3340FC9DF60.txt",
+              "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+              "timestamp" : 1793505950.171,
+              "uuid" : "4DD37915-9C80-4C23-BA78-F1C4C98F4167"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_4C590F5B-098E-40F6-8E74-639A2FCEBC3C.txt",
+              "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+              "timestamp" : 1793505951.141,
+              "uuid" : "4550C534-539F-4351-B2C2-AE8BF3D8DDD1"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_1E4A51D5-39B1-4927-99D9-0C21D24648F0.txt",
+              "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+              "timestamp" : 1793505952.14,
+              "uuid" : "46A9F18B-CD53-485E-B303-22B3ABB8831D"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_021A34F6-DDAC-4177-88AD-925CB4F6BEC9.txt",
+                  "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+                  "timestamp" : 1793505948.191,
+                  "uuid" : "9F8971FA-9A2E-41BA-AD85-5D10BFDC94CD"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505948.11,
+                  "title" : "Checking existence of `\"imageCrop.zoom\" Stepper`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505948.19,
+                  "title" : "Capturing element debug description"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505948.191,
+                  "title" : "Debug description for `\"imageCrop.zoom\" Stepper`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505948.108,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"imageCrop.zoom\" Stepper`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_5138BBF4-EBBE-440D-B703-F5F7DB44F4DA.txt",
+                  "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+                  "timestamp" : 1793505949.204,
+                  "uuid" : "9D568142-7EBB-41FD-84FD-9EF14E5E00A6"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505949.123,
+                  "title" : "Checking existence of `\"imageCrop.zoom\" Stepper`"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505949.204,
+                  "title" : "Debug description for `\"imageCrop.zoom\" Stepper`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505949.204,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505949.123,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"imageCrop.zoom\" Stepper`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_460629DE-9B99-48C8-9D3F-B3340FC9DF60.txt",
+                  "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+                  "timestamp" : 1793505950.171,
+                  "uuid" : "4DD37915-9C80-4C23-BA78-F1C4C98F4167"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505950.132,
+                  "title" : "Checking existence of `\"imageCrop.zoom\" Stepper`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505950.17,
+                  "title" : "Capturing element debug description"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505950.171,
+                  "title" : "Debug description for `\"imageCrop.zoom\" Stepper`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505950.131,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"imageCrop.zoom\" Stepper`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_4C590F5B-098E-40F6-8E74-639A2FCEBC3C.txt",
+                  "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+                  "timestamp" : 1793505951.141,
+                  "uuid" : "4550C534-539F-4351-B2C2-AE8BF3D8DDD1"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505951.102,
+                  "title" : "Checking existence of `\"imageCrop.zoom\" Stepper`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505951.14,
+                  "title" : "Capturing element debug description"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505951.141,
+                  "title" : "Debug description for `\"imageCrop.zoom\" Stepper`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505951.102,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"imageCrop.zoom\" Stepper`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "attachments" : [
+                {
+                  "lifetime" : "deleteOnSuccess",
+                  "name" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_1E4A51D5-39B1-4927-99D9-0C21D24648F0.txt",
+                  "payloadId" : "0~SI-LZjHkOl3GI1E_BFyodg_KiN4fzwWWDHyoWRsH9Qo2x8rojxT-kKG7Ag1_GLezjYmhoAPcpYGIaeyzR49BrA==",
+                  "timestamp" : 1793505952.14,
+                  "uuid" : "46A9F18B-CD53-485E-B303-22B3ABB8831D"
+                }
+              ],
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505952.082,
+                  "title" : "Checking existence of `\"imageCrop.zoom\" Stepper`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505952.139,
+                  "title" : "Capturing element debug description"
+                },
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793505952.14,
+                  "title" : "Debug description for `\"imageCrop.zoom\" Stepper`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505952.081,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"imageCrop.zoom\" Stepper`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505952.141,
+              "title" : "Checking existence of `\"imageCrop.zoom\" Stepper`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505947.079,
+          "title" : "Waiting 5.0s for \"imageCrop.zoom\" Stepper to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "App UI hierarchy for no.paeonia_0_AAEF62F2-041B-4B87-941A-CBD812F159EF.app",
+              "payloadId" : "0~DE7o3pH4QgmcuxcQ7tYeqiX5_-l3fX4FsPk5SjPJN0EH1oellQuuuJRjllb79APkXQG4VKOElqcvoO2fF1ET0w==",
+              "timestamp" : 1793505952.248,
+              "uuid" : "38F987A2-CD08-46BC-B9FF-45742BC8ECD5"
+            },
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "UI Snapshot 2026-11-01 at 05.05.52 am",
+              "payloadId" : "0~_GOY-vK3MSXlt_78SHC8lb9aYD1D-xxObfBxn99htf66UkbemYiaI6uCTMraAPVXLTCevY1vqQ32-aDdg0_Euw==",
+              "timestamp" : 1793505952.249,
+              "uuid" : "67A52D8D-4024-4D1A-9EDA-FC691B86EE3D"
+            }
+          ],
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505952.179,
+              "title" : "Requesting snapshot of accessibility hierarchy for app with pid 72922"
+            },
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505952.248,
+              "title" : "App UI hierarchy for no.paeonia.app"
+            },
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793505952.249,
+              "title" : "kXCTAttachmentLegacySnapshot"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505952.178,
+          "title" : "Collecting debug information to assist test failure triage"
+        },
+        {
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "title" : ""
+            }
+          ],
+          "isAssociatedWithFailure" : true,
+          "startTime" : 1793505952.259,
+          "title" : "XCTAssertTrue failed"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793505952.683,
+          "title" : "Tear Down"
+        }
+      ],
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "24A434",
+        "osVersion" : "27.0",
+        "platform" : "iOS Simulator"
+      },
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ]
+}

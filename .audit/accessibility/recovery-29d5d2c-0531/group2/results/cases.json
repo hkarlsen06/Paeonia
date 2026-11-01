@@ -1,0 +1,47 @@
+[
+  {
+    "children": [
+      {
+        "name": "Invalid frame dimension (negative or non-finite).",
+        "nodeType": "Runtime Warning"
+      }
+    ],
+    "duration": "29\u202fs",
+    "durationInSeconds": 29.47608506679535,
+    "name": "testNativeControlsCreateADrawingWithoutCanvasGestures()",
+    "nodeIdentifier": "DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "children": [
+      {
+        "name": "Invalid frame dimension (negative or non-finite).",
+        "nodeType": "Runtime Warning"
+      }
+    ],
+    "duration": "17\u202fs",
+    "durationInSeconds": 17.127638936042786,
+    "name": "testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()",
+    "nodeIdentifier": "ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "children": [
+      {
+        "name": "Invalid frame dimension (negative or non-finite).",
+        "nodeType": "Runtime Warning"
+      }
+    ],
+    "duration": "26\u202fs",
+    "durationInSeconds": 26.09248697757721,
+    "name": "testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()",
+    "nodeIdentifier": "WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  }
+]

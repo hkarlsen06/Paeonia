@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "DB7160FD-BF09-4E30-840E-7074BCF27C38.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "settings-AX5-nb_0_D3C86011-24F5-42BC-A51E-5271A702B9A2.png",
+        "timestamp" : 1793507947.293
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "2163D84C-CD3E-4059-A0AF-59624852F942.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "settings-before-audit-AX5-nb_0_58916D54-B2FB-4936-B76C-17DD09ABE8F2.png",
+        "timestamp" : 1793507944.671
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "011227D1-0154-4CAE-8F10-000143EF5C40.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "System text size precondition_0_FDD65BB2-DE87-47A0-9DB6-D1F898134C65.txt",
+        "timestamp" : 1793507935.794
+      }
+    ],
+    "testIdentifier" : "AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian"
+  }
+]

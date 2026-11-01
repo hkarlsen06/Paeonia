@@ -1,0 +1,432 @@
+[
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": [
+      {
+        "filename": "kXCTAttachmentScreenRecording_0_31761194-2446-44DB-A346-E96B91444200.mp4",
+        "inActivityIdentifier": "0",
+        "lifetime": "deleteOnSuccess",
+        "name": "kXCTAttachmentScreenRecording",
+        "payloadRef": {
+          "id": "0~cMW97mfkFFV-UEruCUzDzQfH0FKmGiXfHTIlK0ApaZGVBLji3yij7uRdQOVHJLmec47N0CtVkn4wmC1H3sQDmw=="
+        },
+        "payloadSize": "6892588",
+        "timestamp": "2026-11-01T01:43:19.992+0100",
+        "uniformTypeIdentifier": "public.mpeg-4",
+        "userInfo": {
+          "storage": [
+            {
+              "key": "initialDeviceOrientation",
+              "value": "0"
+            },
+            {
+              "key": "initialInterfaceOrientation",
+              "value": "1"
+            },
+            {
+              "key": "scale",
+              "value": "3"
+            }
+          ]
+        },
+        "uuid": "8E242691-BB8B-4516-A408-682D1A870431"
+      }
+    ],
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:19.995+0100",
+    "start": "2026-11-01T01:43:19.971+0100",
+    "subactivities": {},
+    "title": "Start Test at 2026-11-01 01:43:19.971",
+    "uuid": "31761194-2446-44DB-A346-E96B91444200",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:19.996+0100",
+    "start": "2026-11-01T01:43:19.995+0100",
+    "subactivities": {},
+    "title": "Set Up",
+    "uuid": "623B0B93-46E8-4C3B-8CF9-40B37C089910",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.attachmentContainer",
+    "attachments": [
+      {
+        "filename": "System text size precondition_0_EABC32B9-C9A7-4390-964C-2F7EB55BC97B.txt",
+        "inActivityIdentifier": "0",
+        "lifetime": "keepAlways",
+        "name": "System text size precondition",
+        "payloadRef": {
+          "id": "0~--_RtTEZU0d4NW5OjNQYN62HrA1jLI7eM9wPri7PZ_2tbrCAV1qUtEqyoy1MtkfvT1k3kiTl1O7NdivxuG_BGg=="
+        },
+        "payloadSize": "90",
+        "timestamp": "2026-11-01T01:43:21.042+0100",
+        "uniformTypeIdentifier": "public.plain-text",
+        "uuid": "7F8BF2B0-9C55-4BB2-96AC-F788D6B1AC4F"
+      }
+    ],
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:21.044+0100",
+    "start": "2026-11-01T01:43:21.042+0100",
+    "subactivities": {},
+    "title": "Added attachment named 'System text size precondition'",
+    "uuid": "EABC32B9-C9A7-4390-964C-2F7EB55BC97B",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:31.695+0100",
+    "start": "2026-11-01T01:43:21.046+0100",
+    "subactivities": [
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "attachments": {},
+        "expectedFailureIDs": {},
+        "failureSummaryIDs": {},
+        "finish": "2026-11-01T01:43:31.695+0100",
+        "start": "2026-11-01T01:43:21.048+0100",
+        "subactivities": [
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "attachments": {},
+            "expectedFailureIDs": {},
+            "failureSummaryIDs": {},
+            "finish": "2026-11-01T01:43:28.858+0100",
+            "start": "2026-11-01T01:43:21.499+0100",
+            "subactivities": {},
+            "title": "Setting up automation session",
+            "uuid": "84C65A37-97AA-4E02-AF0A-1BD03BCAB805",
+            "warningSummaryIDs": {}
+          },
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "attachments": {},
+            "expectedFailureIDs": {},
+            "failureSummaryIDs": {},
+            "finish": "2026-11-01T01:43:30.689+0100",
+            "start": "2026-11-01T01:43:28.859+0100",
+            "subactivities": {},
+            "title": "Wait for no.paeonia.app to idle",
+            "uuid": "F7231160-A332-402E-AC0B-F9980544F997",
+            "warningSummaryIDs": {}
+          }
+        ],
+        "title": "Launch no.paeonia.app",
+        "uuid": "8B3A34D6-2CA9-4C1F-A113-037D0467A1B0",
+        "warningSummaryIDs": {}
+      }
+    ],
+    "title": "Open no.paeonia.app",
+    "uuid": "AC3CF19F-E2AD-4843-9EE1-0486D8D87990",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:31.698+0100",
+    "start": "2026-11-01T01:43:31.697+0100",
+    "subactivities": {},
+    "title": "Wait for no.paeonia.app to become Running Foreground",
+    "uuid": "406F7637-0402-41FD-998B-1DC546142FBE",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:32.835+0100",
+    "start": "2026-11-01T01:43:31.699+0100",
+    "subactivities": [
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "attachments": {},
+        "expectedFailureIDs": {},
+        "failureSummaryIDs": {},
+        "finish": "2026-11-01T01:43:32.834+0100",
+        "start": "2026-11-01T01:43:32.738+0100",
+        "subactivities": [
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "attachments": {},
+            "expectedFailureIDs": {},
+            "failureSummaryIDs": {},
+            "finish": "2026-11-01T01:43:32.834+0100",
+            "start": "2026-11-01T01:43:32.742+0100",
+            "subactivities": {},
+            "title": "Checking existence of `Window (First Match)`",
+            "uuid": "139B6A09-4712-4EFA-AAED-8F94ACD91FEE",
+            "warningSummaryIDs": {}
+          }
+        ],
+        "title": "Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`",
+        "uuid": "81F7AA01-C58B-4FFB-9DB7-0AAC8E893E9F",
+        "warningSummaryIDs": {}
+      }
+    ],
+    "title": "Waiting 10.0s for Window (First Match) to exist",
+    "uuid": "24476E95-09EA-4F55-B3EF-487B3AF2FA5A",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:32.947+0100",
+    "start": "2026-11-01T01:43:32.836+0100",
+    "subactivities": {},
+    "title": "Find the Target Application 'no.paeonia.app'",
+    "uuid": "D2803420-6347-45C0-A6EB-CA9AFEACC57F",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.attachmentContainer",
+    "attachments": [
+      {
+        "filename": "paywall-trial-before-audit-standard-en_0_3987468B-F9CC-481D-B216-54ED4C406425.png",
+        "inActivityIdentifier": "0",
+        "lifetime": "keepAlways",
+        "name": "paywall-trial-before-audit-standard-en",
+        "payloadRef": {
+          "id": "0~g42enCtRxPCXcr_e6lBDJyL5FIk2vh17NGFzi98Xsh36mHEJ9OEBQF5XfVJVpVdylxNFHEGyxBhaWBrgFZqH7w=="
+        },
+        "payloadSize": "734947",
+        "timestamp": "2026-11-01T01:43:33.130+0100",
+        "uniformTypeIdentifier": "public.png",
+        "userInfo": {
+          "storage": [
+            {
+              "key": "Scale",
+              "value": "3"
+            }
+          ]
+        },
+        "uuid": "F06627E5-0531-4471-82DA-C65164BE997B"
+      }
+    ],
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:33.131+0100",
+    "start": "2026-11-01T01:43:33.130+0100",
+    "subactivities": {},
+    "title": "Added attachment named 'paywall-trial-before-audit-standard-en'",
+    "uuid": "3987468B-F9CC-481D-B216-54ED4C406425",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:35.851+0100",
+    "start": "2026-11-01T01:43:35.835+0100",
+    "subactivities": {},
+    "title": "Find the Any (Descendant with identity binding to AX element pid: 96630, elementOrHash.elementID: 4504312384.20)",
+    "uuid": "93D43379-7C41-44E2-A583-491B4079507F",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:35.890+0100",
+    "start": "2026-11-01T01:43:35.856+0100",
+    "subactivities": {},
+    "title": "Requesting snapshot of accessibility hierarchy for app with pid 96630",
+    "uuid": "C69C5277-C421-45F5-80C9-AB743C5FE5C7",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:35.890+0100",
+    "start": "2026-11-01T01:43:35.890+0100",
+    "subactivities": {},
+    "title": "Find: Descendant with identity binding to AX element pid: 96630, elementOrHash.elementID: 4504312384.20",
+    "uuid": "CBE3C7D2-4BAF-474A-8044-DA9164DBA631",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:35.954+0100",
+    "start": "2026-11-01T01:43:35.928+0100",
+    "subactivities": {},
+    "title": "Requesting snapshot of accessibility hierarchy for app with pid 96630",
+    "uuid": "E4AA27DB-4ED5-4647-81DC-AC8C77819446",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:35.955+0100",
+    "start": "2026-11-01T01:43:35.955+0100",
+    "subactivities": {},
+    "title": "Find: Descendant with identity binding to AX element pid: 96630, elementOrHash.elementID: 4504312384.20",
+    "uuid": "F759EA28-E4EC-41A4-93D0-632725091973",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:35.983+0100",
+    "start": "2026-11-01T01:43:35.956+0100",
+    "subactivities": {},
+    "title": "Requesting snapshot of accessibility hierarchy for app with pid 96630",
+    "uuid": "14188A2C-ABF6-4544-84F7-EE03C958CEBA",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.attachmentContainer",
+    "attachments": [
+      {
+        "filename": "Accessibility issue_0_C42D1A57-78EF-4AA0-9EEE-D007D103B670.txt",
+        "inActivityIdentifier": "0",
+        "lifetime": "keepAlways",
+        "name": "Accessibility issue",
+        "payloadRef": {
+          "id": "0~PfJ702TjMETlYtnebYtwAVIrJZZrQrTtdK-MbQ7Kfq3gYAPRuGqbDRHYHcK28gDC8OhwcH_AZxLQyWEd8ei6CQ=="
+        },
+        "payloadSize": "1299",
+        "timestamp": "2026-11-01T01:43:35.988+0100",
+        "uniformTypeIdentifier": "public.plain-text",
+        "uuid": "A414E7C3-BD5F-43EF-8F11-53F0A070B140"
+      }
+    ],
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:35.988+0100",
+    "start": "2026-11-01T01:43:35.988+0100",
+    "subactivities": {},
+    "title": "Added attachment named 'Accessibility issue'",
+    "uuid": "C42D1A57-78EF-4AA0-9EEE-D007D103B670",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:36.002+0100",
+    "start": "2026-11-01T01:43:35.989+0100",
+    "subactivities": {},
+    "title": "Find the Any (Descendant with identity binding to AX element pid: 96630, elementOrHash.elementID: 4504312384.20)",
+    "uuid": "C70887F1-D4E9-4CAA-9D24-E8DC4B99CA8D",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:36.019+0100",
+    "start": "2026-11-01T01:43:36.005+0100",
+    "subactivities": {},
+    "title": "Checking existence of `\"One subscription covers both of you.\" StaticText`",
+    "uuid": "17B0E186-7BAC-481D-BE1E-A5861A00C6E4",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:36.033+0100",
+    "start": "2026-11-01T01:43:36.019+0100",
+    "subactivities": {},
+    "title": "Find the \"One subscription covers both of you.\" StaticText",
+    "uuid": "82B9E1CC-5CF0-42AA-90D0-D3218F641872",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:36.069+0100",
+    "start": "2026-11-01T01:43:36.057+0100",
+    "subactivities": {},
+    "title": "Find the Target Application 'no.paeonia.app'",
+    "uuid": "F778D688-3C94-47B8-B85C-C393661E8101",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.attachmentContainer",
+    "attachments": [
+      {
+        "filename": "paywall-trial-en_0_083E7360-D6A6-4149-B7B0-1817D2C3E144.png",
+        "inActivityIdentifier": "0",
+        "lifetime": "keepAlways",
+        "name": "paywall-trial-en",
+        "payloadRef": {
+          "id": "0~g42enCtRxPCXcr_e6lBDJyL5FIk2vh17NGFzi98Xsh36mHEJ9OEBQF5XfVJVpVdylxNFHEGyxBhaWBrgFZqH7w=="
+        },
+        "payloadSize": "734947",
+        "timestamp": "2026-11-01T01:43:36.159+0100",
+        "uniformTypeIdentifier": "public.png",
+        "userInfo": {
+          "storage": [
+            {
+              "key": "Scale",
+              "value": "3"
+            }
+          ]
+        },
+        "uuid": "3FCBAC40-CA5B-4EAF-8627-C2B1539F88AD"
+      }
+    ],
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:36.160+0100",
+    "start": "2026-11-01T01:43:36.159+0100",
+    "subactivities": {},
+    "title": "Added attachment named 'paywall-trial-en'",
+    "uuid": "083E7360-D6A6-4149-B7B0-1817D2C3E144",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:37.232+0100",
+    "start": "2026-11-01T01:43:36.160+0100",
+    "subactivities": {},
+    "title": "Terminate no.paeonia.app:96630",
+    "uuid": "5530DEE5-2448-4D31-B9B6-08D682372242",
+    "warningSummaryIDs": {}
+  },
+  {
+    "activityType": "com.apple.dt.xctest.activity-type.internal",
+    "attachments": {},
+    "expectedFailureIDs": {},
+    "failureSummaryIDs": {},
+    "finish": "2026-11-01T01:43:37.291+0100",
+    "start": "2026-11-01T01:43:37.235+0100",
+    "subactivities": {},
+    "title": "Tear Down",
+    "uuid": "5D5E5E8B-4896-40AA-8FCB-444F0F14F3FD",
+    "warningSummaryIDs": {}
+  }
+]

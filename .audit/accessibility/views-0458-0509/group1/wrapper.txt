@@ -1,0 +1,34 @@
+Generated CURRENT_PROJECT_VERSION=20261101.0458
+[xcode-test-agent] build started; heartbeat every 20s
+[xcode-test-agent] alive: build still running (20s elapsed)
+[xcode-test-agent] alive: build still running (40s elapsed)
+[xcode-test-agent] alive: build still running (60s elapsed)
+[xcode-test-agent] alive: build still running (80s elapsed)
+[xcode-test-agent] alive: build still running (100s elapsed)
+[xcode-test-agent] alive: build still running (120s elapsed)
+[xcode-test-agent] alive: build still running (140s elapsed)
+[xcode-test-agent] alive: build still running (161s elapsed)
+[xcode-test-agent] alive: build still running (181s elapsed)
+[xcode-test-agent] tests started; heartbeat every 20s
+[xcode-test-agent] alive: tests still running (20s elapsed)
+[xcode-test-agent] alive: tests still running (40s elapsed)
+[xcode-test-agent] alive: tests still running (60s elapsed)
+[xcode-test-agent] alive: tests still running (80s elapsed)
+[xcode-test-agent] alive: tests still running (100s elapsed)
+[xcode-test-agent] alive: tests still running (120s elapsed)
+[xcode-test-agent] alive: tests still running (140s elapsed)
+[xcode-test-agent] alive: tests still running (160s elapsed)
+[xcode-test-agent] alive: tests still running (180s elapsed)
+STATUS: SUCCESS
+SCHEME: App
+DESTINATION: platform=iOS Simulator,name=Shared iPhone 2
+TESTS: total=3 failed=0
+
+ERRORS:
+GameDrawingDescriptionUITests.testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation(): Invalid frame dimension (negative or non-finite).
+
+TEST FAILURES:
+GameDrawingDescriptionUITests.testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation(): Invalid frame dimension (negative or non-finite).
+
+
+SUMMARY: SUCCESS queued=1s compiled=183s tested=186s simulator="Shared iPhone 2"

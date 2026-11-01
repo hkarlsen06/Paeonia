@@ -1,0 +1,4 @@
+Actual shared code at signed5e5192bf. Foundation-only executable, no simulator.
+Final visible description: Correction A
+Final server version: 1001
+Expected newer correction B, version1002.

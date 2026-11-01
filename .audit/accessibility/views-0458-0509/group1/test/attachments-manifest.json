@@ -1,0 +1,32 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "F1CE2B53-29FA-427D-9EED-913D6548C240.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Unfinished game retained after messages and Chats_0_B2F3DC37-7456-4DB0-B3A9-42D7AA17104A.png",
+        "timestamp" : 1793505764.488
+      }
+    ],
+    "testIdentifier" : "GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "0ADDD023-8990-433A-AA13-603A87A13B73.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Story draft and full-screen game retained after chat_0_4F33FCEC-5374-46AD-981C-E88D6D83D7BF.png",
+        "timestamp" : 1793505812.611
+      }
+    ],
+    "testIdentifier" : "GameConversationJourneyUITests/testEmptyGameChatAndReturnToUnfinishedStory()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests/testEmptyGameChatAndReturnToUnfinishedStory"
+  }
+]

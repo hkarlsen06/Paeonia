@@ -1,0 +1,110 @@
+[
+  {
+    "group": "group1",
+    "duration": "0,0068s",
+    "durationInSeconds": 0.006779193878173828,
+    "name": "completedWidgetCorrectionDoesNotMaskANewerHistoryVersionOrItsClearedText()",
+    "nodeIdentifier": "MediaAlternativeEditingTests/completedWidgetCorrectionDoesNotMaskANewerHistoryVersionOrItsClearedText()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/MediaAlternativeEditingTests/completedWidgetCorrectionDoesNotMaskANewerHistoryVersionOrItsClearedText()",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "group": "group1",
+    "duration": "0,024s",
+    "durationInSeconds": 0.023514986038208008,
+    "name": "failedWidgetAcceptanceKeepsTheDurableCorrectionUntilTheFileWriteCanRetry()",
+    "nodeIdentifier": "MediaAlternativeEditingTests/failedWidgetAcceptanceKeepsTheDurableCorrectionUntilTheFileWriteCanRetry()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/MediaAlternativeEditingTests/failedWidgetAcceptanceKeepsTheDurableCorrectionUntilTheFileWriteCanRetry()",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "group": "group1",
+    "children": [
+      {
+        "duration": "0,019s",
+        "durationInSeconds": 0.019273757934570312,
+        "name": "\"Newer description from another device\"",
+        "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingDescriptionCorrectionTests/newerRemoteTextSurvivesReopeningBeforeAnOlderAcceptance(newerText:)?args=1463b4f5d5130beaff0e8ecdafe30277a209d764f26da5f265f0f1f06a1f198e",
+        "nodeType": "Arguments",
+        "result": "Passed"
+      },
+      {
+        "duration": "0,016s",
+        "durationInSeconds": 0.015525102615356445,
+        "name": "nil",
+        "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingDescriptionCorrectionTests/newerRemoteTextSurvivesReopeningBeforeAnOlderAcceptance(newerText:)?args=74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "nodeType": "Arguments",
+        "result": "Passed"
+      }
+    ],
+    "duration": "0,017s",
+    "durationInSeconds": 0.01739943027496338,
+    "name": "newerRemoteTextSurvivesReopeningBeforeAnOlderAcceptance(newerText:)",
+    "nodeIdentifier": "WidgetDrawingDescriptionCorrectionTests/newerRemoteTextSurvivesReopeningBeforeAnOlderAcceptance(newerText:)",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingDescriptionCorrectionTests/newerRemoteTextSurvivesReopeningBeforeAnOlderAcceptance(newerText:)",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "group": "group1",
+    "duration": "0,022s",
+    "durationInSeconds": 0.022036075592041016,
+    "name": "uploadedLocalDrawingAcceptsCorrectionsUsingItsServerRevision()",
+    "nodeIdentifier": "WidgetDrawingPublicationIdentityTests/uploadedLocalDrawingAcceptsCorrectionsUsingItsServerRevision()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingPublicationIdentityTests/uploadedLocalDrawingAcceptsCorrectionsUsingItsServerRevision()",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "group": "group1",
+    "duration": "0,039s",
+    "durationInSeconds": 0.039389848709106445,
+    "name": "delayedUploadCannotRelabelSameStrokesWithANewerDescription()",
+    "nodeIdentifier": "WidgetDrawingPublicationIdentityTests/delayedUploadCannotRelabelSameStrokesWithANewerDescription()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingPublicationIdentityTests/delayedUploadCannotRelabelSameStrokesWithANewerDescription()",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "group": "group1",
+    "duration": "0,04s",
+    "durationInSeconds": 0.039746999740600586,
+    "name": "purgeInvalidatesAnUploadEvenWhenTheNextPublicationIsIdentical()",
+    "nodeIdentifier": "WidgetDrawingPublicationIdentityTests/purgeInvalidatesAnUploadEvenWhenTheNextPublicationIsIdentical()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingPublicationIdentityTests/purgeInvalidatesAnUploadEvenWhenTheNextPublicationIsIdentical()",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "group": "group1",
+    "duration": "0,025s",
+    "durationInSeconds": 0.02524280548095703,
+    "name": "failedAcceptanceWriteKeepsProgressForAnIdempotentRetryAfterReopening()",
+    "nodeIdentifier": "WidgetDrawingPublicationIdentityTests/failedAcceptanceWriteKeepsProgressForAnIdempotentRetryAfterReopening()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingPublicationIdentityTests/failedAcceptanceWriteKeepsProgressForAnIdempotentRetryAfterReopening()",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "group": "group1",
+    "duration": "0,02s",
+    "durationInSeconds": 0.020112991333007812,
+    "name": "firstDayUploadAttachesTheRevisionRetainedAfterPairing()",
+    "nodeIdentifier": "WidgetDrawingPublicationIdentityTests/firstDayUploadAttachesTheRevisionRetainedAfterPairing()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingPublicationIdentityTests/firstDayUploadAttachesTheRevisionRetainedAfterPairing()",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "group": "group1",
+    "duration": "0,018s",
+    "durationInSeconds": 0.017686128616333008,
+    "name": "supersededFirstDayUploadDoesNotAttachAnotherDrawingsRevision()",
+    "nodeIdentifier": "WidgetDrawingPublicationIdentityTests/supersededFirstDayUploadDoesNotAttachAnotherDrawingsRevision()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingPublicationIdentityTests/supersededFirstDayUploadDoesNotAttachAnotherDrawingsRevision()",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  }
+]

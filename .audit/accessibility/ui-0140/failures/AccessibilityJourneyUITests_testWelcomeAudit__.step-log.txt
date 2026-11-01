@@ -1,0 +1,25 @@
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testWelcomeAudit]' started.
+    t =     0.00s Start Test at 2026-11-01 01:44:27.901
+    t =     0.08s Set Up
+    t =     1.12s Added attachment named 'System text size precondition'
+    t =     1.12s Open no.paeonia.app
+    t =     1.12s     Launch no.paeonia.app
+    t =     1.39s         Setting up automation session
+    t =     5.05s         Wait for no.paeonia.app to idle
+    t =     6.71s Wait for no.paeonia.app to become Running Foreground
+    t =     6.71s Waiting 10.0s for Window (First Match) to exist
+    t =     7.76s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =     7.77s         Checking existence of `Window (First Match)`
+    t =     7.81s Find the Target Application 'no.paeonia.app'
+    t =     7.92s Added attachment named 'welcome-before-audit-standard-en'
+    t =     9.98s Added attachment named 'Accessibility issue'
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testWelcomeAudit] : Contrast failed
+    t =     9.98s Find the Target Application 'no.paeonia.app'
+    t =    10.10s Added attachment named 'welcome-en'
+    t =    10.10s Terminate no.paeonia.app:97646
+    t =    11.15s Tear Down
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testWelcomeAudit]' failed (11.188 seconds).
+Test Suite 'AccessibilityJourneyUITests' failed at 2026-11-01 01:44:39.086.
+	 Executed 8 tests, with 14 failures (0 unexpected) in 119.161 (119.174) seconds
+Test Suite 'DrawingCompositionUITests' started at 2026-11-01 01:44:39.092.
+Test Case '-[PaeoniaAppUITests.DrawingCompositionUITests testNati

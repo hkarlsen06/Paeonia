@@ -1,0 +1,3 @@
+identifier	result	duration_seconds
+AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian()	Passed	12.680337071418762
+PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()	Failed	36.23939800262451

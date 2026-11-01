@@ -1,0 +1,34 @@
+Type: 65536
+Dynamic Type font sizes are partially unsupported
+User will not be able to change the font size of this SwiftUI.AccessibilityNode
+Element: Attributes: StaticText, 0x110b59cc0, {{333.0, 69.0}, {49.0, 30.0}}, label: '0'
+Element subtree:
+ →StaticText, 0x110b59cc0, {{333.0, 69.0}, {49.0, 30.0}}, label: '0'
+Path to element:
+ →Application, 0x110b58140, pid: 97310, label: 'Paeonia'
+  ↳Window (Main), 0x110b58280, {{0.0, 0.0}, {402.0, 874.0}}
+   ↳Other, 0x110b58500, {{0.0, 0.0}, {402.0, 874.0}}
+    ↳Other, 0x110b58640, {{0.0, 0.0}, {402.0, 874.0}}
+     ↳Other, 0x110b58780, {{0.0, 0.0}, {402.0, 874.0}}
+      ↳Other, 0x110b588c0, {{0.0, 0.0}, {402.0, 874.0}}
+       ↳Other, 0x110b58a00, {{0.0, 0.0}, {402.0, 874.0}}
+        ↳Other, 0x110b58b40, {{0.0, 0.0}, {402.0, 874.0}}
+         ↳Other, 0x110b58c80, {{0.0, 0.0}, {402.0, 874.0}}
+          ↳Other, 0x110b58dc0, {{0.0, 0.0}, {402.0, 874.0}}
+           ↳Other, 0x110b58f00, {{0.0, 0.0}, {402.0, 874.0}}
+            ↳Other, 0x110b59040, {{0.0, 0.0}, {402.0, 874.0}}
+             ↳Other, 0x110b59180, {{0.0, 0.0}, {402.0, 874.0}}
+              ↳NavigationBar, 0x110b592c0, {{0.0, 62.0}, {402.0, 54.0}}, identifier: 'Chats'
+               ↳Other, 0x110b59900, {{333.0, 69.0}, {49.0, 30.0}}
+                ↳Other, 0x110b59a40, {{333.0, 69.0}, {49.0, 30.0}}
+                 ↳Button, 0x110b59b80, {{333.0, 69.0}, {49.0, 30.0}}, label: '0 day streak'
+                  ↳StaticText, 0x110b59cc0, {{333.0, 69.0}, {49.0, 30.0}}, label: '0'
+Query chain:
+ →Find: Target Application 'no.paeonia.app'
+  Output: {
+    Application, 0x1110f6a80, pid: 97310, label: 'Paeonia'
+  }
+  ↪︎Find: Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493615872.63
+    Output: {
+      StaticText, 0x1110edcc0, {{333.0, 69.0}, {49.0, 30.0}}, label: '0'
+    }

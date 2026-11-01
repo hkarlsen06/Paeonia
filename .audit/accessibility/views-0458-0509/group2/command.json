@@ -1,0 +1,1 @@
+["./scripts/xcode-test-agent.sh", "--ui", "--", "-collect-test-diagnostics", "never", "-only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian", "-only-testing:PaeoniaAppUITests/PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing"]

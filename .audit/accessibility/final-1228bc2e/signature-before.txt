@@ -1,0 +1,1 @@
+Good "git" signature for kkarlsen06@tidex.no with ED25519 key SHA256:ODXXI46YvymWkAgpB2Z7dtAu8X1JNjzzYBh6IfT85Bc

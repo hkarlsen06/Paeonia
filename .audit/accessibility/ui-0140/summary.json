@@ -1,0 +1,14 @@
+{
+  "provenance": "Recovered legacy per-test summary objects, not a finalized modern export",
+  "bundleFinalized": false,
+  "completedCases": 21,
+  "passedCases": 14,
+  "failedCases": 7,
+  "wrapperExit": 124,
+  "warnings": [
+    "<unknown>:0: warning: -[PaeoniaAppUITests.DrawingCompositionUITests testNativeControlsCreateADrawingWithoutCanvasGestures] : Invalid frame dimension (negative or non-finite).",
+    "<unknown>:0: warning: -[PaeoniaAppUITests.GameDrawingDescriptionUITests testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation] : Invalid frame dimension (negative or non-finite).",
+    "<unknown>:0: warning: -[PaeoniaAppUITests.MediaAlternativeEditingUITests testOwnStoryDescriptionCanBeCorrectedCancelledAndCleared] : Invalid frame dimension (negative or non-finite)."
+  ],
+  "modernExportError": "Error: Failed to create a new result bundle reader, underlying error: Info.plist at /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793493630-94377.xcresult/Info.plist does not exist, the result bundle might be corrupted or the provided path is not a result bundle\nUsage: xcresulttool <subcommand>\n  See 'xcresulttool --help' for more information.\n"
+}

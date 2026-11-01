@@ -1,0 +1,154 @@
+Attributes: Application, 0x10b2a0500, pid: 40713, label: 'Paeonia'
+Element subtree:
+ →Application, 0x10b2a0500, pid: 40713, label: 'Paeonia'
+    Window (Main), 0x10b2a0640, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10b2a0780, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10b2a08c0, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x10b2a0a00, {{-402.0, -874.0}, {1206.0, 2622.0}}
+          Other, 0x10b2a0b40, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x10b2a0c80, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x10b2a0dc0, {{0.0, 0.0}, {402.0, 874.0}}
+                Other, 0x10b2a0f00, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x10b2a1040, {{0.0, 0.0}, {402.0, 874.0}}
+                    Other, 0x10b2a1180, {{0.0, 0.0}, {402.0, 874.0}}
+                      Other, 0x10b2a12c0, {{0.0, 0.0}, {402.0, 874.0}}
+                        Button, 0x10b2a1400, {{75.7, 234.3}, {250.7, 125.3}}, identifier: 'keyboard.diagnostic.open', label: 'Drawing description'
+                Toolbar, 0x10b2a1540, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar'
+                  Other, 0x10b2a1680, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10b2a17c0, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10b2a1900, {{-402.0, -874.0}, {1206.0, 2622.0}}
+        Other, 0x10b2a2d00, {{0.0, 62.0}, {402.0, 812.0}}
+          Other, 0x10b2a2e40, {{0.0, 62.0}, {402.0, 812.0}}
+            Other, 0x10b2a2f80, {{0.0, 62.0}, {402.0, 812.0}}
+              Other, 0x10b2a30c0, {{0.0, 62.0}, {402.0, 812.0}}
+                Other, 0x10b2a3200, {{0.0, 62.0}, {402.0, 812.0}}
+                  NavigationBar, 0x10b2a3340, {{0.0, 78.0}, {402.0, 54.0}}, identifier: 'Drawing description'
+                    StaticText, 0x10b2a3480, {{16.0, 87.3}, {192.3, 25.3}}, label: 'Drawing description'
+                    Other, 0x10b2a35c0, {{307.3, 82.0}, {74.7, 36.0}}
+                      Other, 0x10b2a3700, {{307.3, 82.0}, {74.7, 36.0}}
+                        Button, 0x10b2a3840, {{307.3, 82.0}, {74.7, 36.0}}, identifier: 'keyboard.diagnostic.sheet.done', label: 'Done'
+                  Other, 0x10b2a3980, {{0.0, 62.0}, {402.0, 812.0}}
+                    Other, 0x10b2a3ac0, {{0.0, 62.0}, {402.0, 812.0}}
+                      Other, 0x10b2a3c00, {{0.0, 62.0}, {402.0, 812.0}}
+                        Other, 0x10b2a3d40, {{0.0, 62.0}, {402.0, 812.0}}
+                          CollectionView, 0x10b2a3e80, {{0.0, 62.0}, {402.0, 812.0}}
+                            Other, 0x107623200, {{-16.0, -1492.0}, {434.0, 3459.0}}
+                            Other, 0x107623840, {{0.0, 62.0}, {402.0, 812.0}}
+                              Other, 0x107623980, {{0.0, 62.0}, {402.0, 110.0}}
+                            Other, 0x107623c00, {{0.0, 62.0}, {402.0, 812.0}}
+                            Cell, 0x107623d40, {{16.0, 167.0}, {370.0, 156.0}}
+                              Other, 0x107623ac0, {{16.0, 167.0}, {370.0, 156.0}}
+                                Other, 0x107621400, {{16.0, 167.0}, {370.0, 156.0}}
+                              Other, 0x107623700, {{16.0, 167.0}, {370.0, 156.0}}
+                                Other, 0x107621540, {{16.0, 167.0}, {370.0, 156.0}}
+                                  Other, 0x10a877e80, {{16.0, 167.0}, {370.0, 156.0}}
+                                    TextField, 0x10a874640, {{32.0, 182.0}, {338.0, 126.0}}, identifier: 'keyboard.diagnostic.text', value: A circle above a l..., Keyboard Focused
+                                      Other, 0x10a877200, {{32.0, 182.0}, {0.0, 0.0}}, identifier: '_UITextSelectionRangeAdjustmentContainerView'
+                                        Other, 0x10a876f80, {{32.0, 182.0}, {0.0, 0.0}}, identifier: 'com.apple.text.grabber.leading'
+                                          Other, 0x10a877d40, {{24.8, 168.5}, {16.5, 16.5}}
+                                          Other, 0x10a875540, {{32.0, 182.0}, {2.0, 0.0}}
+                                        Other, 0x10a875cc0, {{32.0, 182.0}, {0.0, 0.0}}, identifier: 'com.apple.text.grabber.leading'
+                                          Other, 0x10a875e00, {{24.8, 168.5}, {16.5, 16.5}}
+                                          Other, 0x10a876080, {{32.0, 182.0}, {2.0, 0.0}}
+                                      Other, 0x10a8761c0, {{42.0, 275.0}, {318.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%
+                                        Other, 0x10a875f40, {{45.0, 302.0}, {312.0, 3.0}}
+                            Other, 0x10a876440, {{369.0, 132.0}, {30.0, 400.0}}, label: 'Vertical scroll bar, 1 page', value: 0%
+                              Other, 0x10a8766c0, {{396.0, 386.0}, {3.0, 143.0}}
+                            Other, 0x10a876300, {{369.0, 132.0}, {30.0, 400.0}}, label: 'Vertical scroll bar, 1 page', value: 0%
+                              Other, 0x10a876580, {{396.0, 386.0}, {3.0, 143.0}}
+                  Toolbar, 0x10a876940, {{0.0, 62.0}, {402.0, 812.0}}, identifier: 'Toolbar', label: 'Toolbar'
+                    Other, 0x10a876bc0, {{0.0, 62.0}, {402.0, 812.0}}
+    Window, 0x10a877700, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10a877480, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10a877840, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10a877ac0, {{0.0, 498.0}, {402.0, 376.0}}
+          Other, 0x10a874780, {{0.0, 498.0}, {402.0, 48.0}}
+            Other, 0x10a877340, {{0.0, 498.0}, {402.0, 48.0}}
+              Other, 0x10b988000, {{0.0, 498.0}, {402.0, 48.0}}
+                Toolbar, 0x10b988140, {{0.0, 498.0}, {402.0, 48.0}}, identifier: 'Toolbar', label: 'Toolbar'
+                  Other, 0x10b988280, {{0.0, 498.0}, {402.0, 48.0}}
+                    Other, 0x10b9883c0, {{16.0, 498.0}, {370.0, 48.0}}
+                      Other, 0x10b988500, {{16.0, 498.0}, {370.0, 48.0}}
+                        Other, 0x10b988640, {{16.0, 498.0}, {0.0, 0.0}}
+                          Other, 0x10b988780, {{160.7, 498.0}, {81.0, 48.0}}
+                            Other, 0x10b9888c0, {{160.7, 498.0}, {81.0, 48.0}}
+                              Other, 0x10b988a00, {{165.7, 504.0}, {71.0, 36.0}}
+                                Other, 0x10b988b40, {{165.7, 504.0}, {71.0, 36.0}}
+                                  Other, 0x10b988c80, {{165.7, 504.0}, {71.0, 36.0}}
+                                    Other, 0x10b988dc0, {{165.7, 504.0}, {71.0, 36.0}}
+                                      Button, 0x10b988f00, {{165.7, 504.0}, {71.0, 36.0}}, identifier: 'keyboard.diagnostic.keyboard.done', label: 'Done'
+          Other, 0x10b989040, {{0.0, 546.0}, {402.0, 328.0}}, identifier: 'inputView'
+    Window, 0x10b989180, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10b9892c0, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10b989400, {{0.0, 546.0}, {402.0, 328.0}}
+          Other, 0x10b989540, {{0.0, 546.0}, {402.0, 44.0}}, identifier: 'SystemInputAssistantView'
+            Other, 0x10b989680, {{0.0, 546.0}, {402.0, 44.0}}
+              Other, 0x10b9897c0, {{0.0, 546.0}, {402.0, 44.0}}, identifier: 'CenterPageView'
+                Other, 0x10b989900, {{0.0, -54.0}, {402.0, 1244.0}}
+                  ScrollView, 0x10b989a40, {{0.0, 546.0}, {402.0, 44.0}}
+                Other, 0x10b989b80, {{0.0, 546.0}, {402.0, 44.0}}
+                  Other, 0x10b989cc0, {{0.0, 546.0}, {402.0, 44.0}}
+                    Other, 0x10b989e00, {{0.0, 546.0}, {402.0, 44.0}}, label: 'Typing Predictions'
+                      Other, 0x10b989f40, {{0.0, 546.0}, {402.0, 44.0}}
+                        Other, 0x10b98a080, {{0.0, 546.0}, {402.0, 44.0}}
+                          Button, 0x10b98a1c0, {{0.0, 546.0}, {134.0, 44.0}}, label: 'I'
+                          Button, 0x10b98a300, {{134.0, 546.0}, {134.0, 44.0}}, label: 'The'
+                          Button, 0x10b98a440, {{268.0, 546.0}, {134.0, 44.0}}, label: 'I’m'
+          Other, 0x10b98a580, {{0.0, 546.0}, {402.0, 329.0}}
+            Other, 0x10b98a6c0, {{0.0, 546.0}, {402.0, 329.0}}
+              Other, 0x10b98a800, {{0.0, 546.0}, {402.0, 329.0}}
+          Other, 0x10b98a940, {{0.0, 590.0}, {402.0, 226.0}}
+            Keyboard, 0x10b98aa80, {{0.0, 590.0}, {402.0, 226.0}}
+              Other, 0x10b98abc0, {{0.0, 590.0}, {402.0, 226.0}}
+                Other, 0x10b98ad00, {{0.0, 590.0}, {402.0, 226.0}}, identifier: 'UIKeyboardLayoutStar Preview'
+                  Key, 0x10b98ae40, {{0.0, 590.0}, {0.0, 0.0}}, label: 'Padding-Left'
+                  Key, 0x10b98af80, {{4.7, 597.0}, {39.3, 54.0}}, label: 'Q'
+                  Key, 0x10b98b0c0, {{44.0, 597.0}, {39.7, 54.0}}, label: 'W'
+                  Key, 0x10b98b200, {{83.7, 597.0}, {39.3, 54.0}}, label: 'E'
+                  Key, 0x10b98b340, {{123.0, 597.0}, {39.7, 54.0}}, label: 'R'
+                  Key, 0x10b98b480, {{162.7, 597.0}, {39.3, 54.0}}, label: 'T'
+                  Key, 0x10b98b5c0, {{202.0, 597.0}, {39.7, 54.0}}, label: 'Y'
+                  Key, 0x10b98b700, {{241.7, 597.0}, {39.3, 54.0}}, label: 'U'
+                  Key, 0x10b98b840, {{281.0, 597.0}, {39.7, 54.0}}, label: 'I'
+                  Key, 0x10b98b980, {{320.7, 597.0}, {39.3, 54.0}}, label: 'O'
+                  Key, 0x10b98bac0, {{360.0, 597.0}, {39.7, 54.0}}, label: 'P'
+                  Key, 0x10b98bc00, {{0.0, 590.0}, {0.0, 0.0}}, label: 'Padding-Right'
+                  Key, 0x10b98bd40, {{0.0, 590.0}, {0.0, 0.0}}, label: 'Padding-Left'
+                  Key, 0x10b98be80, {{24.3, 651.0}, {39.3, 54.0}}, label: 'A'
+                  Key, 0x10b5e8000, {{63.7, 651.0}, {39.7, 54.0}}, label: 'S'
+                  Key, 0x10b5e8140, {{103.3, 651.0}, {39.3, 54.0}}, label: 'D'
+                  Key, 0x10b5e8280, {{142.7, 651.0}, {39.7, 54.0}}, label: 'F'
+                  Key, 0x10b5e83c0, {{182.3, 651.0}, {39.3, 54.0}}, label: 'G'
+                  Key, 0x10b5e8500, {{221.7, 651.0}, {39.7, 54.0}}, label: 'H'
+                  Key, 0x10b5e8640, {{261.3, 651.0}, {39.3, 54.0}}, label: 'J'
+                  Key, 0x10b5e8780, {{300.7, 651.0}, {39.7, 54.0}}, label: 'K'
+                  Key, 0x10b5e88c0, {{340.3, 651.0}, {39.3, 54.0}}, label: 'L'
+                  Key, 0x10b5e8a00, {{0.0, 590.0}, {0.0, 0.0}}, label: 'Padding-Right'
+                  Button, 0x10b5e8b40, {{4.7, 705.0}, {51.3, 54.0}}, identifier: 'shift', label: 'shift', Selected
+                  Key, 0x10b5e8c80, {{0.0, 590.0}, {0.0, 0.0}}, label: 'Padding-Left'
+                  Key, 0x10b5e8dc0, {{63.7, 705.0}, {39.7, 54.0}}, label: 'Z'
+                  Key, 0x10b5e8f00, {{103.3, 705.0}, {39.3, 54.0}}, label: 'X'
+                  Key, 0x10b5e9040, {{142.7, 705.0}, {39.7, 54.0}}, label: 'C'
+                  Key, 0x10b5e9180, {{182.3, 705.0}, {39.3, 54.0}}, label: 'V'
+                  Key, 0x10b5e92c0, {{221.7, 705.0}, {39.7, 54.0}}, label: 'B'
+                  Key, 0x10b5e9400, {{261.3, 705.0}, {39.3, 54.0}}, label: 'N'
+                  Key, 0x10b5e9540, {{300.7, 705.0}, {39.7, 54.0}}, label: 'M'
+                  Key, 0x10b5e9680, {{0.0, 590.0}, {0.0, 0.0}}, label: 'Padding-Right'
+                  Key, 0x10b5e97c0, {{348.0, 705.0}, {51.7, 54.0}}, identifier: 'delete', label: 'delete'
+                  Key, 0x10b5e9900, {{4.7, 759.0}, {98.7, 54.0}}, identifier: 'more', label: 'numbers'
+                  Key, 0x10b5e9a40, {{103.3, 759.0}, {197.3, 54.0}}, identifier: 'space', label: 'space'
+                  Button, 0x10b5e9b80, {{300.7, 759.0}, {99.0, 54.0}}, identifier: 'Return', label: 'return'
+          Other, 0x10b5e9cc0, {{0.0, 590.0}, {402.0, 284.0}}
+            Button, 0x10b5e9e00, {{8.5, 805.7}, {68.1, 68.7}}, label: 'Emoji'
+              StaticText, 0x10b5e9f40, {{8.5, 805.7}, {0.0, 0.0}}
+            Button, 0x10b5ea080, {{325.4, 805.4}, {68.1, 68.7}}, identifier: 'dictation', label: 'Dictate'
+              StaticText, 0x10b5ea1c0, {{325.4, 805.4}, {0.0, 0.0}}
+            Button, 0x10b5ea300, {{325.4, 805.4}, {68.1, 68.7}}, identifier: 'dictation', label: 'Dictate'
+              StaticText, 0x10b5ea440, {{325.4, 805.4}, {0.0, 0.0}}
+Path to element:
+ →Application, 0x10b2a0500, pid: 40713, label: 'Paeonia'
+Query chain:
+ →Find: Target Application 'no.paeonia.app'
+  Output: {
+    Application, 0x10b5ea580, pid: 40713, label: 'Paeonia'
+  }

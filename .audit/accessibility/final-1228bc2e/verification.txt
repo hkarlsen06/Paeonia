@@ -1,0 +1,60 @@
+Frozen verification of 1228bc2e87ff7093d9d854ae5d9a4dbdc96d68a7
+/tmp/paeonia-accessibility-final-1228bc2e-20261101-062337
+Signed HEAD verification: Good "git" signature for kkarlsen06@tidex.no with ED25519 key SHA256:ODXXI46YvymWkAgpB2Z7dtAu8X1JNjzzYBh6IfT85Bc
+Local main: e59d857024b7e279e3a4f78c913c511f3dadbbb8
+Source proof: {"headUnchanged": true, "mainUnchanged": true, "statusUnchanged": true, "hashesUnchanged": true, "trackedFiles": 4166, "localXcconfigAbsent": true}
+Xcode 27.1
+Build version 27A9275
+ProductName:		macOS
+ProductVersion:		27.2
+BuildVersion:		26B118
+Darwin Mac.home 27.2.0 Darwin Kernel Version 27.2.0: Wed Oct 14 23:47:21 PDT 2026; root:xnu-13432.41.4~25/RELEASE_ARM64_T6030 arm64
+Shared iPhone 2, local host, 79EBB58E-1108-4EEE-987D-E193CEA9EA2A, iPhone 17 Pro, iOS 27.0 build 24A434.
+No source edits, commits, merges, pushes, deployments, retries, checkout creation, children, app uninstall/reset, sign-in or runtime downloads.
+Exact repository lease acquired before any device tool. Held continuously through cohorts. Own panel closed before each wrapper.
+Each wrapper ran once, sequentially in bounded foreground subprocess, 600 seconds total including queue. No timeout occurred. XCODE_TEST_AGENT_DESTINATION unset, XCODE_TEST_AGENT_KEEP_ARTIFACTS=1, -collect-test-diagnostics never.
+Separate unfiltered app process debug console stream captured and stopped after each group. No audit issues suppressed, filtered or waived.
+
+Group 1: Passed; {"distinctMethods": 2192, "parameterizedMethods": 36, "argumentExecutions": 137, "nonParameterizedMethods": 2156, "leafExecutions": 2293, "caseResults": {"Passed": 2192}, "argumentResults": {"Passed": 137}}
+Failed 0, skipped 0, runtime warning entries 0. Exit 0, elapsed 108.342s.
+Build errors 0, warnings 0, analyzer warnings 0.
+Wrapper PID/start/argv: {"wrapperPID": 85641, "start": 1793510622.284184, "argv": ["--", "-collect-test-diagnostics", "never"], "consolePID": 85640}
+Original bundles: [   "/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793510622-85641.xcresult",   "/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793510622-85641.xcresult" ]
+WidgetDrawingHistoryLoadingTests/pendingOverlayDoesNotChangeTheNewerServerTextOrVersion(newerText:): Passed
+WidgetDrawingPublicationIdentityTests/unreadablePendingMarkerBlocksWidgetReplacementWithoutBeingDiscarded(): Passed
+WidgetDrawingPublicationIdentityTests/widgetRefreshCannotCompleteAPendingSendByMatchingAnOlderDrawingsContent(): Passed
+Artifacts: /tmp/paeonia-accessibility-final-1228bc2e-20261101-062337/group1. summary.json and tests.json are finalized modern exports; counts.json, case-index.tsv, build-modern-build-results.json, build/test-issues.json, wrapper.log, raw-xcodebuild-*.log, build/action/console-log.json, appconsole.log, and warning-error indexes retain diagnostics. case-*-details/activities.json retain only selected new unit regressions and all selected UI cases. UI attachments and their manifest are under attachments/.
+
+Group 2: Passed; {"distinctMethods": 2, "parameterizedMethods": 0, "argumentExecutions": 0, "nonParameterizedMethods": 2, "leafExecutions": 2, "caseResults": {"Passed": 2}, "argumentResults": {}}
+Failed 0, skipped 0, runtime warning entries 1. Exit 0, elapsed 53.029s.
+Build errors 0, warnings 0, analyzer warnings 0.
+Wrapper PID/start/argv: {"wrapperPID": 88057, "start": 1793510746.3062341, "argv": ["--ui", "--", "-collect-test-diagnostics", "never", "-only-testing:PaeoniaAppUITests/WidgetHistoryDescriptionUITests", "-only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testMemoryAudit"], "consolePID": 88056}
+Original bundles: [   "/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793510746-88057.xcresult",   "/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793510746-88057.xcresult" ]
+AccessibilityJourneyUITests/testMemoryAudit(): Passed
+WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory(): Passed
+Unwaived runtime warning: {"test": "WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()", "activitiesPath": "/tmp/paeonia-accessibility-final-1228bc2e-20261101-062337/group2/case-001-activities.json", "warning": {"start": 1793510781.127, "title": "Invalid frame dimension (negative or non-finite).", "parents": ["Tap \"media.alternative.text\" Any", "Wait for no.paeonia.app to idle"]}, "nearbyActivities": [{"start": 1793510780.542, "title": "Check for interrupting elements affecting \"media.alternative.text\" TextField", "parents": ["Tap \"media.alternative.text\" Any"]}, {"start": 1793510780.606, "title": "Synthesize event", "parents": ["Tap \"media.alternative.text\" Any"]}, {"start": 1793510780.898, "title": "Wait for no.paeonia.app to idle", "parents": ["Tap \"media.alternative.text\" Any"]}, {"start": 1793510781.127, "title": "Invalid frame dimension (negative or non-finite).", "parents": ["Tap \"media.alternative.text\" Any", "Wait for no.paeonia.app to idle"]}, {"start": 1793510781.521, "title": "Type 'A sun above two hi...' into \"media.alternative.text\" TextField", "parents": []}, {"start": 1793510781.522, "title": "Wait for no.paeonia.app to idle", "parents": ["Type 'A sun above two hi...' into \"media.alternative.text\" TextField"]}, {"start": 1793510781.893, "title": "Find the \"media.alternative.text\" TextField", "parents": ["Type 'A sun above two hi...' into \"media.alternative.text\" TextField"]}]}
+Artifacts: /tmp/paeonia-accessibility-final-1228bc2e-20261101-062337/group2. summary.json and tests.json are finalized modern exports; counts.json, case-index.tsv, build-modern-build-results.json, build/test-issues.json, wrapper.log, raw-xcodebuild-*.log, build/action/console-log.json, appconsole.log, and warning-error indexes retain diagnostics. case-*-details/activities.json retain only selected new unit regressions and all selected UI cases. UI attachments and their manifest are under attachments/.
+
+Group 3: Passed; {"distinctMethods": 3, "parameterizedMethods": 0, "argumentExecutions": 0, "nonParameterizedMethods": 3, "leafExecutions": 3, "caseResults": {"Passed": 3}, "argumentResults": {}}
+Failed 0, skipped 0, runtime warning entries 1. Exit 0, elapsed 66.604s.
+Build errors 0, warnings 0, analyzer warnings 0.
+Wrapper PID/start/argv: {"wrapperPID": 89672, "start": 1793510810.713943, "argv": ["--ui", "--", "-collect-test-diagnostics", "never", "-only-testing:PaeoniaAppUITests/WidgetHistoryDescriptionUITests", "-only-testing:PaeoniaAppUITests/DailyQuestionJourneyUITests/testPhotoAnswerAtAX5KeepsQuestionAndAttachmentWhileTyping", "-only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testMemoryEditorAtAX5InNorwegian"], "consolePID": 89670}
+Original bundles: [   "/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793510810-89672.xcresult",   "/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793510810-89672.xcresult" ]
+AccessibilityJourneyUITests/testMemoryEditorAtAX5InNorwegian(): Passed
+DailyQuestionJourneyUITests/testPhotoAnswerAtAX5KeepsQuestionAndAttachmentWhileTyping(): Passed
+WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory(): Passed
+Unwaived runtime warning: {"test": "WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()", "activitiesPath": "/tmp/paeonia-accessibility-final-1228bc2e-20261101-062337/group3/case-002-activities.json", "warning": {"start": 1793510859.413, "title": "Invalid frame dimension (negative or non-finite).", "parents": ["Tap \"media.alternative.text\" Any", "Synthesize event"]}, "nearbyActivities": [{"start": 1793510858.985, "title": "Find the \"media.alternative.text\" Any", "parents": ["Tap \"media.alternative.text\" Any"]}, {"start": 1793510859.091, "title": "Check for interrupting elements affecting \"media.alternative.text\" TextField", "parents": ["Tap \"media.alternative.text\" Any"]}, {"start": 1793510859.15, "title": "Synthesize event", "parents": ["Tap \"media.alternative.text\" Any"]}, {"start": 1793510859.413, "title": "Invalid frame dimension (negative or non-finite).", "parents": ["Tap \"media.alternative.text\" Any", "Synthesize event"]}, {"start": 1793510859.474, "title": "Wait for no.paeonia.app to idle", "parents": ["Tap \"media.alternative.text\" Any"]}, {"start": 1793510859.639, "title": "Type 'A sun above two hi...' into \"media.alternative.text\" TextField", "parents": []}, {"start": 1793510859.639, "title": "Wait for no.paeonia.app to idle", "parents": ["Type 'A sun above two hi...' into \"media.alternative.text\" TextField"]}]}
+Artifacts: /tmp/paeonia-accessibility-final-1228bc2e-20261101-062337/group3. summary.json and tests.json are finalized modern exports; counts.json, case-index.tsv, build-modern-build-results.json, build/test-issues.json, wrapper.log, raw-xcodebuild-*.log, build/action/console-log.json, appconsole.log, and warning-error indexes retain diagnostics. case-*-details/activities.json retain only selected new unit regressions and all selected UI cases. UI attachments and their manifest are under attachments/.
+
+Actual size and language: group1 actual Large. Group2 actual Large, English widget history and memory-detail audit. Group3 actual accessibility-extra-extra-extra-large, English widget history, Norwegian Bokmal photo-answer and memory-editor. Readbacks: large-readback.txt, group2-large-readback.txt, ax5-readback.txt. UIKit size precondition attachments from the audit/photo tests establish the public categories. No launch size pinning.
+Warning source inspection: the widget-history invalid-frame warning occurs during the tap on media.alternative.text, in the idle wait at Large and event synthesis at AX5, WidgetHistoryDescriptionUITests.swift line 18, before typeText at line 19. See numbered source copy and per-group invalid-frame-contexts.json. Warning entries do not report an emitting source line. Details report hasMediaAttachments false for this passing widget-history case, so no contemporaneous hierarchy or screenshot is available for it. The native control is resolved as media.alternative.text TextField in activities. No cause attribution or waiver.
+Complete runtime and compiler diagnostics are preserved, including raw console warning/error indexes. Passing assertions do not clear runtime warnings. The six earlier warnings from 0aad remain unwaived historical findings; this run only covers the requested cohorts.
+Memory audit and memory editor audit return false for every recorded issue. Check attachments/manifest.json for all available audit records and screenshots. No absent hierarchy, screenshot or recording was reconstructed.
+Final actual Large restoration and readback: Text size set to large; Text size is large. Own device panel closed, exact lease released. See release.txt.
+Reduce Motion, Motion page and all other preferences untouched and unverified.
+Canonical docs/accessibility-report.md and repository evidence untouched. Full before/after git status is retained, including task-owned docs/marketing/evidence dirt.
+Limits: automated synthetic verification only. No proof of actual VoiceOver, Voice Control, Accessibility Inspector, manual assistive technology, Apple/Google providers, StoreKit, iPad or App Store behavior. No label or assistive technology support conclusion.
+
+xcresulttool get log --type console reported "No console log available" for every test bundle. stderr files retain this limitation. Independent unfiltered appconsole.log streams supply the app console evidence. Build and action log exports succeeded.
+No audit issue attachments or modern audit failures were reported in either memory audit. The passing widget-history case has no available UI media attachment at either size.
+Raw console logs also retain upload/network, cancellation, keychain, temporary-file permission, thumbnail and text/keyboard diagnostics. These diagnostics have not been waived or used to claim a warning-free run.

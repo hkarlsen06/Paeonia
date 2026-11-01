@@ -1,0 +1,36 @@
+Type: 1
+Contrast failed
+Contrast failed for SwiftUI.AccessibilityNode
+Element: Attributes: StaticText, 0x107375040, {{116.3, 419.0}, {169.3, 20.3}}, label: 'A small moment today'
+Element subtree:
+ →StaticText, 0x107375040, {{116.3, 419.0}, {169.3, 20.3}}, label: 'A small moment today'
+Path to element:
+ →Application, 0x105c4a940, pid: 82306, label: 'Paeonia'
+  ↳Window (Main), 0x105c4abc0, {{0.0, 0.0}, {402.0, 874.0}}
+   ↳Other, 0x105c4ae40, {{0.0, 0.0}, {402.0, 874.0}}
+    ↳Other, 0x105c4b0c0, {{0.0, 0.0}, {402.0, 874.0}}
+     ↳Other, 0x105c4b200, {{0.0, 0.0}, {402.0, 874.0}}
+      ↳Other, 0x105c4af80, {{0.0, 0.0}, {402.0, 874.0}}
+       ↳Other, 0x105c4b340, {{0.0, 0.0}, {402.0, 874.0}}
+        ↳Other, 0x105c4b5c0, {{0.0, 0.0}, {402.0, 874.0}}
+         ↳Other, 0x105c4b700, {{0.0, 0.0}, {402.0, 874.0}}
+          ↳Other, 0x105c4b480, {{0.0, 0.0}, {402.0, 874.0}}
+           ↳Other, 0x105c4b840, {{0.0, 0.0}, {402.0, 874.0}}
+            ↳Other, 0x105c4bac0, {{0.0, 0.0}, {402.0, 874.0}}
+             ↳Other, 0x105c4bc00, {{0.0, 0.0}, {402.0, 874.0}}
+              ↳Other, 0x105c4b980, {{0.0, 0.0}, {402.0, 874.0}}
+               ↳Other, 0x105c4bd40, {{0.0, 0.0}, {402.0, 874.0}}
+                ↳Other, 0x105c4be80, {{0.0, 0.0}, {402.0, 874.0}}
+                 ↳Other, 0x105c48640, {{0.0, 0.0}, {402.0, 874.0}}
+                  ↳ScrollView, 0x105c48780, {{0.0, 0.0}, {402.0, 874.0}}
+                   ↳Other, 0x107374000, {{0.0, 0.0}, {402.0, 784.3}}
+                    ↳StaticText, 0x107375040, {{116.3, 419.0}, {169.3, 20.3}}, label: 'A small moment today'
+Query chain:
+ →Find: Target Application 'no.paeonia.app'
+  Output: {
+    Application, 0x10fd4c500, pid: 82306, label: 'Paeonia'
+  }
+  ↪︎Find: Descendant with identity binding to AX element pid: 82306, elementOrHash.elementID: 4466702080.75
+    Output: {
+      StaticText, 0x105c4a080, {{116.3, 419.0}, {169.3, 20.3}}, label: 'A small moment today'
+    }

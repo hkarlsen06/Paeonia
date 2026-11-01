@@ -1,0 +1,794 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "9711F37C-3F11-470D-8CFF-F1E622DFA7BF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "question-answer-flow-AX5-nb_0_A931B02A-D0D9-4224-817F-F0AF8B3EE109.png",
+        "timestamp" : 1793507779.957
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "C46B0FE1-F108-46B7-8EB2-F62DD2F61B3C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "question-answer-flow-before-audit-AX5-nb_0_DC3E9568-0352-4817-B9BB-EAE5DDB10C64.png",
+        "timestamp" : 1793507777.746
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "A7A437BA-BDBB-4197-B161-5DB60A3396A8.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "System text size precondition_0_F350B71F-DB52-4F03-A6EB-78047A162121.txt",
+        "timestamp" : 1793507769.848
+      }
+    ],
+    "testIdentifier" : "AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "349BD415-E442-496E-A4E3-527D50BFAC12.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "App UI hierarchy for no.paeonia_0_04D708CD-837F-4A38-BDE8-0A8446612E72.app",
+        "timestamp" : 1793507827.092
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "3063640D-68CA-4905-BDA5-0EF173F087F6",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.07 am",
+        "timestamp" : 1793507827.092
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "15DF2D3D-8444-42E2-A5B1-8958231178F3.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_E3E54097-9A64-4E31-A054-5E6A10F210A4.txt",
+        "timestamp" : 1793507826.956
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "10817BEE-4AEB-4A09-B5D9-6B895C08B3AF",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.06 am",
+        "timestamp" : 1793507826.956
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "3B1F2247-5DBA-4129-97E0-65D1770AF7B5.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_4A107856-37ED-4558-9D33-5563FE95B239.txt",
+        "timestamp" : 1793507826.011
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "9C59F06C-CD03-418B-AEF4-65D87CCE126A",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.06 am",
+        "timestamp" : 1793507826.011
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "1C1AE1A0-6949-49C3-AC31-66FF640FCB4C.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_688EC6B5-7401-42BD-911C-6A5E929E035B.txt",
+        "timestamp" : 1793507824.986
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "03515C29-4E4B-434F-B1FD-135B7A38A485",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.04 am",
+        "timestamp" : 1793507824.986
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "B218AE02-04A6-4688-8BAB-BC9D4637D35C.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_8F6F25CA-DF01-463A-BDBB-BB1CBD84DD7A.txt",
+        "timestamp" : 1793507823.924
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "C3B65B2A-33CF-4EE2-88F9-7C22B8EEF02F",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.03 am",
+        "timestamp" : 1793507823.924
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "79873A5E-9A94-477D-8FF0-AFABD6DA6A4C.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"imageCrop.zoom\" Stepper`_0_08421FDE-74D2-4FCF-AE90-2728B3318FF4.txt",
+        "timestamp" : 1793507822.978
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "632DCE7F-38D0-45D8-A164-62049EF29718",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.02 am",
+        "timestamp" : 1793507822.978
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "9B7DEA31-851D-4B14-BA76-7885E2004AE3",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.00 am",
+        "timestamp" : 1793507820.782
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "1B5B3C85-AE71-4D9B-A5BC-F46FD32C69A4",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.01 am",
+        "timestamp" : 1793507821.207
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "7E8FE38D-27C3-4CBD-A2E4-D11B55F7AC86",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.59 am",
+        "timestamp" : 1793507819.682
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "0588DA7A-00DA-46D7-9E66-41B62AB71EDF",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.00 am",
+        "timestamp" : 1793507820.103
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "5EE8B766-F451-414D-8351-81224FAE584F",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.58 am",
+        "timestamp" : 1793507818.664
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "478801EB-CCBF-4DD4-90B8-CE7D511A12A5",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.59 am",
+        "timestamp" : 1793507819.086
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "8AF08729-FA0A-4493-9B18-BE0563FBAD74",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.57 am",
+        "timestamp" : 1793507817.633
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "FA7C5B90-2518-457E-A195-31343FF58C02",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.58 am",
+        "timestamp" : 1793507818.055
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "5B9153CC-165B-44A3-B08A-86F089DF2225",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.56 am",
+        "timestamp" : 1793507816.546
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "841A2518-065E-46DC-8BC3-EB638BEA000A",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.56 am",
+        "timestamp" : 1793507816.97
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "0A452232-FAD5-4FD4-853A-F076FFA3C4B1",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.55 am",
+        "timestamp" : 1793507815.525
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "20100745-8A1C-4EA3-9A3B-FE059D9A6C8E",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.55 am",
+        "timestamp" : 1793507815.949
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "8599B995-8ACE-4D92-A041-2272E526C253",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.53 am",
+        "timestamp" : 1793507813.771
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "3541F172-9932-4D8D-B027-6A8B4B950F93",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.54 am",
+        "timestamp" : 1793507814.192
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "8699E385-93F2-40EF-B88D-5A8E8972813B",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.50 am",
+        "timestamp" : 1793507810.943
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "730FF717-F1B3-472D-9937-8DCAB50FBAA0",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.51 am",
+        "timestamp" : 1793507811.362
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "99CA5FD6-8F8A-410D-B91A-3D08FE7406E0",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.49 am",
+        "timestamp" : 1793507809.684
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "DE0E7EF5-A6D4-40E9-8B02-F69E6922FF9D",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.49 am",
+        "timestamp" : 1793507809.983
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "8803088F-C389-4334-8AE1-42308D2D2834",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.47 am",
+        "timestamp" : 1793507807.539
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "DBE59F0A-D42D-4C94-82D5-842101D61ED1",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.47 am",
+        "timestamp" : 1793507807.84
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "458DD784-4BAC-4057-BB19-F82C9590FD43",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.44 am",
+        "timestamp" : 1793507804.527
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "7FDEC608-BE2D-4752-A257-55FFE3EA6E7C",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.44 am",
+        "timestamp" : 1793507804.981
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "8BFC4D49-F941-4FC7-BDAD-A6A53ED4463C",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.43 am",
+        "timestamp" : 1793507803.226
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "F7715F91-854C-4BDD-BA6F-05732A6AF3FA",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.43 am",
+        "timestamp" : 1793507803.656
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "98F61DF8-5134-498E-A787-3565B2AD3878",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.42 am",
+        "timestamp" : 1793507802.673
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "829CFA9C-1E12-4E1B-B252-F06B9D7ECAB7",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.43 am",
+        "timestamp" : 1793507803.099
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "70923B95-7EBF-487F-9085-371A8D900A8A",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.41 am",
+        "timestamp" : 1793507801.58
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "1EA52B06-67FA-4328-8332-F2CCA7E76F26",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.41 am",
+        "timestamp" : 1793507801.998
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "363B28EC-BDA8-493C-B407-849CDD63821F",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.41 am",
+        "timestamp" : 1793507801.073
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "BF9FF9E1-41A6-4AF3-B19D-43A3D7655FD2",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.41 am",
+        "timestamp" : 1793507801.494
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "64B88229-5F80-40AD-9EE1-3DFE63C25E69",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.40 am",
+        "timestamp" : 1793507800.012
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "9B0921CE-F02B-40EE-BBDE-14F865974D54",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.40 am",
+        "timestamp" : 1793507800.433
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "D273A8B5-B4C1-458D-BA95-1952075E2A03",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.36.39 am",
+        "timestamp" : 1793507799.507
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "F27D01B7-789A-4110-9FCB-181C2D30584C",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.39 am",
+        "timestamp" : 1793507799.927
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "5A5BB985-FABE-46B8-8BE2-E39B2D389FD6",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.38 am",
+        "timestamp" : 1793507798.93
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "8FFC6256-53E8-4DC0-A2F5-2781B6AB6094",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.37 am",
+        "timestamp" : 1793507797.517
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "5ED82496-482B-41E4-8AD4-86AB17933A35",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.35 am",
+        "timestamp" : 1793507795.012
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "B5366964-22C4-4268-900C-C93279A8739F",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.33 am",
+        "timestamp" : 1793507793.646
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "7B437D6B-2C85-470D-8F5E-80C22F47B6CB",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.32 am",
+        "timestamp" : 1793507792.173
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "49FE3AA9-B58F-4BAA-80F1-48C9DC85A3E8.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"widgetDrawing.canvas\" Other`_0_AA7623DF-0441-4F6E-8574-CEE25F3FEC09.txt",
+        "timestamp" : 1793507790.099
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "2D9A407D-45F0-4803-B2E8-9EF04445125A",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.29 am",
+        "timestamp" : 1793507789.035
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "E230C3C1-FC0D-4F7C-8A53-59F549BA1B6C",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.36.27 am",
+        "timestamp" : 1793507787.46
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "FB5AF439-56AC-446F-92CE-B523EEDE9114.mp4",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Screen Recording 2026-11-01 at 05.36.21 am.mp4",
+        "timestamp" : 1793507781.079
+      }
+    ],
+    "testIdentifier" : "PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "F633C09B-DBC3-46EC-9974-C06B023407BE",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.41 am",
+        "timestamp" : 1793507861.322
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "BE781321-8F4D-4945-8960-7EE966EE3A08",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.41 am",
+        "timestamp" : 1793507861.745
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "CE59F06C-0520-4E59-B42F-EA09B0333BBF",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.39 am",
+        "timestamp" : 1793507859.933
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "D35295AB-89CB-461B-81B4-1465F4007FDF",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.40 am",
+        "timestamp" : 1793507860.362
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "77AC88CE-B897-48B2-B2AB-6471EA20288C",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.38 am",
+        "timestamp" : 1793507858.614
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "CC09F538-A1D5-4459-90F7-ACF806C0F528",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.39 am",
+        "timestamp" : 1793507859.049
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "8A4548AF-0C7D-4DA6-8ABE-0A6F79E5C7B6",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.37 am",
+        "timestamp" : 1793507857.085
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "6137DC11-CB05-4663-B4C3-38063AB31A6E",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.37 am",
+        "timestamp" : 1793507857.511
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "15D837EE-A703-4C04-8397-85D180B05FC8",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.35 am",
+        "timestamp" : 1793507855.756
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "2B27D33C-FD78-4866-A569-E445BA3236F6",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.36 am",
+        "timestamp" : 1793507856.181
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "29CABBE4-3282-41B4-B90C-B2B4D63EAEEE",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.34 am",
+        "timestamp" : 1793507854.53
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "12692577-9962-4927-859E-FD2EE38DC485",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.34 am",
+        "timestamp" : 1793507854.952
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "09F88DAE-01AA-4B0F-BB7D-B6FB7A6D1ED6",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.33 am",
+        "timestamp" : 1793507853.282
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "CB84BF3F-7156-4749-B881-2FA1ACEE3FB2",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.33 am",
+        "timestamp" : 1793507853.709
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "E696E4EB-6470-49F1-B204-21775F4B99CA",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.31 am",
+        "timestamp" : 1793507851.96
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "5DD9AD96-8EA9-4181-B337-54B2B6260042",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.32 am",
+        "timestamp" : 1793507852.38
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "B6427774-2D9F-4E3C-8266-CC26F8BE24DC",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.30 am",
+        "timestamp" : 1793507850.444
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "ECB8F4CD-1D98-4ED7-B49C-9054BC36C9AB",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.30 am",
+        "timestamp" : 1793507850.875
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "7EA1FA4A-38DB-4FD0-82D5-9968EF1E1D7C",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.29 am",
+        "timestamp" : 1793507849.084
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "E3CB7B16-272F-4582-8E1A-BD013CFEEFCF",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.29 am",
+        "timestamp" : 1793507849.512
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "9B4179BC-4F36-4CF6-A5AD-61B94365B8C5",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.27 am",
+        "timestamp" : 1793507847.538
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "0BD8A8A8-51CD-451B-BAFA-BB3DBAACB6D1",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.27 am",
+        "timestamp" : 1793507847.969
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "DA7BF7D9-E736-4A7D-9E41-ABA5C9C07E74",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.37.25 am",
+        "timestamp" : 1793507845.382
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "F78770CC-DC91-4946-880D-504E16E5B7EA",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.25 am",
+        "timestamp" : 1793507845.807
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "2105C04D-54A3-4051-9903-BC537BFF8D61",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.24 am",
+        "timestamp" : 1793507844.721
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "D450718F-F723-40A1-A294-5E93D9F9C4EC",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.22 am",
+        "timestamp" : 1793507842.345
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "63CE6767-E00D-4B32-9923-737A5091F23F",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.37.19 am",
+        "timestamp" : 1793507839.22
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "E2155D64-142B-4807-A1B8-911DD098BB5C.mp4",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Screen Recording 2026-11-01 at 05.37.08 am.mp4",
+        "timestamp" : 1793507828.161
+      }
+    ],
+    "testIdentifier" : "ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName"
+  }
+]

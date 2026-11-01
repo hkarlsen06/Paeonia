@@ -1,0 +1,85 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "1 min, 3 s",
+                  "durationInSeconds" : 63.15404796600342,
+                  "name" : "testChatDuringGameAndReturnToUnfinishedWord()",
+                  "nodeIdentifier" : "GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "48 s",
+                  "durationInSeconds" : 48.14370000362396,
+                  "name" : "testEmptyGameChatAndReturnToUnfinishedStory()",
+                  "nodeIdentifier" : "GameConversationJourneyUITests/testEmptyGameChatAndReturnToUnfinishedStory()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests/testEmptyGameChatAndReturnToUnfinishedStory",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "GameConversationJourneyUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "Invalid frame dimension (negative or non-finite).",
+                      "nodeType" : "Runtime Warning"
+                    }
+                  ],
+                  "duration" : "50 s",
+                  "durationInSeconds" : 50.04274594783783,
+                  "name" : "testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation()",
+                  "nodeIdentifier" : "GameDrawingDescriptionUITests/testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameDrawingDescriptionUITests/testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "GameDrawingDescriptionUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameDrawingDescriptionUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "PaeoniaAppUITests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests",
+          "nodeType" : "UI test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "App",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

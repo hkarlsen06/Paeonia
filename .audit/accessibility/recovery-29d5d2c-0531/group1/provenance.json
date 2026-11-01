@@ -1,0 +1,12 @@
+{
+  "pid": 16551,
+  "command": [
+    "./scripts/xcode-test-agent.sh",
+    "--",
+    "-collect-test-diagnostics",
+    "never"
+  ],
+  "start": 1793507493.119464,
+  "consolePID": 16550,
+  "timeoutSeconds": 600
+}

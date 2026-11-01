@@ -1,0 +1,4 @@
+identifier	result	duration_seconds
+AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian()	Passed	13.498793959617615
+GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn()	Passed	81.27244102954865
+GamesBoardAccessibilityUITests/testUltimateNativeSelectionInspectsBoardsAndCommitsOnlyTheChosenSquare()	Passed	98.20232200622559

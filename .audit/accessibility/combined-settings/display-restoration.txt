@@ -1,0 +1,544 @@
+Page: com.apple.Preferences
+App: com.apple.Preferences
+Snapshot: 48 visible nodes
+Warning: possible repeated nav subtree detected.
+@e1 [other] "Innstillinger"
+@e2 [navigation-bar] "Skjerm og tekststørrelse"
+@e3 [button] "Tilgjengelighet"
+@e4 [text] "Skjerm og tekststørrelse"
+@e5 [table]
+  [content below table hidden]
+@e6 [cell] "ENHANCE_TEXT_LEGIBILITY"
+@e7 [switch] "Halvfet tekst" [checked]
+@e8 [button] "Halvfet tekst"
+@e9 [switch] "1" [checked]
+@e10 [cell] "Større tekst, På"
+@e11 [cell] "BUTTON_SHAPES"
+@e12 [switch] "Konturlinjer" [unchecked]
+@e13 [button] "Konturlinjer"
+@e14 [switch] "0" [unchecked]
+@e15 [cell] "ON_OFF_LABELS"
+@e16 [switch] "Av/på-etiketter" [unchecked]
+@e17 [button] "Av/på-etiketter"
+@e18 [switch] "0" [unchecked]
+@e19 [cell] "REDUCE_TRANSPARENCY"
+@e20 [switch] "Reduser gjennomsiktighet" [checked]
+@e21 [button] "REDUCE_TRANSPARENCY"
+@e22 [switch] "1" [checked]
+@e23 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e24 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e25 [cell] "TEXT_COLORS_DARKEN"
+@e26 [switch] "Øk kontrast" [checked]
+@e27 [button] "Øk kontrast"
+@e28 [switch] "1" [checked]
+@e29 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e30 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e31 [cell] "DIFFERENTIATE_WITHOUT_COLOR"
+@e32 [switch] "Differensier uten farger" [checked]
+@e33 [button] [same label as parent]
+@e34 [switch] "1" [checked]
+@e35 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e36 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e37 [cell] "PREFER_HORIZONTAL_TEXT"
+@e38 [switch] "Foretrekk horisontal tekst" [unchecked]
+@e39 [button] "PREFER_HORIZONTAL_TEXT"
+@e40 [switch] "0" [unchecked]
+@e41 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e42 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e43 [cell] "SMART_INVERT"
+@e44 [text] "Smart fargeinvertering snur om på fargene på skjermen, bortsett fra i bilder, medier og noen apper som bruker mørke fargetoner."
+@e45 [other] "Vertikalt rullefelt, 2 sider" [scrollable]
+@e46 [other] "Horisontalt rullefelt, 1 side" [scrollable]
+@e47 [toolbar] "Verktøylinje"
+@e48 [toolbar] "Verktøylinje"
+
+Tapped @e9 (337, 160)
+settled after 882ms: +6 -3 (~45 unchanged)
+- @e7 [switch] "Halvfet tekst" [checked]
++ @e7~s847414 [switch] "Halvfet tekst" [unchecked]
+- @e9 [switch] "1" [checked]
++ @e9~s847414 [switch] "0" [unchecked]
+- @e43 [cell] "SMART_INVERT"
++ @e43~s847414 [cell] "SMART_INVERT"
++ @e44~s847414 [switch] "Smart invertering" [unchecked]
++ @e45~s847414 [button] "Smart invertering"
++ @e46~s847414 [switch] "0" [unchecked]
+
+Page: com.apple.Preferences
+App: com.apple.Preferences
+Snapshot: 51 nodes
+Warning: possible repeated nav subtree detected.
+@e1 [other] "Innstillinger"
+@e2 [navigation-bar] "Skjerm og tekststørrelse"
+@e3 [button] "Tilgjengelighet"
+@e4 [text] "Skjerm og tekststørrelse"
+@e5 [table]
+@e6 [cell] "ENHANCE_TEXT_LEGIBILITY"
+@e7 [switch] "Halvfet tekst" [unchecked]
+@e8 [button] "Halvfet tekst"
+@e9 [switch] "0" [unchecked]
+@e10 [cell] "Større tekst, På"
+@e11 [cell] "BUTTON_SHAPES"
+@e12 [switch] "Konturlinjer" [unchecked]
+@e13 [button] "Konturlinjer"
+@e14 [switch] "0" [unchecked]
+@e15 [cell] "ON_OFF_LABELS"
+@e16 [switch] "Av/på-etiketter" [unchecked]
+@e17 [button] "Av/på-etiketter"
+@e18 [switch] "0" [unchecked]
+@e19 [cell] "REDUCE_TRANSPARENCY"
+@e20 [switch] "Reduser gjennomsiktighet" [checked]
+@e21 [button] "REDUCE_TRANSPARENCY"
+@e22 [switch] "1" [checked]
+@e23 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e24 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e25 [cell] "TEXT_COLORS_DARKEN"
+@e26 [switch] "Øk kontrast" [checked]
+@e27 [button] "Øk kontrast"
+@e28 [switch] "1" [checked]
+@e29 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e30 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e31 [cell] "DIFFERENTIATE_WITHOUT_COLOR"
+@e32 [switch] "Differensier uten farger" [checked]
+@e33 [button] [same label as parent]
+@e34 [switch] "1" [checked]
+@e35 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e36 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e37 [cell] "PREFER_HORIZONTAL_TEXT"
+@e38 [switch] "Foretrekk horisontal tekst" [unchecked]
+@e39 [button] "PREFER_HORIZONTAL_TEXT"
+@e40 [switch] "0" [unchecked]
+@e41 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e42 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e43 [cell] "SMART_INVERT"
+@e44 [switch] "Smart invertering" [unchecked]
+@e45 [button] "Smart invertering"
+@e46 [switch] "0" [unchecked]
+@e47 [text] "Smart fargeinvertering snur om på fargene på skjermen, bortsett fra i bilder, medier og noen apper som bruker mørke fargetoner."
+@e48 [other] "Vertikalt rullefelt, 2 sider" [scrollable]
+@e49 [other] "Horisontalt rullefelt, 1 side" [scrollable]
+@e50 [toolbar] "Verktøylinje"
+@e51 [toolbar] "Verktøylinje"
+
+Page: com.apple.Preferences
+App: com.apple.Preferences
+Snapshot: 51 nodes
+Warning: possible repeated nav subtree detected.
+@e1 [other] "Innstillinger"
+@e2 [navigation-bar] "Skjerm og tekststørrelse"
+@e3 [button] "Tilgjengelighet"
+@e4 [text] "Skjerm og tekststørrelse"
+@e5 [table]
+@e6 [cell] "ENHANCE_TEXT_LEGIBILITY"
+@e7 [switch] "Halvfet tekst" [unchecked]
+@e8 [button] "Halvfet tekst"
+@e9 [switch] "0" [unchecked]
+@e10 [cell] "Større tekst, På"
+@e11 [cell] "BUTTON_SHAPES"
+@e12 [switch] "Konturlinjer" [unchecked]
+@e13 [button] "Konturlinjer"
+@e14 [switch] "0" [unchecked]
+@e15 [cell] "ON_OFF_LABELS"
+@e16 [switch] "Av/på-etiketter" [unchecked]
+@e17 [button] "Av/på-etiketter"
+@e18 [switch] "0" [unchecked]
+@e19 [cell] "REDUCE_TRANSPARENCY"
+@e20 [switch] "Reduser gjennomsiktighet" [checked]
+@e21 [button] "REDUCE_TRANSPARENCY"
+@e22 [switch] "1" [checked]
+@e23 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e24 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e25 [cell] "TEXT_COLORS_DARKEN"
+@e26 [switch] "Øk kontrast" [checked]
+@e27 [button] "Øk kontrast"
+@e28 [switch] "1" [checked]
+@e29 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e30 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e31 [cell] "DIFFERENTIATE_WITHOUT_COLOR"
+@e32 [switch] "Differensier uten farger" [checked]
+@e33 [button] [same label as parent]
+@e34 [switch] "1" [checked]
+@e35 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e36 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e37 [cell] "PREFER_HORIZONTAL_TEXT"
+@e38 [switch] "Foretrekk horisontal tekst" [unchecked]
+@e39 [button] "PREFER_HORIZONTAL_TEXT"
+@e40 [switch] "0" [unchecked]
+@e41 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e42 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e43 [cell] "SMART_INVERT"
+@e44 [switch] "Smart invertering" [unchecked]
+@e45 [button] "Smart invertering"
+@e46 [switch] "0" [unchecked]
+@e47 [text] "Smart fargeinvertering snur om på fargene på skjermen, bortsett fra i bilder, medier og noen apper som bruker mørke fargetoner."
+@e48 [other] "Vertikalt rullefelt, 2 sider" [scrollable]
+@e49 [other] "Horisontalt rullefelt, 1 side" [scrollable]
+@e50 [toolbar] "Verktøylinje"
+@e51 [toolbar] "Verktøylinje"
+
+Tapped @e22 (337, 407)
+settled after 590ms: +2 -2 (~49 unchanged)
+- @e20 [switch] "Reduser gjennomsiktighet" [checked]
++ @e20~s847418 [switch] "Reduser gjennomsiktighet" [unchecked]
+- @e22 [switch] "1" [checked]
++ @e22~s847418 [switch] "0" [unchecked]
+unchanged interactive (20):
+= @e1~s847418 [other] "Innstillinger"
+= @e2~s847418 [navigation-bar] "Skjerm og tekststørrelse"
+= @e3~s847418 [button] "Tilgjengelighet"
+= @e4~s847418 [text] "Skjerm og tekststørrelse"
+= @e5~s847418 [table]
+= @e6~s847418 [cell] "ENHANCE_TEXT_LEGIBILITY"
+= @e7~s847418 [switch] "Halvfet tekst"
+= @e8~s847418 [button] "Halvfet tekst"
+= @e9~s847418 [switch] "0"
+= @e10~s847418 [cell] "Større tekst, På"
+= @e11~s847418 [cell] "BUTTON_SHAPES"
+= @e12~s847418 [switch] "Konturlinjer"
+= @e13~s847418 [button] "Konturlinjer"
+= @e14~s847418 [switch] "0"
+= @e15~s847418 [cell] "ON_OFF_LABELS"
+= @e16~s847418 [switch] "Av/på-etiketter"
+= @e17~s847418 [button] "Av/på-etiketter"
+= @e18~s847418 [switch] "0"
+= @e19~s847418 [cell] "REDUCE_TRANSPARENCY"
+= @e21~s847418 [button] "Reduser gjennomsiktighet"
+… more interactive elements not shown, use snapshot -i
+
+Page: com.apple.Preferences
+App: com.apple.Preferences
+Snapshot: 51 nodes
+Warning: possible repeated nav subtree detected.
+@e1 [other] "Innstillinger"
+@e2 [navigation-bar] "Skjerm og tekststørrelse"
+@e3 [button] "Tilgjengelighet"
+@e4 [text] "Skjerm og tekststørrelse"
+@e5 [table]
+@e6 [cell] "ENHANCE_TEXT_LEGIBILITY"
+@e7 [switch] "Halvfet tekst" [unchecked]
+@e8 [button] "Halvfet tekst"
+@e9 [switch] "0" [unchecked]
+@e10 [cell] "Større tekst, På"
+@e11 [cell] "BUTTON_SHAPES"
+@e12 [switch] "Konturlinjer" [unchecked]
+@e13 [button] "Konturlinjer"
+@e14 [switch] "0" [unchecked]
+@e15 [cell] "ON_OFF_LABELS"
+@e16 [switch] "Av/på-etiketter" [unchecked]
+@e17 [button] "Av/på-etiketter"
+@e18 [switch] "0" [unchecked]
+@e19 [cell] "REDUCE_TRANSPARENCY"
+@e20 [switch] "Reduser gjennomsiktighet" [unchecked]
+@e21 [button] "REDUCE_TRANSPARENCY"
+@e22 [switch] "0" [unchecked]
+@e23 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e24 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e25 [cell] "TEXT_COLORS_DARKEN"
+@e26 [switch] "Øk kontrast" [checked]
+@e27 [button] "Øk kontrast"
+@e28 [switch] "1" [checked]
+@e29 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e30 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e31 [cell] "DIFFERENTIATE_WITHOUT_COLOR"
+@e32 [switch] "Differensier uten farger" [checked]
+@e33 [button] [same label as parent]
+@e34 [switch] "1" [checked]
+@e35 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e36 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e37 [cell] "PREFER_HORIZONTAL_TEXT"
+@e38 [switch] "Foretrekk horisontal tekst" [unchecked]
+@e39 [button] "PREFER_HORIZONTAL_TEXT"
+@e40 [switch] "0" [unchecked]
+@e41 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e42 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e43 [cell] "SMART_INVERT"
+@e44 [switch] "Smart invertering" [unchecked]
+@e45 [button] "Smart invertering"
+@e46 [switch] "0" [unchecked]
+@e47 [text] "Smart fargeinvertering snur om på fargene på skjermen, bortsett fra i bilder, medier og noen apper som bruker mørke fargetoner."
+@e48 [other] "Vertikalt rullefelt, 2 sider" [scrollable]
+@e49 [other] "Horisontalt rullefelt, 1 side" [scrollable]
+@e50 [toolbar] "Verktøylinje"
+@e51 [toolbar] "Verktøylinje"
+
+Page: com.apple.Preferences
+App: com.apple.Preferences
+Snapshot: 51 nodes
+Warning: possible repeated nav subtree detected.
+@e1 [other] "Innstillinger"
+@e2 [navigation-bar] "Skjerm og tekststørrelse"
+@e3 [button] "Tilgjengelighet"
+@e4 [text] "Skjerm og tekststørrelse"
+@e5 [table]
+@e6 [cell] "ENHANCE_TEXT_LEGIBILITY"
+@e7 [switch] "Halvfet tekst" [unchecked]
+@e8 [button] "Halvfet tekst"
+@e9 [switch] "0" [unchecked]
+@e10 [cell] "Større tekst, På"
+@e11 [cell] "BUTTON_SHAPES"
+@e12 [switch] "Konturlinjer" [unchecked]
+@e13 [button] "Konturlinjer"
+@e14 [switch] "0" [unchecked]
+@e15 [cell] "ON_OFF_LABELS"
+@e16 [switch] "Av/på-etiketter" [unchecked]
+@e17 [button] "Av/på-etiketter"
+@e18 [switch] "0" [unchecked]
+@e19 [cell] "REDUCE_TRANSPARENCY"
+@e20 [switch] "Reduser gjennomsiktighet" [unchecked]
+@e21 [button] "REDUCE_TRANSPARENCY"
+@e22 [switch] "0" [unchecked]
+@e23 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e24 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e25 [cell] "TEXT_COLORS_DARKEN"
+@e26 [switch] "Øk kontrast" [checked]
+@e27 [button] "Øk kontrast"
+@e28 [switch] "1" [checked]
+@e29 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e30 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e31 [cell] "DIFFERENTIATE_WITHOUT_COLOR"
+@e32 [switch] "Differensier uten farger" [checked]
+@e33 [button] [same label as parent]
+@e34 [switch] "1" [checked]
+@e35 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e36 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e37 [cell] "PREFER_HORIZONTAL_TEXT"
+@e38 [switch] "Foretrekk horisontal tekst" [unchecked]
+@e39 [button] "PREFER_HORIZONTAL_TEXT"
+@e40 [switch] "0" [unchecked]
+@e41 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e42 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e43 [cell] "SMART_INVERT"
+@e44 [switch] "Smart invertering" [unchecked]
+@e45 [button] "Smart invertering"
+@e46 [switch] "0" [unchecked]
+@e47 [text] "Smart fargeinvertering snur om på fargene på skjermen, bortsett fra i bilder, medier og noen apper som bruker mørke fargetoner."
+@e48 [other] "Vertikalt rullefelt, 2 sider" [scrollable]
+@e49 [other] "Horisontalt rullefelt, 1 side" [scrollable]
+@e50 [toolbar] "Verktøylinje"
+@e51 [toolbar] "Verktøylinje"
+
+Tapped @e28 (337, 524)
+settled after 500ms: +2 -2 (~49 unchanged)
+- @e26 [switch] "Øk kontrast" [checked]
++ @e26~s847422 [switch] "Øk kontrast" [unchecked]
+- @e28 [switch] "1" [checked]
++ @e28~s847422 [switch] "0" [unchecked]
+unchanged interactive (20):
+= @e1~s847422 [other] "Innstillinger"
+= @e2~s847422 [navigation-bar] "Skjerm og tekststørrelse"
+= @e3~s847422 [button] "Tilgjengelighet"
+= @e4~s847422 [text] "Skjerm og tekststørrelse"
+= @e5~s847422 [table]
+= @e6~s847422 [cell] "ENHANCE_TEXT_LEGIBILITY"
+= @e7~s847422 [switch] "Halvfet tekst"
+= @e8~s847422 [button] "Halvfet tekst"
+= @e9~s847422 [switch] "0"
+= @e10~s847422 [cell] "Større tekst, På"
+= @e11~s847422 [cell] "BUTTON_SHAPES"
+= @e12~s847422 [switch] "Konturlinjer"
+= @e13~s847422 [button] "Konturlinjer"
+= @e14~s847422 [switch] "0"
+= @e15~s847422 [cell] "ON_OFF_LABELS"
+= @e16~s847422 [switch] "Av/på-etiketter"
+= @e17~s847422 [button] "Av/på-etiketter"
+= @e18~s847422 [switch] "0"
+= @e19~s847422 [cell] "REDUCE_TRANSPARENCY"
+= @e20~s847422 [switch] "Reduser gjennomsiktighet"
+… more interactive elements not shown, use snapshot -i
+
+Page: com.apple.Preferences
+App: com.apple.Preferences
+Snapshot: 51 nodes
+Warning: possible repeated nav subtree detected.
+@e1 [other] "Innstillinger"
+@e2 [navigation-bar] "Skjerm og tekststørrelse"
+@e3 [button] "Tilgjengelighet"
+@e4 [text] "Skjerm og tekststørrelse"
+@e5 [table]
+@e6 [cell] "ENHANCE_TEXT_LEGIBILITY"
+@e7 [switch] "Halvfet tekst" [unchecked]
+@e8 [button] "Halvfet tekst"
+@e9 [switch] "0" [unchecked]
+@e10 [cell] "Større tekst, På"
+@e11 [cell] "BUTTON_SHAPES"
+@e12 [switch] "Konturlinjer" [unchecked]
+@e13 [button] "Konturlinjer"
+@e14 [switch] "0" [unchecked]
+@e15 [cell] "ON_OFF_LABELS"
+@e16 [switch] "Av/på-etiketter" [unchecked]
+@e17 [button] "Av/på-etiketter"
+@e18 [switch] "0" [unchecked]
+@e19 [cell] "REDUCE_TRANSPARENCY"
+@e20 [switch] "Reduser gjennomsiktighet" [unchecked]
+@e21 [button] "REDUCE_TRANSPARENCY"
+@e22 [switch] "0" [unchecked]
+@e23 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e24 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e25 [cell] "TEXT_COLORS_DARKEN"
+@e26 [switch] "Øk kontrast" [unchecked]
+@e27 [button] "Øk kontrast"
+@e28 [switch] "0" [unchecked]
+@e29 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e30 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e31 [cell] "DIFFERENTIATE_WITHOUT_COLOR"
+@e32 [switch] "Differensier uten farger" [checked]
+@e33 [button] [same label as parent]
+@e34 [switch] "1" [checked]
+@e35 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e36 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e37 [cell] "PREFER_HORIZONTAL_TEXT"
+@e38 [switch] "Foretrekk horisontal tekst" [unchecked]
+@e39 [button] "PREFER_HORIZONTAL_TEXT"
+@e40 [switch] "0" [unchecked]
+@e41 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e42 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e43 [cell] "SMART_INVERT"
+@e44 [switch] "Smart invertering" [unchecked]
+@e45 [button] "Smart invertering"
+@e46 [switch] "0" [unchecked]
+@e47 [text] "Smart fargeinvertering snur om på fargene på skjermen, bortsett fra i bilder, medier og noen apper som bruker mørke fargetoner."
+@e48 [other] "Vertikalt rullefelt, 2 sider" [scrollable]
+@e49 [other] "Horisontalt rullefelt, 1 side" [scrollable]
+@e50 [toolbar] "Verktøylinje"
+@e51 [toolbar] "Verktøylinje"
+
+Page: com.apple.Preferences
+App: com.apple.Preferences
+Snapshot: 51 nodes
+Warning: possible repeated nav subtree detected.
+@e1 [other] "Innstillinger"
+@e2 [navigation-bar] "Skjerm og tekststørrelse"
+@e3 [button] "Tilgjengelighet"
+@e4 [text] "Skjerm og tekststørrelse"
+@e5 [table]
+@e6 [cell] "ENHANCE_TEXT_LEGIBILITY"
+@e7 [switch] "Halvfet tekst" [unchecked]
+@e8 [button] "Halvfet tekst"
+@e9 [switch] "0" [unchecked]
+@e10 [cell] "Større tekst, På"
+@e11 [cell] "BUTTON_SHAPES"
+@e12 [switch] "Konturlinjer" [unchecked]
+@e13 [button] "Konturlinjer"
+@e14 [switch] "0" [unchecked]
+@e15 [cell] "ON_OFF_LABELS"
+@e16 [switch] "Av/på-etiketter" [unchecked]
+@e17 [button] "Av/på-etiketter"
+@e18 [switch] "0" [unchecked]
+@e19 [cell] "REDUCE_TRANSPARENCY"
+@e20 [switch] "Reduser gjennomsiktighet" [unchecked]
+@e21 [button] "REDUCE_TRANSPARENCY"
+@e22 [switch] "0" [unchecked]
+@e23 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e24 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e25 [cell] "TEXT_COLORS_DARKEN"
+@e26 [switch] "Øk kontrast" [unchecked]
+@e27 [button] "Øk kontrast"
+@e28 [switch] "0" [unchecked]
+@e29 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e30 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e31 [cell] "DIFFERENTIATE_WITHOUT_COLOR"
+@e32 [switch] "Differensier uten farger" [checked]
+@e33 [button] [same label as parent]
+@e34 [switch] "1" [checked]
+@e35 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e36 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e37 [cell] "PREFER_HORIZONTAL_TEXT"
+@e38 [switch] "Foretrekk horisontal tekst" [unchecked]
+@e39 [button] "PREFER_HORIZONTAL_TEXT"
+@e40 [switch] "0" [unchecked]
+@e41 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e42 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e43 [cell] "SMART_INVERT"
+@e44 [switch] "Smart invertering" [unchecked]
+@e45 [button] "Smart invertering"
+@e46 [switch] "0" [unchecked]
+@e47 [text] "Smart fargeinvertering snur om på fargene på skjermen, bortsett fra i bilder, medier og noen apper som bruker mørke fargetoner."
+@e48 [other] "Vertikalt rullefelt, 2 sider" [scrollable]
+@e49 [other] "Horisontalt rullefelt, 1 side" [scrollable]
+@e50 [toolbar] "Verktøylinje"
+@e51 [toolbar] "Verktøylinje"
+
+Tapped @e34 (337, 641)
+settled after 524ms: +2 -2 (~49 unchanged)
+- @e32 [switch] "Differensier uten farger" [checked]
++ @e32~s847426 [switch] "Differensier uten farger" [unchecked]
+- @e34 [switch] "1" [checked]
++ @e34~s847426 [switch] "0" [unchecked]
+unchanged interactive (20):
+= @e1~s847426 [other] "Innstillinger"
+= @e2~s847426 [navigation-bar] "Skjerm og tekststørrelse"
+= @e3~s847426 [button] "Tilgjengelighet"
+= @e4~s847426 [text] "Skjerm og tekststørrelse"
+= @e5~s847426 [table]
+= @e6~s847426 [cell] "ENHANCE_TEXT_LEGIBILITY"
+= @e7~s847426 [switch] "Halvfet tekst"
+= @e8~s847426 [button] "Halvfet tekst"
+= @e9~s847426 [switch] "0"
+= @e10~s847426 [cell] "Større tekst, På"
+= @e11~s847426 [cell] "BUTTON_SHAPES"
+= @e12~s847426 [switch] "Konturlinjer"
+= @e13~s847426 [button] "Konturlinjer"
+= @e14~s847426 [switch] "0"
+= @e15~s847426 [cell] "ON_OFF_LABELS"
+= @e16~s847426 [switch] "Av/på-etiketter"
+= @e17~s847426 [button] "Av/på-etiketter"
+= @e18~s847426 [switch] "0"
+= @e19~s847426 [cell] "REDUCE_TRANSPARENCY"
+= @e20~s847426 [switch] "Reduser gjennomsiktighet"
+… more interactive elements not shown, use snapshot -i
+
+Page: com.apple.Preferences
+App: com.apple.Preferences
+Snapshot: 51 nodes
+Warning: possible repeated nav subtree detected.
+@e1 [other] "Innstillinger"
+@e2 [navigation-bar] "Skjerm og tekststørrelse"
+@e3 [button] "Tilgjengelighet"
+@e4 [text] "Skjerm og tekststørrelse"
+@e5 [table]
+@e6 [cell] "ENHANCE_TEXT_LEGIBILITY"
+@e7 [switch] "Halvfet tekst" [unchecked]
+@e8 [button] "Halvfet tekst"
+@e9 [switch] "0" [unchecked]
+@e10 [cell] "Større tekst, På"
+@e11 [cell] "BUTTON_SHAPES"
+@e12 [switch] "Konturlinjer" [unchecked]
+@e13 [button] "Konturlinjer"
+@e14 [switch] "0" [unchecked]
+@e15 [cell] "ON_OFF_LABELS"
+@e16 [switch] "Av/på-etiketter" [unchecked]
+@e17 [button] "Av/på-etiketter"
+@e18 [switch] "0" [unchecked]
+@e19 [cell] "REDUCE_TRANSPARENCY"
+@e20 [switch] "Reduser gjennomsiktighet" [unchecked]
+@e21 [button] "REDUCE_TRANSPARENCY"
+@e22 [switch] "0" [unchecked]
+@e23 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e24 [other] "Øk kontrast og lesbarhet ved å redusere gjennom­s­iktighet og uskarphet i noen bakgrunner."
+@e25 [cell] "TEXT_COLORS_DARKEN"
+@e26 [switch] "Øk kontrast" [unchecked]
+@e27 [button] "Øk kontrast"
+@e28 [switch] "0" [unchecked]
+@e29 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e30 [other] "Øk fargekontrasten mellom appens forgrunn og bakgrunnsfargene."
+@e31 [cell] "DIFFERENTIATE_WITHOUT_COLOR"
+@e32 [switch] "Differensier uten farger" [unchecked]
+@e33 [button] [same label as parent]
+@e34 [switch] "0" [unchecked]
+@e35 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e36 [other] "Erstatter objekter i grensesnittet som kun bruker farge til å formidle informasjon, med andre alternativer."
+@e37 [cell] "PREFER_HORIZONTAL_TEXT"
+@e38 [switch] "Foretrekk horisontal tekst" [unchecked]
+@e39 [button] "PREFER_HORIZONTAL_TEXT"
+@e40 [switch] "0" [unchecked]
+@e41 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e42 [other] "Foretrekk horisontal tekst på språk som støtter vertikal tekst."
+@e43 [cell] "SMART_INVERT"
+@e44 [switch] "Smart invertering" [unchecked]
+@e45 [button] "Smart invertering"
+@e46 [switch] "0" [unchecked]
+@e47 [text] "Smart fargeinvertering snur om på fargene på skjermen, bortsett fra i bilder, medier og noen apper som bruker mørke fargetoner."
+@e48 [other] "Vertikalt rullefelt, 2 sider" [scrollable]
+@e49 [other] "Horisontalt rullefelt, 1 side" [scrollable]
+@e50 [toolbar] "Verktøylinje"
+@e51 [toolbar] "Verktøylinje"

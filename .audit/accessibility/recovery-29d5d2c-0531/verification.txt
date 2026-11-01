@@ -1,0 +1,72 @@
+Frozen verification at 29d5d2c096b2fb854699d7377cfee15195586015. One attempt per group.
+Xcode: Xcode 27.1
+Build version 27A9275
+Device: Shared iPhone 2, local, 79EBB58E-1108-4EEE-987D-E193CEA9EA2A, iPhone 17 Pro, iOS 27.0 build 24A434.
+No edits, commits, merges, pushes, deployments, new checkouts, children, retries or backend reruns. ios/local.xcconfig absent.
+All wrappers used KEEP_ARTIFACTS=1, destination override unset, -collect-test-diagnostics never, and a 600 second process deadline. None timed out. Separate app console predicate process == "PaeoniaApp", level debug.
+Actual Large confirmed before group2; AX5 confirmed before group3 and group4. Actual Large restored/read back; own Device panel closed and simulator lease released. Reduce Motion unverified and untouched.
+Unit result: 2185 distinct methods/cases, 2284 executions. 34 parameterized methods, 133 parameterized runs. Zero failures/skips.
+All 9 new regression methods passed in 10 executions, including 6 publication identity methods, remote text and nil inputs, failed cache acceptance/outbox write, and versioned reader. Actual chmod directory faults executed against real file writes.
+UI result: 7 passed, 2 failed, 0 skipped, 9 executions. All four builds passed with zero compiler warnings. Runtime warnings remain unresolved.
+Backend 2416 tests/typecheck previous evidence supplied by user, not rerun or newly verified.
+No VoiceOver, Voice Control, Accessibility Inspector, iPad, manual assistive-technology, label coverage, real Apple/Google authentication or StoreKit purchase verification claims.
+
+group1: Passed, cases=2185, passed=2185, failed=0
+SUMMARY: SUCCESS queued=0s compiled=84s tested=53s simulator="Shared iPhone 2"
+Original bundles: /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793507493-16551.xcresult | /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793507493-16551.xcresult
+Runtime warnings: []
+
+Exact per-case timing seconds:
+See group1/results/cases.json and all-test-timings.json for all unit cases and parameterized runs.
+
+group2: Passed, cases=3, passed=3, failed=0
+SUMMARY: SUCCESS queued=0s compiled=9s tested=80s simulator="Shared iPhone 2"
+Original bundles: /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793507653-22736.xcresult | /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793507653-22736.xcresult
+Runtime warnings: [{"issueType": "Runtime Warning", "message": "Invalid frame dimension (negative or non-finite)."}, {"issueType": "Runtime Warning", "message": "Invalid frame dimension (negative or non-finite)."}, {"issueType": "Runtime Warning", "message": "Invalid frame dimension (negative or non-finite)."}]
+
+Exact per-case timing seconds:
+DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures() 29.47608506679535 Passed
+ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName() 17.127638936042786 Passed
+WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory() 26.09248697757721 Passed
+
+group3: Failed, cases=3, passed=1, failed=2
+SUMMARY: FAILURE queued=0s compiled=9s tested=102s simulator="Shared iPhone 2"
+Original bundles: /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793507752-29180.xcresult | /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793507752-29180.xcresult
+Runtime warnings: [{"issueType": "Runtime Warning", "message": "Invalid frame dimension (negative or non-finite)."}]
+
+Exact per-case timing seconds:
+AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian() 12.275409936904907 Passed
+PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing() 47.03739809989929 Failed
+ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName() 34.72332799434662 Failed
+
+group4: Passed, cases=3, passed=3, failed=0
+SUMMARY: SUCCESS queued=36s compiled=8s tested=87s simulator="Shared iPhone 2"
+Original bundles: /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793507881-34325.xcresult | /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793507881-34325.xcresult
+Runtime warnings: [{"issueType": "Runtime Warning", "message": "Invalid frame dimension (negative or non-finite)."}, {"issueType": "Runtime Warning", "message": "Invalid frame dimension (negative or non-finite)."}]
+
+Exact per-case timing seconds:
+AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian() 13.679448008537292 Passed
+DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures() 36.63045799732208 Passed
+WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory() 27.29556405544281 Passed
+
+Failures, exact current source locations and incomplete journey steps:
+group3 onboarding, PaeoniaAppUITests.swift:74, XCTAssertTrue(zoom.waitForExistence(timeout: 5)). Legacy wrapper URL reports zero-based line 73. Photos grid selection and Adjust framing completed. Zoom stepper lookup failed after scrolling. Zoom increment, changed value, Apply, Done, profile completion, mock purchase and pairing not reached.
+group3 profile, ProfileAccessibilityJourneyUITests.swift:54, XCTAssertTrue(element.isHittable), called by scrollTo(save, in: app) on line 27. Legacy wrapper URL reports zero-based line 53. Draft Alexandria entered, Save hittability failed while keyboard remained visible. Save enabled, cancel/discard and return navigation not reached at AX5.
+Last recording frames exported beside original MP4 attachments. Profile frame shows Save partially covered by keyboard/Done control. Cropper frame shows long framing instructions after scrolling. Failure activities and available hierarchy/snapshot attachments are exported unfiltered. No separate text hierarchy was generated for the profile helper assertion; original binary UI snapshots remain exported.
+Answer and Settings unfiltered audit passed, no audit issues reported. Original legacy issues and all attachments retained. Wrapper text incorrectly lists runtime warnings under TEST FAILURES even in successful groups; modern summary records them as runtimeWarnings with zero assertion failures in groups2/4. No warnings waived or assigned to a native framework.
+Status unchanged: True
+Hashes: {
+  "beforeCount": 4163,
+  "afterCount": 4163,
+  "changed": []
+}
+All tracked file hashes: {
+  "beforeCount": 4420,
+  "afterCount": 4420,
+  "changed": []
+}
+Restoration: Text size set to large
+Text size is large
+
+d246beb8 ancestor of frozen HEAD: True
+main now: 67d45c0a18b8d64ff97edaf588f47a5d34c54f0c

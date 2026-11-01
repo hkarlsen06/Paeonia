@@ -1,0 +1,58 @@
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testQuestionsAudit]' started.
+    t =     0.00s Start Test at 2026-11-01 01:43:51.447
+    t =     0.05s Set Up
+    t =     1.09s Added attachment named 'System text size precondition'
+    t =     1.09s Open no.paeonia.app
+    t =     1.09s     Launch no.paeonia.app
+    t =     1.51s         Setting up automation session
+    t =     6.87s         Wait for no.paeonia.app to idle
+    t =    12.64s Wait for no.paeonia.app to become Running Foreground
+    t =    12.65s Waiting 10.0s for Window (First Match) to exist
+    t =    13.72s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =    13.73s         Checking existence of `Window (First Match)`
+    t =    13.84s Find the Target Application 'no.paeonia.app'
+    t =    14.39s Added attachment named 'questions-before-audit-standard-en'
+    t =    17.92s Find the Any (Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493621632.96)
+    t =    18.01s Requesting snapshot of accessibility hierarchy for app with pid 97310
+    t =    18.13s Find: Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493621632.96
+    t =    18.28s Requesting snapshot of accessibility hierarchy for app with pid 97310
+    t =    18.36s Find: Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493621632.96
+    t =    18.36s Requesting snapshot of accessibility hierarchy for app with pid 97310
+    t =    18.44s Added attachment named 'Accessibility issue'
+    t =    18.44s Find the Any (Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493621632.96)
+    t =    18.49s Checking existence of `"What small moment made you think of your partner today?" StaticText`
+    t =    18.54s Find the "What small moment made you think of your partner today?" StaticText
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testQuestionsAudit] : Contrast failed
+    t =    18.64s Find the Any (Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493621152.94)
+    t =    18.70s Requesting snapshot of accessibility hierarchy for app with pid 97310
+    t =    18.76s Find: Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493621152.94
+    t =    18.98s Requesting snapshot of accessibility hierarchy for app with pid 97310
+    t =    19.05s Find: Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493621152.94
+    t =    19.06s Requesting snapshot of accessibility hierarchy for app with pid 97310
+    t =    19.19s Added attachment named 'Accessibility issue'
+    t =    19.20s Find the Any (Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493621152.94)
+    t =    19.29s Checking existence of `"June 27, 2026" StaticText`
+    t =    19.33s Find the "June 27, 2026" StaticText
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testQuestionsAudit] : Dynamic Type font sizes are partially unsupported
+    t =    19.39s Find the Any (Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493615872.63)
+    t =    19.44s Requesting snapshot of accessibility hierarchy for app with pid 97310
+    t =    19.52s Find: Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493615872.63
+    t =    19.76s Requesting snapshot of accessibility hierarchy for app with pid 97310
+    t =    19.84s Find: Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493615872.63
+    t =    19.84s Requesting snapshot of accessibility hierarchy for app with pid 97310
+    t =    20.17s Added attachment named 'Accessibility issue'
+    t =    20.17s Find the Any (Descendant with identity binding to AX element pid: 97310, elementOrHash.elementID: 4493615872.63)
+    t =    20.71s Checking existence of `"0" StaticText`
+    t =    20.74s Find the "0" StaticText
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testQuestionsAudit] : Dynamic Type font sizes are partially unsupported
+    t =    20.83s Find the Target Application 'no.paeonia.app'
+    t =    21.10s Added attachment named 'questions-en'
+    t =    21.10s Terminate no.paeonia.app:97310
+    t =    22.18s Tear Down
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testQuestionsAudit]' failed (22.293 seconds).
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAudit]' started.
+    t =     0.00s Start Test at 2026-11-01 01:44:13.742
+    t =     0.07s Set Up
+    t =     1.12s Added attachment named 'System text size precondition'
+    t =     1.13s Open no.paeonia.app
+    t =     1.13s

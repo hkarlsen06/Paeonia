@@ -1,0 +1,1 @@
+["./scripts/xcode-test-agent.sh", "--ui", "--", "-collect-test-diagnostics", "never", "-only-testing:PaeoniaAppUITests/GameDrawingDescriptionUITests", "-only-testing:PaeoniaAppUITests/GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn"]

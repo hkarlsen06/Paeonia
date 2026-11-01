@@ -1,0 +1,75 @@
+{
+  "_type": {
+    "_name": "ResultIssueSummaries"
+  },
+  "analyzerWarningSummaries": {
+    "_type": {
+      "_name": "Array"
+    }
+  },
+  "errorSummaries": {
+    "_type": {
+      "_name": "Array"
+    }
+  },
+  "testFailureSummaries": {
+    "_type": {
+      "_name": "Array"
+    }
+  },
+  "testWarningSummaries": {
+    "_type": {
+      "_name": "Array"
+    },
+    "_values": [
+      {
+        "_type": {
+          "_name": "TestIssueSummary",
+          "_supertype": {
+            "_name": "IssueSummary"
+          }
+        },
+        "documentLocationInCreatingWorkspace": {
+          "_type": {
+            "_name": "DocumentLocation"
+          },
+          "concreteTypeName": {
+            "_type": {
+              "_name": "String"
+            },
+            "_value": "DVTTextDocumentLocation"
+          },
+          "url": {
+            "_type": {
+              "_name": "String"
+            },
+            "_value": ""
+          }
+        },
+        "issueType": {
+          "_type": {
+            "_name": "String"
+          },
+          "_value": "Uncategorized"
+        },
+        "message": {
+          "_type": {
+            "_name": "String"
+          },
+          "_value": "Invalid frame dimension (negative or non-finite)."
+        },
+        "testCaseName": {
+          "_type": {
+            "_name": "String"
+          },
+          "_value": "ProfileAccessibilityJourneyUITests.testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()"
+        }
+      }
+    ]
+  },
+  "warningSummaries": {
+    "_type": {
+      "_name": "Array"
+    }
+  }
+}

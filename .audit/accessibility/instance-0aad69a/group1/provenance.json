@@ -1,0 +1,10 @@
+{
+  "wrapperPID": 63978,
+  "start": 1793509362.340632,
+  "argv": [
+    "--",
+    "-collect-test-diagnostics",
+    "never"
+  ],
+  "consolePID": 63977
+}

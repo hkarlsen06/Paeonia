@@ -1,0 +1,93 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "duration" : "Ran for 24 sekunder",
+  "durationInSeconds" : 24.77156400680542,
+  "hasMediaAttachments" : false,
+  "hasPerformanceMetrics" : false,
+  "startTime" : 1793499385.28,
+  "testDescription" : "Test case with 1 run",
+  "testIdentifier" : "WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory",
+  "testName" : "testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()",
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ],
+  "testResult" : "Failed",
+  "testRuns" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "name" : "Complete Issue Description.txt",
+                  "nodeIdentifier" : "B7900A96-59BD-42BD-AE2E-4B6E99BE9F4B",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~ORXjxv7vPPMGdnc6xar3_QwUuv2NT2_wbFPYQOF8_liiXR86BY0cD9tBCYtIbgbHvXx-zkr0zol9J_kEsAygiw==",
+                  "name" : "App UI hierarchy for no.paeonia_0_9931A487-6F64-4EB9-B1B4-1DB3D3A36843.app",
+                  "nodeIdentifier" : "CB5C33B6-C437-4EDE-A838-D95923C6613C",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~Mb9LRIZYsQwxmDSZXl6_QqRJby75k13Gj4C051TSttpWNB5mUj7mZPSesfIqlOtKfjU2QALXka9xohVpnmeWVQ==",
+                  "name" : "UI Snapshot 2026-11-01 at 03.16.49 am",
+                  "nodeIdentifier" : "540083D6-19D3-40D2-A1C4-C50BB10345E6",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "name" : "",
+                  "nodeType" : "Source Code Reference",
+                  "sourceLocation" : {
+                    "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/WidgetHistoryDescriptionUITests.swift",
+                    "lineNumber" : 34
+                  }
+                }
+              ],
+              "name" : "Failed to get matching snapshot: No matches found for Elements matching predicate '\"media.alternative.clear\" IN identifiers' from input {(\n    Button, label: 'Done',\n    Button, identifier: 'media.alternative.cancel', label: 'Cancel',\n    Button, identifier: 'media.alternative.save', label: 'Save',\n    Button, identifier: 'arrow.clockwise', label: 'Couldn't load this drawing. Tap to try again.',\n    Button, identifier: 'media.alternative.edit', label: 'Edit drawing description',\n    Button, identifier: 'arrow.clockwise', label: 'Couldn't load this drawing. Tap to try again.'\n)}",
+              "nodeType" : "Test Case Run",
+              "result" : "Failed",
+              "sourceLocation" : {
+                "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/WidgetHistoryDescriptionUITests.swift",
+                "lineNumber" : 34
+              }
+            },
+            {
+              "name" : "Invalid frame dimension (negative or non-finite).",
+              "nodeType" : "Runtime Warning"
+            }
+          ],
+          "duration" : "24 s",
+          "durationInSeconds" : 24.77156400680542,
+          "name" : "Test Scheme Action",
+          "nodeIdentifier" : "1",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory",
+          "nodeType" : "Test Plan Configuration",
+          "result" : "Failed"
+        }
+      ],
+      "details" : "iOS Simulator 27.0",
+      "duration" : "24 s",
+      "durationInSeconds" : 24.77156400680542,
+      "name" : "iPhone 17 Pro",
+      "nodeIdentifier" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "nodeType" : "Device",
+      "result" : "Failed"
+    }
+  ]
+}

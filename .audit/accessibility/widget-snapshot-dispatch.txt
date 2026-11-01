@@ -1,0 +1,4 @@
+Synchronous actor, concrete: protocol fallback
+Synchronous actor, protocol: stored metadata
+Async actor, concrete: stored metadata
+Async actor, protocol: stored metadata

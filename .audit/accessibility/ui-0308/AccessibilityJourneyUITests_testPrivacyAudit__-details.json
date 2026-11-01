@@ -1,0 +1,51 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "duration" : "Ran for 10 sekunder",
+  "durationInSeconds" : 10.207789897918701,
+  "hasMediaAttachments" : true,
+  "hasPerformanceMetrics" : false,
+  "startTime" : 1793498960.088,
+  "testDescription" : "Test case with 1 run",
+  "testIdentifier" : "AccessibilityJourneyUITests/testPrivacyAudit()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testPrivacyAudit",
+  "testName" : "testPrivacyAudit()",
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ],
+  "testResult" : "Passed",
+  "testRuns" : [
+    {
+      "children" : [
+        {
+          "duration" : "10 s",
+          "durationInSeconds" : 10.207789897918701,
+          "name" : "Test Scheme Action",
+          "nodeIdentifier" : "1",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testPrivacyAudit",
+          "nodeType" : "Test Plan Configuration",
+          "result" : "Passed"
+        }
+      ],
+      "details" : "iOS Simulator 27.0",
+      "duration" : "10 s",
+      "durationInSeconds" : 10.207789897918701,
+      "name" : "iPhone 17 Pro",
+      "nodeIdentifier" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "nodeType" : "Device",
+      "result" : "Passed"
+    }
+  ]
+}

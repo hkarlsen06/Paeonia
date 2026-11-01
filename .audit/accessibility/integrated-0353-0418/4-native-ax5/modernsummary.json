@@ -1,0 +1,5 @@
+{
+  "availability": "unavailable",
+  "provenance": "incomplete wrapper; recoveredlegacy evidence is separate",
+  "error": "Error: Failed to create a new result bundle reader, underlying error: Info.plist at /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793502440-86118.xcresult/Info.plist does not exist, the result bundle might be corrupted or the provided path is not a result bundle\nUsage: xcresulttool <subcommand>\n  See 'xcresulttool --help' for more information.\n"
+}

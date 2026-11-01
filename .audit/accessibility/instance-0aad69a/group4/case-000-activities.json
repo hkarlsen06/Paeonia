@@ -1,0 +1,182 @@
+{
+  "testIdentifier" : "AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian",
+  "testName" : "testSettingsAtAX5InNorwegian()",
+  "testRuns" : [
+    {
+      "activities" : [
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509716.456,
+          "title" : "Start Test at 2026-11-01 06:08:36.456"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509716.48,
+          "title" : "Set Up"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "System text size precondition_0_ECF269B4-E469-49E4-A1F3-7124CDD5BBF8.txt",
+              "payloadId" : "0~6h3Hd6HfGrWoWwiW_u-ZsJPMTU7U8YS1c-NaMqiEXtFUmx5GrRJeiPNTkQB0K7BZZHSn3GOXAqibO_bbFhdg3g==",
+              "timestamp" : 1793509717.493,
+              "uuid" : "A2799FA7-598E-4092-9429-5A56E2EB7BC6"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793509717.493,
+              "title" : "System text size precondition"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509717.493,
+          "title" : "Added attachment named 'System text size precondition'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793509718.946,
+                  "title" : "Setting up automation session"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793509722.111,
+                  "title" : "Wait for no.paeonia.app to idle"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793509717.505,
+              "title" : "Launch no.paeonia.app"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509717.502,
+          "title" : "Open no.paeonia.app"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509724.623,
+          "title" : "Wait for no.paeonia.app to become Running Foreground"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793509725.712,
+                  "title" : "Checking existence of `Window (First Match)`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793509725.711,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509724.624,
+          "title" : "Waiting 10.0s for Window (First Match) to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509725.767,
+          "title" : "Find the Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "settings-before-audit-AX5-nb_0_16E7ED5A-648A-43D8-946B-3C3B1729D208.png",
+              "payloadId" : "0~YC3UOuFxCLlW0zLESr6a_HRf7rjJH1ixChfK-Or9dI2WWJVXvJoNaRpStTysMfv8RzE7qjjPfV0q2jyVXw0HZw==",
+              "timestamp" : 1793509725.968,
+              "uuid" : "444641BD-0316-488F-B7BE-E865C0E0C113"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793509725.968,
+              "title" : "settings-before-audit-AX5-nb"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509725.968,
+          "title" : "Added attachment named 'settings-before-audit-AX5-nb'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509728.355,
+          "title" : "Find the Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "settings-AX5-nb_0_C3A7E6C4-7D61-4C19-9CCE-109CF1BCEF4C.png",
+              "payloadId" : "0~YC3UOuFxCLlW0zLESr6a_HRf7rjJH1ixChfK-Or9dI2WWJVXvJoNaRpStTysMfv8RzE7qjjPfV0q2jyVXw0HZw==",
+              "timestamp" : 1793509728.457,
+              "uuid" : "B7609E09-5DD1-492F-94E2-ABA4CF5DA575"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793509728.457,
+              "title" : "settings-AX5-nb"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509728.457,
+          "title" : "Added attachment named 'settings-AX5-nb'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509728.458,
+          "title" : "Terminate no.paeonia.app:72096"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793509729.553,
+          "title" : "Tear Down"
+        }
+      ],
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "24A434",
+        "osVersion" : "27.0",
+        "platform" : "iOS Simulator"
+      },
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ]
+}

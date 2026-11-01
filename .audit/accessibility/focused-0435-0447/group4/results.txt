@@ -1,0 +1,24 @@
+Generated CURRENT_PROJECT_VERSION=20261101.0447
+[xcode-test-agent] build started; heartbeat every 20s
+[xcode-test-agent] tests started; heartbeat every 20s
+[xcode-test-agent] alive: tests still running (20s elapsed)
+[xcode-test-agent] alive: tests still running (40s elapsed)
+[xcode-test-agent] alive: tests still running (60s elapsed)
+[xcode-test-agent] alive: tests still running (80s elapsed)
+STATUS: SUCCESS
+SCHEME: App
+DESTINATION: platform=iOS Simulator,name=Shared iPhone 2
+TESTS: total=3 failed=0
+
+ERRORS:
+DrawingCompositionUITests.testNativeControlsCreateADrawingWithoutCanvasGestures(): Invalid frame dimension (negative or non-finite).
+NativeKeyboardDiagnosticUITests.testPresentedNativeFormWithSingleKeyboardItem(): Invalid frame dimension (negative or non-finite).
+WidgetHistoryDescriptionUITests.testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory(): Invalid frame dimension (negative or non-finite).
+
+TEST FAILURES:
+DrawingCompositionUITests.testNativeControlsCreateADrawingWithoutCanvasGestures(): Invalid frame dimension (negative or non-finite).
+NativeKeyboardDiagnosticUITests.testPresentedNativeFormWithSingleKeyboardItem(): Invalid frame dimension (negative or non-finite).
+WidgetHistoryDescriptionUITests.testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory(): Invalid frame dimension (negative or non-finite).
+
+
+SUMMARY: SUCCESS queued=0s compiled=9s tested=83s simulator="Shared iPhone 2"

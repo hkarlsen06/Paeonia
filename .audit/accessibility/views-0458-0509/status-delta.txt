@@ -1,0 +1,12 @@
+--- 
++++ 
+@@ -404,6 +404,9 @@
+ ?? .audit/accessibility/unit-0256/original-bundle-paths.txt
+ ?? .audit/accessibility/unit-0256/results.tsv
+ ?? .audit/accessibility/verification-0256-0317.txt
++?? .audit/accessibility/widget-description-version-before.txt
++?? .audit/accessibility/widget-description-version-candidate.txt
++?? .audit/accessibility/widget-description-version-repro.swift
+ ?? .audit/accessibility/widget-isolation-after.txt
+ ?? .audit/accessibility/widget-isolation-before.txt
+ ?? .audit/accessibility/widget-isolation-probe.swift

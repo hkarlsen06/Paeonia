@@ -1,0 +1,37 @@
+Type: 1
+Contrast failed
+Contrast failed for SwiftUI.AccessibilityNode
+Element: Attributes: StaticText, 0x10a7648c0, {{115.7, 232.3}, {62.7, 44.0}}, label: 'Story'
+Element subtree:
+ →StaticText, 0x10a7648c0, {{115.7, 232.3}, {62.7, 44.0}}, label: 'Story'
+Path to element:
+ →Application, 0x109472a80, pid: 15835, label: 'Paeonia'
+  ↳Window (Main), 0x109471180, {{0.0, 0.0}, {402.0, 874.0}}
+   ↳Other, 0x109470dc0, {{0.0, 0.0}, {402.0, 874.0}}
+    ↳Other, 0x1094712c0, {{0.0, 0.0}, {402.0, 874.0}}
+     ↳Other, 0x109471cc0, {{0.0, 0.0}, {402.0, 874.0}}
+      ↳Other, 0x109471b80, {{0.0, 0.0}, {402.0, 874.0}}
+       ↳Other, 0x109471040, {{0.0, 0.0}, {402.0, 874.0}}
+        ↳Other, 0x109471400, {{0.0, 0.0}, {402.0, 874.0}}
+         ↳Other, 0x109471540, {{0.0, 0.0}, {402.0, 874.0}}
+          ↳Other, 0x109471e00, {{0.0, 0.0}, {402.0, 874.0}}
+           ↳Other, 0x109471f40, {{0.0, 0.0}, {402.0, 874.0}}
+            ↳Other, 0x1094721c0, {{0.0, 0.0}, {402.0, 874.0}}
+             ↳Other, 0x109472580, {{0.0, 0.0}, {402.0, 874.0}}
+              ↳Other, 0x109472440, {{0.0, 0.0}, {402.0, 874.0}}
+               ↳Other, 0x109471a40, {{0.0, 0.0}, {402.0, 874.0}}
+                ↳Other, 0x109472300, {{0.0, 0.0}, {402.0, 874.0}}
+                 ↳Other, 0x109472080, {{0.0, 0.0}, {402.0, 874.0}}
+                  ↳ScrollView, 0x10a764000, {{0.0, 0.0}, {402.0, 874.0}}
+                   ↳Other, 0x10a764140, {{0.0, 0.0}, {402.0, 784.3}}
+                    ↳Button, 0x10a764780, {{115.7, 232.3}, {62.7, 44.0}}, identifier: 'stories.add', label: 'Add to your story'
+                     ↳StaticText, 0x10a7648c0, {{115.7, 232.3}, {62.7, 44.0}}, label: 'Story'
+Query chain:
+ →Find: Target Application 'no.paeonia.app'
+  Output: {
+    Application, 0x112930500, pid: 15835, label: 'Paeonia'
+  }
+  ↪︎Find: Descendant with identity binding to AX element pid: 15835, elementOrHash.elementID: 4407775456.85
+    Output: {
+      StaticText, 0x1094726c0, {{115.7, 232.3}, {62.7, 44.0}}, label: 'Story'
+    }

@@ -1,0 +1,13 @@
+{
+  "wrapperPID": 88057,
+  "start": 1793510746.3062341,
+  "argv": [
+    "--ui",
+    "--",
+    "-collect-test-diagnostics",
+    "never",
+    "-only-testing:PaeoniaAppUITests/WidgetHistoryDescriptionUITests",
+    "-only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testMemoryAudit"
+  ],
+  "consolePID": 88056
+}

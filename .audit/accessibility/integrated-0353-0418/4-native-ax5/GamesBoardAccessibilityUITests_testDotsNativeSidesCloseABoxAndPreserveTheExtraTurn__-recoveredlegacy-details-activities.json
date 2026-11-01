@@ -1,0 +1,3965 @@
+{
+  "activitySummaries": [
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": [
+        {
+          "filename": "kXCTAttachmentScreenRecording_0_86832783-8D1C-4A34-A53A-E2C0DBB6E8CE.mp4",
+          "inActivityIdentifier": "0",
+          "lifetime": "deleteOnSuccess",
+          "name": "kXCTAttachmentScreenRecording",
+          "payloadRef": {
+            "id": "0~o_nqTXBt3NKyDbnqdNUO86dScL9bnMouMhgUvKbKLD6sLbGGs3VSnaqlC4JVIxHAg0CBrEixChrPh66B74blkw=="
+          },
+          "payloadSize": "30367349",
+          "timestamp": "2026-11-01T04:13:47.209+0100",
+          "uniformTypeIdentifier": "public.mpeg-4",
+          "userInfo": {
+            "storage": [
+              {
+                "key": "initialDeviceOrientation",
+                "value": "0"
+              },
+              {
+                "key": "initialInterfaceOrientation",
+                "value": "1"
+              },
+              {
+                "key": "scale",
+                "value": "3"
+              }
+            ]
+          },
+          "uuid": "3A87AAF8-26B0-49B0-A487-D0570FF53CE2"
+        }
+      ],
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:47.211+0100",
+      "start": "2026-11-01T04:13:47.192+0100",
+      "subactivities": {},
+      "title": "Start Test at 2026-11-01 04:13:47.192",
+      "uuid": "86832783-8D1C-4A34-A53A-E2C0DBB6E8CE",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:47.212+0100",
+      "start": "2026-11-01T04:13:47.212+0100",
+      "subactivities": {},
+      "title": "Set Up",
+      "uuid": "86A2DFFC-0628-4D08-A5B9-99381CE4DDC2",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:52.275+0100",
+      "start": "2026-11-01T04:13:47.214+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:52.275+0100",
+          "start": "2026-11-01T04:13:47.216+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:50.019+0100",
+              "start": "2026-11-01T04:13:47.425+0100",
+              "subactivities": {},
+              "title": "Setting up automation session",
+              "uuid": "B3B216D7-2F45-4A7C-8A06-4F50A4B472A5",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:51.269+0100",
+              "start": "2026-11-01T04:13:50.019+0100",
+              "subactivities": {},
+              "title": "Wait for no.paeonia.app to idle",
+              "uuid": "5EE72484-EA8F-42E3-88C6-CC6155B97A9E",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Launch no.paeonia.app",
+          "uuid": "AB38E783-B9C7-4D49-BEC5-F035114484BB",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Open no.paeonia.app",
+      "uuid": "1DA44D0E-776B-484A-A3BE-091B6E018B0A",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:54.330+0100",
+      "start": "2026-11-01T04:13:52.276+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Debug description for `\"games.tutorial.next\" Button`_0_F5A31653-BB55-439F-BD94-BD5E6CF4CC35.txt",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "Debug description for `\"games.tutorial.next\" Button`",
+              "payloadRef": {
+                "id": "0~Y6q1pdzEQm83pWCb4amFDB8KEBTHas1bixUvmg9GmHPwg-82JWzWZfWvh08pVjALgR3bZNSSGApCebm1hN7iGQ=="
+              },
+              "payloadSize": "189",
+              "timestamp": "2026-11-01T04:13:53.444+0100",
+              "uniformTypeIdentifier": "public.plain-text",
+              "uuid": "AE7010AB-34A2-4EBB-92AC-25B618B92640"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:53.445+0100",
+          "start": "2026-11-01T04:13:53.280+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:53.444+0100",
+              "start": "2026-11-01T04:13:53.281+0100",
+              "subactivities": {},
+              "title": "Checking existence of `\"games.tutorial.next\" Button`",
+              "uuid": "684FEEA3-F91B-44DB-B660-0AC03EA0ED9A",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:53.444+0100",
+              "start": "2026-11-01T04:13:53.444+0100",
+              "subactivities": {},
+              "title": "Capturing element debug description",
+              "uuid": "76D6D664-8A3D-4137-B760-44A44AA098C1",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`",
+          "uuid": "F5A31653-BB55-439F-BD94-BD5E6CF4CC35",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Debug description for `\"games.tutorial.next\" Button`_0_3E0E47F6-054C-4A63-BDD5-54FA51F71306.txt",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "Debug description for `\"games.tutorial.next\" Button`",
+              "payloadRef": {
+                "id": "0~Y6q1pdzEQm83pWCb4amFDB8KEBTHas1bixUvmg9GmHPwg-82JWzWZfWvh08pVjALgR3bZNSSGApCebm1hN7iGQ=="
+              },
+              "payloadSize": "189",
+              "timestamp": "2026-11-01T04:13:54.305+0100",
+              "uniformTypeIdentifier": "public.plain-text",
+              "uuid": "886E731F-1D6E-4244-9739-45D048502E45"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:54.305+0100",
+          "start": "2026-11-01T04:13:54.277+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:54.304+0100",
+              "start": "2026-11-01T04:13:54.278+0100",
+              "subactivities": {},
+              "title": "Checking existence of `\"games.tutorial.next\" Button`",
+              "uuid": "68F0B628-DB3C-4A4D-B24F-1A60CB69A94B",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:54.305+0100",
+              "start": "2026-11-01T04:13:54.305+0100",
+              "subactivities": {},
+              "title": "Capturing element debug description",
+              "uuid": "22A301BE-5718-4B1A-8423-D1E90852795C",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`",
+          "uuid": "3E0E47F6-054C-4A63-BDD5-54FA51F71306",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:54.330+0100",
+          "start": "2026-11-01T04:13:54.305+0100",
+          "subactivities": {},
+          "title": "Checking existence of `\"games.tutorial.next\" Button`",
+          "uuid": "6BF32281-D8B5-4C50-8036-39D106AF166B",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Waiting 2.0s for \"games.tutorial.next\" Button to exist",
+      "uuid": "FC87DDC1-7628-4DC6-BD82-BD860B6FAD30",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": [
+        {
+          "filename": "App UI hierarchy for no.paeonia_0_653EFCCA-5B8D-4639-A218-8FC56168FE24.app",
+          "inActivityIdentifier": "0",
+          "lifetime": "deleteOnSuccess",
+          "name": "App UI hierarchy for no.paeonia.app",
+          "payloadRef": {
+            "id": "0~zJ4fb-XVEsUQk4KveeMbc2LiAeTfwi3Q_gLyoIgjZ9W6ZFLmCSYxfiv6fb1bJdpKCDvNmjxu0HOVJV8wAo8LIw=="
+          },
+          "payloadSize": "11187",
+          "timestamp": "2026-11-01T04:13:54.364+0100",
+          "uniformTypeIdentifier": "public.plain-text",
+          "uuid": "F57352D0-C3D8-4A0F-AAC1-C9D5847B518F"
+        },
+        {
+          "filename": "Snapshot_1_653EFCCA-5B8D-4639-A218-8FC56168FE24",
+          "inActivityIdentifier": "1",
+          "lifetime": "deleteOnSuccess",
+          "name": "kXCTAttachmentLegacySnapshot",
+          "payloadRef": {
+            "id": "0~b-lJKkZzc-OZTxl379XT5Bp0EDjRIFW09iHOO34UQKl3XoQvks2BPf5O-XBonzzhSobwaclaY4qAEfp98uShoQ=="
+          },
+          "payloadSize": "45741",
+          "timestamp": "2026-11-01T04:13:54.364+0100",
+          "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+          "uuid": "1F7E253F-E2EF-44BE-BA28-CBAC49768666"
+        }
+      ],
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:54.368+0100",
+      "start": "2026-11-01T04:13:54.331+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:54.364+0100",
+          "start": "2026-11-01T04:13:54.331+0100",
+          "subactivities": {},
+          "title": "Requesting snapshot of accessibility hierarchy for app with pid 96792",
+          "uuid": "076176BC-EC3C-4397-98A2-41A1CE3FA2CB",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Collecting debug information to assist test failure triage",
+      "uuid": "653EFCCA-5B8D-4639-A218-8FC56168FE24",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:55.410+0100",
+      "start": "2026-11-01T04:13:54.369+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:55.410+0100",
+          "start": "2026-11-01T04:13:55.384+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:55.410+0100",
+              "start": "2026-11-01T04:13:55.384+0100",
+              "subactivities": {},
+              "title": "Checking existence of `\"games.board.controls\" Button`",
+              "uuid": "F88A719A-721C-4113-8009-0159E3E430D1",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Checking `Expect predicate `existsNoRetry == 1` for object \"games.board.controls\" Button`",
+          "uuid": "72BF6271-1CA0-403C-B0EC-CBC67EE67C74",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Waiting 5.0s for \"games.board.controls\" Button to exist",
+      "uuid": "2679FEF3-7F24-4F3E-B397-F21884E1D3FA",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:56.288+0100",
+      "start": "2026-11-01T04:13:55.411+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:55.413+0100",
+          "start": "2026-11-01T04:13:55.411+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "A4851E95-5D29-431B-A09D-8B9042A23DC5",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:55.439+0100",
+          "start": "2026-11-01T04:13:55.414+0100",
+          "subactivities": {},
+          "title": "Find the \"games.board.controls\" Button",
+          "uuid": "ABC20BE0-C8E3-4D07-96DB-28459DE2E256",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:55.465+0100",
+          "start": "2026-11-01T04:13:55.441+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"games.board.controls\" Button",
+          "uuid": "B33312A3-BA6D-4BA7-AF6E-FA0D91EC3EAA",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_DF7C839B-E1AE-4028-A3C1-37FE0AF21177",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~b-lJKkZzc-OZTxl379XT5Bp0EDjRIFW09iHOO34UQKl3XoQvks2BPf5O-XBonzzhSobwaclaY4qAEfp98uShoQ=="
+              },
+              "payloadSize": "45741",
+              "timestamp": "2026-11-01T04:13:55.468+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "276FC33D-3FD9-41A6-8B8B-7DCAA7E467B0"
+            },
+            {
+              "filename": "SynthesizedEvent_1_DF7C839B-E1AE-4028-A3C1-37FE0AF21177",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~nIpCvohF1ueHht6d3vBJHSbM3W0_vrE0Z-lVgXknmVdlkH3elHfk0u5ZIhT-9lvnAA10NWYLpFuUre9_n7nNqw=="
+              },
+              "payloadSize": "1905",
+              "timestamp": "2026-11-01T04:13:55.790+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "40C77F7C-167A-440D-B148-335B785AE0C1"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:55.790+0100",
+          "start": "2026-11-01T04:13:55.466+0100",
+          "subactivities": {},
+          "title": "Synthesize event",
+          "uuid": "DF7C839B-E1AE-4028-A3C1-37FE0AF21177",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:56.288+0100",
+          "start": "2026-11-01T04:13:55.791+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "10903996-5A76-454E-A3D4-4475CD36A18C",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Tap \"games.board.controls\" Button",
+      "uuid": "34E7BC31-FA2B-4E63-91CB-BF13C9374B58",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.406+0100",
+      "start": "2026-11-01T04:13:56.288+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:57.406+0100",
+          "start": "2026-11-01T04:13:57.317+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:57.406+0100",
+              "start": "2026-11-01T04:13:57.319+0100",
+              "subactivities": {},
+              "title": "Checking existence of `\"games.board.controls.close\" Button`",
+              "uuid": "1E865D91-01B6-4E66-9090-B66237F81197",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Checking `Expect predicate `existsNoRetry == 1` for object \"games.board.controls.close\" Button`",
+          "uuid": "AF25544A-45B7-4578-8162-66B58111637A",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Waiting 5.0s for \"games.board.controls.close\" Button to exist",
+      "uuid": "8A7CCBBA-16A2-4513-851B-97214891B24E",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.410+0100",
+      "start": "2026-11-01T04:13:57.407+0100",
+      "subactivities": {},
+      "title": "Find the Window (First Match)",
+      "uuid": "B399C6F3-CCBB-4D55-A4A4-CBC65B96E5D7",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.451+0100",
+      "start": "2026-11-01T04:13:57.414+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type NavigationBar",
+      "uuid": "3C1715AD-0B1C-4792-9BF9-46230416F1B1",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.485+0100",
+      "start": "2026-11-01T04:13:57.451+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 0)",
+      "uuid": "6139559C-1498-4171-8311-C91C59A814F1",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.542+0100",
+      "start": "2026-11-01T04:13:57.511+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 1)",
+      "uuid": "284F3083-DF1F-41F4-883F-9D80071B64B1",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.586+0100",
+      "start": "2026-11-01T04:13:57.556+0100",
+      "subactivities": {},
+      "title": "Find the \"Board controls\" NavigationBar",
+      "uuid": "4FDE50FD-8BAA-4AA4-B283-FBFE8320D1EF",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.619+0100",
+      "start": "2026-11-01T04:13:57.589+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type TabBar",
+      "uuid": "39BEA235-32CE-4862-B2EC-1F54BCF0D445",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.689+0100",
+      "start": "2026-11-01T04:13:57.619+0100",
+      "subactivities": {},
+      "title": "Checking existence of `Keyboard (First Match)`",
+      "uuid": "CB8AF2E6-32AE-4A53-BCD1-0BFBDD5F8128",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.832+0100",
+      "start": "2026-11-01T04:13:57.689+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box\" Any`",
+      "uuid": "C0233AC8-8A5A-4C06-810C-7AB7980A8114",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:57.971+0100",
+      "start": "2026-11-01T04:13:57.832+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box\" Any",
+      "uuid": "D3D069DC-7937-4EDD-B6C9-A4E747126678",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:58.120+0100",
+      "start": "2026-11-01T04:13:57.980+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box\" Button",
+      "uuid": "76F789E7-A548-4B71-B021-F95F9EF7C32C",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:58.263+0100",
+      "start": "2026-11-01T04:13:58.123+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box\" Button",
+      "uuid": "3A9A9271-BFB9-4EDE-96CE-C631D433042F",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.158+0100",
+      "start": "2026-11-01T04:13:58.267+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:58.269+0100",
+          "start": "2026-11-01T04:13:58.267+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "3AA209D3-8A97-4BF8-B6FB-E4258CFE1EBF",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:58.411+0100",
+          "start": "2026-11-01T04:13:58.269+0100",
+          "subactivities": {},
+          "title": "Find the \"dotsAndBoxes.native.box\" Button",
+          "uuid": "2F611788-8DB3-4003-909E-936A076CE1FD",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:58.447+0100",
+          "start": "2026-11-01T04:13:58.411+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"dotsAndBoxes.native.box\" Button",
+          "uuid": "D73F16EC-9467-42A0-8F41-0E7099E8B052",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_FA2D8BEA-35B8-4419-99E6-7935CD30835D",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~b-lJKkZzc-OZTxl379XT5Bp0EDjRIFW09iHOO34UQKl3XoQvks2BPf5O-XBonzzhSobwaclaY4qAEfp98uShoQ=="
+              },
+              "payloadSize": "45741",
+              "timestamp": "2026-11-01T04:13:58.467+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "D833A1BE-62A9-4E62-A648-86ABA4D23222"
+            },
+            {
+              "filename": "SynthesizedEvent_1_FA2D8BEA-35B8-4419-99E6-7935CD30835D",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~MieFIFbUAUdgRGb5QgnigQeViGCEHD_PfjtznfNOxVRYqqQCGFaZ_7h2nXxIBOMx6zSF5Nx_azL3LwZqCQnvDw=="
+              },
+              "payloadSize": "1881",
+              "timestamp": "2026-11-01T04:13:58.763+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "12803E10-36F4-472D-BDBD-5E795C258A8A"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:58.763+0100",
+          "start": "2026-11-01T04:13:58.465+0100",
+          "subactivities": {},
+          "title": "Synthesize event",
+          "uuid": "FA2D8BEA-35B8-4419-99E6-7935CD30835D",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:59.158+0100",
+          "start": "2026-11-01T04:13:58.764+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "9EC9B32D-82F6-4A11-A4E7-0E44700664FB",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Tap \"dotsAndBoxes.native.box\" Button",
+      "uuid": "1CB8F47F-9700-48DE-84D5-69EF311FABDE",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.162+0100",
+      "start": "2026-11-01T04:13:59.158+0100",
+      "subactivities": {},
+      "title": "Find the Window (First Match)",
+      "uuid": "0D5B24B3-1543-43F8-9F6C-2D5A00509BC8",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.212+0100",
+      "start": "2026-11-01T04:13:59.172+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type NavigationBar",
+      "uuid": "0EAF615C-F2DF-4C93-A579-09A10DB8A687",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.243+0100",
+      "start": "2026-11-01T04:13:59.212+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 0)",
+      "uuid": "202EC95E-43AE-44EA-85F3-5C5585F26192",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.318+0100",
+      "start": "2026-11-01T04:13:59.283+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 1)",
+      "uuid": "8624BA53-309D-487D-9EC1-0BE175E2B895",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.371+0100",
+      "start": "2026-11-01T04:13:59.334+0100",
+      "subactivities": {},
+      "title": "Find the \"Choose a box\" NavigationBar",
+      "uuid": "382AF0A5-6724-4AF1-8656-1EDDC7C1FA29",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.405+0100",
+      "start": "2026-11-01T04:13:59.374+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type TabBar",
+      "uuid": "F53CBE6C-249E-4BEE-A7CB-CF83B2511E52",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.476+0100",
+      "start": "2026-11-01T04:13:59.405+0100",
+      "subactivities": {},
+      "title": "Checking existence of `Keyboard (First Match)`",
+      "uuid": "17900378-3657-489C-ACCA-DF19CC755848",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.628+0100",
+      "start": "2026-11-01T04:13:59.476+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`",
+      "uuid": "B43F51AA-ECBD-49B4-AC74-EA57741B3D86",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:13:59.778+0100",
+      "start": "2026-11-01T04:13:59.628+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`",
+      "uuid": "4EB70BE2-7377-40BC-80D9-428DF37581E5",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:02.837+0100",
+      "start": "2026-11-01T04:13:59.778+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:59.781+0100",
+          "start": "2026-11-01T04:13:59.778+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "E55F6806-EC41-4C26-B696-DD6439B17B42",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:59.809+0100",
+          "start": "2026-11-01T04:13:59.781+0100",
+          "subactivities": {},
+          "title": "Find the Target Application 'no.paeonia.app'",
+          "uuid": "6EC6A096-F7B8-4C4E-BF0E-B977D8DD656C",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:13:59.848+0100",
+          "start": "2026-11-01T04:13:59.812+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"Paeonia\" Application",
+          "uuid": "25380C9A-8FEA-423C-A298-CDE722C9CA58",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_C8E24DB1-AC03-4168-A7B9-E0344227841F",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~KrhjY1qPi30IqbZJyyhqyLMShpkYsVaYJ9WQQeBnzYYu9xBDmXsCIFTIkJ0syBgd56jJNu6mj-m6AoxG6qolSA=="
+              },
+              "payloadSize": "1299",
+              "timestamp": "2026-11-01T04:13:59.850+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "7738197E-0190-4CF7-99BE-CD86B034E0B3"
+            },
+            {
+              "filename": "SynthesizedEvent_1_C8E24DB1-AC03-4168-A7B9-E0344227841F",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~saRFSBGh-olHn-e4DjwFxKCxLzSAiT6CaiQXRq4TOQVUoegRSWrpCrb4c62lvaZYFRdt-qbZvte8gEA4cIcX3A=="
+              },
+              "payloadSize": "2684",
+              "timestamp": "2026-11-01T04:14:01.286+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "6E6791CB-71DF-4069-AF61-A22559F3CE88"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:01.287+0100",
+          "start": "2026-11-01T04:13:59.848+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:59.878+0100",
+              "start": "2026-11-01T04:13:59.850+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "569525CC-7A5C-4F4F-B242-D6040539E2C6",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:59.908+0100",
+              "start": "2026-11-01T04:13:59.880+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "70932942-474A-466F-99D8-B21E35287114",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:59.939+0100",
+              "start": "2026-11-01T04:13:59.911+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "3AC6440D-B1E0-4574-A9C6-FE77F8D3F240",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:13:59.966+0100",
+              "start": "2026-11-01T04:13:59.940+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "ECF909B9-8810-4483-A6FA-88B3B87D9A26",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:00.001+0100",
+              "start": "2026-11-01T04:13:59.971+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "86C008B3-F2FC-4356-860D-B9C3C84D2FE9",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Synthesize event",
+          "uuid": "C8E24DB1-AC03-4168-A7B9-E0344227841F",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:02.836+0100",
+          "start": "2026-11-01T04:14:01.287+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "5D41720F-326F-4522-801B-6E6F5E0097F9",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds ",
+      "uuid": "935E30A7-495E-4FEF-8296-450583578B08",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:03.028+0100",
+      "start": "2026-11-01T04:14:02.837+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`",
+      "uuid": "15DE527E-74CD-4E58-8881-8233A051F69F",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:03.199+0100",
+      "start": "2026-11-01T04:14:03.028+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`",
+      "uuid": "4A96F6F9-793F-4869-A56D-E44AC7B00FAA",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:06.225+0100",
+      "start": "2026-11-01T04:14:03.199+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:03.202+0100",
+          "start": "2026-11-01T04:14:03.199+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "F3A029CC-4847-4FE5-A31B-C4602B221303",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:03.233+0100",
+          "start": "2026-11-01T04:14:03.202+0100",
+          "subactivities": {},
+          "title": "Find the Target Application 'no.paeonia.app'",
+          "uuid": "74C483EF-2655-402F-B6F8-3E652B44C87A",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:03.275+0100",
+          "start": "2026-11-01T04:14:03.236+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"Paeonia\" Application",
+          "uuid": "19D9E2B8-1EAF-468D-9AF7-F8276F944C35",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_3BA37E76-3698-43DD-802B-4795B0BACD2B",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~KrhjY1qPi30IqbZJyyhqyLMShpkYsVaYJ9WQQeBnzYYu9xBDmXsCIFTIkJ0syBgd56jJNu6mj-m6AoxG6qolSA=="
+              },
+              "payloadSize": "1299",
+              "timestamp": "2026-11-01T04:14:03.277+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "851940AD-5BCB-409A-A062-8A24EC3DBD6D"
+            },
+            {
+              "filename": "SynthesizedEvent_1_3BA37E76-3698-43DD-802B-4795B0BACD2B",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~saRFSBGh-olHn-e4DjwFxKCxLzSAiT6CaiQXRq4TOQVUoegRSWrpCrb4c62lvaZYFRdt-qbZvte8gEA4cIcX3A=="
+              },
+              "payloadSize": "2684",
+              "timestamp": "2026-11-01T04:14:04.707+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "00A069C1-6669-4B3C-8DDB-DF57C0D1EF69"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:04.708+0100",
+          "start": "2026-11-01T04:14:03.275+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:03.308+0100",
+              "start": "2026-11-01T04:14:03.277+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "96B6359C-CAE2-45E6-A8FA-083CE686EB3E",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:03.339+0100",
+              "start": "2026-11-01T04:14:03.309+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "84D1968E-6942-49A9-9699-30395AE72043",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:03.373+0100",
+              "start": "2026-11-01T04:14:03.343+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "4BB30D4D-3342-4637-A898-3476114E9FA5",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:03.402+0100",
+              "start": "2026-11-01T04:14:03.374+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "4D997EDF-8EBB-4989-8599-0C06CBB44611",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:03.434+0100",
+              "start": "2026-11-01T04:14:03.407+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "4D36807D-DB76-4669-9B06-4BB7414048A4",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Synthesize event",
+          "uuid": "3BA37E76-3698-43DD-802B-4795B0BACD2B",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:06.224+0100",
+          "start": "2026-11-01T04:14:04.708+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "0BB07F96-E342-4D44-88F3-95D4E6E5A8A4",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds ",
+      "uuid": "44402E16-E39A-4807-BD2A-B4CF3D3618DB",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:06.417+0100",
+      "start": "2026-11-01T04:14:06.225+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`",
+      "uuid": "C4E7634A-761B-4295-B507-EAE325E3C4E0",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:06.584+0100",
+      "start": "2026-11-01T04:14:06.418+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`",
+      "uuid": "16F0F859-CBDC-4451-9C34-144B6F7244DC",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:09.601+0100",
+      "start": "2026-11-01T04:14:06.585+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:06.588+0100",
+          "start": "2026-11-01T04:14:06.585+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "863C0955-CFF9-489E-95B7-2309CE94D275",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:06.618+0100",
+          "start": "2026-11-01T04:14:06.588+0100",
+          "subactivities": {},
+          "title": "Find the Target Application 'no.paeonia.app'",
+          "uuid": "7CA6DADD-8E8E-4C66-8FE5-686687E12AEF",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:06.657+0100",
+          "start": "2026-11-01T04:14:06.623+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"Paeonia\" Application",
+          "uuid": "B854F747-FB75-4D69-BB70-8B997FCAC83A",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_7D1A0E31-2CBF-48D6-9600-FEEAD48DAE34",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~KrhjY1qPi30IqbZJyyhqyLMShpkYsVaYJ9WQQeBnzYYu9xBDmXsCIFTIkJ0syBgd56jJNu6mj-m6AoxG6qolSA=="
+              },
+              "payloadSize": "1299",
+              "timestamp": "2026-11-01T04:14:06.660+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "FD8516B0-C6EC-46CA-BB0C-C9B822392BC6"
+            },
+            {
+              "filename": "SynthesizedEvent_1_7D1A0E31-2CBF-48D6-9600-FEEAD48DAE34",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~saRFSBGh-olHn-e4DjwFxKCxLzSAiT6CaiQXRq4TOQVUoegRSWrpCrb4c62lvaZYFRdt-qbZvte8gEA4cIcX3A=="
+              },
+              "payloadSize": "2684",
+              "timestamp": "2026-11-01T04:14:08.086+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "3D3EB06E-D8EF-4E4A-AFAE-CDF51A2B677D"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:08.086+0100",
+          "start": "2026-11-01T04:14:06.658+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:06.689+0100",
+              "start": "2026-11-01T04:14:06.660+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "3609DB85-00B0-4079-8A8F-299AB3D5E0F9",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:06.720+0100",
+              "start": "2026-11-01T04:14:06.690+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "9E8148C6-88E8-4ADB-AF90-B3E8977DB48A",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:06.752+0100",
+              "start": "2026-11-01T04:14:06.724+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "076B023C-8307-4AAF-B134-24274CA3B8E0",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:06.781+0100",
+              "start": "2026-11-01T04:14:06.753+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "A747EA9F-6161-42BD-9268-897558D82310",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:06.813+0100",
+              "start": "2026-11-01T04:14:06.786+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "D6E221E5-3B2B-4BAC-85A6-74E082841BF6",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Synthesize event",
+          "uuid": "7D1A0E31-2CBF-48D6-9600-FEEAD48DAE34",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:09.600+0100",
+          "start": "2026-11-01T04:14:08.086+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "2D76E660-FA8A-4C94-9F15-C4E83E4640B3",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds ",
+      "uuid": "C2519526-AEB9-4E2E-A732-832D3CF434CD",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:09.764+0100",
+      "start": "2026-11-01T04:14:09.601+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`",
+      "uuid": "E1D94273-319C-40FE-B324-5E445EDACA55",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:09.924+0100",
+      "start": "2026-11-01T04:14:09.764+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`",
+      "uuid": "AEFD91C8-BA0A-4EA1-AC58-35F25B84C691",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:12.936+0100",
+      "start": "2026-11-01T04:14:09.925+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:09.927+0100",
+          "start": "2026-11-01T04:14:09.925+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "875C4686-B1C5-4AB0-9F48-210769DD37DA",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:09.957+0100",
+          "start": "2026-11-01T04:14:09.927+0100",
+          "subactivities": {},
+          "title": "Find the Target Application 'no.paeonia.app'",
+          "uuid": "2A98D332-E8B2-4538-8F7F-F10D0310D177",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:09.998+0100",
+          "start": "2026-11-01T04:14:09.961+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"Paeonia\" Application",
+          "uuid": "866BBA8E-D96C-401B-B1FE-E93EB42570BF",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_96E2F9EF-DA75-43AF-B4AD-60578F247741",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~KrhjY1qPi30IqbZJyyhqyLMShpkYsVaYJ9WQQeBnzYYu9xBDmXsCIFTIkJ0syBgd56jJNu6mj-m6AoxG6qolSA=="
+              },
+              "payloadSize": "1299",
+              "timestamp": "2026-11-01T04:14:10.000+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "326E917E-68D5-4EC2-97D0-1F79CE7DB7A9"
+            },
+            {
+              "filename": "SynthesizedEvent_1_96E2F9EF-DA75-43AF-B4AD-60578F247741",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~saRFSBGh-olHn-e4DjwFxKCxLzSAiT6CaiQXRq4TOQVUoegRSWrpCrb4c62lvaZYFRdt-qbZvte8gEA4cIcX3A=="
+              },
+              "payloadSize": "2684",
+              "timestamp": "2026-11-01T04:14:11.424+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "A55A7A02-C7CF-40E2-B151-37AEF75270C3"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:11.425+0100",
+          "start": "2026-11-01T04:14:09.998+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:10.030+0100",
+              "start": "2026-11-01T04:14:10.000+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "F4C3C17B-3245-418C-A9FF-EF0699A35FE2",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:10.061+0100",
+              "start": "2026-11-01T04:14:10.031+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "C0270AF7-29DF-47F9-8C08-6B5E424EB294",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:10.093+0100",
+              "start": "2026-11-01T04:14:10.065+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "C1C554F3-5748-49F3-A6CE-CE5AA97C3BC1",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:10.121+0100",
+              "start": "2026-11-01T04:14:10.094+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "FADEB425-CF69-4E15-9333-DDE3D14A2A51",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:10.153+0100",
+              "start": "2026-11-01T04:14:10.126+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "F992E055-D0D0-4021-9FA3-5FFD99AE6693",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Synthesize event",
+          "uuid": "96E2F9EF-DA75-43AF-B4AD-60578F247741",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:12.936+0100",
+          "start": "2026-11-01T04:14:11.426+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "96AA689F-31A9-4BAC-8EF2-242BC3CEBE29",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds ",
+      "uuid": "2325DA63-56EB-49C2-B73B-7BF9ACEBDF92",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:13.141+0100",
+      "start": "2026-11-01T04:14:12.936+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`",
+      "uuid": "3198BDAA-2105-43DB-B6D6-2A804081F2AB",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:13.334+0100",
+      "start": "2026-11-01T04:14:13.141+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box.11\" Any",
+      "uuid": "8AF50AAA-04E4-42B6-A2FF-04E79F8C241B",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:13.573+0100",
+      "start": "2026-11-01T04:14:13.347+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box.11\" Button",
+      "uuid": "E739B23F-ABDE-4D90-BCA1-641ABACB3156",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:13.746+0100",
+      "start": "2026-11-01T04:14:13.576+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box.11\" Button",
+      "uuid": "1B3D3853-C696-4674-8B0C-096DA0124C13",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:14.658+0100",
+      "start": "2026-11-01T04:14:13.749+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:13.752+0100",
+          "start": "2026-11-01T04:14:13.749+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "15EB2832-89F2-4388-AA23-6BBBD9A9A0E3",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:13.920+0100",
+          "start": "2026-11-01T04:14:13.752+0100",
+          "subactivities": {},
+          "title": "Find the \"dotsAndBoxes.native.box.11\" Button",
+          "uuid": "22937E21-E06B-43E9-A26A-6AABD8B909DF",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:13.962+0100",
+          "start": "2026-11-01T04:14:13.920+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"dotsAndBoxes.native.box.11\" Button",
+          "uuid": "8C861D62-8D05-41AD-A51D-921108BFB685",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_FF03BEB3-F28A-4388-94F1-30C38438F35B",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~vnGDEN4ssPtQ3Pz9GWPKgN6Wqn687MfPU3xhUQ-Utn3D8nufKwi4eTtolmsf9cEbxQ0EJfgGmFMwwRv65b3jtw=="
+              },
+              "payloadSize": "1213",
+              "timestamp": "2026-11-01T04:14:13.984+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "238D5A7D-9E51-4066-919D-9D2429E97BDE"
+            },
+            {
+              "filename": "SynthesizedEvent_1_FF03BEB3-F28A-4388-94F1-30C38438F35B",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~D0PH8xsfbZS7Ma2g1q6cIFeb1jJd_-9yVQDSQcAWDNx2bt8ClqQnfrIuWA26wkQjuBYzGPk6_QPOhkICnSWG9w=="
+              },
+              "payloadSize": "1893",
+              "timestamp": "2026-11-01T04:14:14.281+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "6142868C-6902-4253-BD58-D7B25A62C71F"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:14.281+0100",
+          "start": "2026-11-01T04:14:13.982+0100",
+          "subactivities": {},
+          "title": "Synthesize event",
+          "uuid": "FF03BEB3-F28A-4388-94F1-30C38438F35B",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:14.658+0100",
+          "start": "2026-11-01T04:14:14.281+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "779C57EC-6627-4C86-9F43-3C869E6418B0",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Tap \"dotsAndBoxes.native.box.11\" Button",
+      "uuid": "FDD49A67-B7C6-453B-ADAD-93E075ADAF61",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:14.667+0100",
+      "start": "2026-11-01T04:14:14.659+0100",
+      "subactivities": {},
+      "title": "Find the Window (First Match)",
+      "uuid": "2EA41B83-3CE7-4ECC-92C2-B73636959F7A",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:14.709+0100",
+      "start": "2026-11-01T04:14:14.676+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type NavigationBar",
+      "uuid": "F50DD960-96D0-480F-A8C0-ABC969625D70",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:14.739+0100",
+      "start": "2026-11-01T04:14:14.709+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 0)",
+      "uuid": "14115ACA-5226-4321-91C5-F5A892C91A3B",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:14.800+0100",
+      "start": "2026-11-01T04:14:14.768+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 1)",
+      "uuid": "10CC8A1A-EE9A-43B3-9F16-41D8D6CE918A",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:14.850+0100",
+      "start": "2026-11-01T04:14:14.815+0100",
+      "subactivities": {},
+      "title": "Find the \"Board controls\" NavigationBar",
+      "uuid": "65F7018F-0C94-48B2-8598-757939EE4F61",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:14.887+0100",
+      "start": "2026-11-01T04:14:14.853+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type TabBar",
+      "uuid": "E9140D23-312D-4829-BDC6-94E426FD3A6B",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:14.957+0100",
+      "start": "2026-11-01T04:14:14.887+0100",
+      "subactivities": {},
+      "title": "Checking existence of `Keyboard (First Match)`",
+      "uuid": "93F3118D-6498-43CF-872E-C0C074753ED9",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.003+0100",
+      "start": "2026-11-01T04:14:14.958+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.box.11.state\" StaticText`",
+      "uuid": "CE5944A8-DC62-4872-91FA-A6930471E7B5",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.045+0100",
+      "start": "2026-11-01T04:14:15.003+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.state\" StaticText",
+      "uuid": "89A82358-9B8A-4251-9BBE-5DBB3FE16387",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.098+0100",
+      "start": "2026-11-01T04:14:15.056+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.state\" StaticText",
+      "uuid": "618BDD96-F6FE-4EB4-8998-034CD7260AB7",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.141+0100",
+      "start": "2026-11-01T04:14:15.103+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.state\" StaticText",
+      "uuid": "9CA6D2B9-BC8B-4801-B5F9-7F65928F1468",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.184+0100",
+      "start": "2026-11-01T04:14:15.146+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.box.11.state\" StaticText`",
+      "uuid": "D30079CF-5EB2-4C38-9F26-ECE0FF4A99CE",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.186+0100",
+      "start": "2026-11-01T04:14:15.184+0100",
+      "subactivities": {},
+      "title": "Find the Window (First Match)",
+      "uuid": "CAF7DC59-D010-460E-98BA-C2A1081F5771",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.218+0100",
+      "start": "2026-11-01T04:14:15.189+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type NavigationBar",
+      "uuid": "EE8B3F91-37F5-4AB9-B130-FC47F8CEBE19",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.246+0100",
+      "start": "2026-11-01T04:14:15.218+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 0)",
+      "uuid": "86714945-6B0F-40B1-83AD-5288AC9F30D9",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.295+0100",
+      "start": "2026-11-01T04:14:15.268+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 1)",
+      "uuid": "574A37A4-38E0-4F9A-BA2A-CD8EADCCB07E",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.336+0100",
+      "start": "2026-11-01T04:14:15.308+0100",
+      "subactivities": {},
+      "title": "Find the \"Board controls\" NavigationBar",
+      "uuid": "C17E6B0B-6097-47D3-9C94-32732A56FDA5",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.367+0100",
+      "start": "2026-11-01T04:14:15.338+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type TabBar",
+      "uuid": "86E4334C-EF90-4B8B-8371-A43A2ACB36E2",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.434+0100",
+      "start": "2026-11-01T04:14:15.367+0100",
+      "subactivities": {},
+      "title": "Checking existence of `Keyboard (First Match)`",
+      "uuid": "57512AF3-9872-4607-A075-555D2BB004B8",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.473+0100",
+      "start": "2026-11-01T04:14:15.434+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`",
+      "uuid": "44B9DD20-4D88-42D0-8BF1-71AE714D7DF3",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:15.512+0100",
+      "start": "2026-11-01T04:14:15.474+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`",
+      "uuid": "9972B44A-9E72-4A83-BA92-FA2E8DCA5860",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:18.518+0100",
+      "start": "2026-11-01T04:14:15.512+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:15.516+0100",
+          "start": "2026-11-01T04:14:15.512+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "6F523D66-3BBA-4D12-9F48-E9B2AA0C30B8",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:15.542+0100",
+          "start": "2026-11-01T04:14:15.516+0100",
+          "subactivities": {},
+          "title": "Find the Target Application 'no.paeonia.app'",
+          "uuid": "066B7D41-912B-480D-8F45-030A3B30E466",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:15.581+0100",
+          "start": "2026-11-01T04:14:15.546+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"Paeonia\" Application",
+          "uuid": "076A4CEB-4AEC-4DEF-ADD1-DF1A26653137",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_48935440-C151-4458-8D03-7830E68BAE82",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~KrhjY1qPi30IqbZJyyhqyLMShpkYsVaYJ9WQQeBnzYYu9xBDmXsCIFTIkJ0syBgd56jJNu6mj-m6AoxG6qolSA=="
+              },
+              "payloadSize": "1299",
+              "timestamp": "2026-11-01T04:14:15.585+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "448C202D-E4CA-4DE3-8639-8F4EFD5B0319"
+            },
+            {
+              "filename": "SynthesizedEvent_1_48935440-C151-4458-8D03-7830E68BAE82",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~saRFSBGh-olHn-e4DjwFxKCxLzSAiT6CaiQXRq4TOQVUoegRSWrpCrb4c62lvaZYFRdt-qbZvte8gEA4cIcX3A=="
+              },
+              "payloadSize": "2684",
+              "timestamp": "2026-11-01T04:14:16.995+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "8619F5DE-3026-44C7-9C01-097B5EF93E5B"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:16.995+0100",
+          "start": "2026-11-01T04:14:15.582+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:15.611+0100",
+              "start": "2026-11-01T04:14:15.585+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "52841522-E3C7-4786-98E6-D98330F882E5",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:15.637+0100",
+              "start": "2026-11-01T04:14:15.612+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "6CDDC4B1-18F4-4308-A339-8947EECD74EC",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:15.667+0100",
+              "start": "2026-11-01T04:14:15.641+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "19FC8E97-D735-4A46-9463-E7E7DB0CE9DB",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:15.693+0100",
+              "start": "2026-11-01T04:14:15.668+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "2B7FCF3D-B44B-4422-8FA3-17DCC394C52B",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:15.722+0100",
+              "start": "2026-11-01T04:14:15.698+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "ADB1A8B8-738F-423D-812C-6151635A3625",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Synthesize event",
+          "uuid": "48935440-C151-4458-8D03-7830E68BAE82",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:18.518+0100",
+          "start": "2026-11-01T04:14:16.995+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "9490A59A-ABA2-4676-B6C1-77BAC4AC1CF5",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds ",
+      "uuid": "51B91D21-A315-4321-B7C0-0354A2347A8F",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:18.564+0100",
+      "start": "2026-11-01T04:14:18.518+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`",
+      "uuid": "58FB42DD-104B-4B73-B73E-B2760FD968D5",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:18.606+0100",
+      "start": "2026-11-01T04:14:18.564+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "313816FF-89B6-4047-920F-4FA777996566",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:18.659+0100",
+      "start": "2026-11-01T04:14:18.616+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "6B8D29A0-98C2-4474-9ECD-A99DDCF6DCB8",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:18.704+0100",
+      "start": "2026-11-01T04:14:18.664+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "F6794271-3801-493B-9582-F7F5612A725B",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:18.750+0100",
+      "start": "2026-11-01T04:14:18.710+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`",
+      "uuid": "930B68BF-19B3-47C2-A355-AE83D0042EBC",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:18.792+0100",
+      "start": "2026-11-01T04:14:18.751+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "5510F9D8-4670-465F-8733-23E18465D508",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:20.721+0100",
+      "start": "2026-11-01T04:14:18.795+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:18.797+0100",
+          "start": "2026-11-01T04:14:18.795+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "EBAA15A4-1B36-4586-BE20-D7DC808867F3",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:18.825+0100",
+          "start": "2026-11-01T04:14:18.798+0100",
+          "subactivities": {},
+          "title": "Find the Target Application 'no.paeonia.app'",
+          "uuid": "C50A12A2-26F6-4BEA-8952-6445EDF3EE49",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:18.864+0100",
+          "start": "2026-11-01T04:14:18.829+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"Paeonia\" Application",
+          "uuid": "042309D2-5B39-488C-820E-04B999639621",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_B366E7D7-8478-4C00-9817-755B6E0EF06C",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~KrhjY1qPi30IqbZJyyhqyLMShpkYsVaYJ9WQQeBnzYYu9xBDmXsCIFTIkJ0syBgd56jJNu6mj-m6AoxG6qolSA=="
+              },
+              "payloadSize": "1299",
+              "timestamp": "2026-11-01T04:14:18.866+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "A76136F4-DDE8-4000-8980-864B473A8556"
+            },
+            {
+              "filename": "SynthesizedEvent_1_B366E7D7-8478-4C00-9817-755B6E0EF06C",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~saRFSBGh-olHn-e4DjwFxKCxLzSAiT6CaiQXRq4TOQVUoegRSWrpCrb4c62lvaZYFRdt-qbZvte8gEA4cIcX3A=="
+              },
+              "payloadSize": "2684",
+              "timestamp": "2026-11-01T04:14:20.290+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "96BB06E8-78B4-4D44-95C1-87DC4D0FD703"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:20.291+0100",
+          "start": "2026-11-01T04:14:18.864+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:18.894+0100",
+              "start": "2026-11-01T04:14:18.866+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "ED37494F-8FE5-412C-ACED-2F41E76B2D53",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:18.922+0100",
+              "start": "2026-11-01T04:14:18.895+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "0F5FD4CF-DCB7-4C7A-B891-58D55DCBBC31",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:18.953+0100",
+              "start": "2026-11-01T04:14:18.926+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "AD6CD253-DBBB-4270-AF81-ECB6F6A021B5",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:18.982+0100",
+              "start": "2026-11-01T04:14:18.955+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "C1050AA8-C9C6-4B5A-819E-39468DAEBD71",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:19.015+0100",
+              "start": "2026-11-01T04:14:18.987+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "B5F62612-3EDD-4DD6-B7B6-82B96BF3974E",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Synthesize event",
+          "uuid": "B366E7D7-8478-4C00-9817-755B6E0EF06C",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:20.720+0100",
+          "start": "2026-11-01T04:14:20.291+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "0A2EAD51-6B09-444D-86B3-0D1FF4484D30",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds ",
+      "uuid": "A769BF7C-B8E2-4FDE-978C-7684C5A37841",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:20.776+0100",
+      "start": "2026-11-01T04:14:20.731+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`",
+      "uuid": "4E49F65C-E255-4156-8BA2-1E00BF3E58F9",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:20.818+0100",
+      "start": "2026-11-01T04:14:20.776+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "F9BF0714-1485-40E0-9C24-4E0855F641D8",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:20.869+0100",
+      "start": "2026-11-01T04:14:20.827+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "56A0561D-B5A8-48B6-B617-1ADAFFFE62E4",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:20.917+0100",
+      "start": "2026-11-01T04:14:20.874+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "675F9FD1-8264-4E0C-B75D-DD68410388D7",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:20.961+0100",
+      "start": "2026-11-01T04:14:20.920+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.state\" StaticText",
+      "uuid": "320656DE-B69B-4CD5-AABC-84A1B17A2499",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:21.005+0100",
+      "start": "2026-11-01T04:14:20.963+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "3AE69E58-E0C4-4A9D-BB07-199F6336E9B7",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:22.018+0100",
+      "start": "2026-11-01T04:14:21.007+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:21.010+0100",
+          "start": "2026-11-01T04:14:21.007+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "B04AE122-9F16-408E-B3AA-39738F2F3370",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:21.051+0100",
+          "start": "2026-11-01T04:14:21.010+0100",
+          "subactivities": {},
+          "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+          "uuid": "CC0D17BB-A2C2-41DE-BE45-E41F32E239E7",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:21.090+0100",
+          "start": "2026-11-01T04:14:21.053+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"dotsAndBoxes.box.11.side.3\" Button",
+          "uuid": "85674245-8655-4369-9ECC-BF4C76CA4AD7",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_759553D1-949C-4707-835D-D9F938E02C50",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~vnGDEN4ssPtQ3Pz9GWPKgN6Wqn687MfPU3xhUQ-Utn3D8nufKwi4eTtolmsf9cEbxQ0EJfgGmFMwwRv65b3jtw=="
+              },
+              "payloadSize": "1213",
+              "timestamp": "2026-11-01T04:14:21.093+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "A0C9BB4A-DC91-4E35-9961-C5620497B26B"
+            },
+            {
+              "filename": "SynthesizedEvent_1_759553D1-949C-4707-835D-D9F938E02C50",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~pFQnH2Ymm3UudG7PizBc6vcbA5G9ICztap8Gs_QbIVN-qxXsGbYfZAwx8qVRbyFuHUdAC_HN64XKZRS7aDvxMg=="
+              },
+              "payloadSize": "1893",
+              "timestamp": "2026-11-01T04:14:21.383+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "743A99A1-8371-4F80-9020-9DF007842495"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:21.383+0100",
+          "start": "2026-11-01T04:14:21.091+0100",
+          "subactivities": {},
+          "title": "Synthesize event",
+          "uuid": "759553D1-949C-4707-835D-D9F938E02C50",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:22.018+0100",
+          "start": "2026-11-01T04:14:21.383+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "89C320F7-1B89-451E-8D40-F9DEE4F4D9FE",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Tap \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "1D7D3421-5437-44E4-9AAD-D4AD04A9FA69",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.128+0100",
+      "start": "2026-11-01T04:14:23.051+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_57751517-00FD-4071-96E7-CA8D436802D3",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~vnGDEN4ssPtQ3Pz9GWPKgN6Wqn687MfPU3xhUQ-Utn3D8nufKwi4eTtolmsf9cEbxQ0EJfgGmFMwwRv65b3jtw=="
+              },
+              "payloadSize": "1213",
+              "timestamp": "2026-11-01T04:14:23.126+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "36916993-8081-430B-BCCA-B9DD58CA9099"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:23.128+0100",
+          "start": "2026-11-01T04:14:23.052+0100",
+          "subactivities": {},
+          "title": "Find the \"dotsAndBoxes.box.11.state\" StaticText",
+          "uuid": "57751517-00FD-4071-96E7-CA8D436802D3",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Checking `Expect predicate `label != \"Box row 3, column 4, top, bottom, and left drawn\"` for object \"dotsAndBoxes.box.11.state\" StaticText`",
+      "uuid": "9245D02E-27C2-44F5-A767-807D64AD66BA",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.173+0100",
+      "start": "2026-11-01T04:14:23.128+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.11.side.3\" Button",
+      "uuid": "83F47FA1-25BC-400B-9C4C-B517B38357BF",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.178+0100",
+      "start": "2026-11-01T04:14:23.174+0100",
+      "subactivities": {},
+      "title": "Find the Window (First Match)",
+      "uuid": "BF4A5347-A6CA-4253-B6EB-7869480A46C5",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.219+0100",
+      "start": "2026-11-01T04:14:23.181+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type NavigationBar",
+      "uuid": "6B75E387-6D68-4B6C-B84D-FCC010F42D29",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.254+0100",
+      "start": "2026-11-01T04:14:23.219+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 0)",
+      "uuid": "7E683868-1F92-461F-AEAC-31EAF5329C44",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.313+0100",
+      "start": "2026-11-01T04:14:23.279+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 1)",
+      "uuid": "0BA2AF95-B579-4B93-BA5B-7DDAAFA309C6",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.359+0100",
+      "start": "2026-11-01T04:14:23.325+0100",
+      "subactivities": {},
+      "title": "Find the \"Board controls\" NavigationBar",
+      "uuid": "4C49ADDC-5A20-4855-BCB3-9AF305F7B781",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.395+0100",
+      "start": "2026-11-01T04:14:23.362+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type TabBar",
+      "uuid": "943688D2-90FB-4A9A-AFEC-D6FA1AF454DC",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.486+0100",
+      "start": "2026-11-01T04:14:23.395+0100",
+      "subactivities": {},
+      "title": "Checking existence of `Keyboard (First Match)`",
+      "uuid": "45341426-AC7F-41F8-9E47-D5EBD9BF4BC7",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.657+0100",
+      "start": "2026-11-01T04:14:23.486+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box\" Any`",
+      "uuid": "136A110C-0C7E-4AF8-BF96-B815D767883F",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:23.819+0100",
+      "start": "2026-11-01T04:14:23.657+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box\" Any`",
+      "uuid": "B6816413-4D62-4F94-885C-D144B2C943D2",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:25.874+0100",
+      "start": "2026-11-01T04:14:23.819+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:23.822+0100",
+          "start": "2026-11-01T04:14:23.820+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "3C375BB7-5E31-4E22-89AC-923BEB7B604C",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:23.853+0100",
+          "start": "2026-11-01T04:14:23.822+0100",
+          "subactivities": {},
+          "title": "Find the Target Application 'no.paeonia.app'",
+          "uuid": "083EC452-C9BC-42E8-976A-F5AF68024684",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:23.893+0100",
+          "start": "2026-11-01T04:14:23.856+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"Paeonia\" Application",
+          "uuid": "B5EE9B34-2381-4BE3-A604-EB63CDC9FCCC",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_B2C48AB9-0F3B-42E1-B8EF-C8EB78E79D70",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~KrhjY1qPi30IqbZJyyhqyLMShpkYsVaYJ9WQQeBnzYYu9xBDmXsCIFTIkJ0syBgd56jJNu6mj-m6AoxG6qolSA=="
+              },
+              "payloadSize": "1299",
+              "timestamp": "2026-11-01T04:14:23.896+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "F2FD14B1-797A-4088-B4E5-CA1CD50B1490"
+            },
+            {
+              "filename": "SynthesizedEvent_1_B2C48AB9-0F3B-42E1-B8EF-C8EB78E79D70",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~1HjyJlDXwR7nNGEFpSprCXFQsHEtyTQOC44L47sYY4wXXLzi0HCET5S2XZEHqM1_0OIBtBI-zdpE0E3pHKhKdg=="
+              },
+              "payloadSize": "2684",
+              "timestamp": "2026-11-01T04:14:25.336+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "460375DA-534D-49CC-B1C5-7A180A8984B2"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:25.337+0100",
+          "start": "2026-11-01T04:14:23.894+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:23.928+0100",
+              "start": "2026-11-01T04:14:23.896+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "6E826AD8-74CC-43B4-B9FC-F14E15ACC477",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:23.961+0100",
+              "start": "2026-11-01T04:14:23.929+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "FA5C697D-D6B4-4001-9820-4671B9960932",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:23.997+0100",
+              "start": "2026-11-01T04:14:23.965+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "D8275972-9DE5-436B-989D-296D2E44C31C",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:24.029+0100",
+              "start": "2026-11-01T04:14:23.998+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "CF1C300F-EFA8-4C55-8FA0-E9D13C1F5CB6",
+              "warningSummaryIDs": {}
+            },
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:24.065+0100",
+              "start": "2026-11-01T04:14:24.035+0100",
+              "subactivities": {},
+              "title": "Find the Target Application 'no.paeonia.app'",
+              "uuid": "3114D713-8DAB-4311-B892-191D1644FE12",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Synthesize event",
+          "uuid": "B2C48AB9-0F3B-42E1-B8EF-C8EB78E79D70",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:25.873+0100",
+          "start": "2026-11-01T04:14:25.337+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "FBA1BF1D-A923-4735-AD6E-2064BA9BB969",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Press Target Application 'no.paeonia.app'[0.98, 0.20] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.80] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds ",
+      "uuid": "59BC3EA9-96D6-4D0D-A13F-1CE769545334",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:26.046+0100",
+      "start": "2026-11-01T04:14:25.874+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box\" Any`",
+      "uuid": "36A255C0-6023-4EBA-ACA7-051E690B5FF0",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:26.187+0100",
+      "start": "2026-11-01T04:14:26.046+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box\" Any",
+      "uuid": "27F6054D-727D-4276-9C91-18C78F9FF511",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:26.334+0100",
+      "start": "2026-11-01T04:14:26.197+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box\" Button",
+      "uuid": "9D5CD3B2-F27B-42C3-A55A-AABECCEABF99",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:26.482+0100",
+      "start": "2026-11-01T04:14:26.338+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box\" Button",
+      "uuid": "2A4EAFE2-E772-42D9-A87B-19102EE78CC3",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.293+0100",
+      "start": "2026-11-01T04:14:26.485+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:26.488+0100",
+          "start": "2026-11-01T04:14:26.485+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "8DD48441-9F32-44D7-ADC1-62D81C5FFCD6",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:26.633+0100",
+          "start": "2026-11-01T04:14:26.488+0100",
+          "subactivities": {},
+          "title": "Find the \"dotsAndBoxes.native.box\" Button",
+          "uuid": "EA77F83B-F311-40EA-870E-8560C4517E26",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:26.669+0100",
+          "start": "2026-11-01T04:14:26.634+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"dotsAndBoxes.native.box\" Button",
+          "uuid": "6ED91E4C-DFE2-43F0-85EB-716BA0B8259F",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_B53C3D57-EBB1-4677-9762-A10CC6C9884A",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~vnGDEN4ssPtQ3Pz9GWPKgN6Wqn687MfPU3xhUQ-Utn3D8nufKwi4eTtolmsf9cEbxQ0EJfgGmFMwwRv65b3jtw=="
+              },
+              "payloadSize": "1213",
+              "timestamp": "2026-11-01T04:14:26.688+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "7C48E233-4AC5-4747-834B-996D4EB4AE2B"
+            },
+            {
+              "filename": "SynthesizedEvent_1_B53C3D57-EBB1-4677-9762-A10CC6C9884A",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~dNHiLIKI4HtJ_cvZNqVtTcG2KX3VRtPJ_YvZ2ItOPGKe4hdh8rtK3EKBT_9w-bjKC5gKM6szBYQZVpZmb6bSqA=="
+              },
+              "payloadSize": "1881",
+              "timestamp": "2026-11-01T04:14:26.974+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "8613AC07-79F4-4028-9E39-2D3D6D546FF8"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:26.975+0100",
+          "start": "2026-11-01T04:14:26.686+0100",
+          "subactivities": {},
+          "title": "Synthesize event",
+          "uuid": "B53C3D57-EBB1-4677-9762-A10CC6C9884A",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:27.293+0100",
+          "start": "2026-11-01T04:14:26.975+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "B7FAAB4D-C197-4397-83E0-32AAF39D33F7",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Tap \"dotsAndBoxes.native.box\" Button",
+      "uuid": "E71D0399-9B58-4132-9D14-87870EEADF30",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.298+0100",
+      "start": "2026-11-01T04:14:27.294+0100",
+      "subactivities": {},
+      "title": "Find the Window (First Match)",
+      "uuid": "BC90F164-7D65-4C71-A7D6-280644E0A24D",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.353+0100",
+      "start": "2026-11-01T04:14:27.309+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type NavigationBar",
+      "uuid": "27A97362-FC01-452B-87B5-71C227EDC33A",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.388+0100",
+      "start": "2026-11-01T04:14:27.354+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 0)",
+      "uuid": "93F5DC68-F8D3-4A05-BB46-C580F1620456",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.452+0100",
+      "start": "2026-11-01T04:14:27.418+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 1)",
+      "uuid": "A5CB69D3-594C-40A8-BB87-384DAAE8DC47",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.507+0100",
+      "start": "2026-11-01T04:14:27.471+0100",
+      "subactivities": {},
+      "title": "Find the \"Choose a box\" NavigationBar",
+      "uuid": "5F0A0BAA-412D-4BBB-B8DD-D71754C87976",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.549+0100",
+      "start": "2026-11-01T04:14:27.511+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type TabBar",
+      "uuid": "55DE1056-F0FE-46D8-AA35-F4F49F69F898",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.629+0100",
+      "start": "2026-11-01T04:14:27.549+0100",
+      "subactivities": {},
+      "title": "Checking existence of `Keyboard (First Match)`",
+      "uuid": "8D577871-412D-41E1-946A-EA1F78181315",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.784+0100",
+      "start": "2026-11-01T04:14:27.630+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.native.box.0\" Any`",
+      "uuid": "B286B9D2-4B54-49BD-B77F-359C1054A249",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:27.938+0100",
+      "start": "2026-11-01T04:14:27.784+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box.0\" Any",
+      "uuid": "C4F568BE-EC3E-4CF0-8C40-930C28E4EE44",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:28.111+0100",
+      "start": "2026-11-01T04:14:27.949+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box.0\" Button",
+      "uuid": "74640512-DF1B-45D4-8B3A-B53C6CA87D23",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:28.268+0100",
+      "start": "2026-11-01T04:14:28.115+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.native.box.0\" Button",
+      "uuid": "80FE161B-EFBA-4A0A-94DA-FDB1946ED548",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.091+0100",
+      "start": "2026-11-01T04:14:28.271+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:28.275+0100",
+          "start": "2026-11-01T04:14:28.271+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "EFF7710D-26EF-467B-9978-F2A1D6A2CA56",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:28.425+0100",
+          "start": "2026-11-01T04:14:28.275+0100",
+          "subactivities": {},
+          "title": "Find the \"dotsAndBoxes.native.box.0\" Button",
+          "uuid": "972DF019-1D94-4B99-81B7-2760C09DFBFB",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:28.464+0100",
+          "start": "2026-11-01T04:14:28.425+0100",
+          "subactivities": {},
+          "title": "Check for interrupting elements affecting \"dotsAndBoxes.native.box.0\" Button",
+          "uuid": "BDC8F430-62AF-40C2-8BC4-BAEE65549217",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "Snapshot_0_0D3841C4-DE81-4F14-A10D-AE369BD87194",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~vnGDEN4ssPtQ3Pz9GWPKgN6Wqn687MfPU3xhUQ-Utn3D8nufKwi4eTtolmsf9cEbxQ0EJfgGmFMwwRv65b3jtw=="
+              },
+              "payloadSize": "1213",
+              "timestamp": "2026-11-01T04:14:28.483+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "E5B72233-AF95-4039-9D5A-0A69CEF89229"
+            },
+            {
+              "filename": "SynthesizedEvent_1_0D3841C4-DE81-4F14-A10D-AE369BD87194",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySynthesizedEvent",
+              "payloadRef": {
+                "id": "0~58Jblc70NiBrXAjIwskLxuhk_3zQkGc50DN-XZwXY-ItdimUrJ02cLZWkw6fX_aaRYmD7KghGtbKI-ITB-rV_w=="
+              },
+              "payloadSize": "1893",
+              "timestamp": "2026-11-01T04:14:28.774+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.synthesized-event-record",
+              "userInfo": {
+                "storage": [
+                  {
+                    "key": "DisplayID",
+                    "value": "1"
+                  },
+                  {
+                    "key": "Scale",
+                    "value": "3"
+                  }
+                ]
+              },
+              "uuid": "9CF21A92-86BD-479F-B26C-72BC703D6621"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:28.774+0100",
+          "start": "2026-11-01T04:14:28.481+0100",
+          "subactivities": {},
+          "title": "Synthesize event",
+          "uuid": "0D3841C4-DE81-4F14-A10D-AE369BD87194",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:29.091+0100",
+          "start": "2026-11-01T04:14:28.775+0100",
+          "subactivities": {},
+          "title": "Wait for no.paeonia.app to idle",
+          "uuid": "CA7084BB-8A60-4C1D-BCBD-F8005FF609C4",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Tap \"dotsAndBoxes.native.box.0\" Button",
+      "uuid": "5159031C-70BC-40AA-A882-F16197467356",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.098+0100",
+      "start": "2026-11-01T04:14:29.091+0100",
+      "subactivities": {},
+      "title": "Find the Window (First Match)",
+      "uuid": "6B87A8C9-BCCC-4B9A-81FE-3826528DB770",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.135+0100",
+      "start": "2026-11-01T04:14:29.104+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type NavigationBar",
+      "uuid": "D0908428-7D2D-44CC-8697-68504EE9880F",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.163+0100",
+      "start": "2026-11-01T04:14:29.135+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 0)",
+      "uuid": "DF53E6E9-969C-460E-84EE-03FC59199CD6",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.216+0100",
+      "start": "2026-11-01T04:14:29.188+0100",
+      "subactivities": {},
+      "title": "Find the NavigationBar (Element at index 1)",
+      "uuid": "DDB298DE-F396-44C8-90AC-44DE1C7ECBF4",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.260+0100",
+      "start": "2026-11-01T04:14:29.229+0100",
+      "subactivities": {},
+      "title": "Find the \"Board controls\" NavigationBar",
+      "uuid": "FD2720DE-3259-4E91-BDC5-A63797FAF6E0",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.292+0100",
+      "start": "2026-11-01T04:14:29.262+0100",
+      "subactivities": {},
+      "title": "Get all elements bound by index for: Descendants matching type TabBar",
+      "uuid": "A4A6E1BB-BB52-482F-B424-ABABA2AC63A0",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.359+0100",
+      "start": "2026-11-01T04:14:29.293+0100",
+      "subactivities": {},
+      "title": "Checking existence of `Keyboard (First Match)`",
+      "uuid": "39733D8A-D451-4C53-8A78-5AD2AB317DDB",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.399+0100",
+      "start": "2026-11-01T04:14:29.359+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.box.0.state\" StaticText`",
+      "uuid": "0B4E1F52-A3DF-4A4B-8908-C03BFBC3D322",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.436+0100",
+      "start": "2026-11-01T04:14:29.399+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.0.state\" StaticText",
+      "uuid": "0FB4AF57-19CF-496A-9532-BAB8D957A607",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.483+0100",
+      "start": "2026-11-01T04:14:29.446+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.0.state\" StaticText",
+      "uuid": "72925246-AF18-46CE-B620-BA710039D3D9",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.526+0100",
+      "start": "2026-11-01T04:14:29.487+0100",
+      "subactivities": {},
+      "title": "Find the \"dotsAndBoxes.box.0.state\" StaticText",
+      "uuid": "D3784E01-2F8C-4011-ACCC-8BCCC8BF2AF2",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": {},
+      "finish": "2026-11-01T04:14:29.570+0100",
+      "start": "2026-11-01T04:14:29.531+0100",
+      "subactivities": {},
+      "title": "Checking existence of `\"dotsAndBoxes.box.0.state\" StaticText`",
+      "uuid": "611990AD-5F4B-4322-96A1-443E42781BFE",
+      "warningSummaryIDs": {}
+    },
+    {
+      "activityType": "com.apple.dt.xctest.activity-type.internal",
+      "attachments": {},
+      "expectedFailureIDs": {},
+      "failureSummaryIDs": [
+        "ABB1ED16-5BFB-479B-9886-5C115BBEC893"
+      ],
+      "start": "2026-11-01T04:14:29.571+0100",
+      "subactivities": [
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:30.679+0100",
+          "start": "2026-11-01T04:14:30.612+0100",
+          "subactivities": {},
+          "title": "Find the \"dotsAndBoxes.box.0.side.0\" Button (retry 1)",
+          "uuid": "A0856EC6-E747-400E-8FFF-CA5F1C2109E5",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:31.727+0100",
+          "start": "2026-11-01T04:14:31.685+0100",
+          "subactivities": {},
+          "title": "Find the \"dotsAndBoxes.box.0.side.0\" Button (retry 2)",
+          "uuid": "A3B109FA-8F19-45AC-B0C6-898208836066",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": [
+            {
+              "filename": "App UI hierarchy for no.paeonia_0_443E6FA2-042D-44ED-9833-357AE3BD6788.app",
+              "inActivityIdentifier": "0",
+              "lifetime": "deleteOnSuccess",
+              "name": "App UI hierarchy for no.paeonia.app",
+              "payloadRef": {
+                "id": "0~SdCMvmCeUanNFpwiRw2GVM_GYV6mziGUwhstT6WvFG1OnZaNo2i9lu8bCuE06dH65c2Et4H0YNTUajT9s-rcWA=="
+              },
+              "payloadSize": "18136",
+              "timestamp": "2026-11-01T04:14:31.779+0100",
+              "uniformTypeIdentifier": "public.plain-text",
+              "uuid": "D98F2514-55F3-42E9-B240-984E83DCB958"
+            },
+            {
+              "filename": "Snapshot_1_443E6FA2-042D-44ED-9833-357AE3BD6788",
+              "inActivityIdentifier": "1",
+              "lifetime": "deleteOnSuccess",
+              "name": "kXCTAttachmentLegacySnapshot",
+              "payloadRef": {
+                "id": "0~V5GwmTVr6ip_ygPq15RC_XZ4zGL7tafRG0yHaIB32Qwe1RKzY8hSHGbFUm5NzEcqmPnt_ZAbNzL2MXpOgSJ41A=="
+              },
+              "payloadSize": "75634",
+              "timestamp": "2026-11-01T04:14:31.779+0100",
+              "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+              "uuid": "00C81C9A-B8B0-4538-9085-CC41414561A9"
+            }
+          ],
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:31.785+0100",
+          "start": "2026-11-01T04:14:31.727+0100",
+          "subactivities": [
+            {
+              "activityType": "com.apple.dt.xctest.activity-type.internal",
+              "attachments": {},
+              "expectedFailureIDs": {},
+              "failureSummaryIDs": {},
+              "finish": "2026-11-01T04:14:31.778+0100",
+              "start": "2026-11-01T04:14:31.728+0100",
+              "subactivities": {},
+              "title": "Requesting snapshot of accessibility hierarchy for app with pid 96792",
+              "uuid": "994FEEF5-841D-4CE7-B5FD-7282BB2EB498",
+              "warningSummaryIDs": {}
+            }
+          ],
+          "title": "Collecting debug information to assist test failure triage",
+          "uuid": "443E6FA2-042D-44ED-9833-357AE3BD6788",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:31.834+0100",
+          "start": "2026-11-01T04:14:31.785+0100",
+          "subactivities": {},
+          "title": "Requesting snapshot of accessibility hierarchy for app with pid 96792",
+          "uuid": "CAD8DAE0-645E-4949-831E-B07543051F8F",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:31.835+0100",
+          "start": "2026-11-01T04:14:31.834+0100",
+          "subactivities": {},
+          "title": "Find: Descendants matching type Button",
+          "uuid": "045D18A8-ADBD-48D7-B708-9A428A1322CC",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:31.835+0100",
+          "start": "2026-11-01T04:14:31.835+0100",
+          "subactivities": {},
+          "title": "Find: Elements matching predicate '\"dotsAndBoxes.box.0.side.0\" IN identifiers'",
+          "uuid": "AEE16D7B-0549-44A1-A5F6-4C783744A94F",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:31.886+0100",
+          "start": "2026-11-01T04:14:31.837+0100",
+          "subactivities": {},
+          "title": "Requesting snapshot of accessibility hierarchy for app with pid 96792",
+          "uuid": "DCA8E964-7C18-4CE5-97C9-556F762D678D",
+          "warningSummaryIDs": {}
+        },
+        {
+          "activityType": "com.apple.dt.xctest.activity-type.internal",
+          "attachments": {},
+          "expectedFailureIDs": {},
+          "failureSummaryIDs": {},
+          "finish": "2026-11-01T04:14:31.996+0100",
+          "start": "2026-11-01T04:14:31.920+0100",
+          "subactivities": {},
+          "title": "Tear Down",
+          "uuid": "030178C8-D269-47AC-B2DC-2EF6D3F36656",
+          "warningSummaryIDs": {}
+        }
+      ],
+      "title": "Find the \"dotsAndBoxes.box.0.side.0\" Button",
+      "uuid": "4983D1C7-8DAF-494D-A537-83AC415A1998",
+      "warningSummaryIDs": {}
+    }
+  ],
+  "arguments": {},
+  "documentation": {},
+  "duration": "45.026426911354065",
+  "expectedFailures": {},
+  "failureSummaries": [
+    {
+      "attachments": [
+        {
+          "filename": "App UI hierarchy for no.paeonia_0_3A6D05B3-3108-4160-ADA5-26B385470B68.app",
+          "inActivityIdentifier": "0",
+          "lifetime": "deleteOnSuccess",
+          "name": "App UI hierarchy for no.paeonia.app",
+          "payloadRef": {
+            "id": "0~Iucg9JH5BmcUud_cby0Ohk0HQhVOOh83H9rsupzmeQjr56WfnmmVauvLM__m3iY8Y_XVnrkQIyYVrLF-yPGezQ=="
+          },
+          "payloadSize": "18136",
+          "timestamp": "2026-11-01T04:14:31.886+0100",
+          "uniformTypeIdentifier": "public.plain-text",
+          "uuid": "00D3A97E-CC80-4E3F-B9F3-7A30C36CED61"
+        },
+        {
+          "filename": "Snapshot_1_9B1760E6-4230-439E-89A7-DF4981B31D27",
+          "inActivityIdentifier": "1",
+          "lifetime": "deleteOnSuccess",
+          "name": "kXCTAttachmentLegacySnapshot",
+          "payloadRef": {
+            "id": "0~V5GwmTVr6ip_ygPq15RC_XZ4zGL7tafRG0yHaIB32Qwe1RKzY8hSHGbFUm5NzEcqmPnt_ZAbNzL2MXpOgSJ41A=="
+          },
+          "payloadSize": "75634",
+          "timestamp": "2026-11-01T04:14:31.886+0100",
+          "uniformTypeIdentifier": "com.apple.dt.xctest.element-snapshot",
+          "uuid": "78368524-549A-4A24-B95C-9D25060B14EA"
+        }
+      ],
+      "fileName": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/GamesBoardAccessibilityUITests.swift",
+      "isPerformanceFailure": "false",
+      "issueType": "UI Automation Failure",
+      "isTopLevelFailure": "false",
+      "lineNumber": "22",
+      "message": "Failed to get matching snapshot: No matches found for Elements matching predicate '\"dotsAndBoxes.box.0.side.0\" IN identifiers' from input {(\n    Button, identifier: 'games.menu', label: 'More options',\n    Button,\n    Button, identifier: 'games.board.controls.close', label: 'Done',\n    Button, identifier: 'boardGames.score', label: 'You 4 wins, Robin 3 wins',\n    Button, identifier: 'games.board.controls', label: 'Board controls',\n    Button, identifier: 'dotsAndBoxes.native.box', label: 'Choose a box', value: Box row 1, column ...\n)}\nPossibly caused by runtime issues:\nAutomation type mismatch: computed Button from legacy attributes vs PopUpButton from modern attribute. Input attributes and values: {\n    \"XC_kAXXCAttributeAutomationType\" = 14;\n    \"XC_kAXXCAttributeElementBaseType\" = NSObject;\n    \"XC_kAXXCAttributeElementType\" = \"SwiftUI.AccessibilityNode\";\n    \"XC_kAXXCAttributeTraits\" = 1108101562369;\n}\nSee test report attachments for more detail.",
+      "sourceCodeContext": {
+        "callStack": [
+          {
+            "addressString": "4355117196"
+          },
+          {
+            "addressString": "4356944007"
+          },
+          {
+            "addressString": "4357043919"
+          },
+          {
+            "addressString": "4354645447"
+          },
+          {
+            "addressString": "4354640839"
+          },
+          {
+            "addressString": "4357041963"
+          },
+          {
+            "addressString": "4357045079"
+          },
+          {
+            "addressString": "4440621111"
+          },
+          {
+            "addressString": "4440598175"
+          },
+          {
+            "addressString": "4440621755"
+          },
+          {
+            "addressString": "4440590099"
+          },
+          {
+            "addressString": "4440553567"
+          },
+          {
+            "addressString": "4440627223"
+          },
+          {
+            "addressString": "4354710031"
+          },
+          {
+            "addressString": "4440589915"
+          },
+          {
+            "addressString": "4440598251"
+          },
+          {
+            "addressString": "4423479603"
+          },
+          {
+            "addressString": "7518873663"
+          },
+          {
+            "addressString": "7518861839"
+          },
+          {
+            "addressString": "4354718611"
+          },
+          {
+            "addressString": "4354718519"
+          },
+          {
+            "addressString": "4354717199"
+          },
+          {
+            "addressString": "4354658215"
+          },
+          {
+            "addressString": "4355122235"
+          },
+          {
+            "addressString": "4355122319"
+          },
+          {
+            "addressString": "4354657995"
+          },
+          {
+            "addressString": "4354716691"
+          },
+          {
+            "addressString": "4354718139"
+          },
+          {
+            "addressString": "4354719235"
+          },
+          {
+            "addressString": "4354794747"
+          },
+          {
+            "addressString": "4354796247"
+          },
+          {
+            "addressString": "4354817407"
+          },
+          {
+            "addressString": "4354795271"
+          },
+          {
+            "addressString": "4354801267"
+          },
+          {
+            "addressString": "4354817407"
+          },
+          {
+            "addressString": "4354800971"
+          },
+          {
+            "addressString": "4354799683"
+          },
+          {
+            "addressString": "4354647091"
+          },
+          {
+            "addressString": "4354646871"
+          },
+          {
+            "addressString": "4354798659"
+          },
+          {
+            "addressString": "4354784091"
+          },
+          {
+            "addressString": "4354841315"
+          },
+          {
+            "addressString": "4354840859"
+          },
+          {
+            "addressString": "4354838563"
+          },
+          {
+            "addressString": "4354647091"
+          },
+          {
+            "addressString": "4354646871"
+          },
+          {
+            "addressString": "4354838435"
+          },
+          {
+            "addressString": "4354839643"
+          },
+          {
+            "addressString": "4354784091"
+          },
+          {
+            "addressString": "4354841315"
+          },
+          {
+            "addressString": "4354840859"
+          },
+          {
+            "addressString": "4354838563"
+          },
+          {
+            "addressString": "4354647091"
+          },
+          {
+            "addressString": "4354646871"
+          },
+          {
+            "addressString": "4354838435"
+          },
+          {
+            "addressString": "4354839643"
+          },
+          {
+            "addressString": "4354784091"
+          },
+          {
+            "addressString": "4354841315"
+          },
+          {
+            "addressString": "4354840859"
+          },
+          {
+            "addressString": "4354838563"
+          },
+          {
+            "addressString": "4354647091"
+          },
+          {
+            "addressString": "4354646871"
+          },
+          {
+            "addressString": "4354838435"
+          },
+          {
+            "addressString": "4354839643"
+          },
+          {
+            "addressString": "4354784091"
+          },
+          {
+            "addressString": "4354946555"
+          },
+          {
+            "addressString": "4354647091"
+          },
+          {
+            "addressString": "4354646871"
+          },
+          {
+            "addressString": "4354946235"
+          },
+          {
+            "addressString": "4354908807"
+          },
+          {
+            "addressString": "4354912407"
+          },
+          {
+            "addressString": "4354912771"
+          },
+          {
+            "addressString": "4354908447"
+          },
+          {
+            "addressString": "4354907907"
+          },
+          {
+            "addressString": "4354909079"
+          },
+          {
+            "addressString": "4354900971"
+          },
+          {
+            "addressString": "4354965711"
+          },
+          {
+            "addressString": "4354899751"
+          },
+          {
+            "addressString": "4354907163"
+          },
+          {
+            "addressString": "4337802859"
+          },
+          {
+            "addressString": "4337802487"
+          },
+          {
+            "addressString": "7518176631"
+          },
+          {
+            "addressString": "7518174467"
+          },
+          {
+            "addressString": "7518171259"
+          },
+          {
+            "addressString": "7518150719"
+          },
+          {
+            "addressString": "9153124779"
+          },
+          {
+            "addressString": "7605542447"
+          },
+          {
+            "addressString": "4337803663"
+          },
+          {
+            "addressString": "4340269903"
+          },
+          {
+            "addressString": "4338212219"
+          }
+        ],
+        "location": {
+          "filePath": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/GamesBoardAccessibilityUITests.swift",
+          "lineNumber": "22"
+        }
+      },
+      "timestamp": "2026-11-01T04:14:31.886+0100",
+      "uuid": "ABB1ED16-5BFB-479B-9886-5C115BBEC893"
+    }
+  ],
+  "identifier": "GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn()",
+  "identifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn",
+  "name": "testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn()",
+  "performanceMetrics": {},
+  "tags": {},
+  "testStatus": "Failure",
+  "trackedIssues": {},
+  "warningSummaries": {}
+}

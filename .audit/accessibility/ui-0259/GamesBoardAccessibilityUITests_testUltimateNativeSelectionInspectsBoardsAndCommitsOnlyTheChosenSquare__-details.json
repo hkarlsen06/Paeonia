@@ -1,0 +1,66 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "duration" : "Ran for 2 minutter",
+  "durationInSeconds" : 120,
+  "hasMediaAttachments" : false,
+  "hasPerformanceMetrics" : false,
+  "startTime" : 1793498626.591,
+  "testDescription" : "Test case with 1 run",
+  "testIdentifier" : "GamesBoardAccessibilityUITests/testUltimateNativeSelectionInspectsBoardsAndCommitsOnlyTheChosenSquare()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests/testUltimateNativeSelectionInspectsBoardsAndCommitsOnlyTheChosenSquare",
+  "testName" : "testUltimateNativeSelectionInspectsBoardsAndCommitsOnlyTheChosenSquare()",
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ],
+  "testResult" : "Failed",
+  "testRuns" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "details" : "0~XGGHP4MmqiJFMIEbxWGGDGLZx65C_GBugtI4ZDDqIgIMjyLELoakHQ5vpBFdQaWMwPtKFscWTqaTU-mhRMnRew==",
+                  "name" : "2026-11-01 020546 +0000-Spindump_0_7D874A52-8E6A-4040-93CF-9644EC2B769C.txt",
+                  "nodeIdentifier" : "041219E0-B333-40F4-9713-738EC4ED2738",
+                  "nodeType" : "Attachment"
+                }
+              ],
+              "name" : "Test exceeded execution time allowance of 2 minutes",
+              "nodeType" : "Test Case Run",
+              "result" : "Failed"
+            }
+          ],
+          "duration" : "2 min, 5 s",
+          "durationInSeconds" : 125.08699989318848,
+          "name" : "Test Scheme Action",
+          "nodeIdentifier" : "1",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests/testUltimateNativeSelectionInspectsBoardsAndCommitsOnlyTheChosenSquare",
+          "nodeType" : "Test Plan Configuration",
+          "result" : "Failed"
+        }
+      ],
+      "details" : "iOS Simulator 27.0",
+      "duration" : "2 min, 5 s",
+      "durationInSeconds" : 125.08699989318848,
+      "name" : "iPhone 17 Pro",
+      "nodeIdentifier" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "nodeType" : "Device",
+      "result" : "Failed"
+    }
+  ]
+}

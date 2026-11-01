@@ -1,0 +1,209 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "14 s",
+                  "durationInSeconds" : 14.191963911056519,
+                  "name" : "testDrawingAudit()",
+                  "nodeIdentifier" : "AccessibilityJourneyUITests/testDrawingAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testDrawingAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "Hit area is too small",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    },
+                    {
+                      "name" : "Contrast failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    },
+                    {
+                      "name" : "Contrast failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    },
+                    {
+                      "name" : "Contrast failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    },
+                    {
+                      "name" : "Dynamic Type font sizes are partially unsupported",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    }
+                  ],
+                  "duration" : "14 s",
+                  "durationInSeconds" : 14.404119968414307,
+                  "name" : "testHomeAudit()",
+                  "nodeIdentifier" : "AccessibilityJourneyUITests/testHomeAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testHomeAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "duration" : "10 s",
+                  "durationInSeconds" : 10.704607009887695,
+                  "name" : "testMemoryAudit()",
+                  "nodeIdentifier" : "AccessibilityJourneyUITests/testMemoryAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testMemoryAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "10 s",
+                  "durationInSeconds" : 10.879823923110962,
+                  "name" : "testPaywallAudit()",
+                  "nodeIdentifier" : "AccessibilityJourneyUITests/testPaywallAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testPaywallAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "10 s",
+                  "durationInSeconds" : 10.736364960670471,
+                  "name" : "testPrivacyAudit()",
+                  "nodeIdentifier" : "AccessibilityJourneyUITests/testPrivacyAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testPrivacyAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "Contrast failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    },
+                    {
+                      "name" : "Contrast failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    },
+                    {
+                      "name" : "Dynamic Type font sizes are partially unsupported",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    },
+                    {
+                      "name" : "Dynamic Type font sizes are partially unsupported",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    }
+                  ],
+                  "duration" : "13 s",
+                  "durationInSeconds" : 13.239228010177612,
+                  "name" : "testQuestionsAudit()",
+                  "nodeIdentifier" : "AccessibilityJourneyUITests/testQuestionsAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testQuestionsAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "Contrast failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    },
+                    {
+                      "name" : "Contrast failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    },
+                    {
+                      "name" : "Contrast failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    }
+                  ],
+                  "duration" : "9 s",
+                  "durationInSeconds" : 9.913460969924927,
+                  "name" : "testSignInAudit()",
+                  "nodeIdentifier" : "AccessibilityJourneyUITests/testSignInAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testSignInAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                }
+              ],
+              "name" : "AccessibilityJourneyUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Failed"
+            }
+          ],
+          "name" : "PaeoniaAppUITests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests",
+          "nodeType" : "UI test bundle",
+          "result" : "Failed"
+        }
+      ],
+      "name" : "App",
+      "nodeType" : "Test Plan",
+      "result" : "Failed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

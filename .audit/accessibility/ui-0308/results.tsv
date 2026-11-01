@@ -1,0 +1,8 @@
+test	result	duration
+AccessibilityJourneyUITests/testDrawingAudit()	Passed	13 s
+AccessibilityJourneyUITests/testHomeAudit()	Failed	14 s
+AccessibilityJourneyUITests/testMemoryAudit()	Passed	10 s
+AccessibilityJourneyUITests/testPaywallAudit()	Failed	10 s
+AccessibilityJourneyUITests/testPrivacyAudit()	Passed	10 s
+AccessibilityJourneyUITests/testQuestionsAudit()	Failed	14 s
+AccessibilityJourneyUITests/testSignInAudit()	Failed	10 s

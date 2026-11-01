@@ -1,0 +1,8 @@
+Extracted verbatim from /tmp/paeonia-accessibility-focused-879d9fb7-043523/group4/app-console.log
+
+2026-11-01 04:47:54.288619+0100 0x780a02   Fault       0x1ed32fd            40263  14   PaeoniaApp: (SwiftUICore) [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2026-11-01 04:48:08.960647+0100 0x780a02   Fault       0x1ed4902            40263  14   PaeoniaApp: (SwiftUICore) [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2026-11-01 04:48:19.553087+0100 0x7813f4   Fault       0x1ed5496            40713  14   PaeoniaApp: (SwiftUICore) [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2026-11-01 04:48:22.818005+0100 0x7813f4   Fault       0x1ed5c34            40713  14   PaeoniaApp: (SwiftUICore) [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2026-11-01 04:48:32.828994+0100 0x781a42   Fault       0x1ed6438            40958  14   PaeoniaApp: (SwiftUICore) [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2026-11-01 04:48:35.181243+0100 0x781a42   Fault       0x1ed6b01            40958  14   PaeoniaApp: (SwiftUICore) [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).

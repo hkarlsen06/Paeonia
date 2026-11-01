@@ -1,0 +1,66 @@
+[
+  [
+    "group1/test/build-log.json.stderr",
+    "Error: No build log available\n"
+  ],
+  [
+    "group1/test/console-log.json.stderr",
+    "Error: No console log available\n"
+  ],
+  [
+    "group1/build/action-log.json.stderr",
+    "Error: No action log available\n"
+  ],
+  [
+    "group1/build/console-log.json.stderr",
+    "Error: No console log available\n"
+  ],
+  [
+    "group3/test/build-log.json.stderr",
+    "Error: No build log available\n"
+  ],
+  [
+    "group3/test/console-log.json.stderr",
+    "Error: No console log available\n"
+  ],
+  [
+    "group3/build/action-log.json.stderr",
+    "Error: No action log available\n"
+  ],
+  [
+    "group3/build/console-log.json.stderr",
+    "Error: No console log available\n"
+  ],
+  [
+    "group4/test/build-log.json.stderr",
+    "Error: No build log available\n"
+  ],
+  [
+    "group4/test/console-log.json.stderr",
+    "Error: No console log available\n"
+  ],
+  [
+    "group4/build/action-log.json.stderr",
+    "Error: No action log available\n"
+  ],
+  [
+    "group4/build/console-log.json.stderr",
+    "Error: No console log available\n"
+  ],
+  [
+    "group2/test/build-log.json.stderr",
+    "Error: No build log available\n"
+  ],
+  [
+    "group2/test/console-log.json.stderr",
+    "Error: No console log available\n"
+  ],
+  [
+    "group2/build/action-log.json.stderr",
+    "Error: No action log available\n"
+  ],
+  [
+    "group2/build/console-log.json.stderr",
+    "Error: No console log available\n"
+  ]
+]

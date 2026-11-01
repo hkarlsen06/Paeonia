@@ -1,0 +1,283 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "Contrast failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                        "lineNumber" : 89
+                      }
+                    }
+                  ],
+                  "duration" : "13 s",
+                  "durationInSeconds" : 13.350849986076355,
+                  "name" : "testWelcomeAudit()",
+                  "nodeIdentifier" : "AccessibilityJourneyUITests/testWelcomeAudit()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testWelcomeAudit",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                }
+              ],
+              "name" : "AccessibilityJourneyUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Failed"
+            },
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "Invalid frame dimension (negative or non-finite).",
+                      "nodeType" : "Runtime Warning"
+                    }
+                  ],
+                  "duration" : "26 s",
+                  "durationInSeconds" : 26.878670930862427,
+                  "name" : "testNativeControlsCreateADrawingWithoutCanvasGestures()",
+                  "nodeIdentifier" : "DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "DrawingCompositionUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/DrawingCompositionUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "duration" : "55 s",
+                  "durationInSeconds" : 55.561378955841064,
+                  "name" : "testChatDuringGameAndReturnToUnfinishedWord()",
+                  "nodeIdentifier" : "GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "41 s",
+                  "durationInSeconds" : 41.48943603038788,
+                  "name" : "testEmptyGameChatAndReturnToUnfinishedStory()",
+                  "nodeIdentifier" : "GameConversationJourneyUITests/testEmptyGameChatAndReturnToUnfinishedStory()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests/testEmptyGameChatAndReturnToUnfinishedStory",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "GameConversationJourneyUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "Invalid frame dimension (negative or non-finite).",
+                      "nodeType" : "Runtime Warning"
+                    }
+                  ],
+                  "duration" : "46 s",
+                  "durationInSeconds" : 46.7539941072464,
+                  "name" : "testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation()",
+                  "nodeIdentifier" : "GameDrawingDescriptionUITests/testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameDrawingDescriptionUITests/testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "GameDrawingDescriptionUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameDrawingDescriptionUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "duration" : "14 s",
+                  "durationInSeconds" : 14.562509059906006,
+                  "name" : "testConsensioNativeStepsChangeTheValueAndCanLockPlacement()",
+                  "nodeIdentifier" : "GamesBoardAccessibilityUITests/testConsensioNativeStepsChangeTheValueAndCanLockPlacement()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests/testConsensioNativeStepsChangeTheValueAndCanLockPlacement",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "16 s",
+                  "durationInSeconds" : 16.542773008346558,
+                  "name" : "testCustomMarkCanBeCreatedAndSavedWithoutTracing()",
+                  "nodeIdentifier" : "GamesBoardAccessibilityUITests/testCustomMarkCanBeCreatedAndSavedWithoutTracing()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests/testCustomMarkCanBeCreatedAndSavedWithoutTracing",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "36 s",
+                  "durationInSeconds" : 36.27717697620392,
+                  "name" : "testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn()",
+                  "nodeIdentifier" : "GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "51 s",
+                  "durationInSeconds" : 51.714462995529175,
+                  "name" : "testUltimateNativeSelectionInspectsBoardsAndCommitsOnlyTheChosenSquare()",
+                  "nodeIdentifier" : "GamesBoardAccessibilityUITests/testUltimateNativeSelectionInspectsBoardsAndCommitsOnlyTheChosenSquare()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests/testUltimateNativeSelectionInspectsBoardsAndCommitsOnlyTheChosenSquare",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "GamesBoardAccessibilityUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "Invalid frame dimension (negative or non-finite).",
+                      "nodeType" : "Runtime Warning"
+                    }
+                  ],
+                  "duration" : "14 s",
+                  "durationInSeconds" : 14.341691017150879,
+                  "name" : "testPresentedNativeFormWithKeyboardToolbar()",
+                  "nodeIdentifier" : "NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithKeyboardToolbar()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithKeyboardToolbar",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "12 s",
+                  "durationInSeconds" : 12.675891995429993,
+                  "name" : "testPresentedNativeFormWithoutKeyboardToolbar()",
+                  "nodeIdentifier" : "NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithoutKeyboardToolbar()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithoutKeyboardToolbar",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "children" : [
+                    {
+                      "name" : "Invalid frame dimension (negative or non-finite).",
+                      "nodeType" : "Runtime Warning"
+                    }
+                  ],
+                  "duration" : "13 s",
+                  "durationInSeconds" : 13.00319504737854,
+                  "name" : "testPresentedNativeFormWithSingleKeyboardItem()",
+                  "nodeIdentifier" : "NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithSingleKeyboardItem()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithSingleKeyboardItem",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "NativeKeyboardDiagnosticUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/NativeKeyboardDiagnosticUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "duration" : "38 s",
+                  "durationInSeconds" : 38.26703703403473,
+                  "name" : "testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+                  "nodeIdentifier" : "PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PaeoniaAppUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/PaeoniaAppUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "duration" : "24 s",
+                  "durationInSeconds" : 24.07987892627716,
+                  "name" : "testWelcomeShapeCreationCarriesIntoTheFirstDrawingWithoutTracing()",
+                  "nodeIdentifier" : "WelcomeDoodleJourneyUITests/testWelcomeShapeCreationCarriesIntoTheFirstDrawingWithoutTracing()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/WelcomeDoodleJourneyUITests/testWelcomeShapeCreationCarriesIntoTheFirstDrawingWithoutTracing",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "WelcomeDoodleJourneyUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/WelcomeDoodleJourneyUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "Invalid frame dimension (negative or non-finite).",
+                      "nodeType" : "Runtime Warning"
+                    }
+                  ],
+                  "duration" : "26 s",
+                  "durationInSeconds" : 26.79765498638153,
+                  "name" : "testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()",
+                  "nodeIdentifier" : "WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "WidgetHistoryDescriptionUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/WidgetHistoryDescriptionUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "PaeoniaAppUITests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests",
+          "nodeType" : "UI test bundle",
+          "result" : "Failed"
+        }
+      ],
+      "name" : "App",
+      "nodeType" : "Test Plan",
+      "result" : "Failed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

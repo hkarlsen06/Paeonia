@@ -1,0 +1,231 @@
+[
+  {
+    "test": "NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithSingleKeyboardItem()",
+    "warningUTC": "2026-11-01T03:48:19.554000+00:00",
+    "sinceTestStartSeconds": 9.116999864578247,
+    "nearbyActivities": [
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504899.184,
+        "title": "Find the \"keyboard.diagnostic.text\" Any"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504899.24,
+        "title": "Check for interrupting elements affecting \"keyboard.diagnostic.text\" TextField"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "childActivities": [
+          {
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504899.554,
+            "title": "Invalid frame dimension (negative or non-finite)."
+          }
+        ],
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504899.275,
+        "title": "Synthesize event"
+      },
+      {
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504899.554,
+        "title": "Invalid frame dimension (negative or non-finite)."
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504899.572,
+        "title": "Wait for no.paeonia.app to idle"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "childActivities": [
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504899.789,
+            "title": "Wait for no.paeonia.app to idle"
+          },
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504900.16,
+            "title": "Find the \"keyboard.diagnostic.text\" TextField"
+          },
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504900.338,
+            "title": "Check for interrupting elements affecting \"keyboard.diagnostic.text\" TextField"
+          },
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504900.396,
+            "title": "Synthesize event"
+          },
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504900.97,
+            "title": "Wait for no.paeonia.app to idle"
+          }
+        ],
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504899.789,
+        "title": "Type 'A circle above a l...' into \"keyboard.diagnostic.text\" TextField"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504899.789,
+        "title": "Wait for no.paeonia.app to idle"
+      }
+    ]
+  },
+  {
+    "test": "DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures()",
+    "warningUTC": "2026-11-01T03:47:54.289000+00:00",
+    "sinceTestStartSeconds": 19.10599994659424,
+    "nearbyActivities": [
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504874.01,
+        "title": "Find the Target Application 'no.paeonia.app'"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504874.049,
+        "title": "Check for interrupting elements affecting \"Paeonia\" Application"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "childActivities": [
+          {
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504874.289,
+            "title": "Invalid frame dimension (negative or non-finite)."
+          }
+        ],
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504874.091,
+        "title": "Synthesize event"
+      },
+      {
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504874.289,
+        "title": "Invalid frame dimension (negative or non-finite)."
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504874.513,
+        "title": "Wait for no.paeonia.app to idle"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504876.63,
+        "title": "Checking existence of `\"drawing.description\" Any`"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504876.809,
+        "title": "Find the \"drawing.description\" Any"
+      }
+    ]
+  },
+  {
+    "test": "WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()",
+    "warningUTC": "2026-11-01T03:48:32.830000+00:00",
+    "sinceTestStartSeconds": 7.676999807357788,
+    "nearbyActivities": [
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504912.384,
+        "title": "Find the \"media.alternative.text\" Any"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504912.496,
+        "title": "Check for interrupting elements affecting \"media.alternative.text\" TextField"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "childActivities": [
+          {
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504912.83,
+            "title": "Invalid frame dimension (negative or non-finite)."
+          }
+        ],
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504912.555,
+        "title": "Synthesize event"
+      },
+      {
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504912.83,
+        "title": "Invalid frame dimension (negative or non-finite)."
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504912.848,
+        "title": "Wait for no.paeonia.app to idle"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "childActivities": [
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504913.06,
+            "title": "Wait for no.paeonia.app to idle"
+          },
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504913.429,
+            "title": "Find the \"media.alternative.text\" TextField"
+          },
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504913.673,
+            "title": "Check for interrupting elements affecting \"media.alternative.text\" TextField"
+          },
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504913.773,
+            "title": "Synthesize event"
+          },
+          {
+            "activityType": "com.apple.dt.xctest.activity-type.internal",
+            "isAssociatedWithFailure": false,
+            "startTime": 1793504914.331,
+            "title": "Wait for no.paeonia.app to idle"
+          }
+        ],
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504913.06,
+        "title": "Type 'A sun above two hi...' into \"media.alternative.text\" TextField"
+      },
+      {
+        "activityType": "com.apple.dt.xctest.activity-type.internal",
+        "isAssociatedWithFailure": false,
+        "startTime": 1793504913.06,
+        "title": "Wait for no.paeonia.app to idle"
+      }
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+Xcode 27.1
+Build version 27A9275
+ProductName:		macOS
+ProductVersion:		27.2
+BuildVersion:		26B118
+Darwin Mac.home 27.2.0 Darwin Kernel Version 27.2.0: Wed Oct 14 23:47:21 PDT 2026; root:xnu-13432.41.4~25/RELEASE_ARM64_T6030 arm64

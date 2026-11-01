@@ -1,0 +1,537 @@
+{
+  "testIdentifier" : "NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithSingleKeyboardItem()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithSingleKeyboardItem",
+  "testName" : "testPresentedNativeFormWithSingleKeyboardItem()",
+  "testRuns" : [
+    {
+      "activities" : [
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499371.964,
+          "title" : "Start Test at 2026-11-01 03:16:11.964"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499371.986,
+          "title" : "Set Up"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793499372.205,
+                  "title" : "Setting up automation session"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793499374.471,
+                  "title" : "Wait for no.paeonia.app to idle"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499371.99,
+              "title" : "Launch no.paeonia.app"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499371.988,
+          "title" : "Open no.paeonia.app"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793499377.025,
+                  "title" : "Checking existence of `\"keyboard.diagnostic.open\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499377.024,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"keyboard.diagnostic.open\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499375.957,
+          "title" : "Waiting 10.0s for \"keyboard.diagnostic.open\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499377.086,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499377.089,
+              "title" : "Find the \"keyboard.diagnostic.open\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499377.097,
+              "title" : "Check for interrupting elements affecting \"keyboard.diagnostic.open\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499377.107,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499377.42,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499377.086,
+          "title" : "Tap \"keyboard.diagnostic.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793499379.001,
+                  "title" : "Checking existence of `\"keyboard.diagnostic.text\" Any`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499379,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"keyboard.diagnostic.text\" Any`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499377.922,
+          "title" : "Waiting 5.0s for \"keyboard.diagnostic.text\" Any to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499379.102,
+          "title" : "Find the Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Native Form before keyboard_0_492A841B-2871-4B1F-AE3C-1683FF84D984.png",
+              "payloadId" : "0~PqwKrR0XKzkaRnILnS_sVQDslbzS_ulT_cHso7k4uRFhOmEAtkEB98SqhN-TlkipyojtpIRf34QL84wx6TPvVw==",
+              "timestamp" : 1793499379.199,
+              "uuid" : "03884758-65F3-4A85-928D-1F021D3D2110"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499379.199,
+              "title" : "Native Form before keyboard"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499379.199,
+          "title" : "Added attachment named 'Native Form before keyboard'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499379.2,
+          "title" : "Requesting snapshot of accessibility hierarchy for app with pid 29151"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499379.276,
+          "title" : "Requesting snapshot of accessibility hierarchy for app with pid 29151"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Native Form before keyboard hierarchy_0_581373D8-74B8-402F-9028-F1A913B95689.txt",
+              "payloadId" : "0~GTJQ_kboHsrlM1kQp_92N9f17DL971fnVw1MVPgArpThOGXcLm9yZWvELl6L4bTD2aZlp2IUPlr-h_XDshL0EA==",
+              "timestamp" : 1793499379.297,
+              "uuid" : "BC2F286B-EF9A-437F-8B05-AFD6AB01544F"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499379.297,
+              "title" : "Native Form before keyboard hierarchy"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499379.297,
+          "title" : "Added attachment named 'Native Form before keyboard hierarchy'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499379.298,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499379.3,
+              "title" : "Find the \"keyboard.diagnostic.text\" Any"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499379.359,
+              "title" : "Check for interrupting elements affecting \"keyboard.diagnostic.text\" TextField"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793499379.651,
+                  "title" : "Invalid frame dimension (negative or non-finite)."
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499379.395,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499379.692,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499379.297,
+          "title" : "Tap \"keyboard.diagnostic.text\" Any"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499379.873,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499380.234,
+              "title" : "Find the \"keyboard.diagnostic.text\" TextField"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499380.405,
+              "title" : "Check for interrupting elements affecting \"keyboard.diagnostic.text\" TextField"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499380.48,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499381.06,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499379.872,
+          "title" : "Type 'A circle above a l...' into \"keyboard.diagnostic.text\" TextField"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499381.07,
+          "title" : "Find the \"keyboard.diagnostic.text\" TextField"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499381.248,
+          "title" : "Find the Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Native Form while editing_0_BE5A1D37-F64D-4D55-A08E-F0C5A3BADDAC.png",
+              "payloadId" : "0~g4VohL-iiWgxotfyouQYeLGyWhwfPSn6QAC01M3wFWAHMM_T52ZRI4rIZBQIKct202nIFbhJqR_7xR2gCNeaog==",
+              "timestamp" : 1793499381.364,
+              "uuid" : "24DF352F-7045-4066-9D67-F063D7D6F1B8"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499381.364,
+              "title" : "Native Form while editing"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499381.364,
+          "title" : "Added attachment named 'Native Form while editing'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499381.364,
+          "title" : "Requesting snapshot of accessibility hierarchy for app with pid 29151"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499381.537,
+          "title" : "Requesting snapshot of accessibility hierarchy for app with pid 29151"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Native Form while editing hierarchy_0_7416487D-7A15-485C-8B4C-2935B24699B0.txt",
+              "payloadId" : "0~geVbrveN-hdP2EVGMs7JIEHeVgcT5svXh-fT13oArj62cH44ZVt2IuzF4MS-XfOWUaJVtGOtqBp_r3zTMj6zbQ==",
+              "timestamp" : 1793499381.581,
+              "uuid" : "A27E578F-C8D3-4B25-B69A-D7044AA51175"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499381.581,
+              "title" : "Native Form while editing hierarchy"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499381.581,
+          "title" : "Added attachment named 'Native Form while editing hierarchy'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499381.581,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499381.584,
+              "title" : "Find the \"keyboard.diagnostic.keyboard.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499381.616,
+              "title" : "Check for interrupting elements affecting \"keyboard.diagnostic.keyboard.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499381.646,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499381.948,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499381.581,
+          "title" : "Tap \"keyboard.diagnostic.keyboard.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499382.222,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499382.226,
+              "title" : "Find the \"keyboard.diagnostic.sheet.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499382.248,
+              "title" : "Check for interrupting elements affecting \"keyboard.diagnostic.sheet.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499382.273,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499382.58,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499382.222,
+          "title" : "Tap \"keyboard.diagnostic.sheet.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793499383.99,
+                  "title" : "Checking existence of `\"keyboard.diagnostic.open\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499383.989,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"keyboard.diagnostic.open\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499382.97,
+          "title" : "Waiting 5.0s for \"keyboard.diagnostic.open\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499384.009,
+          "title" : "Find the \"keyboard.diagnostic.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499384.023,
+          "title" : "Find the Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Native Form after dismissal_0_B9B45E4D-F3DB-49DB-9E0A-03D0374D65C4.png",
+              "payloadId" : "0~spgxtrPJxH_IqOBI-xTtTLHuWzL7wn_jmzBCH07Oqo2OLDiLLSW11yU54tDA0bmmVX__jrA64RdMqoW7g0wtIg==",
+              "timestamp" : 1793499384.111,
+              "uuid" : "4F6BCB99-5E6A-4420-BBC4-37CC9350621A"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499384.111,
+              "title" : "Native Form after dismissal"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499384.111,
+          "title" : "Added attachment named 'Native Form after dismissal'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499384.111,
+          "title" : "Requesting snapshot of accessibility hierarchy for app with pid 29151"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499384.134,
+          "title" : "Requesting snapshot of accessibility hierarchy for app with pid 29151"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Native Form after dismissal hierarchy_0_C3622BB9-CD6F-4FF1-A139-3B63EC7C9392.txt",
+              "payloadId" : "0~1GSRlTpjSQuOjVANHeF6hxBXXzqKXnElQd_AoifKVqwPpVTsabf4wBWjyM8TM6ziek4EBnrDsu62GY8FN7ynhw==",
+              "timestamp" : 1793499384.142,
+              "uuid" : "A1812AD7-46BA-43C3-802B-A6F6717B92DE"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793499384.142,
+              "title" : "Native Form after dismissal hierarchy"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499384.142,
+          "title" : "Added attachment named 'Native Form after dismissal hierarchy'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499384.142,
+          "title" : "Terminate no.paeonia.app:29151"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793499385.218,
+          "title" : "Tear Down"
+        }
+      ],
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "24A434",
+        "osVersion" : "27.0",
+        "platform" : "iOS Simulator"
+      },
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ]
+}

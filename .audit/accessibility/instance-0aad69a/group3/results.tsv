@@ -1,0 +1,4 @@
+identifier	result	duration_seconds
+AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian()	Passed	11.868971943855286
+PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()	Passed	39.151010036468506
+ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()	Passed	17.038939952850342

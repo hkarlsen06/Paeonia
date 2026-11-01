@@ -1,0 +1,89 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "duration" : "Ran for 10 sekunder",
+  "durationInSeconds" : 10.397418975830078,
+  "hasMediaAttachments" : true,
+  "hasPerformanceMetrics" : false,
+  "startTime" : 1793499471.435,
+  "testDescription" : "Test case with 1 run",
+  "testIdentifier" : "AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian",
+  "testName" : "testPaywallAtAX5InNorwegian()",
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ],
+  "testResult" : "Failed",
+  "testRuns" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "name" : "Complete Issue Description.txt",
+                  "nodeIdentifier" : "A70CC2F8-8D74-4506-8F7F-7393DCE25ED0",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~AREu1zYXA0CTe505JuLfamWJXLLHabHSEn_OgxHDUqQ_Olfw3lPfJvQ7oq1foHGM22vjeZnelxW70MAWB6vm6w==",
+                  "name" : "App Screenshot_0_8FE30DCD-B156-4734-B050-3771B87BF3F3.png",
+                  "nodeIdentifier" : "018D28B7-2ACB-4A10-98D7-FF3E6BAA2E94",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~6CNMSl70XTpd0hidPNX8HpQ1z7DB4Oidrftd6SwHHGRqHJqLfSNvTAxYqHMOo6OTx6omVaut3CelEHfIKj6onw==",
+                  "name" : "Element Screenshot_1_94034DE0-E336-4D2F-ADF9-16C65F68175C.png",
+                  "nodeIdentifier" : "EF1E6CFD-DFE7-455E-A01D-FF871614B423",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "name" : "",
+                  "nodeType" : "Source Code Reference",
+                  "sourceLocation" : {
+                    "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                    "lineNumber" : 85
+                  }
+                }
+              ],
+              "name" : "Contrast failed",
+              "nodeType" : "Test Case Run",
+              "result" : "Failed",
+              "sourceLocation" : {
+                "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                "lineNumber" : 85
+              }
+            }
+          ],
+          "duration" : "10 s",
+          "durationInSeconds" : 10.397418975830078,
+          "name" : "Test Scheme Action",
+          "nodeIdentifier" : "1",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian",
+          "nodeType" : "Test Plan Configuration",
+          "result" : "Failed"
+        }
+      ],
+      "details" : "iOS Simulator 27.0",
+      "duration" : "10 s",
+      "durationInSeconds" : 10.397418975830078,
+      "name" : "iPhone 17 Pro",
+      "nodeIdentifier" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "nodeType" : "Device",
+      "result" : "Failed"
+    }
+  ]
+}

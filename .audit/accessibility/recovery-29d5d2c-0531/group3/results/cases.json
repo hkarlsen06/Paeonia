@@ -1,0 +1,53 @@
+[
+  {
+    "duration": "12\u202fs",
+    "durationInSeconds": 12.275409936904907,
+    "name": "testAnswerAtAX5InNorwegian()",
+    "nodeIdentifier": "AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "children": [
+      {
+        "name": "XCTAssertTrue failed",
+        "nodeType": "Failure Message",
+        "sourceLocation": {
+          "filePath": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/PaeoniaAppUITests.swift",
+          "lineNumber": 74
+        }
+      }
+    ],
+    "duration": "47\u202fs",
+    "durationInSeconds": 47.03739809989929,
+    "name": "testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+    "nodeIdentifier": "PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing",
+    "nodeType": "Test Case",
+    "result": "Failed"
+  },
+  {
+    "children": [
+      {
+        "name": "XCTAssertTrue failed",
+        "nodeType": "Failure Message",
+        "sourceLocation": {
+          "filePath": "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/ProfileAccessibilityJourneyUITests.swift",
+          "lineNumber": 54
+        }
+      },
+      {
+        "name": "Invalid frame dimension (negative or non-finite).",
+        "nodeType": "Runtime Warning"
+      }
+    ],
+    "duration": "34\u202fs",
+    "durationInSeconds": 34.72332799434662,
+    "name": "testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()",
+    "nodeIdentifier": "ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName",
+    "nodeType": "Test Case",
+    "result": "Failed"
+  }
+]

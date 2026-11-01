@@ -1,0 +1,8 @@
+identifier	name	result	duration
+AccessibilityJourneyUITests/testDrawingAudit()	testDrawingAudit()	Passed	14 s
+AccessibilityJourneyUITests/testHomeAudit()	testHomeAudit()	Failed	14 s
+AccessibilityJourneyUITests/testMemoryAudit()	testMemoryAudit()	Passed	10 s
+AccessibilityJourneyUITests/testPaywallAudit()	testPaywallAudit()	Passed	10 s
+AccessibilityJourneyUITests/testPrivacyAudit()	testPrivacyAudit()	Passed	10 s
+AccessibilityJourneyUITests/testQuestionsAudit()	testQuestionsAudit()	Failed	13 s
+AccessibilityJourneyUITests/testSignInAudit()	testSignInAudit()	Failed	9 s

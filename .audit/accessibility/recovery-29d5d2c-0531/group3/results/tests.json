@@ -1,0 +1,111 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "12 s",
+                  "durationInSeconds" : 12.275409936904907,
+                  "name" : "testAnswerAtAX5InNorwegian()",
+                  "nodeIdentifier" : "AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "AccessibilityJourneyUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "XCTAssertTrue failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/PaeoniaAppUITests.swift",
+                        "lineNumber" : 74
+                      }
+                    }
+                  ],
+                  "duration" : "47 s",
+                  "durationInSeconds" : 47.03739809989929,
+                  "name" : "testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+                  "nodeIdentifier" : "PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                }
+              ],
+              "name" : "PaeoniaAppUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/PaeoniaAppUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Failed"
+            },
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "name" : "XCTAssertTrue failed",
+                      "nodeType" : "Failure Message",
+                      "sourceLocation" : {
+                        "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/ProfileAccessibilityJourneyUITests.swift",
+                        "lineNumber" : 54
+                      }
+                    },
+                    {
+                      "name" : "Invalid frame dimension (negative or non-finite).",
+                      "nodeType" : "Runtime Warning"
+                    }
+                  ],
+                  "duration" : "34 s",
+                  "durationInSeconds" : 34.72332799434662,
+                  "name" : "testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()",
+                  "nodeIdentifier" : "ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName",
+                  "nodeType" : "Test Case",
+                  "result" : "Failed"
+                }
+              ],
+              "name" : "ProfileAccessibilityJourneyUITests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/ProfileAccessibilityJourneyUITests",
+              "nodeType" : "Test Suite",
+              "result" : "Failed"
+            }
+          ],
+          "name" : "PaeoniaAppUITests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests",
+          "nodeType" : "UI test bundle",
+          "result" : "Failed"
+        }
+      ],
+      "name" : "App",
+      "nodeType" : "Test Plan",
+      "result" : "Failed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

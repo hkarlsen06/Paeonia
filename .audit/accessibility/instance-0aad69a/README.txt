@@ -1,0 +1,11 @@
+Compact evidence copied from /tmp/paeonia-accessibility-instance-0aad69a. No new test or device operation occurred during this copy.
+
+Signed unchanged source 0aad69a7187bbfa428092643247e76aaaa0fdf09. Four finalized owned groups ran once, without retries. Full unit suite: 2,190 distinct cases and 2,291 executions. Original summary reports 36 tests with dynamic parameters and 137 parameterized runs. All nine UI executions passed: Large drawing/profile/history, AX5 answer/onboarding/profile and AX5 drawing/history/Settings audit. No assertion failures or compiler warnings.
+
+Six invalid-frame runtime warnings remain unwaived: Large drawing/profile/history, AX5 profile and AX5 drawing/history. Modern summaries classify them as runtime warnings despite wrapper ERRORS/TEST FAILURES headings. Relevant UI details and activities, original issue objects and compact console extracts are included. Full unfiltered console logs remain at original paths.
+
+AX5 onboarding now reached actual Photos selection, Zoom increment, framing Apply, crop Done and the synthetic pairing destination. AX5 profile cancellation and saved-name retention passed. This does not prove actual authentication or purchasing. Passing cases did not all retain images, recordings or hierarchies. All attachment manifests and text preferences are copied, with the two small profile screenshots. Other available images remain in /tmp. No missing frame or manual reproduction was invented.
+
+Generated results.tsv files index modern Test Case identifiers, results and durations. copy-manifest.json hashes the unaltered copied originals. No unit activity files or full unit tree were copied. Source hashes and status were unchanged. Full unit indexes, selected unit regression details, raw logs and result bundles remain at original paths.
+
+Actual Large was restored and independently read back. Reduce Motion and other preferences were untouched and unverified. No new VoiceOver, Voice Control, Inspector, iPad, regular-user, provider, purchase or label validation follows. Prior review cases are closed in the tested scope; the extension content-based completion and history refresh variants found by the latest review remain pending their own fixes and runtime checks.

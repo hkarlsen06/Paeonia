@@ -1,0 +1,7 @@
+AccessibilityJourneyUITests/testDrawingAtAX5InNorwegian()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.
+AccessibilityJourneyUITests/testMemoryEditorAtAX5InNorwegian()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.
+AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.

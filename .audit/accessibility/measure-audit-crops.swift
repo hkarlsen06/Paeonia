@@ -3,21 +3,21 @@ import CoreGraphics
 import Foundation
 import ImageIO
 
-// A diagnostic for these three retained UI-2156 crops only, not a general audit.
+// A diagnostic for retained light-on-dark crops and explicit point rectangles, not a general audit.
 // Their visible content is light text/SF symbols on dark plum surfaces. Convert
 // the embedded profile to sRGB, then require a flat 3x3 neighborhood (each RGB
 // channel within 1) to sample glyph interiors rather than antialias edges.
 // Luminance above 0.1 selects glyph cores; the nearest flat pixel below 0.1 in
 // four directions within 80 physical pixels samples the adjacent background.
 // Count cores in 0.1...0.3 explicitly so medium-gray glyphs are not silently
-// excluded. All three known crops have zero flat cores in that interval.
+// excluded. A zero count is a measurement result, not an assumption.
 // Dark glyphs on dark surfaces, boundaries, selection markers, and other states
 // are outside this crop-specific measurement and require separate evaluation.
 func writeLine(_ value: String) {
     FileHandle.standardOutput.write(Data((value + "\n").utf8))
 }
 
-func measure(_ path: String) {
+func measure(_ path: String, rect: CGRect? = nil) {
     guard let source = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
           let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
           let space = CGColorSpace(name: CGColorSpace.sRGB) else {
@@ -55,7 +55,13 @@ func measure(_ path: String) {
     var minimum = Double.infinity, maximum = 0.0, count = 0
     var worstForeground = "", worstBackground = "", foregroundPosition = "", backgroundPosition = ""
     var mediumCoreCount = 0
-    for y in 1..<(h - 1) { for x in 1..<(w - 1) {
+    let scale = Double(w) / 402
+    let minX = rect.map { max(1, Int($0.minX * scale)) } ?? 1
+    let maxX = rect.map { min(w - 1, Int($0.maxX * scale)) } ?? (w - 1)
+    let minY = rect.map { max(1, Int($0.minY * scale)) } ?? 1
+    let maxY = rect.map { min(h - 1, Int($0.maxY * scale)) } ?? (h - 1)
+    guard minX < maxX, minY < maxY else { fputs("Rectangle is outside the image\n", stderr); exit(64) }
+    for y in minY..<maxY { for x in minX..<maxX {
         guard lum[y * w + x] > 0.1, flat(x, y) else { continue }
         if lum[y * w + x] <= 0.3 { mediumCoreCount += 1 }
         var background: (Int, Int)?
@@ -84,9 +90,26 @@ func measure(_ path: String) {
         worstForeground, worstBackground, foregroundPosition, backgroundPosition]
     writeLine(fields.joined(separator: ","))
 }
-guard CommandLine.arguments.count > 1 else {
-    fputs("usage: swift .audit/accessibility/measure-audit-crops.swift <crop.png>...\n", stderr)
-    exit(64)
+let arguments = Array(CommandLine.arguments.dropFirst())
+let header = "crop,width,height,glyph_core_samples,medium_tone_core_samples,min_ratio,max_ratio,"
+    + "fg_sRGB,bg_sRGB,fg_xy,bg_xy"
+if arguments.first == "--rect" {
+    guard arguments.count == 6 else {
+        fputs("usage: measure-audit-crops.swift --rect <image.png> <x> <y> <width> <height>\n", stderr)
+        exit(64)
+    }
+    let values = arguments.dropFirst(2).compactMap(Double.init)
+    guard values.count == 4, values.allSatisfy({ $0.isFinite && $0 >= 0 }), values[2] > 0, values[3] > 0 else {
+        fputs("Rectangle values must be finite nonnegative points with positive width and height\n", stderr)
+        exit(64)
+    }
+    writeLine(header)
+    measure(arguments[1], rect: CGRect(x: values[0], y: values[1], width: values[2], height: values[3]))
+} else {
+    guard !arguments.isEmpty else {
+        fputs("usage: swift .audit/accessibility/measure-audit-crops.swift <crop.png>...\n", stderr)
+        exit(64)
+    }
+    writeLine(header)
+    for path in arguments { measure(path) }
 }
-writeLine("crop,width,height,glyph_core_samples,medium_tone_core_samples,min_ratio,max_ratio,fg_sRGB,bg_sRGB,fg_xy,bg_xy")
-for path in CommandLine.arguments.dropFirst() { measure(path) }

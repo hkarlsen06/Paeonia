@@ -1,0 +1,87 @@
+{
+  "arguments" : [
+    {
+      "value" : "\"A newer server description\""
+    },
+    {
+      "value" : "nil"
+    }
+  ],
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "duration" : "Average duration 0,0054 seconds",
+  "durationInSeconds" : 0.0054160356521606445,
+  "hasMediaAttachments" : false,
+  "hasPerformanceMetrics" : false,
+  "testDescription" : "Test case with 2 runs",
+  "testIdentifier" : "WidgetDrawingHistoryLoadingTests/pendingOverlayDoesNotChangeTheNewerServerTextOrVersion(newerText:)",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingHistoryLoadingTests/pendingOverlayDoesNotChangeTheNewerServerTextOrVersion(newerText:)",
+  "testName" : "pendingOverlayDoesNotChangeTheNewerServerTextOrVersion(newerText:)",
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ],
+  "testResult" : "Passed",
+  "testRuns" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "details" : "Swift.String",
+                  "name" : "some : \"A newer server description\"",
+                  "nodeType" : "Test Value"
+                }
+              ],
+              "details" : "Swift.Optional<Swift.String>",
+              "name" : "newerText : \"A newer server description\"",
+              "nodeType" : "Test Value"
+            }
+          ],
+          "name" : "Arguments",
+          "nodeType" : "Arguments"
+        }
+      ],
+      "duration" : "0,006s",
+      "durationInSeconds" : 0.005959033966064453,
+      "name" : "\"A newer server description\"",
+      "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingHistoryLoadingTests/pendingOverlayDoesNotChangeTheNewerServerTextOrVersion(newerText:)?args=09856ef3f3eccf3c86721d4c0ebe400ed9395e7e2f29ca8ead54d7cb4c64304b",
+      "nodeType" : "Arguments",
+      "result" : "Passed"
+    },
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "details" : "Swift.Optional<Swift.String>",
+              "name" : "newerText : nil",
+              "nodeType" : "Test Value"
+            }
+          ],
+          "name" : "Arguments",
+          "nodeType" : "Arguments"
+        }
+      ],
+      "duration" : "0,0049s",
+      "durationInSeconds" : 0.004873037338256836,
+      "name" : "nil",
+      "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppTests/WidgetDrawingHistoryLoadingTests/pendingOverlayDoesNotChangeTheNewerServerTextOrVersion(newerText:)?args=74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "nodeType" : "Arguments",
+      "result" : "Passed"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "duration" : "Ran for 1 minutt og 3 sekunder",
+  "durationInSeconds" : 63.15404796600342,
+  "hasMediaAttachments" : true,
+  "hasPerformanceMetrics" : false,
+  "startTime" : 1793505701.687,
+  "testDescription" : "Test case with 1 run",
+  "testIdentifier" : "GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord",
+  "testName" : "testChatDuringGameAndReturnToUnfinishedWord()",
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ],
+  "testResult" : "Passed",
+  "testRuns" : [
+    {
+      "children" : [
+        {
+          "duration" : "1 min, 3 s",
+          "durationInSeconds" : 63.15404796600342,
+          "name" : "Test Scheme Action",
+          "nodeIdentifier" : "1",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord",
+          "nodeType" : "Test Plan Configuration",
+          "result" : "Passed"
+        }
+      ],
+      "details" : "iOS Simulator 27.0",
+      "duration" : "1 min, 3 s",
+      "durationInSeconds" : 63.15404796600342,
+      "name" : "iPhone 17 Pro",
+      "nodeIdentifier" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "nodeType" : "Device",
+      "result" : "Passed"
+    }
+  ]
+}

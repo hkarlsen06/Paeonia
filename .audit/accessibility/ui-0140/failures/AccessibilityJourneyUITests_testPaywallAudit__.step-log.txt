@@ -1,0 +1,36 @@
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testPaywallAudit]' started.
+    t =     0.00s Start Test at 2026-11-01 01:43:19.971
+    t =     0.03s Set Up
+    t =     1.07s Added attachment named 'System text size precondition'
+    t =     1.08s Open no.paeonia.app
+    t =     1.08s     Launch no.paeonia.app
+    t =     1.53s         Setting up automation session
+    t =     8.89s         Wait for no.paeonia.app to idle
+    t =    11.73s Wait for no.paeonia.app to become Running Foreground
+    t =    11.73s Waiting 10.0s for Window (First Match) to exist
+    t =    12.77s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =    12.77s         Checking existence of `Window (First Match)`
+    t =    12.87s Find the Target Application 'no.paeonia.app'
+    t =    13.16s Added attachment named 'paywall-trial-before-audit-standard-en'
+    t =    15.86s Find the Any (Descendant with identity binding to AX element pid: 96630, elementOrHash.elementID: 4504312384.20)
+    t =    15.89s Requesting snapshot of accessibility hierarchy for app with pid 96630
+    t =    15.92s Find: Descendant with identity binding to AX element pid: 96630, elementOrHash.elementID: 4504312384.20
+    t =    15.96s Requesting snapshot of accessibility hierarchy for app with pid 96630
+    t =    15.98s Find: Descendant with identity binding to AX element pid: 96630, elementOrHash.elementID: 4504312384.20
+    t =    15.99s Requesting snapshot of accessibility hierarchy for app with pid 96630
+    t =    16.02s Added attachment named 'Accessibility issue'
+    t =    16.02s Find the Any (Descendant with identity binding to AX element pid: 96630, elementOrHash.elementID: 4504312384.20)
+    t =    16.04s Checking existence of `"One subscription covers both of you." StaticText`
+    t =    16.05s Find the "One subscription covers both of you." StaticText
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testPaywallAudit] : Contrast failed
+    t =    16.09s Find the Target Application 'no.paeonia.app'
+    t =    16.19s Added attachment named 'paywall-trial-en'
+    t =    16.19s Terminate no.paeonia.app:96630
+    t =    17.27s Tear Down
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testPaywallAudit]' failed (17.368 seconds).
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testPrivacyAudit]' started.
+    t =     0.00s Start Test at 2026-11-01 01:43:37.341
+    t =     0.04s Set Up
+    t =     1.07s Added attachment named 'System text size precondition'
+    t =     1.08s Open no.paeonia.app
+    t =     1.08s 

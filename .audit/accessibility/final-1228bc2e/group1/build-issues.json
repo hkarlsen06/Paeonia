@@ -1,0 +1,30 @@
+{
+  "_type": {
+    "_name": "ResultIssueSummaries"
+  },
+  "analyzerWarningSummaries": {
+    "_type": {
+      "_name": "Array"
+    }
+  },
+  "errorSummaries": {
+    "_type": {
+      "_name": "Array"
+    }
+  },
+  "testFailureSummaries": {
+    "_type": {
+      "_name": "Array"
+    }
+  },
+  "testWarningSummaries": {
+    "_type": {
+      "_name": "Array"
+    }
+  },
+  "warningSummaries": {
+    "_type": {
+      "_name": "Array"
+    }
+  }
+}

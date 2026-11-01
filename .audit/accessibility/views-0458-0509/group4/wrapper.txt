@@ -1,0 +1,23 @@
+Generated CURRENT_PROJECT_VERSION=20261101.0509
+[xcode-test-agent] waiting for another agent's xcodebuild to finish (81313 Paeonia-profile-save xcode-build-agent since 05:09:22); 0s waited
+[xcode-test-agent] waiting for another agent's xcodebuild to finish (81313 Paeonia-profile-save xcode-build-agent since 05:09:22); 20s waited
+[xcode-test-agent] waiting for another agent's xcodebuild to finish (81313 Paeonia-profile-save xcode-build-agent since 05:09:22); 40s waited
+[xcode-test-agent] waiting for another agent's xcodebuild to finish (81313 Paeonia-profile-save xcode-build-agent since 05:09:22); 60s waited
+[xcode-test-agent] waiting for another agent's xcodebuild to finish (81313 Paeonia-profile-save xcode-build-agent since 05:09:22); 80s waited
+[xcode-test-agent] waiting for another agent's xcodebuild to finish (81313 Paeonia-profile-save xcode-build-agent since 05:09:22); 100s waited
+[xcode-test-agent] xcodebuild lock acquired after 102s
+[xcode-test-agent] build started; heartbeat every 20s
+[xcode-test-agent] tests started; heartbeat every 20s
+[xcode-test-agent] alive: tests still running (20s elapsed)
+[xcode-test-agent] alive: tests still running (40s elapsed)
+[xcode-test-agent] alive: tests still running (60s elapsed)
+[xcode-test-agent] alive: tests still running (80s elapsed)
+[xcode-test-agent] alive: tests still running (100s elapsed)
+[xcode-test-agent] alive: tests still running (120s elapsed)
+STATUS: SUCCESS
+SCHEME: App
+DESTINATION: platform=iOS Simulator,name=Shared iPhone 2
+TESTS: total=2 failed=0
+
+
+SUMMARY: SUCCESS queued=104s compiled=8s tested=120s simulator="Shared iPhone 2"

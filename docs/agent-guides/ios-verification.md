@@ -11,10 +11,11 @@ The root [AGENTS.md](../../AGENTS.md#testing) says when a change needs a test. A
 
 Prefer the UI test when the bug would show on screen, and the integration test when it would show in what is stored or sent. A unit test of a view model's loading flag, banner text or animation timing catches nothing that the device check misses.
 
-XCUITest on iOS 27 has two quirks:
+XCUITest on iOS 27 has these quirks:
 
 - With five tabs, the system tab bar drops every tab button's accessibility identifier, whichever tab API sets it. Find a tab by position: `app.tabBars.firstMatch.buttons.element(boundBy:)`.
 - An alert action is a button inside a button with the same identifier, so `app.alerts.buttons[id]` matches two elements and the tap fails. Use `.matching(identifier:).firstMatch`.
+- An identifier on a broad feature container can replace the identifier of its only exposed native action. The Consensio Lock and drawing-game Done journeys reproduced this. Put control identifiers on the actual action and screen identifiers on an inert heading when needed. Native Form rows can also be virtualized, so scroll before requiring an offscreen row to exist.
 
 ### Dead ends in test speed
 

@@ -1,0 +1,31 @@
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAudit]' started.
+    t =     0.00s Start Test at 2026-11-01 01:44:13.742
+    t =     0.07s Set Up
+    t =     1.12s Added attachment named 'System text size precondition'
+    t =     1.13s Open no.paeonia.app
+    t =     1.13s     Launch no.paeonia.app
+    t =     1.63s         Setting up automation session
+    t =     6.69s         Wait for no.paeonia.app to idle
+    t =     8.89s Wait for no.paeonia.app to become Running Foreground
+    t =     8.89s Waiting 10.0s for Window (First Match) to exist
+    t =     9.94s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =     9.94s         Checking existence of `Window (First Match)`
+    t =    10.03s Find the Target Application 'no.paeonia.app'
+    t =    10.25s Added attachment named 'sign-in-before-audit-standard-en'
+    t =    12.68s Added attachment named 'Accessibility issue'
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAudit] : Contrast failed
+    t =    12.70s Added attachment named 'Accessibility issue'
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAudit] : Contrast failed
+    t =    12.70s Added attachment named 'Accessibility issue'
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAudit] : Contrast failed
+    t =    12.70s Find the Target Application 'no.paeonia.app'
+    t =    12.81s Added attachment named 'sign-in-en'
+    t =    12.81s Terminate no.paeonia.app:97484
+    t =    13.90s Tear Down
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAudit]' failed (14.155 seconds).
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testWelcomeAudit]' started.
+    t =     0.00s Start Test at 2026-11-01 01:44:27.901
+    t =     0.08s Set Up
+    t =     1.12s Added attachment named 'System text size precondition'
+    t =     1.12s Open no.paeonia.app
+    t =     1.12s  

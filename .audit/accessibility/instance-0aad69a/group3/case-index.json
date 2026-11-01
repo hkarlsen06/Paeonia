@@ -1,0 +1,35 @@
+[
+  {
+    "duration": "11\u202fs",
+    "durationInSeconds": 11.868971943855286,
+    "name": "testAnswerAtAX5InNorwegian()",
+    "nodeIdentifier": "AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "duration": "39\u202fs",
+    "durationInSeconds": 39.151010036468506,
+    "name": "testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+    "nodeIdentifier": "PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  },
+  {
+    "children": [
+      {
+        "name": "Invalid frame dimension (negative or non-finite).",
+        "nodeType": "Runtime Warning"
+      }
+    ],
+    "duration": "17\u202fs",
+    "durationInSeconds": 17.038939952850342,
+    "name": "testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()",
+    "nodeIdentifier": "ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName()",
+    "nodeIdentifierURL": "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/ProfileAccessibilityJourneyUITests/testProfileOpensFromTheCoupleHeaderAndCancellingKeepsTheSavedName",
+    "nodeType": "Test Case",
+    "result": "Passed"
+  }
+]

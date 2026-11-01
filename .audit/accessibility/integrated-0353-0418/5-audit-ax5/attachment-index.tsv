@@ -1,0 +1,46 @@
+test	name	file	timestamp	failure
+AccessibilityJourneyUITests/testDrawingAtAX5InNorwegian()	widget-drawing-AX5-nb_0_F3BDAB89-F6A3-4140-A449-1D4D24B4ABF8.png	29332338-9454-4881-A6DB-6D48DA5CDA70.png	1793503136.709	False
+AccessibilityJourneyUITests/testDrawingAtAX5InNorwegian()	widget-drawing-before-audit-AX5-nb_0_2F90DDD3-B537-4704-B41A-193328A99C65.png	41762DB5-CC09-41DE-9339-5C4762E622C7.png	1793503134.359	False
+AccessibilityJourneyUITests/testDrawingAtAX5InNorwegian()	System text size precondition_0_BB1C9D4F-C2BC-45B4-9BB3-046609149DEB.txt	6939DB92-AE98-4F80-8183-BE930926F88F.txt	1793503124.358	False
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	paired-home-AX5-nb_0_31A9BDE5-6EEF-46AC-BB5A-36577D4F6172.png	C48C1C0F-9518-4E40-B2D5-E75CFC36A6AD.png	1793503148.979	False
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Accessibility issue_0_D77390AF-70E4-4ACF-A1DE-24D4E8FB562D.txt	4B0EE12F-A4CE-4FAB-B1D9-1B31B83ABD9C.txt	1793503148.757	False
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Accessibility issue_0_C191FF5C-AF93-4795-99D3-91D384688D98.txt	3431E235-5937-43E1-A9DB-96365F9CC00F.txt	1793503148.434	False
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Accessibility issue_0_8A1AD6D2-680C-45C9-8C60-394FF9FBBB9C.txt	984B6B62-77CB-449E-B636-AF466C906D31.txt	1793503148.126	False
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	paired-home-before-audit-AX5-nb_0_4E64B1F8-BE51-4A65-A7EE-B54DA8717DA6.png	26B76102-4C77-4A53-ABA1-D052B442B595.png	1793503145.916	False
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	System text size precondition_0_350FC74B-F3D7-4F9A-AFA5-0627C5E7C866.txt	C8F5D641-AB55-4938-96D4-15158DFA0DB2.txt	1793503138.964	False
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Screen Recording 2026-11-01 at 04.18.57 am.mp4	0766FDD8-AE21-4DCF-99FF-EC7A46A0CFC3.mp4	1793503137.821	False
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Complete Issue Description.txt	8133B400-3611-4EDD-9D97-CA23D05C5B49.txt		True
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	App Screenshot_0_E686E54F-C65B-483B-A359-6AA2403389FB.png	DA57FC52-7886-4BC8-9246-676502FC578B.png	1793503148.126	True
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Complete Issue Description.txt	7F4E4980-9B07-4E85-9D1F-51F2CE862833.txt		True
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	App Screenshot_0_A91C0ECE-16BC-41FD-A6A6-E6AC15A94315.png	7DC0178C-BF61-4D3F-8C02-8746B4DEA5CC.png	1793503148.434	True
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Element Screenshot_1_AD9A0CA3-0711-47E5-A189-157365EDDEC1.png	171C4557-EA2C-4E49-B07C-D28455C4B6DC.png	1793503148.434	True
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Complete Issue Description.txt	12582756-B326-46C7-955B-0959D2EFD788.txt		True
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	App Screenshot_0_9308CCE1-FDFC-46E4-AB0D-27C8FABD2BF8.png	199FCAE8-04D1-4260-97C1-44A5CAA79279.png	1793503148.757	True
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Element Screenshot_1_CC9878EC-CE87-44C7-9A8F-55B7ADBF964A.png	6D8F6E6F-4759-4D4A-8BF7-328FBB78F209.png	1793503148.757	True
+AccessibilityJourneyUITests/testMemoryEditorAtAX5InNorwegian()	memory-editor-AX5-nb_0_EB8E1A86-237B-419B-8975-F752650E1FB3.png	B03D7957-1202-4CA0-8F99-C38962715298.png	1793503158.813	False
+AccessibilityJourneyUITests/testMemoryEditorAtAX5InNorwegian()	memory-editor-before-audit-AX5-nb_0_DD0AFDEA-5667-46D7-8B22-0E36D636DF66.png	F35F770E-1F32-4BF3-A16F-CB43D7CC2A0F.png	1793503156.768	False
+AccessibilityJourneyUITests/testMemoryEditorAtAX5InNorwegian()	System text size precondition_0_AE89662C-7631-44DE-AD1B-B1FF42728DCA.txt	C0BB8E2E-AA25-4548-A8D4-76927BBF400B.txt	1793503151.214	False
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	paywall-trial-AX5-nb_0_7A152BE9-A106-4A05-80F3-D1D15F4AAB16.png	80697131-3122-4952-9506-F29D78C18023.png	1793503172.402	False
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	Accessibility issue_0_EF353BC2-A207-4E4E-8C32-71937074E021.txt	EB789044-E786-45A7-862A-5E4F69385390.txt	1793503172.192	False
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	paywall-trial-before-audit-AX5-nb_0_2922FC1E-8D1D-4E76-A048-D414A89B77E7.png	232A3EFD-BDC7-4035-A7AB-9033CD44ABEE.png	1793503169.064	False
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	System text size precondition_0_514AE3CF-0F2C-4868-9831-204A9FF90160.txt	A47DEBB7-A2D6-45FC-8133-A1242621446D.txt	1793503160.97	False
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	Screen Recording 2026-11-01 at 04.19.19 am.mp4	841638FF-EB3A-46E1-86F5-7E51C29B745C.mp4	1793503159.933	False
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	Complete Issue Description.txt	C083BBDA-37D0-44F4-80A4-44FC492F5A4D.txt		True
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	App Screenshot_0_412AD216-A6DC-44D7-93B2-0A63B5DEC934.png	6AB326F3-4109-48BB-A07F-F82EDDD64E6C.png	1793503172.192	True
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	Element Screenshot_1_42D86D9F-7B36-4EA4-8FAF-2531C0D8E90D.png	D420FFFD-6611-449A-872C-64307F16195E.png	1793503172.192	True
+AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()	settings-AX5-nb_0_74668C7C-ACBD-4083-B5AD-596F9C6D98C8.png	353C09DF-2797-4981-82E1-9D0763D1B15F.png	1793503183.937	False
+AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()	settings-before-audit-AX5-nb_0_23AEF035-F23A-42A4-AD58-8DE735DAF72C.png	80CBCF4C-D34A-46E1-AA73-0369D68CF074.png	1793503181.266	False
+AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()	System text size precondition_0_075583D9-96EA-4F4A-ABA9-6164FE2CBA33.txt	6AE3D4A4-4AB5-48F0-AB83-8140E4CF1289.txt	1793503174.581	False
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	sign-in-AX5-nb_0_A2497BCD-3F20-4DFA-85DC-87FE2B00FB3F.png	E4D595D2-EEA9-4189-9846-575A22F47FCD.png	1793503193.952	False
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	Accessibility issue_0_4AF34000-1634-40AB-B8E2-A45C18CB5E45.txt	360601A6-0951-4A05-BFD9-8C505A37D208.txt	1793503193.838	False
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	Accessibility issue_0_3A79B2C7-A2CD-466F-8A8F-146ED1917276.txt	DEE04613-1464-48F0-97DD-A33BC615F4EE.txt	1793503193.835	False
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	sign-in-before-audit-AX5-nb_0_80756D49-2D1B-40B2-B234-7277D0A38146.png	1D61299D-FB2F-435A-AFBF-A0EDF6D04E77.png	1793503191.886	False
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	System text size precondition_0_6B5B2B4A-574B-4039-812C-75323DBB2526.txt	B0512A6B-E547-4D58-9107-EA163556EE64.txt	1793503186.128	False
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	Screen Recording 2026-11-01 at 04.19.45 am.mp4	57D59C4C-86B1-44B1-878B-0E66B50AC78C.mp4	1793503185.086	False
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	Complete Issue Description.txt	962B4C19-173F-4350-B4BF-2FB77E288AFA.txt		True
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	App Screenshot_0_7B3F5405-5910-40B9-9E3F-2872582B2B5D.png	EB97A111-E893-47D0-A862-9FE94DA7FFE8.png	1793503193.835	True
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	Complete Issue Description.txt	014EEAA5-F2CA-49AE-9F11-6F401A18FE3C.txt		True
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	App Screenshot_0_9AA4F899-0413-4EC9-8D76-0BDF7D753FD3.png	63893446-BCB7-4F78-BD1F-8E60035B643B.png	1793503193.838	True
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	welcome-AX5-nb_0_2798C937-E498-4035-86AE-F090E1C3E1F7.png	743E6FC7-57F9-4E87-8814-29372AF19A41.png	1793503203.61	False
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	welcome-before-audit-AX5-nb_0_5920AB0F-8817-4B6C-BFCF-875BC1E077D8.png	93B704ED-EB78-4E9C-B0EB-68249065CC3C.png	1793503201.579	False
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	System text size precondition_0_98DC4518-6801-4C2B-8B8E-55DCEB720A4E.txt	50A4524E-F1E3-42B8-86EB-B3495DD58038.txt	1793503196.104	False

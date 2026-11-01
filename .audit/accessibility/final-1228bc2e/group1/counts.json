@@ -1,0 +1,13 @@
+{
+  "distinctMethods": 2192,
+  "parameterizedMethods": 36,
+  "argumentExecutions": 137,
+  "nonParameterizedMethods": 2156,
+  "leafExecutions": 2293,
+  "caseResults": {
+    "Passed": 2192
+  },
+  "argumentResults": {
+    "Passed": 137
+  }
+}

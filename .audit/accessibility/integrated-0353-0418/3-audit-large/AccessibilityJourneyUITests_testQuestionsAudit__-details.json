@@ -1,0 +1,197 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "deviceName" : "Shared iPhone 2",
+      "modelName" : "iPhone 17 Pro",
+      "osBuildNumber" : "24A434",
+      "osVersion" : "27.0",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "duration" : "Ran for 13 sekunder",
+  "durationInSeconds" : 13.239228010177612,
+  "hasMediaAttachments" : true,
+  "hasPerformanceMetrics" : false,
+  "startTime" : 1793502393.637,
+  "testDescription" : "Test case with 1 run",
+  "testIdentifier" : "AccessibilityJourneyUITests/testQuestionsAudit()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testQuestionsAudit",
+  "testName" : "testQuestionsAudit()",
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ],
+  "testResult" : "Failed",
+  "testRuns" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "name" : "Complete Issue Description.txt",
+                  "nodeIdentifier" : "2282F771-66BB-4DB6-A194-E09A58B74204",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~Sc7MW9WFQ9-4lMFkAJcYDydghe6m19YkUgHYCu9--F16a8uakkCyX6SmV0wnkyigURJC5ceekUMdoQDseOdtxw==",
+                  "name" : "App Screenshot_0_328D53C8-4FFA-4FC2-82F0-CA7548D755CB.png",
+                  "nodeIdentifier" : "93C01A83-8192-4868-BEEC-5D207B5DFC65",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~hVe2VVJKd9xTAJogvos--4BL9KEJO7TraIPqzViTIaXZHUA84C50BD8mJRhabX_LvbBLeIQWG8Tw5mMPGCKk3w==",
+                  "name" : "Element Screenshot_1_D319BD32-FAB3-4583-BD25-07C18F95BD32.png",
+                  "nodeIdentifier" : "FE67B98C-FEBD-4133-AC53-B32839F938E9",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "name" : "",
+                  "nodeType" : "Source Code Reference",
+                  "sourceLocation" : {
+                    "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                    "lineNumber" : 89
+                  }
+                }
+              ],
+              "name" : "Contrast failed",
+              "nodeType" : "Test Case Run",
+              "result" : "Failed",
+              "sourceLocation" : {
+                "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                "lineNumber" : 89
+              }
+            },
+            {
+              "children" : [
+                {
+                  "name" : "Complete Issue Description.txt",
+                  "nodeIdentifier" : "ED88BA88-E70E-4369-9384-7742CED5544D",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~Sc7MW9WFQ9-4lMFkAJcYDydghe6m19YkUgHYCu9--F16a8uakkCyX6SmV0wnkyigURJC5ceekUMdoQDseOdtxw==",
+                  "name" : "App Screenshot_0_512884B9-4055-431A-B26F-BFD8E3F09CDE.png",
+                  "nodeIdentifier" : "D8A08F19-7938-4B26-8691-C37D0340F01B",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~IjoTHLxgG7eiugvd4pVafaX9_0C_cnDlsKucbu7kfwqH9VgjuHt7EnVkIvmoDNpI2H2W9xpDIzD4mDsp3mSnvg==",
+                  "name" : "Element Screenshot_1_2AAE5924-2E35-4C09-9A93-45ABC5751A99.png",
+                  "nodeIdentifier" : "544591C6-0555-493C-B7D4-46C54B260CFB",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "name" : "",
+                  "nodeType" : "Source Code Reference",
+                  "sourceLocation" : {
+                    "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                    "lineNumber" : 89
+                  }
+                }
+              ],
+              "name" : "Contrast failed",
+              "nodeType" : "Test Case Run",
+              "result" : "Failed",
+              "sourceLocation" : {
+                "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                "lineNumber" : 89
+              }
+            },
+            {
+              "children" : [
+                {
+                  "name" : "Complete Issue Description.txt",
+                  "nodeIdentifier" : "A529DF2C-7C51-4369-BAC6-A0805238B198",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~Sc7MW9WFQ9-4lMFkAJcYDydghe6m19YkUgHYCu9--F16a8uakkCyX6SmV0wnkyigURJC5ceekUMdoQDseOdtxw==",
+                  "name" : "App Screenshot_0_4A981F37-E17E-42F7-B38F-B476083EA60B.png",
+                  "nodeIdentifier" : "8BD11718-0837-452D-9508-3B6C4E8744E1",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~hVe2VVJKd9xTAJogvos--4BL9KEJO7TraIPqzViTIaXZHUA84C50BD8mJRhabX_LvbBLeIQWG8Tw5mMPGCKk3w==",
+                  "name" : "Element Screenshot_1_78E3127D-2EAC-4147-BCAD-9DBB0E2E8133.png",
+                  "nodeIdentifier" : "EEDD79C8-9693-4623-9AA7-ECFA3273A8F9",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "name" : "",
+                  "nodeType" : "Source Code Reference",
+                  "sourceLocation" : {
+                    "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                    "lineNumber" : 89
+                  }
+                }
+              ],
+              "name" : "Dynamic Type font sizes are partially unsupported",
+              "nodeType" : "Test Case Run",
+              "result" : "Failed",
+              "sourceLocation" : {
+                "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                "lineNumber" : 89
+              }
+            },
+            {
+              "children" : [
+                {
+                  "name" : "Complete Issue Description.txt",
+                  "nodeIdentifier" : "33FF26FF-C5E3-4C84-BB03-BAB049A0C338",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~Sc7MW9WFQ9-4lMFkAJcYDydghe6m19YkUgHYCu9--F16a8uakkCyX6SmV0wnkyigURJC5ceekUMdoQDseOdtxw==",
+                  "name" : "App Screenshot_0_A0029740-9C44-4819-826D-C3EDCC45127F.png",
+                  "nodeIdentifier" : "35F2331A-92F4-4A81-AF1C-C23B3C4DECB5",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "details" : "0~-NqDHXWIY3n_RvwN1Qn8OisioQVRTtT0x-F7Mo14g4_E6AHLOz8uW1tBVcE1amM-Bph7mGJ01XNfuBEpogP3KA==",
+                  "name" : "Element Screenshot_1_019CB60E-CC30-4513-91FA-212ECF04C9E5.png",
+                  "nodeIdentifier" : "3F6D3AFA-21E1-4C39-AC16-74A1872AD660",
+                  "nodeType" : "Attachment"
+                },
+                {
+                  "name" : "",
+                  "nodeType" : "Source Code Reference",
+                  "sourceLocation" : {
+                    "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                    "lineNumber" : 89
+                  }
+                }
+              ],
+              "name" : "Dynamic Type font sizes are partially unsupported",
+              "nodeType" : "Test Case Run",
+              "result" : "Failed",
+              "sourceLocation" : {
+                "filePath" : "/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift",
+                "lineNumber" : 89
+              }
+            }
+          ],
+          "duration" : "13 s",
+          "durationInSeconds" : 13.239228010177612,
+          "name" : "Test Scheme Action",
+          "nodeIdentifier" : "1",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testQuestionsAudit",
+          "nodeType" : "Test Plan Configuration",
+          "result" : "Failed"
+        }
+      ],
+      "details" : "iOS Simulator 27.0",
+      "duration" : "13 s",
+      "durationInSeconds" : 13.239228010177612,
+      "name" : "iPhone 17 Pro",
+      "nodeIdentifier" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+      "nodeType" : "Device",
+      "result" : "Failed"
+    }
+  ]
+}

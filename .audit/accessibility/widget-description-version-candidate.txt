@@ -1,0 +1,4 @@
+Uncommitted /tmp candidate only, not application validation. Same executable and input with deferred remote state.
+Final visible description: Newer correction B
+Final server version: 1002
+Application integration and regression tests remain pending.

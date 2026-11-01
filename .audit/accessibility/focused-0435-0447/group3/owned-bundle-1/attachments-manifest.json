@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "417C913D-6394-4D26-B126-9306EB518DD5.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "question-answer-flow-AX5-nb_0_8326FF7E-CB37-42CF-AB7E-7B2A61CCEDDF.png",
+        "timestamp" : 1793504654.142
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "25B108C9-CF1D-4B63-84FC-FE5F907E1594.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "question-answer-flow-before-audit-AX5-nb_0_D3062D7B-2456-471C-A302-F584D3850FB2.png",
+        "timestamp" : 1793504651.641
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "exportedFileName" : "7E55A17C-A501-41CA-9BB9-59D4BD0D59B8.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "System text size precondition_0_D4212158-1F97-4A62-B416-0C32F5169366.txt",
+        "timestamp" : 1793504642.941
+      }
+    ],
+    "testIdentifier" : "AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian"
+  }
+]

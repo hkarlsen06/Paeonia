@@ -1,0 +1,64 @@
+[
+  {
+    "test": "WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()",
+    "activitiesPath": "/tmp/paeonia-accessibility-final-1228bc2e-20261101-062337/group2/case-001-activities.json",
+    "warning": {
+      "start": 1793510781.127,
+      "title": "Invalid frame dimension (negative or non-finite).",
+      "parents": [
+        "Tap \"media.alternative.text\" Any",
+        "Wait for no.paeonia.app to idle"
+      ]
+    },
+    "nearbyActivities": [
+      {
+        "start": 1793510780.542,
+        "title": "Check for interrupting elements affecting \"media.alternative.text\" TextField",
+        "parents": [
+          "Tap \"media.alternative.text\" Any"
+        ]
+      },
+      {
+        "start": 1793510780.606,
+        "title": "Synthesize event",
+        "parents": [
+          "Tap \"media.alternative.text\" Any"
+        ]
+      },
+      {
+        "start": 1793510780.898,
+        "title": "Wait for no.paeonia.app to idle",
+        "parents": [
+          "Tap \"media.alternative.text\" Any"
+        ]
+      },
+      {
+        "start": 1793510781.127,
+        "title": "Invalid frame dimension (negative or non-finite).",
+        "parents": [
+          "Tap \"media.alternative.text\" Any",
+          "Wait for no.paeonia.app to idle"
+        ]
+      },
+      {
+        "start": 1793510781.521,
+        "title": "Type 'A sun above two hi...' into \"media.alternative.text\" TextField",
+        "parents": []
+      },
+      {
+        "start": 1793510781.522,
+        "title": "Wait for no.paeonia.app to idle",
+        "parents": [
+          "Type 'A sun above two hi...' into \"media.alternative.text\" TextField"
+        ]
+      },
+      {
+        "start": 1793510781.893,
+        "title": "Find the \"media.alternative.text\" TextField",
+        "parents": [
+          "Type 'A sun above two hi...' into \"media.alternative.text\" TextField"
+        ]
+      }
+    ]
+  }
+]

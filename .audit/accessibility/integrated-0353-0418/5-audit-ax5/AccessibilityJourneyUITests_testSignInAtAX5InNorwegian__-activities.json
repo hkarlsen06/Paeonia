@@ -1,0 +1,310 @@
+{
+  "testIdentifier" : "AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testSignInAtAX5InNorwegian",
+  "testName" : "testSignInAtAX5InNorwegian()",
+  "testRuns" : [
+    {
+      "activities" : [
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "attachments" : [
+            {
+              "lifetime" : "deleteOnSuccess",
+              "name" : "Screen Recording 2026-11-01 at 04.19.45 am.mp4",
+              "payloadId" : "0~4m-mEmo8-o5wmrPFBTO0qbuJWIHkcz4UjNl8Tmlr6m-_mRbSPol88INuwLgLiQSTfWsfBXe7dLP3OPUA2BXLxg==",
+              "timestamp" : 1793503185.086,
+              "uuid" : "57D59C4C-86B1-44B1-878B-0E66B50AC78C"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503185.086,
+              "title" : "kXCTAttachmentScreenRecording"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503185.068,
+          "title" : "Start Test at 2026-11-01 04:19:45.068"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503185.088,
+          "title" : "Set Up"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "System text size precondition_0_6B5B2B4A-574B-4039-812C-75323DBB2526.txt",
+              "payloadId" : "0~6h3Hd6HfGrWoWwiW_u-ZsJPMTU7U8YS1c-NaMqiEXtFUmx5GrRJeiPNTkQB0K7BZZHSn3GOXAqibO_bbFhdg3g==",
+              "timestamp" : 1793503186.128,
+              "uuid" : "B0512A6B-E547-4D58-9107-EA163556EE64"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503186.128,
+              "title" : "System text size precondition"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503186.128,
+          "title" : "Added attachment named 'System text size precondition'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793503186.337,
+                  "title" : "Setting up automation session"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793503189.025,
+                  "title" : "Wait for no.paeonia.app to idle"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503186.129,
+              "title" : "Launch no.paeonia.app"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503186.128,
+          "title" : "Open no.paeonia.app"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503190.676,
+          "title" : "Wait for no.paeonia.app to become Running Foreground"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793503191.714,
+                  "title" : "Checking existence of `Window (First Match)`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503191.713,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503190.678,
+          "title" : "Waiting 10.0s for Window (First Match) to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503191.762,
+          "title" : "Find the Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "sign-in-before-audit-AX5-nb_0_80756D49-2D1B-40B2-B234-7277D0A38146.png",
+              "payloadId" : "0~Mb7JIXk7RjctrNtKgG5RW3_KZnOtHtqIkTHsvuh8m9xm1rOBXqFXSCuGv30c_mUlfBbIOJq7KRbtXnBtsz_tuw==",
+              "timestamp" : 1793503191.886,
+              "uuid" : "1D61299D-FB2F-435A-AFBF-A0EDF6D04E77"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503191.886,
+              "title" : "sign-in-before-audit-AX5-nb"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503191.886,
+          "title" : "Added attachment named 'sign-in-before-audit-AX5-nb'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Accessibility issue_0_3A79B2C7-A2CD-466F-8A8F-146ED1917276.txt",
+              "payloadId" : "0~wwyL2QHQA0-deSj95i5hx3PUikMAy1C1-ko0_mAPuNm-RbHB2VlFBNOwLFszmAJ5kNGzdpVsyqVoWcxTXV9N0g==",
+              "timestamp" : 1793503193.835,
+              "uuid" : "DEE04613-1464-48F0-97DD-A33BC615F4EE"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503193.835,
+              "title" : "Accessibility issue"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503193.835,
+          "title" : "Added attachment named 'Accessibility issue'"
+        },
+        {
+          "attachments" : [
+            {
+              "lifetime" : "",
+              "name" : "Complete Issue Description.txt",
+              "uuid" : "37083149-44A0-4599-9433-B360DFD608C9"
+            },
+            {
+              "lifetime" : "keepAlways",
+              "name" : "App Screenshot_0_7B3F5405-5910-40B9-9E3F-2872582B2B5D.png",
+              "payloadId" : "0~ppNFspNq5l-mRwPyWZuSl2lzvcF3VDZURxZ5URKw15gmxdkHLI1yIc6j1L1n53UZ6f2gokRejGuEA93dN3AHAw==",
+              "timestamp" : 1793503193.835,
+              "uuid" : "EB97A111-E893-47D0-A862-9FE94DA7FFE8"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "title" : "Complete Issue Description"
+            },
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503193.835,
+              "title" : "App Screenshot"
+            },
+            {
+              "isAssociatedWithFailure" : false,
+              "title" : ""
+            }
+          ],
+          "isAssociatedWithFailure" : true,
+          "startTime" : 1793503193.835,
+          "title" : "Contrast failed"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "Accessibility issue_0_4AF34000-1634-40AB-B8E2-A45C18CB5E45.txt",
+              "payloadId" : "0~wwyL2QHQA0-deSj95i5hx3PUikMAy1C1-ko0_mAPuNm-RbHB2VlFBNOwLFszmAJ5kNGzdpVsyqVoWcxTXV9N0g==",
+              "timestamp" : 1793503193.838,
+              "uuid" : "360601A6-0951-4A05-BFD9-8C505A37D208"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503193.838,
+              "title" : "Accessibility issue"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503193.838,
+          "title" : "Added attachment named 'Accessibility issue'"
+        },
+        {
+          "attachments" : [
+            {
+              "lifetime" : "",
+              "name" : "Complete Issue Description.txt",
+              "uuid" : "E9A0A841-CAF0-459A-876C-28BC911DCFEB"
+            },
+            {
+              "lifetime" : "keepAlways",
+              "name" : "App Screenshot_0_9AA4F899-0413-4EC9-8D76-0BDF7D753FD3.png",
+              "payloadId" : "0~ppNFspNq5l-mRwPyWZuSl2lzvcF3VDZURxZ5URKw15gmxdkHLI1yIc6j1L1n53UZ6f2gokRejGuEA93dN3AHAw==",
+              "timestamp" : 1793503193.838,
+              "uuid" : "63893446-BCB7-4F78-BD1F-8E60035B643B"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "title" : "Complete Issue Description"
+            },
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503193.838,
+              "title" : "App Screenshot"
+            },
+            {
+              "isAssociatedWithFailure" : false,
+              "title" : ""
+            }
+          ],
+          "isAssociatedWithFailure" : true,
+          "startTime" : 1793503193.838,
+          "title" : "Contrast failed"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503193.839,
+          "title" : "Find the Target Application 'no.paeonia.app'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.attachmentContainer",
+          "attachments" : [
+            {
+              "lifetime" : "keepAlways",
+              "name" : "sign-in-AX5-nb_0_A2497BCD-3F20-4DFA-85DC-87FE2B00FB3F.png",
+              "payloadId" : "0~Q4mDQPZ_0PTH5m6j5fCv9tL8x7v55x2Hcq6662VWM2gHHOiGE4r_Iqg70GVXXWA6edEp99KC24c51DE2if8hiA==",
+              "timestamp" : 1793503193.952,
+              "uuid" : "E4D595D2-EEA9-4189-9846-575A22F47FCD"
+            }
+          ],
+          "childActivities" : [
+            {
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793503193.952,
+              "title" : "sign-in-AX5-nb"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503193.952,
+          "title" : "Added attachment named 'sign-in-AX5-nb'"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503193.952,
+          "title" : "Terminate no.paeonia.app:4102"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793503195.01,
+          "title" : "Tear Down"
+        }
+      ],
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "24A434",
+        "osVersion" : "27.0",
+        "platform" : "iOS Simulator"
+      },
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ]
+}

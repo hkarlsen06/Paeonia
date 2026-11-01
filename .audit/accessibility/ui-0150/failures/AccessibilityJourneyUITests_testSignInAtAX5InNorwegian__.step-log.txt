@@ -1,0 +1,28 @@
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAtAX5InNorwegian]' started.
+    t =     0.00s Start Test at 2026-11-01 01:53:01.995
+    t =     0.02s Set Up
+    t =     1.06s Added attachment named 'System text size precondition'
+    t =     1.06s Open no.paeonia.app
+    t =     1.06s     Launch no.paeonia.app
+    t =     1.27s         Setting up automation session
+    t =     4.32s         Wait for no.paeonia.app to idle
+    t =     6.08s Wait for no.paeonia.app to become Running Foreground
+    t =     6.08s Waiting 10.0s for Window (First Match) to exist
+    t =     7.12s     Checking `Expect predicate `existsNoRetry == 1` for object Window (First Match)`
+    t =     7.12s         Checking existence of `Window (First Match)`
+    t =     7.19s Find the Target Application 'no.paeonia.app'
+    t =     7.37s Added attachment named 'sign-in-before-audit-AX5-nb'
+    t =     9.46s Added attachment named 'Accessibility issue'
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAtAX5InNorwegian] : Contrast failed
+    t =     9.47s Added attachment named 'Accessibility issue'
+/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilityJourneyUITests.swift:85: error: -[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAtAX5InNorwegian] : Contrast failed
+    t =     9.47s Find the Target Application 'no.paeonia.app'
+    t =     9.58s Added attachment named 'sign-in-AX5-nb'
+    t =     9.58s Terminate no.paeonia.app:8434
+    t =    10.65s Tear Down
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testSignInAtAX5InNorwegian]' failed (10.699 seconds).
+Test Case '-[PaeoniaAppUITests.AccessibilityJourneyUITests testWelcomeAtAX5InNorwegian]' started.
+    t =     0.00s Start Test at 2026-11-01 01:53:12.696
+    t =     0.03s Set Up
+    t =     1.06s Added attachment named 'System text size precondition'
+    t =     1.06s Open no.paeonia.a

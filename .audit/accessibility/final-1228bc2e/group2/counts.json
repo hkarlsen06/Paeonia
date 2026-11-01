@@ -1,0 +1,11 @@
+{
+  "distinctMethods": 2,
+  "parameterizedMethods": 0,
+  "argumentExecutions": 0,
+  "nonParameterizedMethods": 2,
+  "leafExecutions": 2,
+  "caseResults": {
+    "Passed": 2
+  },
+  "argumentResults": {}
+}

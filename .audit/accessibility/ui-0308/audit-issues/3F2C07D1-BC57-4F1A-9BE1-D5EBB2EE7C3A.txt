@@ -1,0 +1,38 @@
+Type: 65536
+Dynamic Type font sizes are partially unsupported
+User will not be able to change the font size of this SwiftUI.AccessibilityNode
+Element: Attributes: StaticText, 0x10a767200, {{160.8, 773.3}, {80.3, 14.3}}, label: 'June 27, 2026'
+Element subtree:
+ →StaticText, 0x10a767200, {{160.8, 773.3}, {80.3, 14.3}}, label: 'June 27, 2026'
+Path to element:
+ →Application, 0x109472300, pid: 17277, label: 'Paeonia'
+  ↳Window (Main), 0x109473e80, {{0.0, 0.0}, {402.0, 874.0}}
+   ↳Other, 0x109472440, {{0.0, 0.0}, {402.0, 874.0}}
+    ↳Other, 0x109471a40, {{0.0, 0.0}, {402.0, 874.0}}
+     ↳Other, 0x109473980, {{0.0, 0.0}, {402.0, 874.0}}
+      ↳Other, 0x109471cc0, {{0.0, 0.0}, {402.0, 874.0}}
+       ↳Other, 0x1094712c0, {{0.0, 0.0}, {402.0, 874.0}}
+        ↳Other, 0x109470dc0, {{0.0, 0.0}, {402.0, 874.0}}
+         ↳Other, 0x109471b80, {{0.0, 0.0}, {402.0, 874.0}}
+          ↳Other, 0x109472d00, {{0.0, 0.0}, {402.0, 874.0}}
+           ↳Other, 0x109473ac0, {{0.0, 0.0}, {402.0, 874.0}}
+            ↳Other, 0x109472a80, {{0.0, 0.0}, {402.0, 874.0}}
+             ↳Other, 0x10a764000, {{0.0, 0.0}, {402.0, 874.0}}
+              ↳Other, 0x10a764c80, {{0.0, 0.0}, {402.0, 874.0}}
+               ↳Other, 0x10a764dc0, {{0.0, 0.0}, {402.0, 874.0}}
+                ↳Other, 0x10a764f00, {{0.0, 0.0}, {402.0, 874.0}}
+                 ↳Other, 0x10a765040, {{0.0, 0.0}, {402.0, 874.0}}
+                  ↳ScrollView, 0x10a7652c0, {{0.0, 0.0}, {402.0, 874.0}}
+                   ↳Other, 0x10a765a40, {{0.0, 116.0}, {402.0, 1194.3}}
+                    ↳Other, 0x10a766e40, {{20.0, 773.3}, {362.0, 155.1}}
+                     ↳StaticText, 0x10a766f80, {{20.0, 773.3}, {362.0, 14.3}}, label: 'June 27, 2026'
+                      ↳StaticText, 0x10a767200, {{160.8, 773.3}, {80.3, 14.3}}, label: 'June 27, 2026'
+Query chain:
+ →Find: Target Application 'no.paeonia.app'
+  Output: {
+    Application, 0x112931400, pid: 17277, label: 'Paeonia'
+  }
+  ↪︎Find: Descendant with identity binding to AX element pid: 17277, elementOrHash.elementID: 4514479264.94
+    Output: {
+      StaticText, 0x112929680, {{160.8, 773.3}, {80.3, 14.3}}, label: 'June 27, 2026'
+    }

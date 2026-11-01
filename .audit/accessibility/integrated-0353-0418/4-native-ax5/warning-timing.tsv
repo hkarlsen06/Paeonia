@@ -1,0 +1,5 @@
+test	timestamp	message
+NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithKeyboardToolbar()	2026-11-01T04:16:51.631+0100	Invalid frame dimension (negative or non-finite).
+DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures()	2026-11-01T04:09:43.719+0100	Invalid frame dimension (negative or non-finite).
+GameDrawingDescriptionUITests/testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation()	2026-11-01T04:12:15.766+0100	Invalid frame dimension (negative or non-finite).
+MediaAlternativeEditingUITests/testOwnStoryDescriptionCanBeCorrectedCancelledAndCleared()	2026-11-01T04:16:26.884+0100	Invalid frame dimension (negative or non-finite).
