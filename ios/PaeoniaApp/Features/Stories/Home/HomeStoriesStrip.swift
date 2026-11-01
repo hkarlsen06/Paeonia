@@ -139,7 +139,13 @@ struct HomeStoriesStrip: View {
         )
         return Group {
             if let arrange {
-                arrange(AnyView(ownView), AnyView(partnerView))
+                // Map coordinates locate the portrait, independent of controls below it.
+                let diameter = avatarSize + 2 * StoryRingAvatar.ringGap
+                let alignment = Alignment(horizontal: .center, vertical: .storyAvatarMiddle)
+                arrange(
+                    AnyView(ownView.frame(height: diameter, alignment: alignment)),
+                    AnyView(partnerView.frame(height: diameter, alignment: alignment))
+                )
             } else if dynamicTypeSize.isAccessibilitySize {
                 VStack(spacing: PaeoniaSpacing.space32) {
                     ownView
