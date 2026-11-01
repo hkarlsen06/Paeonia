@@ -21,7 +21,7 @@ struct ExquisiteCorpseRevealTitle: View {
     }
 }
 
-/// One row for each part: the drawer's avatar and "Head by Robin · a grandma".
+/// The head and legs share one credit when the same person drew both.
 /// At accessibility text sizes the avatar sits above the text.
 struct ExquisiteCorpseRevealCredits: View {
     let parts: [ExquisiteCorpseRevealContent.Part]
@@ -30,21 +30,35 @@ struct ExquisiteCorpseRevealCredits: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            ForEach(parts) { part in
-                row(part)
+            ForEach(credits, id: \.first.kind) { credit in
+                row(credit.first, text: credit.text)
             }
         }
         .frame(maxWidth: .infinity)
     }
 
-    private func row(_ part: ExquisiteCorpseRevealContent.Part) -> some View {
+    private var credits: [(first: ExquisiteCorpseRevealContent.Part, text: Text)] {
+        let head = parts.first { $0.kind == .head }
+        let legs = parts.first { $0.kind == .legs }
+        let combinesHeadAndLegs = head != nil && legs != nil && head?.drawerIsMe == legs?.drawerIsMe
+        return parts.compactMap { part in
+            if combinesHeadAndLegs, part.kind == .legs { return nil }
+            if combinesHeadAndLegs, part.kind == .head, let legs {
+                let title = String(localized: .exquisiteCorpseRevealCreditHeadAndLegs(part.drawerName))
+                return (part, line(title, ideas: [part.idea, legs.idea].compactMap { $0 }))
+            }
+            return (part, line(part.credit, ideas: [part.idea].compactMap { $0 }))
+        }
+    }
+
+    private func row(_ part: ExquisiteCorpseRevealContent.Part, text: Text) -> some View {
         let layout = dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space4))
             : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
         return layout {
             GameAvatar(player: part.drawer, isMe: part.drawerIsMe, size: Self.avatarSize)
                 .accessibilityHidden(true)
-            line(part)
+            text
                 .font(PaeoniaTypography.body)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -52,10 +66,10 @@ struct ExquisiteCorpseRevealCredits: View {
     }
 
     /// The credit in the main text color and the idea after a dot in the quiet one.
-    private func line(_ part: ExquisiteCorpseRevealContent.Part) -> Text {
-        var text = AttributedString(part.credit)
+    private func line(_ credit: String, ideas: [String]) -> Text {
+        var text = AttributedString(credit)
         text.foregroundColor = .paeoniaTextPrimary
-        if let idea = part.idea {
+        for idea in ideas {
             var tail = AttributedString(" · \(idea)")
             tail.foregroundColor = .paeoniaTextSecondary
             text += tail

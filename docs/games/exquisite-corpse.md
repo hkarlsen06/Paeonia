@@ -270,7 +270,7 @@ The invite bell uses the shared invite copy and behavior from Draw & Guess (`doc
 
 ### 3. Reveal
 
-See "The reveal" for the beats.
+See "The reveal" for the beats. On the reveal and saved-creature detail, the head and legs share one avatar and a "Head and legs by [Name]" credit when the same person drew both. Any chosen ideas stay visible after the credit.
 
 | Key | English | Norwegian |
 |---|---|---|

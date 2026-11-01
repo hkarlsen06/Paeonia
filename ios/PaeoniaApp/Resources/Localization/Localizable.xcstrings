@@ -11541,6 +11541,24 @@
         }
       }
     },
+    "exquisiteCorpse.reveal.credit.headAndLegs" : {
+      "comment" : "Combined credit when the same person drew the head and legs. The placeholder is their name or localized you.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Head and legs by %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hode og bein av %@"
+          }
+        }
+      }
+    },
     "exquisiteCorpse.reveal.credit.legs" : {
       "comment" : "Credit line that says who drew the legs. %@ is the partner's name, or the word for you.",
       "extractionState" : "manual",
