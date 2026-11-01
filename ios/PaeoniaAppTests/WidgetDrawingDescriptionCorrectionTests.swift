@@ -32,7 +32,11 @@ struct WidgetDrawingDescriptionCorrectionTests {
         let queued = try environment.decodePayload()
         #expect(queued.accessibilityText == "A sun above two hills")
         #expect(queued.pendingDescriptionOperationID == operationID)
-        #expect(await environment.makeService().loadSavedSnapshot()?.accessibilityText == queued.accessibilityText)
+        let reopenedService = environment.makeService()
+        let reopened = await reopenedService.loadSavedSnapshot()
+        let protocolReader: any WidgetCanvasManaging = reopenedService
+        #expect(reopened?.accessibilityText == queued.accessibilityText)
+        #expect(await protocolReader.loadSavedSnapshot() == reopened)
         await service.updateDescription(.accepted(text: queued.accessibilityText, version: 1_001,
                                                    operationID: operationID), revisionID: revision, privacyToken: token)
         await service.updateDescription(.remote(text: "Stale server description", version: 1_000),

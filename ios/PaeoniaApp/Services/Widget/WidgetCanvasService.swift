@@ -95,7 +95,9 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         return data
     }
 
-    func loadSavedSnapshot() -> WidgetCanvasSnapshot? {
+    // Explicit async keeps concrete calls from selecting the protocol's async fallback.
+    // swiftlint:disable:next async_without_await
+    func loadSavedSnapshot() async -> WidgetCanvasSnapshot? {
         guard let data = loadSavedDrawing() else {
             return nil
         }
