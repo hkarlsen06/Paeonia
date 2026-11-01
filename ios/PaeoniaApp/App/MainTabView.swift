@@ -174,6 +174,7 @@ struct MainTabView: View {
     @State var gameChatDestination: GameChatDestination?
     @State var openingGameChatID: UUID?
     @State var gameChatReturnKind: GameKind?
+    @State var gameChatReturn = GameChatReturnTransition()
     @State var visibleChatSubject: ThreadChatSubject?
     @State var messageNoticeStartedAt = Date()
     /// The time the Home tab badge counts unseen stories at. It moves forward when the
@@ -268,17 +269,7 @@ struct MainTabView: View {
     }
 
     private var tabContent: some View {
-        TabView(selection: selection) {
-            ForEach(tabs) { tab in
-                content(for: tab)
-                    .tag(tab)
-                    .badge(badgeCount(for: tab))
-                    .tabItem {
-                        Label(tab.title, systemImage: tab.systemImage)
-                            .accessibilityIdentifier("mainTab.\(tab.rawValue)")
-                    }
-            }
-        }
+        tabNavigation
         .tint(.paeoniaAccentPrimary)
         // Key the load on the signed-in user alone. The partner id, display names,
         // and profile photos all populate/refresh shortly after launch; if they were

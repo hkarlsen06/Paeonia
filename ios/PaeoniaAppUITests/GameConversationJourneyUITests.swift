@@ -45,6 +45,7 @@ final class GameConversationJourneyUITests: XCTestCase {
         let app = launchGameFlow(gameID: "storyChain")
         let draft = app.textViews.firstMatch
         XCTAssertTrue(draft.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
         draft.tap()
         draft.typeText("The ladder led to another door.")
         app.buttons["game.conversation.open"].firstMatch.tap()
@@ -63,16 +64,17 @@ final class GameConversationJourneyUITests: XCTestCase {
         XCTAssertEqual(draft.value as? String, "The ladder led to another door.")
         XCTAssertFalse(app.keyboards.firstMatch.exists)
         let tabs = app.tabBars.firstMatch
-        XCTAssertTrue(tabs.waitForExistence(timeout: 5))
-        XCTAssertTrue(tabs.buttons.element(boundBy: 2).isSelected)
+        XCTAssertFalse(tabs.exists)
 
-        tabs.buttons.element(boundBy: 1).tap()
+        app.buttons["game.conversation.open"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Where should the story go next?"].waitForExistence(timeout: 5))
+        XCTAssertTrue(tabs.waitForExistence(timeout: 5))
         tabs.buttons.element(boundBy: 2).tap()
         XCTAssertTrue(draft.waitForExistence(timeout: 5))
         XCTAssertEqual(draft.value as? String, "The ladder led to another door.")
+        XCTAssertFalse(tabs.exists)
         let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Story draft and game tabs retained after chat"
+        attachment.name = "Story draft and full-screen game retained after chat"
         attachment.lifetime = .keepAlways
         add(attachment)
     }
