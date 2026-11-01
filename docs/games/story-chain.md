@@ -226,7 +226,7 @@ The page is the heart of the game, so it gets the care a book would.
 - Live row above the composer: a 24 pt portrait with the shared presence ring whenever the partner has the game open. The text says "[Name] is reading along" while the partner is `watching`, "[Name] is here" for other present roles, and "[Name] will read it later" when away.
 - A compact toolbar sits directly under the draft, above the keyboard. Its quiet filled chips are "+ Give a word", or the chosen word with a remove button, and a checkable "Last line?" from line 8. The selected last-line chip has a pink check and fill. The counter appears immediately before the round Send arrow from 200 characters, turning `.paeoniaErrorText` past 240. All controls keep at least 44 pt hit targets. Long words and larger text sizes wrap the controls into more rows, with Send at the right. VoiceOver keeps the full partner-specific word instruction and last-line instruction.
 - The dare picker is a sheet at `.medium` detent: title "Give [Name] a word", subtitle "Their next line has to use it.", three word rows, and "Your own word" with a field. Choosing closes the sheet.
-- Send is off with a hint line under the field: "Use LIGHTHOUSE to send." when the dare is missing, nothing otherwise.
+- Send stays disabled while the dared word is missing. The capsule above the field names the word and shows whether it is present. There is no second reminder under the field.
 - A line sent offline stays visible in the page and sends automatically without a save-status line.
 
 | Key | English | Norwegian |
@@ -235,7 +235,6 @@ The page is the heart of the game, so it gets the care a book would.
 | `write.placeholderFirst` | Write the first line. | Skriv den første linjen. |
 | `write.lastLinePrompt` | Write the last line. | Skriv den siste linjen. |
 | `write.mustUse` | Use the word %@ | Bruk ordet %@ |
-| `write.mustUseHint` | Use %@ to send. | Bruk %@ for å sende. |
 | `write.readingAlong` | [Name] is reading along | [Name] leser med |
 | `write.here` | [Name] is here | [Name] er her |
 | `write.later` | [Name] will read it later | [Name] leser det senere |
@@ -362,7 +361,7 @@ The reveal. It should feel like closing a book you wrote together.
 - **A refused start.** When the server refuses the start of a story for good, the story never exists. The lines, title, seen mark and star queued for it stop too, because nothing could ever send them. The words of its line are rescued the same way.
 - **Arrivals.** A partner's unseen line writes itself in once per app session. The page runs the animation from `StoryChainPageText`'s `TimelineView` clock, with `page.arrivingLineID` and 45 ms between words. The view model remembers which draft the person watched during this visit, so a pause in typing and either confirmation order never replay a watched line. Leaving the screen or backgrounding the app clears that record. Own lines show without an arrival animation. Background updates wait until the screen is active. The shared `GameAttentionCue` owns the turn haptic.
 - **Live room.** Story Chain uses `WidgetLiveDrawing` only for presence and the socket, with no canvas. Its `GameLiveChannel` sends `StoryChainRoomMessage`, with separate draft and reaction cases. The draft keeps `StoryChainLiveMessage` and its validation.
-- **Built screens.** The screens follow the design with these differences. The dare hint "Use WORD to send." shows only once the line is otherwise valid, because the capsule above the field already names the word. On line 20 the locked switch keeps its "Make this the last line" label, and the placeholder says "Write the last line." The hub card's status before the first story is the card subtitle, and "Waiting for [Name]" reuses the shared Games copy. Each line is its own VoiceOver element, and there is no rotor or VoiceOver action for the line popover yet.
+- **Built screens.** The screens follow the design with these differences. The dare capsule is the only required-word reminder. On line 20 the locked switch keeps its "Make this the last line" label, and the placeholder says "Write the last line." The hub card's status before the first story is the card subtitle, and "Waiting for [Name]" reuses the shared Games copy. Each line is its own VoiceOver element, and there is no rotor or VoiceOver action for the line popover yet.
 - **Offline history.** The phone keeps the current and previous story and the first page of "Our stories". An older story's page needs the network.
 - **Testing.** Every screen has a developer scenario (`story-chain-choose`, `-writing`, `-writing-last`, `-waiting-live`, `-reading-reactions`, `-waiting-away`, `-saved-offline`, `-naming`, `-waiting-name`, `-finished`, `-waiting-opening`, `-history`, `-history-empty`, `-choose-offline`). `backend/scripts/story-chain/play.mjs` plays the partner against the hosted backend, including live typing over the relay.
 

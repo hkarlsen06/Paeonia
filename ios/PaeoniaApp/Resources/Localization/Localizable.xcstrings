@@ -11541,24 +11541,6 @@
         }
       }
     },
-    "exquisiteCorpse.reveal.credit.headAndLegs" : {
-      "comment" : "Combined credit when the same person drew the head and legs. The placeholder is their name or localized you.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Head and legs by %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hode og bein av %@"
-          }
-        }
-      }
-    },
     "exquisiteCorpse.reveal.credit.legs" : {
       "comment" : "Credit line that says who drew the legs. %@ is the partner's name, or the word for you.",
       "extractionState" : "manual",
@@ -11645,6 +11627,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skapning %lld"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.body" : {
+      "comment" : "Compact body part credit beside its drawer avatar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Body"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kropp"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.head" : {
+      "comment" : "Compact body part credit beside its drawer avatar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Head"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hode"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.headAndLegs" : {
+      "comment" : "Compact combined body part credit beside the avatar of the person who drew both.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Head and legs"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hode og bein"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.legs" : {
+      "comment" : "Compact body part credit beside its drawer avatar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legs"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bein"
           }
         }
       }
@@ -26189,24 +26243,6 @@
         }
       }
     },
-    "onboarding.firstDay.date.confirm.message" : {
-      "comment" : "Line under the date the partner set, asking the person to confirm it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Is that right?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stemmer det?"
-          }
-        }
-      }
-    },
     "onboarding.firstDay.date.confirm.title" : {
       "comment" : "Title that shows the day the couple got together, as the partner set it. %1$@ is the partner's name. %2$@ is the date, like 3 March 2024.",
       "extractionState" : "manual",
@@ -28759,42 +28795,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "per år"
-          }
-        }
-      }
-    },
-    "paywall.plan.detail.bothOfYou" : {
-      "comment" : "Detail line on the monthly plan card on the paywall. Says one subscription covers both partners.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For both of you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For dere begge"
-          }
-        }
-      }
-    },
-    "paywall.plan.detail.perMonth" : {
-      "comment" : "Detail line on the yearly plan card on the paywall. %@ is what the year works out to per month, for example '49 kr/mo'. Must stay short. The billed yearly price shows bigger beside it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, for both of you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, for dere begge"
           }
         }
       }
@@ -36748,24 +36748,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bruk ordet %@"
-          }
-        }
-      }
-    },
-    "storyChain.write.mustUseHint" : {
-      "comment" : "Under the field while the line does not use the given word yet. %@ is the word in capitals.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use %@ to send."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bruk %@ for å sende."
           }
         }
       }

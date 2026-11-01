@@ -21,63 +21,65 @@ struct ExquisiteCorpseRevealTitle: View {
     }
 }
 
-/// The head and legs share one credit when the same person drew both.
-/// At accessibility text sizes the avatar sits above the text.
+/// One compact contribution label per drawer.
 struct ExquisiteCorpseRevealCredits: View {
     let parts: [ExquisiteCorpseRevealContent.Part]
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            ForEach(credits, id: \.first.kind) { credit in
-                row(credit.first, text: credit.text)
+        ViewThatFits(in: .horizontal) {
+            if !dynamicTypeSize.isAccessibilitySize {
+                HStack(spacing: PaeoniaSpacing.space24) {
+                    rows
+                }
+                .fixedSize(horizontal: true, vertical: false)
+            }
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                rows
             }
         }
         .frame(maxWidth: .infinity)
     }
 
-    private var credits: [(first: ExquisiteCorpseRevealContent.Part, text: Text)] {
+    private var rows: some View {
+        ForEach(credits, id: \.first.kind) { credit in
+            HStack(spacing: PaeoniaSpacing.space8) {
+                GameAvatar(player: credit.first.drawer, isMe: credit.first.drawerIsMe, size: 24)
+                Text(credit.label)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private struct Credit {
+        let first: ExquisiteCorpseRevealContent.Part
+        let label: LocalizedStringResource
+    }
+
+    private var credits: [Credit] {
         let head = parts.first { $0.kind == .head }
         let legs = parts.first { $0.kind == .legs }
         let combinesHeadAndLegs = head != nil && legs != nil && head?.drawerIsMe == legs?.drawerIsMe
         return parts.compactMap { part in
             if combinesHeadAndLegs, part.kind == .legs { return nil }
-            if combinesHeadAndLegs, part.kind == .head, let legs {
-                let title = String(localized: .exquisiteCorpseRevealCreditHeadAndLegs(part.drawerName))
-                return (part, line(title, ideas: [part.idea, legs.idea].compactMap { $0 }))
+            if combinesHeadAndLegs, part.kind == .head {
+                return Credit(
+                    first: part,
+                    label: .exquisiteCorpseRevealPartsHeadAndLegs
+                )
             }
-            return (part, line(part.credit, ideas: [part.idea].compactMap { $0 }))
+            let label: LocalizedStringResource = switch part.kind {
+            case .head: .exquisiteCorpseRevealPartsHead
+            case .body: .exquisiteCorpseRevealPartsBody
+            case .legs: .exquisiteCorpseRevealPartsLegs
+            }
+            return Credit(first: part, label: label)
         }
     }
-
-    private func row(_ part: ExquisiteCorpseRevealContent.Part, text: Text) -> some View {
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space4))
-            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
-        return layout {
-            GameAvatar(player: part.drawer, isMe: part.drawerIsMe, size: Self.avatarSize)
-                .accessibilityHidden(true)
-            text
-                .font(PaeoniaTypography.body)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// The credit in the main text color and the idea after a dot in the quiet one.
-    private func line(_ credit: String, ideas: [String]) -> Text {
-        var text = AttributedString(credit)
-        text.foregroundColor = .paeoniaTextPrimary
-        for idea in ideas {
-            var tail = AttributedString(" · \(idea)")
-            tail.foregroundColor = .paeoniaTextSecondary
-            text += tail
-        }
-        return Text(text)
-    }
-
-    private static let avatarSize: CGFloat = 24
 }
 
 /// Under the part that plays: the drawer's avatar, "Head by Robin" and, quieter,
