@@ -15,6 +15,11 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-11-01.
+
+- The tab bar stays visible in games and their histories on iPhone and iPad. Switching between Games and Chats keeps both routes in place. Games sets its tab bar visibility at the navigation root, so returning from chat keeps the same available height. Opening chat or returning to a game dismisses the previous screen's keyboard.
+- An empty game chat explains that the couple can chat while playing and that finished rounds will appear there. The composer remains available.
+
 Decided on 2026-10-31.
 
 - Chats, Games, Memories and Us use inline navigation titles. Home keeps its custom map header. Mind Meld stacks full-width word cards at accessibility text sizes, so the revealed words use the person's chosen reading size.
@@ -99,7 +104,6 @@ Decided on 2026-10-12.
 - **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
 - **Tab order.** Home, Chats, Games, Memories, Us. Games sits in the middle.
 - **Tab badge.** The Games tab counts the turns, unseen results and open invites waiting for this person, except those put aside with "Not now". An unseen Draw & Guess result stays under "Right now" with a button to see the result and "Not now", even when the partner has the next turn. The badge loads at launch, before the tab is opened.
-- **Tab bar in a game.** On iPhone the tab bar hides while a game screen is open. On iPad it stays, because the iPad tab bar sits at the top and iPadOS 26 moves the game's content when it hides during the push.
 - **One ongoing game per kind.** A couple has at most one active game of each kind.
 - **Turn reminder.** When a move has waited 72 hours, the partner whose turn it is gets one reminder. There is never a second one for the same move.
 - **Live is not deferred.** When a game's design includes live play, live ships in the game's first version.

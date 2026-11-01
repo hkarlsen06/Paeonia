@@ -10,6 +10,7 @@ final class GameConversationJourneyUITests: XCTestCase {
         let app = launchGameFlow()
         let word = app.textFields["mindMeld.field"]
         XCTAssertTrue(word.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         word.tap()
         word.typeText("CLOUD")
         app.buttons["game.conversation.open"].firstMatch.tap()
@@ -40,7 +41,44 @@ final class GameConversationJourneyUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchGameFlow() -> XCUIApplication {
+    func testEmptyGameChatAndReturnToUnfinishedStory() throws {
+        let app = launchGameFlow(gameID: "storyChain")
+        let draft = app.textViews.firstMatch
+        XCTAssertTrue(draft.waitForExistence(timeout: 10))
+        draft.tap()
+        draft.typeText("The ladder led to another door.")
+        app.buttons["game.conversation.open"].firstMatch.tap()
+
+        let emptyState = app.descendants(matching: .any)["game.conversation.empty"].firstMatch
+        XCTAssertTrue(emptyState.waitForExistence(timeout: 10), app.debugDescription)
+        let message = app.descendants(matching: .any)["chat.composer.field"].firstMatch
+        message.tap()
+        message.typeText("Where should the story go next?")
+        tapSendAboveKeyboard(in: app)
+        XCTAssertTrue(app.staticTexts["Where should the story go next?"].waitForExistence(timeout: 5))
+        XCTAssertFalse(emptyState.exists)
+
+        app.buttons["game.conversation.return"].tap()
+        XCTAssertTrue(draft.waitForExistence(timeout: 5))
+        XCTAssertEqual(draft.value as? String, "The ladder led to another door.")
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
+        let tabs = app.tabBars.firstMatch
+        XCTAssertTrue(tabs.waitForExistence(timeout: 5))
+        XCTAssertTrue(tabs.buttons.element(boundBy: 2).isSelected)
+
+        tabs.buttons.element(boundBy: 1).tap()
+        XCTAssertTrue(app.staticTexts["Where should the story go next?"].waitForExistence(timeout: 5))
+        tabs.buttons.element(boundBy: 2).tap()
+        XCTAssertTrue(draft.waitForExistence(timeout: 5))
+        XCTAssertEqual(draft.value as? String, "The ladder led to another door.")
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Story draft and game tabs retained after chat"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    @MainActor
+    private func launchGameFlow(gameID: String = "mindMeld") -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-game-conversation"
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US",
@@ -49,7 +87,7 @@ final class GameConversationJourneyUITests: XCTestCase {
         let tabs = app.tabBars.firstMatch
         XCTAssertTrue(tabs.waitForExistence(timeout: 10))
         tabs.buttons.element(boundBy: 2).tap()
-        let game = app.buttons["games.hub.mindMeld"]
+        let game = app.buttons["games.hub.\(gameID)"]
         for _ in 0..<4 where !game.isHittable { app.scrollViews["games.hub"].swipeUp() }
         XCTAssertTrue(game.waitForExistence(timeout: 10))
         game.tap()

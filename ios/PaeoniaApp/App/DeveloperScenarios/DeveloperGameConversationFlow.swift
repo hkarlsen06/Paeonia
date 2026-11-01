@@ -93,8 +93,9 @@
       -> GameChatTimeline
     {
       GameChatTimeline(
-        threadID: summaries.first?.threadID, messages: messages,
-        results: reference.map { [$0] } ?? [], hasMore: false)
+        threadID: summaries.first { $0.subject == .game(subject) }?.threadID,
+        messages: messages.filter { $0.subjectID == subject.id },
+        results: reference.flatMap { $0.source.kind == subject.kind ? [$0] : nil } ?? [], hasMore: false)
     }
 
     func loadMessages(threadID _: UUID, subjectID _: UUID, before _: ThreadChatMessageCursor?)

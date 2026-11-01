@@ -12441,6 +12441,42 @@
         }
       }
     },
+    "games.conversation.empty.message" : {
+      "comment" : "Empty game chat explanation. The composer remains available below it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat while you play. Finished rounds will appear here too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snakk sammen mens dere spiller. Ferdige runder dukker også opp her."
+          }
+        }
+      }
+    },
+    "games.conversation.empty.title" : {
+      "comment" : "Title in a game chat before it has messages or finished rounds.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your game chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spillsamtalen deres"
+          }
+        }
+      }
+    },
     "games.conversation.failedMessage" : {
       "comment" : "Explains a game result could not be loaded and offers a next step.",
       "extractionState" : "manual",
