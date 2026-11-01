@@ -21,7 +21,7 @@ struct GameChatResultRow: View {
                 "game.conversation.result.\(card.reference.id.uuidString.lowercased())")
             if card.isExpanded {
                 GameConversationHeader(
-                    source: card.reference.source, result: card.result, participants: participants,
+                    result: card.result, participants: participants,
                     loadState: card.loadState, onRetry: onRetry)
                 Button(action: onReply) {
                     Label {

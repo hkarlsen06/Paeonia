@@ -17,7 +17,7 @@ struct DataExportScreen: View {
         NavigationStack {
             ScrollView {
                 PaeoniaCard(padding: 0) {
-                    DataExportSection(viewModel: viewModel)
+                    DataExportSection(viewModel: viewModel, showsTitle: false)
                 }
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.top, PaeoniaSpacing.screenTopSpacing)

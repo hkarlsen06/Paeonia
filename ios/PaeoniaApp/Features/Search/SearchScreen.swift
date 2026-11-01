@@ -169,7 +169,7 @@ struct SearchScreen: View {
             } else {
                 PaeoniaEmptyStateView(
                     title: .searchEmptyTitle,
-                    message: .searchEmptyMessage(viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines)),
+                    message: .searchEmptyMessage,
                     systemImage: "magnifyingglass"
                 )
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)

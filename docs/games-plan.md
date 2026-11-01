@@ -29,6 +29,7 @@ Decided on 2026-10-31.
 - Draw & Guess has a visible skip replay button in guessing and history, alongside its existing replay actions. These controls do not make visual drawing recognition accessible. Drawing composition, recognition and the remaining animated reveals still need device-based accessibility review before claiming complete game access.
 
 - Chats, Games, Memories and Us use inline navigation titles. Home keeps its custom map header. Mind Meld stacks full-width word cards at accessibility text sizes, so the revealed words use the person's chosen reading size.
+- Story Chain's custom opening choice uses its label without a subtitle. Expanded chat results keep the game name in the navigation bar and show the date above the result.
 - Board games, drawing games and Guess my spot share the wide-window breakpoint. Board and drawing squares use the same wide sizing calculation.
 
 - Queued moves show no local-save or offline reassurance line. The board, word, drawing or story stays visible and sends automatically. Failed sends on a working connection keep their warning and retry action. Held reveals still wait for the server before showing the hidden result.

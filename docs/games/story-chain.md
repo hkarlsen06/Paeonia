@@ -209,7 +209,6 @@ The page is the heart of the game, so it gets the care a book would.
 | `choose.title` | Start a new story | Start en ny historie |
 | `choose.subtitle` | Pick a first line. Then you and [Name] take turns adding one or two sentences. | Velg en første linje. Så bytter du og [Name] på å skrive én eller to setninger. |
 | `choose.own` | Start with your own line | Start med din egen linje |
-| `choose.own.subtitle` | Write the first sentence yourself. | Skriv den første setningen selv. |
 | `choose.start` | Start writing | Begynn å skrive |
 | `choose.offline.message` | Connect to the internet to get your opening lines. | Koble til internett for å få åpningslinjene. |
 

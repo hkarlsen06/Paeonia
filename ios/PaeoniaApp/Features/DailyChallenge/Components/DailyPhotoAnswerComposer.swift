@@ -55,9 +55,6 @@ struct DailyPhotoAnswerComposer: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
 
-            Text(.dailyChallengeComposerPhotoAdded)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(colors.foreground)
             Spacer(minLength: 0)
             libraryButton
             removeButton

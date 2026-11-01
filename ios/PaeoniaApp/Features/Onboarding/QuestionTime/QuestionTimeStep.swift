@@ -137,9 +137,11 @@ struct QuestionTimeStep: View {
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(Self.subtitle(for: choice))
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
+                if let subtitle = Self.subtitle(for: choice) {
+                    Text(subtitle)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
             }
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
@@ -233,12 +235,12 @@ struct QuestionTimeStep: View {
         }
     }
 
-    private static func subtitle(for choice: QuestionTimeChoice) -> LocalizedStringResource {
+    private static func subtitle(for choice: QuestionTimeChoice) -> LocalizedStringResource? {
         switch choice {
         case .morning: .onboardingQuestionTimeMorningSubtitle
         case .lunch: .onboardingQuestionTimeLunchSubtitle
         case .evening: .onboardingQuestionTimeEveningSubtitle
-        case .custom: .onboardingQuestionTimeCustomSubtitle
+        case .custom: nil
         }
     }
 }

@@ -34,16 +34,11 @@ struct StoryChainOwnLineRow: View {
     var body: some View {
         Button(action: action) {
             StoryChainChoiceRowFrame(isSelected: isSelected, trailingSymbol: "square.and.pencil") {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
-                    Text(.storyChainChooseOwn)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                    Text(.storyChainChooseOwnSubtitle)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .multilineTextAlignment(.leading)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                Text(.storyChainChooseOwn)
+                    .multilineTextAlignment(.leading)
+                    .font(PaeoniaTypography.title)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .buttonStyle(.plain)
