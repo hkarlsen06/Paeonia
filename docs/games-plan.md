@@ -17,6 +17,8 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-11-01.
 
+- Mind Meld, Consensio and Guess my spot open history through their toolbar score capsules. Their adjacent menus omit history, and Mind Meld has no second history button on the result.
+
 - The tab bar stays visible in games and their histories on iPhone and iPad. Switching between Games and Chats keeps both routes in place. Games sets its tab bar visibility at the navigation root, so returning from chat keeps the same available height. Opening chat or returning to a game dismisses the previous screen's keyboard.
 - An empty game chat explains that the couple can chat while playing and that finished rounds will appear there. The composer remains available.
 

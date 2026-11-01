@@ -186,7 +186,7 @@ struct MindMeldScreen: View {
         }
         .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .topBarTrailing) {
-            GameMenu(history: .mindMeld, showTutorial: { showsTutorial = true }) {
+            GameMenu(history: nil, showTutorial: { showsTutorial = true }) {
                 if viewModel.game?.state == .playing {
                     restartButton
                 }

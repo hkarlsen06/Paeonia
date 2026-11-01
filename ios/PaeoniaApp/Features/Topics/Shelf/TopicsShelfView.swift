@@ -52,7 +52,6 @@ extension TopicsViewModel.Notice {
             )
         case .other:
             return .error(
-                title: String(localized: .commonLoadFailedTitle),
                 message: String(localized: .commonActionFailedMessage)
             )
         }

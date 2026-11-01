@@ -25029,24 +25029,6 @@
         }
       }
     },
-    "mindMeld.reveal.seeMelds" : {
-      "comment" : "Quiet button after a game ended that opens the list of finished games.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See our melds"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se treffene våre"
-          }
-        }
-      }
-    },
     "mindMeld.reveal.you" : {
       "comment" : "Label for the current player on the reveal. VoiceOver reads it before their word, as in 'You, OCEAN'.",
       "extractionState" : "manual",

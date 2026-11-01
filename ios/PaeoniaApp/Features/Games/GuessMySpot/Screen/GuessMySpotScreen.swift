@@ -137,7 +137,7 @@ struct GuessMySpotScreen: View {
         }
         .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .topBarTrailing) {
-            GameMenu(history: .guessMySpot, showTutorial: { showsTutorial = true })
+            GameMenu(history: nil, showTutorial: { showsTutorial = true })
         }
     }
 }

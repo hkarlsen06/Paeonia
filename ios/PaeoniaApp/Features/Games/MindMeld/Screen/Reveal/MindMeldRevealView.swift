@@ -245,7 +245,6 @@ struct MindMeldRevealView: View {
                     if viewModel.resolution.canCount { countItButton }
                 case .meld, .gotAway:
                     playAgainButton
-                    seeMeldsLink
                 }
             }
             .opacity(timeline.actionsShown ? 1 : 0)
@@ -292,14 +291,6 @@ struct MindMeldRevealView: View {
         }
         .buttonStyle(PaeoniaQuietButtonStyle())
         .accessibilityIdentifier("mindMeld.countIt")
-    }
-
-    private var seeMeldsLink: some View {
-        NavigationLink(value: GamesDestination.mindMeldHistory) {
-            Text(.mindMeldRevealSeeMelds)
-        }
-        .buttonStyle(PaeoniaQuietButtonStyle())
-        .accessibilityIdentifier("mindMeld.seeMelds")
     }
 }
 
