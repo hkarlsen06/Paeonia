@@ -28,11 +28,11 @@ struct ExquisiteCorpseDrawingView: View {
             squareHeightRatio: part.hasStripAbove ? 1 + ExquisiteCorpseFold.stripFraction : 1
         ) {
             VStack(spacing: PaeoniaSpacing.space8) {
-                ideaRow
                 if showsFirstHint {
                     firstHint
                 }
                 liveRow
+                ideaRow
             }
         } square: { side in
             ExquisiteCorpseDrawingSurface(
@@ -87,21 +87,12 @@ struct ExquisiteCorpseDrawingView: View {
 
     private var ideaRow: some View {
         ExquisiteCorpseIdeaRow(
-            title: title,
             idea: viewModel.idea?.text,
             canAsk: viewModel.hasIdeas,
             onAsk: viewModel.askIdea,
             onShuffle: viewModel.shuffleIdea,
             onRemove: viewModel.removeIdea
         )
-    }
-
-    private var title: LocalizedStringResource {
-        switch part {
-        case .head: .exquisiteCorpseDrawHead
-        case .body: .exquisiteCorpseDrawBody
-        case .legs: .exquisiteCorpseDrawLegs
-        }
     }
 
     private var liveRow: some View {

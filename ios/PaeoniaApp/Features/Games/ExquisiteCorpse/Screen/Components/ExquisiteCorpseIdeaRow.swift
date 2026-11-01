@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// The part heading and idea button, with a selected idea below them.
+/// The centered idea button or selected idea above the canvas.
 struct ExquisiteCorpseIdeaRow: View {
-    let title: LocalizedStringResource
     let idea: String?
     let canAsk: Bool
     let onAsk: () -> Void
@@ -13,24 +12,16 @@ struct ExquisiteCorpseIdeaRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                Text(title)
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .accessibilityIdentifier("corpse.partTitle")
-                Spacer(minLength: 0)
-                if canAsk && idea == nil {
-                    askButton
-                }
-            }
-            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+        ZStack {
             if let idea {
                 chip(idea)
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: Self.rise)))
+            } else if canAsk {
+                askButton
+                    .transition(.opacity)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
         // Only the chip coming and going. A shuffle changes the text, not this.
         .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: idea != nil)
         .onChange(of: idea) { old, new in
@@ -111,7 +102,6 @@ private struct ExquisiteCorpseIdeaRowPreview: View {
 
     var body: some View {
         ExquisiteCorpseIdeaRow(
-            title: .exquisiteCorpseDrawHead,
             idea: index.map { Self.ideas[$0] },
             canAsk: true,
             onAsk: { index = 0 },

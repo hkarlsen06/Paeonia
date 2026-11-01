@@ -11,7 +11,7 @@ Decided on 2026-10-13.
 - **The name is "Odd Creatures".** Norwegian "Rare skapninger". The game is known as exquisite corpse, and the code uses the kind `exquisite_corpse` and the Swift prefix `ExquisiteCorpse`.
 - **Three parts, and turns alternate.** A figure is a head, a body and legs. The partner who starts a figure draws its head and its legs, and the other partner draws the body. The next figure starts with the other partner. Turns simply alternate forever, so over two figures each partner draws three parts.
 - **The strip is 12% of a part.** The next drawer sees the bottom 12% of the part before, 38 pt of the 320 pt square. Nothing else of it.
-- **Ideas are optional.** The canvas says "Draw the head". A right-aligned button with a light bulb and question mark beside the heading deals a hand-written idea in the couple's game language. The idea shows as a chip with Shuffle and a remove button. Whatever chip shows when the drawer taps Done is saved with the part, stays hidden from the partner, and becomes the part's caption at the reveal.
+- **Ideas are optional.** The toolbar says "Draw the head". A centered button with a light bulb and question mark above the canvas deals a hand-written idea in the couple's game language. The idea shows as a chip with Shuffle and a remove button. Whatever chip shows when the drawer taps Done is saved with the part, stays hidden from the partner, and becomes the part's caption at the reveal.
 - **Live shows folded paper.** While the partner draws live, you see the back of the folded paper with a soft glow where their pen moves behind it. The strokes that reach the strip appear while they are drawn. The hidden part never leaves the drawer's phone before the reveal.
 - **The reveal unfolds part by part.** The folded paper opens one fold at a time from the top. Each part replays its strokes at the drawn pace, squeezed to about 2.5 seconds. Then the view zooms out to the whole figure with the petal bloom and a success haptic.
 - **Play style doesn't apply.** A figure is always made together, so there are no points in either style. The hub shows how many figures the couple has made.
@@ -45,7 +45,7 @@ Decided on 2026-10-13.
 
 ## Ideas
 
-- The drawing screen shows "Draw the head" (or body, legs) with a right-aligned light bulb and question mark on the same line. There is no "Your part" label.
+- The drawing screen uses "Draw the head" (or body, legs) as its toolbar title. The light bulb and question mark sit centered above the canvas. There is no "Your part" label.
 - Tapping it shows an idea chip, such as "a grandma", with a Shuffle button (`shuffle`) and a remove button (`xmark`). Shuffle deals the next idea. Remove clears the chip and brings back the light bulb button.
 - The chip that shows when the drawer taps Done is saved with the part. It is hidden from the partner until the figure is finished. At the reveal and in "Our creatures", each part shows its idea under the drawer's name. A part without an idea shows only the name.
 - Ideas are noun phrases that fit any part: "a robot" as the head, the body or the legs. Each part has its own list, because some ideas only work as one part (a spider's legs, a teapot body).
@@ -205,10 +205,13 @@ Haptics.
 
 Purpose. Draw your part, and connect to the lines you were given.
 
+The toolbar title says "Draw the head", "Draw the body" or "Draw the legs" instead of the game name. There is no heading in the content.
+
 Layout, top to bottom.
-1. "Draw the head" in `PaeoniaTypography.title`, wrapping when needed, with the idea button right aligned on the same line. No eyebrow.
-2. The idea button shows `lightbulb` and a question mark, with "Need an idea?" as its accessibility label. A selected idea replaces the button with a chip below the heading: `.paeoniaSurfacePrimary` capsule, `caption` semibold idea text, a `shuffle` button and an `xmark` button (each 44 pt hit area). The chip comes in with `cardReveal` and a 6 pt rise. Shuffle swaps the text with a quick cross-fade and `selection()`.
-3. Centered live row with wrapping presence text, as in Draw & Guess. The portrait stays in the row while away or present. The shared ring shows whenever the partner has the game open. The text says "[Name] is waiting for your part" while they watch, "[Name] is here" for other present roles, or "[Name] will see it later" while away.
+
+1. On the first head, the hint explains which part the partner sees.
+2. Centered live row with wrapping presence text, as in Draw & Guess. The portrait stays in the row while away or present. The shared ring shows whenever the partner has the game open. The text says "[Name] is waiting for your part" while they watch, "[Name] is here" for other present roles, or "[Name] will see it later" while away.
+3. Centered above the canvas, the idea button shows `lightbulb` and a question mark, with "Need an idea?" as its accessibility label. A selected idea replaces the button with a chip in the same row: `.paeoniaSurfacePrimary` capsule, `caption` semibold idea text, a `shuffle` button and an `xmark` button (each 44 pt hit area). The chip comes in with `cardReveal` and a 6 pt rise. Shuffle swaps the text with a quick cross-fade and `selection()`.
 4. Body and legs: the strip, full canvas width and 12% of its height, drawn from the part above. It sits on the same surface as the canvas, with a 1 pt dashed line along its bottom edge where the canvas starts. VoiceOver: "The bottom of [Name]'s part. Connect your drawing to its lines."
 5. The square canvas. Head and body: the dashed fold line at 88% (`.paeoniaTextTertiary`, 1.5 pt, dash 6 and 4) and, just under it at the trailing edge, "[Name] only sees below this line" in `caption2`, `.paeoniaTextTertiary`. Both are drawn over the canvas and take no touches.
 6. Tool rows, unchanged from Draw & Guess.
