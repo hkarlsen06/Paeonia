@@ -6,7 +6,7 @@ import PencilKit
 @MainActor
 enum DrawingGeometryDescription {
     static func text(_ drawing: PKDrawing, side: CGFloat) -> String {
-        ([String(localized: .drawingGeometryMissing)] + marks(drawing, side: side)).joined(separator: "\n")
+        ([String(localized: .drawingGeometryExplanation)] + marks(drawing, side: side)).joined(separator: "\n")
     }
 
     static func marks(_ drawing: PKDrawing, side: CGFloat) -> [String] {

@@ -27,19 +27,21 @@ final class DrawingCompositionUITests: XCTestCase {
             format: "label == %@ AND identifier != %@", "Done", "drawing.compose.done"
         )).firstMatch
         if keyboardDone.exists { keyboardDone.tap() }
-        scrollTo(undo, in: app)
+        scrollTo(undo, in: app, scrollsDown: false)
         XCTAssertTrue(undo.isEnabled, "Typing a description must preserve the shape editing history")
         app.buttons["drawing.compose.done"].tap()
         XCTAssertTrue(app.buttons["widgetDrawing.send"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["widgetDrawing.send"].isEnabled)
     }
     @MainActor
-    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
+    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, scrollsDown: Bool = true) {
         for _ in 0..<14 where !element.exists || !element.isHittable {
             if element.exists && element.frame.midY < app.windows.firstMatch.frame.midY {
                 app.swipeDown()
-            } else {
+            } else if element.exists || scrollsDown {
                 app.swipeUp()
+            } else {
+                app.swipeDown()
             }
         }
         XCTAssertTrue(element.isHittable)

@@ -19,7 +19,9 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
         XCTAssertFalse(closingSide.isEnabled)
 
         viewBox(0, in: app)
-        XCTAssertFalse(app.buttons["dotsAndBoxes.box.0.side.0"].isEnabled,
+        let ownedSide = app.buttons["dotsAndBoxes.box.0.side.0"]
+        scrollTo(ownedSide, in: app)
+        XCTAssertFalse(ownedSide.isEnabled,
                        "Already owned boxes stay inspectable without offering a move")
         viewBox(14, in: app)
         let nextSide = app.buttons["dotsAndBoxes.box.14.side.1"]

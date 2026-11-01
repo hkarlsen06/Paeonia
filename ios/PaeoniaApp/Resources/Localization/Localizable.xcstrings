@@ -11187,6 +11187,24 @@
         }
       }
     },
+    "drawing.geometry.explanation" : {
+      "comment" : "Introduces a geometry-only drawing readout. An authored description may be available separately. Do not say that it is missing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shapes and positions. Freehand drawings are not described automatically."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Former og plasseringer. Frihåndstegninger beskrives ikke automatisk."
+          }
+        }
+      }
+    },
     "drawing.geometry.mark" : {
       "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
       "extractionState" : "manual",

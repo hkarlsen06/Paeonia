@@ -188,7 +188,7 @@ struct DrawingGeometryReadout: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(.drawingGeometryMissing)
+            Text(.drawingGeometryExplanation)
             ForEach(
                 Array(DrawingGeometryDescription.marks(drawing, side: side).enumerated()), id: \.offset
             ) { index, mark in
