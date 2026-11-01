@@ -1,13 +1,10 @@
 import SwiftUI
 
-/// The idea row of the drawing screen, one line at least 44 pt tall. It shows a
-/// quiet "Need an idea?" button, or the idea as a chip with a shuffle button and a
-/// remove button. Both states are the same height, so nothing below moves.
-///
-/// The row holds no state. The caller deals the ideas and keeps the current one.
+/// The part heading and idea button, with a selected idea below them.
 struct ExquisiteCorpseIdeaRow: View {
-    /// The idea on the chip. Nil shows the "Need an idea?" button.
+    let title: LocalizedStringResource
     let idea: String?
+    let canAsk: Bool
     let onAsk: () -> Void
     let onShuffle: () -> Void
     let onRemove: () -> Void
@@ -16,16 +13,24 @@ struct ExquisiteCorpseIdeaRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        ZStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                Text(title)
+                    .font(PaeoniaTypography.title)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .accessibilityIdentifier("corpse.partTitle")
+                Spacer(minLength: 0)
+                if canAsk && idea == nil {
+                    askButton
+                }
+            }
+            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
             if let idea {
                 chip(idea)
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: Self.rise)))
-            } else {
-                askButton
-                    .transition(.opacity)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         // Only the chip coming and going. A shuffle changes the text, not this.
         .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: idea != nil)
         .onChange(of: idea) { old, new in
@@ -41,15 +46,14 @@ struct ExquisiteCorpseIdeaRow: View {
             GameSound.tap.play(volume: 0.7)
             onAsk()
         } label: {
-            Label {
-                Text(.exquisiteCorpseIdeaAsk)
-            } icon: {
+            HStack(spacing: PaeoniaSpacing.space4) {
                 Image(systemName: "lightbulb")
-                    .accessibilityHidden(true)
+                Text(verbatim: "?")
             }
             .font(PaeoniaTypography.caption.weight(.semibold))
         }
         .buttonStyle(PaeoniaQuietButtonStyle())
+        .accessibilityLabel(Text(.exquisiteCorpseIdeaAsk))
     }
 
     private func chip(_ idea: String) -> some View {
@@ -107,7 +111,9 @@ private struct ExquisiteCorpseIdeaRowPreview: View {
 
     var body: some View {
         ExquisiteCorpseIdeaRow(
+            title: .exquisiteCorpseDrawHead,
             idea: index.map { Self.ideas[$0] },
+            canAsk: true,
             onAsk: { index = 0 },
             onShuffle: { index = ((index ?? 0) + 1) % Self.ideas.count },
             onRemove: { index = nil }
