@@ -1,0 +1,46 @@
+Frozen UI verification FAILED at actual AX5. Large test NOT RUN because AX5 failed. No retry or waiver.
+
+Checkout /Users/hkarlsen06/repo/Paeonia-accessibility
+Branch fix/optional-accessibility-controls
+Signed HEAD 8619a354e47ecba5d0e987b1bbab901c0d23a9de
+main 09089110667687e5d9e3cec4fbff6fbfbc22aa67
+Read root AGENTS.md, ios/AGENTS.md and docs/agent-guides/ios-verification.md, copies retained here. No children, source edits, commits, checkouts, deployments or canonical report changes. No unit/backend/other UI repetition. No personal device, real account, sign-in, manual uninstall, new simulator/runtime or Motion retry. Only actual text size changed.
+
+Invariance
+before.json and after.json are exactly equal. invariance.json records identical=true, changedKeys=[], trackedFiles=4172. This proves unchanged HEAD, main, branch, full porcelain status including all untracked entries, and SHA256 for every tracked ios/backend/scripts file. backend/convex/subscriptionNotices.test.ts is still the sole unstaged entry, byte-identical SHA256 8d246615eeb0a0cc7bfa67e62bf9c2bbec172166ed6a4c47d5e87f5cb3e4d677. git verify-commit HEAD passed before and after, signature.txt and signature-after.txt. source-change.txt confirms only the AccessibilitySettingsView Form identifier and openSettings helper changed since 497c4d27. No functional app/model change beyond that identifier.
+
+Device, toolchain and cleanup
+scripts/lock acquire simulator returned Shared iPhone. Bound exactly hostId local, deviceId 8E84ADB0-9092-4EB4-839E-71D62A350146 via device_open. iPhone 17 Pro, arm64, iOS27.0 build24A434. All actual text-size commands used the exact returned bound driver in driver.txt. No other device driven.
+ax5-setting-before.txt records set accessibility-extra-extra-extra-large then read Text size is accessibility-extra-extra-extra-large. Own Device panel closed before the wrapper while the lease remained held.
+After the failed wrapper, reopened the same leased simulator with device_open. large-restoration.txt records AX5 readback, set large, then Text size is large. Own panel closed before scripts/lock release simulator. Final device_list open=[]; locks-final.txt shows all three leases free. panel-proof.json records this sequence. Large restoration is cleanup, not a Large test run.
+Xcode27.1 build27A9275 at /Applications/Xcode.app/Contents/Developer. macOS27.2 build26B118. Wrapper generated CURRENT_PROJECT_VERSION=20261101.1803. toolchain.txt and modern xcresult metadata retained.
+
+Exact command, executed once only
+cwd /Users/hkarlsen06/repo/Paeonia-accessibility
+unset XCODE_TEST_AGENT_DESTINATION
+export XCODE_TEST_AGENT_KEEP_ARTIFACTS=1
+./scripts/xcode-test-agent.sh --ui -- -collect-test-diagnostics never -only-testing:PaeoniaAppUITests/AccessibilitySettingsJourneyUITests/testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic
+
+run-group.py ran this wrapper in a foreground subprocess, total timeout600 seconds including queue. Frozen method executionTimeAllowance=240. No timeout occurred. No direct xcodebuild except reading version. Independent unfiltered app console collected with simctl log stream solely for logs, not UI. Full console includes235871 lines.
+Wrapper exit65, elapsed147.017s, queued0s compiled39s tested108s. Modern result Failed, one test, duration98.942688s, zero passes/skips/expected failures. Build succeeded, zero compiler warnings, analyzer warnings and errors.
+
+Completed and incomplete stages
+Initial controls Automatic and media Automatic selected. Default drawing assertions passed with both optional tools absent. Returning to More recognized settings.accessibility.form, so the earlier parent-entry failure is passed. Media Always selected. Description editor opened, A small sun typed and exact equality asserted. Media-only drawing captured with shape controls absent. Returned to More, recognized the page again, opened media picker and selected Automatic.
+Failure occurs next in choose controls Always: controls picker does not exist while Form is scrolled to media. scrollTo chooses swipeUp for a nonexistent element, performs12 upward swipes, then fails XCTAssertTrue(element.isHittable). It never opens controls Always menu. Modern test-details reports AccessibilitySettingsJourneyUITests.swift line154. Raw wrapper and legacy issue report line153. Both original emitted locations retained. This is an assertion failure, not a timeout.
+Controls-on drawing, native Apply/Undo-enabled assertion, description retention after shapes, terminate/relaunch persistence, restored Automatic drawing and default Dots board are all UNPERFORMED. Large is UNPERFORMED per stop-on-failure instruction.
+The frozen method would assert A small sun retained BEFORE relaunch, and only control/description presence after relaunch. It would assert Undo enabled, not tap Undo. None of those later assertions ran here.
+
+Media
+All six actual PNG attachments inspected. Full per-file notes are in ax5-visual-inspection.txt and ax5/png-index.json. Four open menus show both options fully, with Always show wrapping to two lines at AX5. Media row headings partly extend behind the navigation bar after scrolling. Media-only action Drawing description wraps to two lines and authored text is visible. Default drawing and media-only captures leave lower actions below or clipped by the tab-bar viewport. No keyboard or menu obscures either drawing capture. No later-stage images exist; no unobscured Dots board claim.
+All92 exported attachments retained with manifest and SHA256 inventory, including97.31-second screen recording, legacy snapshots/events and six PNGs. Derived failure-frame-80.png and failure-frame-94.png inspected; final frame shows the media row with Automatic selected and controls row above visible content. Full activities retain the unsuccessful upward-swiping sequence.
+A local attempt to create contact sheets found system Python lacked PIL. No contact sheets were created; originals were inspected directly with view_image. This tooling error caused no UI test rerun or repository change.
+
+Diagnostics and release limits
+Modern runtimeWarnings=[] and legacy issue objects contain the single test failure, no warnings. Raw console has9 Unexpectedly received animationDidStop without a matching animationDidStart diagnostics. All remain unwaived; no framework-cause assumption. Raw Invalid frame dimension count0 in this settings run does not clear earlier game recovery warnings because those tests were not rerun. All other runtime/tool diagnostics remain in raw logs, including operatingSystemBuild parsing output. Zero modern warnings is not a diagnostic-free runtime claim.
+Native fixture logs system=false then system=true while simulated=false. XCTest is an accessibility client. This is not actual VoiceOver/Voice Control verification. Actual-size evidence is the bound driver set/readback. This selected method has no public UIKit content-category attachment, so that precondition evidence is unavailable here. No edits or extra tests added to obtain it.
+Original manual assistive-technology, iPad, provider and labels release gates remain open. Prior game recovery loops, Dots, Norwegian AX5 audit and simulated-active results remain scoped to /tmp/paeonia-accessibility-options-4a630761-20261101-173627/verification.txt. Prior Large full settings pass remains scoped to /tmp/paeonia-accessibility-options-497c4d27-20261101-175341/verification.txt. Unit2293/backend2416 were not repeated. This run does not replace those results or clear their warnings. No code/documentation inconsistency found in this verification scope.
+
+Artifacts and originals
+ax5/ contains wrapper.log, copied full raw Paeonia-test-log and parser JSON, independent appconsole.log, outcome/provenance.json, original-bundles.json, modern summary/tests/test-details/activities/metrics, modern build summaries, full legacy issue objects, exported build/action logs, all available attachments and manifest, recording probe and per-attachment hashes. export.py is reproducible. Modern console export says No console log available; independent appconsole.log supplies console evidence. Unavailable build-action and test-build export stderr is retained. Evidence only under this fresh /tmp directory, no root report edit.
+Original build xcresult /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793552584-59465.xcresult
+Original test xcresult /var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793552584-59465.xcresult

@@ -1,0 +1,37 @@
+diff --git a/ios/PaeoniaApp/Features/WidgetDrawing/Canvas/WidgetDrawingView.swift b/ios/PaeoniaApp/Features/WidgetDrawing/Canvas/WidgetDrawingView.swift
+index 985c2e82..64f5a526 100644
+--- a/ios/PaeoniaApp/Features/WidgetDrawing/Canvas/WidgetDrawingView.swift
++++ b/ios/PaeoniaApp/Features/WidgetDrawing/Canvas/WidgetDrawingView.swift
+@@ -196,6 +196,7 @@ struct WidgetDrawingView: View {
+                     .fixedSize(horizontal: false, vertical: true)
+                     .accessibilityIdentifier("widgetDrawing.description")
+                 Button(.mediaAccessibilityDrawingDescription) { isDescriptionPresented = true }
++                    .tint(.paeoniaAccentPrimary)
+                     .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                     .accessibilityIdentifier("widgetDrawing.description.edit")
+             }
+diff --git a/ios/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests.swift b/ios/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests.swift
+index 323ea665..28c0b86f 100644
+--- a/ios/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests.swift
++++ b/ios/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests.swift
+@@ -147,6 +147,9 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
+     @MainActor
+     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, scrollsDown: Bool = true) {
+         let viewport = gameJourneyViewport(in: app)
++        let scrollView = app.scrollViews.firstMatch
++        let collection = app.collectionViews.firstMatch
++        let container = scrollView.exists ? scrollView : collection.exists ? collection : app
+         for _ in 0..<12 {
+             // Native Form rows can report hittable while their tap point is below the tab bar.
+             if element.exists && element.isHittable,
+@@ -154,8 +157,8 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
+             // Form unloads offscreen rows. Use their known order until they reappear.
+             let goesUp = element.exists ? element.frame.midY > viewport.midY : scrollsDown
+             // Keep scroll gestures outside PencilKit when this helper visits the drawing.
+-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.8 : 0.2))
+-            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.2 : 0.8))
++            let start = container.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.8 : 0.2))
++            let end = container.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.2 : 0.8))
+             start.press(forDuration: 0.01, thenDragTo: end)
+         }
+         XCTAssertTrue(element.isHittable)

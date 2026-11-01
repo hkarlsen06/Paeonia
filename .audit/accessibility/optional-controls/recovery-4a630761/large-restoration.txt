@@ -1,0 +1,6 @@
+COMMAND ['/Users/hkarlsen06/.t3/userdata/device/targets/t3-b5aaedd93a2aca69ac3f066d/agent-device', 'settings', 'text-size']
+Text size is accessibility-extra-extra-extra-large
+COMMAND ['/Users/hkarlsen06/.t3/userdata/device/targets/t3-b5aaedd93a2aca69ac3f066d/agent-device', 'settings', 'text-size', 'large']
+Text size set to large
+COMMAND ['/Users/hkarlsen06/.t3/userdata/device/targets/t3-b5aaedd93a2aca69ac3f066d/agent-device', 'settings', 'text-size']
+Text size is large

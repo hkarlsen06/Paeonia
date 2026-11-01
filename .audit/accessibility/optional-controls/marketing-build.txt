@@ -1,0 +1,96 @@
+
+> marketing@0.1.0 build
+> vite build
+
+vite v8.3.4 building ssr environment for production...
+transforming...
+✓ 4229 modules transformed.
+rendering chunks...
+computing gzip size...
+.svelte-kit/output/server/.vite/manifest.json                                            7.71 kB │ gzip:  1.00 kB
+.svelte-kit/output/server/_app/immutable/assets/_layout.BgbWyrXg.css                    47.74 kB │ gzip:  9.57 kB
+.svelte-kit/output/server/chunks/index-server.js                                         0.03 kB │ gzip:  0.05 kB
+.svelte-kit/output/server/entries/pages/join/_page.ts.js                                 0.11 kB │ gzip:  0.12 kB │ map:   0.27 kB
+.svelte-kit/output/server/entries/pages/404.html/_page.ts.js                             0.14 kB │ gzip:  0.13 kB │ map:   0.26 kB
+.svelte-kit/output/server/entries/pages/_page.ts.js                                      0.18 kB │ gzip:  0.16 kB │ map:   0.36 kB
+.svelte-kit/output/server/entries/pages/_layout.ts.js                                    0.19 kB │ gzip:  0.15 kB │ map:   0.37 kB
+.svelte-kit/output/server/chunks/config.js                                               0.20 kB │ gzip:  0.17 kB │ map:   0.43 kB
+.svelte-kit/output/server/entries/pages/_error.svelte.js                                 0.27 kB │ gzip:  0.19 kB │ map:   0.27 kB
+.svelte-kit/output/server/entries/pages/_layout.svelte.js                                0.27 kB │ gzip:  0.21 kB │ map:   0.32 kB
+.svelte-kit/output/server/entries/params.js                                              0.29 kB │ gzip:  0.19 kB │ map:   0.43 kB
+.svelte-kit/output/server/env.js                                                         0.31 kB │ gzip:  0.19 kB │ map:   0.57 kB
+.svelte-kit/output/server/entries/pages/_locale_locale_/_layout.ts.js                    0.31 kB │ gzip:  0.22 kB │ map:   0.44 kB
+.svelte-kit/output/server/entries/hooks.server.js                                        0.34 kB │ gzip:  0.24 kB │ map:   0.72 kB
+.svelte-kit/output/server/entries/fallbacks/layout.svelte.js                             0.37 kB │ gzip:  0.27 kB │ map:   0.40 kB
+.svelte-kit/output/server/entries/pages/404.html/_page.svelte.js                         0.48 kB │ gzip:  0.28 kB │ map:   0.40 kB
+.svelte-kit/output/server/chunks/NotFound.js                                             0.54 kB │ gzip:  0.33 kB │ map:   0.53 kB
+.svelte-kit/output/server/entries/pages/_locale_locale_/terms/_page.svelte.js            0.66 kB │ gzip:  0.36 kB │ map:   0.80 kB
+.svelte-kit/output/server/entries/pages/_locale_locale_/privacy/_page.svelte.js          0.66 kB │ gzip:  0.36 kB │ map:   0.80 kB
+.svelte-kit/output/server/entries/pages/_locale_locale_/accessibility/_page.svelte.js    0.97 kB │ gzip:  0.49 kB │ map:   1.14 kB
+.svelte-kit/output/server/entries/pages/join/_page.svelte.js                             1.20 kB │ gzip:  0.61 kB │ map:   3.98 kB
+.svelte-kit/output/server/entries/pages/_locale_locale_/support/_page.svelte.js          1.38 kB │ gzip:  0.59 kB │ map:   1.63 kB
+.svelte-kit/output/server/chunks/LegalPage.js                                            1.92 kB │ gzip:  0.77 kB │ map:   2.12 kB
+.svelte-kit/output/server/chunks/PageHead.js                                             1.98 kB │ gzip:  0.71 kB │ map:   2.24 kB
+.svelte-kit/output/server/index.js                                                       2.32 kB │ gzip:  0.94 kB │ map:   3.38 kB
+.svelte-kit/output/server/chunks/SiteShell.js                                            3.36 kB │ gzip:  1.34 kB │ map:   4.49 kB
+.svelte-kit/output/server/chunks/uneval.js                                              19.42 kB │ gzip:  5.37 kB │ map:  40.87 kB
+.svelte-kit/output/server/chunks/marketing.no.js                                        20.17 kB │ gzip:  6.59 kB │ map:  27.67 kB
+.svelte-kit/output/server/entries/pages/_locale_locale_/_page.svelte.js                 35.77 kB │ gzip:  8.70 kB │ map:  56.23 kB
+.svelte-kit/output/server/chunks/server.js                                              48.43 kB │ gzip: 13.43 kB │ map: 128.88 kB
+.svelte-kit/output/server/remote-entry.js                                               54.74 kB │ gzip: 11.85 kB │ map:  90.18 kB
+.svelte-kit/output/server/chunks/dictionaries.js                                        73.05 kB │ gzip: 22.58 kB │ map:  82.32 kB
+.svelte-kit/output/server/chunks/instance.js                                           129.11 kB │ gzip: 34.81 kB │ map: 258.26 kB
+.svelte-kit/output/server/chunks/internal.js                                           130.28 kB │ gzip: 32.57 kB │ map: 271.29 kB
+
+✓ built in 1.13s
+Analysing routes
+(node:98178) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Building app
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 4268 modules transformed.
+rendering chunks...
+computing gzip size...
+.svelte-kit/output/client/_app/version.json                          0.02 kB │ gzip:  0.04 kB
+.svelte-kit/output/client/.vite/manifest.json                        8.17 kB │ gzip:  1.11 kB
+.svelte-kit/output/client/_app/immutable/assets/0.BgbWyrXg.css      47.74 kB │ gzip:  9.57 kB
+.svelte-kit/output/client/_app/immutable/chunks/Bt0HYHgc.js          0.06 kB │ gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/entry/payload.DSmR2FwN.js   0.06 kB │ gzip:  0.07 kB
+.svelte-kit/output/client/_app/immutable/nodes/1.Dp2ksNEH.js         0.11 kB │ gzip:  0.11 kB
+.svelte-kit/output/client/_app/immutable/chunks/DK3Fl9T5.js          0.15 kB │ gzip:  0.15 kB
+.svelte-kit/output/client/_app/immutable/nodes/0.LEMGw9G-.js         0.27 kB │ gzip:  0.21 kB
+.svelte-kit/output/client/_app/immutable/nodes/2.DhR8MWMu.js         0.33 kB │ gzip:  0.23 kB
+.svelte-kit/output/client/_app/immutable/nodes/4.Bfk5MKXa.js         0.39 kB │ gzip:  0.27 kB
+.svelte-kit/output/client/_app/immutable/nodes/9.CjoAIeea.js         0.42 kB │ gzip:  0.25 kB
+.svelte-kit/output/client/_app/immutable/nodes/7.DqlD_OEB.js         0.42 kB │ gzip:  0.26 kB
+.svelte-kit/output/client/_app/immutable/chunks/hWNvYavl.js          0.44 kB │ gzip:  0.28 kB
+.svelte-kit/output/client/_app/immutable/entry/start.CUsF9TVZ.js     0.54 kB │ gzip:  0.31 kB
+.svelte-kit/output/client/_app/immutable/nodes/6.Fa2-71_-.js         0.72 kB │ gzip:  0.42 kB
+.svelte-kit/output/client/_app/immutable/nodes/3.BwMcLv5V.js         0.76 kB │ gzip:  0.45 kB
+.svelte-kit/output/client/_app/immutable/nodes/8.Cnw2rJqN.js         1.04 kB │ gzip:  0.55 kB
+.svelte-kit/output/client/_app/immutable/chunks/DobvpMN4.js          1.17 kB │ gzip:  0.66 kB
+.svelte-kit/output/client/_app/immutable/chunks/Bjy-W4x2.js          1.36 kB │ gzip:  0.65 kB
+.svelte-kit/output/client/_app/immutable/chunks/BVvVFx3T.js          1.38 kB │ gzip:  0.73 kB
+.svelte-kit/output/client/_app/immutable/chunks/DOd-xi0Z.js          1.47 kB │ gzip:  0.45 kB
+.svelte-kit/output/client/_app/immutable/chunks/DPrw6Sw6.js          1.47 kB │ gzip:  0.64 kB
+.svelte-kit/output/client/_app/immutable/chunks/CRzLMJPS.js          1.53 kB │ gzip:  0.80 kB
+.svelte-kit/output/client/_app/immutable/chunks/BX6tNrKd.js          2.56 kB │ gzip:  1.23 kB
+.svelte-kit/output/client/_app/immutable/nodes/10.D3PPruoK.js        2.78 kB │ gzip:  1.40 kB
+.svelte-kit/output/client/_app/immutable/entry/app.CNjwGQBq.js       2.89 kB │ gzip:  1.10 kB
+.svelte-kit/output/client/_app/immutable/chunks/Ct4NOdVN.js         17.52 kB │ gzip:  6.32 kB
+.svelte-kit/output/client/_app/immutable/nodes/5.CTggcxqS.js        26.17 kB │ gzip:  8.74 kB
+.svelte-kit/output/client/_app/immutable/chunks/CbNfV-Sx.js         43.70 kB │ gzip: 16.22 kB
+.svelte-kit/output/client/_app/immutable/chunks/CJaOLona.js         48.38 kB │ gzip: 18.55 kB
+.svelte-kit/output/client/_app/immutable/chunks/DtLcT_eg.js         68.81 kB │ gzip: 22.15 kB
+
+✓ built in 1.13s
+(node:98178) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Prerendering
+
+Run npm run preview to preview your production build locally.
+
+> Using @sveltejs/adapter-static
+Wrote site to "out"
+✔ done

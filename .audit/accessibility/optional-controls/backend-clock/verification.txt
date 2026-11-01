@@ -1,0 +1,61 @@
+Verification outcome: FAILED Large UI. Backend suite PASSED. AX5 gated, not run.
+
+Frozen checkout /Users/hkarlsen06/repo/Paeonia-accessibility, branch fix/optional-accessibility-controls.
+HEAD e7bbf07022e6f0e5275f880950eec9bf89418dda before and after. Signed verification succeeds.
+Local main 09089110667687e5d9e3cec4fbff6fbfbc22aa67 before and after, ancestor of HEAD. Main signed verification also succeeds.
+5235 tracked SHA256 hashes identical before/after, including the one authorized uncommitted backend test edit. Full status byte-identical, only backend/convex/subscriptionNotices.test.ts modified and unstaged. backend-before.diff and backend-after.diff byte-identical. Backend file SHA256 8d246615eeb0a0cc7bfa67e62bf9c2bbec172166ed6a4c47d5e87f5cb3e4d677 unchanged. See invariance.json, all hashes/status/signature files.
+Prior 170321 hashes differ only in that backend test file. All iOS source unchanged. Its 2293 passed unit/integration executions are prior evidence, not executions here. No iOS unit suite rerun. No typecheck repeat.
+No repository edits, commits, merges, deployments, retries, checkouts, children, account use, sign-in, resets, manual uninstall, personal devices, new simulators or runtimes. No canonical report changes. ios/local.xcconfig absent. Root/ios AGENTS and ios-verification read and copied. Backend guidance read for the test command. Requested frozen verification overrides repository implementation/landing defaults. No other documentation/code inconsistency identified in this verification scope.
+
+Toolchain and device
+Xcode 27.1 27A9275, macOS 27.2 26B118. Build CURRENT_PROJECT_VERSION=20261101.1717. Full toolchain.txt retained.
+Only local Shared iPhone 2, UDID 79EBB58E-1108-4EEE-987D-E193CEA9EA2A, iPhone 17 Pro, iOS 27.0 build 24A434 arm64.
+Exact repository lease acquired before device_open. Bound CLI recorded in driver.txt used for all actual text-size changes/readbacks. No generic CLI or simctl UI. Own panel closed before wrapper. Lease held through cohort, renewed for restoration. Actual Large before, set/readback Large before cohort. Actual Large set/readback after even though cohort failed. Own panel closed before lease released. locks-final.txt shows all shared simulators free. Motion and other system preferences untouched.
+App preferences changed only by actual test Settings flow and existing synthetic test fixtures, with no manual preference edits. Final read-only plist has accessibility.alwaysShowControls=false and accessibility.alwaysShowMediaAlternatives=false. See saved-app-preferences-after.json. This final stored state does not establish successful completion of the timed-out restoration journey.
+
+Backend
+npm test executed ONCE, parallel with Large UI, never blocking UI. PID/argv/start in backend-provenance.json, full backend-test.log retained. Exit 0, elapsed 130.61s. 92 files passed, 2416 tests passed, zero failures or skips reported. Full suite confirms the authorized tomorrow-UTC-noon clock change passes with freshly generated certificates. No production Apple verifier change; its tracked hash unchanged. Previous four certificate-time failures remain prior evidence, not waived or erased. No additional backend command or typecheck rerun.
+
+Large UI execution
+./scripts/xcode-test-agent.sh --ui -- -collect-test-diagnostics never -only-testing:PaeoniaAppUITests/AccessibilitySettingsJourneyUITests -only-testing:PaeoniaAppUITests/GameDrawingDescriptionUITests -only-testing:PaeoniaAppUITests/DrawingCompositionUITests
+Executed once, foreground bounded subprocess 600s total including queue. XCODE_TEST_AGENT_DESTINATION unset. XCODE_TEST_AGENT_KEEP_ARTIFACTS=1. No test retry. Wrapper PID 16510, console stream PID 16508. Original argv/start/PID in large/provenance.json; full process inventories retained.
+Exit 65 after 313.06s; queued=0s compiled=13s tested=299s. Full finalized modern summary/tests/index/details/activities retained for all five methods, alongside legacy issues and full action/build logs. No mass unit activity export.
+5 methods executed, 3 passed, 2 failed, 0 skipped, 0 expected failures. Failures did not block unrelated selected methods.
+PASS AccessibilitySettingsJourneyUITests/testAutomaticShowsToolsForASimulatedActiveAssistiveTechnology, 10.13s.
+FAIL AccessibilitySettingsJourneyUITests/testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic, 120s. Test exceeded execution time allowance of 2 minutes.
+PASS DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures, 30.08s, with runtime warning retained.
+PASS GameDrawingDescriptionUITests/testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation, 48.66s, with runtime warning retained. Its Draw & Guess and Odd Creatures iterations both completed the existing description/reopen, shape, send and privacy assertions.
+FAIL GameDrawingDescriptionUITests/testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic, 19.45s. Draw & Guess iteration opens description, sees read failure, taps game.drawing.description.retryLoading, then game.drawing.description.text fails to appear within 5s. Wrapper source line 25, modern tree reports line 26. Failure hierarchy is a populated Draw & Guess screen with game.drawing.description.open and no description text field. It is not the prior sparse global-accessibility-disabled tree. Recovery typing/drawing/finish never reached, nor the second Odd Creatures iteration. Do not claim a two-scenario recovery pass.
+
+Settings failure detail and media
+Activities prove first tab Us and last tab More, then settings.accessibility navigation and both preference pickers work with the native accessibility tree intact. Default drawing hides optional tools. Media-only enters A small sun through the independent native description sheet. Controls-only shows Build with shapes while hiding description. Applying a shape succeeds. Re-enabling media shows A small sun retained. App terminate/relaunch and subsequent controls/description presence assertions complete before restoration. Relaunch test asserts presence, not the retained description's string after relaunch.
+The last actions are More > Accessibility > controls picker > Automatic. The two-minute timeout occurs after that tap. The final media-Automatic choice, restored-drawing assertions/capture and default Dots board launch/capture never execute. This is partial journey evidence, not a passing settings test. Final plist values are separately reported above.
+ALL available Settings PNGs exported and inspected. Four images total, checksummed in large/settings-png-manifest.json, source mapping in large/attachments/manifest.json. Pixel text is English, including Shared widget, Clear, Send, Drawing description, Build with shapes, Us/Chats/Games/Memories/More, and A small sun. Active case is also visibly English.
+Default drawing: 5548C3D7-0D35-4B8B-BE2A-B42A8BEFBD8C.png.
+Media-only: 4919DB7A-3191-408F-9505-5DCE0CB66927.png.
+Controls on: 0F3200A2-4A51-4CC0-ADEF-A807FBCF2C5B.png.
+Simulated active: C1373D2F-16AD-4C6C-85C2-D3E8A3EB1223.png.
+Restored Automatic PNG and default board PNG: NOT AVAILABLE, never reached. No invented replacements.
+All other available attachments exported, including snapshots, hierarchy text, event data, spindump and the recovery failure recording 005FA859-AFE9-4E5F-A3A5-BE10BA3CDCCA.mp4, 13.643s. large/media-manifest.json indexes original media. Recovery video frames at 5/9/12s were extracted for inspection, separately named recovery-video-*.png. The 12s frame shows the English saved-changes failure and Try again. These derived frames are not additional original Settings screenshots. No recording exists for the timed-out Settings method in the exported manifest. No invented media.
+
+Unmodified native state and simulated input
+Full unfiltered large/appconsole.log and PID/timestamp index large/native-at-index.txt retained.
+PID 17784 active fixture: system=false simulated=true at 17:18:25.000, system=true simulated=true at 17:18:28.183.
+PID 17816 none fixture: system=false simulated=false at 17:18:32.541, system=true simulated=false at 17:18:36.311.
+PID 18398 Settings relaunch: system=false simulated=false at 17:20:07.131, system=true simulated=false at 17:20:09.312.
+PID 19767 recovery: system=false simulated=false at 17:22:54.493, system=true simulated=false at 17:22:58.487.
+These are context-specific SwiftUI native environment observations under XCTest, not actual VoiceOver or Voice Control state claims. Source uses scenarioAssistiveTechnologyEnabled only for AccessibilityPresentation and does not override native SwiftUI accessibilityEnabled. The simulated input does not establish manual assistive-technology support. Same nine label gates remain open.
+
+Warnings and diagnostics
+Modern build summary: succeeded, 0 compiler/analyzer warnings/errors. Full build log retained; no warning: line found by recursive string scan. Existing prior metadata warning is not waived by this incremental build.
+Modern finalized summary has two runtime warning issue entries, attributed to DrawingComposition and the normal GameDrawingDescription method. Raw app console has SIX Invalid frame dimension emissions, retained without waiver in large/invalid-frame-index.txt:
+PID 18700 at 17:21:53.583 and 17:21:59.745.
+PID 19120 at 17:22:15.760 and 17:22:18.435.
+PID 19556 at 17:22:38.568 and 17:22:41.137.
+All say Invalid frame dimension (negative or non-finite). No framework-blame inference. Passing assertions do not clear these warnings.
+Full raw legacy/modern issues, build/action logs, unfiltered appconsole, details/activities, all exported attachments and warning/error indexes retained. xcresult console export reports no console log available; stderr retained. No diagnostic suppression beyond the requested -collect-test-diagnostics never. Simulator console stream independently retained.
+
+AX5: NOT RUN
+Both required Large gates failed, so no AX5 wrapper invocation, no actual AX5 setting, no four-method AX5 executions. UIKit public text-size precondition and Norwegian root-More audit unexecuted. No Norwegian pixel/audit pass claim. Settings/recovery/AX5 failures and prior e062/f505 evidence remain open. No skips, waivers, blind repeats or source fixes.
+
+Original result bundles remain at paths in large/original-bundles.json. This report and evidence exist only in this fresh /tmp directory. Checkout invariance is proven by invariance.json. Verification ends with actionable failures, not a claim that accessibility is complete.

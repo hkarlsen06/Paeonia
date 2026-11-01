@@ -12,15 +12,20 @@ import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, 
 // signed server notifications, the way they arrive.
 
 let apple: Chain;
+let notificationClock: Date;
 beforeAll(() => {
   apple = makeChain("subscription-notices");
+  // OpenSSL uses the real clock. Start after certificate issuance and outside quiet hours.
+  notificationClock = new Date();
+  notificationClock.setUTCDate(notificationClock.getUTCDate() + 1);
+  notificationClock.setUTCHours(12, 0, 0, 0);
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 afterAll(removeChains);
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date("2026-11-01T12:00:00.000Z"));
+  vi.setSystemTime(notificationClock);
   // The webhook downloads Apple's root certificates. Serve the test root.
   vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array(apple.rootDer))));
   vi.stubEnv("APPLE_BUNDLE_ID", "no.paeonia.app");

@@ -1,0 +1,26 @@
+Page: no.paeonia.app
+App: no.paeonia.app
+Snapshot: 22 visible nodes
+@e1 [other] "Paeonia"
+@e2 [navigation-bar] "Shared widget"
+@e3 [text] "Shared widget"
+@e4 [button] "Go back to the sent drawing" [disabled]
+@e5 [button] "Drawing history"
+@e6 [scroll-area] [scrollable]
+  [content above scroll-area hidden]
+@e7 [button] "Blush" [selected]
+@e8 [button] "Petal pink"
+@e9 [button] "Pink"
+@e10 [button] "Warm pink"
+@e11 [button] "Green"
+@e12 [button] "Gold"
+@e13 [button] "Blue"
+@e14 [button] "Lavender"
+@e15 [colorwell] "Custom color"
+@e16 [slider] "Tool size"
+@e17 [button] "Line style"
+@e18 [text] "No description added. Freehand content is not recognized."
+@e19 [button] "Drawing description"
+@e20 [button] "Clear" [disabled]
+@e21 [button] "Send" [disabled]
+@e22 [toolbar] "Toolbar"

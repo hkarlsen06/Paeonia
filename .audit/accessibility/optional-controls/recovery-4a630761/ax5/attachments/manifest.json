@@ -1,0 +1,263 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "A662E48E-9D4F-4C97-A43D-C635313276C3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "settings-AX5-nb_0_5B0D10FB-C70E-44A5-9AD8-60D045B8BAF3.png",
+        "timestamp" : 1793551445.328
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "D9A39519-5415-4422-9E6C-068D657E52BF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "settings-before-audit-AX5-nb_0_697769A2-D675-45D9-A486-6DA7B5679B8D.png",
+        "timestamp" : 1793551442.692
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "9A248093-189F-4840-B7A0-924312BA7949.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "System text size precondition_0_8C8E13DF-4CD6-40F8-AC28-FFD0690847FA.txt",
+        "timestamp" : 1793551434.071
+      }
+    ],
+    "testIdentifier" : "AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "E6C0574C-75B6-498C-9807-DA1CA116F875.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Automatic with a simulated active assistive technology_0_F8623030-FE9E-4078-81DA-664F7C2C8BA7.png",
+        "timestamp" : 1793551452.637
+      }
+    ],
+    "testIdentifier" : "AccessibilitySettingsJourneyUITests/testAutomaticShowsToolsForASimulatedActiveAssistiveTechnology()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests/testAutomaticShowsToolsForASimulatedActiveAssistiveTechnology"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "41601EAE-F9E0-4630-A7C6-8AEB9FC1E4F7.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "App UI hierarchy for no.paeonia_0_FB257621-B4C8-4EF7-8F31-8419D62E4814.app",
+        "timestamp" : 1793551484.293
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "07B2526D-76FC-49CB-A11D-DFB81395A912",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.44.44 pm",
+        "timestamp" : 1793551484.293
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "AE07D308-BEB4-40BB-B685-0E91E76EDAC7.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"settings.accessibility.media.automatic\" Button`_0_E9C102CB-2C91-41E7-BB0B-0617963C7BDE.txt",
+        "timestamp" : 1793551484.219
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "8D361C3A-30E8-429A-9488-E08E54D5B458.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"settings.accessibility.media.automatic\" Button`_0_EBCEB767-08F9-4352-942C-5C7CD4CB1132.txt",
+        "timestamp" : 1793551483.281
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "7A1A89CA-991F-4AFA-9725-81FD9E509BE0.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"settings.accessibility.media.automatic\" Button`_0_B696C332-F738-4725-AEB5-48CF7668782F.txt",
+        "timestamp" : 1793551482.314
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "2CE73A3F-0FCC-4254-A7E1-95E5674961DE.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"settings.accessibility.media.automatic\" Button`_0_44A800FD-DC06-4204-9621-9BA9498AEA5D.txt",
+        "timestamp" : 1793551481.223
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "A81C308C-D5BB-4697-B437-680C7956BE40.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"settings.accessibility.media.automatic\" Button`_0_B8E026D7-A53F-4652-B5E3-E23B2D8EF707.txt",
+        "timestamp" : 1793551480.233
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "483382D9-738A-43A8-8E45-C48CAE16C645",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.44.38 pm",
+        "timestamp" : 1793551478.852
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "EEE9036F-4AF2-4A22-8C1E-4702CEE41B1A",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.44.39 pm",
+        "timestamp" : 1793551479.151
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "7CFB6BA4-5E45-43DC-8B70-3F64B2788686",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.44.36 pm",
+        "timestamp" : 1793551476.202
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "72B53751-68E7-45A6-8CE1-B6242E562F94",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.44.36 pm",
+        "timestamp" : 1793551476.495
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "7B93187F-FA20-4910-93B4-296D8454A3AE",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.44.34 pm",
+        "timestamp" : 1793551474.529
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "F40A721D-5D6F-4B3F-AF98-B53B3843093C",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.44.34 pm",
+        "timestamp" : 1793551474.816
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "81A3038B-0042-4E9E-8D1A-5F82F13E4E86",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.44.31 pm",
+        "timestamp" : 1793551471.778
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "5D842488-550C-44F6-8743-5DE62011BE06",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.44.32 pm",
+        "timestamp" : 1793551472.073
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "518F9488-AACC-441B-899B-1566E4C8EFB4",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.44.28 pm",
+        "timestamp" : 1793551468.321
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "5FDD56A7-CDF6-42A6-A239-E136A710CF14",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.44.28 pm",
+        "timestamp" : 1793551468.762
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "41EAA2D2-1601-4043-96DD-95BA2D0F8CB8",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.44.25 pm",
+        "timestamp" : 1793551465.657
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "26C5FC8E-416F-42C0-8D11-5E69B47D6BC2",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.44.26 pm",
+        "timestamp" : 1793551466.079
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "7F559406-341A-45B3-BB2F-3D2D1CD02E64",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-01 at 05.44.22 pm",
+        "timestamp" : 1793551462.996
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "AF91BF6F-097F-4904-B92C-209C9ABF7829",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.44.23 pm",
+        "timestamp" : 1793551463.416
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "1113DCFA-8E5B-4B20-9A5F-447A638529D6",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-11-01 at 05.44.20 pm",
+        "timestamp" : 1793551460.899
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "50FE89BA-4FBF-4D9E-8CA8-294152B6E83B.mp4",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Screen Recording 2026-11-01 at 05.44.13 pm.mp4",
+        "timestamp" : 1793551453.767
+      }
+    ],
+    "testIdentifier" : "AccessibilitySettingsJourneyUITests/testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests/testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic"
+  }
+]

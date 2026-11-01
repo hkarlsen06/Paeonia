@@ -1,0 +1,20 @@
+{
+  "hostId": "local",
+  "deviceId": "8E84ADB0-9092-4EB4-839E-71D62A350146",
+  "sequence": [
+    "scripts/lock acquire simulator returned Shared iPhone",
+    "device_open exact UDID",
+    "bound settings text-size AX5 then readback",
+    "device_close retaining lease",
+    "AX5 wrapper once PASS",
+    "device_open same UDID",
+    "bound settings text-size large then readback",
+    "device_close retaining lease",
+    "Large wrapper once PASS",
+    "device_open same UDID",
+    "bound settings text-size large then readback",
+    "device_close",
+    "scripts/lock release simulator",
+    "device_list open=[]"
+  ]
+}

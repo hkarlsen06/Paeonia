@@ -1,0 +1,23 @@
+[
+  {
+    "name": "typecheck",
+    "argv": [
+      "npm",
+      "run",
+      "typecheck"
+    ],
+    "pid": 3399,
+    "exit": 0,
+    "elapsed": 1.502851963043213
+  },
+  {
+    "name": "test",
+    "argv": [
+      "npm",
+      "test"
+    ],
+    "pid": 3569,
+    "exit": 1,
+    "elapsed": 161.6124608516693
+  }
+]

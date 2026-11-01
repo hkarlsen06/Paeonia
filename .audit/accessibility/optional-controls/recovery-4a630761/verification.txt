@@ -1,0 +1,83 @@
+Frozen UI verification outcome: Large PASSED, AX5 FAILED. No waiver or retry.
+
+Checkout /Users/hkarlsen06/repo/Paeonia-accessibility
+Branch fix/optional-accessibility-controls
+HEAD 4a630761ff353a47eada31fb389efc3582a37606
+main 09089110667687e5d9e3cec4fbff6fbfbc22aa67
+HEAD signed verification succeeds before and after. See signature.txt and signature-after.txt.
+Full HEAD, main, branch, status and SHA256 for all 4172 tracked files under ios/backend/scripts are identical before and after. See before.json, after.json, invariance.json. The only unstaged change remains backend/convex/subscriptionNotices.test.ts, SHA256 8d246615eeb0a0cc7bfa67e62bf9c2bbec172166ed6a4c47d5e87f5cb3e4d677. No source, test, scripts, canonical report or repo documentation edits. No commits, checkouts, deployments, children, test retries, sign-in, manual uninstall, personal devices or new simulators/runtimes. No global accessibilityEnabled modification.
+Read AGENTS.md, ios/AGENTS.md and docs/agent-guides/ios-verification.md. Copies retained in evidence root. Requested frozen verification overrides normal implementation/landing rules. No code/documentation inconsistency found within this verification scope.
+
+Device and cleanup
+scripts/lock acquire simulator returned Shared iPhone rather than Shared iPhone 2. Followed explicit instruction to bind to the returned reserved device after device_list. Only local 8E84ADB0-9092-4EB4-839E-71D62A350146 was used, iPhone 17 Pro, arm64, iOS27.0 build24A434. No other device was driven. Lease held across both groups, renewed before each device_open. Driver path in driver.txt is the exact bound command returned by device_open. All actual settings changes/readbacks used that command, never direct simctl UI. Only text size changed. Motion and all other system settings untouched.
+large-setting-before.txt proves actual Large before group1. ax5-setting-before.txt proves actual accessibility-extra-extra-extra-large before group2. Each Device panel closed before its wrapper while lease retained. large-restoration.txt proves actual AX5 was read after group2, then Large set, then actual Large read back. Own panel closed before lease release. panel-tool-proof.json has successful device_close and subsequent device_list open:[]. locks-final.txt shows all simulator leases free. Devices left booted.
+Toolchain Xcode27.1 27A9275 at /Applications/Xcode.app/Contents/Developer, macOS27.2. Toolchain and system outputs retained. App Debug build numbers from actual wrappers are 20261101.1737 for Large and 20261101.1743 for AX5. Exact run configuration/device metadata in summaries, legacy result metadata and logs.
+
+Commands and execution
+commands.txt records the exact requested wrapper commands. run-group.py is the reproducible runner. Each wrapper ran once with subprocess timeout600 seconds including queue, XCODE_TEST_AGENT_DESTINATION unset and XCODE_TEST_AGENT_KEEP_ARTIFACTS=1. No direct xcodebuild build/test invocation. xcodebuild -version was read only.
+Group1 selected exactly AccessibilitySettingsJourneyUITests, GameDrawingDescriptionUITests/testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic, and GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn, with --ui and -collect-test-diagnostics never. Group2 used the same selection plus AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian. Group2 started only after finalized modern group1 Passed.
+Large wrapper exit0, 292.086s total, queued1s compiled40s tested251s.
+AX5 wrapper exit65, 205.337s total, queued0s compiled10s tested195s.
+Modern counts: Large4 passed,0 failed,0 skipped,0 expected failures. AX5 4 passed,1 failed,0 skipped,0 expected failures. Total9 executions,8 passed,1 failed. Exact method results and durations are in case-results.tsv.
+Both modern build summaries succeeded with0 compiler warnings,0 analyzer warnings,0 errors. Both full raw build/test logs and modern build/action logs retained. Console-log exports report no console log available; stderr retained. Independent unfiltered simulator app-console streams are retained as each group/appconsole.log, including native/simulated AT logs and frame warnings.
+
+Large findings
+All four methods passed. Long Settings journey took143.809s under its240s allowance. Its assertions cover automatic default hiding, media-only authored A small sun and edit action with no shape button, controls-only shape button with no description, retained A small sun after hiding and shape editing, preferences present after terminate/relaunch, return to Automatic and default Dots board button absence.
+Text equality is checked before relaunch. After relaunch the test checks controls and description presence, not description string equality. Do not broaden that claim.
+All six original Settings PNGs exported and individually viewed. Mapping in large/attachments/manifest.json and checksums in large/attachment-hashes.json. large-visual-inspection.txt records each image. Default drawing, media-only, controls-only, restored Automatic and simulated-active captures visibly use English. No clipping seen in the pictured optional drawing actions. Default Dots screenshot F02F9F32-1907-4729-B894-890D6A222956.png is covered by a tutorial sheet. It is not an unobscured board screenshot. No separate Settings menu pixels were exported, so a no-clipping claim for those choices is not established.
+Recovery method activities show both Draw & Guess and Odd Creatures read failure, Retry, editable description field, typing, Done, native shape creation and each game finish button disappearing. Both iterations completed. No recovery PNG or recording was exported; these are activity/assertion results. Separate Dots native sides method passed box/extra-turn assertions.
+
+AX5 failure and passes
+FAIL AccessibilitySettingsJourneyUITests/testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic,31.092s. Wrapper reports ios/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests.swift:126 XCTAssertTrue failed. It is the choose helper waiting5s for settings.accessibility.media.automatic after tapping settings.accessibility.media on the FIRST initial Automatic setup. Controls Automatic selection completed. The media option never appeared. This is not a method timeout. No AX5 default drawing, media-only, controls-only, retained-text, restoredAutomatic or default-board captures were reached. Those stages are unperformed in AX5, not passed.
+Full failure hierarchy and snapshot/event attachments exported. Original recording ax5/attachments/50FE89BA-4FBF-4D9E-8CA8-294152B6E83B.mp4 is24.2s. Derived inspected frames at12,16,17,18,20,23 seconds retained as ax5/failure-frame-*s.png. At20/23s the Accessibility page shows Extra controls/Automatic and its explanatory text; the media row begins below/under the tab bar. Hierarchy has media row y760 height298.7, viewport874, tab bar y791 height83, inner Automatic text y973. No option menu is present. These facts document the failed interaction; root cause is not proven by this audit. No fix/retry performed.
+PASS AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian,13.489s. Exported public UIKit precondition attachment says UICTContentSizeCategoryAccessibilityXXXL, no app size override. performAccessibilityAudit completed; issue handler returnsfalse in frozen source and no findings were waived or filtered. Both original Norwegian before/after PNGs viewed, show Mer, Alex, Robin and relationship duration at top of the scrollable More screen. They do not depict lower settings choices. Native audit pass is scoped to this actual tested screen.
+PASS simulated-active English fixture,7.276s. Its PNG shows Shared widget and Build with shapes wrapping across two lines at AX5. Description action lies below screenshot viewport; assertion confirms existence, not full visible-screen fit.
+PASS recovery54.747s, both game loops typed text after Retry and finished. PASS Dots native side/extra-turn journey79.187s.
+All three original AX5 PNGs viewed. ax5-visual-inspection.txt records observations. Recording and failure hierarchy inspected. No fabricated captures.
+
+Unwaived warnings
+Each group modern summary has1 runtime-warning issue: Invalid frame dimension (negative or non-finite), attributed in wrapper to the recovery method. Each raw appconsole has4 emissions,8 total. See each invalid-frame-index.txt for exact timestamps/PIDs and full appconsole.log. Modern issue count and raw emission count are separate observations. No inference about framework cause, no warning waiver. Wrapper labels this runtime warning under ERRORS/TEST FAILURES even in Large's successful result; modern summary explicitly has0 failed tests for Large and1 for AX5.
+Other raw toolchain diagnostics remain in full wrapper raw logs, including operatingSystemBuild invalidDigitCount and debugger-version lookup messages. Build summary has no compiler/analyzer warnings. Do not equate passing assertions or clean compilation with warning-free runtime.
+
+AT and remaining gates
+Each native-at-index.txt and full appconsole preserve system=false to system=true changes under XCTest while simulated input stays false or true for its fixture. This fixture only supplies Paeonia private presentation input. Native accessibilityEnabled remains unmodified. These logs and reading trees do not prove manual VoiceOver/Voice Control behavior. All nine original label/manual AT/iPad/provider gates remain OPEN. This verification does not close those gates, clear prior evidence, or claim accessibility complete.
+Prior evidence only: /tmp/paeonia-accessibility-options-e7bb-ui-20261101-171738/verification.txt reports2416 backend tests passed and earlier unchanged-model2293 iOS executions passed. None of those suites were rerun here. No backend/typecheck/full unit/normal composition/normal description tests run.
+
+Evidence layout and provenance
+Each large/ and ax5/ contains wrapper.log, provenance.json, outcome.json, copied raw Paeonia-test-log.* and parser files, original-bundles.json with original retained xcresult paths, summary.json, tests.json, test-ids.json, per-selected-case test-details.json and activities.json plus readable activity text, legacy full issues, build-summary.json, build/action logs, attachments/manifest.json and every exported attachment. Export errors are retained alongside outputs. export.py records reproducible export calls. Originals remain at the exact paths below. All report paths are relative to this fresh evidence directory unless absolute.
+
+large original bundles
+/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793551024-32851.xcresult
+/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793551024-32851.xcresult
+
+ax5 original bundles
+/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-test-1793551414-38985.xcresult
+/var/folders/9j/7d72xt915393rwfg7fzyvv5r0000gn/T/Paeonia-build-for-testing-1793551414-38985.xcresult
+
+Reproducible wrapper commands
+cwd /Users/hkarlsen06/repo/Paeonia-accessibility
+unset XCODE_TEST_AGENT_DESTINATION
+export XCODE_TEST_AGENT_KEEP_ARTIFACTS=1
+Each subprocess has timeout=600 seconds including queue.
+
+large
+./scripts/xcode-test-agent.sh --ui -- -collect-test-diagnostics never -only-testing:PaeoniaAppUITests/AccessibilitySettingsJourneyUITests -only-testing:PaeoniaAppUITests/GameDrawingDescriptionUITests/testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic -only-testing:PaeoniaAppUITests/GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn
+
+ax5
+./scripts/xcode-test-agent.sh --ui -- -collect-test-diagnostics never -only-testing:PaeoniaAppUITests/AccessibilitySettingsJourneyUITests -only-testing:PaeoniaAppUITests/GameDrawingDescriptionUITests/testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic -only-testing:PaeoniaAppUITests/GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn -only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian
+
+Runner: /tmp/paeonia-accessibility-options-4a630761-20261101-173627/run-group.py
+Exporter: /tmp/paeonia-accessibility-options-4a630761-20261101-173627/export.py
+
+Actual restoration proof
+COMMAND ['/Users/hkarlsen06/.t3/userdata/device/targets/t3-b5aaedd93a2aca69ac3f066d/agent-device', 'settings', 'text-size']
+Text size is accessibility-extra-extra-extra-large
+COMMAND ['/Users/hkarlsen06/.t3/userdata/device/targets/t3-b5aaedd93a2aca69ac3f066d/agent-device', 'settings', 'text-size', 'large']
+Text size set to large
+COMMAND ['/Users/hkarlsen06/.t3/userdata/device/targets/t3-b5aaedd93a2aca69ac3f066d/agent-device', 'settings', 'text-size']
+Text size is large
+
+Lease release proof
+simulator (Shared iPhone): free
+simulator-2 (Shared iPhone 2): free
+simulator-3 (Shared iPhone 3): free

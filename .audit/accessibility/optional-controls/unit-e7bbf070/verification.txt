@@ -1,0 +1,40 @@
+Verification outcome: FAILED prerequisite backend gate. UI verification NOT REACHED.
+
+Frozen checkout /Users/hkarlsen06/repo/Paeonia-accessibility, branch fix/optional-accessibility-controls.
+Signed HEAD before/after e7bbf07022e6f0e5275f880950eec9bf89418dda. git verify-commit succeeded before and after.
+All 5235 tracked SHA256 hashes identical. Full porcelain status including all untracked files empty before and after. Long final status also retained. No source edits, commits, merges, deployments, retries, new checkouts, children, account sign-ins, resets/uninstalls, personal devices, runtimes or new simulators.
+Local main before/after 09089110667687e5d9e3cec4fbff6fbfbc22aa67, already ancestor of frozen HEAD. No movement observed. Main provenance is separate from frozen worktree invariance.
+Root/ios AGENTS and ios-verification read and copied. ios/local.xcconfig absent. Only synthetic, account-free scenarios authorized. No UI scenario launched because backend gate failed.
+
+Toolchain Xcode 27.1 27A9275, macOS 27.2 26B118. Build CURRENT_PROJECT_VERSION 20261101.1703.
+Only simulator used: local Shared iPhone 2, 79EBB58E-1108-4EEE-987D-E193CEA9EA2A, iPhone 17 Pro, iOS 27.0 24A434 arm64.
+Exact repository lease acquired before device_open. Own bound driver /Users/hkarlsen06/.t3/userdata/device/targets/t3-bc9b15d72b27a3ac66dae839/agent-device used for text-size settings/readback. Own Device panel closed before wrapper. Lease held through unit cohort. No other device driven.
+Actual size set Large and read back Large before tests. Final set/readback Large succeeded. Panel closed and lease released afterward. Motion and other system preferences untouched.
+App preferences were not changed through manual edits. No settings test ran. Read-only final plist reports accessibility.alwaysShowControls=false and accessibility.alwaysShowMediaAlternatives=false. This does not prove the requested settings flow or relaunch persistence.
+
+SUCCESS: ./scripts/xcode-test-agent.sh -- -collect-test-diagnostics never
+Ran once. XCODE_TEST_AGENT_DESTINATION unset; XCODE_TEST_AGENT_KEEP_ARTIFACTS=1. Foreground Python bounded subprocess, 600s total including queue. Exit 0, elapsed 132.55s, queued=0s compiled=87s tested=45s. Original wrapper PID 3529, simctl console stream PID 3528. Original bundles and argv in group1/provenance.json and original-bundles.json. Process inventory retained, app console includes PaeoniaApp PID 6010.
+2192 distinct methods: 2156 nonparameterized, 36 parameterized with 137 argument executions. Total 2293 leaf executions passed. Zero failed, skipped, expected failures. All selected unit/integration tests ran. Modern finalized summary/tests/case-index/counts retained. Compact unit index retained; only three targeted unit cases have expanded details/activities, no thousands-of-activities export.
+Modern build results report zero compiler/analyzer warnings/errors; full build log nevertheless contains appintentsmetadataprocessor warning at 17:05:06.155: Metadata extraction skipped, no AppIntents.framework dependency found. Retained without waiver. Full raw logs, legacy issue objects, modern build/test issue objects and warning/error indexes retained.
+Modern summary runtimeWarnings empty. No Invalid frame dimension occurrence in captured unit appconsole/build/action/wrapper logs. Prior runtime Invalid frame dimension warnings remain unwaived; blocked UI groups cannot establish their resolution. No framework attribution asserted.
+xcresult console-log export returned Error: No console log available. Its stderr retained. Full action log and unfiltered 10.7MB simulator appconsole stream retained. No invented console export.
+All available unit attachments exported: empty manifest, no matching media. Export messages saying skipped export refer to absent attachments, not skipped tests.
+
+SUCCESS: backend npm run typecheck, once. Exit 0, 1.50s. Full backend-typecheck.log retained.
+FAILED: backend npm test, once. Exit 1, 161.61s. 92 files: 91 passed, 1 failed. 2416 tests: 2412 passed, 4 failed. No retry/filter/waiver. Full backend-test.log retained.
+All four failures in convex/subscriptionNotices.test.ts at notify line 79 expected processed:true but received ok:false,error:Invalid Apple notification. Calling lines 102, 152, 169, 239.
+Exact failing tests:
+ a failed renewal payment > tells only the payer, once, and a recovered payment clears it
+ a failed renewal payment > a lapsed subscription without a grace period still tells the payer
+ a subscription the payer stopped > warns both partners five days before access ends, once, and turning renewal back on clears it
+ a subscription the payer stopped > stays quiet while the partner's own subscription keeps going
+No root cause established. Existing tests mock console.warn/error internally; this verifier did not filter output. Backend ran in-memory with no server. Backend typecheck and npm test ran sequentially alongside Xcode, at most two heavy commands at once.
+
+NOT REACHED: Large UI wrapper selecting AccessibilitySettingsJourneyUITests, GameDrawingDescriptionUITests, DrawingCompositionUITests. All 5 methods and 2-scenario game loops blocked by failed backend prerequisite.
+NOT REACHED: AX5 wrapper selecting AccessibilitySettingsJourneyUITests, GameDrawingDescriptionUITests/testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic, AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian. All 4 methods blocked. Actual AX5 never set. UIKit AX5 precondition/audit not executed.
+No settings keepAlways screenshots, audit issue objects, failure hierarchies, recordings or UI media available in this run. Default drawing, media-only, controlsOn, restoredAuto, default Dots board and simulated AT state visual review all NOT REACHED. English screenshots unconfirmed; Norwegian audit unexecuted. The two settings tests declare en/en_US in frozen source, but that is not visual proof.
+No native/simulated assistive-technology scenario logs generated, since those UI launches did not run. Frozen source uses only scenarioAssistiveTechnologyEnabled and leaves native SwiftUI accessibilityEnabled untouched. This source inspection does not prove navigation works. More > Accessibility navigation, independent widget description editor, media-only authoring, hidden-description preservation around shape edits, preference relaunch, recovery retry in both games, normal send/privacy journey all remain unverified by UI in this run.
+Simulated AT input is not actual VoiceOver/Voice Control/Accessibility Inspector validation. Production Automatic policy was not changed. Same nine label gates remain open.
+Prior e062 and f505 evidence left intact. No waiver of their failures. This run does not replace failed evidence with a pass.
+
+Evidence lives only under this fresh /tmp directory. Original xcresults retained at paths in group1/original-bundles.json. No canonical report or repo document edits. Remaining verification requires a separately authorized run after the backend prerequisite failure is addressed; no retries performed here.

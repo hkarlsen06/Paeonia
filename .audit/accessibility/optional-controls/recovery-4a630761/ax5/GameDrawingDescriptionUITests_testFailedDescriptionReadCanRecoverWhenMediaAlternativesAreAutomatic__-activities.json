@@ -1,0 +1,2083 @@
+{
+  "testIdentifier" : "GameDrawingDescriptionUITests/testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GameDrawingDescriptionUITests/testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic",
+  "testName" : "testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic()",
+  "testRuns" : [
+    {
+      "activities" : [
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551484.837,
+          "title" : "Start Test at 2026-11-01 17:44:44.837"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551484.871,
+          "title" : "Set Up"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551484.874,
+                  "title" : "Terminate no.paeonia.app:39997"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551486.155,
+                  "title" : "Setting up automation session"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551488.582,
+                  "title" : "Wait for no.paeonia.app to idle"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551484.874,
+              "title" : "Launch no.paeonia.app"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551484.872,
+          "title" : "Open no.paeonia.app"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551491.912,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551492.076,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551491.911,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551492.077,
+              "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551490.907,
+          "title" : "Waiting 1.0s for \"games.tutorial.next\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551492.11,
+              "title" : "Requesting snapshot of accessibility hierarchy for app with pid 40400"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551492.11,
+          "title" : "Collecting debug information to assist test failure triage"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551493.161,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551493.201,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551493.16,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551493.201,
+              "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551492.159,
+          "title" : "Waiting 1.0s for \"games.tutorial.next\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551493.231,
+              "title" : "Requesting snapshot of accessibility hierarchy for app with pid 40400"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551493.231,
+          "title" : "Collecting debug information to assist test failure triage"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551494.28,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551494.322,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551494.279,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551494.323,
+              "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551493.274,
+          "title" : "Waiting 1.0s for \"games.tutorial.next\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551494.351,
+              "title" : "Requesting snapshot of accessibility hierarchy for app with pid 40400"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.35,
+          "title" : "Collecting debug information to assist test failure triage"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.392,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.398,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.42,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.48,
+          "title" : "Find the \"Draw & Guess\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.503,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.524,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.571,
+          "title" : "Checking existence of `\"game.drawing.description.open\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.599,
+          "title" : "Find the \"game.drawing.description.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.637,
+          "title" : "Find the \"game.drawing.description.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.671,
+          "title" : "Find the \"game.drawing.description.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551494.704,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551494.707,
+              "title" : "Find the \"game.drawing.description.open\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551494.736,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.open\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551494.761,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551495.059,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551494.704,
+          "title" : "Tap \"game.drawing.description.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551496.67,
+                  "title" : "Checking existence of `\"game.drawing.description.failure\" StaticText`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551496.669,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"game.drawing.description.failure\" StaticText`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551495.654,
+          "title" : "Waiting 5.0s for \"game.drawing.description.failure\" StaticText to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551496.744,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551496.747,
+              "title" : "Find the \"game.drawing.description.retryLoading\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551496.79,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.retryLoading\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551497.06,
+                  "title" : "Invalid frame dimension (negative or non-finite)."
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551496.828,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551497.125,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551496.744,
+          "title" : "Tap \"game.drawing.description.retryLoading\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551498.536,
+                  "title" : "Checking existence of `\"game.drawing.description.text\" Any`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551498.534,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"game.drawing.description.text\" Any`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551497.502,
+          "title" : "Waiting 5.0s for \"game.drawing.description.text\" Any to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551498.713,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551498.715,
+              "title" : "Find the \"game.drawing.description.text\" Any"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551498.875,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.text\" TextField"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551498.931,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551499.229,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551498.712,
+          "title" : "Tap \"game.drawing.description.text\" Any"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551499.874,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551500.243,
+              "title" : "Find the \"game.drawing.description.text\" TextField"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551500.546,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.text\" TextField"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551500.629,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551501.212,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551499.874,
+          "title" : "Type 'A circle above a l...' into \"game.drawing.description.text\" TextField"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551501.215,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551501.218,
+              "title" : "Find the \"game.drawing.description.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551501.282,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551501.331,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551501.63,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551501.215,
+          "title" : "Tap \"game.drawing.description.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551501.954,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551501.962,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551501.987,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.026,
+          "title" : "Find the \"Draw & Guess\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.051,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.072,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.122,
+          "title" : "Checking existence of `\"drawing.compose\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.152,
+          "title" : "Find the \"drawing.compose\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.19,
+          "title" : "Find the \"drawing.compose\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.223,
+          "title" : "Find the \"drawing.compose\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551502.256,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551502.258,
+              "title" : "Find the \"drawing.compose\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551502.288,
+              "title" : "Check for interrupting elements affecting \"drawing.compose\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551502.314,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551502.608,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.255,
+          "title" : "Tap \"drawing.compose\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.665,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.671,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.74,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.799,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.847,
+          "title" : "Find the \"Build with shapes\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.887,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551502.922,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551503.009,
+          "title" : "Checking existence of `\"drawing.compose.apply\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551503.062,
+          "title" : "Checking existence of `\"drawing.compose.apply\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551503.112,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551503.164,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551503.196,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551503.235,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551503.264,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551503.295,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551503.324,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551503.357,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551503.233,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551504.658,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551503.112,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551506.214,
+          "title" : "Checking existence of `\"drawing.compose.apply\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551506.3,
+          "title" : "Find the \"drawing.compose.apply\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551506.373,
+          "title" : "Find the \"drawing.compose.apply\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551506.437,
+          "title" : "Find the \"drawing.compose.apply\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551506.5,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551506.503,
+              "title" : "Find the \"drawing.compose.apply\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551506.56,
+              "title" : "Check for interrupting elements affecting \"drawing.compose.apply\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551506.602,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551506.896,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551506.5,
+          "title" : "Tap \"drawing.compose.apply\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551507.173,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551507.176,
+              "title" : "Find the \"drawing.compose.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551507.24,
+              "title" : "Check for interrupting elements affecting \"drawing.compose.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551507.285,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551507.583,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551507.173,
+          "title" : "Tap \"drawing.compose.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551507.949,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551507.958,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551507.983,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551508.024,
+          "title" : "Find the \"Draw & Guess\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551508.048,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551508.069,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551508.117,
+          "title" : "Checking existence of `\"draw.done\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551508.148,
+          "title" : "Find the \"draw.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551508.19,
+          "title" : "Checking existence of `\"draw.done\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551508.219,
+          "title" : "Find the \"draw.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551508.252,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551508.255,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551508.275,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551508.302,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551508.32,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551508.341,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551508.359,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551508.381,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551508.299,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551509.67,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551508.251,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551510.078,
+          "title" : "Checking existence of `\"draw.done\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551510.11,
+          "title" : "Find the \"draw.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551510.152,
+          "title" : "Find the \"draw.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551510.188,
+          "title" : "Find the \"draw.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551510.222,
+          "title" : "Find the \"draw.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551510.256,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551510.258,
+              "title" : "Find the \"draw.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551510.29,
+              "title" : "Check for interrupting elements affecting \"draw.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551510.318,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551510.612,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551510.255,
+          "title" : "Tap \"draw.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551511.651,
+                  "title" : "Checking existence of `\"draw.done\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551511.649,
+              "title" : "Checking `Expect predicate `existsNoRetry == 0` for object \"draw.done\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551510.616,
+          "title" : "Waiting 5.0s for \"draw.done\" Button to not exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551511.686,
+          "title" : "Terminate no.paeonia.app:40400"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551512.963,
+                  "title" : "Setting up automation session"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551515.425,
+                  "title" : "Wait for no.paeonia.app to idle"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551512.751,
+              "title" : "Launch no.paeonia.app"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551512.746,
+          "title" : "Open no.paeonia.app"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551518.677,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551518.844,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551518.676,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551518.844,
+              "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551517.67,
+          "title" : "Waiting 1.0s for \"games.tutorial.next\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551518.879,
+              "title" : "Requesting snapshot of accessibility hierarchy for app with pid 40798"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551518.878,
+          "title" : "Collecting debug information to assist test failure triage"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551519.931,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551519.989,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551519.928,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551519.99,
+              "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551518.924,
+          "title" : "Waiting 1.0s for \"games.tutorial.next\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551520.03,
+              "title" : "Requesting snapshot of accessibility hierarchy for app with pid 40798"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551520.03,
+          "title" : "Collecting debug information to assist test failure triage"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551521.083,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551521.125,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551521.082,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551521.125,
+              "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551520.076,
+          "title" : "Waiting 1.0s for \"games.tutorial.next\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551521.155,
+              "title" : "Requesting snapshot of accessibility hierarchy for app with pid 40798"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.155,
+          "title" : "Collecting debug information to assist test failure triage"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.197,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.204,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.225,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.289,
+          "title" : "Find the \"Draw the head\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.312,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.332,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.378,
+          "title" : "Checking existence of `\"game.drawing.description.open\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.407,
+          "title" : "Find the \"game.drawing.description.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.446,
+          "title" : "Find the \"game.drawing.description.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.479,
+          "title" : "Find the \"game.drawing.description.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551521.512,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551521.515,
+              "title" : "Find the \"game.drawing.description.open\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551521.546,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.open\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551521.571,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551521.869,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551521.512,
+          "title" : "Tap \"game.drawing.description.open\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551523.363,
+                  "title" : "Checking existence of `\"game.drawing.description.failure\" StaticText`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551523.361,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"game.drawing.description.failure\" StaticText`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551522.332,
+          "title" : "Waiting 5.0s for \"game.drawing.description.failure\" StaticText to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551523.442,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551523.444,
+              "title" : "Find the \"game.drawing.description.retryLoading\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551523.488,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.retryLoading\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551523.524,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551523.819,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551523.442,
+          "title" : "Tap \"game.drawing.description.retryLoading\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551525.16,
+                  "title" : "Checking existence of `\"game.drawing.description.text\" Any`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551525.159,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"game.drawing.description.text\" Any`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551524.143,
+          "title" : "Waiting 5.0s for \"game.drawing.description.text\" Any to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551525.327,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551525.329,
+              "title" : "Find the \"game.drawing.description.text\" Any"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551525.477,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.text\" TextField"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551525.532,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551525.829,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551525.326,
+          "title" : "Tap \"game.drawing.description.text\" Any"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551526.101,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551526.46,
+              "title" : "Find the \"game.drawing.description.text\" TextField"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551526.744,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.text\" TextField"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551526.825,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551527.403,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551526.1,
+          "title" : "Type 'A circle above a l...' into \"game.drawing.description.text\" TextField"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551527.406,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551527.409,
+              "title" : "Find the \"game.drawing.description.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551527.469,
+              "title" : "Check for interrupting elements affecting \"game.drawing.description.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551527.518,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551527.819,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551527.406,
+          "title" : "Tap \"game.drawing.description.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.138,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.147,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.173,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.211,
+          "title" : "Find the \"Draw the head\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.235,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.259,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.306,
+          "title" : "Checking existence of `\"drawing.compose\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.337,
+          "title" : "Find the \"drawing.compose\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.375,
+          "title" : "Find the \"drawing.compose\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.408,
+          "title" : "Find the \"drawing.compose\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551528.442,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551528.445,
+              "title" : "Find the \"drawing.compose\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551528.475,
+              "title" : "Check for interrupting elements affecting \"drawing.compose\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551528.501,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551528.795,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.442,
+          "title" : "Tap \"drawing.compose\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.808,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.814,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.874,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.933,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551528.98,
+          "title" : "Find the \"Build with shapes\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551529.018,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551529.054,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551529.14,
+          "title" : "Checking existence of `\"drawing.compose.apply\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551529.192,
+          "title" : "Checking existence of `\"drawing.compose.apply\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551529.241,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551529.306,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551529.339,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551529.379,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551529.409,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551529.441,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551529.471,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551529.505,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551529.377,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551530.805,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551529.24,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551532.36,
+          "title" : "Checking existence of `\"drawing.compose.apply\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551532.422,
+          "title" : "Find the \"drawing.compose.apply\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551532.486,
+          "title" : "Find the \"drawing.compose.apply\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551532.544,
+          "title" : "Find the \"drawing.compose.apply\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551532.603,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551532.606,
+              "title" : "Find the \"drawing.compose.apply\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551532.661,
+              "title" : "Check for interrupting elements affecting \"drawing.compose.apply\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551532.701,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551533.001,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551532.603,
+          "title" : "Tap \"drawing.compose.apply\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551533.271,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551533.275,
+              "title" : "Find the \"drawing.compose.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551533.376,
+              "title" : "Check for interrupting elements affecting \"drawing.compose.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551533.424,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551533.723,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551533.271,
+          "title" : "Tap \"drawing.compose.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.112,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.121,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.164,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.205,
+          "title" : "Find the \"Draw the head\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.23,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.253,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.306,
+          "title" : "Checking existence of `\"corpse.done\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.338,
+          "title" : "Find the \"corpse.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.382,
+          "title" : "Checking existence of `\"corpse.done\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.413,
+          "title" : "Find the \"corpse.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551534.445,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551534.448,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551534.484,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551534.512,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551534.534,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551534.556,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551534.575,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551534.598,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551534.51,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551535.888,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551534.445,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551536.692,
+          "title" : "Checking existence of `\"corpse.done\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551536.742,
+          "title" : "Find the \"corpse.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551536.786,
+          "title" : "Find the \"corpse.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551536.825,
+          "title" : "Find the \"corpse.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551536.863,
+          "title" : "Find the \"corpse.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551536.895,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551536.898,
+              "title" : "Find the \"corpse.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551536.93,
+              "title" : "Check for interrupting elements affecting \"corpse.done\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551536.958,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551537.253,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551536.895,
+          "title" : "Tap \"corpse.done\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551538.354,
+                  "title" : "Checking existence of `\"corpse.done\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551538.353,
+              "title" : "Checking `Expect predicate `existsNoRetry == 0` for object \"corpse.done\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551537.333,
+          "title" : "Waiting 5.0s for \"corpse.done\" Button to not exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551538.435,
+          "title" : "Terminate no.paeonia.app:40798"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551539.495,
+          "title" : "Tear Down"
+        }
+      ],
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "24A434",
+        "osVersion" : "27.0",
+        "platform" : "iOS Simulator"
+      },
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ]
+}

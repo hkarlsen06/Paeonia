@@ -1,0 +1,2864 @@
+{
+  "testIdentifier" : "GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn()",
+  "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn",
+  "testName" : "testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn()",
+  "testRuns" : [
+    {
+      "activities" : [
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551539.589,
+          "title" : "Start Test at 2026-11-01 17:45:39.589"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551539.614,
+          "title" : "Set Up"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551539.83,
+                  "title" : "Setting up automation session"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551542.6,
+                  "title" : "Wait for no.paeonia.app to idle"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551539.619,
+              "title" : "Launch no.paeonia.app"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551539.616,
+          "title" : "Open no.paeonia.app"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551546.004,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551546.202,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551546.003,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551546.98,
+                  "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551547.028,
+                  "title" : "Capturing element debug description"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551546.979,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.tutorial.next\" Button`"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551547.029,
+              "title" : "Checking existence of `\"games.tutorial.next\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551544.972,
+          "title" : "Waiting 2.0s for \"games.tutorial.next\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551547.06,
+              "title" : "Requesting snapshot of accessibility hierarchy for app with pid 41071"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551547.06,
+          "title" : "Collecting debug information to assist test failure triage"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551548.137,
+                  "title" : "Checking existence of `\"games.board.controls\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551548.136,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.board.controls\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551547.102,
+          "title" : "Waiting 5.0s for \"games.board.controls\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551548.191,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551548.195,
+              "title" : "Find the \"games.board.controls\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551548.229,
+              "title" : "Check for interrupting elements affecting \"games.board.controls\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551548.257,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551548.598,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551548.191,
+          "title" : "Tap \"games.board.controls\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551549.695,
+                  "title" : "Checking existence of `\"games.board.controls.close\" Button`"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551549.694,
+              "title" : "Checking `Expect predicate `existsNoRetry == 1` for object \"games.board.controls.close\" Button`"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551548.672,
+          "title" : "Waiting 5.0s for \"games.board.controls.close\" Button to exist"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551549.802,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551549.809,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551549.843,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551549.901,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551549.944,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551549.979,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551550.01,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551550.079,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551550.22,
+          "title" : "Find the \"dotsAndBoxes.native.box\" Any"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551550.37,
+          "title" : "Find the \"dotsAndBoxes.native.box\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551550.526,
+          "title" : "Find the \"dotsAndBoxes.native.box\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551550.671,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551550.673,
+              "title" : "Find the \"dotsAndBoxes.native.box\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551550.819,
+              "title" : "Check for interrupting elements affecting \"dotsAndBoxes.native.box\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551550.872,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551551.17,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551550.671,
+          "title" : "Tap \"dotsAndBoxes.native.box\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551551.553,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551551.583,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551551.627,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551551.7,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551551.756,
+          "title" : "Find the \"Choose a box\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551551.79,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551551.821,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551551.882,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551552.03,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551552.18,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551552.183,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551552.214,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551552.252,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551552.282,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551552.315,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551552.342,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551552.373,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551552.25,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551553.671,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551552.18,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551555.23,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551555.405,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551555.565,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551555.568,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551555.601,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551555.64,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551555.67,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551555.705,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551555.736,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551555.769,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551555.637,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551557.072,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551555.565,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551558.597,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551558.784,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551558.937,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551558.94,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551558.973,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551559.011,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551559.043,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551559.077,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551559.108,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551559.141,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551559.009,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551560.442,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551558.937,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551561.964,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551562.162,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551562.329,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551562.331,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551562.364,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551562.405,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551562.436,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551562.47,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551562.499,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551562.531,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551562.402,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551563.831,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551562.328,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551565.349,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.11\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551565.523,
+          "title" : "Find the \"dotsAndBoxes.native.box.11\" Any"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551565.692,
+          "title" : "Find the \"dotsAndBoxes.native.box.11\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551565.852,
+          "title" : "Find the \"dotsAndBoxes.native.box.11\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551566.015,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551566.018,
+              "title" : "Find the \"dotsAndBoxes.native.box.11\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551566.176,
+              "title" : "Check for interrupting elements affecting \"dotsAndBoxes.native.box.11\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551566.233,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551566.527,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551566.015,
+          "title" : "Tap \"dotsAndBoxes.native.box.11\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551566.885,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551566.904,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551566.94,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551566.998,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.045,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.083,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.116,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.187,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.11.state\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.227,
+          "title" : "Find the \"dotsAndBoxes.box.11.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.277,
+          "title" : "Find the \"dotsAndBoxes.box.11.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.322,
+          "title" : "Find the \"dotsAndBoxes.box.11.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.366,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.11.state\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.404,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.41,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.438,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.486,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.528,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.559,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.588,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.655,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.694,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551567.731,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551567.734,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551567.761,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551567.795,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551567.82,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551567.848,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551567.876,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551567.907,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551567.792,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551569.205,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551567.731,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551570.715,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551570.776,
+          "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551570.839,
+          "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551570.89,
+          "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551570.94,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551570.983,
+          "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551571.03,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551571.033,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551571.066,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551571.106,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551571.135,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551571.167,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551571.196,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551571.23,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551571.103,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551572.534,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551571.03,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551572.977,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.11.side.3\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551573.022,
+          "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551573.077,
+          "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551573.125,
+          "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551573.171,
+          "title" : "Find the \"dotsAndBoxes.box.11.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551573.217,
+          "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551573.262,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551573.264,
+              "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551573.31,
+              "title" : "Check for interrupting elements affecting \"dotsAndBoxes.box.11.side.3\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551573.35,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551573.647,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551573.262,
+          "title" : "Tap \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551575.329,
+              "title" : "Find the \"dotsAndBoxes.box.11.state\" StaticText"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.328,
+          "title" : "Checking `Expect predicate `label != \"Box row 3, column 4, top, bottom, and left drawn\"` for object \"dotsAndBoxes.box.11.state\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.389,
+          "title" : "Find the \"dotsAndBoxes.box.11.side.3\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.437,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.443,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.479,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.542,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.589,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.625,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.66,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.734,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551575.898,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551576.069,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551576.072,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551576.107,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551576.149,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551576.181,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551576.216,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551576.249,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551576.284,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551576.146,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551577.586,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551576.069,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.20] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.80] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551578.13,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551578.301,
+          "title" : "Find the \"dotsAndBoxes.native.box\" Any"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551578.452,
+          "title" : "Find the \"dotsAndBoxes.native.box\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551578.597,
+          "title" : "Find the \"dotsAndBoxes.native.box\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551578.75,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551578.753,
+              "title" : "Find the \"dotsAndBoxes.native.box\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551578.902,
+              "title" : "Check for interrupting elements affecting \"dotsAndBoxes.native.box\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551578.958,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551579.253,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551578.75,
+          "title" : "Tap \"dotsAndBoxes.native.box\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551579.585,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551579.614,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551579.657,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551579.727,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551579.779,
+          "title" : "Find the \"Choose a box\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551579.819,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551579.851,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551579.922,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.0\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551580.072,
+          "title" : "Find the \"dotsAndBoxes.native.box.0\" Any"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551580.228,
+          "title" : "Find the \"dotsAndBoxes.native.box.0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551580.38,
+          "title" : "Find the \"dotsAndBoxes.native.box.0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551580.525,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551580.527,
+              "title" : "Find the \"dotsAndBoxes.native.box.0\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551580.679,
+              "title" : "Check for interrupting elements affecting \"dotsAndBoxes.native.box.0\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551580.735,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551581.028,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551580.525,
+          "title" : "Tap \"dotsAndBoxes.native.box.0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.351,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.37,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.407,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.468,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.511,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.547,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.582,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.651,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.0.state\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.691,
+          "title" : "Find the \"dotsAndBoxes.box.0.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.742,
+          "title" : "Find the \"dotsAndBoxes.box.0.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.788,
+          "title" : "Find the \"dotsAndBoxes.box.0.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.832,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.0.state\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.869,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.874,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.904,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.955,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551581.996,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551582.029,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551582.059,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551582.128,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.0.side.0\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551582.167,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.0.side.0\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551582.205,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551582.208,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551582.235,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551582.27,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551582.295,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551582.323,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551582.349,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551582.378,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551582.267,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551583.676,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551582.205,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.195,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.0.side.0\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.258,
+          "title" : "Find the \"dotsAndBoxes.box.0.side.0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.318,
+          "title" : "Find the \"dotsAndBoxes.box.0.side.0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.369,
+          "title" : "Find the \"dotsAndBoxes.box.0.side.0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.418,
+          "title" : "Find the \"dotsAndBoxes.box.0.side.0\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.463,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.469,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.506,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.566,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.612,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.65,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.684,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.766,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551585.935,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551586.105,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551586.107,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551586.142,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551586.188,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551586.22,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551586.255,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551586.287,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551586.323,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551586.186,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551587.628,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551586.104,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.20] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.80] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551589.144,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551589.283,
+          "title" : "Find the \"dotsAndBoxes.native.box\" Any"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551589.427,
+          "title" : "Find the \"dotsAndBoxes.native.box\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551589.568,
+          "title" : "Find the \"dotsAndBoxes.native.box\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551589.708,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551589.71,
+              "title" : "Find the \"dotsAndBoxes.native.box\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551589.853,
+              "title" : "Check for interrupting elements affecting \"dotsAndBoxes.native.box\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551589.907,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551590.199,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551589.707,
+          "title" : "Tap \"dotsAndBoxes.native.box\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551590.518,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551590.538,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551590.585,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551590.652,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551590.708,
+          "title" : "Find the \"Choose a box\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551590.747,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551590.782,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551590.854,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551591.006,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551591.156,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551591.159,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551591.192,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551591.231,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551591.261,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551591.294,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551591.323,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551591.354,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551591.229,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551592.655,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551591.156,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551594.182,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551594.351,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551594.518,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551594.521,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551594.555,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551594.595,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551594.625,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551594.658,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551594.688,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551594.722,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551594.592,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551596.023,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551594.518,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551597.549,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551597.756,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551597.924,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551597.927,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551597.961,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551598.001,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551598.033,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551598.067,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551598.096,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551598.13,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551597.999,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551599.431,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551597.924,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551600.946,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551601.12,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551601.284,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551601.287,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551601.321,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551601.361,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551601.393,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551601.426,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551601.456,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551601.489,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551601.359,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551602.79,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551601.284,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551604.314,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551604.479,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551604.637,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551604.64,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551604.673,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551604.713,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551604.745,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551604.779,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551604.81,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551604.847,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551604.711,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551606.148,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551604.637,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551607.665,
+          "title" : "Checking existence of `\"dotsAndBoxes.native.box.14\" Any`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551607.85,
+          "title" : "Find the \"dotsAndBoxes.native.box.14\" Any"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551608.023,
+          "title" : "Find the \"dotsAndBoxes.native.box.14\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551608.184,
+          "title" : "Find the \"dotsAndBoxes.native.box.14\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551608.346,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551608.348,
+              "title" : "Find the \"dotsAndBoxes.native.box.14\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551608.501,
+              "title" : "Check for interrupting elements affecting \"dotsAndBoxes.native.box.14\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551608.556,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551608.849,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551608.346,
+          "title" : "Tap \"dotsAndBoxes.native.box.14\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.184,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.199,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.232,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.286,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.328,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.364,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.403,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.476,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.14.state\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.517,
+          "title" : "Find the \"dotsAndBoxes.box.14.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.568,
+          "title" : "Find the \"dotsAndBoxes.box.14.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.615,
+          "title" : "Find the \"dotsAndBoxes.box.14.state\" StaticText"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.658,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.14.state\" StaticText`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.698,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.704,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.734,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.785,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.826,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.856,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.885,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.955,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.14.side.1\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551609.994,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.14.side.1\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551610.033,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551610.036,
+              "title" : "Find the Target Application 'no.paeonia.app'"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551610.064,
+              "title" : "Check for interrupting elements affecting \"Paeonia\" Application"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "childActivities" : [
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551610.1,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551610.125,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551610.154,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551610.18,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                },
+                {
+                  "activityType" : "com.apple.dt.xctest.activity-type.internal",
+                  "isAssociatedWithFailure" : false,
+                  "startTime" : 1793551610.209,
+                  "title" : "Find the Target Application 'no.paeonia.app'"
+                }
+              ],
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551610.097,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551611.506,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551610.033,
+          "title" : "Press Target Application 'no.paeonia.app'[0.98, 0.80] for 0.0 seconds, then drag to Target Application 'no.paeonia.app'[0.98, 0.20] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds "
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.032,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.14.side.1\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.086,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.1\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.145,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.1\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.2,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.1\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.249,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.255,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.29,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.349,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.394,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.429,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.463,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.542,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.14.side.2\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.584,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.2\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.635,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.2\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.681,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.2\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.728,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.2\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.771,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.777,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.811,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.868,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.913,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.95,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551613.984,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551614.066,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.14.side.1\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551614.11,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.1\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551614.162,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.1\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551614.209,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.1\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551615.287,
+              "title" : "Find the \"dotsAndBoxes.box.14.side.1\" Button"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551615.286,
+          "title" : "Checking `Expect predicate `enabled == 1` for object \"dotsAndBoxes.box.14.side.1\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551615.346,
+              "title" : "Wait for no.paeonia.app to idle"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551615.348,
+              "title" : "Find the \"dotsAndBoxes.box.14.side.1\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551615.392,
+              "title" : "Check for interrupting elements affecting \"dotsAndBoxes.box.14.side.1\" Button"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551615.433,
+              "title" : "Synthesize event"
+            },
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551615.728,
+              "title" : "Wait for no.paeonia.app to idle"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551615.346,
+          "title" : "Tap \"dotsAndBoxes.box.14.side.1\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551615.979,
+          "title" : "Find the Window (First Match)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551615.989,
+          "title" : "Get all elements bound by index for: Descendants matching type NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551616.036,
+          "title" : "Find the NavigationBar (Element at index 0)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551616.107,
+          "title" : "Find the NavigationBar (Element at index 1)"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551616.159,
+          "title" : "Find the \"Board controls\" NavigationBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551616.198,
+          "title" : "Get all elements bound by index for: Descendants matching type TabBar"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551616.234,
+          "title" : "Checking existence of `Keyboard (First Match)`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551616.315,
+          "title" : "Checking existence of `\"dotsAndBoxes.box.14.side.2\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551616.36,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.2\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551616.411,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.2\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551616.457,
+          "title" : "Find the \"dotsAndBoxes.box.14.side.2\" Button"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "childActivities" : [
+            {
+              "activityType" : "com.apple.dt.xctest.activity-type.internal",
+              "isAssociatedWithFailure" : false,
+              "startTime" : 1793551617.517,
+              "title" : "Find the \"dotsAndBoxes.box.14.side.2\" Button"
+            }
+          ],
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551617.516,
+          "title" : "Checking `Expect predicate `enabled == 0` for object \"dotsAndBoxes.box.14.side.2\" Button`"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551617.575,
+          "title" : "Terminate no.paeonia.app:41071"
+        },
+        {
+          "activityType" : "com.apple.dt.xctest.activity-type.internal",
+          "isAssociatedWithFailure" : false,
+          "startTime" : 1793551618.654,
+          "title" : "Tear Down"
+        }
+      ],
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "24A434",
+        "osVersion" : "27.0",
+        "platform" : "iOS Simulator"
+      },
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "./scripts/xcode-test-agent.sh",
+    "--ui",
+    "--",
+    "-collect-test-diagnostics",
+    "never",
+    "-only-testing:PaeoniaAppUITests/AccessibilitySettingsJourneyUITests/testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic"
+  ],
+  "pid": 79667,
+  "consolePid": 79666,
+  "start": 1793553902.5483341,
+  "destination": "unset",
+  "keepArtifacts": "1",
+  "timeoutSeconds": 600
+}

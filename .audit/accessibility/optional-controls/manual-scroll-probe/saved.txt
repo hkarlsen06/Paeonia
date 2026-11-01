@@ -1,0 +1,36 @@
+Page: no.paeonia.app
+App: no.paeonia.app
+Snapshot: 31 visible nodes
+@e1 [other] "Paeonia"
+@e2 [navigation-bar] "Shared widget"
+@e3 [text] "Shared widget"
+@e4 [button] "Go back to the sent drawing" [disabled]
+@e5 [button] "Drawing history"
+@e6 [scroll-area] [scrollable]
+  [content above scroll-area hidden]
+  [content below scroll-area hidden]
+@e7 [other] "widgetDrawing.canvas"
+@e8 [scroll-area] "Drawing canvas" [scrollable]
+@e9 [other] "com.apple.pencilkit.tiledView"
+@e10 [button] "Pen" [selected]
+@e11 [button] "Pencil"
+@e12 [button] "Fill"
+@e13 [button] "Eraser"
+@e14 [button] "Undo" [disabled]
+@e15 [button] "Redo" [disabled]
+@e16 [button] "Blush" [selected]
+@e17 [button] "Petal pink"
+@e18 [button] "Pink"
+@e19 [button] "Warm pink"
+@e20 [button] "Green"
+@e21 [button] "Gold"
+@e22 [button] "Blue"
+@e23 [button] "Lavender"
+@e24 [colorwell] "Custom color"
+@e25 [slider] "Tool size"
+@e26 [button] "Line style"
+@e27 [text] "A small sun"
+@e28 [button] "Drawing description"
+@e29 [button] "Clear" [disabled]
+@e30 [button] "Send" [disabled]
+@e31 [toolbar] "Toolbar"

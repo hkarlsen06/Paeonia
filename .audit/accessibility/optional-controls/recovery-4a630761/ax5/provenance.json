@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "./scripts/xcode-test-agent.sh",
+    "--ui",
+    "--",
+    "-collect-test-diagnostics",
+    "never",
+    "-only-testing:PaeoniaAppUITests/AccessibilitySettingsJourneyUITests",
+    "-only-testing:PaeoniaAppUITests/GameDrawingDescriptionUITests/testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic",
+    "-only-testing:PaeoniaAppUITests/GamesBoardAccessibilityUITests/testDotsNativeSidesCloseABoxAndPreserveTheExtraTurn",
+    "-only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian"
+  ],
+  "pid": 38985,
+  "consolePid": 38984,
+  "start": 1793551414.0192351,
+  "destination": "unset",
+  "keepArtifacts": "1",
+  "timeoutSeconds": 600
+}

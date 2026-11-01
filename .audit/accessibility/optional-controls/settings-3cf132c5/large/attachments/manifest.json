@@ -1,0 +1,125 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "3082C993-8666-461E-91FB-6641B1BDFD3D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Default board without the additional controls button_0_33E55C9F-6390-4676-A0F1-47BC0D7E0E62.png",
+        "timestamp" : 1793554058.187
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "FB393BCA-5B37-4E1B-A263-39994DB28710.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Drawing after restoring automatic presentation_0_12EB0C6F-8A9E-4D41-B56D-215FD64BA366.png",
+        "timestamp" : 1793554047.471
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "41A40403-1FD3-41A2-A00B-D3E246D69B2B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility media choices before selecting automatic_0_ABA5B317-F5D6-4938-BAC0-F9BDA705B908.png",
+        "timestamp" : 1793554041.201
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "9D3DA22C-BB62-4D62-A310-939AE09E96A3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility controls choices before selecting automatic_0_A735454C-7834-4611-9363-EC675964EE33.png",
+        "timestamp" : 1793554036.35
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "B5F55D0C-739B-4B4A-882D-C5DDA429C29E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility media choices before selecting always_0_D24BADE3-7739-4AFD-A169-AE0821FD5884.png",
+        "timestamp" : 1793554002.815
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "E5348024-4E6B-4A80-9FA0-1D656EE586BD.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Drawing with controls enabled and media alternatives automatic_0_2C90D707-E87F-4472-A3C5-4678196C3753.png",
+        "timestamp" : 1793553990.925
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "25264F99-17A1-4156-BE1C-537A8E10D01A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility controls choices before selecting always_0_94E3251A-726F-41C6-9CE5-B40CE79CB23A.png",
+        "timestamp" : 1793553983.544
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "B03D5A58-D926-4CD0-AE3F-0AD170E824FB.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility media choices before selecting automatic_0_4BCBC5B7-9CCA-402B-93C6-BD5274717391.png",
+        "timestamp" : 1793553978.617
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "1DF72742-C18A-4CD1-99E5-54A844D1FD96.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Descriptions enabled without shape controls_0_7B2A0892-315D-4984-826C-03E2F7272A76.png",
+        "timestamp" : 1793553971.526
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "56EFB4C7-EE12-4635-922B-31732300DF92.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility media choices before selecting always_0_1170DF04-3705-4636-BE3B-858680ED8285.png",
+        "timestamp" : 1793553958.557
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "8DB76DE8-C2B0-4917-86DD-E0513E95758B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Default drawing without additional controls_0_DF8E0859-6B81-404B-8DEB-C2818748E123.png",
+        "timestamp" : 1793553951.531
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "446D859A-E2F9-4467-B555-2E25A68C935C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility media choices before selecting automatic_0_0BF84D03-B064-49EE-8495-1922AC183DA0.png",
+        "timestamp" : 1793553942.71
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "8E84ADB0-9092-4EB4-839E-71D62A350146",
+        "deviceName" : "Shared iPhone",
+        "exportedFileName" : "9C32CCAF-2D8F-4E69-844D-FCC498645749.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Accessibility controls choices before selecting automatic_0_D0C7FB3B-55EE-46D3-B1C4-155BBE59D4C9.png",
+        "timestamp" : 1793553937.804
+      }
+    ],
+    "testIdentifier" : "AccessibilitySettingsJourneyUITests/testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic()",
+    "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests/testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic"
+  }
+]

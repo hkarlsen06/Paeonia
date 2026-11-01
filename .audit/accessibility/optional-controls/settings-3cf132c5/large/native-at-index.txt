@@ -1,0 +1,6 @@
+2026-11-01 18:25:23.534 I  PaeoniaApp[80076:b111e9] [no.paeonia.app:DeveloperScenarios] Accessibility fixture: system=false, simulated=false
+2026-11-01 18:25:26.866 I  PaeoniaApp[80076:b111e9] [no.paeonia.app:DeveloperScenarios] Accessibility fixture: system=true, simulated=false
+2026-11-01 18:26:54.044 I  PaeoniaApp[80342:b1209e] [no.paeonia.app:DeveloperScenarios] Accessibility fixture: system=false, simulated=false
+2026-11-01 18:26:56.225 I  PaeoniaApp[80342:b1209e] [no.paeonia.app:DeveloperScenarios] Accessibility fixture: system=true, simulated=false
+2026-11-01 18:27:31.400 I  PaeoniaApp[80427:b12517] [no.paeonia.app:DeveloperScenarios] Accessibility fixture: system=false, simulated=false
+2026-11-01 18:27:34.594 I  PaeoniaApp[80427:b12517] [no.paeonia.app:DeveloperScenarios] Accessibility fixture: system=true, simulated=false

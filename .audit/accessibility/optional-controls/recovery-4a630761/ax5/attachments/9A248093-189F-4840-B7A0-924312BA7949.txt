@@ -1,0 +1,1 @@
+Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.

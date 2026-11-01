@@ -1,0 +1,3 @@
+simulator (Shared iPhone): free
+simulator-2 (Shared iPhone 2): free
+simulator-3 (Shared iPhone 3): free
