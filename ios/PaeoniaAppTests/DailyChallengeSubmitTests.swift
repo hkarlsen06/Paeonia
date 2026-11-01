@@ -21,6 +21,7 @@ struct DailyChallengeSubmitTests {
         viewModel.setDraftText("  Thinking of you  ", for: question.id)
 
         await viewModel.submitAnswer(for: question)
+        #expect(viewModel.homeCardState.kind == .complete)
 
         // Saved on the device and shown as sending right away — nothing was lost and no
         // error was raised — with the trimmed text queued for the sync engine to send.
@@ -51,9 +52,35 @@ struct DailyChallengeSubmitTests {
             draftStore: InMemoryDailyChallengeDraftStore(), pendingOperationStore: pendingStore
         )
         await relaunched.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        #expect(relaunched.homeCardState.kind == .complete)
         #expect(relaunched.isSending(question.id))
         #expect(relaunched.isHeldOnPhone(question.id))
         #expect(relaunched.sendingText(for: question.id) == "Thinking of you")
+    }
+
+    @MainActor
+    @Test func homeCardReopensWhenQueuedAnswerIsRefused() async throws {
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let viewModel = DailyChallengeViewModel(
+            service: RecordingDailyChallengeService(snapshots: [makeDailySnapshot(rows: [dailyQuestionRow()])]),
+            draftStore: InMemoryDailyChallengeDraftStore(), pendingOperationStore: pendingStore
+        )
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        let question = try #require(viewModel.snapshot.todayQuestion)
+        viewModel.setDraftText("Thinking of you", for: question.id)
+        await viewModel.submitAnswer(for: question)
+        #expect(viewModel.homeCardState.kind == .complete)
+        let queued = try await pendingStore.inFlightOperations(
+            ownerUserID: TestDailyChallengeIDs.currentUser, kind: .submitDailyAnswer
+        )
+
+        try await pendingStore.markTerminalFailure(
+            clientOperationID: try #require(queued.first).operation.id,
+            errorDescription: "Answer refused", at: Date()
+        )
+        await viewModel.refreshSendingState()
+        #expect(!viewModel.isSending(question.id))
+        #expect(viewModel.homeCardState.kind != .complete)
     }
 
     @MainActor
@@ -92,6 +119,7 @@ struct DailyChallengeSubmitTests {
 
         #expect(await syncProbe.didSubmitReturn())
         #expect(viewModel.isSending(question.id))
+        #expect(viewModel.homeCardState.kind == .complete)
 
         await syncProbe.release()
         await submitTask.value

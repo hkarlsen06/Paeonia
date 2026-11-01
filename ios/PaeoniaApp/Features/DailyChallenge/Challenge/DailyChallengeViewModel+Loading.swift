@@ -126,6 +126,11 @@ extension DailyChallengeViewModel {
         if !hasResolvedTodayState && snapshot.todayQuestion == nil {
             return DailyChallengeCardState(kind: .loading)
         }
-        return snapshot.homeCardState
+        var state = snapshot.homeCardState
+        // A persisted answer completes our part while it sends in the background.
+        if let today = snapshot.todayQuestion, isSending(today.id) {
+            state.kind = .complete
+        }
+        return state
     }
 }
