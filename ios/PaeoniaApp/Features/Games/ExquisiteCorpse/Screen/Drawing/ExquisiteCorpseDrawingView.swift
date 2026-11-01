@@ -31,12 +31,11 @@ struct ExquisiteCorpseDrawingView: View {
             squareHeightRatio: part.hasStripAbove ? 1 + ExquisiteCorpseFold.stripFraction : 1
         ) {
             VStack(spacing: PaeoniaSpacing.space8) {
-                ExquisiteCorpsePartLine(part: part)
                 if showsFirstHint {
                     firstHint
                 }
-                ideaRow
                 liveRow
+                ideaRow
                 if dynamicTypeSize.isAccessibilitySize {
                     nativeCreation
                 }
@@ -117,20 +116,14 @@ struct ExquisiteCorpseDrawingView: View {
             .accessibilityIdentifier("corpse.firstHint")
     }
 
-    /// Always laid out at the same height, so nothing below it moves when the chip
-    /// comes and goes. Without a dealt deck there is nothing to ask for.
-    @ViewBuilder
     private var ideaRow: some View {
-        if viewModel.hasIdeas || viewModel.idea != nil {
-            ExquisiteCorpseIdeaRow(
-                idea: viewModel.idea?.text,
-                onAsk: viewModel.askIdea,
-                onShuffle: viewModel.shuffleIdea,
-                onRemove: viewModel.removeIdea
-            )
-        } else {
-            Color.clear.frame(height: PaeoniaSpacing.compactButtonHeight)
-        }
+        ExquisiteCorpseIdeaRow(
+            idea: viewModel.idea?.text,
+            canAsk: viewModel.hasIdeas,
+            onAsk: viewModel.askIdea,
+            onShuffle: viewModel.shuffleIdea,
+            onRemove: viewModel.removeIdea
+        )
     }
 
     private var liveRow: some View {
@@ -156,31 +149,5 @@ struct ExquisiteCorpseDrawingView: View {
             PaeoniaHaptics.partnerDrawingReceived()
         }
         GameSound.nudge.play(volume: 0.7)
-    }
-}
-
-/// A centered part heading that stacks when space is tight.
-struct ExquisiteCorpsePartLine: View {
-    let part: ExquisiteCorpsePartKind
-
-    var body: some View {
-        GameLiveRow {
-            Text(.exquisiteCorpseDrawEyebrow)
-                .paeoniaEyebrowStyle()
-        } trailing: {
-            Text(title)
-                .font(PaeoniaTypography.title)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .accessibilityIdentifier("corpse.partTitle")
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private var title: LocalizedStringResource {
-        switch part {
-        case .head: .exquisiteCorpseDrawHead
-        case .body: .exquisiteCorpseDrawBody
-        case .legs: .exquisiteCorpseDrawLegs
-        }
     }
 }
