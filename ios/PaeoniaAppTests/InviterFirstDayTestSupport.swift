@@ -16,9 +16,13 @@ actor FirstDayGatewaySpy {
     private var drawingRelease: CheckedContinuation<Void, Never>?
     private(set) var isDrawingHeld = false
     private(set) var drawingDescriptions: [String?] = []
+    private var revisionsByAsset: [UUID: UUID] = [:]
+    var acceptedDrawingOverride: FirstDayDrawingReference?
+    private(set) var acceptedDrawings: [FirstDayDrawingReference] = []
 
     func holdNextDrawing() { holdsNextDrawing = true }
     func releaseDrawing() { drawingRelease?.resume(); drawingRelease = nil }
+    func returnDrawing(_ reference: FirstDayDrawingReference) { acceptedDrawingOverride = reference }
 
     init(draft: FirstDayDraft = firstDayDraft()) {
         self.draft = draft
@@ -51,10 +55,12 @@ actor FirstDayGatewaySpy {
         savedAnswers.append((questionVersionID, text))
     }
 
-    func reserveDrawingUpload(revisionID _: UUID, operation _: SyncClientOperation) throws -> MediaUploadReservation {
+    func reserveDrawingUpload(revisionID: UUID, operation _: SyncClientOperation) throws -> MediaUploadReservation {
         try record("reserve")
+        let mediaAssetID = UUID()
+        revisionsByAsset[mediaAssetID] = revisionID
         return MediaUploadReservation(
-            mediaAssetID: UUID(),
+            mediaAssetID: mediaAssetID,
             bucket: "widget-drawings",
             storagePath: "drafts/test",
             uploadURL: URL(fileURLWithPath: "/")
@@ -71,14 +77,23 @@ actor FirstDayGatewaySpy {
     }
 
     func saveDrawing(
-        _ payload: WidgetDrawingUploadPayload, mediaAssetID _: UUID, operation _: SyncClientOperation
-    ) async throws {
+        _ payload: WidgetDrawingUploadPayload, mediaAssetID: UUID, operation _: SyncClientOperation
+    ) async throws -> FirstDayDrawingReference {
         try record("save")
         drawingDescriptions.append(payload.accessibilityText)
         if holdsNextDrawing {
             holdsNextDrawing = false
             await withCheckedContinuation { drawingRelease = $0; isDrawingHeld = true }
         }
+        let accepted: FirstDayDrawingReference
+        if let acceptedDrawingOverride {
+            accepted = acceptedDrawingOverride
+        } else {
+            guard let revisionID = revisionsByAsset[mediaAssetID] else { throw WidgetCanvasGatewayError.emptyResponse }
+            accepted = FirstDayDrawingReference(mediaAssetID: mediaAssetID, revisionID: revisionID)
+        }
+        acceptedDrawings.append(accepted)
+        return accepted
     }
 
     func signedDrawingURL(mediaAssetID _: UUID) throws -> URL? {
@@ -91,6 +106,11 @@ extension FirstDayGatewaySpy: FirstDayGateway {}
 
 /// The widget's saved drawing, in memory.
 actor FirstDayCanvasFake {
+    func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
+        widgetPublicationTestTicket(for: payload)
+    }
+    func acceptPublication(_: WidgetCanvasPublicationTicket, revisionID _: UUID) {}
+
     private(set) var drawingData: Data?
     private(set) var accessibilityText: String?
 

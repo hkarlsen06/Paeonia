@@ -101,7 +101,7 @@ struct MediaAlternativePendingOperationHandler: PendingSyncOperationHandling {
         if latest?.operationID == operation.operation.id {
             let normalized = MediaAlternativeEdit(coupleID: edit.coupleID, target: edit.target,
                                                   text: accepted.accessibilityText ?? "")
-            await cache.apply(normalized, ownerUserID: operation.ownerUserID, operation: operation.operation,
+            try await cache.apply(normalized, ownerUserID: operation.ownerUserID, operation: operation.operation,
                               stamp: stamp, widgetRevisionVersion: accepted.widgetRevisionVersion)
         }
         return .succeeded

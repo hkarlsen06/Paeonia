@@ -129,6 +129,14 @@
   }
 
   actor DeveloperWidgetCanvasService: WidgetCanvasManaging {
+    func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
+      WidgetCanvasPublicationTicket(
+        publicationID: payload.publicationID,
+        generations: WidgetCanvasGenerations(privacy: 0, publication: 0), privacyEpoch: 0
+      )
+    }
+    func acceptPublication(_: WidgetCanvasPublicationTicket, revisionID _: UUID) {}
+
     private var snapshot: WidgetCanvasSnapshot?
 
     init(snapshot: WidgetCanvasSnapshot? = nil) {

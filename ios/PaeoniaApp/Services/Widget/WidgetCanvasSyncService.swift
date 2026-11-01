@@ -196,7 +196,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
                 return
             }
 
-            await updateDescription(of: state, revisionID: revisionID, identity: identity)
+            try await updateDescription(of: state, revisionID: revisionID, identity: identity)
             if await skipsDownload(of: state, revisionID: revisionID, identity: identity) {
                 return
             }
@@ -207,7 +207,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
                 mediaAssetID: mediaAssetID,
                 identity: identity
             )
-            await updateDescription(of: state, revisionID: revisionID, identity: identity)
+            try await updateDescription(of: state, revisionID: revisionID, identity: identity)
         } catch {
             #if DEBUG
             logger.error("Widget sync failed: \(String(describing: error))")
@@ -215,10 +215,11 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         }
     }
 
-    private func updateDescription(of state: WidgetCanvasState, revisionID: UUID, identity: WidgetSyncIdentity) async {
+    private func updateDescription(of state: WidgetCanvasState, revisionID: UUID,
+                                   identity: WidgetSyncIdentity) async throws {
         guard !Task.isCancelled, let owner = identity.currentUserID,
               let version = state.descriptionVersion else { return }
-        await descriptions?.updateDescription(.remote(text: state.bounds?.accessibilityText, version: version),
+        try await descriptions?.updateDescription(.remote(text: state.bounds?.accessibilityText, version: version),
                                                revisionID: revisionID,
                                                privacyToken: LocalPrivacyWriteGuard.shared.token(ownerUserID: owner))
     }

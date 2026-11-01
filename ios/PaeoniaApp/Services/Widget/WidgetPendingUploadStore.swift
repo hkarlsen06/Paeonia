@@ -3,6 +3,11 @@ import CryptoKit
 import Foundation
 
 nonisolated enum WidgetDrawingPublication {
+    static func id(drawingData: Data, canvasSide: Double, accessibilityText: String?) -> String {
+        id(contentHash: SHA256.hash(data: drawingData).paeoniaHexString,
+           canvasSide: canvasSide, accessibilityText: accessibilityText)
+    }
+
     static func id(contentHash: String, canvasSide: Double, accessibilityText: String?) -> String {
         let identity = [contentHash, String(canvasSide.bitPattern), accessibilityText ?? ""].joined(separator: "\0")
         return SHA256.hash(data: Data(identity.utf8)).paeoniaHexString

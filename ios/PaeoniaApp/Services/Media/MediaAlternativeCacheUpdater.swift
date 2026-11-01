@@ -50,8 +50,8 @@ nonisolated struct MediaAlternativeCacheUpdater: Sendable {
     }
 
     func apply(_ edit: MediaAlternativeEdit, ownerUserID: UUID, operation: SyncClientOperation, stamp: Stamp,
-               widgetRevisionVersion: Int64? = nil) async {
-        await MediaAlternativeCacheWrites.shared.perform(
+               widgetRevisionVersion: Int64? = nil) async throws {
+        try await MediaAlternativeCacheWrites.shared.perform(
             ownerUserID: ownerUserID, edit: edit, operation: operation, privacyToken: stamp.privacy,
             widgetRevisionVersion: widgetRevisionVersion
         ) {
@@ -60,7 +60,7 @@ nonisolated struct MediaAlternativeCacheUpdater: Sendable {
                 let update: WidgetDrawingDescriptionUpdate = widgetRevisionVersion.map {
                     .accepted(text: edit.text.trimmedNonEmpty, version: $0, operationID: operation.id)
                 } ?? .queued(text: edit.text, operationID: operation.id)
-                await widgetCanvas?.updateDescription(update, revisionID: revisionID, privacyToken: stamp.privacy)
+                try await widgetCanvas?.updateDescription(update, revisionID: revisionID, privacyToken: stamp.privacy)
             }
         }
     }

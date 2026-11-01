@@ -24,7 +24,19 @@ enum WidgetDrawingTestError: Error {
     case failed
 }
 
+func widgetPublicationTestTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
+    WidgetCanvasPublicationTicket(
+        publicationID: payload.publicationID,
+        generations: WidgetCanvasGenerations(privacy: 0, publication: 0), privacyEpoch: 0
+    )
+}
+
 final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sendable {
+    func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
+        widgetPublicationTestTicket(for: payload)
+    }
+    func acceptPublication(_: WidgetCanvasPublicationTicket, revisionID _: UUID) {}
+
     private(set) var saveCount = 0
     private(set) var loadCount = 0
     private(set) var clearCount = 0
@@ -109,6 +121,11 @@ final class WidgetCanvasUploadSpy: WidgetCanvasUploading, @unchecked Sendable {
 }
 
 actor SuspendedWidgetCanvasService {
+    func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
+        widgetPublicationTestTicket(for: payload)
+    }
+    func acceptPublication(_: WidgetCanvasPublicationTicket, revisionID _: UUID) {}
+
     private var shouldSuspendNextSave = false
     private var suspendedSaveStarted = false
     private var suspendedSaveStartedContinuation: CheckedContinuation<Void, Never>?

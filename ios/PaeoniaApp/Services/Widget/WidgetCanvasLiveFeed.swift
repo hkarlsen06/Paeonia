@@ -59,18 +59,23 @@ nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
             // the moment to retry a drawing that is still waiting to be sent,
             // even when the canvas itself did not change.
             let revisionID = rows.first?.activeRevisionID
+            var descriptionNeedsRetry = false
             if let state = rows.first, let revisionID, let version = state.descriptionVersion {
-                await descriptions?.updateDescription(.remote(text: state.bounds?.accessibilityText, version: version),
-                                                       revisionID: revisionID,
-                                                       privacyToken: LocalPrivacyWriteGuard.shared.token(
-                                                        ownerUserID: session.userID
-                                                       ))
+                do {
+                    try await descriptions?.updateDescription(
+                        .remote(text: state.bounds?.accessibilityText, version: version), revisionID: revisionID,
+                        privacyToken: LocalPrivacyWriteGuard.shared.token(ownerUserID: session.userID)
+                    )
+                } catch {
+                    // The regular sync retries the failed metadata write before skipping a known revision.
+                    descriptionNeedsRetry = true
+                }
             }
             guard !Task.isCancelled else { return }
             // Reactions on the drawing need the server's revision and its author.
             await recordLatestDrawing(revisionID, rows.first?.activeRevisionAuthorUserID)
             let isNewRevision = revisionID.map { $0.uuidString != lastSyncedRevisionID() } ?? false
-            guard isNewRevision || hasPendingUpload() else {
+            guard descriptionNeedsRetry || isNewRevision || hasPendingUpload() else {
                 continue
             }
 

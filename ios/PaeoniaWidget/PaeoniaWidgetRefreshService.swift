@@ -269,11 +269,13 @@ enum PaeoniaWidgetRefreshService {
             if let bytes = try? Data(contentsOf: url),
                let stored = try? WidgetSharePayload.decoder().decode(WidgetSharePayload.self, from: bytes),
                stored.revisionID == current.revisionID, stored.contentHash == current.contentHash {
-                if stored.pendingDescriptionOperationID != nil ||
-                    stored.descriptionVersion.map({ $0 > (current.descriptionVersion ?? -1) }) == true {
-                    current.accessibilityText = stored.accessibilityText
-                    current.descriptionVersion = stored.descriptionVersion
-                    current.pendingDescriptionOperationID = stored.pendingDescriptionOperationID
+                current.localPublicationID = stored.localPublicationID
+                current.accessibilityText = stored.accessibilityText
+                current.descriptionVersion = stored.descriptionVersion
+                current.pendingDescriptionOperationID = stored.pendingDescriptionOperationID
+                current.deferredDescription = stored.deferredDescription
+                if let version = remoteDrawing.descriptionVersion {
+                    current.applyDescription(.remote(text: remoteDrawing.accessibilityText, version: version))
                 }
             }
             try WidgetSharePayload.encoder().encode(current).write(to: url, options: .atomic)
@@ -367,12 +369,14 @@ extension PaeoniaWidgetRefreshService {
             }
             if stored.authorName != name {
                 stored = WidgetSharePayload(
-                    revisionID: stored.revisionID, authorName: name, createdAt: stored.createdAt,
+                    revisionID: stored.revisionID, localPublicationID: stored.localPublicationID,
+                    authorName: name, createdAt: stored.createdAt,
                     renderedAt: stored.renderedAt, rendererVersion: stored.rendererVersion,
                     privacyMode: stored.privacyMode, isRedacted: stored.isRedacted,
                     contentHash: stored.contentHash, previews: stored.previews, canvasSide: stored.canvasSide,
                     accessibilityText: stored.accessibilityText, descriptionVersion: stored.descriptionVersion,
-                    pendingDescriptionOperationID: stored.pendingDescriptionOperationID
+                    pendingDescriptionOperationID: stored.pendingDescriptionOperationID,
+                    deferredDescription: stored.deferredDescription
                 )
             }
         }

@@ -93,6 +93,6 @@ nonisolated struct MediaAlternativeEditingService: Sendable {
             _ = try? await pending.discardUnsent(clientOperationID: operation.id)
             throw MediaAlternativeEditingError.privacyChanged
         }
-        await cache.apply(edit, ownerUserID: ownerUserID, operation: operation, stamp: stamp)
+        try await cache.apply(edit, ownerUserID: ownerUserID, operation: operation, stamp: stamp)
     }
 }

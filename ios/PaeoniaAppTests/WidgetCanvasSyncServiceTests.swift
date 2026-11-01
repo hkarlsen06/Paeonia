@@ -394,6 +394,11 @@ private actor SyncSuspendingDownloaderSpy: WidgetPayloadDownloading {
 }
 
 private nonisolated final class SyncLocalStoreSpy: WidgetCanvasManaging, @unchecked Sendable {
+    func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
+        widgetPublicationTestTicket(for: payload)
+    }
+    func acceptPublication(_: WidgetCanvasPublicationTicket, revisionID _: UUID) {}
+
     struct SaveCall {
         let data: Data
         let canvasSize: CGSize

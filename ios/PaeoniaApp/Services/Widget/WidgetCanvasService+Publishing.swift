@@ -12,7 +12,7 @@ nonisolated struct WidgetCanvasPublication {
 
 /// The privacy and publication counters when a publication started. A newer
 /// publication or a privacy purge moves them on, which cancels the older one.
-nonisolated struct WidgetCanvasGenerations {
+nonisolated struct WidgetCanvasGenerations: Sendable {
     let privacy: UInt64
     let publication: UInt64
 }
@@ -103,10 +103,13 @@ extension WidgetCanvasService {
             if let data = try? Data(contentsOf: payloadURL),
                let current = try? WidgetSharePayload.decoder().decode(WidgetSharePayload.self, from: data),
                current.revisionID == payload.revisionID, current.contentHash == payload.contentHash,
-               current.descriptionVersion != nil || current.pendingDescriptionOperationID != nil {
+               current.descriptionVersion != nil || current.pendingDescriptionOperationID != nil
+                || current.localPublicationID != nil || current.deferredDescription != nil {
                 payload.accessibilityText = current.accessibilityText
                 payload.descriptionVersion = current.descriptionVersion
                 payload.pendingDescriptionOperationID = current.pendingDescriptionOperationID
+                payload.localPublicationID = current.localPublicationID
+                payload.deferredDescription = current.deferredDescription
             }
             let payloadData = try WidgetSharePayload.encoder().encode(payload)
             try checkGenerations(generations)
@@ -157,7 +160,7 @@ extension WidgetCanvasService {
         previews: [String: String]
     ) -> WidgetSharePayload {
         let trimmedAuthorName = publication.authorName?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return WidgetSharePayload(
+        var payload = WidgetSharePayload(
             revisionID: publication.serverRevisionID ?? fileRevisionID,
             authorName: trimmedAuthorName?.isEmpty == false ? trimmedAuthorName : nil,
             createdAt: publication.createdAt,
@@ -169,5 +172,12 @@ extension WidgetCanvasService {
             canvasSide: Double(publication.canvasSize.width),
             accessibilityText: publication.accessibilityText
         )
+        if publication.serverRevisionID == nil {
+            payload.localPublicationID = WidgetDrawingPublication.id(
+                drawingData: publication.drawingData, canvasSide: Double(publication.canvasSize.width),
+                accessibilityText: publication.accessibilityText
+            )
+        }
+        return payload
     }
 }

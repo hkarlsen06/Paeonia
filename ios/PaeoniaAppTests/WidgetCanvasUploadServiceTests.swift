@@ -9,7 +9,8 @@ struct WidgetCanvasUploadServiceTests {
         gateway.holdFirstSubmit = true
         let pendingStore = WidgetPendingUploadStore(defaults: UserDefaults(suiteName: UUID().uuidString))
         let service = WidgetCanvasUploadService(
-            gateway: gateway, operationFactory: WidgetCanvasOperationFactorySpy(), pendingStore: pendingStore
+            gateway: gateway, operationFactory: WidgetCanvasOperationFactorySpy(), pendingStore: pendingStore,
+            localStore: WidgetCanvasServiceSpy()
         )
         var staged = Self.samplePayload
         staged.accessibilityText = "A circle"
@@ -33,7 +34,8 @@ struct WidgetCanvasUploadServiceTests {
         let gateway = WidgetCanvasGatewaySpy()
         let service = WidgetCanvasUploadService(
             gateway: gateway,
-            operationFactory: WidgetCanvasOperationFactorySpy()
+            operationFactory: WidgetCanvasOperationFactorySpy(),
+            localStore: WidgetCanvasServiceSpy()
         )
 
         try await service.upload(Self.samplePayload)
@@ -73,7 +75,8 @@ struct WidgetCanvasUploadServiceTests {
         )
         let service = WidgetCanvasUploadService(
             gateway: gateway,
-            operationFactory: WidgetCanvasOperationFactorySpy()
+            operationFactory: WidgetCanvasOperationFactorySpy(),
+            localStore: WidgetCanvasServiceSpy()
         )
 
         try await service.upload(Self.samplePayload)
@@ -99,7 +102,8 @@ struct WidgetCanvasUploadServiceTests {
         let service = WidgetCanvasUploadService(
             gateway: gateway,
             operationFactory: WidgetCanvasOperationFactorySpy(),
-            pendingStore: pendingStore
+            pendingStore: pendingStore,
+            localStore: WidgetCanvasServiceSpy()
         )
         let first = Self.payload(byte: 0x01)
         let second = Self.payload(byte: 0x02)
@@ -133,7 +137,8 @@ struct WidgetCanvasUploadServiceTests {
         let service = WidgetCanvasUploadService(
             gateway: gateway,
             operationFactory: WidgetCanvasOperationFactorySpy(),
-            pendingStore: pendingStore
+            pendingStore: pendingStore,
+            localStore: WidgetCanvasServiceSpy()
         )
 
         _ = await service.markPending(Self.samplePayload)
@@ -150,7 +155,8 @@ struct WidgetCanvasUploadServiceTests {
         let service = WidgetCanvasUploadService(
             gateway: WidgetCanvasGatewaySpy(),
             operationFactory: WidgetCanvasOperationFactorySpy(),
-            pendingStore: pendingStore
+            pendingStore: pendingStore,
+            localStore: WidgetCanvasServiceSpy()
         )
         let older = Self.payload(byte: 0x0A)
         let newer = Self.payload(byte: 0x0B)
@@ -249,7 +255,8 @@ struct WidgetCanvasUploadServiceTests {
         let service = WidgetCanvasUploadService(
             gateway: gateway,
             operationFactory: WidgetCanvasOperationFactorySpy(),
-            pendingStore: pendingStore
+            pendingStore: pendingStore,
+            localStore: WidgetCanvasServiceSpy()
         )
         return (service, pendingStore)
     }
@@ -273,7 +280,7 @@ struct WidgetCanvasUploadServiceTests {
     )
 }
 
-private nonisolated final class WidgetCanvasOperationFactorySpy:
+nonisolated final class WidgetCanvasOperationFactorySpy:
     WidgetCanvasClientOperationProviding, @unchecked Sendable {
     private var count = 0
 
@@ -288,7 +295,7 @@ private nonisolated final class WidgetCanvasOperationFactorySpy:
     }
 }
 
-private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked Sendable {
+nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked Sendable {
     static let storageID = "kg2storage-id"
 
     let canvas = WidgetCanvasReference(
@@ -310,6 +317,9 @@ private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @un
     private(set) var submitOperationIDs: [UUID] = []
     /// Like the server, a replayed reserve operation returns the same asset.
     private var reservedAssetIDs: [UUID: UUID] = [:]
+    private var revisionsByAsset: [UUID: UUID] = [:]
+    private var submittedRevisions: [UUID: WidgetDrawingRevisionResult] = [:]
+    var beforeReturningSubmit: (@Sendable () throws -> Void)?
     private var heldSubmit: CheckedContinuation<Void, Never>?
     private(set) var isSubmitHeld = false
 
@@ -346,6 +356,7 @@ private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @un
         }
         let assetID = reservedAssetIDs[operation.id] ?? UUID()
         reservedAssetIDs[operation.id] = assetID
+        revisionsByAsset[assetID] = revisionID
         return MediaUploadReservation(
             mediaAssetID: assetID,
             bucket: "widget-drawings",
@@ -380,7 +391,13 @@ private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @un
         submitCalls.append(submission)
         submitOperationIDs.append(operation.id)
         submitAttempts += 1
+        guard let revisionID = revisionsByAsset[submission.payloadMediaAssetID] else {
+            throw WidgetCanvasGatewayError.emptyResponse
+        }
+        let result = submittedRevisions[operation.id]
+            ?? WidgetDrawingRevisionResult(revisionID: revisionID, activeRevisionID: revisionID)
         if loseFirstSubmitResponse, submitAttempts == 1 {
+            submittedRevisions[operation.id] = result
             throw URLError(.networkConnectionLost)
         }
         if hangFirstSubmitUntilCancelled, submitAttempts == 1 {
@@ -399,7 +416,9 @@ private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @un
         if conflictOnFirstSubmit, submitAttempts == 1 {
             throw WidgetCanvasGatewayError.parentRevisionConflict
         }
-        return WidgetDrawingRevisionResult(revisionID: UUID(), activeRevisionID: UUID())
+        submittedRevisions[operation.id] = result
+        try beforeReturningSubmit?()
+        return result
     }
 
     func releaseHeldSubmit() {

@@ -115,8 +115,9 @@ actor FirstDayDrawingUploadService: WidgetCanvasUploading {
             return .replaced
         }
         pendingStore.recordAttempt(publicationID)
-        try await upload(payload, contentHash: contentHash)
+        let outcome = try await upload(payload, contentHash: contentHash)
         pendingStore.clearPending(publicationID)
+        guard outcome == .delivered else { return outcome }
         deliveredPublicationID = publicationID
         await MainActor.run {
             NotificationCenter.default.post(name: .paeoniaWidgetUploadDidFinish, object: nil)
@@ -125,7 +126,10 @@ actor FirstDayDrawingUploadService: WidgetCanvasUploading {
     }
 
     /// Reserve, upload, finalize, then save on the draft.
-    private func upload(_ payload: WidgetDrawingUploadPayload, contentHash: String) async throws {
+    private func upload(
+        _ payload: WidgetDrawingUploadPayload, contentHash: String
+    ) async throws -> WidgetDrawingDelivery {
+        let ticket = await localStore.capturePublicationTicket(for: payload)
         // ponytail: no saved progress, so a retry reserves a new upload and the server
         // replaces the draft's drawing. Save progress like the couple's uploader if
         // retries get frequent.
@@ -144,11 +148,16 @@ actor FirstDayDrawingUploadService: WidgetCanvasUploading {
             ),
             operation: await operationFactory.makeOperation()
         )
-        try await gateway.saveDrawing(
+        let accepted = try await gateway.saveDrawing(
             payload,
             mediaAssetID: reservation.mediaAssetID,
             operation: await operationFactory.makeOperation()
         )
+        // A superseded request returns the newer draft, which may be a drawing
+        // from another device. Its revision must never label our local bytes.
+        guard accepted.mediaAssetID == reservation.mediaAssetID else { return .replaced }
+        try await localStore.acceptPublication(ticket, revisionID: accepted.revisionID)
+        return .delivered
     }
 
     static func sha256Hex(of data: Data) -> String {

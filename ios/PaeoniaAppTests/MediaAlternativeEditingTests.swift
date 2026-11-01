@@ -1,9 +1,87 @@
+import CoreGraphics
 import Foundation
+import PencilKit
 import Testing
 @testable import PaeoniaApp
 
 @MainActor
 struct MediaAlternativeEditingTests {
+    @Test func completedWidgetCorrectionDoesNotMaskANewerHistoryVersionOrItsClearedText() async throws {
+        let fixture = try Fixture()
+        defer { fixture.removeFiles() }
+        let target = MediaAlternativeTarget.widgetDrawing(revisionID: UUID())
+        var context = ThreadChatContext(coupleID: fixture.couple)
+        context.participants.currentUserID = fixture.owner
+        context.operationProvider = fixture.operations
+        let model = MediaAlternativeEditorModel(target: target, context: context, service: fixture.service)
+        await model.prepare()
+        model.open(currentText: "Original")
+        model.text = "My correction"
+        await model.save()
+        let operation = try #require(try await fixture.pending.inFlightOperations(
+            ownerUserID: fixture.owner, kind: .updateMediaAlternative
+        ).first)
+        try await fixture.caches.apply(
+            MediaAlternativeEdit(coupleID: fixture.couple, target: target, text: "My correction"),
+            ownerUserID: fixture.owner, operation: operation.operation,
+            stamp: await fixture.caches.stamp(ownerUserID: fixture.owner), widgetRevisionVersion: 1_001
+        )
+        try await fixture.pending.markSucceeded(clientOperationID: operation.operation.id, at: Date())
+        await model.reloadPending()
+        #expect(model.displayedText(source: "Stale", version: 1_000) == "My correction")
+        #expect(model.displayedText(source: "A newer correction", version: 1_002) == "A newer correction")
+        #expect(model.displayedText(source: nil, version: 1_002) == nil)
+    }
+
+    @Test func failedWidgetAcceptanceKeepsTheDurableCorrectionUntilTheFileWriteCanRetry() async throws {
+        let fixture = try Fixture()
+        defer { fixture.removeFiles() }
+        let files = WidgetCanvasTestEnvironment()
+        let directory = files.payloadURL.deletingLastPathComponent()
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+            try? FileManager.default.removeItem(at: files.containerURL.deletingLastPathComponent())
+        }
+        let canvas = files.makeService()
+        let revision = UUID()
+        try await canvas.saveDescribedDrawing(makeNonEmptyDrawing().dataRepresentation(),
+                                              canvasSize: CGSize(width: 320, height: 320), authorName: "Alex",
+                                              createdAt: Date(), revisionID: revision, accessibilityText: "Original")
+        let caches = MediaAlternativeCacheUpdater(chat: fixture.chat, stories: fixture.stories,
+                                                   daily: fixture.caches.daily, widgetCanvas: canvas)
+        let service = MediaAlternativeEditingService(pending: fixture.pending, cache: caches)
+        let edit = MediaAlternativeEdit(coupleID: fixture.couple, target: .widgetDrawing(revisionID: revision),
+                                         text: "A corrected drawing description")
+        try await service.queue(edit, ownerUserID: fixture.owner, operation: fixture.operations.makeOperation(),
+                                stamp: await caches.stamp(ownerUserID: fixture.owner))
+        let operation = try #require(try await fixture.pending.inFlightOperations(
+            ownerUserID: fixture.owner, kind: .updateMediaAlternative
+        ).first)
+        let handler = MediaAlternativePendingOperationHandler(
+            gateway: AcceptedWidgetAlternativeGateway(), cache: caches
+        )
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
+        await #expect(throws: CocoaError.self) {
+            try await handler.send(operation, context: fixture.context)
+        }
+        #expect(try files.decodePayload().pendingDescriptionOperationID == operation.operation.id)
+        let reopened = MediaAlternativeEditingService(
+            pending: SwiftDataPendingSyncOperationRepository(container: fixture.localStore.container), cache: caches
+        )
+        #expect(try await reopened.pendingEdit(ownerUserID: fixture.owner, coupleID: fixture.couple,
+                                                target: edit.target)?.text == edit.text)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+        #expect(try await handler.send(operation, context: fixture.context) == .succeeded)
+        try await fixture.pending.markSucceeded(clientOperationID: operation.operation.id, at: Date())
+        #expect(try await reopened.pendingEdit(ownerUserID: fixture.owner, coupleID: fixture.couple,
+                                                target: edit.target) == nil)
+        #expect(try files.decodePayload().pendingDescriptionOperationID == nil)
+        let token = LocalPrivacyWriteGuard.shared.token(ownerUserID: fixture.owner)
+        try await canvas.updateDescription(.remote(text: "Newer server text", version: 1_002),
+                                             revisionID: revision, privacyToken: token)
+        #expect(try files.decodePayload().accessibilityText == "Newer server text")
+    }
+
     @Test func queuedVoiceCorrectionSurvivesRepositoryReopeningAndKeepsAudioAndMessageTime() async throws {
         let fixture = try Fixture()
         defer { fixture.removeFiles() }
@@ -119,8 +197,9 @@ struct MediaAlternativeEditingTests {
         let later = SyncClientOperation(clientID: earlier.clientID, clientSequence: earlier.clientSequence + 1,
                                         localCreatedAt: earlier.localCreatedAt.addingTimeInterval(-60))
         let stamp = await fixture.caches.stamp(ownerUserID: fixture.owner)
-        await fixture.caches.apply(fixture.edit("Latest"), ownerUserID: fixture.owner, operation: later, stamp: stamp)
-        await fixture.caches.apply(fixture.edit("Earlier"), ownerUserID: fixture.owner,
+        try await fixture.caches.apply(fixture.edit("Latest"), ownerUserID: fixture.owner,
+                                       operation: later, stamp: stamp)
+        try await fixture.caches.apply(fixture.edit("Earlier"), ownerUserID: fixture.owner,
                                     operation: earlier, stamp: stamp)
         let messages = await fixture.chat.messages(ownerUserID: fixture.owner, subjectID: fixture.message.subjectID)
         #expect(messages.first?.voice?.transcript == "Latest")
@@ -222,7 +301,7 @@ struct MediaAlternativeEditingTests {
         ).first)
         let accepted = MediaAlternativeEdit(coupleID: fixture.couple, target: target,
                                             text: "The server's accepted text")
-        await fixture.caches.apply(accepted, ownerUserID: fixture.owner, operation: pending.operation,
+        try await fixture.caches.apply(accepted, ownerUserID: fixture.owner, operation: pending.operation,
                                    stamp: await fixture.caches.stamp(ownerUserID: fixture.owner))
         try await fixture.pending.markSucceeded(clientOperationID: pending.operation.id, at: Date())
         await model.reloadPending()
@@ -296,6 +375,13 @@ struct MediaAlternativeEditingTests {
                                     stamp: await caches.stamp(ownerUserID: owner))
         }
         func removeFiles() { try? FileManager.default.removeItem(at: directory) }
+    }
+}
+
+private struct AcceptedWidgetAlternativeGateway: MediaAlternativeGateway {
+    // swiftlint:disable:next async_without_await
+    func update(_ edit: MediaAlternativeEdit, operation _: SyncClientOperation) async -> MediaAlternativeAcceptedText {
+        MediaAlternativeAcceptedText(accessibilityText: edit.text, widgetRevisionVersion: 1_001)
     }
 }
 

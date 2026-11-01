@@ -139,12 +139,16 @@
 
     func finalizeDrawingUpload(_: WidgetDrawingFinalizeInput, operation _: SyncClientOperation) {}
 
-    func saveDrawing(_: WidgetDrawingUploadPayload, mediaAssetID: UUID, operation _: SyncClientOperation) {
+    func saveDrawing(
+      _: WidgetDrawingUploadPayload, mediaAssetID: UUID, operation _: SyncClientOperation
+    ) -> FirstDayDrawingReference {
+      let drawing = FirstDayDrawingReference(mediaAssetID: mediaAssetID, revisionID: UUID())
       draft = FirstDayDraft(
         startedOn: draft.startedOn,
         question: draft.question,
-        drawing: FirstDayDrawingReference(mediaAssetID: mediaAssetID, revisionID: UUID())
+        drawing: drawing
       )
+      return drawing
     }
 
     func signedDrawingURL(mediaAssetID _: UUID) -> URL? {

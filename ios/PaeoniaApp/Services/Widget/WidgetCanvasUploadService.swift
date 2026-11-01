@@ -18,7 +18,7 @@ nonisolated struct WidgetDrawingUploadPayload: Sendable {
 
     var publicationID: String {
         WidgetDrawingPublication.id(
-            contentHash: SHA256.hash(data: drawingData).paeoniaHexString,
+            drawingData: drawingData,
             canvasSide: Double(canvasSide), accessibilityText: accessibilityText
         )
     }
@@ -83,6 +83,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     private let gateway: any WidgetCanvasGateway
     private let operationFactory: any WidgetCanvasClientOperationProviding
     private let pendingStore: WidgetPendingUploadStore
+    private let localStore: any WidgetCanvasManaging
     private var lastUpload: Task<Void, Never>?
     private var deliveredPublicationID: String?
 
@@ -96,11 +97,13 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     init(
         gateway: any WidgetCanvasGateway,
         operationFactory: any WidgetCanvasClientOperationProviding,
-        pendingStore: WidgetPendingUploadStore = .shared
+        pendingStore: WidgetPendingUploadStore = .shared,
+        localStore: any WidgetCanvasManaging = WidgetCanvasService.shared
     ) {
         self.gateway = gateway
         self.operationFactory = operationFactory
         self.pendingStore = pendingStore
+        self.localStore = localStore
     }
 
     var hasPendingUpload: Bool {
@@ -172,7 +175,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
             return .replaced
         }
         pendingStore.recordAttempt(publicationID)
-        try await upload(payload, resumingFrom: pending.progress) { progress in
+        _ = try await upload(payload, resumingFrom: pending.progress) { progress in
             pendingStore.saveProgress(progress, publicationID: publicationID)
         }
         pendingStore.clearPending(publicationID)
@@ -186,7 +189,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     /// Uploads with fresh IDs and keeps no progress. Retries go through
     /// `uploadPending`, which saves progress with the pending marker.
     func upload(_ payload: WidgetDrawingUploadPayload) async throws {
-        try await upload(payload, resumingFrom: nil) { _ in }
+        _ = try await upload(payload, resumingFrom: nil) { _ in }
     }
 
     /// Runs reserve, upload, finalize, and submit, skipping the steps `saved`
@@ -196,7 +199,8 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
         _ payload: WidgetDrawingUploadPayload,
         resumingFrom saved: WidgetUploadProgress?,
         persist: (WidgetUploadProgress?) -> Void
-    ) async throws {
+    ) async throws -> WidgetDrawingRevisionResult {
+        let ticket = await localStore.capturePublicationTicket(for: payload)
         var progress: WidgetUploadProgress
         if let saved {
             progress = saved
@@ -229,7 +233,9 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
             progress.submitOperation = await operationFactory.makeOperation()
             persist(progress)
         }
-        try await submit(progress: &progress, persist: persist)
+        let result = try await submit(progress: &progress, persist: persist)
+        try await localStore.acceptPublication(ticket, revisionID: result.revisionID)
+        return result
     }
 
     /// Reserves, uploads, and finalizes the canonical `.pkdrawing` media asset.
@@ -278,12 +284,12 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     private func submit(
         progress: inout WidgetUploadProgress,
         persist: (WidgetUploadProgress?) -> Void
-    ) async throws {
+    ) async throws -> WidgetDrawingRevisionResult {
         guard var submission = progress.submission, let operation = progress.submitOperation else {
             throw WidgetCanvasGatewayError.emptyResponse
         }
         do {
-            _ = try await gateway.submitRevision(submission, operation: operation)
+            return try await gateway.submitRevision(submission, operation: operation)
         } catch WidgetCanvasGatewayError.parentRevisionConflict {
             // The partner saved a revision before ours landed. Re-anchor to the
             // new active revision and submit the same finalized asset once more.
@@ -295,7 +301,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
             progress.submission = submission
             progress.submitOperation = retryOperation
             persist(progress)
-            _ = try await gateway.submitRevision(submission, operation: retryOperation)
+            return try await gateway.submitRevision(submission, operation: retryOperation)
         }
     }
 

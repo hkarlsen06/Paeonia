@@ -111,6 +111,11 @@ private func setAsideDrawing(at origin: CGFloat) -> PKDrawing {
 }
 
 private actor SetAsideCanvasService: WidgetCanvasManaging {
+    func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
+        widgetPublicationTestTicket(for: payload)
+    }
+    func acceptPublication(_: WidgetCanvasPublicationTicket, revisionID _: UUID) {}
+
     var snapshot: WidgetCanvasSnapshot?
 
     init(snapshot: WidgetCanvasSnapshot?) {
@@ -222,6 +227,11 @@ private func restoreDrawing(at origin: CGFloat) -> PKDrawing {
 }
 
 private actor RestoreCanvasService: WidgetCanvasManaging {
+    func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
+        widgetPublicationTestTicket(for: payload)
+    }
+    func acceptPublication(_: WidgetCanvasPublicationTicket, revisionID _: UUID) {}
+
     let widget: PKDrawing
     private var snapshot: WidgetCanvasSnapshot?
 

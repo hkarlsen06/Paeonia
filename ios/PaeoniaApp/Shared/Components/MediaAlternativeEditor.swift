@@ -14,6 +14,7 @@ final class MediaAlternativeEditorModel {
     private(set) var isSaving = false
     private(set) var pending: PendingMediaAlternative?
     private(set) var acceptedText: String?
+    private var acceptedWidgetVersion: Int64?
     private(set) var hasReadPending = false
     private(set) var pendingReadFailed = false
     private(set) var failureCount = 0
@@ -90,7 +91,16 @@ final class MediaAlternativeEditorModel {
     func retry() { Task { await sync?() } }
 
     func sourceChanged() {
-        if pending == nil { acceptedText = nil }
+        if pending == nil {
+            acceptedText = nil
+            acceptedWidgetVersion = nil
+        }
+    }
+
+    func displayedText(source: String?, version: Int64?) -> String? {
+        if let pending { return pending.text }
+        if let acceptedWidgetVersion, let version, version >= acceptedWidgetVersion { return source }
+        return acceptedText ?? source
     }
 
     func reloadPending() async {
@@ -101,9 +111,17 @@ final class MediaAlternativeEditorModel {
             if pending != nil, loaded == nil {
                 // History detail models hold a value snapshot. Keep the accepted correction
                 // visible after its queue entry leaves, including a server-normalized result.
-                acceptedText = await MediaAlternativeCacheWrites.shared.acceptedText(
-                    ownerUserID: ownerUserID, target: target
-                )
+                if case .widgetDrawing = target {
+                    let accepted = await MediaAlternativeCacheWrites.shared.acceptedWidgetDescription(
+                        ownerUserID: ownerUserID, target: target
+                    )
+                    acceptedText = accepted?.text
+                    acceptedWidgetVersion = accepted?.version
+                } else {
+                    acceptedText = await MediaAlternativeCacheWrites.shared.acceptedText(
+                        ownerUserID: ownerUserID, target: target
+                    )
+                }
             }
             pending = loaded
             hasReadPending = true

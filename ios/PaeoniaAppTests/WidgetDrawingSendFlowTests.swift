@@ -267,6 +267,11 @@ private final class FlowUploadSpy: WidgetCanvasUploading, @unchecked Sendable {
 
 /// A canvas service whose load can be held open by the test.
 private actor GatedLoadCanvasService: WidgetCanvasManaging {
+    func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
+        widgetPublicationTestTicket(for: payload)
+    }
+    func acceptPublication(_: WidgetCanvasPublicationTicket, revisionID _: UUID) {}
+
     private var snapshot: WidgetCanvasSnapshot?
     private var holdsNextLoad = false
     private var heldLoad: CheckedContinuation<Void, Never>?

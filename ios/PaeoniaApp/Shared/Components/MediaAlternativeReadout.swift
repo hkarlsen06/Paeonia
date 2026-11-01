@@ -4,6 +4,7 @@ import SwiftUI
 struct MediaAlternativeReadout: View {
     let text: String?
     let isVoice: Bool
+    var sourceVersion: Int64?
     var isDrawing = false
     var editingTarget: MediaAlternativeTarget?
     var isCompact = false
@@ -81,7 +82,10 @@ struct MediaAlternativeReadout: View {
         }
     }
 
-    private var displayedText: String? { model?.pending?.text ?? model?.acceptedText ?? text }
+    private var displayedText: String? {
+        guard let model else { return text }
+        return model.displayedText(source: text, version: sourceVersion)
+    }
     private var model: MediaAlternativeEditorModel? {
         guard storedModel?.matches(target: editingTarget, context: context) == true else { return nil }
         return storedModel

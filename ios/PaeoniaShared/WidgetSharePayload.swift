@@ -18,7 +18,9 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
     nonisolated static let currentRendererVersion = 1
 
     var schemaVersion = WidgetSharePayload.currentSchemaVersion
-    let revisionID: String
+    var revisionID: String
+    /// Identifies the exact local publication independently of later description corrections.
+    var localPublicationID: String?
     /// Display name of whoever saved this drawing, shown on the widget. This is
     /// the only identity detail in the payload; keep other private content out.
     let authorName: String?
@@ -36,14 +38,17 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
     /// ignores it.
     let canvasSide: Double
     var accessibilityText: String?
-    /// Nil while the drawing has not received a server description version.
+    /// The server version installed as visible text. A newer version can wait behind a pending edit.
     var descriptionVersion: Int64?
     /// Keeps stale live reads from replacing a correction waiting in the durable outbox.
     var pendingDescriptionOperationID: UUID?
+    /// The newest server state stays durable behind the local pending text.
+    var deferredDescription: WidgetDrawingServerDescription?
 
     enum CodingKeys: String, CodingKey {
         case schemaVersion
         case revisionID = "revisionId"
+        case localPublicationID
         case authorName
         case createdAt
         case renderedAt
@@ -52,7 +57,7 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
         case isRedacted
         case contentHash
         case previews
-        case accessibilityText, descriptionVersion, pendingDescriptionOperationID
+        case accessibilityText, descriptionVersion, pendingDescriptionOperationID, deferredDescription
         case canvasSide
     }
 
@@ -80,8 +85,13 @@ nonisolated extension WidgetSharePayload {
     static func updateFile(in containerURL: URL, _ update: (inout Self) throws -> Void) throws -> Bool {
         try WidgetPayloadFileLock.withExclusiveAccess(in: containerURL) {
             let url = containerURL.appendingPathComponent("Widget/current.json")
-            guard let bytes = try? Data(contentsOf: url),
-                  var current = try? decoder().decode(Self.self, from: bytes) else { return false }
+            let bytes: Data
+            do {
+                bytes = try Data(contentsOf: url)
+            } catch CocoaError.fileReadNoSuchFile {
+                return false
+            }
+            var current = try decoder().decode(Self.self, from: bytes)
             let previous = current
             try update(&current)
             guard current != previous else { return false }
@@ -98,19 +108,41 @@ nonisolated extension WidgetSharePayload {
     mutating func applyDescription(_ update: WidgetDrawingDescriptionUpdate) {
         switch update {
         case let .queued(text, operationID):
+            if pendingDescriptionOperationID == nil, let descriptionVersion {
+                deferredDescription = WidgetDrawingServerDescription(
+                    text: accessibilityText, version: descriptionVersion
+                )
+            }
             accessibilityText = Self.cleanedDescription(text)
             pendingDescriptionOperationID = operationID
         case let .accepted(text, version, operationID):
-            guard pendingDescriptionOperationID == nil || pendingDescriptionOperationID == operationID,
-                  descriptionVersion.map({ version >= $0 }) ?? true else { return }
-            accessibilityText = Self.cleanedDescription(text)
-            descriptionVersion = version
+            rememberServerDescription(text, version: version)
+            // Complete only this optimistic edit, then reveal the newest server state already received.
+            guard pendingDescriptionOperationID == operationID, let deferredDescription else { return }
+            accessibilityText = deferredDescription.text
+            descriptionVersion = deferredDescription.version
             pendingDescriptionOperationID = nil
+            self.deferredDescription = nil
         case let .remote(text, version):
-            guard pendingDescriptionOperationID == nil,
-                  descriptionVersion.map({ version >= $0 }) ?? true else { return }
-            accessibilityText = Self.cleanedDescription(text)
-            descriptionVersion = version
+            rememberServerDescription(text, version: version)
         }
     }
+
+    private mutating func rememberServerDescription(_ text: String?, version: Int64) {
+        guard descriptionVersion.map({ version >= $0 }) ?? true,
+              deferredDescription.map({ version >= $0.version }) ?? true else { return }
+        let cleaned = Self.cleanedDescription(text)
+        if pendingDescriptionOperationID != nil {
+            deferredDescription = WidgetDrawingServerDescription(text: cleaned, version: version)
+        } else {
+            accessibilityText = cleaned
+            descriptionVersion = version
+            deferredDescription = nil
+        }
+    }
+}
+
+nonisolated struct WidgetDrawingServerDescription: Codable, Equatable, Sendable {
+    let text: String?
+    let version: Int64
 }

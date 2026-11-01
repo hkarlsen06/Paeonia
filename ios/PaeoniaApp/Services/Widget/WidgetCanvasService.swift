@@ -175,6 +175,22 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         ))
     }
 
+    // swiftlint:disable:next async_without_await
+    func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) async -> WidgetCanvasPublicationTicket {
+        WidgetCanvasPublicationTicket(
+            publicationID: payload.publicationID,
+            generations: WidgetCanvasGenerations(privacy: privacyGeneration, publication: publicationGeneration),
+            privacyEpoch: sharedDefaults?.integer(forKey: Self.widgetPrivacyEpochKey) ?? 0
+        )
+    }
+
+    func checkPublicationTicket(_ ticket: WidgetCanvasPublicationTicket) throws {
+        try checkGenerations(ticket.generations)
+        guard ticket.privacyEpoch == (sharedDefaults?.integer(forKey: Self.widgetPrivacyEpochKey) ?? 0) else {
+            throw CancellationError()
+        }
+    }
+
     private func publish(_ publication: WidgetCanvasPublication) async throws {
         // Required precondition: never persist data we cannot re-render.
         guard (try? PKDrawing(data: publication.drawingData)) != nil else {

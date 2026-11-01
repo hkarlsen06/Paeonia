@@ -226,7 +226,8 @@ private struct WidgetDrawingHistoryRow: View {
             )
             .containerRelativeFrame(.horizontal) { width, _ in width * Self.widthFraction }
 
-            MediaAlternativeReadout(text: item.accessibilityText, isVoice: false, isDrawing: true,
+            MediaAlternativeReadout(text: item.accessibilityText, isVoice: false,
+                                    sourceVersion: item.descriptionVersion, isDrawing: true,
                                     editingTarget: item.isMine ? .widgetDrawing(revisionID: item.id) : nil)
 
             HStack(spacing: PaeoniaSpacing.space8) {
