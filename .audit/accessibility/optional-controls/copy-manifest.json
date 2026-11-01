@@ -111,7 +111,7 @@
   },
   {
     "source": "/tmp/paeonia-accessibility-options-3cf132c5-20261101-182002/large/wrapper.log",
-    "copy": "settings-3cf132c5/large/wrapper.log",
+    "copy": "settings-3cf132c5/large/wrapper.txt",
     "sha256": "3a07773f6ee4433c5d46a753816e777680a25ce53e8132170823b4711db75d74"
   },
   {
@@ -256,7 +256,7 @@
   },
   {
     "source": "/tmp/paeonia-accessibility-options-3cf132c5-20261101-182002/ax5/wrapper.log",
-    "copy": "settings-3cf132c5/ax5/wrapper.log",
+    "copy": "settings-3cf132c5/ax5/wrapper.txt",
     "sha256": "42bddbeefef1d20839a9970a665cb45149f34f28e0357a1d6f8d73224eb22765"
   },
   {
@@ -411,7 +411,7 @@
   },
   {
     "source": "/tmp/paeonia-accessibility-options-4a630761-20261101-173627/large/wrapper.log",
-    "copy": "recovery-4a630761/large/wrapper.log",
+    "copy": "recovery-4a630761/large/wrapper.txt",
     "sha256": "803b138f82305ef47cf0dfa6dbb829bd3844cf2552f43418ef625b01dfbebc13"
   },
   {
@@ -476,7 +476,7 @@
   },
   {
     "source": "/tmp/paeonia-accessibility-options-4a630761-20261101-173627/ax5/wrapper.log",
-    "copy": "recovery-4a630761/ax5/wrapper.log",
+    "copy": "recovery-4a630761/ax5/wrapper.txt",
     "sha256": "cb911f2d07b67dc6854b26a5831a5f79ceb4c09c9878ba2ec950a168f44c21fe"
   },
   {
@@ -561,7 +561,7 @@
   },
   {
     "source": "/tmp/paeonia-accessibility-options-e7bbf070-20261101-170321/backend-typecheck.log",
-    "copy": "unit-e7bbf070/backend-typecheck.log",
+    "copy": "unit-e7bbf070/backend-typecheck.txt",
     "sha256": "b16c7795be66e22cdda6ca48bc4a5c94fccf7d71cdca5d745d4b0046d9e4a486"
   },
   {
@@ -581,7 +581,7 @@
   },
   {
     "source": "/tmp/paeonia-accessibility-options-e7bbf070-20261101-170321/group1/wrapper.log",
-    "copy": "unit-e7bbf070/wrapper.log",
+    "copy": "unit-e7bbf070/wrapper.txt",
     "sha256": "ca115c8d1c21ff2817af563c1b34a6b95e7f9c2b60ae41839e0c7563d595c59c"
   },
   {
@@ -596,7 +596,7 @@
   },
   {
     "source": "/tmp/paeonia-accessibility-options-e7bb-ui-20261101-171738/backend-test.log",
-    "copy": "backend-clock/backend-test.log",
+    "copy": "backend-clock/backend-test.txt",
     "sha256": "65ef27c87b449c105b9639021046c54f9f867cf05252a93b38e47e83c893625d"
   },
   {

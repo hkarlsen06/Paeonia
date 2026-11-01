@@ -1,0 +1,17 @@
+Generated CURRENT_PROJECT_VERSION=20261101.1825
+[xcode-test-agent] build started; heartbeat every 20s
+[xcode-test-agent] tests started; heartbeat every 20s
+[xcode-test-agent] alive: tests still running (20s elapsed)
+[xcode-test-agent] alive: tests still running (40s elapsed)
+[xcode-test-agent] alive: tests still running (60s elapsed)
+[xcode-test-agent] alive: tests still running (80s elapsed)
+[xcode-test-agent] alive: tests still running (100s elapsed)
+[xcode-test-agent] alive: tests still running (120s elapsed)
+[xcode-test-agent] alive: tests still running (140s elapsed)
+STATUS: SUCCESS
+SCHEME: App
+DESTINATION: platform=iOS Simulator,name=Shared iPhone
+TESTS: total=1 failed=0
+
+
+SUMMARY: SUCCESS queued=0s compiled=10s tested=148s simulator="Shared iPhone"

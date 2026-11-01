@@ -1,0 +1,27 @@
+Generated CURRENT_PROJECT_VERSION=20261101.1743
+[xcode-test-agent] build started; heartbeat every 20s
+[xcode-test-agent] tests started; heartbeat every 20s
+[xcode-test-agent] alive: tests still running (20s elapsed)
+[xcode-test-agent] alive: tests still running (40s elapsed)
+[xcode-test-agent] alive: tests still running (60s elapsed)
+[xcode-test-agent] alive: tests still running (80s elapsed)
+[xcode-test-agent] alive: tests still running (100s elapsed)
+[xcode-test-agent] alive: tests still running (120s elapsed)
+[xcode-test-agent] alive: tests still running (140s elapsed)
+[xcode-test-agent] alive: tests still running (160s elapsed)
+[xcode-test-agent] alive: tests still running (180s elapsed)
+STATUS: FAILURE
+SCHEME: App
+DESTINATION: platform=iOS Simulator,name=Shared iPhone
+TESTS: total=5 failed=1
+
+ERRORS:
+AccessibilitySettingsJourneyUITests.testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic() [/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests.swift:126]: XCTAssertTrue failed
+GameDrawingDescriptionUITests.testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic(): Invalid frame dimension (negative or non-finite).
+
+TEST FAILURES:
+AccessibilitySettingsJourneyUITests.testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic() [/Users/hkarlsen06/repo/Paeonia-accessibility/ios/PaeoniaAppUITests/AccessibilitySettingsJourneyUITests.swift:126]: XCTAssertTrue failed
+GameDrawingDescriptionUITests.testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic(): Invalid frame dimension (negative or non-finite).
+
+
+SUMMARY: FAILURE queued=0s compiled=10s tested=195s simulator="Shared iPhone"

@@ -1,0 +1,13 @@
+
+> test
+> vitest run
+
+
+ RUN  v5.0.3 /Users/hkarlsen06/repo/Paeonia-accessibility/backend
+
+
+ Test Files  92 passed (92)
+      Tests  2416 passed (2416)
+   Start at  17:17:57
+   Duration  130.15s (tests 93%, import 3%, transform 3%, environment 2%)
+
