@@ -73,6 +73,10 @@ extension MemoriesMapCoordinator {
             return
         }
         guard let memory = annotation as? MemoryMapAnnotation else { return }
+        if parent?.selectedID == memory.memoryID {
+            parent?.onOpen(memory.memoryID)
+            return
+        }
         // The person tapped the pin, so it is already on screen: no camera move.
         revealedID = memory.memoryID
         if parent?.selectedID != memory.memoryID {
