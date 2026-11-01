@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Screenshots one developer scenario of this worktree's Debug build on a shared
+# simulator, to check how a change looks.
+#
+#   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--no-build]
+#
+# It builds the App scheme into a scratch derived data folder for this worktree
+# (no xcodebuild lock, see docs/agent-guides/ios-verification.md), then takes a
+# simulator with scripts/lock, installs the app, launches the scenario with its
+# debug controls hidden, waits (default 8 s, for map tiles and fade-ins), saves
+# the screenshot, uninstalls the app and releases the simulator. It prints the
+# PNG's path last. --no-build reuses the last build, for a second screenshot.
+#
+# For a before and after, run it once with your change stashed and once without,
+# with a different --out each time. Scenario ids are in
+# ios/PaeoniaApp/App/DeveloperScenarios/DeveloperScenario+App.swift.
+set -euo pipefail
+
+usage() {
+  echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--no-build]" >&2
+  exit 64
+}
+
+[[ $# -ge 1 && $1 != -* ]] || usage
+scenario=$1
+shift
+root=$(git rev-parse --show-toplevel)
+worktree_key=$(printf '%s' "$root" | shasum | cut -c1-10)
+scratch=/tmp/paeonia-scenario-$worktree_key
+out=$scratch/$scenario.png
+wait_seconds=8
+build=1
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --out) [[ $# -ge 2 ]] || usage; out=$2; shift 2 ;;
+    --wait) [[ $# -ge 2 ]] || usage; wait_seconds=$2; shift 2 ;;
+    --no-build) build=0; shift ;;
+    *) usage ;;
+  esac
+done
+
+bundle_id=no.paeonia.app
+derived_data=$scratch/DerivedData
+app=$derived_data/Build/Products/Debug-iphonesimulator/PaeoniaApp.app
+mkdir -p "$scratch" "$(dirname "$out")"
+
+if [[ $build == 1 ]]; then
+  log=$scratch/build.log
+  "$root/scripts/generate-ios-build-number.sh" >/dev/null
+  echo "Building into $derived_data" >&2
+  if ! xcodebuild -quiet -project "$root/ios/Paeonia.xcodeproj" -scheme App -configuration Debug \
+    -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived_data" build >"$log" 2>&1; then
+    grep -E "error:" "$log" >&2 || tail -20 "$log" >&2
+    echo "Build failed. Full log: $log" >&2
+    exit 1
+  fi
+fi
+[[ -d $app ]] || { echo "No build at $app. Run without --no-build." >&2; exit 1; }
+
+cd "$root"
+sim=$(scripts/lock acquire simulator)
+release() {
+  xcrun simctl uninstall "$sim" "$bundle_id" 2>/dev/null || true
+  scripts/lock release simulator >/dev/null 2>&1 || true
+}
+trap release EXIT
+
+xcrun simctl install "$sim" "$app"
+xcrun simctl launch --terminate-running-process "$sim" "$bundle_id" \
+  -paeonia-scenario "$scenario" -paeonia-scenario-hide-controls YES >/dev/null
+sleep "$wait_seconds"
+xcrun simctl io "$sim" screenshot "$out" >/dev/null 2>&1
+echo "$out"

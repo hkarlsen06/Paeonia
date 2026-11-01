@@ -34,7 +34,7 @@ Agents build, run tests and drive the app themselves to prove a change works. Wo
 
 To fix a compiler warning or error that reading the code can't settle, reproduce it in a small standalone file and run `scripts/swift-typecheck <file>`. It uses the app target's Swift settings and finishes in seconds. Try candidate fixes in the same file.
 
-Drive the app on the shared simulator to see a change that shows on screen, such as a layout, animation, or navigation change. Never use a connected iPhone or iPad. [Devices And Simulators](../../AGENTS.md#devices-and-simulators) names the simulators to use.
+Drive the app on the shared simulator to see a change that shows on screen, such as a layout, animation, or navigation change. Never use a connected iPhone or iPad. [Devices And Simulators](../../AGENTS.md#devices-and-simulators) names the simulators to use. To see a screen that a developer scenario shows, run `scripts/scenario-screenshot <scenario-id> --out <file.png>`. It builds, takes a simulator, launches the scenario, saves the screenshot and gives the simulator back. Run it with your change stashed and again without it for a before and after.
 
 Run the iOS tests that cover your change. Backend tests are fine to run any time.
 
