@@ -128,7 +128,7 @@ extension PairedHomeView {
             onAnswer: onOpenDailyChallenge,
             onOpenPartnerQuestion: onOpenPartnerQuestion
         )
-        .zoomSource(DailyFlowZoom.home, in: zoomNamespace)
+        .zoomSource(DailyFlowZoom.us, in: zoomNamespace)
     }
 
     var cardsLayout: AnyLayout {

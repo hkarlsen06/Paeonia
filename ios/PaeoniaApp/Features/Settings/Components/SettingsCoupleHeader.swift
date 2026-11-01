@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The couple at the top of the Us tab: both photos joined by a heart, both names,
+/// The couple at the top of the More tab: both photos joined by a heart, both names,
 /// and how long they have been together.
 ///
 /// Tapping your own photo opens your profile, and the pencil badge says so. Tapping

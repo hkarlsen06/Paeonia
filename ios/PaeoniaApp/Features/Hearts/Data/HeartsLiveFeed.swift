@@ -8,7 +8,7 @@ nonisolated struct HeartsLiveFeed: LiveFeed {
 
     /// Hearts play only while Home is on screen.
     var activation: LiveFeedActivation {
-        .whileNeeded([.homeTab])
+        .whileNeeded([.usTab])
     }
 
     private let cache: any HeartsCaching

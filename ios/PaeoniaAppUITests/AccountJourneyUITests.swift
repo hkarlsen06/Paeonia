@@ -51,12 +51,12 @@ final class AccountJourneyUITests: XCTestCase {
         app.launch()
 
         // With five tabs the system tab bar drops the tabs' accessibility identifiers, so
-        // the Us tab is found by its place: the last of home, questions, games, memories, us.
+        // the More tab is found by its place: the last of us, questions, games, memories, settings.
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
-        let usTab = tabBar.buttons.element(boundBy: 4)
-        XCTAssertTrue(usTab.waitForExistence(timeout: 5))
-        usTab.tap()
+        let settingsTab = tabBar.buttons.element(boundBy: 4)
+        XCTAssertTrue(settingsTab.waitForExistence(timeout: 5))
+        settingsTab.tap()
 
         let profileRow = app.buttons["settings.profile"]
         XCTAssertTrue(profileRow.waitForExistence(timeout: 5))

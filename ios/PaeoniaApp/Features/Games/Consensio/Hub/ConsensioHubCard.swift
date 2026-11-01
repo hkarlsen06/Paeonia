@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Consensio on the hub: artwork, whose turn it is, the couple's shared points,
-/// and a quiet link to "What we know". The Home tab shows the same card while the
+/// and a quiet link to "What we know". The Us tab shows the same card while the
 /// partner is in the game.
 struct ConsensioHubCard: View {
     let summary: ConsensioHubSummary

@@ -2,7 +2,7 @@ import Observation
 
 /// The state and async work behind the nickname screen.
 ///
-/// The Us tab owns one instance, so a save keeps running and still reports back if the person
+/// The More tab owns one instance, so a save keeps running and still reports back if the person
 /// leaves the screen. The saved nickname stays upstream in the access snapshot, which the server
 /// pushes live. This model only holds what the person has typed.
 @MainActor

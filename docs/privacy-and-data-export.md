@@ -1,6 +1,6 @@
 # Privacy and data export
 
-"Download my data" (Us tab, Privacy and safety) answers the right of access (GDPR Art. 15) and the right to data portability (Art. 20) in the app. It is free, needs no email, and works without a subscription. The person gets their data as JSON files plus their original photos, voice messages and drawings, in zip files, with a README that holds the supplementary information Art. 15 asks for.
+"Download my data" (More tab, Privacy and safety) answers the right of access (GDPR Art. 15) and the right to data portability (Art. 20) in the app. It is free, needs no email, and works without a subscription. The person gets their data as JSON files plus their original photos, voice messages and drawings, in zip files, with a README that holds the supplementary information Art. 15 asks for.
 
 The old manual `access` and `export` privacy requests are gone. Correction and deletion remain as requests.
 

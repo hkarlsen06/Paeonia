@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The countdown to the couple's next event on the Home tab. Countdown is not a tab of
+/// The countdown to the couple's next event on the Us tab. Countdown is not a tab of
 /// its own. It lives here as a derived value computed from when the couple started
 /// (`couples.started_on`).
 ///

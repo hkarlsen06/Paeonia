@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// Sends and receives the hearts on the Home tab.
+/// Sends and receives the hearts on the Us tab.
 ///
 /// Sending: each tap on the map or the heart row calls `tap()`. Taps wait until
 /// they stop for `HeartsTapBatcher.quietPeriod`, then go to the pending operations

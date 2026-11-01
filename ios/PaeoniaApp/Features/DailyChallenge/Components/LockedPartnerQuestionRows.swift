@@ -4,7 +4,7 @@ extension DailyFlowZoom {
     /// The zoom source of a locked row on the Home card. It differs from the question
     /// id, which the Questions tab list uses, so the two tabs never share a source.
     static func homePartnerQuestion(_ id: UUID) -> String {
-        "dailyFlow.home.partnerQuestion.\(id.uuidString)"
+        "dailyFlow.us.partnerQuestion.\(id.uuidString)"
     }
 }
 

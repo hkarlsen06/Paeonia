@@ -255,7 +255,7 @@ struct PostPairingFlowModelTests {
         await model.start(startedOn: "2024-03-03", acceptedInvite: false)
 
         #expect(model.screen == nil)
-        #expect(model.outcome == .home)
+        #expect(model.outcome == .us)
     }
 
     @Test func steppingThroughEndsOnTheAnswerFlow() async throws {

@@ -1,7 +1,7 @@
 import Foundation
 
 extension PartnerNicknameEditorModel.Event {
-    /// The banner the Us tab shows for the result of a save.
+    /// The banner the More tab shows for the result of a save.
     var banner: PaeoniaBannerContent {
         switch self {
         case let .saved(nickname?):

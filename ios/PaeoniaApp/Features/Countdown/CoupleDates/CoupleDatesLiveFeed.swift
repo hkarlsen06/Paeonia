@@ -5,9 +5,9 @@ import Foundation
 nonisolated struct CoupleDatesLiveFeed: LiveFeed {
     let name = "coupleDates"
 
-    /// Home shows the dates and the Us tab edits them.
+    /// Home shows the dates and the More tab edits them.
     var activation: LiveFeedActivation {
-        .whileNeeded([.homeTab, .usTab])
+        .whileNeeded([.usTab, .settingsTab])
     }
 
     private let cache: any CoupleDatesCaching

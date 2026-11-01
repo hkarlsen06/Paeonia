@@ -2,7 +2,7 @@ import PencilKit
 import SwiftUI
 
 /// Shows the partner's strokes while they draw them, on top of the canvas, and
-/// on the Home tab also their whole canvas. It is two PencilKit canvases that
+/// on the Us tab also their whole canvas. It is two PencilKit canvases that
 /// take no touches, so the strokes have the real pen and pencil look. The lower
 /// one holds the partner's whole canvas and changes only when that does. The
 /// upper one holds the strokes in progress, which change on every frame.

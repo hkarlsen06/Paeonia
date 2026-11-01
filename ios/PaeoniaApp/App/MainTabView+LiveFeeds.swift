@@ -4,11 +4,11 @@ extension MainTab {
     /// The live feeds this tab needs while it is on screen.
     var liveFeedTopic: LiveFeedTopic {
         switch self {
-        case .home: .homeTab
+        case .us: .usTab
         case .questions: .questionsTab
         case .games: .gamesTab
         case .memories: .memoriesTab
-        case .us: .usTab
+        case .settings: .settingsTab
         }
     }
 }

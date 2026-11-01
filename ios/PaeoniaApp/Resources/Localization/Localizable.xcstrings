@@ -821,7 +821,7 @@
       }
     },
     "admin.entry.title" : {
-      "comment" : "Row in the Us tab that opens the admin tools. Only the developer sees it.",
+      "comment" : "Row in the More tab that opens the admin tools. Only the developer sees it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7444,7 +7444,7 @@
       }
     },
     "dailyChallenge.home.complete.message" : {
-      "comment" : "Message on the Home daily question card once both partners have answered today's question",
+      "comment" : "Message on the Us tab daily question card once both partners have answered today's question",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7480,7 +7480,7 @@
       }
     },
     "dailyChallenge.home.completePartnerAnsweredMessage" : {
-      "comment" : "Home daily card message after the user answered today's question, when the partner has answered a question from an earlier day that the user hasn't. The argument is the partner's name.",
+      "comment" : "Us tab daily card message after the user answered today's question, when the partner has answered a question from an earlier day that the user hasn't. The argument is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7498,7 +7498,7 @@
       }
     },
     "dailyChallenge.home.completeWaitingMessage" : {
-      "comment" : "Home daily card message after the user answered today's question while the partner hasn't answered it yet. Shown under the title 'Your part is done'. The argument is the partner's name.",
+      "comment" : "Us tab daily card message after the user answered today's question while the partner hasn't answered it yet. Shown under the title 'Your part is done'. The argument is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7552,7 +7552,7 @@
       }
     },
     "dailyChallenge.home.noChallenge.title" : {
-      "comment" : "Title on the Home daily challenge card before the challenge is started",
+      "comment" : "Title on the Us tab daily challenge card before the challenge is started",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -8002,7 +8002,7 @@
       }
     },
     "dailyChallenge.openChatButton" : {
-      "comment" : "Button on the answer reveal, and on the Home card once both partners answered today's question. Opens the question's chat, where the couple can talk about their answers.",
+      "comment" : "Button on the answer reveal, and on the Us tab card once both partners answered today's question. Opens the question's chat, where the couple can talk about their answers.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20116,7 +20116,7 @@
       }
     },
     "hearts.incoming.line" : {
-      "comment" : "Short line on the Home card when the partner's hearts arrive. %1$@ is the partner's name. %2$@ is the number of hearts with its unit, such as '14 hearts' (see hearts.count).",
+      "comment" : "Short line on the Us tab card when the partner's hearts arrive. %1$@ is the partner's name. %2$@ is the number of hearts with its unit, such as '14 hearts' (see hearts.count).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20134,7 +20134,7 @@
       }
     },
     "hearts.send.action" : {
-      "comment" : "VoiceOver action and button label that sends the partner a heart from the Home card.",
+      "comment" : "VoiceOver action and button label that sends the partner a heart from the Us tab card.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20152,7 +20152,7 @@
       }
     },
     "hearts.send.hint" : {
-      "comment" : "VoiceOver hint for the send a heart button on the Home card. %@ is the partner's name.",
+      "comment" : "VoiceOver hint for the send a heart button on the Us tab card. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20170,7 +20170,7 @@
       }
     },
     "home.accessNotice.ending.button" : {
-      "comment" : "Button on the ending Home notice for the person who pays. Opens the App Store page where they can turn their subscription back on",
+      "comment" : "Button on the ending Us tab notice for the person who pays. Opens the App Store page where they can turn their subscription back on",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20188,7 +20188,7 @@
       }
     },
     "home.accessNotice.ending.payerMessage" : {
-      "comment" : "Second line of the ending Home notice, shown only to the person who pays and turned off renewal",
+      "comment" : "Second line of the ending Us tab notice, shown only to the person who pays and turned off renewal",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20206,7 +20206,7 @@
       }
     },
     "home.accessNotice.ending.title" : {
-      "comment" : "Home notice shown to both partners a few days before the app stops working because the subscription will not renew. The argument is a short date, like 12 Nov. Must not say who pays",
+      "comment" : "Us tab notice shown to both partners a few days before the app stops working because the subscription will not renew. The argument is a short date, like 12 Nov. Must not say who pays",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20224,7 +20224,7 @@
       }
     },
     "home.accessNotice.payment.button" : {
-      "comment" : "Button on the failed payment Home notice. Opens the App Store page where the person manages their subscription",
+      "comment" : "Button on the failed payment Us tab notice. Opens the App Store page where the person manages their subscription",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20242,7 +20242,7 @@
       }
     },
     "home.accessNotice.payment.message" : {
-      "comment" : "Home notice text under the failed payment title. 'Paeonia for you both' means the couple keeps using the app",
+      "comment" : "Us tab notice text under the failed payment title. 'Paeonia for you both' means the couple keeps using the app",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20260,7 +20260,7 @@
       }
     },
     "home.accessNotice.payment.title" : {
-      "comment" : "Home notice title shown only to the person who pays, when Apple could not take their subscription payment",
+      "comment" : "Us tab notice title shown only to the person who pays, when Apple could not take their subscription payment",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20278,7 +20278,7 @@
       }
     },
     "home.dailyPrompt.eyebrow" : {
-      "comment" : "Small overline above today's question on the Home tab. Both partners answer the same question each day.",
+      "comment" : "Small overline above today's question on the Us tab. Both partners answer the same question each day.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20296,7 +20296,7 @@
       }
     },
     "home.firstSteps.close" : {
-      "comment" : "VoiceOver label for the X button that hides the Home card with things to try together for good.",
+      "comment" : "VoiceOver label for the X button that hides the Us tab card with things to try together for good.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20314,7 +20314,7 @@
       }
     },
     "home.firstSteps.countdown" : {
-      "comment" : "Row on the Home card with things to try together. Opens the couple's dates, where they can add a countdown to something they look forward to.",
+      "comment" : "Row on the Us tab card with things to try together. Opens the couple's dates, where they can add a countdown to something they look forward to.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20332,7 +20332,7 @@
       }
     },
     "home.firstSteps.done" : {
-      "comment" : "VoiceOver value of a row on the Home card with things to try together, once the person has done it.",
+      "comment" : "VoiceOver value of a row on the Us tab card with things to try together, once the person has done it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20350,7 +20350,7 @@
       }
     },
     "home.firstSteps.finished" : {
-      "comment" : "Shown under a big check mark on the Home card with things to try together, once the couple has done every row. The card then goes away for good.",
+      "comment" : "Shown under a big check mark on the Us tab card with things to try together, once the couple has done every row. The card then goes away for good.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20368,7 +20368,7 @@
       }
     },
     "home.firstSteps.game" : {
-      "comment" : "Row on the Home card with things to try together. Opens the Games tab. %@ is the partner's name.",
+      "comment" : "Row on the Us tab card with things to try together. Opens the Games tab. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20386,7 +20386,7 @@
       }
     },
     "home.firstSteps.memory" : {
-      "comment" : "Row on the Home card with things to try together. Opens the Memories tab.",
+      "comment" : "Row on the Us tab card with things to try together. Opens the Memories tab.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20404,7 +20404,7 @@
       }
     },
     "home.firstSteps.notDone" : {
-      "comment" : "VoiceOver value of a row on the Home card with things to try together, before the person has done it.",
+      "comment" : "VoiceOver value of a row on the Us tab card with things to try together, before the person has done it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20422,7 +20422,7 @@
       }
     },
     "home.firstSteps.progress" : {
-      "comment" : "Under the title of the Home card with things to try together. The first %lld is how many rows are done, the second is how many rows there are.",
+      "comment" : "Under the title of the Us tab card with things to try together. The first %lld is how many rows are done, the second is how many rows there are.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20440,7 +20440,7 @@
       }
     },
     "home.firstSteps.story" : {
-      "comment" : "Row on the Home card with things to try together. Opens the screen for posting a story, a photo the partner sees on Home for 24 hours.",
+      "comment" : "Row on the Us tab card with things to try together. Opens the screen for posting a story, a photo the partner sees on the Us tab for 24 hours.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20458,7 +20458,7 @@
       }
     },
     "home.firstSteps.title" : {
-      "comment" : "Title of the Home card shown after the couple's first day, listing a few things to do in the app. Each row ticks itself off once done.",
+      "comment" : "Title of the Us tab card shown after the couple's first day, listing a few things to do in the app. Each row ticks itself off once done.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20476,7 +20476,7 @@
       }
     },
     "home.firstSteps.topic" : {
-      "comment" : "Row on the Home card with things to try together. Opens Topics, the extra questions sorted by theme.",
+      "comment" : "Row on the Us tab card with things to try together. Opens Topics, the extra questions sorted by theme.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20494,7 +20494,7 @@
       }
     },
     "home.lookBack.drawing.partners" : {
-      "comment" : "Title on the Home look-back card for a widget drawing the partner made. %@ is the partner's name.",
+      "comment" : "Title on the Us tab look-back card for a widget drawing the partner made. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20512,7 +20512,7 @@
       }
     },
     "home.lookBack.drawing.yours" : {
-      "comment" : "Title on the Home look-back card for a widget drawing the signed-in person made.",
+      "comment" : "Title on the Us tab look-back card for a widget drawing the signed-in person made.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20530,7 +20530,7 @@
       }
     },
     "home.lookBack.eyebrow.earlier" : {
-      "comment" : "Small heading on the Home card that brings back something older the couple shared, such as a question, a drawing or a memory. The time since is shown beside it.",
+      "comment" : "Small heading on the Us tab card that brings back something older the couple shared, such as a question, a drawing or a memory. The time since is shown beside it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20548,7 +20548,7 @@
       }
     },
     "home.lookBack.eyebrow.onThisDay" : {
-      "comment" : "Small heading on the Home card that brings back something from this same day in an earlier year. The year is shown beside it.",
+      "comment" : "Small heading on the Us tab card that brings back something from this same day in an earlier year. The year is shown beside it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20566,7 +20566,7 @@
       }
     },
     "home.lookBack.memory.accessibility" : {
-      "comment" : "VoiceOver text for a memory on the Home look-back card. %@ is the memory title.",
+      "comment" : "VoiceOver text for a memory on the Us tab look-back card. %@ is the memory title.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20584,7 +20584,7 @@
       }
     },
     "home.lookBack.open.action" : {
-      "comment" : "VoiceOver action name on the Home look-back card. It opens the question chat, the drawing history or the memory.",
+      "comment" : "VoiceOver action name on the Us tab look-back card. It opens the question chat, the drawing history or the memory.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20602,7 +20602,7 @@
       }
     },
     "home.lookBack.question.accessibility" : {
-      "comment" : "VoiceOver text for a daily question on the Home look-back card. %@ is the short question.",
+      "comment" : "VoiceOver text for a daily question on the Us tab look-back card. %@ is the short question.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20692,7 +20692,7 @@
       }
     },
     "home.map.controls" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20710,7 +20710,7 @@
       }
     },
     "home.map.credits.label" : {
-      "comment" : "VoiceOver label of the small info button next to the distance on Home's map. It opens who made the map.",
+      "comment" : "VoiceOver label of the small info button next to the distance on the Us tab's map. It opens who made the map.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20728,7 +20728,7 @@
       }
     },
     "home.map.credits.openFreeMap" : {
-      "comment" : "Link in the map info popover on Home to OpenFreeMap, the service that sends the map. Keep the name OpenFreeMap.",
+      "comment" : "Link in the map info popover on the Us tab to OpenFreeMap, the service that sends the map. Keep the name OpenFreeMap.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20746,7 +20746,7 @@
       }
     },
     "home.map.credits.openMapTiles" : {
-      "comment" : "Link in Home's map credits to OpenMapTiles. Keep the copyright sign and the name OpenMapTiles.",
+      "comment" : "Link in the Us tab's map credits to OpenMapTiles. Keep the copyright sign and the name OpenMapTiles.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20764,7 +20764,7 @@
       }
     },
     "home.map.credits.openStreetMap" : {
-      "comment" : "Link in the map info popover on Home to OpenStreetMap's copyright page. Keep the © sign and the name OpenStreetMap.",
+      "comment" : "Link in the map info popover on the Us tab to OpenStreetMap's copyright page. Keep the © sign and the name OpenStreetMap.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20836,7 +20836,7 @@
       }
     },
     "home.map.currentUnknown.button" : {
-      "comment" : "Button in the Home map tile that asks iOS for this user's location and turns on sharing.",
+      "comment" : "Button in the Us tab map tile that asks iOS for this user's location and turns on sharing.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20854,7 +20854,7 @@
       }
     },
     "home.map.currentUnknown.message" : {
-      "comment" : "Message shown in the Home map tile when this user must share location before the map appears",
+      "comment" : "Message shown in the Us tab map tile when this user must share location before the map appears",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20872,7 +20872,7 @@
       }
     },
     "home.map.currentUnknown.title" : {
-      "comment" : "Title shown in the Home map tile when this user has not shared location yet.",
+      "comment" : "Title shown in the Us tab map tile when this user has not shared location yet.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20908,7 +20908,7 @@
       }
     },
     "home.map.faceNorth" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20926,7 +20926,7 @@
       }
     },
     "home.map.latitude" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20980,7 +20980,7 @@
       }
     },
     "home.map.locationDetails" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20998,7 +20998,7 @@
       }
     },
     "home.map.longitude" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21016,7 +21016,7 @@
       }
     },
     "home.map.openHint" : {
-      "comment" : "Accessibility hint for the map tile on the Home tab; tapping opens the locations in the Maps app.",
+      "comment" : "Accessibility hint for the map tile on the Us tab; tapping opens the locations in the Maps app.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21034,7 +21034,7 @@
       }
     },
     "home.map.openLocations" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21052,7 +21052,7 @@
       }
     },
     "home.map.panDown" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21070,7 +21070,7 @@
       }
     },
     "home.map.panLeft" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21088,7 +21088,7 @@
       }
     },
     "home.map.panRight" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21106,7 +21106,7 @@
       }
     },
     "home.map.panUp" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21322,7 +21322,7 @@
       }
     },
     "home.map.relationshipEnded.title" : {
-      "comment" : "Title shown in the Home map tile if location visibility reports that the relationship ended.",
+      "comment" : "Title shown in the Us tab map tile if location visibility reports that the relationship ended.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21340,7 +21340,7 @@
       }
     },
     "home.map.showBoth" : {
-      "comment" : "Button on the Home map that appears after the person moves or zooms the map. It moves the map back so both partners are in view.",
+      "comment" : "Button on the Us tab map that appears after the person moves or zooms the map. It moves the map back so both partners are in view.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21430,7 +21430,7 @@
       }
     },
     "home.map.yourLocation" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21448,7 +21448,7 @@
       }
     },
     "home.map.zoomIn" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21466,7 +21466,7 @@
       }
     },
     "home.map.zoomOut" : {
-      "comment" : "Native Home map control or location detail label.",
+      "comment" : "Native Us tab map control or location detail label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21556,7 +21556,7 @@
       }
     },
     "home.milestone.birthday.partner" : {
-      "comment" : "Timeline row and Home tile title for the partner's birthday. %@ is the partner's name",
+      "comment" : "Timeline row and Us tab tile title for the partner's birthday. %@ is the partner's name",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21592,7 +21592,7 @@
       }
     },
     "home.milestone.birthday.yours" : {
-      "comment" : "Timeline row and Home tile title for the signed-in person's birthday",
+      "comment" : "Timeline row and Us tab tile title for the signed-in person's birthday",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22042,7 +22042,7 @@
       }
     },
     "home.milestone.setup.title" : {
-      "comment" : "Line under the empty calendar on the Home tab countdown tile when the couple has not chosen their relationship start date. Invites them to add it.",
+      "comment" : "Line under the empty calendar on the Us tab countdown tile when the couple has not chosen their relationship start date. Invites them to add it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22060,7 +22060,7 @@
       }
     },
     "home.milestone.timeline.accessibilityHint" : {
-      "comment" : "Accessibility hint on the Home tab milestone card; tapping opens the milestone timeline sheet",
+      "comment" : "Accessibility hint on the Us tab milestone card; tapping opens the milestone timeline sheet",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22312,7 +22312,7 @@
       }
     },
     "home.milestone.title.days" : {
-      "comment" : "Milestone name shown under the day count on the Home tab countdown card for a round day-count marker. %@ is the day count (e.g. 100, 1,000). Must wrap across lines; avoid long unbreakable compounds.",
+      "comment" : "Milestone name shown under the day count on the Us tab countdown card for a round day-count marker. %@ is the day count (e.g. 100, 1,000). Must wrap across lines; avoid long unbreakable compounds.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22330,7 +22330,7 @@
       }
     },
     "home.milestone.title.firstAnniversary" : {
-      "comment" : "Milestone name shown under the day count on the Home tab countdown card: the couple's first one-year anniversary",
+      "comment" : "Milestone name shown under the day count on the Us tab countdown card: the couple's first one-year anniversary",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22348,7 +22348,7 @@
       }
     },
     "home.milestone.title.firstMonth" : {
-      "comment" : "Milestone name shown under the day count on the Home tab countdown card: the couple's first whole month together",
+      "comment" : "Milestone name shown under the day count on the Us tab countdown card: the couple's first whole month together",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22366,7 +22366,7 @@
       }
     },
     "home.milestone.title.halfYear" : {
-      "comment" : "Milestone name shown under the day count on the Home tab countdown card: six months, phrased as half a year",
+      "comment" : "Milestone name shown under the day count on the Us tab countdown card: six months, phrased as half a year",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22384,7 +22384,7 @@
       }
     },
     "home.milestone.title.months" : {
-      "comment" : "Milestone countdown subject on the Home tab, reads after 'X days until …'. %@ is the number of months (2–11, never 6).",
+      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of months (2–11, never 6).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22402,7 +22402,7 @@
       }
     },
     "home.milestone.title.years" : {
-      "comment" : "Milestone countdown subject on the Home tab, reads after 'X days until …'. %@ is the number of years (2 or more).",
+      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of years (2 or more).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22420,7 +22420,7 @@
       }
     },
     "home.milestone.today" : {
-      "comment" : "Written on the calendar page on the Home tab countdown tile in place of the day count when the event is today. Must be short, it is drawn large on a small page. Also the caption in the milestones sheet.",
+      "comment" : "Written on the calendar page on the Us tab countdown tile in place of the day count when the event is today. Must be short, it is drawn large on a small page. Also the caption in the milestones sheet.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22438,7 +22438,7 @@
       }
     },
     "home.milestone.untilEvent" : {
-      "comment" : "Line under the calendar on the Home tab countdown tile. The day count is drawn on the calendar page above it, so this reads 'days until 500 days together'. %@ is the event name, such as '500 days together', 'Oda's birthday' or a countdown the couple named. Plural.",
+      "comment" : "Line under the calendar on the Us tab countdown tile. The day count is drawn on the calendar page above it, so this reads 'days until 500 days together'. %@ is the event name, such as '500 days together', 'Oda's birthday' or a countdown the couple named. Plural.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22474,7 +22474,7 @@
       }
     },
     "home.streak.label" : {
-      "comment" : "Label under the streak number on the Home tab, e.g. 12 day streak",
+      "comment" : "Label under the streak number on the Us tab, e.g. 12 day streak",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22492,7 +22492,7 @@
       }
     },
     "home.streakSave.message" : {
-      "comment" : "Body of the Home card on the free save day of a broken streak. Both partners must each do something, such as answer a question, before the day ends.",
+      "comment" : "Body of the Us tab card on the free save day of a broken streak. Both partners must each do something, such as answer a question, before the day ends.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22510,7 +22510,7 @@
       }
     },
     "home.streakSave.title" : {
-      "comment" : "Title of the Home card on the day after a missed streak day, when both partners can still bring the streak back for free. %lld is the number of days in the broken streak, at least 3.",
+      "comment" : "Title of the Us tab card on the day after a missed streak day, when both partners can still bring the streak back for free. %lld is the number of days in the broken streak, at least 3.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22528,7 +22528,7 @@
       }
     },
     "home.unreadChats.eyebrow" : {
-      "comment" : "Heading of the Home card that lists chats with unread messages from the partner",
+      "comment" : "Heading of the Us tab card that lists chats with unread messages from the partner",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22546,7 +22546,7 @@
       }
     },
     "home.unreadChats.hiddenPreview" : {
-      "comment" : "Shown in the Home unread chats card when the newest message has no text to preview",
+      "comment" : "Shown in the Us tab unread chats card when the newest message has no text to preview",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -23955,24 +23955,6 @@
         }
       }
     },
-    "mainTab.home" : {
-      "comment" : "Title for the Home tab in the main tab bar. It shows what is happening between the couple right now.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Home"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hjem"
-          }
-        }
-      }
-    },
     "mainTab.memories" : {
       "comment" : "Title for the Memories tab in the main tab bar",
       "extractionState" : "manual",
@@ -24009,8 +23991,26 @@
         }
       }
     },
+    "mainTab.settings" : {
+      "comment" : "Title for the last tab in the main tab bar, which has a gear icon, and of the screen it opens. It shows both partners at the top, then the relationship, profile, and app settings. Keep it short, it shares the tab bar with four other tabs.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mer"
+          }
+        }
+      }
+    },
     "mainTab.us" : {
-      "comment" : "Title for the couple's tab in the main tab bar and of the screen it opens. It shows both partners at the top, then the relationship, profile, and app settings.",
+      "comment" : "Title for the first tab in the main tab bar, the one the app opens on. It shows what is happening between the couple right now.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -28440,37 +28440,37 @@
       }
     },
     "onboarding.firstDay.gift.failed.message" : {
-      "comment" : "Banner message when the partner's first drawing did not load for a reason other than being offline. Home shows the couple's current drawing.",
+      "comment" : "Banner message when the partner's first drawing did not load for a reason other than being offline. The Us tab shows the couple's current drawing.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Something went wrong. You'll find it on Home later."
+            "value" : "Something went wrong. You'll find it in the Us tab later."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noe gikk galt. Du finner den på Hjem senere."
+            "value" : "Noe gikk galt. Du finner den i Oss-fanen senere."
           }
         }
       }
     },
     "onboarding.firstDay.gift.failed.offlineMessage" : {
-      "comment" : "Banner message when the partner's first drawing did not load because the phone has no internet. Home shows the couple's current drawing.",
+      "comment" : "Banner message when the partner's first drawing did not load because the phone has no internet. The Us tab shows the couple's current drawing.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You're offline. Once you're back online, you'll find it on Home."
+            "value" : "You're offline. Once you're back online, you'll find it in the Us tab."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er ikke på nett. Når du er på nett igjen, finner du den på Hjem."
+            "value" : "Du er ikke på nett. Når du er på nett igjen, finner du den i Oss-fanen."
           }
         }
       }
@@ -30744,7 +30744,7 @@
       }
     },
     "paywall.paired.paymentFailed.headline" : {
-      "comment" : "Paywall headline for the person whose App Store subscription payment failed while Apple keeps retrying it. Same wording as the Home notice title.",
+      "comment" : "Paywall headline for the person whose App Store subscription payment failed while Apple keeps retrying it. Same wording as the Us tab notice title.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33390,7 +33390,7 @@
       }
     },
     "search.title" : {
-      "comment" : "Title of the Search screen and the accessibility label of the Home search button",
+      "comment" : "Title of the Search screen and the accessibility label of the Us tab search button",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33408,7 +33408,7 @@
       }
     },
     "settings.account.logoutButton" : {
-      "comment" : "Us tab: sign out of the app on this device",
+      "comment" : "More tab: sign out of the app on this device",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33480,7 +33480,7 @@
       }
     },
     "settings.birthday.add" : {
-      "comment" : "Value on a birthday row in the Us tab while no birthday is set; tapping it opens the birthday picker",
+      "comment" : "Value on a birthday row in the More tab while no birthday is set; tapping it opens the birthday picker",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -33498,7 +33498,7 @@
       }
     },
     "settings.gameMark.title" : {
-      "comment" : "Row in the Us tab that opens the sheet where the person draws the small mark shown on their pieces in every board game.",
+      "comment" : "Row in the More tab that opens the sheet where the person draws the small mark shown on their pieces in every board game.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -34524,7 +34524,7 @@
       }
     },
     "settings.partnerNickname.row.empty" : {
-      "comment" : "Value on the Us tab nickname row while no nickname is set.",
+      "comment" : "Value on the More tab nickname row while no nickname is set.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -34542,7 +34542,7 @@
       }
     },
     "settings.partnerNickname.row.title" : {
-      "comment" : "Us tab row that opens the nickname screen. %@ is the partner's own name.",
+      "comment" : "More tab row that opens the nickname screen. %@ is the partner's own name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -34973,7 +34973,7 @@
       }
     },
     "settings.profile.sectionTitle" : {
-      "comment" : "Title of the Us tab row that opens the user's own profile, and of the screen it opens",
+      "comment" : "Title of the More tab row that opens the user's own profile, and of the screen it opens",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -35531,7 +35531,7 @@
       }
     },
     "settings.purchases.sectionTitle" : {
-      "comment" : "Title of the Us tab row and screen for the subscription: manage it in the App Store or restore a purchase.",
+      "comment" : "Title of the More tab row and screen for the subscription: manage it in the App Store or restore a purchase.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -35566,7 +35566,7 @@
       }
     },
     "settings.relationship.dates.title" : {
-      "comment" : "Row on the Us tab that opens the screen with the day the couple got together and both birthdays. Also that screen's title.",
+      "comment" : "Row on the More tab that opens the screen with the day the couple got together and both birthdays. Also that screen's title.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -35619,7 +35619,7 @@
       }
     },
     "settings.section.you" : {
-      "comment" : "Header of the Us tab section with your profile, your photo decoration and your partner's nickname.",
+      "comment" : "Header of the More tab section with your profile, your photo decoration and your partner's nickname.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -36201,13 +36201,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Share a photo from Home to show you're thinking of %@."
+            "value" : "Share a photo from the Us tab to show you're thinking of %@."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Del et bilde fra Hjem for å vise at du tenker på %@."
+            "value" : "Del et bilde fra Oss-fanen for å vise at du tenker på %@."
           }
         }
       }
@@ -36459,13 +36459,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ can see your story on Home for 24 hours. After that, you'll both find it under Stories in Memories."
+            "value" : "%@ can see your story in the Us tab for 24 hours. After that, you'll both find it under Stories in Memories."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ kan se storyen din på Hjem i 24 timer. Etter det finner dere den under Stories i Minner."
+            "value" : "%@ kan se storyen din i Oss-fanen i 24 timer. Etter det finner dere den under Stories i Minner."
           }
         }
       }
@@ -36759,7 +36759,7 @@
       }
     },
     "stories.home.partnerNewStory" : {
-      "comment" : "VoiceOver label for the partner's avatar on Home when they shared a story you haven't opened. %@ is the partner's name.",
+      "comment" : "VoiceOver label for the partner's avatar on the Us tab when they shared a story you haven't opened. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -36777,7 +36777,7 @@
       }
     },
     "stories.home.partnerNoStory" : {
-      "comment" : "VoiceOver label for the partner's avatar on Home when they have no story. %@ is the partner's name.",
+      "comment" : "VoiceOver label for the partner's avatar on the Us tab when they have no story. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -36795,7 +36795,7 @@
       }
     },
     "stories.home.partnerStory" : {
-      "comment" : "VoiceOver label for the partner's avatar on Home when you already opened their story. %@ is the partner's name.",
+      "comment" : "VoiceOver label for the partner's avatar on the Us tab when you already opened their story. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -36831,7 +36831,7 @@
       }
     },
     "stories.home.yourStory" : {
-      "comment" : "Label under your own avatar at the top of Home. It opens your story.",
+      "comment" : "Label under your own avatar at the top of the Us tab. It opens your story.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -36939,7 +36939,7 @@
       }
     },
     "stories.note.placeholder" : {
-      "comment" : "Quiet text in the empty thought bubble over your own avatar on Home. Tapping it lets you write a note.",
+      "comment" : "Quiet text in the empty thought bubble over your own avatar on the Us tab. Tapping it lets you write a note.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -37065,7 +37065,7 @@
       }
     },
     "stories.viewer.homeSubtitle" : {
-      "comment" : "Line under the name in the story viewer. %1$@ is when it was shared, like '2 hours ago'. %2$@ is how long it stays on Home, like '21 hr'.",
+      "comment" : "Line under the name in the story viewer. %1$@ is when it was shared, like '2 hours ago'. %2$@ is how long it stays on the Us tab, like '21 hr'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -40899,13 +40899,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PostHog stores this for us in Germany, and we never sell it. You can change your answer any time in Us, under Privacy and safety."
+            "value" : "PostHog stores this for us in Germany, and we never sell it. You can change your answer any time in the More tab, under Privacy and safety."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PostHog lagrer dette for oss i Tyskland, og vi selger det aldri. Du kan endre svaret når som helst under Oss, i Personvern og trygghet."
+            "value" : "PostHog lagrer dette for oss i Tyskland, og vi selger det aldri. Du kan endre svaret når som helst i Mer-fanen, under Personvern og trygghet."
           }
         }
       }

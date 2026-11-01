@@ -16,7 +16,7 @@ struct MainTabIdentity: Equatable {
     /// The active couple, needed to create new memories. Cosmetic for the rest of the
     /// tabs, so it must not be part of any load-bearing `.task(id:)` key.
     var coupleID: UUID?
-    /// The day the relationship started (`yyyy-MM-dd`), used by the Home tab milestone
+    /// The day the relationship started (`yyyy-MM-dd`), used by the Us tab milestone
     /// countdown. Display-only, so it never keys a load.
     var relationshipStartedOn: String?
     /// What this person has without their partner's subscription. The leave
@@ -122,7 +122,7 @@ final class MainTabModels {
 ///
 /// Tab selection is owned by `RootViewModel` and passed in as a binding. That lets
 /// navigation intent, such as opening the widget drawing screen from the Home
-/// Screen widget, select the Home tab and present its destination in one atomic
+/// Screen widget, select the Us tab and present its destination in one atomic
 /// update, so the screen can never open hidden behind another tab. Deep links,
 /// the daily answer flows, and the streak sheets live in `MainTabView+Flows.swift`.
 struct MainTabView: View {
@@ -140,7 +140,7 @@ struct MainTabView: View {
     @State var isAnswerFlowPresented = false
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
     /// Questions-tab hero card), so the cover grows from the one the user tapped.
-    @State var dailyFlowSource: DailyFlowSource = .home
+    @State var dailyFlowSource: DailyFlowSource = .us
     /// Streak-restore offer opened from the streak badge when a lost streak can still
     /// be bought back, outside the answer flow.
     @State var showStreakRestore = false
@@ -177,7 +177,7 @@ struct MainTabView: View {
     @State var gameChatReturn = GameChatReturnTransition()
     @State var visibleChatSubject: ThreadChatSubject?
     @State var messageNoticeStartedAt = Date()
-    /// The time the Home tab badge counts unseen stories at. It moves forward when the
+    /// The time the Us tab badge counts unseen stories at. It moves forward when the
     /// stories change and when an unseen story leaves Home.
     @State var storyBadgeDate = Date()
     /// The signed-in user's photo, cropped to a circle for the You tab icon.
@@ -440,7 +440,7 @@ struct MainTabView: View {
         ),
         locationMapState: .partnerUnknown(.notSharing),
         locationViewModel: LocationMapViewModel(),
-        selection: .constant(.home),
+        selection: .constant(.us),
         widgetDrawingPresented: .constant(false)
     )
     .environment(PaeoniaBannerCenter())

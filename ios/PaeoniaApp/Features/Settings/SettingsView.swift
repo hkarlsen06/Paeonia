@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Us tab: the couple at the top, then a menu rather than a control panel.
+/// The More tab: the couple at the top, then a menu rather than a control panel.
 ///
 /// Every switch lives one push away on its own screen, so this stays short enough
 /// to scan. The account actions sit last, and each one only opens a centered
@@ -152,7 +152,7 @@ struct SettingsView: View {
         }
         .listStyle(.insetGrouped)
         .paeoniaGroupedList(showsTabBackdrop: true)
-        .navigationTitle(Text(.mainTabUs))
+        .navigationTitle(Text(.mainTabSettings))
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $headerDestination) { destination in
             switch destination {

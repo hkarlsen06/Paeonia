@@ -10,7 +10,7 @@ nonisolated struct WidgetLivePresence {
     enum Role: String, Codable, Sendable, CaseIterable {
         /// On the drawing canvas.
         case drawing
-        /// Looking at the widget on the Home tab, or at a drawing as it is made.
+        /// Looking at the widget on the Us tab, or at a drawing as it is made.
         case watching
         /// Game only: on the screen where a word is picked.
         case choosing

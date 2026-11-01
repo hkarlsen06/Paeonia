@@ -102,7 +102,7 @@
         .exquisiteCorpseHubReveal, .exquisiteCorpseHubNotStarted, .gamesHubBoardGames:
         .games
       default:
-        .home
+        .us
       }
     }
 
@@ -165,7 +165,7 @@
           }
       } else {
         MainTabView(
-          tabs: [.home, .questions, .games, .memories],
+          tabs: [.us, .questions, .games, .memories],
           identity: MainTabIdentity(
             currentUserID: DeveloperScenarioFixture.currentUserID,
             currentDisplayName: "Alex",

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The admin area, pushed from the Us tab. Nothing else links here, and the server
+/// The admin area, pushed from the More tab. Nothing else links here, and the server
 /// checks admin access again on every call.
 struct AdminHubView: View {
     let gateway: any AdminGateway

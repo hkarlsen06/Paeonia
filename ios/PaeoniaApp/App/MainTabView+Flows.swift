@@ -2,12 +2,12 @@ import SwiftUI
 
 /// Which entry card the daily answer flow zooms out of.
 enum DailyFlowSource {
-    case home
+    case us
     case questions
 
     var zoomSourceID: String {
         switch self {
-        case .home: DailyFlowZoom.home
+        case .us: DailyFlowZoom.us
         case .questions: DailyFlowZoom.questions
         }
     }
@@ -235,7 +235,7 @@ extension MainTabView {
             return
         }
 
-        openAnswerFlow(source: .home)
+        openAnswerFlow(source: .us)
     }
 
     /// Today's question is created lazily, so opening the flow before the couple has
@@ -314,8 +314,8 @@ extension MainTabView {
             await openGame(kind, for: deepLink)
         case .streak:
             await openStreak(for: deepLink)
-        case .stories, .home, .dates, .story, .firstDayAnswer:
-            await openHome(for: deepLink)
+        case .stories, .us, .dates, .story, .firstDayAnswer:
+            await openUs(for: deepLink)
         }
     }
 
@@ -323,14 +323,14 @@ extension MainTabView {
     /// The dates timeline opens on top for a date reminder. "Answer now" after the first day
     /// opens today's question over Home, after the same refresh as a question link, so
     /// closing it shows the things to try on Home.
-    private func openHome(for deepLink: PaeoniaDeepLink) async {
-        selection.wrappedValue = .home
+    private func openUs(for deepLink: PaeoniaDeepLink) async {
+        selection.wrappedValue = .us
         if deepLink == .dates {
             coupleDatesViewModel.requestTimeline()
         }
         if deepLink == .firstDayAnswer {
             guard await refreshStillCurrent(for: deepLink) else { return }
-            openTodayAnswerIfNeeded(source: .home)
+            openTodayAnswerIfNeeded(source: .us)
         }
         if case let .story(storyID, showsReplies) = deepLink {
             await storiesViewModel.reload()
@@ -361,7 +361,7 @@ extension MainTabView {
     }
 
     private func openStreak(for deepLink: PaeoniaDeepLink) async {
-        selection.wrappedValue = .home
+        selection.wrappedValue = .us
         // The streak may have advanced, broken, or passed its restore deadline
         // since the notification was queued. Refresh before choosing the one
         // destination so a broken streak opens the purchase offer directly.
@@ -395,7 +395,7 @@ extension MainTabView {
     /// The partner just opened `kind`. Home already shows the game's card, and a
     /// person already in that game, or in the middle of answering, gets no banner.
     func announcePartnerGame(_ kind: GameKind?) {
-        guard let kind, selection.wrappedValue != .home,
+        guard let kind, selection.wrappedValue != .us,
               !(selection.wrappedValue == .games && gamesPath.contains(.game(kind))),
               !isAnswerFlowPresented, partnerAnswerQuestion == nil
         else { return }

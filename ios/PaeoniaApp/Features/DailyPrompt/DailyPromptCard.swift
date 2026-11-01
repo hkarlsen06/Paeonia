@@ -6,7 +6,7 @@ extension EnvironmentValues {
     @Entry var dailyFlowIsPresented = false
 }
 
-/// Today's Daily Challenge on the Home tab and the Questions tab.
+/// Today's Daily Challenge on the Us tab and the Questions tab.
 ///
 /// While there is something to do (and while the questions load) it is the picture card
 /// with the sealed envelope (`DailyPromptHeroCard`). Once today's question is answered it is

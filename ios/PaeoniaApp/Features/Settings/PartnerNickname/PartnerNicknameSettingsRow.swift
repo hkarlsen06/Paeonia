@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Us tab row that opens the nickname screen. It shows the nickname once one is set.
+/// The More tab row that opens the nickname screen. It shows the nickname once one is set.
 struct PartnerNicknameSettingsRow: View {
     let editor: PartnerNicknameEditorModel
     let partner: PartnerName?

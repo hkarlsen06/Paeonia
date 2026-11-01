@@ -93,7 +93,7 @@ struct WidgetDrawingCanvasHeader: View {
         }
     }
 
-    /// Whether the partner draws along or watches from their Home tab.
+    /// Whether the partner draws along or watches from their Us tab.
     private var livePresenceText: String? {
         switch viewModel.live?.partnerActivity {
         case .drawing:

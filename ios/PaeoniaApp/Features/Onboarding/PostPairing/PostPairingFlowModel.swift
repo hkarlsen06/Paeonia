@@ -13,7 +13,7 @@ nonisolated struct PostPairingContext: Equatable, Sendable {
 
 /// How the sequence ended.
 enum PostPairingOutcome: Equatable {
-    case home
+    case us
     /// "Answer now" on the answer invitation.
     case answerQuestions
 }
@@ -271,7 +271,7 @@ final class PostPairingFlowModel {
 
     private func finish() {
         guard let check = lateAnswersCheck, let context else {
-            outcome = .home
+            outcome = .us
             return
         }
         lateAnswersCheck = nil
@@ -283,7 +283,7 @@ final class PostPairingFlowModel {
             if waiting {
                 screen = .answerInvite
             } else {
-                outcome = .home
+                outcome = .us
             }
         }
     }
@@ -394,6 +394,6 @@ extension PostPairingFlowModel {
 
     func answerInviteFinished(answerNow: Bool) {
         complete(.answerInvite)
-        outcome = answerNow ? .answerQuestions : .home
+        outcome = answerNow ? .answerQuestions : .us
     }
 }

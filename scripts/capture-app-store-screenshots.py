@@ -103,8 +103,8 @@ DUPLICATE_THRESHOLD = 6
 # card at the top of Home.
 # 01-widget opens the app so it syncs the widgets, then goes to the Home Screen.
 SCREENS = {
-    "01-widget": ("paeonia://home", 10),
-    "04-home": ("paeonia://home", 10),
+    "01-widget": ("paeonia://us", 10),
+    "04-home": ("paeonia://us", 10),
     "05-memories": ("paeonia://memories", 8),
     "02-chat": ("paeonia://daily/chat?questionId={question_id}", 8),
     "03-ludo": ("paeonia://games/ludo", 25),

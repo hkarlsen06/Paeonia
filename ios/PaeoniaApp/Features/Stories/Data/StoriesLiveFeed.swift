@@ -5,7 +5,7 @@ import Foundation
 nonisolated struct StoriesLiveFeed: LiveFeed {
     let name = "stories"
 
-    /// The Home tab badge counts unseen stories on every tab.
+    /// The Us tab badge counts unseen stories on every tab.
     var activation: LiveFeedActivation {
         .always
     }

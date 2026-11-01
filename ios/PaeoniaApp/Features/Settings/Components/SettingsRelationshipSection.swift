@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Us tab's relationship section: the couple's dates and location sharing. A date
+/// The More tab's relationship section: the couple's dates and location sharing. A date
 /// that isn't set yet gets its own row here so it's easy to find. Set dates move to
 /// the Important dates screen, since they rarely change.
 struct SettingsRelationshipSection: View {

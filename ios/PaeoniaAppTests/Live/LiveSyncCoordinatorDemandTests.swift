@@ -52,7 +52,7 @@ struct LiveSyncCoordinatorDemandTests {
         await coordinator.apply(.held([.gamesTab], sequence: 1))
         #expect(await waitUntil { games.running.value == 1 })
 
-        await coordinator.apply(.held([.homeTab], sequence: 2))
+        await coordinator.apply(.held([.usTab], sequence: 2))
         #expect(await waitUntil { games.running.value == 0 })
         #expect(always.running.value == 1)
         await coordinator.stop()
@@ -65,7 +65,7 @@ struct LiveSyncCoordinatorDemandTests {
 
         await coordinator.apply(.held([.gamesTab], sequence: 1))
         #expect(await waitUntil { games.running.value == 1 })
-        await coordinator.apply(.held([.homeTab], sequence: 2))
+        await coordinator.apply(.held([.usTab], sequence: 2))
         await coordinator.apply(.held([.gamesTab], sequence: 3))
         try? await Task.sleep(for: .milliseconds(500))
 

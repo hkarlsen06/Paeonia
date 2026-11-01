@@ -18,7 +18,7 @@ nonisolated struct WidgetLiveMessage: Codable, Equatable, Sendable {
         /// From the relay, right after connecting. `id` is this socket, and
         /// `peers` is how many of the partner's sockets are in the room.
         case welcome
-        /// From the relay: the partner opened the canvas or the Home tab.
+        /// From the relay: the partner opened the canvas or the Us tab.
         case joined
         /// From the relay: the partner closed it.
         case left

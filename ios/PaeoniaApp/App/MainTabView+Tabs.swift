@@ -122,14 +122,14 @@ extension MainTabView {
     @ViewBuilder
     func content(for tab: MainTab) -> some View {
         switch tab {
-        case .home:
-            homeTab
+        case .us:
+            usTab
         case .questions:
             questionsTab
         case .games:
             gamesTab
-        case .us:
-            usTab
+        case .settings:
+            settingsTab
         case .memories:
             memoriesTab
         }
@@ -142,9 +142,9 @@ extension MainTabView {
         // the stories from this phone's own list, so opening one clears it at once.
         case .questions: AppBadges.shared.counts.questions
         case .games: AppBadges.shared.counts.games
-        case .home:
+        case .us:
             StoryTimeline.unseenCount(storiesViewModel.stories, partner: identity.partnerUserID, at: storyBadgeDate)
-        case .memories, .us: 0
+        case .memories, .settings: 0
         }
     }
 
@@ -174,7 +174,7 @@ extension MainTabView {
         )
     }
 
-    /// Counts the Home tab badge again now, then again each time an unseen story
+    /// Counts the Us tab badge again now, then again each time an unseen story
     /// leaves Home, until the stories or the partner change and the task restarts.
     func refreshStoryBadge() async {
         while !Task.isCancelled {
@@ -207,14 +207,14 @@ extension MainTabView {
         }
     }
 
-    private var homeTab: some View {
+    private var usTab: some View {
         NavigationStack {
             // Home hides its navigation bar and draws the brand mark and streak in its
             // own header. Screens pushed from it keep their bar.
             pairedHome
                 // Shows only where Home has a navigation bar, on a wide iPad.
                 .searchToolbarButton(placement: .topBarTrailing, action: openSearch)
-                .analyticsScreen("home")
+                .analyticsScreen("us")
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationDestination(isPresented: widgetDrawingPresented) {
                     WidgetDrawingView(
@@ -353,11 +353,11 @@ extension MainTabView {
         )
     }
 
-    private var usTab: some View {
+    private var settingsTab: some View {
         NavigationStack {
             settingsView
                 .searchToolbarButton(action: openSearch)
-                .analyticsScreen("us")
+                .analyticsScreen("settings")
         }
     }
 
@@ -397,7 +397,7 @@ extension MainTabView {
     }
 }
 
-/// What the Home tab badge counts from. A change restarts `refreshStoryBadge()`.
+/// What the Us tab badge counts from. A change restarts `refreshStoryBadge()`.
 struct StoryBadgeKey: Equatable {
     let stories: [Story]
     let partner: UUID?

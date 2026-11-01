@@ -2,7 +2,7 @@ import MapKit
 import SwiftUI
 import UIKit
 
-/// The couple's map card on the Home tab. With a map to show it is a 2:1 tile, square on a wide
+/// The couple's map card on the Us tab. With a map to show it is a 2:1 tile, square on a wide
 /// iPad (`aspectRatio`). A dark-mode map fills the whole card, framed to show both
 /// partners with their avatars, with the live distance overlaid at the bottom. The map
 /// is rendered with `MKMapSnapshotter`, so the camera framing and pin placement are fully
@@ -11,7 +11,7 @@ import UIKit
 ///
 /// When there is no map, the card shrinks to a compact row (`MapEmptyState`) that
 /// explains why and, where it helps, offers one action. That keeps the rest of the
-/// Home tab on screen for couples who do not share location. `.loading` keeps the map's
+/// Us tab on screen for couples who do not share location. `.loading` keeps the map's
 /// shape because it usually resolves to a map, so the card does not shrink and
 /// then grow back. Both shapes share the same corner radius, stroke, and shadow.
 struct CoupleMapCard: View {

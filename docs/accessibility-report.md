@@ -93,7 +93,7 @@ For each row cover ready, empty, loading, offline, failure, disabled, completed 
 | Home Screen widgets | Drawing, days, countdown, question and streak | S/P | S/P | Placeholder, locked/redacted, cached/stale, tinted/contrast variants, semantic text and correct link. |
 | Lock Screen widgets | Days, countdown, their time, distance, streak, question, your move | S/P | S/P | Small text constraints, symbols, privacy and dates, link destination. |
 | Notification actions | `Notifications/NotificationQuickActions` | S/P | S/P | Reply/heart, locked phone, queued offline, failure, accessible system text field, no private lock-screen leak. |
-| Deep links | `PaeoniaDeepLink`, router, destination scenarios | S/P | S/P | Drawing, daily/chat, game chat, topics, memories/comments, stories/replies, Home/dates/games/streak/subscription/export; signed out, locked, removed or unavailable. |
+| Deep links | `PaeoniaDeepLink`, router, destination scenarios | S/P | S/P | Drawing, daily/chat, game chat, topics, memories/comments, stories/replies, Us/dates/games/streak/subscription/export; signed out, locked, removed or unavailable. |
 
 ## Findings and implementation
 

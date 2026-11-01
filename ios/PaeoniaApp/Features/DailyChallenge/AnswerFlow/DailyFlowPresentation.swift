@@ -5,7 +5,7 @@ import SwiftUI
 /// `.matchedTransitionSource`, and `MainTabView` zooms the answer flow's full-screen
 /// cover out of whichever card opened it. (Partner-answer cards use their question id.)
 enum DailyFlowZoom {
-    static let home = "dailyFlow.home"
+    static let us = "dailyFlow.us"
     static let questions = "dailyFlow.questions"
 }
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Admin row for the Us tab. It shows only after the server says this account
+/// The Admin row for the More tab. It shows only after the server says this account
 /// is an admin, and stays hidden while that check runs and when it fails.
 struct AdminSettingsSection: View {
     let access: AdminAccessModel

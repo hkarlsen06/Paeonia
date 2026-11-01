@@ -15,10 +15,10 @@ final class FirstStepsJourneyUITests: XCTestCase {
         app.launch()
 
         // With five tabs the system tab bar drops the tabs' accessibility identifiers, so
-        // the tabs are found by place: home, questions, games, memories, us.
+        // the tabs are found by place: us, questions, games, memories, settings.
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
-        let homeTab = tabBar.buttons.element(boundBy: 0)
+        let usTab = tabBar.buttons.element(boundBy: 0)
         let memoriesTab = tabBar.buttons.element(boundBy: 3)
 
         let memoryRow = app.buttons["home.firstSteps.memory"]
@@ -27,7 +27,7 @@ final class FirstStepsJourneyUITests: XCTestCase {
         memoryRow.tap()
         XCTAssertTrue(memoriesTab.waitForSelection(timeout: 5))
 
-        homeTab.tap()
+        usTab.tap()
         let close = app.buttons["home.firstSteps.close"]
         XCTAssertTrue(close.waitForExistence(timeout: 5))
         scrollUntilHittable(close, in: app)

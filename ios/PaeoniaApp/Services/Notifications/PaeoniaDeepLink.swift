@@ -21,8 +21,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     /// `paeonia://stories/story?storyId=...`: opens one story in the viewer. `showsReplies`
     /// (`&replies=1`) is for a reply push, so the story opens with its replies.
     case story(storyID: UUID, showsReplies: Bool)
-    /// `paeonia://home`: opens Home, for example after the partner joined.
-    case home
+    /// `paeonia://us`: opens the Us tab, for example after the partner joined.
+    case us
     /// `paeonia://dates`: a reminder about a birthday, the anniversary or a countdown.
     /// Opens Home with the dates timeline on top.
     case dates
@@ -203,7 +203,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         "topics": .topics,
         "memories": .memories,
         "stories": .stories,
-        "home": .home,
+        "us": .us,
         "dates": .dates,
         "streak": .streak,
     ]

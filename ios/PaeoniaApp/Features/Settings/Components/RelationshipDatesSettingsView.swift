@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The couple's dates that are set: the day they got together and both partners'
-/// birthdays. They rarely change, so they sit one step in from the Us tab. Dates
-/// not set yet stay on the Us tab instead.
+/// birthdays. They rarely change, so they sit one step in from the More tab. Dates
+/// not set yet stay on the More tab instead.
 struct RelationshipDatesSettingsView: View {
     let relationshipDateRow: RelationshipDateSettingsRow
     let yourBirthdayRow: BirthdaySettingsRow?

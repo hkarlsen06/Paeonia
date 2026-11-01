@@ -5,11 +5,11 @@ import Foundation
 /// serves in its `activation`.
 nonisolated enum LiveFeedTopic: Hashable, Sendable {
     /// The tab on screen. Exactly one is wanted at a time.
-    case homeTab
+    case usTab
     case questionsTab
     case gamesTab
     case memoriesTab
-    case usTab
+    case settingsTab
     /// The partner has this game open. The Home card follows the game while the
     /// partner plays it.
     case partnerInGame(GameKind)

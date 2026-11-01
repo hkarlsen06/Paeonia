@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Guess my spot on the hub: artwork, whose turn it is, the couple's shared points,
-/// and a quiet link to "Our guesses". The Home tab shows the same card while the
+/// and a quiet link to "Our guesses". The Us tab shows the same card while the
 /// partner is in the game.
 struct GuessMySpotHubCard: View {
     let summary: GuessMySpotHubSummary

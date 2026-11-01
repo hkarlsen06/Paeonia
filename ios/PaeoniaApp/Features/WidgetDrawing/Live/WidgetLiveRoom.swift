@@ -1,6 +1,6 @@
 import PencilKit
 
-/// The partner's canvas as seen from the Home tab while they draw. It starts
+/// The partner's canvas as seen from the Us tab while they draw. It starts
 /// from the snapshot they send and follows their changes.
 nonisolated struct WidgetLiveRoom {
     /// Strokes are kept in this canvas size and scaled for display.

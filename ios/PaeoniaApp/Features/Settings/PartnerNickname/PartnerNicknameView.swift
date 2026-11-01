@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The screen behind the Us tab's nickname row: one field for what the person calls their partner.
+/// The screen behind the More tab's nickname row: one field for what the person calls their partner.
 ///
 /// While there are unsaved edits the back button steps aside for Cancel, like the profile screen, so a
-/// stray swipe never throws away typed text. Save sits at the bottom within thumb reach. The Us tab
+/// stray swipe never throws away typed text. Save sits at the bottom within thumb reach. The More tab
 /// shows the banner for the result, so it still appears if the person has moved on.
 struct PartnerNicknameView: View {
     let editor: PartnerNicknameEditorModel

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Sheet opened from the Home tab milestone card: the couple's milestone history and
+/// Sheet opened from the Us tab milestone card: the couple's milestone history and
 /// what's ahead, laid out like a lyrics screen. The couple's own countdowns and both
 /// birthdays sit between the milestones by date. Tapping one edits it, and the plus
 /// menu adds them. "Together for X days" is the focal

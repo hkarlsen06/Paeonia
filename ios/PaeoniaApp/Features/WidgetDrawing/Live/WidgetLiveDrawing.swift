@@ -3,7 +3,7 @@ import PencilKit
 import UIKit
 
 /// Drawing together while both partners have the canvas open, and watching the
-/// partner draw from the Home tab. Strokes stream to the partner through the
+/// partner draw from the Us tab. Strokes stream to the partner through the
 /// relay while they are drawn, and the finished strokes follow so both canvases
 /// end up the same. Sending to the widgets stays a separate step, as before.
 @MainActor
@@ -297,7 +297,7 @@ final class WidgetLiveDrawing {
             playback.removeAll()
             isAwaitingRoomState = false
         }
-        // The partner left the canvas. The Home tab shows the widget again.
+        // The partner left the canvas. The Us tab shows the widget again.
         if partnerActivity != .drawing {
             room.clear()
             isPartnerCanvasCaughtUp = false

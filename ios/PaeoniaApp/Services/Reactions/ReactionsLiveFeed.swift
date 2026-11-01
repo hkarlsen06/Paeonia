@@ -8,7 +8,7 @@ nonisolated struct ReactionsLiveFeed: LiveFeed {
     /// Stories and drawings show on Home, which also opens the game the partner is in, memories
     /// on the Memories tab, and game creations on the Games tab.
     var activation: LiveFeedActivation {
-        .whileNeeded([.homeTab, .memoriesTab, .gamesTab])
+        .whileNeeded([.usTab, .memoriesTab, .gamesTab])
     }
 
     private let cache: any ReactionsCaching

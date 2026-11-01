@@ -1,6 +1,6 @@
 # Game hub artwork
 
-Every game card on the Games tab, and on the Home tab while the partner is in a game, has a picture with the card's text on it (`GameHubCardFrame`, which uses the shared `PaeoniaIllustratedCard`). The picture is one painted backdrop that every card shares, with the game's illustrated objects placed on it in code. This file is the standard for those pictures. Check a new or changed card against every rule here before it ships. The shared code is in `Features/Games/Hub/GameHubArtworkParts.swift`, and the objects are made with the `paeonia-illustrations` skill.
+Every game card on the Games tab, and on the Us tab while the partner is in a game, has a picture with the card's text on it (`GameHubCardFrame`, which uses the shared `PaeoniaIllustratedCard`). The picture is one painted backdrop that every card shares, with the game's illustrated objects placed on it in code. This file is the standard for those pictures. Check a new or changed card against every rule here before it ships. The shared code is in `Features/Games/Hub/GameHubArtworkParts.swift`, and the objects are made with the `paeonia-illustrations` skill.
 
 ## The series
 
@@ -60,7 +60,7 @@ The scene is the final frame of the game's moment, with one element left out. Th
 
 ### The daily question card
 
-The daily question card on the Home tab is in the same series (`DailyPromptHeroArtwork`, in `Features/DailyPrompt/`). It uses the shared `PaeoniaIllustratedCard` directly, with no partner chip, and the zones above hold:
+The daily question card on the Us tab is in the same series (`DailyPromptHeroArtwork`, in `Features/DailyPrompt/`). It uses the shared `PaeoniaIllustratedCard` directly, with no partner chip, and the zones above hold:
 
 | Card | Objects | The beat |
 |---|---|---|

@@ -87,7 +87,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 - The board tints the mark in its owner's color. On this phone, my pieces use `.paeoniaPartnerOne` and my partner's use `.paeoniaInkLavender` (`Color.boardGameMine` and `Color.boardGamePartner`). Ludo is the exception: each partner picks one of four colors, and both phones show the same colors (see `docs/games/ludo.md`).
 - Without a drawn mark, a partner's mark is the first letter of their display name.
 - The first time a partner opens any game, the first-time sheet ends on the mark editor for someone with no mark, after setup or the partner's choices. Cancel skips it, and the game opens either way.
-- Later the editor opens from "Your mark" in the game settings sheet on the hub, "Your mark in games" on the Us tab, and "Your mark" in the board's toolbar menu or a long press on its hub card. It never blocks a game.
+- Later the editor opens from "Your mark" in the game settings sheet on the hub, "Your mark in games" on the More tab, and "Your mark" in the board's toolbar menu or a long press on its hub card. It never blocks a game.
 - Saving needs a connection. A failed save keeps the drawing in the editor and shows "We couldn't save your mark. Check your connection and try again."
 - The partner's new mark shows on their pieces the next time the board renders. Nobody gets a push for it.
 

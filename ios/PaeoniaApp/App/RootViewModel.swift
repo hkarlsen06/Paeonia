@@ -50,7 +50,7 @@ final class RootViewModel {
         didSet {
             // A new pairing, account, or relationship always starts on Home.
             if route.appState != .paired {
-                selectedMainTab = .home
+                selectedMainTab = .us
             }
         }
     }
@@ -69,7 +69,7 @@ final class RootViewModel {
     /// The selected paired tab. Owned here (rather than in the tab view) so that
     /// navigation intent can move the user to the right tab and present its
     /// destination as one atomic change. See [openWidgetDrawing].
-    private(set) var selectedMainTab: MainTab = .home
+    private(set) var selectedMainTab: MainTab = .us
     private var celebration: RootPairingCelebrationState
     /// Where the celebration and the first day sequence keep their progress.
     let pairingCelebrationStore: any PairingCelebrationStoring
@@ -217,7 +217,7 @@ final class RootViewModel {
     }
 
     /// Opens the couple's widget drawing screen. The screen is a destination on
-    /// the Home tab, so opening it always selects Home first; presenting it on a
+    /// the Us tab, so opening it always selects Home first; presenting it on a
     /// non-visible tab would otherwise leave it hidden behind whatever tab the
     /// user was last on.
     func openWidgetDrawing() {
@@ -235,11 +235,11 @@ final class RootViewModel {
         presentedDestination = nil
     }
 
-    /// Selects the Home tab and presents the widget drawing destination as one
+    /// Selects the Us tab and presents the widget drawing destination as one
     /// atomic change. The single entry point keeps the "drawing lives on Home"
     /// rule in one place for every caller (direct tap and deferred deep link).
     private func presentWidgetDrawing() {
-        selectedMainTab = .home
+        selectedMainTab = .us
         presentedDestination = .widgetDrawing
     }
 

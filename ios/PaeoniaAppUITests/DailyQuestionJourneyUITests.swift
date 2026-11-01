@@ -17,10 +17,10 @@ final class DailyQuestionJourneyUITests: XCTestCase {
         app.launch()
 
         // With five tabs the system tab bar drops the tabs' accessibility identifiers, so
-        // Home is found by its place: the first of home, questions, games, memories, us.
-        let homeTab = app.tabBars.firstMatch.buttons.element(boundBy: 0)
-        XCTAssertTrue(homeTab.waitForExistence(timeout: 10))
-        XCTAssertTrue(homeTab.isSelected)
+        // the Us tab is found by its place: the first of us, questions, games, memories, settings.
+        let usTab = app.tabBars.firstMatch.buttons.element(boundBy: 0)
+        XCTAssertTrue(usTab.waitForExistence(timeout: 10))
+        XCTAssertTrue(usTab.isSelected)
 
         // The local flow's partner answered yesterday's question, so it waits on the Home
         // card as a locked row.
@@ -55,10 +55,10 @@ final class DailyQuestionJourneyUITests: XCTestCase {
         XCTAssertTrue(close.exists)
         close.tap()
 
-        // Closing lands back on Home, where the row was tapped, not on the Questions tab.
+        // Closing lands back on the Us tab, where the row was tapped, not on the Questions tab.
         XCTAssertTrue(close.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(homeTab.waitForExistence(timeout: 5))
-        XCTAssertTrue(homeTab.isSelected)
+        XCTAssertTrue(usTab.waitForExistence(timeout: 5))
+        XCTAssertTrue(usTab.isSelected)
     }
 
     @MainActor

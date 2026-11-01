@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The lock's own screen under App in the Us tab: the switch, how long Paeonia
+/// The lock's own screen under App in the More tab: the switch, how long Paeonia
 /// may be left before it locks, and what the lock does not cover.
 struct AppLockSettingsView: View {
     let model: AppLockModel

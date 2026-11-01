@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One built game as the Games tab and the Home tab see it. A game's
+/// One built game as the Games tab and the Us tab see it. A game's
 /// hub model conforms, and `GamesViewModel.games` lists it. A kind that is not
 /// listed shows nowhere: no hub card, no Home card, and a deep link to it opens
 /// the hub.
@@ -48,9 +48,9 @@ struct GameHubCardContext {
     let partnerName: String
     /// The partner has this game open right now.
     let partnerIsHere: Bool
-    /// False on the Home tab, which has no room for extra links such as "Our drawings".
+    /// False on the Us tab, which has no room for extra links such as "Our drawings".
     let isOnHub: Bool
     /// "Not now", which moves the card to the hub's grid. Nil when the card is not under
-    /// "Right now" for this person's turn, such as on the Home tab or while the partner is here.
+    /// "Right now" for this person's turn, such as on the Us tab or while the partner is here.
     let hide: (() -> Void)?
 }

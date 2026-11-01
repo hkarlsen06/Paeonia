@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The tear-off desk calendar on the Home tab countdown tile, with the day count drawn on
+/// The tear-off desk calendar on the Us tab countdown tile, with the day count drawn on
 /// its blank page. The art scales with its available space; the meaningful text uses
 /// native Dynamic Type instead of shrinking with the picture.
 struct CountdownCalendarView: View {

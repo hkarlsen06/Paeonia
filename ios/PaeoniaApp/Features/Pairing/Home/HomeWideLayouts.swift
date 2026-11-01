@@ -10,7 +10,7 @@ nonisolated enum HomeWideRole: LayoutValueKey {
     static let defaultValue = HomeWideRole.card
 }
 
-/// The Home tab on a wide iPad: three columns about phone width. The cards keep the
+/// The Us tab on a wide iPad: three columns about phone width. The cards keep the
 /// phone's order and fill in the way people read, left to right and then down. Each card
 /// goes in the column that ends highest, and ties go left, so today's questions start at
 /// the top left. The tile pair takes the two neighboring columns that end highest, so its

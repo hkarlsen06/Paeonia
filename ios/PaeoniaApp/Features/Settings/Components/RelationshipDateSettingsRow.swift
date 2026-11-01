@@ -13,7 +13,7 @@ struct RelationshipDateSettingsRow: View {
 
     var body: some View {
         // The date editor is a modal task (Cancel/Save), so it presents as a
-        // sheet, same as from the Home tab milestone tile, instead of a push
+        // sheet, same as from the Us tab milestone tile, instead of a push
         // that would nest the editor's own navigation stack.
         Button {
             selectedDate = relationshipStartDate ?? Date()
