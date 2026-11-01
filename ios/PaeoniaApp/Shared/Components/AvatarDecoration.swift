@@ -124,6 +124,23 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// Rounded up from the artwork's bottom alpha bounds, relative to the photo diameter.
+    var bottomOutset: CGFloat {
+        switch self {
+        case .none, .peony, .ribbon, .moon, .candy, .mischief, .flame, .silver: 0
+        case .winter: 0.04
+        case .rose, .christmas: 0.05
+        case .halloween, .jelly: 0.06
+        case .woodland: 0.09
+        case .racing: 0.12
+        case .cosy, .rope, .newyear: 0.13
+        case .easter: 0.14
+        case .paint, .hearts, .norway: 0.15
+        case .pride: 0.17
+        case .wildflowers: 0.27
+        }
+    }
+
     func noteClearance(photoSize: CGFloat) -> CGFloat {
         photoSize * outset
     }

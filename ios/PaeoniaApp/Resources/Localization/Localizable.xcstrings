@@ -34797,19 +34797,37 @@
       }
     },
     "stories.home.addButton" : {
-      "comment" : "Compact button below your decorated profile photo that opens the story composer.",
+      "comment" : "Visible label beside a plus icon below your profile photo. Opens the story composer.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add"
+            "value" : "Story"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Legg til"
+            "value" : "Story"
+          }
+        }
+      }
+    },
+    "stories.home.newStory" : {
+      "comment" : "Action below your partner's profile photo that opens their unseen story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny story"
           }
         }
       }
@@ -34864,6 +34882,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Storyen til %@"
+          }
+        }
+      }
+    },
+    "stories.home.viewStory" : {
+      "comment" : "Action below your partner's profile photo that opens a story you have already viewed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story"
           }
         }
       }

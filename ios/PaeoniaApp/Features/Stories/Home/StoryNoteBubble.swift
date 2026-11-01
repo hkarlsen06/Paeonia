@@ -24,31 +24,34 @@ struct StoryNoteBubble: View {
 
     var body: some View {
         ThoughtBubble(dotSize: ThoughtBubbleMetrics.compactDotSize) {
-            Group {
-                if let text {
-                    Text(text)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .lineLimit(Self.maxLines)
-                } else {
-                    Text(.storiesNotePlaceholder)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .lineLimit(1)
-                }
-            }
-            .modifier(BodyStyle())
+            textBody
         }
         .frame(maxWidth: Self.maxWidth)
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// An empty body as tall as the tallest note, for reserving its room in a layout.
-    static var tallestBody: some View {
-        // An empty string reserves only one line, so this holds a space.
-        Text(verbatim: " ")
-            .lineLimit(maxLines, reservesSpace: true)
-            .modifier(BodyStyle())
+    /// Reserves the body's actual height while the visible bubble overlaps the portrait.
+    static func bodySpace(text: String?) -> some View {
+        StoryNoteBubble(text: text).textBody
+            .frame(maxWidth: maxWidth)
+            .fixedSize(horizontal: false, vertical: true)
             .hidden()
             .accessibilityHidden(true)
+    }
+
+    private var textBody: some View {
+        Group {
+            if let text {
+                Text(text)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .lineLimit(Self.maxLines)
+            } else {
+                Text(.storiesNotePlaceholder)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .lineLimit(1)
+            }
+        }
+        .modifier(BodyStyle())
     }
 
     private struct BodyStyle: ViewModifier {

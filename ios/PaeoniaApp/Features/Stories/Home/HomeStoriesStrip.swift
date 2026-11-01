@@ -3,19 +3,20 @@ import SwiftUI
 /// The two partners at the top of Home. A ring around an avatar means there is a story
 /// from the last day: bright while the partner's is new to you, quiet once you opened it.
 /// Your own avatar opens your stories, and a separate button adds one. A thought bubble over an
-/// avatar holds that person's note, and your own bubble opens the note editor. The row's
-/// top is the top of a full two-line bubble, so the header can line it up with the streak.
+/// avatar holds that person's note, and your own bubble opens the note editor. Each marker
+/// reserves room for its note, decoration and one story action.
 struct HomeStoriesStrip: View {
     let viewModel: StoriesViewModel
     let people: StoryPeople
     var avatarSize: CGFloat = 72
     /// Places the two avatars itself, as the map does on Home. Nil lays them out in a row.
-    /// Placed avatars leave out the reserved bubble room and the names.
+    /// Placed avatars leave out the names.
     var arrange: ((_ own: AnyView, _ partner: AnyView) -> AnyView)?
     /// In the row, a view between the two avatars, centered on them, such as the heart.
     /// It overlaps each avatar by `middleOverlap`.
     var middle: AnyView?
     var middleOverlap: CGFloat = 0
+    var onMarkerMeasurements: (StoryMarkerMeasurements) -> Void = { _ in }
 
     @State private var viewer: StoryViewerContent?
     @State private var isComposing = false
@@ -26,10 +27,11 @@ struct HomeStoriesStrip: View {
     /// The viewer's Add button closes it first, then the composer opens.
     @State private var composesAfterViewer = false
     @State private var isStyling = false
+    @State private var ownMeasurements = StoryMarkerMeasurements()
+    @State private var partnerMeasurements = StoryMarkerMeasurements()
     @Environment(\.avatarStyling) private var avatarStyling
 
-    /// The plus on your avatar that adds a story.
-    private static let plusBadgeSize: CGFloat = 32
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// Center to center, wide enough that the two bubbles never touch, and narrow enough
     /// that the partner's bubble stays clear of the streak in the corner.
     private var avatarSpacing: CGFloat { StoryNoteBubble.maxWidth - avatarSize + PaeoniaSpacing.space8 }
@@ -38,6 +40,9 @@ struct HomeStoriesStrip: View {
         // Stories leave Home a day after they were posted, so the rings follow the clock.
         TimelineView(.everyMinute) { context in
             row(now: context.date)
+        }
+        .onChange(of: markerMeasurements) { _, measurements in
+            onMarkerMeasurements(measurements)
         }
         .fullScreenCover(item: $viewer, onDismiss: openComposerAfterViewer) { content in
             StoryViewer(
@@ -145,6 +150,12 @@ struct HomeStoriesStrip: View {
                     AnyView(ownView.frame(height: diameter, alignment: alignment)),
                     AnyView(partnerView.frame(height: diameter, alignment: alignment))
                 )
+            } else if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: PaeoniaSpacing.space24) {
+                    ownView
+                    partnerView
+                }
+                .frame(maxWidth: .infinity)
             } else {
                 HStack(alignment: .storyAvatarMiddle, spacing: middle == nil ? avatarSpacing : -middleOverlap) {
                     ownView
@@ -157,30 +168,22 @@ struct HomeStoriesStrip: View {
             }
         }
     }
+
+    private var markerMeasurements: StoryMarkerMeasurements {
+        var measurements = ownMeasurements
+        measurements.include(partnerMeasurements)
+        return measurements
+    }
 }
 
 extension HomeStoriesStrip {
     private func ownAvatar(_ stories: [Story], note: StoryNote?) -> some View {
-        VStack(spacing: 0) {
-            // Room for the tallest note above the avatar, so the row's top is the top of
-            // a full bubble, whoever has a note.
-            if arrange == nil {
-                StoryNoteBubble.tallestBody
-                    .padding(
-                        .bottom, (avatarStyling?.decorations.own ?? .none).noteClearance(photoSize: avatarSize)
-                    )
-            }
+        let decoration = avatarStyling?.decorations.own ?? .none
+        return VStack(spacing: 0) {
+            noteSpace(note?.text, decoration: decoration)
             ownAvatarButton(stories)
                 .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
-                .overlay(alignment: .bottomTrailing) {
-                    if (avatarStyling?.decorations.own ?? AvatarDecoration.none) == AvatarDecoration.none {
-                        addButton
-                    }
-                }
-                .overlay(alignment: .bottom) { ownStoryControls(stories) }
-                .storyNoteBubble(
-                    clearance: (avatarStyling?.decorations.own ?? .none).noteClearance(photoSize: avatarSize)
-                ) {
+                .storyNoteBubble(clearance: decoration.noteClearance(photoSize: avatarSize)) {
                     Button {
                         showNote(.edit(current: note), from: ownAvatarFrame)
                     } label: {
@@ -189,30 +192,32 @@ extension HomeStoriesStrip {
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text(ownNoteLabel(note)))
                 }
-
+            addButton
+                .padding(.top, actionClearance)
             if arrange == nil {
                 name(Text(.storiesHomeYourStory))
-                    .padding(.top, ownNameSpacing)
+                    .padding(.top, PaeoniaSpacing.space8)
             }
         }
+        .frame(width: markerWidth(decoration))
+        .fixedSize(horizontal: false, vertical: true)
+        .storyMarkerPart(.ownContent)
+        .measureStoryMarkers { ownMeasurements = $0 }
     }
 
-    private func ownStoryControls(_ stories: [Story]) -> some View {
-        let decoration = avatarStyling?.decorations.own ?? .none
-        return VStack(spacing: PaeoniaSpacing.space4) {
-            StoryStatusBadge(ring: stories.isEmpty ? .noStory : .seen, isOwn: true)
-            if decoration != .none {
-                decoratedAddButton
-            }
-        }
-        .padding(.top, max(0, avatarSize * decoration.outset - StoryRingAvatar.ringGap))
-        .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
+    private func markerWidth(_ decoration: AvatarDecoration) -> CGFloat {
+        max(StoryNoteBubble.maxWidth, avatarSize + 2 * max(StoryRingAvatar.ringGap, avatarSize * decoration.outset))
     }
 
-    private var ownNameSpacing: CGFloat {
-        let decoration = avatarStyling?.decorations.own ?? .none
-        return PaeoniaSpacing.space40 + (decoration == .none ? 0 :
-            PaeoniaSpacing.space32 + avatarSize * decoration.outset)
+    private var actionClearance: CGFloat {
+        let decorations = avatarStyling?.decorations ?? CoupleAvatarDecorations()
+        let outset = max(decorations.own.bottomOutset, decorations.partner.bottomOutset)
+        return max(0, avatarSize * outset - StoryRingAvatar.ringGap) + PaeoniaSpacing.space8
+    }
+
+    private func noteSpace(_ text: String?, decoration: AvatarDecoration) -> some View {
+        StoryNoteBubble.bodySpace(text: text)
+            .padding(.bottom, decoration.noteClearance(photoSize: avatarSize))
     }
 
     /// Opens your stories, or the composer when you have none.
@@ -232,6 +237,7 @@ extension HomeStoriesStrip {
                 size: avatarSize,
                 decoration: avatarStyling?.decorations.own ?? .none
             )
+            .storyMarkerPart(.ownPortrait)
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { ownAvatarFrame = $0 }
         }
         .buttonStyle(.plain)
@@ -247,13 +253,17 @@ extension HomeStoriesStrip {
         }
     }
 
-    private var decoratedAddButton: some View {
+    private var addButton: some View {
         Button {
             isComposing = true
         } label: {
             Label { Text(.storiesHomeAddButton) } icon: { Image(systemName: "plus") }
                 .modifier(StoryBadgeStyle())
-                .frame(minWidth: 44, minHeight: 44, alignment: .top)
+                .frame(
+                    minWidth: PaeoniaSpacing.compactButtonHeight,
+                    minHeight: PaeoniaSpacing.compactButtonHeight,
+                    alignment: .top
+                )
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -261,45 +271,17 @@ extension HomeStoriesStrip {
         .accessibilityIdentifier("stories.add")
     }
 
-    private var addButton: some View {
-        Button {
-            isComposing = true
-        } label: {
-            Image(systemName: "plus")
-                .accessibilityHidden(true)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: Self.plusBadgeSize, height: Self.plusBadgeSize)
-                .background(Circle().fill(.paeoniaBackgroundPrimary))
-                .overlay(Circle().strokeBorder(.paeoniaTextPrimary, lineWidth: 2))
-                // A bigger target than the badge looks.
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .offset(x: PaeoniaSpacing.space8, y: PaeoniaSpacing.space8)
-        .accessibilityLabel(Text(.storiesHomeAddAccessibility))
-        .accessibilityIdentifier("stories.add")
-    }
-
     private func partnerAvatar(_ stories: [Story], ring: StoryRingState, note: StoryNote?) -> some View {
-        VStack(spacing: 0) {
-            // Room for the tallest note above the avatar, so the row's top is the top of
-            // a full bubble, whoever has a note.
-            if arrange == nil {
-                StoryNoteBubble.tallestBody
-                    .padding(
-                        .bottom, (avatarStyling?.decorations.partner ?? .none).noteClearance(photoSize: avatarSize)
-                    )
+        let decoration = avatarStyling?.decorations.partner ?? .none
+        return VStack(spacing: 0) {
+            if let note {
+                noteSpace(note.text, decoration: decoration)
+            } else {
+                Color.clear.frame(height: decoration.noteClearance(photoSize: avatarSize))
             }
-            partnerAvatarButton(stories, ring: ring)
-                .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
-                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { partnerAvatarFrame = $0 }
-                .storyNoteBubble(
-                    clearance: (avatarStyling?.decorations.partner ?? .none).noteClearance(photoSize: avatarSize)
-                ) {
+            partnerAvatarButton(stories, ring: ring, decoration: decoration)
+                .storyNoteBubble(clearance: decoration.noteClearance(photoSize: avatarSize)) {
                     if let note {
-                        // Opens the whole note, which may be longer than the bubble shows.
                         Button {
                             showNote(.read(note), from: partnerAvatarFrame)
                         } label: {
@@ -311,51 +293,62 @@ extension HomeStoriesStrip {
                 }
             if arrange == nil {
                 name(Text(people.partnerName))
-                    .padding(.top, PaeoniaSpacing.space40)
+                    .padding(.top, PaeoniaSpacing.space8)
             }
         }
+        .frame(width: markerWidth(decoration))
+        .fixedSize(horizontal: false, vertical: true)
+        .storyMarkerPart(.partnerContent)
+        .measureStoryMarkers { partnerMeasurements = $0 }
     }
 
-    /// Opens the partner's stories. Without any, it is only the avatar.
+    /// The partner's portrait and action row form one story button.
     @ViewBuilder
-    private func partnerAvatarButton(_ stories: [Story], ring: StoryRingState) -> some View {
-        let avatar = StoryRingAvatar(
-            mediaAssetID: people.partnerPhotoAssetID,
-            name: people.partnerName,
-            tint: .paeoniaPartnerTwo,
-            ring: ring,
-            size: avatarSize,
-            decoration: avatarStyling?.decorations.partner ?? .none
-        )
-        .overlay(alignment: .bottom) {
-            StoryStatusBadge(ring: ring)
-                .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
+    private func partnerAvatarButton(
+        _ stories: [Story], ring: StoryRingState, decoration: AvatarDecoration
+    ) -> some View {
+        let content = VStack(spacing: 0) {
+            StoryRingAvatar(
+                mediaAssetID: people.partnerPhotoAssetID,
+                name: people.partnerName,
+                tint: .paeoniaPartnerTwo,
+                ring: ring,
+                size: avatarSize,
+                decoration: decoration
+            )
+            .storyMarkerPart(.partnerPortrait)
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { partnerAvatarFrame = $0 }
+            .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
+            StoryStatusBadge(ring: ring == .noStory ? .seen : ring)
+                .opacity(ring == .noStory ? 0 : 1)
+                .frame(minHeight: PaeoniaSpacing.compactButtonHeight, alignment: .top)
+                .padding(.top, actionClearance)
         }
+        .frame(width: markerWidth(decoration))
+        .contentShape(Rectangle())
         if stories.isEmpty {
-            avatar
+            content
                 .accessibilityLabel(Text(.storiesHomePartnerNoStory(people.partnerName)))
                 .accessibilityIdentifier("stories.partner.empty")
         } else {
             Button {
-                viewer = StoryViewerContent(
-                    stories: stories,
-                    startIndex: StoryTimeline.startIndex(in: stories),
-                    mode: .home
-                )
+                openPartnerStories(stories)
             } label: {
-                avatar
+                content
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("stories.partner")
             .accessibilityValue(Text(ring == .unseen ? .storiesBadgeNew : .storiesBadgeSeen))
-            .accessibilityLabel(
-                Text(
-                    ring == .unseen
-                        ? .storiesHomePartnerNewStory(people.partnerName)
-                        : .storiesHomePartnerStory(people.partnerName)
-                )
-            )
+            .accessibilityLabel(Text(
+                ring == .unseen
+                    ? .storiesHomePartnerNewStory(people.partnerName)
+                    : .storiesHomePartnerStory(people.partnerName)
+            ))
         }
+    }
+
+    private func openPartnerStories(_ stories: [Story]) {
+        viewer = StoryViewerContent(stories: stories, startIndex: StoryTimeline.startIndex(in: stories), mode: .home)
     }
 
     private func ownNoteLabel(_ note: StoryNote?) -> LocalizedStringResource {
@@ -370,8 +363,8 @@ extension HomeStoriesStrip {
         text
             .font(PaeoniaTypography.caption)
             .foregroundStyle(.paeoniaTextSecondary)
-            .lineLimit(1)
-            .frame(maxWidth: avatarSize + PaeoniaSpacing.space24)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             .accessibilityHidden(true)
     }
 
