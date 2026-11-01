@@ -64,8 +64,8 @@ describe("send_pairing_invite_reminders", () => {
     expect(reminder.payload).toEqual({
       type: "pairing_invite_reminder",
       invite_id: inviteId,
-      route: "home",
-      deeplink: "paeonia://home",
+      route: "us",
+      deeplink: "paeonia://us",
     });
     expect(reminder.title).toBeTruthy();
     expect(reminder.body).toBeTruthy();

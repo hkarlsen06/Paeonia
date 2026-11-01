@@ -201,7 +201,7 @@ describe("a subscription the payer stopped", () => {
     expect(partnerPush).toMatchObject({
       title: "Paeonia avsluttes om 5 dager",
       body: "Fram til da fungerer alt som vanlig.",
-      payload: { own_subscription: false, deeplink: "paeonia://home", ends_at: endsAtIso },
+      payload: { own_subscription: false, deeplink: "paeonia://us", ends_at: endsAtIso },
     });
     // The lock screen never says who stopped paying.
     expect(JSON.stringify(partnerPush)).not.toContain("First Partner");

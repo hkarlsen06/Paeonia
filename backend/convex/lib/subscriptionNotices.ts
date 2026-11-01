@@ -85,8 +85,8 @@ export async function queueAccessEndingPushes(ctx: WriterCtx, payerUserId: strin
       kind: "subscription_ending",
       payload: {
         type: "subscription_ending",
-        route: ownSubscription ? "subscription" : "home",
-        deeplink: ownSubscription ? "paeonia://settings/subscription" : "paeonia://home",
+        route: ownSubscription ? "subscription" : "us",
+        deeplink: ownSubscription ? "paeonia://settings/subscription" : "paeonia://us",
         ...(coupleId ? { couple_id: coupleId } : {}),
         ends_at: endsAt,
         days_left: daysLeft,

@@ -303,7 +303,7 @@ export function notificationAlertBody(
     case "memory_created":
       return nb ? "Se det blant minnene deres." : "See it in your memories.";
     case "story_posted":
-      return nb ? "Den ligger på Hjem i 24 timer." : "It's on Home for 24 hours.";
+      return nb ? "Den ligger i Oss-fanen i 24 timer." : "It's in the Us tab for 24 hours.";
     case "thread_message_sent":
       // Every chat push has the same shape and never names the topic, so a Flirt chat looks like any other.
       return nb ? "Sendte deg en melding" : "Sent you a message";

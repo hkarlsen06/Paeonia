@@ -334,14 +334,14 @@ describe("story_posted push", () => {
     expect(rows).toHaveLength(2);
     expect(new Set(rows.map((row) => row.recipient_user_id))).toEqual(new Set([couple.second.userId]));
     expect(rows.map((row) => row.title).sort()).toEqual(["First Partner delte en story", "First Partner shared a story"]);
-    expect(rows.map((row) => row.body).sort()).toEqual(["Den ligger på Hjem i 24 timer.", "It's on Home for 24 hours."]);
+    expect(rows.map((row) => row.body).sort()).toEqual(["Den ligger i Oss-fanen i 24 timer.", "It's in the Us tab for 24 hours."]);
     expect(rows[0].payload).toEqual({
       type: "story_posted",
       expires_at: "2026-10-11T12:00:00.000Z",
       couple_id: couple.coupleId,
       story_id: story.storyId,
       actor_user_id: couple.first.userId,
-      route: "home",
+      route: "us",
       deeplink: `paeonia://stories/story?storyId=${story.storyId}`,
     });
     expect(JSON.stringify(rows)).not.toContain("Secret caption");

@@ -68,7 +68,7 @@ describe("the anniversary and milestones", () => {
     expect(plan({ today: "2026-10-21", started_on: "2026-07-13" })[0]).toMatchObject({
       extra: { milestone: "days", days: 100 },
     });
-    // The other months of the first year stay on the Home tab.
+    // The other months of the first year stay on the Us tab.
     expect(kinds({ today: "2026-10-21", started_on: "2026-08-21" })).toEqual([]);
   });
 

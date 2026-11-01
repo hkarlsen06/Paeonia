@@ -136,7 +136,7 @@ function english(input: ReadmeInput): string {
     "",
     "## Your rights",
     "",
-    "You can ask us to correct your data, delete it, limit how we use it, or stop using it. You can take back a consent you gave. You can open Us, then Privacy and safety, in the app to ask for a correction, to turn off usage statistics, and to delete your account. You can also write to contact@paeonia.no. We answer within a month.",
+    "You can ask us to correct your data, delete it, limit how we use it, or stop using it. You can take back a consent you gave. You can open the More tab, then Privacy and safety, in the app to ask for a correction, to turn off usage statistics, and to delete your account. You can also write to contact@paeonia.no. We answer within a month.",
     "",
     "If you think we handle your data wrongly, you can complain to the Norwegian Data Protection Authority, Datatilsynet (www.datatilsynet.no), or to the authority in the country where you live.",
     "",

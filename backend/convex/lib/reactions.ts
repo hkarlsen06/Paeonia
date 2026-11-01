@@ -276,7 +276,7 @@ function reactionLink(
     case "widget_drawing":
       return { route: "widget", deeplink: "paeonia://widget/drawing" };
     default:
-      return { route: "home", deeplink: storyDeepLink(targetId) };
+      return { route: "us", deeplink: storyDeepLink(targetId) };
   }
 }
 

@@ -20,7 +20,7 @@ import { topicsWaitingCount } from "./topics";
 // tab explains. The tabs ignore the Notifications switches, since those turn off pushes and not
 // what the app shows.
 
-/** How long a story stays on Home, so how long an unseen one counts. */
+/** How long a story stays on the Us tab, so how long an unseen one counts. */
 const STORY_BADGE_MS = 24 * 60 * 60 * 1000;
 /** A badge-only push waits this long, so a burst of reads sends one number. */
 const BADGE_UPDATE_DELAY_MS = 30 * 1000;
@@ -33,13 +33,13 @@ export type BadgeCounts = {
   questions: number;
   /** Games that wait on this person, and open invites. */
   games: number;
-  /** The partner's stories still on Home that this person has not opened. */
-  home: number;
+  /** The partner's stories still on the Us tab that this person has not opened. */
+  us: number;
   /** The tabs' items of the kinds whose alerts are on in Notifications. */
   icon: number;
 };
 
-const NO_BADGES: BadgeCounts = { questions: 0, games: 0, home: 0, icon: 0 };
+const NO_BADGES: BadgeCounts = { questions: 0, games: 0, us: 0, icon: 0 };
 
 /** What waits for `userId`. All zero without an entitled couple. */
 export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: string = nowIso()): Promise<BadgeCounts> {
@@ -66,7 +66,7 @@ export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: st
     // The Questions tab lists every chat: a question's, a memory's and a story's.
     questions: chats + answers,
     games,
-    home: stories,
+    us: stories,
     icon,
   };
 }
@@ -137,7 +137,7 @@ async function answersWaiting(ctx: ReaderCtx, coupleId: string, userId: string, 
   return count;
 }
 
-/** The partner's stories still on Home that this person has not opened. */
+/** The partner's stories still on the Us tab that this person has not opened. */
 async function unseenStories(ctx: ReaderCtx, coupleId: string, userId: string, now: string): Promise<number> {
   const stories = await ctx.db
     .query("stories")

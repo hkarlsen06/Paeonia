@@ -268,7 +268,7 @@ describe("accept_pairing_invite with a first day draft", () => {
         recipient_user_id: creator.userId,
         title: "Partner joined you",
         body: "See your first day together.",
-        payload: expect.objectContaining({ couple_id: coupleId, deeplink: "paeonia://home" }),
+        payload: expect.objectContaining({ couple_id: coupleId, deeplink: "paeonia://us" }),
       }),
     ]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);

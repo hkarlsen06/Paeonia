@@ -82,7 +82,7 @@ const DAY_MILESTONE_STRIDE = 1_000;
 /**
  * The milestone the couple reaches on `today`, if any. This is the part of the app's milestone
  * schedule worth a push: the first month, half a year, every anniversary and the round day counts
- * (100, 500, then every 1,000th). The other months of the first year show on the Home tab but do
+ * (100, 500, then every 1,000th). The other months of the first year show on the Us tab but do
  * not send a push. When two fall on the same day the anniversary wins over half a year, which wins
  * over the first month, which wins over a day count, like the app's tie-break.
  */

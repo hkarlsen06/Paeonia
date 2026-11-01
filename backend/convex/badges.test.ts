@@ -52,17 +52,17 @@ describe("get_badges", () => {
   test("is zero for someone without a couple", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
-    expect(await user.as.query(api.badges.get_badges, {})).toEqual({ questions: 0, games: 0, home: 0, icon: 0 });
+    expect(await user.as.query(api.badges.get_badges, {})).toEqual({ questions: 0, games: 0, us: 0, icon: 0 });
   });
 
   test("counts the partner's unseen story for the partner only, until it is opened", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     const storyId = await postStory(t, couple);
-    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ home: 1, icon: 1 });
-    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ home: 0, icon: 0 });
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ us: 1, icon: 1 });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ us: 0, icon: 0 });
     await couple.second.as.mutation(api.stories.mark_story_seen, { p_story_id: storyId });
-    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ home: 0, icon: 0 });
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ us: 0, icon: 0 });
   });
 
   test("counts a memory comment on Questions until it is read", async () => {
@@ -72,7 +72,7 @@ describe("get_badges", () => {
     expect(await couple.first.as.query(api.badges.get_badges, {})).toEqual({
       questions: 1,
       games: 0,
-      home: 0,
+      us: 0,
       icon: 1,
     });
     expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0, icon: 0 });
@@ -92,7 +92,7 @@ describe("get_badges", () => {
     expect(await couple.first.as.query(api.badges.get_badges, {})).toEqual({
       questions: 1,
       games: 0,
-      home: 0,
+      us: 0,
       icon: 1,
     });
     await couple.first.as.mutation(api.chatPresence.mark_thread_read, {
@@ -121,7 +121,7 @@ describe("get_badges", () => {
       p_column: "memories_enabled",
       p_enabled: false,
     });
-    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ home: 1, icon: 0 });
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ us: 1, icon: 0 });
   });
 });
 

@@ -16,7 +16,7 @@ import { roomName, verifyTicket } from "./ticket.ts";
  * widget canvas room, and one room for each game channel in the ticket. The room
  * forwards every message from one socket to the other person's sockets as is,
  * and never stores or reads the drawing. The app owns the message format.
- * Sockets of the same user (the Home tab and the canvas on one phone) never
+ * Sockets of the same user (the Us tab and the canvas on one phone) never
  * hear from each other. A socket past its 10-minute session hears nothing more: the room
  * closes it before forwarding to it, and an alarm closes it when the room is quiet.
  */

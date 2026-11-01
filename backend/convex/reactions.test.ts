@@ -300,7 +300,7 @@ describe("the push for a first reaction", () => {
       target_id: story,
       emoji: "❤️",
       actor_user_id: couple.second.userId,
-      route: "home",
+      route: "us",
       deeplink: `paeonia://stories/story?storyId=${story}`,
     });
 

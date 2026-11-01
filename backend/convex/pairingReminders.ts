@@ -62,8 +62,8 @@ async function remindInviter(ctx: MutationCtx, invite: Doc<"pairing_invites">, n
       type: "pairing_invite_reminder",
       invite_id: invite.id,
       // An inviter without a couple has the invite screen as the app's root, so Home lands there.
-      route: "home",
-      deeplink: "paeonia://home",
+      route: "us",
+      deeplink: "paeonia://us",
     },
     dedupe_key: `pairing_invite_reminder:${invite.id}`,
     redaction_level: "private",

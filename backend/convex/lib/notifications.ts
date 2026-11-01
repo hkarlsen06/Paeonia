@@ -573,7 +573,7 @@ export async function enqueueStoryPostedNotification(ctx: WriterCtx, story: Doc<
       story_id: story.id,
       expires_at: addMs(story.created_at, 86_400_000),
       actor_user_id: story.author_user_id,
-      route: "home",
+      route: "us",
       deeplink: storyDeepLink(story.id),
     },
     dedupe_key: `story_posted:${story.id}`,
