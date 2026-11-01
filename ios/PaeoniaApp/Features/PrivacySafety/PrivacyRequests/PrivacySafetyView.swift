@@ -37,11 +37,6 @@ struct PrivacySafetyView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                Text(introduction)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
                 privacyRequestsSection
 
                 if let usageSharing, PaeoniaAnalytics.isAvailable, usageSharing.userID != nil {
@@ -79,10 +74,6 @@ struct PrivacySafetyView: View {
         .sheet(isPresented: $isShowingCorrectionRequest) {
             PrivacyCorrectionRequestView(viewModel: viewModel)
         }
-    }
-
-    private var introduction: LocalizedStringResource {
-        partnerUserID == nil ? .privacySafetyIntroductionDataOnly : .privacySafetyIntroduction
     }
 
     private var privacyRequestsSection: some View {
