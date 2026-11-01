@@ -31,7 +31,7 @@ struct GameConversationButton: View {
 
     var body: some View {
         if context.isAvailable, context.openGameChat != nil {
-            button.buttonStyle(.plain)
+            button
         }
     }
 
