@@ -332,7 +332,8 @@ extension WidgetDrawingViewModel {
                 authorName: authorName,
                 createdAt: savedAt,
                 revisionID: nil,
-                accessibilityText: uploadPayload.accessibilityText
+                accessibilityText: uploadPayload.accessibilityText,
+                publicationID: uploadPayload.publicationID
             )
         } catch {
             await uploader.restorePending(previousPending, replacing: uploadPayload)

@@ -9,11 +9,8 @@ struct FirstDayDrawingUploadServiceTests {
         let gateway = FirstDayGatewaySpy()
         await gateway.holdNextDrawing()
         let (service, pending) = makeService(gateway: gateway, defaults: try firstDayTestDefaults())
-        var staged = firstDayPayload()
-        staged.accessibilityText = "A circle"
-        let first = staged
-        staged.accessibilityText = "The sun above our house"
-        let second = staged
+        let first = widgetPublicationTestPayload(copying: firstDayPayload(), description: "A circle")
+        let second = widgetPublicationTestPayload(copying: first, description: "The sun above our house")
         _ = await service.markPending(first)
         let retry = Task { await service.send(first) }
         while !(await gateway.isDrawingHeld) { await Task.yield() }

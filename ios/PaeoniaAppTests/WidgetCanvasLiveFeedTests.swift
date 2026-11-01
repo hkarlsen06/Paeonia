@@ -40,7 +40,8 @@ struct WidgetCanvasLiveFeedTests {
         let revision = UUID()
         try await service.saveDescribedDrawing(makeNonEmptyDrawing().dataRepresentation(),
                                                canvasSize: CGSize(width: 320, height: 320), authorName: "Partner",
-                                               createdAt: Date(), revisionID: revision, accessibilityText: "Original")
+                                               createdAt: Date(), revisionID: revision, accessibilityText: "Original",
+                                               publicationID: nil)
         let before = try files.decodePayload()
         let env = Env(me: me, couple: couple, descriptions: service)
         env.lastSynced.mutate { $0 = revision.uuidString }

@@ -17,7 +17,7 @@ struct WidgetDrawingDescriptionCorrectionTests {
         let drawing = makeNonEmptyDrawing().dataRepresentation()
         try await service.saveDescribedDrawing(drawing, canvasSize: CGSize(width: 320, height: 320),
                                                authorName: "Alex", createdAt: Date(), revisionID: revision,
-                                               accessibilityText: "Original")
+                                               accessibilityText: "Original", publicationID: nil)
         try await service.updateDescription(.remote(text: "Original", version: 1_000),
                                              revisionID: revision, privacyToken: token)
         let before = try environment.decodePayload()
@@ -50,7 +50,8 @@ struct WidgetDrawingDescriptionCorrectionTests {
         let data = makeNonEmptyDrawing().dataRepresentation()
         try await service.saveDescribedDrawing(data, canvasSize: CGSize(width: 320, height: 320),
                                                authorName: "Alex", createdAt: Date(timeIntervalSince1970: 1),
-                                               revisionID: revision, accessibilityText: "Original sun")
+                                               revisionID: revision, accessibilityText: "Original sun",
+                                               publicationID: nil)
         try await service.updateDescription(.remote(text: "Original sun", version: 1_000),
                                          revisionID: revision, privacyToken: token)
         // The widget's network read finishes before the app queues an offline correction.
@@ -97,7 +98,8 @@ struct WidgetDrawingDescriptionCorrectionTests {
         let revision = UUID()
         try await service.saveDescribedDrawing(makeNonEmptyDrawing().dataRepresentation(),
                                                canvasSize: CGSize(width: 320, height: 320), authorName: "Alex",
-                                               createdAt: Date(), revisionID: revision, accessibilityText: "Original")
+                                               createdAt: Date(), revisionID: revision, accessibilityText: "Original",
+                                               publicationID: nil)
         let older = UUID()
         let latest = UUID()
         try await service.updateDescription(.queued(text: "Newer correction", operationID: latest),

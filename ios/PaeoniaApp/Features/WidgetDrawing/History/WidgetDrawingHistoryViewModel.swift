@@ -133,13 +133,19 @@ final class WidgetDrawingHistoryViewModel {
         let token = LocalPrivacyWriteGuard.shared.token(ownerUserID: owner)
         for item in items where item.isMine {
             let target = MediaAlternativeTarget.widgetDrawing(revisionID: item.id)
-            let pending = try? await service.pendingEdit(ownerUserID: owner, coupleID: couple, target: target)
+            let pending: PendingMediaAlternative?
+            do {
+                pending = try await service.pendingEdit(ownerUserID: owner, coupleID: couple, target: target)
+            } catch {
+                // A failed outbox read cannot establish that a correction completed.
+                continue
+            }
             guard generation == descriptionsGeneration, !Task.isCancelled,
                   LocalPrivacyWriteGuard.shared.isCurrent(token) else { return }
-            guard let index = items.firstIndex(where: { $0.id == item.id }) else { continue }
+            guard items.contains(where: { $0.id == item.id }) else { continue }
             if let pending {
                 pendingDescriptionOperations[item.id] = pending.operationID
-                items[index].accessibilityText = pending.text.trimmedNonEmpty
+                // The row's editor owns the pending overlay. Keep the server text and version together.
             } else if pendingDescriptionOperations.removeValue(forKey: item.id) != nil {
                 let accepted = await MediaAlternativeCacheWrites.shared.acceptedWidgetDescription(
                     ownerUserID: owner, target: target

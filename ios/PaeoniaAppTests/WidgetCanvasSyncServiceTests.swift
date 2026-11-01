@@ -422,7 +422,7 @@ private nonisolated final class SyncLocalStoreSpy: WidgetCanvasManaging, @unchec
     func isShowingSavedDrawing() -> Bool { isShowingDrawing }
     func saveDescribedDrawing(
         _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
-        revisionID _: UUID?, accessibilityText: String?
+        revisionID _: UUID?, accessibilityText: String?, publicationID _: UUID?
     ) {
         savedCalls.append(
             SaveCall(

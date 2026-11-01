@@ -292,6 +292,7 @@ final class WelcomeFlowModel {
             return
         }
         let side = snapshot.canvasSide ?? CGFloat(pending.canvasSide)
+        let publication = pending.uploadPayload(with: snapshot.drawingData)
         do {
             try await widgetCanvas.saveDescribedDrawing(
                 snapshot.drawingData,
@@ -299,13 +300,14 @@ final class WelcomeFlowModel {
                 authorName: snapshot.authorName,
                 createdAt: snapshot.createdAt ?? pending.markedAt,
                 revisionID: nil,
-                accessibilityText: pending.accessibilityText
+                accessibilityText: pending.accessibilityText,
+                publicationID: publication.publicationID
             )
         } catch {
             return
         }
         widgetPendingUploads.markPending(
-            pending.uploadPayload(with: snapshot.drawingData),
+            publication,
             contentHash: pending.contentHash,
             isFirstDay: true
         )

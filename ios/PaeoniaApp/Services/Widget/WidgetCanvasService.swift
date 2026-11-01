@@ -142,7 +142,8 @@ actor WidgetCanvasService: WidgetCanvasManaging {
                 canvasSize: canvasSize,
                 authorName: authorName,
                 createdAt: createdAt,
-                serverRevisionID: nil
+                serverRevisionID: nil,
+                localPublicationID: UUID()
             )
         )
     }
@@ -160,18 +161,20 @@ actor WidgetCanvasService: WidgetCanvasManaging {
                 canvasSize: canvasSize,
                 authorName: authorName,
                 createdAt: createdAt,
-                serverRevisionID: revisionID.uuidString.lowercased()
+                serverRevisionID: revisionID.uuidString.lowercased(),
+                localPublicationID: nil
             )
         )
     }
 
     func saveDescribedDrawing(
         _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
-        revisionID: UUID?, accessibilityText: String?
+        revisionID: UUID?, accessibilityText: String?, publicationID: UUID?
     ) async throws {
         try await publish(WidgetCanvasPublication(
             drawingData: drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt,
-            serverRevisionID: revisionID?.uuidString.lowercased(), accessibilityText: accessibilityText
+            serverRevisionID: revisionID?.uuidString.lowercased(), localPublicationID: publicationID,
+            accessibilityText: accessibilityText
         ))
     }
 

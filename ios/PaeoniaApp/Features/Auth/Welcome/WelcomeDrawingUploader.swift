@@ -20,13 +20,11 @@ actor WelcomeDrawingUploader: WidgetCanvasUploading {
     }
 
     func markPending(_ payload: WidgetDrawingUploadPayload) -> WidgetPendingUploadSnapshot? {
-        let previous = pendingStore.pendingSnapshot
         pendingStore.markPending(
             payload,
             contentHash: WidgetCanvasUploadService.sha256Hex(of: payload.drawingData),
             isFirstDay: true
         )
-        return previous
     }
 
     func restorePending(_ previous: WidgetPendingUploadSnapshot?, replacing payload: WidgetDrawingUploadPayload) {

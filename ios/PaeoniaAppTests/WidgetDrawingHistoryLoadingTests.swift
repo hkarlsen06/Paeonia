@@ -8,6 +8,53 @@ import Testing
 /// First-page, newest-page, and older-page loads that fail or overlap in time.
 @MainActor
 struct WidgetDrawingHistoryLoadingTests {
+    @Test(arguments: [Optional("A newer server description"), nil])
+    func pendingOverlayDoesNotChangeTheNewerServerTextOrVersion(newerText: String?) async throws {
+        let owner = UUID()
+        let couple = UUID()
+        let revision = UUID()
+        let summary = makeSummary(createdAt: date(100), revisionID: revision, description: newerText,
+                                  version: 1_002, authorUserID: owner)
+        let gateway = GatedListGateway(canvasState: makeState(coupleID: couple), heldCall: Int.max,
+                                      otherPages: [[summary]])
+        let history = WidgetDrawingHistoryViewModel(
+            gateway: gateway,
+            identity: WidgetSyncIdentity(currentUserID: owner, currentDisplayName: "Alex", partnerDisplayName: "Robin")
+        )
+        await history.loadInitialIfNeeded()
+        let store = try PaeoniaLocalStore(inMemory: true)
+        let pending = SwiftDataPendingSyncOperationRepository(container: store.container)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = MediaAlternativeCacheUpdater(
+            chat: FileThreadChatCache(directoryURL: directory.appendingPathComponent("chat")),
+            stories: FileStoriesCache(directoryURL: directory.appendingPathComponent("stories")),
+            daily: FileDailyChallengeSnapshotCache(directoryURL: directory.appendingPathComponent("daily"))
+        )
+        let service = MediaAlternativeEditingService(pending: pending, cache: cache)
+        let operation = SyncClientOperation(clientID: UUID(), clientSequence: 1, localCreatedAt: Date())
+        let target = MediaAlternativeTarget.widgetDrawing(revisionID: revision)
+        let edit = MediaAlternativeEdit(coupleID: couple, target: target, text: "Older correction A")
+        let stamp = await cache.stamp(ownerUserID: owner)
+        try await service.queue(edit, ownerUserID: owner, operation: operation, stamp: stamp)
+        let context = ThreadChatContext(
+            coupleID: couple, participants: DailyChallengeParticipants(currentUserID: owner)
+        )
+        let reader = MediaAlternativeEditorModel(target: target, context: context, service: service)
+        await reader.prepare()
+        await history.refreshDescriptions(service: service, context: context)
+        #expect(history.items.first?.accessibilityText == newerText)
+        try await cache.apply(edit, ownerUserID: owner, operation: operation,
+                              stamp: stamp, widgetRevisionVersion: 1_001)
+        try await pending.markSucceeded(clientOperationID: operation.id, at: Date())
+        await history.refreshDescriptions(service: service, context: context)
+        await reader.reloadPending()
+        let item = try #require(history.items.first)
+        #expect(item.accessibilityText == newerText)
+        #expect(item.descriptionVersion == 1_002)
+        #expect(reader.displayedText(source: item.accessibilityText, version: item.descriptionVersion) == newerText)
+    }
+
     // MARK: - Newest page
 
     @Test func refreshNewestReloadsWhenAFullPageOfNewDrawingsArrives() async {
@@ -172,10 +219,10 @@ struct WidgetDrawingHistoryLoadingTests {
     }
 
     private func makeSummary(createdAt: Date, revisionID: UUID = UUID(), description: String? = nil,
-                             version: Int64? = nil) -> WidgetDrawingRevisionSummary {
+                             version: Int64? = nil, authorUserID: UUID = UUID()) -> WidgetDrawingRevisionSummary {
         WidgetDrawingRevisionSummary(
             revisionID: revisionID,
-            authorUserID: UUID(),
+            authorUserID: authorUserID,
             payloadMediaAssetID: UUID(),
             bounds: WidgetDrawingBounds(x: 0, y: 0, width: 10, height: 10, canvasSide: 320,
                                         accessibilityText: description),

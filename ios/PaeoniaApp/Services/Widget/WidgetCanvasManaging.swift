@@ -16,7 +16,7 @@ nonisolated struct WidgetCanvasSnapshot: Sendable, Equatable {
 /// The publication and privacy state before its upload starts. A late response
 /// cannot attach a server revision to a newer local drawing or a new session.
 nonisolated struct WidgetCanvasPublicationTicket: Sendable {
-    let publicationID: String
+    let publicationID: UUID
     let generations: WidgetCanvasGenerations
     let privacyEpoch: Int
 }
@@ -54,7 +54,7 @@ nonisolated protocol WidgetCanvasManaging: Sendable {
 
     func saveDescribedDrawing(
         _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
-        revisionID: UUID?, accessibilityText: String?
+        revisionID: UUID?, accessibilityText: String?, publicationID: UUID?
     ) async throws
 
     func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) async -> WidgetCanvasPublicationTicket
@@ -100,7 +100,7 @@ extension WidgetCanvasManaging {
     ) async throws {
         try await saveDescribedDrawing(
             drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt,
-            revisionID: revisionID, accessibilityText: nil
+            revisionID: revisionID, accessibilityText: nil, publicationID: nil
         )
     }
 
@@ -109,7 +109,7 @@ extension WidgetCanvasManaging {
     ) async throws {
         try await saveDescribedDrawing(
             drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt,
-            revisionID: nil, accessibilityText: nil
+            revisionID: nil, accessibilityText: nil, publicationID: UUID()
         )
     }
 }

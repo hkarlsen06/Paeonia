@@ -12,11 +12,8 @@ struct WidgetCanvasUploadServiceTests {
             gateway: gateway, operationFactory: WidgetCanvasOperationFactorySpy(), pendingStore: pendingStore,
             localStore: WidgetCanvasServiceSpy()
         )
-        var staged = Self.samplePayload
-        staged.accessibilityText = "A circle"
-        let first = staged
-        staged.accessibilityText = "The sun above our house"
-        let second = staged
+        let first = widgetPublicationTestPayload(copying: Self.samplePayload, description: "A circle")
+        let second = widgetPublicationTestPayload(copying: first, description: "The sun above our house")
         _ = await service.markPending(first)
         let retry = Task { await service.send(first) }
         while !gateway.isSubmitHeld { await Task.yield() }
@@ -307,6 +304,8 @@ nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked 
     var conflictOnFirstSubmit = false
     var failSubmit = false
     var holdFirstSubmit = false
+    var holdFirstReserve = false
+    var holdFirstFinalize = false
     /// Like a network request, the first submit waits until its task is cancelled.
     var hangFirstSubmitUntilCancelled = false
     /// The server applies the first submit, but the response never arrives.
@@ -321,7 +320,11 @@ nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked 
     private var submittedRevisions: [UUID: WidgetDrawingRevisionResult] = [:]
     var beforeReturningSubmit: (@Sendable () throws -> Void)?
     private var heldSubmit: CheckedContinuation<Void, Never>?
+    private var heldReserve: CheckedContinuation<Void, Never>?
+    private var heldFinalize: CheckedContinuation<Void, Never>?
     private(set) var isSubmitHeld = false
+    private(set) var isReserveHeld = false
+    private(set) var isFinalizeHeld = false
 
     struct ReserveCall { let coupleID: UUID; let canvasID: UUID; let revisionID: UUID }
     struct UploadCall { let reservation: MediaUploadReservation; let payloadData: Data }
@@ -347,7 +350,7 @@ nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked 
         canvasID: UUID,
         revisionID: UUID,
         operation: WidgetCanvasClientOperation
-    ) throws -> MediaUploadReservation {
+    ) async throws -> MediaUploadReservation {
         callOrder.append("reserve")
         reserveCalls.append(ReserveCall(coupleID: coupleID, canvasID: canvasID, revisionID: revisionID))
         reserveOperationIDs.append(operation.id)
@@ -357,6 +360,9 @@ nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked 
         let assetID = reservedAssetIDs[operation.id] ?? UUID()
         reservedAssetIDs[operation.id] = assetID
         revisionsByAsset[assetID] = revisionID
+        if holdFirstReserve, reserveCalls.count == 1 {
+            await withCheckedContinuation { heldReserve = $0; isReserveHeld = true }
+        }
         return MediaUploadReservation(
             mediaAssetID: assetID,
             bucket: "widget-drawings",
@@ -377,9 +383,12 @@ nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked 
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput,
         operation: WidgetCanvasClientOperation
-    ) -> FinalizedMediaUploadResponse {
+    ) async -> FinalizedMediaUploadResponse {
         callOrder.append("finalize")
         finalizeInputs.append(input)
+        if holdFirstFinalize, finalizeInputs.count == 1 {
+            await withCheckedContinuation { heldFinalize = $0; isFinalizeHeld = true }
+        }
         return FinalizedMediaUploadResponse(mediaAssetID: input.reservation.mediaAssetID, uploadStatus: "finalized")
     }
 
@@ -424,6 +433,18 @@ nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked 
     func releaseHeldSubmit() {
         heldSubmit?.resume()
         heldSubmit = nil
+    }
+
+    func releaseHeldReserve() {
+        heldReserve?.resume()
+        heldReserve = nil
+        isReserveHeld = false
+    }
+
+    func releaseHeldFinalize() {
+        heldFinalize?.resume()
+        heldFinalize = nil
+        isFinalizeHeld = false
     }
 
     func getCanvasState() -> WidgetCanvasState? { nil }

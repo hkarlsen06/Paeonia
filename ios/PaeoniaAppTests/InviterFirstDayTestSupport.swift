@@ -128,7 +128,7 @@ actor FirstDayCanvasFake {
 
     func saveDescribedDrawing(
         _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
-        revisionID _: UUID?, accessibilityText: String?
+        revisionID _: UUID?, accessibilityText: String?, publicationID _: UUID?
     ) {
         saveDrawing(data, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
         self.accessibilityText = accessibilityText

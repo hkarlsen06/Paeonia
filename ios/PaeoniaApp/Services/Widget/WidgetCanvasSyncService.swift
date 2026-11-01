@@ -299,7 +299,8 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
             authorName: authorName,
             createdAt: state.revisionCreatedAt ?? Date(),
             revisionID: revisionID,
-            accessibilityText: state.bounds?.accessibilityText
+            accessibilityText: state.bounds?.accessibilityText,
+            publicationID: nil
         )
 
         try Task.checkCancellation()

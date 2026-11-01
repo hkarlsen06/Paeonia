@@ -20,7 +20,7 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
     var schemaVersion = WidgetSharePayload.currentSchemaVersion
     var revisionID: String
     /// Identifies the exact local publication independently of later description corrections.
-    var localPublicationID: String?
+    var localPublicationID: UUID?
     /// Display name of whoever saved this drawing, shown on the widget. This is
     /// the only identity detail in the payload; keep other private content out.
     let authorName: String?
@@ -77,6 +77,8 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
 nonisolated enum WidgetDrawingDescriptionUpdate: Sendable {
     case queued(text: String, operationID: UUID)
     case accepted(text: String?, version: Int64, operationID: UUID)
+    /// The outbox and ordered cache writer verified that this is the latest durable operation.
+    case acceptedLatestPending(text: String?, version: Int64, operationID: UUID)
     case remote(text: String?, version: Int64)
 }
 
@@ -123,6 +125,13 @@ nonisolated extension WidgetSharePayload {
             descriptionVersion = deferredDescription.version
             pendingDescriptionOperationID = nil
             self.deferredDescription = nil
+        case let .acceptedLatestPending(text, version, operationID):
+            // An optimistic write may have failed after the operation reached the outbox.
+            // Restore that overlay inside this same atomic write before completing it.
+            if pendingDescriptionOperationID != operationID {
+                applyDescription(.queued(text: text ?? "", operationID: operationID))
+            }
+            applyDescription(.accepted(text: text, version: version, operationID: operationID))
         case let .remote(text, version):
             rememberServerDescription(text, version: version)
         }

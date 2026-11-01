@@ -1,20 +1,8 @@
 import CoreGraphics
-import CryptoKit
 import Foundation
 
-nonisolated enum WidgetDrawingPublication {
-    static func id(drawingData: Data, canvasSide: Double, accessibilityText: String?) -> String {
-        id(contentHash: SHA256.hash(data: drawingData).paeoniaHexString,
-           canvasSide: canvasSide, accessibilityText: accessibilityText)
-    }
-
-    static func id(contentHash: String, canvasSide: Double, accessibilityText: String?) -> String {
-        let identity = [contentHash, String(canvasSide.bitPattern), accessibilityText ?? ""].joined(separator: "\0")
-        return SHA256.hash(data: Data(identity.utf8)).paeoniaHexString
-    }
-}
-
 nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
+    let publicationID: UUID
     let contentHash: String
     let markedAt: Date
     var lastAttemptAt: Date?
@@ -33,12 +21,6 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
     /// no couple, so an ended relationship's purge keeps it (`LocalPrivacyPurgeService`).
     let isFirstDay: Bool
 
-    var publicationID: String {
-        WidgetDrawingPublication.id(
-            contentHash: contentHash, canvasSide: canvasSide, accessibilityText: accessibilityText
-        )
-    }
-
     init(
         contentHash: String,
         markedAt: Date,
@@ -46,6 +28,7 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
         payload: WidgetDrawingUploadPayload,
         isFirstDay: Bool = false
     ) {
+        publicationID = payload.publicationID
         self.accessibilityText = payload.accessibilityText
         self.contentHash = contentHash
         self.markedAt = markedAt
@@ -72,7 +55,8 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
                 width: boundsWidth,
                 height: boundsHeight
             ),
-            accessibilityText: accessibilityText
+            accessibilityText: accessibilityText,
+            publicationID: publicationID
         )
     }
 }
@@ -81,10 +65,13 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
 /// confirmed on the server yet. While something is pending, a sync must not pull
 /// a (possibly older) server revision over the newer un-sent local work.
 ///
-/// Keyed by content hash so a later save supersedes an earlier one cleanly, and
-/// a confirmed upload only clears the entry if it still matches.
+/// Each send has its own identity, even when its bytes and description match an
+/// earlier send. A late callback can change only the marker for its own send.
 nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
     nonisolated static let shared = WidgetPendingUploadStore()
+    /// Several service actors and store instances share the same defaults key.
+    /// Keep their read, identity check and write in one critical section.
+    private static let lock = NSLock()
 
     private let defaults: UserDefaults
     private let key: String
@@ -104,10 +91,14 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
     }
 
     var hasPending: Bool {
-        defaults.data(forKey: key) != nil
+        Self.lock.withLock { defaults.data(forKey: key) != nil }
     }
 
     var pendingSnapshot: WidgetPendingUploadSnapshot? {
+        Self.lock.withLock { readSnapshotUnlocked() }
+    }
+
+    private func readSnapshotUnlocked() -> WidgetPendingUploadSnapshot? {
         guard let data = defaults.data(forKey: key) else {
             return nil
         }
@@ -115,12 +106,13 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
         return try? JSONDecoder().decode(WidgetPendingUploadSnapshot.self, from: data)
     }
 
+    @discardableResult
     func markPending(
         _ payload: WidgetDrawingUploadPayload,
         contentHash: String,
         isFirstDay: Bool = false,
         at date: Date = Date()
-    ) {
+    ) -> WidgetPendingUploadSnapshot? {
         let snapshot = WidgetPendingUploadSnapshot(
             contentHash: contentHash,
             markedAt: date,
@@ -128,8 +120,14 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
             payload: payload,
             isFirstDay: isFirstDay
         )
-        if let data = try? JSONEncoder().encode(snapshot) {
-            defaults.set(data, forKey: key)
+        return Self.lock.withLock {
+            let previous = readSnapshotUnlocked()
+            // Re-marking a retry must retain its operations and retry clock.
+            guard previous?.publicationID != payload.publicationID else { return previous }
+            if let data = try? JSONEncoder().encode(snapshot) {
+                defaults.set(data, forKey: key)
+            }
+            return previous
         }
     }
 
@@ -141,49 +139,50 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
         return now.timeIntervalSince(lastAttemptAt) >= retryDelay
     }
 
-    func recordAttempt(_ publicationID: String, at date: Date = Date()) {
-        guard var snapshot = pendingSnapshot, snapshot.publicationID == publicationID else {
-            return
-        }
-
-        snapshot.lastAttemptAt = date
-        if let data = try? JSONEncoder().encode(snapshot) {
-            defaults.set(data, forKey: key)
+    func recordAttempt(_ publicationID: UUID, at date: Date = Date()) {
+        Self.lock.withLock {
+            guard var snapshot = readSnapshotUnlocked(), snapshot.publicationID == publicationID else { return }
+            snapshot.lastAttemptAt = date
+            if let data = try? JSONEncoder().encode(snapshot) {
+                defaults.set(data, forKey: key)
+            }
         }
     }
 
     /// Saves (or, with nil, forgets) the upload progress, but only while the
     /// marker still belongs to this drawing.
-    func saveProgress(_ progress: WidgetUploadProgress?, publicationID: String) {
-        guard var snapshot = pendingSnapshot, snapshot.publicationID == publicationID else {
-            return
-        }
-        snapshot.progress = progress
-        if let data = try? JSONEncoder().encode(snapshot) {
-            defaults.set(data, forKey: key)
+    func saveProgress(_ progress: WidgetUploadProgress?, publicationID: UUID) {
+        Self.lock.withLock {
+            guard var snapshot = readSnapshotUnlocked(), snapshot.publicationID == publicationID else { return }
+            snapshot.progress = progress
+            if let data = try? JSONEncoder().encode(snapshot) {
+                defaults.set(data, forKey: key)
+            }
         }
     }
 
-    func clearPending(_ publicationID: String) {
-        if pendingSnapshot?.publicationID == publicationID {
-            defaults.removeObject(forKey: key)
+    func clearPending(_ publicationID: UUID) {
+        Self.lock.withLock {
+            if readSnapshotUnlocked()?.publicationID == publicationID {
+                defaults.removeObject(forKey: key)
+            }
         }
     }
 
     /// Puts back `previous` (or clears the marker when there was none), but only
     /// while the marker still belongs to the drawing that replaced it.
-    func restore(_ previous: WidgetPendingUploadSnapshot?, replacingPublicationID publicationID: String) {
-        guard pendingSnapshot?.publicationID == publicationID else {
-            return
-        }
-        if let previous, let data = try? JSONEncoder().encode(previous) {
-            defaults.set(data, forKey: key)
-        } else {
-            defaults.removeObject(forKey: key)
+    func restore(_ previous: WidgetPendingUploadSnapshot?, replacingPublicationID publicationID: UUID) {
+        Self.lock.withLock {
+            guard readSnapshotUnlocked()?.publicationID == publicationID else { return }
+            if let previous, let data = try? JSONEncoder().encode(previous) {
+                defaults.set(data, forKey: key)
+            } else {
+                defaults.removeObject(forKey: key)
+            }
         }
     }
 
     func clearAll() {
-        defaults.removeObject(forKey: key)
+        Self.lock.withLock { defaults.removeObject(forKey: key) }
     }
 }

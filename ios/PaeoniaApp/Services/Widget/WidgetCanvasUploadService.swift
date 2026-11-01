@@ -9,18 +9,26 @@ import OSLog
 /// the PencilKit-derived fields on the main actor so the uploader never touches
 /// PencilKit off the main actor.
 nonisolated struct WidgetDrawingUploadPayload: Sendable {
+    /// One logical send. Retries retain this value; another send always gets a new one.
+    let publicationID: UUID
     let drawingData: Data
     let canvasSide: CGFloat
     let strokeCount: Int
     let pointCount: Int
     let bounds: CGRect
-    var accessibilityText: String?
+    let accessibilityText: String?
 
-    var publicationID: String {
-        WidgetDrawingPublication.id(
-            drawingData: drawingData,
-            canvasSide: Double(canvasSide), accessibilityText: accessibilityText
-        )
+    init(
+        drawingData: Data, canvasSide: CGFloat, strokeCount: Int, pointCount: Int, bounds: CGRect,
+        accessibilityText: String? = nil, publicationID: UUID = UUID()
+    ) {
+        self.publicationID = publicationID
+        self.drawingData = drawingData
+        self.canvasSide = canvasSide
+        self.strokeCount = strokeCount
+        self.pointCount = pointCount
+        self.bounds = bounds
+        self.accessibilityText = accessibilityText
     }
 }
 
@@ -85,7 +93,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     private let pendingStore: WidgetPendingUploadStore
     private let localStore: any WidgetCanvasManaging
     private var lastUpload: Task<Void, Never>?
-    private var deliveredPublicationID: String?
+    private var deliveredPublicationID: UUID?
 
     #if DEBUG
     private let logger = Logger(
@@ -111,9 +119,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     }
 
     func markPending(_ payload: WidgetDrawingUploadPayload) -> WidgetPendingUploadSnapshot? {
-        let previous = pendingStore.pendingSnapshot
         pendingStore.markPending(payload, contentHash: Self.sha256Hex(of: payload.drawingData))
-        return previous
     }
 
     func restorePending(_ previous: WidgetPendingUploadSnapshot?, replacing payload: WidgetDrawingUploadPayload) {

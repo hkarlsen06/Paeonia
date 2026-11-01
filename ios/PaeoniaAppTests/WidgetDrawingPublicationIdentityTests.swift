@@ -42,8 +42,7 @@ struct WidgetDrawingPublicationIdentityTests {
         gateway.holdFirstSubmit = true
         let uploader = environment.uploader(gateway: gateway)
         let older = makePayload(description: "A circle")
-        var newer = older
-        newer.accessibilityText = "The sun above our house"
+        let newer = widgetPublicationTestPayload(copying: older, description: "The sun above our house")
         _ = await uploader.markPending(older)
         try await environment.publish(older)
         let upload = Task { await uploader.send(older) }
@@ -74,15 +73,16 @@ struct WidgetDrawingPublicationIdentityTests {
         let upload = Task { await uploader.send(payload) }
         while !gateway.isSubmitHeld { await Task.yield() }
         await environment.service.clearForPrivacy()
-        _ = await uploader.markPending(payload)
-        try await environment.publish(payload)
+        let newer = widgetPublicationTestPayload(copying: payload, description: payload.accessibilityText)
+        _ = await uploader.markPending(newer)
+        try await environment.publish(newer)
         let afterPurge = try environment.files.decodePayload()
 
         gateway.releaseHeldSubmit()
         #expect(await upload.value == .waiting)
         #expect(try environment.files.decodePayload() == afterPurge)
         #expect(environment.pending.hasPending)
-        #expect(await uploader.send(payload) == .delivered)
+        #expect(await uploader.send(newer) == .delivered)
         #expect(gateway.reserveCalls.count == 2)
         #expect(try environment.files.decodePayload().revisionID
             == gateway.reserveCalls.last?.revisionID.uuidString.lowercased())
@@ -121,6 +121,80 @@ struct WidgetDrawingPublicationIdentityTests {
         #expect(await reopened.loadSavedDrawing() == payload.drawingData)
     }
 
+    @Test(arguments: WidgetPublicationUploadPhase.allCases)
+    func staleUploadProgressCannotEnterAnIdenticalPublicationAfterPurge(
+        _ phase: WidgetPublicationUploadPhase
+    ) async throws {
+        let environment = try PublicationEnvironment()
+        defer { environment.removeFiles() }
+        let gateway = WidgetCanvasGatewaySpy()
+        gateway.holdFirstReserve = phase == .reserve
+        gateway.holdFirstFinalize = phase == .finalize
+        let uploader = environment.uploader(gateway: gateway)
+        let older = makePayload(description: "A circle")
+        _ = await uploader.markPending(older)
+        try await environment.publish(older)
+        let upload = Task { await uploader.send(older) }
+        while !(phase == .reserve ? gateway.isReserveHeld : gateway.isFinalizeHeld) { await Task.yield() }
+
+        environment.pending.clearAll()
+        await environment.service.clearForPrivacy()
+        let newer = widgetPublicationTestPayload(copying: older, description: older.accessibilityText)
+        _ = await uploader.markPending(newer)
+        try await environment.publish(newer)
+        let marker = try #require(environment.pending.pendingSnapshot)
+        let publication = try environment.files.decodePayload()
+        #expect(marker.publicationID != older.publicationID)
+        #expect(marker.progress == nil)
+
+        if phase == .reserve { gateway.releaseHeldReserve() } else { gateway.releaseHeldFinalize() }
+        #expect(await upload.value == .waiting)
+        #expect(environment.pending.pendingSnapshot == marker)
+        #expect(try environment.files.decodePayload() == publication)
+        #expect(await uploader.send(newer) == .delivered)
+        #expect(gateway.reserveCalls.count == 2)
+        #expect(gateway.reserveCalls.first?.revisionID != gateway.reserveCalls.last?.revisionID)
+        #expect(gateway.reserveOperationIDs.first != gateway.reserveOperationIDs.last)
+        #expect(try environment.files.decodePayload().localPublicationID == newer.publicationID)
+        #expect(try environment.files.decodePayload().revisionID
+            == gateway.reserveCalls.last?.revisionID.uuidString.lowercased())
+    }
+
+    @Test func reopeningPreservesTheInstanceAndStaleStoreMutationsLeaveItsMarkerIntact() throws {
+        let environment = try PublicationEnvironment()
+        defer { environment.removeFiles() }
+        let older = makePayload(description: "A circle")
+        let contentHash = WidgetCanvasUploadService.sha256Hex(of: older.drawingData)
+        environment.pending.markPending(older, contentHash: contentHash)
+        let newer = widgetPublicationTestPayload(copying: older, description: older.accessibilityText)
+        let previous = environment.pending.markPending(newer, contentHash: contentHash)
+        #expect(previous?.publicationID == older.publicationID)
+        let operations = WidgetCanvasOperationFactorySpy()
+        let progress = WidgetUploadProgress(
+            revisionID: UUID(), reserveOperation: operations.makeOperation(),
+            finalizeOperation: operations.makeOperation()
+        )
+        environment.pending.saveProgress(progress, publicationID: newer.publicationID)
+        environment.pending.recordAttempt(newer.publicationID, at: Date(timeIntervalSince1970: 500))
+        let marker = try #require(environment.pending.pendingSnapshot)
+        let reopened = WidgetPendingUploadStore(defaults: environment.defaults)
+        #expect(reopened.pendingSnapshot == marker)
+        #expect(reopened.pendingSnapshot?.uploadPayload(with: newer.drawingData).publicationID == newer.publicationID)
+        let repeated = reopened.markPending(newer, contentHash: contentHash, at: Date(timeIntervalSince1970: 1_000))
+        #expect(repeated == marker)
+        #expect(reopened.pendingSnapshot == marker)
+
+        let obsoleteProgress = WidgetUploadProgress(
+            revisionID: UUID(), reserveOperation: operations.makeOperation(),
+            finalizeOperation: operations.makeOperation()
+        )
+        environment.pending.recordAttempt(older.publicationID, at: Date(timeIntervalSince1970: 1))
+        environment.pending.saveProgress(obsoleteProgress, publicationID: older.publicationID)
+        environment.pending.clearPending(older.publicationID)
+        environment.pending.restore(previous, replacingPublicationID: older.publicationID)
+        #expect(reopened.pendingSnapshot == marker)
+    }
+
     @Test func firstDayUploadAttachesTheRevisionRetainedAfterPairing() async throws {
         let environment = try PublicationEnvironment()
         defer { environment.removeFiles() }
@@ -155,6 +229,33 @@ struct WidgetDrawingPublicationIdentityTests {
         #expect(await environment.service.loadSavedDrawing() == payload.drawingData)
     }
 
+    @Test func firstDayRetryAfterReopeningUsesTheSavedPublicationInstance() async throws {
+        let environment = try PublicationEnvironment()
+        defer { environment.removeFiles() }
+        let gateway = FirstDayGatewaySpy()
+        await gateway.fail("save")
+        let uploader = FirstDayDrawingUploadService(
+            gateway: gateway, operationFactory: FirstDayOperationsFake(),
+            pendingStore: environment.pending, localStore: environment.service
+        )
+        let payload = makePayload(description: "A welcome sun")
+        _ = await uploader.markPending(payload)
+        try await environment.publish(payload)
+        #expect(await uploader.send(payload) == .waiting)
+
+        let pending = WidgetPendingUploadStore(defaults: environment.defaults, retryDelay: 0)
+        #expect(pending.pendingSnapshot?.publicationID == payload.publicationID)
+        await gateway.fail("none")
+        let retry = FirstDayDrawingUploadService(
+            gateway: gateway, operationFactory: FirstDayOperationsFake(),
+            pendingStore: pending, localStore: environment.makeService()
+        )
+        #expect(await retry.retryPending())
+        let accepted = try #require(await gateway.acceptedDrawings.last)
+        #expect(try environment.files.decodePayload().revisionID == accepted.revisionID.uuidString.lowercased())
+        #expect(try environment.files.decodePayload().localPublicationID == payload.publicationID)
+    }
+
     private func makePayload(description: String) -> WidgetDrawingUploadPayload {
         let drawing = makeNonEmptyDrawing(seed: 30)
         return WidgetDrawingUploadPayload(
@@ -163,6 +264,11 @@ struct WidgetDrawingPublicationIdentityTests {
             bounds: drawing.bounds, accessibilityText: description
         )
     }
+}
+
+nonisolated enum WidgetPublicationUploadPhase: CaseIterable, Sendable {
+    case reserve
+    case finalize
 }
 
 @MainActor
@@ -199,7 +305,7 @@ private struct PublicationEnvironment {
         try await service.saveDescribedDrawing(
             payload.drawingData, canvasSize: CGSize(width: payload.canvasSide, height: payload.canvasSide),
             authorName: "Alex", createdAt: Date(timeIntervalSince1970: 1_000),
-            revisionID: nil, accessibilityText: payload.accessibilityText
+            revisionID: nil, accessibilityText: payload.accessibilityText, publicationID: payload.publicationID
         )
     }
 

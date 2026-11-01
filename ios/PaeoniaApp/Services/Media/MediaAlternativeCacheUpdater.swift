@@ -58,7 +58,7 @@ nonisolated struct MediaAlternativeCacheUpdater: Sendable {
             await applyToCaches(edit, ownerUserID: ownerUserID, stamp: stamp)
             if case let .widgetDrawing(revisionID) = edit.target, await isCurrent(stamp) {
                 let update: WidgetDrawingDescriptionUpdate = widgetRevisionVersion.map {
-                    .accepted(text: edit.text.trimmedNonEmpty, version: $0, operationID: operation.id)
+                    .acceptedLatestPending(text: edit.text.trimmedNonEmpty, version: $0, operationID: operation.id)
                 } ?? .queued(text: edit.text, operationID: operation.id)
                 try await widgetCanvas?.updateDescription(update, revisionID: revisionID, privacyToken: stamp.privacy)
             }

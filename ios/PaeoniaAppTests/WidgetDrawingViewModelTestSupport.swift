@@ -31,6 +31,16 @@ func widgetPublicationTestTicket(for payload: WidgetDrawingUploadPayload) -> Wid
     )
 }
 
+/// A new send can intentionally have the same bytes as an earlier one.
+func widgetPublicationTestPayload(
+    copying payload: WidgetDrawingUploadPayload, description: String?
+) -> WidgetDrawingUploadPayload {
+    WidgetDrawingUploadPayload(
+        drawingData: payload.drawingData, canvasSide: payload.canvasSide, strokeCount: payload.strokeCount,
+        pointCount: payload.pointCount, bounds: payload.bounds, accessibilityText: description
+    )
+}
+
 final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sendable {
     func capturePublicationTicket(for payload: WidgetDrawingUploadPayload) -> WidgetCanvasPublicationTicket {
         widgetPublicationTestTicket(for: payload)
@@ -83,7 +93,7 @@ final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sendable {
 
     func saveDescribedDrawing(
         _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
-        revisionID _: UUID?, accessibilityText: String?
+        revisionID _: UUID?, accessibilityText: String?, publicationID _: UUID?
     ) async throws {
         try await saveDrawing(data, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
         savedAccessibilityText = accessibilityText
@@ -183,7 +193,7 @@ actor SuspendedWidgetCanvasService {
 
     func saveDescribedDrawing(
         _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
-        revisionID _: UUID?, accessibilityText: String?
+        revisionID _: UUID?, accessibilityText: String?, publicationID _: UUID?
     ) async throws {
         try await saveDrawing(data, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
         savedAccessibilityText = accessibilityText

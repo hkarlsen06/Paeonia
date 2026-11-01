@@ -20,7 +20,7 @@ actor FirstDayDrawingUploadService: WidgetCanvasUploading {
     private let pendingStore: WidgetPendingUploadStore
     private let localStore: any WidgetCanvasManaging
     private var lastUpload: Task<Void, Never>?
-    private var deliveredPublicationID: String?
+    private var deliveredPublicationID: UUID?
 
     init(
         gateway: any FirstDayGateway,
@@ -39,9 +39,7 @@ actor FirstDayDrawingUploadService: WidgetCanvasUploading {
     }
 
     func markPending(_ payload: WidgetDrawingUploadPayload) -> WidgetPendingUploadSnapshot? {
-        let previous = pendingStore.pendingSnapshot
         pendingStore.markPending(payload, contentHash: Self.sha256Hex(of: payload.drawingData), isFirstDay: true)
-        return previous
     }
 
     func restorePending(_ previous: WidgetPendingUploadSnapshot?, replacing payload: WidgetDrawingUploadPayload) {

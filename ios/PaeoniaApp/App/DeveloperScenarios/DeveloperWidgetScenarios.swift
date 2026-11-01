@@ -157,7 +157,7 @@
     func clearForPrivacy() { snapshot = nil }
     func saveDescribedDrawing(
       _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
-      revisionID _: UUID?, accessibilityText: String?
+      revisionID _: UUID?, accessibilityText: String?, publicationID _: UUID?
     ) {
       snapshot = WidgetCanvasSnapshot(
         drawingData: data, authorName: authorName, createdAt: createdAt,

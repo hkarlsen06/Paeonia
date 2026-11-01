@@ -7,6 +7,7 @@ nonisolated struct WidgetCanvasPublication {
     let authorName: String?
     let createdAt: Date
     let serverRevisionID: String?
+    let localPublicationID: UUID?
     var accessibilityText: String?
 }
 
@@ -172,12 +173,7 @@ extension WidgetCanvasService {
             canvasSide: Double(publication.canvasSize.width),
             accessibilityText: publication.accessibilityText
         )
-        if publication.serverRevisionID == nil {
-            payload.localPublicationID = WidgetDrawingPublication.id(
-                drawingData: publication.drawingData, canvasSide: Double(publication.canvasSize.width),
-                accessibilityText: publication.accessibilityText
-            )
-        }
+        payload.localPublicationID = publication.localPublicationID
         return payload
     }
 }
