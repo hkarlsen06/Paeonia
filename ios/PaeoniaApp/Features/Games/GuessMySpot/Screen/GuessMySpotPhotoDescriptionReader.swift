@@ -10,7 +10,7 @@ struct GuessMySpotPhotoDescriptionReader: View {
 
     var body: some View {
         Group {
-            if showsMedia {
+            if showsMedia || isPresented {
                 Button { isPresented = true } label: {
                     if isIconOnly {
                         Image(systemName: "text.bubble")

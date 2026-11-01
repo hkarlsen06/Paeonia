@@ -18,16 +18,10 @@ extension DrawingComposition.Shape {
 /// for speech, switch and keyboard interaction.
 struct DrawingCompositionButton: View {
     let action: () -> Void
-    var alwaysVisible: Bool
     @AccessibilityPresentation(.controls) private var showsControls
 
-    init(alwaysVisible: Bool = false, action: @escaping () -> Void) {
-        self.alwaysVisible = alwaysVisible
-        self.action = action
-    }
-
     var body: some View {
-        if showsControls || alwaysVisible {
+        if showsControls {
             Button(action: action) {
                 Text(.drawingComposeTitle)
                     .fixedSize(horizontal: false, vertical: true)

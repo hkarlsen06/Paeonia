@@ -8,11 +8,14 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
     private var startedBackgroundSaves = 0
     private var finishedBackgroundSaves = 0
     private var descriptions: [String: GameDrawingDescriptionDraft] = [:]
+    private var descriptionReadFailures: Int
     private var rescued: [UUID: Data] = [:]
     private var downloads: [UUID: Data] = [:]
     private var snapshots: [UUID: (roundID: UUID, data: Data)] = [:]
 
-    init() {}
+    init(descriptionReadFailures: Int = 0) {
+        self.descriptionReadFailures = descriptionReadFailures
+    }
 
     func draft(ownerUserID: UUID, roundID: UUID) -> Data? {
         lock.withLock { drafts["\(ownerUserID)/\(roundID)"] }
@@ -78,7 +81,11 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
     }
 
     func draftDescription(ownerUserID: UUID, coupleID: UUID, roundID: UUID?) throws -> String? {
-        lock.withLock {
+        try lock.withLock {
+            if descriptionReadFailures > 0 {
+                descriptionReadFailures -= 1
+                throw CocoaError(.fileReadUnknown)
+            }
             guard let draft = descriptions["\(ownerUserID)/\(roundID?.uuidString ?? "rescued")"],
                   draft.coupleID == coupleID else { return nil }
             return draft.text

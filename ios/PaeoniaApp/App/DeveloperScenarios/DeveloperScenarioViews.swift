@@ -122,6 +122,7 @@
       scenarioContent
         .id(reloadID)
         .environment(bannerCenter)
+        .modifier(DeveloperAssistiveTechnologyEnvironment())
         .preferredColorScheme(.dark)
         // No host-level accessibilityIdentifier here: a container identifier
         // cascades onto every descendant element, replacing the production

@@ -4,9 +4,15 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
     @MainActor
     func testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic() throws {
         continueAfterFailure = false
+        // This journey changes both preferences repeatedly and verifies them across app relaunches.
+        executionTimeAllowance = 240
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-paired"
-        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = [
+            "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+            "-paeonia-scenario-hide-controls", "YES",
+            "-paeonia-scenario-assistive-technology", "none",
+        ]
         app.launch()
         defer { app.terminate() }
 
@@ -20,12 +26,32 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
 
         openSettings(app)
+        choose("media", mode: "always", in: app)
+        openDrawing(app)
+        XCTAssertFalse(app.buttons["drawing.compose"].exists)
+        let editDescription = app.buttons["widgetDrawing.description.edit"]
+        XCTAssertTrue(editDescription.waitForExistence(timeout: 5))
+        scrollTo(editDescription, in: app)
+        editDescription.tap()
+        let field = app.descendants(matching: .any)["widgetDrawing.description.text"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("A small sun")
+        app.buttons["widgetDrawing.description.done"].tap()
+        XCTAssertEqual(app.staticTexts["widgetDrawing.description"].label, "A small sun")
+        capture(app, "Descriptions enabled without shape controls")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        openSettings(app)
+        choose("media", mode: "automatic", in: app)
         choose("controls", mode: "always", in: app)
         openDrawing(app)
         XCTAssertTrue(app.buttons["drawing.compose"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["widgetDrawing.description"].exists)
         capture(app, "Drawing with controls enabled and media alternatives automatic")
-        app.buttons["drawing.compose"].tap()
+        let compose = app.buttons["drawing.compose"]
+        scrollTo(compose, in: app)
+        compose.tap()
         let addMark = app.buttons["drawing.compose.apply"]
         scrollTo(addMark, in: app)
         addMark.tap()
@@ -39,6 +65,8 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
         choose("media", mode: "always", in: app)
         openDrawing(app)
         XCTAssertTrue(app.staticTexts["widgetDrawing.description"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["widgetDrawing.description"].label, "A small sun",
+                       "Hiding the field and editing shapes must retain the authored description")
         app.terminate()
         app.launch()
         openDrawing(app)
@@ -56,6 +84,9 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
         app.terminate()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "dots-and-boxes-extra-turn"
         app.launch()
+        let tutorial = app.buttons["games.tutorial.next"]
+        for _ in 0..<3 where tutorial.waitForExistence(timeout: 1) { tutorial.tap() }
+        XCTAssertFalse(tutorial.exists)
         XCTAssertTrue(app.descendants(matching: .any)["dotsAndBoxes.box.0"].firstMatch
             .waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["games.board.controls"].exists)
@@ -63,25 +94,44 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
     }
 
     @MainActor
+    func testAutomaticShowsToolsForASimulatedActiveAssistiveTechnology() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["PAEONIA_SCENARIO"] = "widget-drawing"
+        app.launchArguments = [
+            "-paeonia-scenario-hide-controls", "YES",
+            "-paeonia-scenario-assistive-technology", "active",
+            "-accessibility.alwaysShowControls", "NO", "-accessibility.alwaysShowMediaAlternatives", "NO",
+            "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+        ]
+        app.launch()
+        defer { app.terminate() }
+        XCTAssertTrue(app.buttons["drawing.compose"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["widgetDrawing.description.edit"].exists)
+        capture(app, "Automatic with a simulated active assistive technology")
+    }
+
+    @MainActor
     private func openSettings(_ app: XCUIApplication) {
         let tabs = app.tabBars.firstMatch
         XCTAssertTrue(tabs.waitForExistence(timeout: 10))
         tabs.buttons.element(boundBy: tabs.buttons.count - 1).tap()
-        let controls = app.buttons["settings.accessibility.controls"]
-        if controls.exists { return }
+        let page = app.descendants(matching: .any)["settings.accessibility.form"].firstMatch
+        if page.exists { return }
         let row = app.buttons["settings.accessibility"]
         scrollTo(row, in: app)
         row.tap()
-        XCTAssertTrue(controls.waitForExistence(timeout: 5))
+        XCTAssertTrue(page.waitForExistence(timeout: 5))
     }
 
     @MainActor
     private func choose(_ preference: String, mode: String, in app: XCUIApplication) {
         let picker = app.buttons["settings.accessibility.\(preference)"]
-        scrollTo(picker, in: app)
+        scrollTo(picker, in: app, scrollsDown: preference == "media")
         picker.tap()
         let option = app.buttons["settings.accessibility.\(preference).\(mode)"]
         XCTAssertTrue(option.waitForExistence(timeout: 5))
+        capture(app, "Accessibility \(preference) choices before selecting \(mode)")
         option.tap()
     }
 
@@ -95,12 +145,24 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
     }
 
     @MainActor
-    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
-        for _ in 0..<12 where !element.exists || !element.isHittable {
-            if element.exists && element.frame.midY < app.windows.firstMatch.frame.midY { app.swipeDown() }
-            else { app.swipeUp() }
+    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, scrollsDown: Bool = true) {
+        let viewport = gameJourneyViewport(in: app)
+        let scrollView = app.scrollViews.firstMatch
+        let collection = app.collectionViews.firstMatch
+        let container = scrollView.exists ? scrollView : collection.exists ? collection : app
+        for _ in 0..<12 {
+            // Native Form rows can report hittable while their tap point is below the tab bar.
+            if element.exists && element.isHittable,
+               viewport.contains(CGPoint(x: element.frame.midX, y: element.frame.midY)) { return }
+            // Form unloads offscreen rows. Use their known order until they reappear.
+            let goesUp = element.exists ? element.frame.midY > viewport.midY : scrollsDown
+            // Keep scroll gestures outside PencilKit when this helper visits the drawing.
+            let start = container.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.8 : 0.2))
+            let end = container.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.2 : 0.8))
+            start.press(forDuration: 0.01, thenDragTo: end)
         }
         XCTAssertTrue(element.isHittable)
+        XCTAssertTrue(viewport.contains(CGPoint(x: element.frame.midX, y: element.frame.midY)))
     }
 
     @MainActor

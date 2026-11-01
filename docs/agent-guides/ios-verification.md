@@ -11,6 +11,8 @@ The root [AGENTS.md](../../AGENTS.md#testing) says when a change needs a test. A
 
 Prefer the UI test when the bug would show on screen, and the integration test when it would show in what is stored or sent. A unit test of a view model's loading flag, banner text or animation timing catches nothing that the device check misses.
 
+Optional-tool journeys use `launchWithExtraAccessibilityTools()` to choose Always show. The settings journey models the input to Paeonia's optional-control policy with the Debug-only `-paeonia-scenario-assistive-technology none` or `active` argument. XCTest itself is an accessibility client, so its ordinary launch cannot establish a no-assistive-technology precondition. The scenario logs the unmodified system value and simulated value. Override only Paeonia's presentation input. Setting SwiftUI's global `accessibilityEnabled` to false leaves the tree too sparse for XCTest navigation. These fixtures do not run or verify VoiceOver or Voice Control. Actual Dynamic Type checks still use the device preference and UIKit precondition.
+
 XCUITest on iOS 27 has these quirks:
 
 - With five tabs, the system tab bar drops every tab button's accessibility identifier, whichever tab API sets it. Find a tab by position: `app.tabBars.firstMatch.buttons.element(boundBy:)`.

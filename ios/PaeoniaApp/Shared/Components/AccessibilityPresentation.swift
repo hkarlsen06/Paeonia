@@ -9,11 +9,19 @@ struct AccessibilityPresentation: DynamicProperty {
     @AppStorage("accessibility.alwaysShowControls") private var alwaysShowControls = false
     @AppStorage("accessibility.alwaysShowMediaAlternatives") private var alwaysShowMedia = false
     @Environment(\.accessibilityEnabled) private var assistiveTechnologyEnabled
+    #if DEBUG
+    @Environment(\.scenarioAssistiveTechnologyEnabled) private var simulatedEnabled
+    #endif
 
     init(_ kind: Kind) { self.kind = kind }
 
     var wrappedValue: Bool {
-        assistiveTechnologyEnabled || projectedValue.wrappedValue
+        #if DEBUG
+        let automatic = simulatedEnabled ?? assistiveTechnologyEnabled
+        #else
+        let automatic = assistiveTechnologyEnabled
+        #endif
+        return automatic || projectedValue.wrappedValue
     }
 
     /// Settings edits the saved Always choice. Automatic also follows assistive technology.
@@ -24,3 +32,10 @@ struct AccessibilityPresentation: DynamicProperty {
         }
     }
 }
+
+#if DEBUG
+extension EnvironmentValues {
+    /// Only Paeonia's optional presentation reads this fixture. Native accessibility stays active.
+    @Entry var scenarioAssistiveTechnologyEnabled: Bool? = nil
+}
+#endif

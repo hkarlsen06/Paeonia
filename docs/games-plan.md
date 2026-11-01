@@ -17,7 +17,7 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-11-01.
 
-- Us > Accessibility controls the optional visible tools. Extra controls and media descriptions each default to Automatic, which follows the system's assistive-technology state, or can be set to Always show. Board-control buttons, native scale inputs, place picking, shape creation and description panels use these preferences. Labels, native board semantics, text scaling, contrast, motion preferences and private game-state rules remain active. Hiding an authoring field preserves its draft and validation; invalid input and failed saves retain a recovery action.
+- More > Accessibility controls the optional visible tools. Extra controls and media descriptions each default to Automatic, which follows the system's assistive-technology state, or can be set to Always show. Board-control buttons, native scale inputs, place picking, shape creation and description panels use these preferences. Labels, native board semantics, text scaling, contrast, motion preferences and private game-state rules remain active. Hiding an authoring field preserves its draft and validation; invalid input and failed saves retain a recovery action.
 
 - Mind Meld, Consensio and Guess my spot open history through their toolbar score capsules. Their adjacent menus omit history, and Mind Meld has no second history button on the result.
 

@@ -18,7 +18,7 @@ struct MediaAlternativeReadout: View {
 
     var body: some View {
         Group {
-            if alwaysVisible || showsMedia || needsRecovery {
+            if alwaysVisible || showsMedia || model?.isPresented == true || needsRecovery {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                     readout
                     pendingStatus

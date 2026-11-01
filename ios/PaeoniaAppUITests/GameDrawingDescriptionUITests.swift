@@ -4,6 +4,47 @@ import XCTest
 /// Production game views and their real draft/outbox logic. This does not run assistive technology.
 final class GameDrawingDescriptionUITests: XCTestCase {
     @MainActor
+    func testFailedDescriptionReadCanRecoverWhenMediaAlternativesAreAutomatic() {
+        continueAfterFailure = false
+        for scenario in ["draw-drawing", "corpse-draw-head"] {
+            let app = XCUIApplication()
+            app.launchArguments = [
+                "-paeonia-scenario", scenario, "-paeonia-scenario-hide-controls", "YES",
+                "-paeonia-scenario-assistive-technology", "none", "-paeonia-description-read-failures", "1",
+                "-accessibility.alwaysShowControls", "YES", "-accessibility.alwaysShowMediaAlternatives", "NO",
+                "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+            ]
+            app.launch()
+            let tutorial = app.buttons["games.tutorial.next"]
+            for _ in 0..<3 where tutorial.waitForExistence(timeout: 1) { tutorial.tap() }
+            let open = app.buttons["game.drawing.description.open"]
+            scrollTo(open, in: app)
+            open.tap()
+            XCTAssertTrue(app.staticTexts["game.drawing.description.failure"].waitForExistence(timeout: 5))
+            app.buttons["game.drawing.description.retryLoading"].tap()
+            let field = app.descendants(matching: .any)["game.drawing.description.text"].firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: 5))
+            field.tap()
+            field.typeText("A circle above a line.")
+            app.buttons["game.drawing.description.done"].tap()
+
+            let compose = app.buttons["drawing.compose"]
+            scrollTo(compose, in: app)
+            compose.tap()
+            let addMark = app.buttons["drawing.compose.apply"]
+            scrollTo(addMark, in: app)
+            addMark.tap()
+            app.buttons["drawing.compose.done"].tap()
+            let send = app.buttons[scenario == "draw-drawing" ? "draw.done" : "corpse.done"]
+            scrollTo(send, in: app)
+            XCTAssertTrue(send.isEnabled, "A recovered description read must allow the drawing to finish")
+            send.tap()
+            XCTAssertTrue(send.waitForNonExistence(timeout: 5))
+            app.terminate()
+        }
+    }
+
+    @MainActor
     func testDescriptionsRemainEditableAcrossTheirSheetAndTravelWithNativeDrawingCreation() {
         continueAfterFailure = false
         for scenario in ["draw-drawing", "corpse-draw-head"] {

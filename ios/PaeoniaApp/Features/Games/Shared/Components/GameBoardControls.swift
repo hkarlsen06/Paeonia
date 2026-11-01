@@ -9,7 +9,7 @@ struct GameBoardControls<Controls: View>: View {
 
     var body: some View {
         Group {
-            if showsControls {
+            if showsControls || isPresented {
                 Button { isPresented = true } label: {
                     Label(.gamesBoardControls, systemImage: "hand.tap")
                 }

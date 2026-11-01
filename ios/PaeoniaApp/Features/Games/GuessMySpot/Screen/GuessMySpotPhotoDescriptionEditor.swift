@@ -8,7 +8,7 @@ struct GuessMySpotPhotoDescriptionEditor: View {
 
     var body: some View {
         Group {
-            if showsMedia || viewModel.photoDescriptionTooLong {
+            if showsMedia || isPresented || viewModel.photoDescriptionTooLong {
                 Button(title) { isPresented = true }
                     .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
                     .accessibilityIdentifier("guessMySpot.description.open")

@@ -229,7 +229,9 @@
     }
 
     private static func seededDrawingStore(isLoading: Bool) -> InMemoryGameDrawingStore {
-      let drawingStore = InMemoryGameDrawingStore()
+      let drawingStore = InMemoryGameDrawingStore(
+        descriptionReadFailures: UserDefaults.standard.integer(forKey: "paeonia-description-read-failures")
+      )
       if !isLoading {
         drawingStore.saveDownloadedDrawing(
           DeveloperGamesFixture.umbrella().dataRepresentation(),

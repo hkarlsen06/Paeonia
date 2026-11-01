@@ -20,7 +20,7 @@ export const legalNo = {
       {
         heading: 'Stemme og tastatur',
         paragraphs: [
-          'Historier har synlige knapper for pause, forrige og neste. Ekstra kontroller for spillbrett, kart, tegninger og bilder vises automatisk med hjelpemidler. Du kan også velge Vis alltid under Oss > Tilgjengelighet. Beskrivelser og tekstversjoner har et eget valg der. Disse kontrollene trenger fortsatt full testing med hjelpemidler.',
+          'Historier har synlige knapper for pause, forrige og neste. Ekstra kontroller for spillbrett, kart, tegninger og bilder vises automatisk med hjelpemidler. Du kan også velge Vis alltid under Mer > Tilgjengelighet. Beskrivelser og tekstversjoner har et eget valg der. Disse kontrollene trenger fortsatt full testing med hjelpemidler.',
           'Vi har ennå ikke testet hele brukerreiser med VoiceOver, Talekontroll, Bryterkontroll eller Full tastaturtilgang på iPhone eller iPad. Vi hevder derfor ikke at disse funksjonene er fullt støttet.',
         ],
       },

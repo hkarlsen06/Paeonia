@@ -51,6 +51,7 @@ struct AccessibilitySettingsView: View {
             }
         }
         .paeoniaGroupedList()
+        .accessibilityIdentifier("settings.accessibility.form")
         .navigationTitle(Text(.settingsAccessibilityTitle))
         .navigationBarTitleDisplayMode(.inline)
     }

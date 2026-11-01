@@ -18,6 +18,7 @@ struct WidgetDrawingView: View {
     private let emptyCanvasHint: LocalizedStringResource?
     @State private var isHistoryPresented = false
     @State private var isCompositionPresented = false
+    @State private var isDescriptionPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(ReactionStore.self) private var reactionStore: ReactionStore?
     @Environment(\.scenePhase) private var scenePhase
@@ -88,6 +89,11 @@ struct WidgetDrawingView: View {
                 get: { viewModel.accessibilityText }, set: { viewModel.updateAccessibilityText($0) }
             )
         ) { viewModel.applyEdit($0) }
+        .sheet(isPresented: $isDescriptionPresented) {
+            WidgetDrawingDescriptionSheet(text: Binding(
+                get: { viewModel.accessibilityText }, set: { viewModel.updateAccessibilityText($0) }
+            ))
+        }
         .sheet(isPresented: $isHistoryPresented) {
             if let historyViewModel, let historyThumbnailLoader {
                 WidgetDrawingHistoryView(
@@ -189,6 +195,10 @@ struct WidgetDrawingView: View {
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("widgetDrawing.description")
+                Button(.mediaAccessibilityDrawingDescription) { isDescriptionPresented = true }
+                    .tint(.paeoniaAccentPrimary)
+                    .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                    .accessibilityIdentifier("widgetDrawing.description.edit")
             }
 
             bottomActions
@@ -196,9 +206,7 @@ struct WidgetDrawingView: View {
     }
 
     private var compositionButton: some View {
-        DrawingCompositionButton(alwaysVisible: viewModel.accessibilityText.unicodeScalars.count > 500) {
-            isCompositionPresented = true
-        }
+        DrawingCompositionButton { isCompositionPresented = true }
     }
 
     private func showBanner(for failure: WidgetDrawingSaveFailure) {

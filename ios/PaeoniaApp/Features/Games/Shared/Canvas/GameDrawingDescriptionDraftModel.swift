@@ -91,7 +91,8 @@ struct GameDrawingDescriptionEditor: View {
 
     var body: some View {
         Group {
-            if showsMedia || model.isTooLong || model.saveFailed {
+            // A successful retry must keep the sheet's presenter until the person closes it.
+            if showsMedia || isPresented || model.loadFailed || model.isTooLong || model.saveFailed {
                 Button(.mediaAccessibilityDrawingDescription) { isPresented = true }
                     .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
                     .disabled(isLocked)
@@ -103,7 +104,9 @@ struct GameDrawingDescriptionEditor: View {
                 Form {
                     if model.loadFailed {
                         Text(.mediaAccessibilityLoadFailed)
+                            .accessibilityIdentifier("game.drawing.description.failure")
                         Button(.commonTryAgain, action: model.load)
+                            .accessibilityIdentifier("game.drawing.description.retryLoading")
                     } else {
                         TextField(text: Binding(get: { model.text }, set: model.update), axis: .vertical) {
                             Text(.mediaAccessibilityDrawingDescription)
