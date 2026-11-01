@@ -33407,38 +33407,20 @@
         }
       }
     },
-    "settings.accessibility.always" : {
-      "comment" : "Always shows optional visible tools, including when no assistive technology is active.",
+    "settings.accessibility.automaticFooter" : {
+      "comment" : "Footer under the accessibility switches. They also turn on by themselves when matching iPhone accessibility settings are on.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Always show"
+            "value" : "Paeonia also shows these when you use VoiceOver, Increase Contrast or other accessibility settings on your iPhone."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vis alltid"
-          }
-        }
-      }
-    },
-    "settings.accessibility.automatic" : {
-      "comment" : "Shows optional visible tools when the system reports an active assistive technology.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Automatic"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Automatisk"
+            "value" : "Paeonia viser også disse når du bruker VoiceOver, Øk kontrast eller andre tilgjengelighetsvalg på iPhonen."
           }
         }
       }
@@ -33462,19 +33444,55 @@
       }
     },
     "settings.accessibility.controlsHelp" : {
-      "comment" : "Explains which visible controls the preference affects and its automatic behavior.",
+      "comment" : "Explains which visible controls the switch adds.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buttons for games, drawing, maps and photos. Automatic shows these when you use accessibility tools."
+            "value" : "Buttons for games, drawing, the map and photos."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Knapper for spill, tegning, kart og bilder. Automatisk viser dem når du bruker hjelpemidler."
+            "value" : "Knapper for spill, tegning, kartet og bilder."
+          }
+        }
+      }
+    },
+    "settings.accessibility.highContrast" : {
+      "comment" : "Switch that gives Paeonia brighter outlines and text, like iOS Increase Contrast.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High contrast"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Høy kontrast"
+          }
+        }
+      }
+    },
+    "settings.accessibility.highContrastHelp" : {
+      "comment" : "Explains what the High contrast switch changes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brighter outlines and text, and shapes that show whose game piece is whose."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tydeligere kanter og tekst, og former som viser hvem spillbrikkene tilhører."
           }
         }
       }
@@ -33498,19 +33516,19 @@
       }
     },
     "settings.accessibility.mediaHelp" : {
-      "comment" : "Explains the optional media alternatives preference and its automatic behavior.",
+      "comment" : "Explains the switch for picture descriptions and voice message transcripts.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Read and write image descriptions and voice transcripts. Automatic shows these when you use accessibility tools."
+            "value" : "Read and write descriptions of pictures and text versions of voice messages."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les og skriv beskrivelser av bilder og tekstversjoner av talemeldinger. Automatisk viser dem når du bruker hjelpemidler."
+            "value" : "Les og skriv beskrivelser av bilder og tekstversjoner av talemeldinger."
           }
         }
       }

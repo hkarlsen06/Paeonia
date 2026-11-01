@@ -18,37 +18,30 @@ struct AccessibilitySettingsRow: View {
 struct AccessibilitySettingsView: View {
     @AccessibilityPresentation(.controls) private var showsControls
     @AccessibilityPresentation(.media) private var showsMedia
+    @AppStorage(PaeoniaContrastPreference.storageKey) private var highContrast = false
 
     var body: some View {
         Form {
             Section {
-                Picker(selection: $showsControls) {
-                    Text(.settingsAccessibilityAutomatic).tag(false)
-                        .accessibilityIdentifier("settings.accessibility.controls.automatic")
-                    Text(.settingsAccessibilityAlways).tag(true)
-                        .accessibilityIdentifier("settings.accessibility.controls.always")
-                } label: {
+                Toggle(isOn: $showsControls) {
                     Text(.settingsAccessibilityControls)
+                    Text(.settingsAccessibilityControlsHelp)
                 }
                 .accessibilityIdentifier("settings.accessibility.controls")
-                .pickerStyle(.menu)
-            } footer: {
-                Text(.settingsAccessibilityControlsHelp)
-            }
-            Section {
-                Picker(selection: $showsMedia) {
-                    Text(.settingsAccessibilityAutomatic).tag(false)
-                        .accessibilityIdentifier("settings.accessibility.media.automatic")
-                    Text(.settingsAccessibilityAlways).tag(true)
-                        .accessibilityIdentifier("settings.accessibility.media.always")
-                } label: {
+                Toggle(isOn: $showsMedia) {
                     Text(.settingsAccessibilityMedia)
+                    Text(.settingsAccessibilityMediaHelp)
                 }
                 .accessibilityIdentifier("settings.accessibility.media")
-                .pickerStyle(.menu)
+                Toggle(isOn: $highContrast) {
+                    Text(.settingsAccessibilityHighContrast)
+                    Text(.settingsAccessibilityHighContrastHelp)
+                }
+                .accessibilityIdentifier("settings.accessibility.highContrast")
             } footer: {
-                Text(.settingsAccessibilityMediaHelp)
+                Text(.settingsAccessibilityAutomaticFooter)
             }
+            .listRowBackground(Color.paeoniaSurfacePrimary)
         }
         .paeoniaGroupedList()
         .accessibilityIdentifier("settings.accessibility.form")

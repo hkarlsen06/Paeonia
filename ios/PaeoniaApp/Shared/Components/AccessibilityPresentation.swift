@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Optional visible tools, separate from the app's always-on accessibility semantics.
 @propertyWrapper
@@ -39,3 +40,29 @@ extension EnvironmentValues {
     @Entry var scenarioAssistiveTechnologyEnabled: Bool? = nil
 }
 #endif
+
+/// The app's High contrast switch acts like iOS Increase Contrast for Paeonia only,
+/// so asset colors pick their high contrast variants and views read `colorSchemeContrast`.
+struct PaeoniaContrastPreference: ViewModifier {
+    static let storageKey = "accessibility.highContrast"
+    @AppStorage(Self.storageKey) private var highContrast = false
+
+    func body(content: Content) -> some View {
+        content.onChange(of: highContrast, initial: true) { _, isOn in
+            for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+                if isOn {
+                    scene.traitOverrides.accessibilityContrast = .high
+                } else {
+                    scene.traitOverrides.remove(UITraitAccessibilityContrast.self)
+                }
+            }
+        }
+    }
+}
+
+extension EnvironmentValues {
+    /// Board pieces differ by color alone unless the person asked for more than color.
+    var showsBoardOwnerSymbols: Bool {
+        accessibilityDifferentiateWithoutColor || colorSchemeContrast == .increased
+    }
+}

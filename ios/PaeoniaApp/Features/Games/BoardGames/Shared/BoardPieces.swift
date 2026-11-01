@@ -65,9 +65,17 @@ struct BoardMarkView: View {
     let style: BoardPieceStyle
     var tint: Color = .paeoniaTextPrimary
 
+    @Environment(\.showsBoardOwnerSymbols) private var showsOwner
+
+    /// With the owner shape on, the mark shrinks toward one corner so the shape
+    /// sits in the free corner instead of covering the drawing.
+    private static let markScaleWithOwner: CGFloat = 0.74
+    private static let ownerScale: CGFloat = 0.24
+
     var body: some View {
         GeometryReader { proxy in
-            let side = min(proxy.size.width, proxy.size.height)
+            let scale = showsOwner ? Self.markScaleWithOwner : 1
+            let side = min(proxy.size.width, proxy.size.height) * scale
             Group {
                 if let mark = style.mark {
                     Image(uiImage: mark)
@@ -82,33 +90,35 @@ struct BoardMarkView: View {
                         .lineLimit(1)
                 }
             }
-            .foregroundStyle(tint)
-            .frame(width: proxy.size.width, height: proxy.size.height)
+            .frame(width: proxy.size.width * scale, height: proxy.size.height * scale)
+            .frame(width: proxy.size.width, height: proxy.size.height,
+                   alignment: showsOwner ? .bottomLeading : .center)
             .overlay(alignment: .topTrailing) {
-                BoardOwnerSymbol(owner: style.owner)
-                    .frame(width: max(10, side * 0.32), height: max(10, side * 0.32))
-                    .offset(x: side * 0.12, y: -side * 0.12)
+                if showsOwner {
+                    let ownerSide = min(proxy.size.width, proxy.size.height) * Self.ownerScale
+                    BoardOwnerSymbol(owner: style.owner)
+                        .frame(width: ownerSide, height: ownerSide)
+                }
             }
+            .foregroundStyle(tint)
         }
         .accessibilityHidden(true)
     }
 }
 
-/// Used on pieces and beside player names. The dark backing separates the
-/// shape from arbitrary custom ink and from both piece colors.
+/// A circle for player one and a diamond for player two, so pieces differ by more
+/// than color. Drawn in the current foreground style.
 struct BoardOwnerSymbol: View {
     let owner: BoardPlayer
 
     var body: some View {
         Group {
             if owner == .one {
-                Circle().fill(.paeoniaTextPrimary)
+                Circle().fill(.foreground)
             } else {
-                BoardOwnerDiamond().fill(.paeoniaTextPrimary)
+                BoardOwnerDiamond().fill(.foreground)
             }
         }
-        .padding(2)
-        .background(.paeoniaBackgroundSecondary, in: RoundedRectangle(cornerRadius: 2))
         .accessibilityHidden(true)
     }
 }

@@ -42,6 +42,7 @@ struct PaeoniaApp: App {
         WindowGroup {
             appContent
             .modifier(PaeoniaSymbolMotionPreferences())
+            .modifier(PaeoniaContrastPreference())
             .onOpenURL { url in
                 if let deepLink = PaeoniaDeepLink(url) {
                     self.deepLink = deepLink

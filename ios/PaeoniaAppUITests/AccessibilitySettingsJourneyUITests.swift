@@ -2,7 +2,7 @@ import XCTest
 
 final class AccessibilitySettingsJourneyUITests: XCTestCase {
     @MainActor
-    func testOptionalToolsCanBeEnabledIndependentlyPersistAndReturnToAutomatic() throws {
+    func testOptionalToolsCanBeTurnedOnIndependentlyPersistAndTurnOff() throws {
         continueAfterFailure = false
         // This journey changes both preferences repeatedly and verifies them across app relaunches.
         executionTimeAllowance = 240
@@ -17,8 +17,8 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
         defer { app.terminate() }
 
         openSettings(app)
-        choose("controls", mode: "automatic", in: app)
-        choose("media", mode: "automatic", in: app)
+        set("controls", isOn: false, in: app)
+        set("media", isOn: false, in: app)
         openDrawing(app)
         XCTAssertFalse(app.buttons["drawing.compose"].exists)
         XCTAssertFalse(app.staticTexts["widgetDrawing.description"].exists)
@@ -26,7 +26,7 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
 
         openSettings(app)
-        choose("media", mode: "always", in: app)
+        set("media", isOn: true, in: app)
         openDrawing(app)
         XCTAssertFalse(app.buttons["drawing.compose"].exists)
         let editDescription = app.buttons["widgetDrawing.description.edit"]
@@ -43,8 +43,8 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
 
         openSettings(app)
-        choose("media", mode: "automatic", in: app)
-        choose("controls", mode: "always", in: app)
+        set("media", isOn: false, in: app)
+        set("controls", isOn: true, in: app)
         openDrawing(app)
         XCTAssertTrue(app.buttons["drawing.compose"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["widgetDrawing.description"].exists)
@@ -62,7 +62,7 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
 
         openSettings(app)
-        choose("media", mode: "always", in: app)
+        set("media", isOn: true, in: app)
         openDrawing(app)
         XCTAssertTrue(app.staticTexts["widgetDrawing.description"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["widgetDrawing.description"].label, "A small sun",
@@ -75,8 +75,8 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
 
         openSettings(app)
-        choose("controls", mode: "automatic", in: app)
-        choose("media", mode: "automatic", in: app)
+        set("controls", isOn: false, in: app)
+        set("media", isOn: false, in: app)
         openDrawing(app)
         XCTAssertFalse(app.buttons["drawing.compose"].exists)
         XCTAssertFalse(app.staticTexts["widgetDrawing.description"].exists)
@@ -125,14 +125,13 @@ final class AccessibilitySettingsJourneyUITests: XCTestCase {
     }
 
     @MainActor
-    private func choose(_ preference: String, mode: String, in app: XCUIApplication) {
-        let picker = app.buttons["settings.accessibility.\(preference)"]
-        scrollTo(picker, in: app, scrollsDown: preference == "media")
-        picker.tap()
-        let option = app.buttons["settings.accessibility.\(preference).\(mode)"]
-        XCTAssertTrue(option.waitForExistence(timeout: 5))
-        capture(app, "Accessibility \(preference) choices before selecting \(mode)")
-        option.tap()
+    private func set(_ preference: String, isOn: Bool, in app: XCUIApplication) {
+        let toggle = app.switches["settings.accessibility.\(preference)"]
+        scrollTo(toggle, in: app)
+        if (toggle.value as? String == "1") != isOn {
+            toggle.switches.firstMatch.tap()
+        }
+        XCTAssertEqual(toggle.value as? String, isOn ? "1" : "0")
     }
 
     @MainActor

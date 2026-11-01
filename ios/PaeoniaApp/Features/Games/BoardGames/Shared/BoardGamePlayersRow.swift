@@ -13,7 +13,8 @@ struct BoardGamePlayersRow: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ScaledMetric(relativeTo: .caption) private var ownerSymbolSide: CGFloat = 14
+    @Environment(\.showsBoardOwnerSymbols) private var showsOwnerSymbols
+    @ScaledMetric(relativeTo: .caption) private var ownerSymbolSide: CGFloat = 10
 
     private static let avatarSize: CGFloat = 44
     private static let columnWidth: CGFloat = 88
@@ -101,12 +102,14 @@ struct BoardGamePlayersRow: View {
     private func styledName(isMe: Bool) -> some View {
         let active = isActive(isMe: isMe)
         return HStack(spacing: PaeoniaSpacing.space4) {
-            BoardOwnerSymbol(owner: isMe ? me.style.owner : partner.style.owner)
-                .frame(width: ownerSymbolSide, height: ownerSymbolSide)
+            if showsOwnerSymbols {
+                BoardOwnerSymbol(owner: isMe ? me.style.owner : partner.style.owner)
+                    .frame(width: ownerSymbolSide, height: ownerSymbolSide)
+            }
             name(isMe: isMe)
                 .font(PaeoniaTypography.caption.weight(active ? .bold : .regular))
-                .foregroundStyle(active ? Color.paeoniaTextPrimary : .paeoniaTextSecondary)
         }
+        .foregroundStyle(active ? Color.paeoniaTextPrimary : .paeoniaTextSecondary)
     }
 
     /// "[Name] is here" while my partner has the game open, otherwise the name.
