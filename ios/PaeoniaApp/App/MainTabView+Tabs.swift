@@ -1,7 +1,124 @@
+import Foundation
 import SwiftUI
+import UIKit
+
+struct GameChatReturnTransition {
+    var isPending = false
+    var isKeyboardDocked = false
+    var waitsForKeyboard = false
+    var containerBottom: CGFloat?
+    var chatBottom: CGFloat?
+    var layoutReadyFrame: Date?
+
+    var isReady: Bool {
+        guard isPending, !waitsForKeyboard, let containerBottom, let chatBottom else { return false }
+        return abs(containerBottom - chatBottom) < 1
+    }
+}
 
 /// The five tabs and the views they show.
 extension MainTabView {
+    var tabNavigation: some View {
+        TabView(selection: Binding<MainTab>(get: { selection.wrappedValue }, set: { selectTab($0) })) {
+            ForEach(tabs) { tab in
+                content(for: tab)
+                    .toolbar(gameTabBarVisibility, for: .tabBar)
+                    .onGeometryChange(for: CGFloat.self) {
+                        $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
+                    } action: { bottom in
+                        guard tab == .questions else { return }
+                        gameChatReturn.chatBottom = bottom
+                    }
+                    .tag(tab)
+                    .badge(badgeCount(for: tab))
+                    .tabItem {
+                        Label(tab.title, systemImage: tab.systemImage)
+                            .accessibilityIdentifier("mainTab.\(tab.rawValue)")
+                    }
+            }
+        }
+        .onGeometryChange(for: CGFloat.self) {
+            $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
+        } action: { bottom in
+            gameChatReturn.containerBottom = bottom
+        }
+        .onDockedKeyboardChange { gameChatReturn.isKeyboardDocked = $0 }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in
+            gameChatReturn.waitsForKeyboard = false
+        }
+        .onChange(of: selection.wrappedValue) { _, _ in
+            gameChatReturn.isPending = false
+            gameChatReturn.waitsForKeyboard = false
+            gameChatReturn.layoutReadyFrame = nil
+        }
+        .onChange(of: gameChatDestination?.id) { _, _ in
+            gameChatReturn.isPending = false
+            gameChatReturn.waitsForKeyboard = false
+            gameChatReturn.layoutReadyFrame = nil
+        }
+        .overlay {
+            if gameChatReturn.isPending {
+                TimelineView(.animation) { context in
+                    Color.clear.onChange(of: context.date, initial: true) { _, frame in
+                        finishGameChatReturn(after: frame)
+                    }
+                }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+            }
+        }
+    }
+
+    /// Declare visibility above the tab stacks, before the selected stack appears.
+    private var gameTabBarVisibility: Visibility {
+        (gameChatReturn.isPending || selection.wrappedValue == .games && !gamesPath.isEmpty)
+            && UIDevice.current.userInterfaceIdiom != .pad
+            ? .hidden : .automatic
+    }
+
+    func selectTab(_ tab: MainTab) {
+        if tab == .games, selection.wrappedValue == .questions, !gamesPath.isEmpty,
+           UIDevice.current.userInterfaceIdiom != .pad {
+            guard !gameChatReturn.isPending else { return }
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                gameChatReturn.isPending = true
+                gameChatReturn.waitsForKeyboard = gameChatReturn.isKeyboardDocked
+                gameChatReturn.layoutReadyFrame = nil
+            }
+            PaeoniaKeyboard.dismiss()
+            return
+        }
+        gameChatReturn.isPending = false
+        gameChatReturn.layoutReadyFrame = nil
+        PaeoniaKeyboard.dismiss()
+        guard !gamesPath.isEmpty, selection.wrappedValue == .games || tab == .games else {
+            selection.wrappedValue = tab
+            return
+        }
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { selection.wrappedValue = tab }
+    }
+
+    private func finishGameChatReturn(after frame: Date) {
+        guard gameChatReturn.isReady else {
+            gameChatReturn.layoutReadyFrame = nil
+            return
+        }
+        guard let readyFrame = gameChatReturn.layoutReadyFrame else {
+            gameChatReturn.layoutReadyFrame = frame
+            return
+        }
+        guard frame != readyFrame else { return }
+        gameChatReturn.isPending = false
+        gameChatReturn.layoutReadyFrame = nil
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { selection.wrappedValue = .games }
+    }
+
     @ViewBuilder
     func content(for tab: MainTab) -> some View {
         switch tab {
@@ -32,7 +149,7 @@ extension MainTabView {
     }
 
     private var gamesTab: some View {
-        GamesRootView(viewModel: gamesViewModel, path: $gamesPath)
+        GamesRootView(viewModel: gamesViewModel, path: $gamesPath, tabBarVisibility: gameTabBarVisibility)
     }
 
     var gamesParticipants: GameParticipants {

@@ -49,6 +49,45 @@ struct DrawingEditHistoryTests {
         #expect(history.canUndo)
     }
 
+    @Test(arguments: [100, 200])
+    func undoingASecondPixelEraseRestoresOnlyThatErase(firstEraseX: Int) throws {
+        var history = DrawingEditHistory()
+        let secondEraseX = 300 - firstEraseX
+        let original = longLine()
+        let erasedOnce = erase(original, at: CGFloat(firstEraseX))
+        let erasedTwice = erase(erasedOnce, at: CGFloat(secondEraseX))
+        #expect(render(erasedOnce).pixel(x: firstEraseX, y: 100).alpha == 0)
+        #expect(render(erasedOnce).pixel(x: secondEraseX, y: 100).alpha > 200)
+        #expect(render(erasedTwice).pixel(x: secondEraseX, y: 100).alpha == 0)
+        history.record(from: original, to: erasedOnce)
+        history.record(from: erasedOnce, to: erasedTwice)
+
+        let undoneResult = history.undo(erasedTwice)
+        let undone = try #require(undoneResult)
+        #expect(render(undone).pixel(x: firstEraseX, y: 100).alpha == 0)
+        #expect(render(undone).pixel(x: secondEraseX, y: 100).alpha > 200)
+        #expect(render(undone).pixel(x: 40, y: 100).alpha > 200)
+        let redoneResult = history.redo(undone)
+        let redone = try #require(redoneResult)
+        #expect(render(redone).pixel(x: 100, y: 100).alpha == 0)
+        #expect(render(redone).pixel(x: 200, y: 100).alpha == 0)
+        #expect(render(redone).pixel(x: 140, y: 100).alpha > 200)
+    }
+
+    @Test func liveChangesKeepBothSidesOfAPixelErase() throws {
+        let original = longLine()
+        let erased = erase(original, at: 100)
+        var tracker = WidgetLiveStrokeTracker()
+        tracker.reset(to: original)
+        let changes = tracker.changes(to: erased)
+        let received = WidgetLiveStrokeSync.apply(upserts: changes.upserts, removals: changes.removals, to: original)
+        let decoded = try PKDrawing(data: received.dataRepresentation())
+
+        #expect(render(decoded).pixel(x: 100, y: 100).alpha == 0)
+        #expect(render(decoded).pixel(x: 40, y: 100).alpha > 200)
+        #expect(render(decoded).pixel(x: 200, y: 100).alpha > 200)
+    }
+
     // MARK: Fill
 
     @Test func fillInsideABoxStaysInsideIt() throws {
@@ -81,6 +120,22 @@ struct DrawingEditHistoryTests {
 
 private func keys(_ strokes: [PKStroke]) -> [String] {
     strokes.map(WidgetLiveStrokeSync.key(for:))
+}
+
+private func longLine() -> PKDrawing {
+    let locations = stride(from: 20, through: 300, by: 10).map { CGPoint(x: $0, y: 100) }
+    return PKDrawing(strokes: [stroke(through: locations, createdAt: 1)])
+}
+
+private func erase(_ drawing: PKDrawing, at x: CGFloat) -> PKDrawing {
+    let points = [80, 100, 120].enumerated().map { index, y in
+        PKStrokePoint(
+            location: CGPoint(x: x, y: CGFloat(y)), timeOffset: Double(index) * 0.01,
+            size: CGSize(width: 20, height: 20), opacity: 1,
+            force: 1, azimuth: 0, altitude: .pi / 2
+        )
+    }
+    return drawing.erasingPath(PKStrokePath(controlPoints: points, creationDate: .now))
 }
 
 private func line(at origin: CGFloat) -> PKStroke {

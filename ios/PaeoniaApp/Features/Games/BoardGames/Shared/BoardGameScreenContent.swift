@@ -54,6 +54,7 @@ nonisolated struct BoardGameResultContent: Equatable, Sendable {
     let gamesFinished: Int
     /// An ending the person missed, shown before the next game. The action reads "Continue" instead of "Play again".
     let isMissedEnding: Bool
+    var continuation: GameContinuation?
 }
 
 /// Everything the shell draws around the board.

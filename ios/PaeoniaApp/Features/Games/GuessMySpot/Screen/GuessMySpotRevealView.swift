@@ -282,7 +282,11 @@ struct GuessMySpotRevealView: View {
             PaeoniaHaptics.gameContinued()
             viewModel.continueFromReveal()
         } label: {
-            Text(isSender ? .guessMySpotHandoffContinue : .guessMySpotHandoffSend)
+            GameContinueLabel(
+                title: isSender ? .guessMySpotHandoffContinue : .guessMySpotHandoffSend,
+                partnerName: viewModel.participants.partnerName,
+                continuation: viewModel.continuation
+            )
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .opacity(isShown ? 1 : 0)

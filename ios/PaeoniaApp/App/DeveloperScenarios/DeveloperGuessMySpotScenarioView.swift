@@ -246,6 +246,11 @@
     private func arrange() async {
       try? await Task.sleep(for: .milliseconds(400))
       switch scenario {
+      case .guessMySpotRevealNextReady:
+        try? await Task.sleep(for: .seconds(12))
+        guard !Task.isCancelled, let state = DeveloperGuessMySpotScenarioFactory.nextReadyState() else { return }
+        await hub.game.dependencies.guessMySpotCache.saveState(state, ownerUserID: DeveloperGamesFixture.me)
+        await hub.game.reload()
       case .guessMySpotCheckFound:
         hub.game.draft = DeveloperGuessMySpotScenarioFactory.draft(spot: DeveloperGuessMySpotScenarioFactory.bergen)
       case .guessMySpotCheckMissing:

@@ -186,7 +186,7 @@
         reveal(harbor(sender: Fixture.partner, guess: Spot(latitude: 41.9028, longitude: 12.4964)))
       case .guessMySpotRevealWorld:
         reveal(harbor(sender: Fixture.partner, guess: Spot(latitude: -33.8688, longitude: 151.2093)))
-      case .guessMySpotRevealSender:
+      case .guessMySpotRevealSender, .guessMySpotRevealNextReady:
         reveal(
           harbor(sender: Fixture.me, guess: Spot(latitude: 60.3400, longitude: 5.2200)),
           sharedPoints: 238_606,
@@ -195,6 +195,20 @@
       default:
         nil
       }
+    }
+
+    static func nextReadyState() -> RemoteGuessMySpotState? {
+      guard let result = revealed(for: .guessMySpotRevealNextReady), let game = result.game else { return nil }
+      let next = round(
+        id: UUID(), number: 7, sender: Fixture.partner, photo: lakeAssetID,
+        spot: nil, place: nil, takenOn: nil
+      )
+      return RemoteGuessMySpotState(
+        userID: result.userID, partnerUserID: result.partnerUserID, coupleID: result.coupleID,
+        dataEpoch: result.dataEpoch,
+        game: Self.game(turn: Fixture.me, points: game.sharedPoints, mine: game.myPoints, rounds: 7, version: 8),
+        currentRound: next, previousRound: result.currentRound
+      )
     }
 
     private static func hubState(for scenario: DeveloperScenario) -> RemoteGuessMySpotState? {

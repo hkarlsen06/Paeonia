@@ -97,9 +97,10 @@ extension ExquisiteCorpseViewModel {
         updateStrip()
         updateReveal(resolution)
         runEffects()
+        continuation = makeContinuation()
         if state != nil {
             attentionCue.update(
-                ExquisiteCorpseResolver.attention(resolution: resolution, game: state?.game),
+                ExquisiteCorpseResolver.attention(resolution: resolution, game: state?.game).including(continuation),
                 isActive: isRunning && isActive
             )
         }

@@ -36,6 +36,31 @@ nonisolated struct StoryChainWritingKey: Equatable, Sendable {
 // The partner: the heartbeat that says this screen is open, the invite, the live
 // room, and the partner's live draft.
 extension StoryChainViewModel {
+    func updateContinuation(attention: GameAttention) {
+        if live?.partnerActivity == .result {
+            partnerResultID = finished?.storyID
+        }
+        continuation = makeContinuation()
+        if state != nil {
+            attentionCue.update(attention.including(continuation), isActive: isRunning && isActive)
+        }
+    }
+
+    func makeContinuation() -> GameContinuation? {
+        guard let finished, let userID = currentUserID else { return nil }
+        if let next = state?.currentStory, next.storyNumber > finished.storyNumber,
+           next.starterUserID != userID {
+            if let line = next.lines.last, line.authorUserID != userID {
+                return GameContinuation(id: "line \(line.id)", status: .wrote)
+            }
+            return GameContinuation(id: "story \(next.id) started", status: .picked)
+        }
+        if finished.isNamer, partnerResultID == finished.storyID, live?.partnerActivity == .present {
+            return GameContinuation(id: "story \(finished.storyID) partner waiting", status: .waiting)
+        }
+        return nil
+    }
+
     /// A draft older than this without an update fades out, so a writer who left
     /// without sending leaves no ghost behind.
     static let draftLifetime: TimeInterval = 10

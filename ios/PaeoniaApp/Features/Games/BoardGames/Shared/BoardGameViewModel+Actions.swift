@@ -255,12 +255,17 @@ extension BoardGameViewModel {
             score = Self.score(snapshot, playStyle: overview?.settings?.playStyle ?? .against)
         }
         loadPhoto(isShowingMissedEnding ? missedEnding?.photoMediaAssetID : snapshot.photoMediaAssetID)
+        if isShowingMissedEnding, result != nil {
+            result = makeResult()
+        }
         // After the first read, only a board that shows the whole game counts, so the tap
         // comes after the partner's piece has landed and never for a move still on its way.
         // The first read counts at once, so a move that lands during the opening replay taps.
-        if !attentionCue.hasRead || (!isReplaying && !isShowingMissedEnding && displayedMovesMatchGame) {
+        let showsCurrentBoard = !isReplaying && !isShowingMissedEnding && displayedMovesMatchGame
+        if !attentionCue.hasRead || continuation != nil || showsCurrentBoard {
             attentionCue.update(
-                snapshot.attention(userID: userID, startedHere: rematchedGameNumber == snapshot.gameNumber),
+                snapshot.attention(userID: userID, startedHere: rematchedGameNumber == snapshot.gameNumber)
+                    .including(continuation),
                 isActive: isRunning && isActive
             )
         }

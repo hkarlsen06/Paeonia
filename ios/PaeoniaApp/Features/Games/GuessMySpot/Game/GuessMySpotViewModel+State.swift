@@ -126,9 +126,7 @@ extension GuessMySpotViewModel {
         updatePartnerStatus()
         syncLiveRole()
         runEffects()
-        if state != nil {
-            attentionCue.update(resolver.attention(state: state, pending: work), isActive: isRunning && isActive)
-        }
+        updateContinuation(attention: resolver.attention(state: state, pending: work))
     }
 
     /// A new guess starts with no pin on the map.

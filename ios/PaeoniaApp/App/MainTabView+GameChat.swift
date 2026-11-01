@@ -11,6 +11,9 @@ struct GameChatDestination: Hashable, Identifiable {
 
 extension MainTabView {
     func resetGameChatNavigation() {
+        gameChatReturn.isPending = false
+        gameChatReturn.waitsForKeyboard = false
+        gameChatReturn.layoutReadyFrame = nil
         messageNoticeStartedAt = Date()
         visibleChatSubject = nil
         gameChatDestination = nil
@@ -40,10 +43,7 @@ extension MainTabView {
         }
         context.returnGameKind = retainedReturnGame
         if retainedReturnGame != nil {
-            context.returnToGame = {
-                PaeoniaKeyboard.dismiss()
-                selection.wrappedValue = .games
-            }
+            context.returnToGame = { selectTab(.games) }
         }
         context.chatVisibilityChanged = { subject, isVisible in
             if isVisible {
@@ -84,8 +84,7 @@ extension MainTabView {
                 return nil
             }.last
         }
-        PaeoniaKeyboard.dismiss()
-        selection.wrappedValue = .questions
+        selectTab(.questions)
         dailyChatQuestion = nil
         requestedConversationID = nil
         if existing == nil { questionsPath = [] }

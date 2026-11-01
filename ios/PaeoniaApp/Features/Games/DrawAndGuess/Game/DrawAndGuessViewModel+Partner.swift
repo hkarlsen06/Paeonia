@@ -5,6 +5,20 @@ import PencilKit
 // The partner: the heartbeat that says this screen is open, the invite, and the
 // live room.
 extension DrawAndGuessViewModel {
+    func makeContinuation() -> GameContinuation? {
+        guard phase == .reveal, let round else { return nil }
+        if let next = state?.currentRound, let partnerNextRound {
+            return GameContinuation(
+                id: "round \(next.id) \(partnerNextRound == .drawing ? "started" : "drawing sent")",
+                status: partnerNextRound == .drawing ? .drawing : .sentDrawing
+            )
+        }
+        if isPartnerWaitingForMe {
+            return GameContinuation(id: "round \(round.id) partner waiting", status: .waiting)
+        }
+        return nil
+    }
+
     // MARK: - Presence
 
     func updatePresenceState() {

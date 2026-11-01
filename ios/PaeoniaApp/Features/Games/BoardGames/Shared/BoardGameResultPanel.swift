@@ -44,7 +44,11 @@ struct BoardGameResultPanel: View {
         VStack(spacing: PaeoniaSpacing.space16) {
             info
             Button(action: onPrimary) {
-                Text(primaryTitle)
+                GameContinueLabel(
+                    title: primaryTitle,
+                    partnerName: partner.name,
+                    continuation: content.continuation
+                )
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .accessibilityIdentifier("boardGames.result.primary")

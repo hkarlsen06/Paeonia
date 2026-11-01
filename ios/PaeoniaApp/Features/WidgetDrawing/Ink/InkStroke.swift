@@ -38,8 +38,7 @@ nonisolated struct InkStroke: Equatable, Sendable {
     /// The pencil texture's seed. Fixed per stroke, so the texture holds still
     /// while the stroke grows and when it lands on the canvas.
     let seed: UInt32
-    /// With the seed and the point count, this names the stroke on both phones
-    /// (`WidgetLiveStrokeSync.key`).
+    /// When the stroke began.
     let creationDate: Date
     /// The touches, all of them, also after a snap.
     private(set) var samples: [InkSample]

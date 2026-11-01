@@ -331,6 +331,11 @@ extension BoardGameViewModel {
         }
     }
 
+    var continuation: GameContinuation? {
+        guard isShowingMissedEnding, let snapshot, !snapshot.isFinished else { return nil }
+        return GameContinuation(id: "game \(snapshot.gameNumber) started", status: .started)
+    }
+
     func makeResult() -> BoardGameResultContent? {
         guard let outcome = board.outcome, let snapshot else { return nil }
         let winner: BoardGameWinner = if let player = outcome.winner {
@@ -346,7 +351,8 @@ extension BoardGameViewModel {
             myWins: snapshot.myWins,
             partnerWins: snapshot.partnerWins,
             gamesFinished: snapshot.gamesFinished,
-            isMissedEnding: isShowingMissedEnding
+            isMissedEnding: isShowingMissedEnding,
+            continuation: continuation
         )
     }
 

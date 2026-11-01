@@ -13035,6 +13035,150 @@
         }
       }
     },
+    "games.continue.partnerDrawing" : {
+      "comment" : "Continue button on a drawing result. The partner is drawing the next round. %@ is the partner name or private nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue · %@ is drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett · %@ tegner"
+          }
+        }
+      }
+    },
+    "games.continue.partnerDrew" : {
+      "comment" : "Continue button on a creature result. The partner finished drawing the next head. %@ is the partner name or private nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue · %@ has drawn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett · %@ har tegnet"
+          }
+        }
+      }
+    },
+    "games.continue.partnerPicked" : {
+      "comment" : "Continue button on a game result. The partner has made their next choice. %@ is the partner name or private nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue · %@ has picked"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett · %@ har valgt"
+          }
+        }
+      }
+    },
+    "games.continue.partnerSentDrawing" : {
+      "comment" : "Continue button on a drawing result. The partner sent the next drawing to guess. %@ is the partner name or private nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue · %@ sent a drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett · %@ har sendt en tegning"
+          }
+        }
+      }
+    },
+    "games.continue.partnerSentPhoto" : {
+      "comment" : "Continue button on a game result. The partner sent the next photo to guess. %@ is the partner name or private nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue · %@ sent a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett · %@ har sendt et bilde"
+          }
+        }
+      }
+    },
+    "games.continue.partnerStarted" : {
+      "comment" : "Continue button on a game result. The partner started the next game. %@ is the partner name or private nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue · %@ has started"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett · %@ har startet"
+          }
+        }
+      }
+    },
+    "games.continue.partnerWaiting" : {
+      "comment" : "Continue button on a game result. The partner has moved on and is waiting for this person. %@ is the partner name or private nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue · %@ is waiting"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett · %@ venter"
+          }
+        }
+      }
+    },
+    "games.continue.partnerWrote" : {
+      "comment" : "Continue button on a finished story. The partner wrote the first line of the next story. %@ is the partner name or private nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue · %@ has written"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett · %@ har skrevet"
+          }
+        }
+      }
+    },
     "games.conversation.distance" : {
       "comment" : "A photo guessing result. Arguments are the guesser name and the distance from the spot.",
       "extractionState" : "manual",

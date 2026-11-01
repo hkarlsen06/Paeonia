@@ -5,6 +5,7 @@ import SwiftUI
 struct GamesRootView: View {
     @Bindable var viewModel: GamesViewModel
     @Binding var path: [GamesDestination]
+    let tabBarVisibility: Visibility
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
@@ -13,7 +14,7 @@ struct GamesRootView: View {
             content
                 .analyticsScreen("games")
                 .paeoniaTabBackdrop()
-                .toolbar(.visible, for: .tabBar)
+                .toolbar(tabBarVisibility, for: .tabBar)
                 .navigationDestination(for: GamesDestination.self) { destination in
                     viewModel.screen(for: destination)
                         .analyticsScreen(destination.analyticsName)

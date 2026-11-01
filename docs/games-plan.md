@@ -19,7 +19,7 @@ Decided on 2026-11-01.
 
 - Mind Meld, Consensio and Guess my spot open history through their toolbar score capsules. Their adjacent menus omit history, and Mind Meld has no second history button on the result.
 
-- The tab bar stays visible in games and their histories on iPhone and iPad. Switching between Games and Chats keeps both routes in place. Games sets its tab bar visibility at the navigation root, so returning from chat keeps the same available height. Opening chat or returning to a game dismisses the previous screen's keyboard.
+- Games and their histories hide the tab bar on iPhone to keep the play area available. iPad keeps its top tab bar. The toolbar chat shortcut and the chat's return button switch between the retained Games and Chats routes. Returning hides the tab bar and waits for the keyboard to close, the full-screen layout to settle and a frame to render before showing the game. The shared tab root supplies the same visibility to the Games navigation root.
 - An empty game chat explains that the couple can chat while playing and that finished rounds will appear there. The composer remains available.
 
 Decided on 2026-10-31.
@@ -43,6 +43,8 @@ Decided on 2026-10-31.
 - Story Chain keeps optional writing controls in a compact toolbar beneath the draft and above the keyboard. "Give a word" and "Last line?" are quiet filled chips, with the counter beside Send. Long words and larger text sizes wrap the controls while keeping their tap targets and full accessibility labels.
 
 - Guess my spot uses a compact reveal card. The verdict centers above a square photo at the bottom left and scores on the right. The totals share the right edge, and earned points sit directly above their total. The distance stays above the map. Your turn sits below the card, with Continue for the sender. Chat stays in the toolbar. The overview uses the full map while the controls are hidden, and the landing keeps the destination pin above them.
+
+- Result buttons show the partner's next action beside Continue, such as "Continue · Robin is waiting" or "Continue · Robin has picked". This covers the next word, drawing, photo, marker, creature part, story and board game. A new partner action plays the shared attention haptic and sound once while the game is open. Opening a result with that action already there stays quiet. A partner's progress does not dismiss the result. Waiting requires the partner's live screen to have moved past the result, and the label uses the person's private nickname when set.
 
 - Games size their play area from the available window. Landscape boards and drawing canvases keep a centered pair of columns, with a narrower control column in smaller windows. The controls stay together beside the play area. Drawing tools, colors and size controls share its width, and tool rows scroll when their buttons cannot keep their tap targets. Odd Creatures unfolds in the center of the screen, then moves beside the credits as the camera pulls back. Consensio uses the readable width for its line, and Mind Meld uses larger reveal cards in both iPad orientations. Story Chain keeps its reading column, Guess my spot keeps its photo and map layout, and Ludo keeps its full-screen board.
 

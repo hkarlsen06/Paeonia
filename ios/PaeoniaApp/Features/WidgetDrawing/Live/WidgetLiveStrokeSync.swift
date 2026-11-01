@@ -6,12 +6,10 @@ import UIKit
 /// canvas. Adding strokes works in any order, so the two canvases end up the
 /// same even when both people draw at once.
 nonisolated enum WidgetLiveStrokeSync {
-    /// `PKStroke` has no id. The path's creation time, point count, and random
-    /// seed survive encoding and scaling, so together they name a stroke on both
-    /// phones.
+    /// PencilKit's id survives encoding and scaling, and distinguishes pieces
+    /// left by the pixel eraser even when they share a path and random seed.
     static func key(for stroke: PKStroke) -> String {
-        let milliseconds = Int64((stroke.path.creationDate.timeIntervalSinceReferenceDate * 1_000).rounded())
-        return "\(milliseconds)-\(stroke.path.count)-\(stroke.randomSeed)"
+        stroke.id.uuidString
     }
 
     /// Changes when the eraser, a move, or a color change touches the stroke.

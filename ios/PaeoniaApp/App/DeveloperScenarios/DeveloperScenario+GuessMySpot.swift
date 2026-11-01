@@ -6,7 +6,8 @@
     static let guessMySpot: [DeveloperScenario] = [
       guessMySpotFirstTurn, guessMySpotCheckFound, guessMySpotCheckMissing, guessMySpotWaitChoosing,
       guessMySpotWaitLive, guessMySpotWaitLater, guessMySpotGuess, guessMySpotRevealSpotOn, guessMySpotRevealClose,
-      guessMySpotRevealFar, guessMySpotRevealWorld, guessMySpotRevealSender, guessMySpotRevealHeld, guessMySpotHistory,
+      guessMySpotRevealFar, guessMySpotRevealWorld, guessMySpotRevealSender, guessMySpotRevealNextReady,
+      guessMySpotRevealHeld, guessMySpotHistory,
       memoriesMapWithGame,
     ]
 
@@ -52,6 +53,10 @@
     static let guessMySpotRevealSender = guessMySpotScreen(
       "guess-my-spot-reveal-sender", "Guess my spot · reveal, Robin guessed",
       "Robin guessed your photo about 9 km off. You see the guess fly to your spot"
+    )
+    static let guessMySpotRevealNextReady = guessMySpotScreen(
+      "guess-my-spot-reveal-next-ready", "Guess my spot · next photo arrives",
+      "Robin sends the next photo while the previous result stays open. Continue changes with one haptic and sound"
     )
     static let guessMySpotRevealHeld = guessMySpotScreen(
       "guess-my-spot-reveal-held", "Guess my spot · reveal held",

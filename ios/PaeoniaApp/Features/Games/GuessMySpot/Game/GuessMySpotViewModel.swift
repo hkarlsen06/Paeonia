@@ -130,6 +130,8 @@ final class GuessMySpotViewModel {
     @ObservationIgnored var restoredDraftScope: String?
     @ObservationIgnored var isRestoringDraft = false
     @ObservationIgnored let decodeDraftPhoto: @Sendable (Data) async -> UIImage?
+    var continuation: GameContinuation?
+    @ObservationIgnored var partnerResultID: UUID?
     /// Taps when the partner sends a photo and it becomes this person's turn to guess.
     @ObservationIgnored var attentionCue = GameAttentionCue()
     @ObservationIgnored var refusedMoves: [GuessMySpotRefusedMove] = []

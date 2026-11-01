@@ -10,7 +10,7 @@ nonisolated struct DailyChallengeCardState: Equatable, Sendable {
         case complete
     }
 
-    let kind: Kind
+    var kind: Kind
     /// The partner has answered today's question. Before the user answers, their answer
     /// waits to be unlocked. After, it is ready to read.
     let hasPartnerAnsweredToday: Bool

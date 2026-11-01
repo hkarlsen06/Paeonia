@@ -112,6 +112,8 @@ final class StoryChainViewModel {
     @ObservationIgnored var now: Date
     @ObservationIgnored var localInviteSentAt: Date?
     @ObservationIgnored var reloadGate = GameReloadGate()
+    var continuation: GameContinuation?
+    @ObservationIgnored var partnerResultID: UUID?
     /// Taps when the partner's line makes it this person's turn to write or to name the story.
     @ObservationIgnored var attentionCue = GameAttentionCue()
     @ObservationIgnored var isRunning = false
@@ -308,9 +310,7 @@ final class StoryChainViewModel {
 
         live?.switchRole(to: StoryChainResolver.liveRole(for: phase))
         startGameIfNeeded()
-        if state != nil {
-            attentionCue.update(resolver.attention(state: state, pending: pending), isActive: isRunning && isActive)
-        }
+        updateContinuation(attention: resolver.attention(state: state, pending: pending))
     }
 
     /// Shows nothing until the next read, such as after another person signs in.

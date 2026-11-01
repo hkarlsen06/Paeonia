@@ -64,7 +64,11 @@ struct StoryChainActionBar: View {
             PaeoniaHaptics.gameContinued()
             Task { await viewModel.continueFromFinished() }
         } label: {
-            Text(title)
+            GameContinueLabel(
+                title: title,
+                partnerName: viewModel.partnerName,
+                continuation: viewModel.continuation
+            )
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .accessibilityIdentifier("storyChain.continue")

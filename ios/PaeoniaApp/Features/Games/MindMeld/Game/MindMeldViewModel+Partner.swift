@@ -4,6 +4,19 @@ import Observation
 // The partner: the heartbeat that says this screen is open, what the partner is
 // doing, the invite, and the live room with the typing message.
 extension MindMeldViewModel {
+    func makeContinuation() -> GameContinuation? {
+        guard phase == .reveal || phase == .over, let current = state?.current,
+              !current.isFinished, let open = current.openRound, open.id != round?.id
+        else { return nil }
+        if open.partnerLocked {
+            return GameContinuation(id: "round \(open.id) partner locked", status: .picked)
+        }
+        if current.id != game?.id, current.createdByUserID != currentUserID {
+            return GameContinuation(id: "game \(current.id) started", status: .started)
+        }
+        return nil
+    }
+
     // MARK: - Presence
 
     var isPartnerInLiveRoom: Bool {
