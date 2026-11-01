@@ -77,9 +77,6 @@ struct GuessMySpotCheckView: View {
                 .accessibilityAddTraits(.isHeader)
             placeLine
             GuessMySpotPhotoDescriptionEditor(viewModel: viewModel)
-            Text(.guessMySpotCheckPrivate(viewModel.partnerName))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)

@@ -3,8 +3,9 @@ import SwiftUI
 /// The couple at the top of the Us tab: both photos joined by a heart, both names,
 /// and how long they have been together.
 ///
-/// It only shows who the couple is. The rows below it edit things: the profile row
-/// for the user's own name and photo, and the relationship date row for the count.
+/// Tapping your own photo opens your profile, and the pencil badge says so. Tapping
+/// your partner's photo opens what you call them. The rows below open the same
+/// screens, for anyone who doesn't think to tap a photo.
 struct SettingsCoupleHeader: View {
     let currentName: String
     let currentProfilePhotoAssetID: UUID?
@@ -13,6 +14,9 @@ struct SettingsCoupleHeader: View {
     /// The day the relationship started (`yyyy-MM-dd`). The count line hides until
     /// the couple sets it.
     let relationshipStartedOn: String?
+    var onOpenProfile: (() -> Void)?
+    /// Nil while there is no partner, so the photo is not a button.
+    var onOpenPartner: (() -> Void)?
 
     @Environment(\.avatarStyling) private var avatarStyling
 
@@ -38,14 +42,24 @@ struct SettingsCoupleHeader: View {
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             HStack(alignment: .top, spacing: 0) {
-                person(
-                    name: currentName, photo: currentProfilePhotoAssetID,
-                    tint: .paeoniaPartnerOne, decoration: decorations.own
+                tappable(
+                    person(
+                        name: currentName, photo: currentProfilePhotoAssetID,
+                        tint: .paeoniaPartnerOne, decoration: decorations.own, showsEditBadge: onOpenProfile != nil
+                    ),
+                    action: onOpenProfile,
+                    label: Text(.settingsProfileSectionTitle),
+                    identifier: "settings.coupleHeader.profile"
                 )
                 connector
-                person(
-                    name: partnerName, photo: partnerProfilePhotoAssetID,
-                    tint: .paeoniaPartnerTwo, decoration: decorations.partner
+                tappable(
+                    person(
+                        name: partnerName, photo: partnerProfilePhotoAssetID,
+                        tint: .paeoniaPartnerTwo, decoration: decorations.partner, showsEditBadge: false
+                    ),
+                    action: onOpenPartner,
+                    label: Text(.settingsPartnerNicknameRowTitle(partnerName)),
+                    identifier: "settings.coupleHeader.partner"
                 )
             }
 
@@ -55,18 +69,36 @@ struct SettingsCoupleHeader: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, PaeoniaSpacing.space8)
-        // Read as one line: both names, then the count.
-        .accessibilityElement(children: .combine)
         .onCalendarDayChange { now = Date() }
     }
 
+    @ViewBuilder
+    private func tappable(
+        _ content: some View, action: (() -> Void)?, label: Text, identifier: String
+    ) -> some View {
+        if let action {
+            Button(action: action) { content }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityHint(label)
+                .accessibilityIdentifier(identifier)
+        } else {
+            content.accessibilityElement(children: .combine)
+        }
+    }
+
     private func person(
-        name: String, photo: UUID?, tint: Color, decoration: AvatarDecoration
+        name: String, photo: UUID?, tint: Color, decoration: AvatarDecoration, showsEditBadge: Bool
     ) -> some View {
         VStack(spacing: PaeoniaSpacing.space8) {
             PaeoniaDecoratedAvatar(
                 mediaAssetID: photo, name: name, tint: tint, size: avatarSize, decoration: decoration
             )
+            .overlay(alignment: .bottomTrailing) {
+                if showsEditBadge {
+                    editBadge
+                }
+            }
             .padding(.vertical, decorationClearance)
             .accessibilityHidden(true)
 
@@ -78,6 +110,17 @@ struct SettingsCoupleHeader: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(width: columnWidth)
+    }
+
+    /// Sits on the photo's edge, like the edit badge on a contact card.
+    private var editBadge: some View {
+        Image(systemName: "pencil")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(.paeoniaBackgroundPrimary)
+            .frame(width: Self.heartCircleDiameter, height: Self.heartCircleDiameter)
+            .background(Circle().fill(.paeoniaAccentPrimary))
+            .overlay(Circle().stroke(.paeoniaBackgroundPrimary, lineWidth: 2))
+            .accessibilityHidden(true)
     }
 
     /// A line from photo to photo with the heart on it. The line overflows the

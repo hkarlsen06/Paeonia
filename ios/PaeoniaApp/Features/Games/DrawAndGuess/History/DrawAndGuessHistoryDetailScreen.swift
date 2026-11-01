@@ -95,11 +95,6 @@ struct DrawAndGuessHistoryDetailScreen: View {
                 drawing
                 replayRow
                 details
-                Text(.favoritesPrivacyHint)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextTertiary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.vertical, PaeoniaSpacing.space16)

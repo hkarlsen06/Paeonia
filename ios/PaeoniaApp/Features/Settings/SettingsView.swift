@@ -48,8 +48,8 @@ struct SettingsView: View {
     private let privacyOperationProvider: (any SyncClientOperationProviding)?
     private let adminGateway: (any AdminGateway)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ScaledMetric(relativeTo: .title) private var profileAvatarSize: CGFloat = 56
+    /// A screen opened from a photo in the couple header.
+    @State private var headerDestination: HeaderDestination?
 
     /// Lives here rather than on the profile screen, so a save keeps its state
     /// and still reports back after the user leaves that screen.
@@ -132,16 +132,7 @@ struct SettingsView: View {
                 coupleHeader
             }
             Group {
-                Section {
-                    profileRow
-                    AvatarDecorationSettingsRow(
-                        name: profileRowName,
-                        photoAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID
-                    )
-                    if partner != nil {
-                        PartnerNicknameSettingsRow(editor: nicknameEditor, partner: partner)
-                    }
-                }
+                youSection
                 SettingsRelationshipSection(
                     relationshipDateRow: RelationshipDateSettingsRow(
                         relationshipStartedOn: relationshipStartedOn,
@@ -163,6 +154,14 @@ struct SettingsView: View {
         .paeoniaGroupedList(showsTabBackdrop: true)
         .navigationTitle(Text(.mainTabUs))
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(item: $headerDestination) { destination in
+            switch destination {
+            case .profile:
+                profileScreen
+            case .partnerNickname:
+                PartnerNicknameSettingsRow.destination(editor: nicknameEditor, partner: partner)
+            }
+        }
         .task {
             await adminAccess.refresh()
         }
@@ -197,6 +196,13 @@ struct SettingsView: View {
 
 // MARK: - Menu
 
+private enum HeaderDestination: Hashable, Identifiable {
+    case profile
+    case partnerNickname
+
+    var id: Self { self }
+}
+
 extension SettingsView {
     /// Sits on the plum background instead of in a card, so it reads as the top of
     /// the page rather than a row.
@@ -206,69 +212,67 @@ extension SettingsView {
             currentProfilePhotoAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID,
             partnerName: partnerName,
             partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-            relationshipStartedOn: relationshipStartedOn
+            relationshipStartedOn: relationshipStartedOn,
+            onOpenProfile: { headerDestination = .profile },
+            onOpenPartner: partner == nil ? nil : { headerDestination = .partnerNickname }
         )
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets())
     }
 
+    private var youSection: some View {
+        Section {
+            profileRow
+            AvatarDecorationSettingsRow(
+                name: profileRowName,
+                photoAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID
+            )
+            if partner != nil {
+                PartnerNicknameSettingsRow(editor: nicknameEditor, partner: partner)
+            }
+        } header: {
+            Text(.settingsSectionYou)
+        }
+    }
+
     /// Name and photo are edited on the screen behind this row, above the account
     /// actions. Those are serious enough to sit one deliberate step away instead
-    /// of on the menu.
+    /// of on the menu. Your photo in the couple header opens the same screen.
     private var profileRow: some View {
         NavigationLink {
-            ProfileSettingsView(
-                editor: profileEditor,
-                savedDisplayName: currentDisplayName,
-                customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
-                providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
-                onSave: { [onUpdateProfile] displayName, photoUpdate in
-                    await onUpdateProfile(displayName, photoUpdate)
-                },
-                signInMethods: signInMethods,
-                accountSection: SettingsAccountSection(
-                    viewModel: viewModel,
-                    partnerName: partnerName,
-                    ownAccess: ownAccess,
-                    onLeftRelationship: onLeftRelationship,
-                    onLogout: onLogout,
-                    onDeleteAccount: onDeleteAccount,
-                    isLoggingOut: isLoggingOut
-                )
-            )
-            .analyticsScreen("settings_profile")
+            profileScreen
         } label: {
-            HStack(spacing: PaeoniaSpacing.space16) {
-                PaeoniaCoupleAvatar(
-                    mediaAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID,
-                    name: profileRowName,
-                    tint: .paeoniaPartnerOne,
-                    size: min(profileAvatarSize, 72),
-                    isCurrentUser: true
-                )
-                .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                    Text(profileRowName)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    // Clerk keeps the email with its saved session, so this works offline.
-                    if let email = PaeoniaClerk.currentEmail() {
-                        Text(email)
-                            .font(PaeoniaTypography.caption)
-                            .foregroundStyle(.paeoniaTextSecondary)
-                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
-                            .truncationMode(.middle)
-                    }
-                }
-                .layoutPriority(1)
+            Label {
+                Text(.settingsProfileSectionTitle)
+                    .foregroundStyle(.paeoniaTextPrimary)
+            } icon: {
+                Image(systemName: "person.crop.circle.fill")
             }
-            .padding(.vertical, PaeoniaSpacing.space4)
         }
         .accessibilityIdentifier("settings.profile")
+    }
+
+    private var profileScreen: some View {
+        ProfileSettingsView(
+            editor: profileEditor,
+            savedDisplayName: currentDisplayName,
+            customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
+            providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
+            onSave: { [onUpdateProfile] displayName, photoUpdate in
+                await onUpdateProfile(displayName, photoUpdate)
+            },
+            signInMethods: signInMethods,
+            accountSection: SettingsAccountSection(
+                viewModel: viewModel,
+                partnerName: partnerName,
+                ownAccess: ownAccess,
+                onLeftRelationship: onLeftRelationship,
+                onLogout: onLogout,
+                onDeleteAccount: onDeleteAccount,
+                isLoggingOut: isLoggingOut
+            )
+        )
+        .analyticsScreen("settings_profile")
     }
 
     private var profileRowName: String {
