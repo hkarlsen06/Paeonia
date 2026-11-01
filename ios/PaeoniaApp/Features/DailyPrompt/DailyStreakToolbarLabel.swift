@@ -160,8 +160,7 @@ struct DailyStreakToolbarLabel: View {
     private func label(for state: StreakPillState) -> some View {
         // On a milestone day the gold dot belongs to the number, so it sits right
         // against it and the flame moves a little further away.
-        // The hourglass hangs off the flame's top right corner, so it needs the same room.
-        HStack(spacing: state.isMilestone || state.isAtRisk ? PaeoniaSpacing.space8 : PaeoniaSpacing.space4) {
+        HStack(spacing: state.isMilestone ? PaeoniaSpacing.space8 : PaeoniaSpacing.space4) {
             flame(for: state)
 
             HStack(spacing: PaeoniaSpacing.space2) {
@@ -174,6 +173,12 @@ struct DailyStreakToolbarLabel: View {
 
                 Text(state.displayCount, format: .number)
                     .monospacedDigit()
+            }
+
+            if state.isAtRisk {
+                Image(systemName: "hourglass")
+                    .font(.system(size: flameHeight * 0.65, weight: .semibold))
+                    .accessibilityHidden(true)
             }
         }
         .font(.system(.subheadline, design: .rounded).weight(.bold))
@@ -202,15 +207,6 @@ struct DailyStreakToolbarLabel: View {
                         .font(.system(size: flameHeight * 0.42, weight: .bold))
                         .foregroundStyle(.paeoniaBackgroundPrimary)
                         .offset(y: flameHeight * 0.15)
-                        .accessibilityHidden(true)
-                }
-            }
-            .overlay(alignment: .topTrailing) {
-                if state.isAtRisk {
-                    Image(systemName: "hourglass")
-                        .font(.system(size: flameHeight * 0.5, weight: .bold))
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .offset(x: flameHeight * 0.2, y: -flameHeight * 0.1)
                         .accessibilityHidden(true)
                 }
             }
