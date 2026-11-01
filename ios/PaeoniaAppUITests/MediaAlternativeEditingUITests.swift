@@ -9,7 +9,6 @@ final class MediaAlternativeEditingUITests: XCTestCase {
         app.launchArguments = [
             "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
-        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
         app.launch()
         defer { app.terminate() }
         let own = app.buttons["stories.own"]

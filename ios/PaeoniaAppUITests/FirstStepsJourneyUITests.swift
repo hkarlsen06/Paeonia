@@ -38,9 +38,12 @@ final class FirstStepsJourneyUITests: XCTestCase {
     /// The card sits under today's question, which can push it below the fold.
     @MainActor
     private func scrollUntilHittable(_ element: XCUIElement, in app: XCUIApplication) {
-        for _ in 0..<4 where !element.isHittable {
-            app.swipeUp()
+        // Returning from another tab preserves Home's scroll position. The header may be above us.
+        for _ in 0..<12 where !element.isHittable {
+            if element.frame.midY < app.windows.firstMatch.frame.midY { app.swipeDown() }
+            else { app.swipeUp() }
         }
+        XCTAssertTrue(element.isHittable)
     }
 }
 

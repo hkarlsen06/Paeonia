@@ -313,8 +313,12 @@
       }
       .task {
         await seed()
+        if scenario == .consensioPlace || scenario == .consensioOwnTopic {
+          // Arrange only after the real load, rather than racing it with a fixed delay.
+          await hub.game.start()
+          arrange()
+        }
         isReady = true
-        await arrange()
       }
     }
 
@@ -357,8 +361,7 @@
     }
 
     /// Opens the part of the topic screen the scenario names, once the screen has read its state.
-    private func arrange() async {
-      try? await Task.sleep(for: .milliseconds(400))
+    private func arrange() {
       let game = hub.game
       switch scenario {
       case .consensioOwnTopic:

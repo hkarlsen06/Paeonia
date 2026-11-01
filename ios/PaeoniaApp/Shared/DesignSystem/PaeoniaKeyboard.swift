@@ -117,12 +117,8 @@ private struct KeyboardDoneButtonModifier: ViewModifier {
                         Text(.commonDone)
                             .fontWeight(.semibold)
                     }
-                    .buttonStyle(.glass)
-                    .controlSize(.large)
                     .tint(.paeoniaAccentPrimary)
-                    .padding(.bottom, PaeoniaSpacing.space8)
                 }
-                .sharedBackgroundVisibility(.hidden)
             }
     }
 }

@@ -36,6 +36,12 @@ struct SimulatorTextSizeSettings {
 
     private func openLargerText() throws {
         settings.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        // Relaunching Settings discards this controller and restores a different AX5 page.
+        // Resume it while the app audit runs so restoration uses the same native controls.
+        if settings.state == .runningBackground || settings.state == .runningForeground {
+            settings.activate()
+            if isLargerTextPage { return }
+        }
         settings.launch()
         guard settings.wait(for: .runningForeground, timeout: 10) else {
             throw failure("Settings did not enter the foreground")
