@@ -275,7 +275,7 @@
       "location-current-missing", "Location · current missing", "Current device needs a location refresh"
     )
     static let locationLive = relationship(
-      "location-live", "Location · live", "Both partners visible on the map"
+      "location-live", "Location · live", "Both partners on the iPad map card (MapKit). The iPhone map is paired-home"
     )
     static let locationStale = relationship(
       "location-stale", "Location · stale partner", "Partner location older than 24 hours"

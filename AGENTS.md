@@ -72,7 +72,7 @@ Do not create placeholder directories or files unless they are needed for the cu
 
 ## Agent Orientation
 
-When ownership is unclear or exploration would span the project, consult `docs/implementation-map.md`. A known-file typo or narrow edit does not require a repository tour.
+When the developer names a screen or tab the way users see it (Us, Chats, Games, More), look it up in `docs/implementation-map.md` before searching the code, because code names differ. The Us tab is `PairedHomeView`, which code calls Home. Consult it too when ownership is unclear or exploration would span the project. A known-file typo or narrow edit does not require a repository tour.
 
 For release planning, use `docs/mvp-release-checklist.md`. Paeonia no longer uses a phase roadmap as the active execution plan; the checklist is the source of truth for what remains before MVP submission.
 
@@ -152,7 +152,7 @@ The developer may run multiple agents in parallel in the same worktree.
 ## Development Defaults
 
 - Run commands from the repository root unless explicitly stated otherwise.
-- Work in your own git worktree off `main`. Build it, run the tests that cover it, and drive the app on the simulator when the change shows on screen. Then follow the global "Landing changes" instructions to rebase and fast-forward local `main` before handing back. [Testing](#testing) says when a change needs a new test.
+- Work in your own git worktree off `main`. Build it, run the tests that cover it, and drive the app on the simulator when the change shows on screen (`scripts/scenario-screenshot <scenario-id>` screenshots a developer scenario in one command). Then follow the global "Landing changes" instructions to rebase and fast-forward local `main` before handing back. [Testing](#testing) says when a change needs a new test.
 - Run Xcode builds and iOS tests through `./scripts/xcode-build-agent.sh` and `./scripts/xcode-test-agent.sh`, on the simulators that [Devices And Simulators](#devices-and-simulators) allows. To settle a compiler warning or error, reproduce it in a small file with `scripts/swift-typecheck`, which finishes in seconds.
 - Run a wrapper in the foreground with a 600000 ms timeout. That is how you wait for a long run, so do not write `sleep` loops to poll one. The wrapper's last line is a summary such as `SUMMARY: SUCCESS queued=312s compiled=95s tested=140s simulator="Shared iPhone 2"`, where `queued` is the time it waited for other agents and for a simulator to boot.
 - Run backend tests (`npm test` and `npm run typecheck` in `backend/`) whenever they help. They run in memory and touch no simulator.

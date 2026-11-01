@@ -2,9 +2,11 @@ import MapLibre
 import SwiftUI
 import UIKit
 
-/// A MapLibre map of OpenStreetMap data from OpenFreeMap, recolored to
-/// Paeonia's plum. Its camera fits both partners inside `framedBox`. The coordinator reports
-/// their projected positions as the camera moves, so SwiftUI's avatars follow the map.
+/// The Us tab's map in compact width (iPhone). Regular width (iPad) uses the MapKit
+/// `CoupleMapCard` instead. A MapLibre map of OpenStreetMap data from OpenFreeMap, recolored
+/// to Paeonia's plum. Colors and road visibility live in `HomeMapLibreView+PlumStyle.swift`.
+/// Its camera fits both partners inside `framedBox`. The coordinator reports their projected
+/// positions as the camera moves, so SwiftUI's avatars follow the map.
 /// The data credit sits behind the info button next to the distance (`HomeMapCredits`).
 struct HomeMapLibreView: UIViewRepresentable {
     let current: CLLocationCoordinate2D
