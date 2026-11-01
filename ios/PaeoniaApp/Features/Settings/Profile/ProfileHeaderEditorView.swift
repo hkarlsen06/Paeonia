@@ -4,11 +4,13 @@ import SwiftUI
 /// The name and photo editor on the profile screen. The avatar is the anchor, with
 /// its decoration left uncovered. A row of labelled buttons below it changes or
 /// removes the photo, and the name field sits under that row at the same width.
+/// Save appears under the name field once there is something to save.
 ///
 /// Nothing leaves the device until the user taps Save. `ProfileEditorViewModel`
 /// owns the edits and the async work; this view only draws them.
 struct ProfileHeaderEditorView: View {
     let editor: ProfileEditorViewModel
+    let onSave: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool
 
     @ScaledMetric(relativeTo: .title) private var avatarSize: CGFloat = 104
     /// Keeps the centered field visually tied to the avatar instead of stretching
@@ -16,6 +18,7 @@ struct ProfileHeaderEditorView: View {
     @ScaledMetric(relativeTo: .body) private var nameFieldWidth: CGFloat = 260
 
     @Environment(\.avatarStyling) private var avatarStyling
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var selectedItem: PhotosPickerItem?
 
@@ -32,8 +35,13 @@ struct ProfileHeaderEditorView: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                if showsSaveButton {
+                    saveButton
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
             }
             .frame(maxWidth: nameFieldWidth)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: showsSaveButton)
         }
         .frame(maxWidth: .infinity)
         .onChange(of: selectedItem) { _, item in
@@ -166,7 +174,7 @@ extension ProfileHeaderEditorView {
     }
 }
 
-// MARK: - Name
+// MARK: - Name and save
 
 extension ProfileHeaderEditorView {
     private var draft: ProfileEditorDraft {
@@ -195,6 +203,21 @@ extension ProfileHeaderEditorView {
         .disabled(editor.isSaving)
         .accessibilityIdentifier("settings.profile.displayName")
     }
+
+    private var showsSaveButton: Bool {
+        draft.hasChanges || editor.isSaving
+    }
+
+    private var saveButton: some View {
+        Button {
+            PaeoniaKeyboard.dismiss()
+            Task { await editor.save(using: onSave) }
+        } label: {
+            Text(.settingsProfileSave)
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: editor.isSaving))
+        .disabled(!editor.canSave)
+    }
 }
 
 /// A capsule with an icon and a short label, sized to its text so the two
@@ -222,7 +245,7 @@ private struct ProfilePhotoActionLabel: View {
 
 #Preview {
     ScrollView {
-        ProfileHeaderEditorView(editor: ProfileEditorViewModel())
+        ProfileHeaderEditorView(editor: ProfileEditorViewModel(), onSave: { _, _ in true })
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
     }

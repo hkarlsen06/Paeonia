@@ -4,8 +4,8 @@ import SwiftUI
 /// account actions below them.
 ///
 /// While there are unsaved edits the back button steps aside for Cancel, so a
-/// stray swipe can never throw away a new name or photo. Save sits at the bottom
-/// within thumb reach, and the keyboard covers it while the name is typed. The Us tab shows the banner
+/// stray swipe can never throw away a new name or photo. Save sits under the name
+/// field, since it saves only the name and photo. The Us tab shows the banner
 /// for the result, so it still appears if the user has moved on.
 struct ProfileSettingsView: View {
     let editor: ProfileEditorViewModel
@@ -17,12 +17,10 @@ struct ProfileSettingsView: View {
     let signInMethods: SignInMethodsViewModel?
     let accountSection: SettingsAccountSection
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     var body: some View {
         Form {
             Section {
-                ProfileHeaderEditorView(editor: editor)
+                ProfileHeaderEditorView(editor: editor, onSave: onSave)
                     .padding(.vertical, PaeoniaSpacing.space8)
                     .listRowBackground(Color.clear)
             }
@@ -38,13 +36,6 @@ struct ProfileSettingsView: View {
         .paeoniaGroupedList()
         .navigationTitle(Text(.settingsProfileSectionTitle))
         .navigationBarTitleDisplayMode(.inline)
-        .paeoniaBottomBar {
-            if showsSaveBar {
-                saveBar
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: showsSaveBar)
         .navigationBarBackButtonHidden(holdsUnsavedEdits)
         .toolbar {
             if holdsUnsavedEdits {
@@ -81,32 +72,6 @@ struct ProfileSettingsView: View {
     /// shows how it went.
     private var holdsUnsavedEdits: Bool {
         (editor.draft.hasChanges || editor.isLoadingPhoto) && !editor.isSaving
-    }
-
-    private var showsSaveBar: Bool {
-        editor.draft.hasChanges || editor.isSaving
-    }
-
-    private var saveBar: some View {
-        Button {
-            PaeoniaKeyboard.dismiss()
-            Task { await editor.save(using: onSave) }
-        } label: {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                if editor.isSaving {
-                    ProgressView()
-                        .tint(.paeoniaTextInverse)
-                        .accessibilityHidden(true)
-                }
-
-                Text(editor.isSaving ? .settingsProfileSaving : .settingsProfileSave)
-            }
-        }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .disabled(!editor.canSave)
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.vertical, PaeoniaSpacing.space12)
-        .background(.paeoniaBackgroundPrimary)
     }
 
     /// The saved profile can change while the screen is open, for example when
