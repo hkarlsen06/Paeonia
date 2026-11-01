@@ -9,7 +9,7 @@ final class MediaAlternativeEditingUITests: XCTestCase {
         app.launchArguments = [
             "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
-        app.launch()
+        app.launchWithExtraAccessibilityTools()
         defer { app.terminate() }
         let own = app.buttons["stories.own"]
         XCTAssertTrue(own.waitForExistence(timeout: 15))

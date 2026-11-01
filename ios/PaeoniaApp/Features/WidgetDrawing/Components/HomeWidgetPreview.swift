@@ -137,6 +137,7 @@ struct HomeWidgetCard: View {
         .accessibilityLabel(Text(.homeWidgetCardLabel))
         .accessibilityHint(Text(.homeWidgetCardHint))
         .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("home.widgetDrawing")
         // Beside the card's button, not inside it, so a tap on the reaction does not open the drawing.
         // At the bottom, because at the top it covers the header's name and time.
         .overlay(alignment: .bottomTrailing) {

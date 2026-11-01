@@ -127,7 +127,7 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
         app.launchArguments = [
             "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
-        app.launch()
+        app.launchWithExtraAccessibilityTools()
         let next = app.buttons["games.tutorial.next"]
         for _ in 0..<5 {
             guard next.waitForExistence(timeout: 2) else { break }

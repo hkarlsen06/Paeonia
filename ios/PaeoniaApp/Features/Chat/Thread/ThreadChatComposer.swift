@@ -35,6 +35,7 @@ struct ThreadChatComposer: View {
     @FocusState var isFocused: Bool
     @State var recorder = DailyVoiceRecorder()
     @State var voiceTranscript = ""
+    @AccessibilityPresentation(.media) var showsMediaAlternatives
     @State var voiceDraftEditing: ThreadChatVoiceDraftEditing?
     @State var staging = ThreadChatPhotoStaging()
     @State var isSubmitting = false

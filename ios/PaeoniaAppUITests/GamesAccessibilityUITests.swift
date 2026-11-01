@@ -67,7 +67,7 @@ final class GamesAccessibilityUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-paeonia-scenario", scenario, "-paeonia-scenario-hide-controls", "YES",
                                "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchWithExtraAccessibilityTools()
         let next = app.buttons["games.tutorial.next"]
         for _ in 0..<3 where next.waitForExistence(timeout: 1) { next.tap() }
         return app

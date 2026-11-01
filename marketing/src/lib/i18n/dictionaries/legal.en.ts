@@ -20,7 +20,7 @@ export const legalEn = {
       {
         heading: 'Voice and keyboard access',
         paragraphs: [
-          'Stories have visible pause, previous and next buttons. Boards, map navigation and profile-photo framing have button or form alternatives to dragging. These controls still need complete testing with assistive technology.',
+          'Stories have visible pause, previous and next buttons. Extra controls for boards, maps, drawings and photos appear automatically with accessibility tools, or you can choose Always show under Us > Accessibility. Descriptions and transcripts have a separate choice there. These controls still need complete testing with assistive technology.',
           'We have not yet verified complete journeys with VoiceOver, Voice Control, Switch Control, or Full Keyboard Access on either iPhone or iPad. We are not claiming complete support for these features.',
         ],
       },

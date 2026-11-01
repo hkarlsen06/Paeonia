@@ -74,6 +74,7 @@ struct PaeoniaImageViewerOverlay: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
+    @AccessibilityPresentation(.controls) private var showsControls
     @State private var selectedItemID: String
     @State private var savedItemIDs: Set<String> = []
     @State private var isSaving = false
@@ -123,8 +124,10 @@ struct PaeoniaImageViewerOverlay: View {
                     } else {
                         pages
                     }
-                    controls(maxHeight: geometry.size.height / 2)
-                        .opacity(1 - dragProgress)
+                    if showsControls {
+                        controls(maxHeight: geometry.size.height / 2)
+                            .opacity(1 - dragProgress)
+                    }
                 }
             }
         }

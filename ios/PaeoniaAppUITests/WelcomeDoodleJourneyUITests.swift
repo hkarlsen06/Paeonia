@@ -81,7 +81,7 @@ final class WelcomeDoodleJourneyUITests: XCTestCase {
             let app = XCUIApplication()
             app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
             app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-            app.launch()
+            app.launchWithExtraAccessibilityTools()
             defer { app.terminate() }
             let compose = app.buttons["drawing.compose"]
             XCTAssertTrue(compose.waitForExistence(timeout: 10))

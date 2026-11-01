@@ -10,14 +10,20 @@ struct MediaAlternativeReadout: View {
     var isCompact = false
     var titleOverride: LocalizedStringResource?
     var onPresentationChanged: ((Bool) -> Void)?
+    var alwaysVisible = false
     @Environment(\.threadChatContext) private var context
     @Environment(\.mediaAlternativeEditingService) private var service
     @State private var storedModel: MediaAlternativeEditorModel?
+    @AccessibilityPresentation(.media) private var showsMedia
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            readout
-            pendingStatus
+        Group {
+            if alwaysVisible || showsMedia || needsRecovery {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                    readout
+                    pendingStatus
+                }
+            }
         }
         .font(PaeoniaTypography.body)
         .tint(.paeoniaAccentPrimary)
@@ -85,6 +91,9 @@ struct MediaAlternativeReadout: View {
     private var displayedText: String? {
         guard let model else { return text }
         return model.displayedText(source: text, version: sourceVersion)
+    }
+    private var needsRecovery: Bool {
+        model?.pendingReadFailed == true || model?.pending?.hasFailedAttempt == true
     }
     private var model: MediaAlternativeEditorModel? {
         guard storedModel?.matches(target: editingTarget, context: context) == true else { return nil }

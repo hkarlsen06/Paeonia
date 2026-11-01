@@ -2,14 +2,18 @@ import SwiftUI
 
 struct PhotoDescriptionField: View {
     @Binding var text: String
+    var alwaysVisible = false
+    @AccessibilityPresentation(.media) private var showsMedia
 
     var body: some View {
-        TextField(text: $text, axis: .vertical) {
-            Text(.mediaAccessibilityPhotoDescription)
+        if alwaysVisible || showsMedia || text.unicodeScalars.count > 10_000 {
+            TextField(text: $text, axis: .vertical) {
+                Text(.mediaAccessibilityPhotoDescription)
+            }
+            .lineLimit(2...5)
+            .font(PaeoniaTypography.body)
+            .accessibilityHint(Text(.mediaAccessibilityPhotoHelp))
         }
-        .lineLimit(2...5)
-        .font(PaeoniaTypography.body)
-        .accessibilityHint(Text(.mediaAccessibilityPhotoHelp))
         if text.unicodeScalars.count > 10_000 {
             Text(.mediaAccessibilityTooLong)
                 .foregroundStyle(.paeoniaErrorText)

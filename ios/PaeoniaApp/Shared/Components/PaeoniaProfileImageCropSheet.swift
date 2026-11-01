@@ -16,6 +16,7 @@ struct PaeoniaProfileImageCropSheet: View {
 
     @State private var framingController = ProfilePhotoFramingController()
     @State private var framingDraft: FramingDraft?
+    @AccessibilityPresentation(.controls) private var showsControls
 
     private struct FramingDraft: Identifiable {
         let id = UUID()
@@ -28,14 +29,16 @@ struct PaeoniaProfileImageCropSheet: View {
                 image: image, onCrop: onCrop, onCancel: onCancel,
                 framingController: framingController
             )
-            Button(.imageCropAdjustFraming) {
-                guard let crop = framingController.cropController?.imageCropFrame else { return }
-                framingDraft = FramingDraft(framing: ProfilePhotoFraming(imageSize: image.size, crop: crop))
+            if showsControls {
+                Button(.imageCropAdjustFraming) {
+                    guard let crop = framingController.cropController?.imageCropFrame else { return }
+                    framingDraft = FramingDraft(framing: ProfilePhotoFraming(imageSize: image.size, crop: crop))
+                }
+                .buttonStyle(.borderedProminent)
+                .frame(minHeight: PaeoniaSpacing.buttonHeight)
+                .padding(PaeoniaSpacing.space12)
+                .accessibilityIdentifier("imageCrop.adjustFraming")
             }
-            .buttonStyle(.borderedProminent)
-            .frame(minHeight: PaeoniaSpacing.buttonHeight)
-            .padding(PaeoniaSpacing.space12)
-            .accessibilityIdentifier("imageCrop.adjustFraming")
         }
         .background(Color.paeoniaBackgroundPrimary)
         .preferredColorScheme(.dark)

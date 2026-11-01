@@ -10,7 +10,7 @@ final class GameDrawingDescriptionUITests: XCTestCase {
             let app = XCUIApplication()
             app.launchArguments = ["-paeonia-scenario", scenario, "-paeonia-scenario-hide-controls", "YES",
                                    "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-            app.launch()
+            app.launchWithExtraAccessibilityTools()
             let tutorial = app.buttons["games.tutorial.next"]
             for _ in 0..<3 where tutorial.waitForExistence(timeout: 1) { tutorial.tap() }
             let open = app.buttons["game.drawing.description.open"]

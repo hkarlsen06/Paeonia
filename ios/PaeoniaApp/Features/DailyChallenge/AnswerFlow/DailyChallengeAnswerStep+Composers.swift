@@ -97,24 +97,30 @@ extension DailyChallengeAnswerStep {
     }
 
     private func mediaAccessibilityField(isVoice: Bool) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            Text(isVoice ? LocalizedStringResource.mediaAccessibilityTranscript : .mediaAccessibilityPhotoDescription)
-                .font(PaeoniaTypography.caption)
-            TextField(
-                isVoice ? String(localized: .mediaAccessibilityTranscriptHint)
-                    : String(localized: .mediaAccessibilityPhotoHint),
-                text: Binding(
-                    get: { viewModel.mediaAccessibilityText(for: question.id) },
-                    set: { viewModel.setMediaAccessibilityText($0, for: question.id) }
-                ), axis: .vertical
-            )
-            .accessibilityIdentifier("daily.answer.mediaAccessibilityText")
-            .font(PaeoniaTypography.body)
-            .textFieldStyle(.roundedBorder)
-            if DailyAnswerDraft.measuredLength(of: viewModel.mediaAccessibilityText(for: question.id)) > 10_000 {
-                Text(.mediaAccessibilityTooLong)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaErrorText)
+        let title: LocalizedStringResource = isVoice ? .mediaAccessibilityTranscript : .mediaAccessibilityPhotoDescription
+        let isTooLong = DailyAnswerDraft.measuredLength(of: viewModel.mediaAccessibilityText(for: question.id)) > 10_000
+        return Group {
+            if showsMediaAlternatives || isTooLong {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                    Text(title)
+                        .font(PaeoniaTypography.caption)
+                    TextField(
+                        isVoice ? String(localized: .mediaAccessibilityTranscriptHint)
+                            : String(localized: .mediaAccessibilityPhotoHint),
+                        text: Binding(
+                            get: { viewModel.mediaAccessibilityText(for: question.id) },
+                            set: { viewModel.setMediaAccessibilityText($0, for: question.id) }
+                        ), axis: .vertical
+                    )
+                    .accessibilityIdentifier("daily.answer.mediaAccessibilityText")
+                    .font(PaeoniaTypography.body)
+                    .textFieldStyle(.roundedBorder)
+                    if isTooLong {
+                        Text(.mediaAccessibilityTooLong)
+                            .font(PaeoniaTypography.caption)
+                            .foregroundStyle(.paeoniaErrorText)
+                    }
+                }
             }
         }
     }

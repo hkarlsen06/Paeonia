@@ -18,14 +18,23 @@ extension DrawingComposition.Shape {
 /// for speech, switch and keyboard interaction.
 struct DrawingCompositionButton: View {
     let action: () -> Void
+    var alwaysVisible: Bool
+    @AccessibilityPresentation(.controls) private var showsControls
+
+    init(alwaysVisible: Bool = false, action: @escaping () -> Void) {
+        self.alwaysVisible = alwaysVisible
+        self.action = action
+    }
 
     var body: some View {
-        Button(action: action) {
-            Text(.drawingComposeTitle)
-                .fixedSize(horizontal: false, vertical: true)
+        if showsControls || alwaysVisible {
+            Button(action: action) {
+                Text(.drawingComposeTitle)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .buttonStyle(PaeoniaSecondaryButtonStyle())
+            .accessibilityIdentifier("drawing.compose")
         }
-        .buttonStyle(PaeoniaSecondaryButtonStyle())
-        .accessibilityIdentifier("drawing.compose")
     }
 }
 
@@ -62,12 +71,13 @@ private struct DrawingCompositionView: View {
     @State private var selected: Int?
     @State private var undo: [PKDrawing] = []
     @Environment(\.dismiss) private var dismiss
+    @AccessibilityPresentation(.media) private var showsMedia
 
     var body: some View {
         NavigationStack {
             Form {
                 compositionSection
-                if let description {
+                if let description, showsMedia || description.wrappedValue.unicodeScalars.count > 500 {
                     Section {
                         TextField(text: description, axis: .vertical) { Text(.drawingDescriptionTitle) }
                             .accessibilityIdentifier("drawing.description")

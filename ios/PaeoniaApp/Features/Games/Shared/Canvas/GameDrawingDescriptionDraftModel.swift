@@ -87,46 +87,51 @@ struct GameDrawingDescriptionEditor: View {
     var isGuessingGame = false
     var isLocked = false
     @State private var isPresented = false
+    @AccessibilityPresentation(.media) private var showsMedia
 
     var body: some View {
-        Button(.mediaAccessibilityDrawingDescription) { isPresented = true }
-            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-            .disabled(isLocked)
-            .accessibilityIdentifier("game.drawing.description.open")
-            .sheet(isPresented: $isPresented) {
-                NavigationStack {
-                    Form {
-                        if model.loadFailed {
-                            Text(.mediaAccessibilityLoadFailed)
-                            Button(.commonTryAgain, action: model.load)
-                        } else {
-                            TextField(text: Binding(get: { model.text }, set: model.update), axis: .vertical) {
-                                Text(.mediaAccessibilityDrawingDescription)
-                            }
-                            .lineLimit(4...12)
-                            .disabled(isLocked)
-                            .accessibilityIdentifier("game.drawing.description.text")
-                            Text(isGuessingGame ? LocalizedStringResource.gamesDrawingDescriptionClueHint
-                                 : .gamesDrawingDescriptionPartHint)
-                            if model.isTooLong { Text(.mediaAccessibilityTooLong).foregroundStyle(.paeoniaErrorText) }
-                            if model.saveFailed {
-                                Text(.mediaAccessibilitySaveFailed)
-                                Button(.commonTryAgain, action: model.save)
-                            }
+        Group {
+            if showsMedia || model.isTooLong || model.saveFailed {
+                Button(.mediaAccessibilityDrawingDescription) { isPresented = true }
+                    .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                    .disabled(isLocked)
+                    .accessibilityIdentifier("game.drawing.description.open")
+            }
+        }
+        .sheet(isPresented: $isPresented) {
+            NavigationStack {
+                Form {
+                    if model.loadFailed {
+                        Text(.mediaAccessibilityLoadFailed)
+                        Button(.commonTryAgain, action: model.load)
+                    } else {
+                        TextField(text: Binding(get: { model.text }, set: model.update), axis: .vertical) {
+                            Text(.mediaAccessibilityDrawingDescription)
                         }
-                    }
-                    .paeoniaGroupedList()
-                    .keyboardDoneToolbar()
-                    .navigationTitle(Text(.mediaAccessibilityDrawingDescription))
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button(.commonDone) { isPresented = false }
-                                .accessibilityIdentifier("game.drawing.description.done")
+                        .lineLimit(4...12)
+                        .disabled(isLocked)
+                        .accessibilityIdentifier("game.drawing.description.text")
+                        Text(isGuessingGame ? LocalizedStringResource.gamesDrawingDescriptionClueHint
+                             : .gamesDrawingDescriptionPartHint)
+                        if model.isTooLong { Text(.mediaAccessibilityTooLong).foregroundStyle(.paeoniaErrorText) }
+                        if model.saveFailed {
+                            Text(.mediaAccessibilitySaveFailed)
+                            Button(.commonTryAgain, action: model.save)
                         }
                     }
                 }
-                .preferredColorScheme(.dark)
+                .paeoniaGroupedList()
+                .keyboardDoneToolbar()
+                .navigationTitle(Text(.mediaAccessibilityDrawingDescription))
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(.commonDone) { isPresented = false }
+                            .accessibilityIdentifier("game.drawing.description.done")
+                    }
+                }
             }
+            .preferredColorScheme(.dark)
+        }
     }
 }

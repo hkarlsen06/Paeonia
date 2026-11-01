@@ -17,6 +17,8 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-11-01.
 
+- Us > Accessibility controls the optional visible tools. Extra controls and media descriptions each default to Automatic, which follows the system's assistive-technology state, or can be set to Always show. Board-control buttons, native scale inputs, place picking, shape creation and description panels use these preferences. Labels, native board semantics, text scaling, contrast, motion preferences and private game-state rules remain active. Hiding an authoring field preserves its draft and validation; invalid input and failed saves retain a recovery action.
+
 - Mind Meld, Consensio and Guess my spot open history through their toolbar score capsules. Their adjacent menus omit history, and Mind Meld has no second history button on the result.
 
 - Games and their histories hide the tab bar on iPhone to keep the play area available. iPad keeps its top tab bar. The toolbar chat shortcut and the chat's return button switch between the retained Games and Chats routes. Returning hides the tab bar and waits for the keyboard to close, the full-screen layout to settle and a frame to render before showing the game. The shared tab root supplies the same visibility to the Games navigation root.
@@ -24,8 +26,8 @@ Decided on 2026-11-01.
 
 Decided on 2026-10-31.
 
-- Board games offer a visible Board controls button opening native, scrollable controls. Four in a Row lists every cell and its owner before each column's drop button. Dots and Boxes offers a native list-style box picker, the selected box's full state, and four side buttons. Its spatial grid still exposes all 16 boxes and their custom actions. Ludo lists all four pawns, including base, shared track square and safety, home lane and finished state, with Roll and legal pawn buttons using the existing move callbacks. Ultimate Tic-Tac-Toe cells include their board number and selected state.
-- Consensio offers a native Slider and Stepper alongside the line. Revealed pins report owner and exact position measured from the left endpoint. Pins still hidden by the reveal are omitted. Guess my spot offers place search and signed coordinate entry in both photo checking and guessing. The picker receives no photo or round metadata and selects through the same callbacks as map taps.
+- When extra controls are shown, board games offer a Board controls button opening native, scrollable controls. Four in a Row lists every cell and its owner before each column's drop button. Dots and Boxes offers a native list-style box picker, the selected box's full state, and four side buttons. Its spatial grid still exposes all 16 boxes and their custom actions. Ludo lists all four pawns, including base, shared track square and safety, home lane and finished state, with Roll and legal pawn buttons using the existing move callbacks. Ultimate Tic-Tac-Toe cells include their board number and selected state.
+- Extra controls add a native Slider and Stepper alongside Consensio's line. Revealed pins report owner and exact position measured from the left endpoint. Pins still hidden by the reveal are omitted. Guess my spot's extra controls offer place search and signed coordinate entry in both photo checking and guessing. The picker receives no photo or round metadata and selects through the same callbacks as map taps.
 - Draw & Guess has a visible skip replay button in guessing and history, alongside its existing replay actions. These controls do not make visual drawing recognition accessible. Drawing composition, recognition and the remaining animated reveals still need device-based accessibility review before claiming complete game access.
 
 - Chats, Games, Memories and More use inline navigation titles. Us keeps its custom map header. Mind Meld stacks full-width word cards at accessibility text sizes, so the revealed words use the person's chosen reading size.

@@ -37,6 +37,7 @@ struct DailyChallengeAnswerStep: View {
     @State var isRecording = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @AccessibilityPresentation(.media) var showsMediaAlternatives
     @ScaledMetric(relativeTo: .title) private var questionSize: CGFloat = 32
     @ScaledMetric(relativeTo: .title2) private var compactQuestionSize: CGFloat = 24
     @ScaledMetric(relativeTo: .body) private var smallQuestionSize: CGFloat = 20

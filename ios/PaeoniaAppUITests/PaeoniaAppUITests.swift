@@ -41,7 +41,7 @@ final class PaeoniaAppUITests: XCTestCase {
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
         // English, so the headlines can be checked.
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchWithExtraAccessibilityTools()
 
         pickTheDateAndDrawBeforeSignIn(app)
 

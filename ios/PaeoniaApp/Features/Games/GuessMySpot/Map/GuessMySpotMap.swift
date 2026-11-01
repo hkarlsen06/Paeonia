@@ -58,6 +58,7 @@ struct GuessMySpotMap: View {
     static let satelliteKey = "paeonia.games.guessMySpot.satellite"
     @AppStorage(GuessMySpotMap.satelliteKey) private var savedSatellite = false
     @State private var showsPlacePicker = false
+    @AccessibilityPresentation(.controls) private var showsControls
     @State private var center: CLLocationCoordinate2D?
     /// Where the map sits in its window, and the safe area under it.
     @State private var layoutFrame: CGRect = .zero
@@ -144,7 +145,7 @@ struct GuessMySpotMap: View {
             }
         }
         .overlay(alignment: .bottomLeading) {
-            if onTap != nil {
+            if showsControls, onTap != nil {
                 Button(.guessMySpotChoosePlace) { showsPlacePicker = true }
                     .buttonStyle(.borderedProminent)
                     .padding(PaeoniaSpacing.space8)

@@ -22,6 +22,7 @@ struct WidgetDrawingView: View {
     @Environment(ReactionStore.self) private var reactionStore: ReactionStore?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @AccessibilityPresentation(.media) private var showsMedia
 
     init(
         ownerUserID: UUID? = nil,
@@ -182,17 +183,22 @@ struct WidgetDrawingView: View {
             }
 
             if !dynamicTypeSize.isAccessibilitySize { compositionButton }
-            Text(viewModel.accessibilityText.trimmedNonEmpty ?? String(localized: .drawingGeometryMissing))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            if showsMedia || viewModel.accessibilityText.unicodeScalars.count > 500 {
+                Text(viewModel.accessibilityText.trimmedNonEmpty ?? String(localized: .drawingGeometryMissing))
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("widgetDrawing.description")
+            }
 
             bottomActions
         }
     }
 
     private var compositionButton: some View {
-        DrawingCompositionButton { isCompositionPresented = true }
+        DrawingCompositionButton(alwaysVisible: viewModel.accessibilityText.unicodeScalars.count > 500) {
+            isCompositionPresented = true
+        }
     }
 
     private func showBanner(for failure: WidgetDrawingSaveFailure) {

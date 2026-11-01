@@ -194,7 +194,26 @@ struct ThreadChatAttachmentDrawer: View {
 struct ThreadChatStagedPhotosRow: View {
     let staging: ThreadChatPhotoStaging
 
+    @AccessibilityPresentation(.media) private var showsMedia
+
     var body: some View {
+        if showsMedia || staging.staged.contains(where: {
+            DailyAnswerDraft.measuredLength(of: $0.photo.accessibilityText ?? "") > 10_000
+        }) {
+            describedPhotos
+        } else {
+            ScrollView(.horizontal) {
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    ForEach(staging.staged) { thumbnail($0, side: 64) }
+                    if staging.isProcessing { ProgressView() }
+                }
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
+        }
+    }
+
+    private var describedPhotos: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             ForEach(staging.staged) { item in
                 HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {

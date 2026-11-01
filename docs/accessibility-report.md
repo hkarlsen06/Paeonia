@@ -8,6 +8,8 @@ Apple requires every common task to work with a feature before claiming its labe
 
 The current implementation has four main tabs and ten games. `MainTab.questions` names the Chats tab internally. Existing native semantics, local-first storage, private nickname resolution, hidden-answer rules, adaptive layouts and Reduce Motion behavior were inspected before extending them.
 
+Us > Accessibility now controls optional visible tools. Extra controls and media alternatives each offer Automatic or Always show. Automatic uses SwiftUI's [assistive-technology environment](https://developer.apple.com/documentation/swiftui/environmentvalues/accessibilityenabled), including before sign-in. The preferences hide optional buttons and fields, preserve drafts and stored descriptions, and keep validation and failed-save recovery available. Labels, board semantics, text size, contrast and Reduce Motion remain active. Verification of this presentation change is pending; earlier recorded feature journeys describe the prior visible presentation.
+
 Our quality goals exceed Apple's label requirements: comfortable AX5 layouts, 44-point custom targets, efficient navigation, stable focus, accessible creation, durable drafts and correction after sharing. Apple does not list the last two as separate label requirements. Neither automated audits nor the labels establish legal compliance.
 
 ## Verification record

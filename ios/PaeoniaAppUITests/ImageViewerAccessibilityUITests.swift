@@ -72,7 +72,7 @@ final class ImageViewerAccessibilityUITests: XCTestCase {
         app.launchArguments += [
             "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
-        app.launch()
+        app.launchWithExtraAccessibilityTools()
         let thumbnail = app.buttons["memory.photo.E1000001-0000-4000-8000-000000000001"]
         XCTAssertTrue(thumbnail.waitForExistence(timeout: 15))
         thumbnail.tap()

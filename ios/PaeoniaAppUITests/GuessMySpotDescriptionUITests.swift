@@ -9,7 +9,7 @@ final class GuessMySpotDescriptionUITests: XCTestCase {
         app.launchArguments = [
             "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
-        app.launch()
+        app.launchWithExtraAccessibilityTools()
         defer { app.terminate() }
         let next = app.buttons["games.tutorial.next"]
         for _ in 0..<5 {

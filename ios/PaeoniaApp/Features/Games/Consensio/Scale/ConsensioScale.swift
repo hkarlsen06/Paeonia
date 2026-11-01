@@ -57,6 +57,7 @@ struct ConsensioScale: View {
     @State private var dragStart: Int?
     @State private var lastTickBucket: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AccessibilityPresentation(.controls) private var showsControls
 
     static let trackHeight: CGFloat = 4
     /// Room above the track for a lifted pin.
@@ -75,7 +76,7 @@ struct ConsensioScale: View {
                 subject: subject, leftEnd: leftEnd, rightEnd: rightEnd,
                 editable: editable, readOnlyPins: pins
             ))
-            if let editable {
+            if showsControls, let editable {
                 Slider(value: Binding(
                     get: { Double(editable.position ?? ConsensioRules.middle) },
                     set: { editable.move(Int($0), false) }

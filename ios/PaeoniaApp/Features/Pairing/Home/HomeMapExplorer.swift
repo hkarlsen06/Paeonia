@@ -330,6 +330,7 @@ struct HomeMapShowBothButton: View {
     let onDetails: () -> Void
     /// The bottom of the open map, in the map's points.
     let mapBottom: CGFloat
+    @AccessibilityPresentation(.controls) private var showsControls
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -348,7 +349,7 @@ struct HomeMapShowBothButton: View {
                 .accessibilityLabel(Text(.homeMapShowBoth))
                 .transition(.opacity)
             }
-            mapMenu
+            if showsControls { mapMenu }
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: explorer.isExploring)
         .padding(.trailing, PaeoniaSpacing.screenHorizontalPadding)

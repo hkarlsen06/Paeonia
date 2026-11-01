@@ -307,6 +307,8 @@ extension SettingsView {
 
             AppLockSettingsRow()
 
+            AccessibilitySettingsRow()
+
             NavigationLink {
                 PurchaseSettingsView(
                     viewModel: viewModel,

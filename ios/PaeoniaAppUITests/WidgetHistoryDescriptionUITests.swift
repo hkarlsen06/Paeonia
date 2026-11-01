@@ -8,7 +8,7 @@ final class WidgetHistoryDescriptionUITests: XCTestCase {
         app.launchArguments = ["-paeonia-scenario", "widget-history-populated",
                                "-paeonia-scenario-hide-controls", "YES",
                                "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchWithExtraAccessibilityTools()
         defer { app.terminate() }
         let edit = app.buttons["media.alternative.edit"].firstMatch
         scrollTo(edit, app: app)

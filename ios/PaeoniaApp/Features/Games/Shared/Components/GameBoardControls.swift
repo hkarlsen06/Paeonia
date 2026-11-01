@@ -4,14 +4,19 @@ import SwiftUI
 struct GameBoardControls<Controls: View>: View {
     @State private var isPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @AccessibilityPresentation(.controls) private var showsControls
     @ViewBuilder let controls: () -> Controls
 
     var body: some View {
-        Button { isPresented = true } label: {
-            Label(.gamesBoardControls, systemImage: "hand.tap")
+        Group {
+            if showsControls {
+                Button { isPresented = true } label: {
+                    Label(.gamesBoardControls, systemImage: "hand.tap")
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("games.board.controls")
+            }
         }
-        .buttonStyle(.bordered)
-        .accessibilityIdentifier("games.board.controls")
         .sheet(isPresented: $isPresented) {
             NavigationStack {
                 Form { controls() }

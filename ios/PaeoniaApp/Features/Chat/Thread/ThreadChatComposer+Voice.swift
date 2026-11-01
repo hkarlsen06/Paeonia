@@ -39,12 +39,14 @@ extension ThreadChatComposer {
 
     var reviewBar: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(.mediaAccessibilityTranscript).font(PaeoniaTypography.caption)
-            TextField(String(localized: .mediaAccessibilityTranscriptHint), text: $voiceTranscript, axis: .vertical)
-                .lineLimit(2...4)
-                .textFieldStyle(.roundedBorder)
-            if DailyAnswerDraft.measuredLength(of: voiceTranscript) > 10_000 {
-                Text(.mediaAccessibilityTooLong).foregroundStyle(.paeoniaErrorText)
+            if showsMediaAlternatives || DailyAnswerDraft.measuredLength(of: voiceTranscript) > 10_000 {
+                Text(.mediaAccessibilityTranscript).font(PaeoniaTypography.caption)
+                TextField(String(localized: .mediaAccessibilityTranscriptHint), text: $voiceTranscript, axis: .vertical)
+                    .lineLimit(2...4)
+                    .textFieldStyle(.roundedBorder)
+                if DailyAnswerDraft.measuredLength(of: voiceTranscript) > 10_000 {
+                    Text(.mediaAccessibilityTooLong).foregroundStyle(.paeoniaErrorText)
+                }
             }
             HStack(spacing: PaeoniaSpacing.space8) {
                 roundButton(

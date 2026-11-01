@@ -8,7 +8,7 @@ final class DrawingCompositionUITests: XCTestCase {
         app.launchArguments = [
             "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
-        app.launch()
+        app.launchWithExtraAccessibilityTools()
         let compose = app.buttons["drawing.compose"]
         XCTAssertTrue(compose.waitForExistence(timeout: 10))
         compose.tap()
