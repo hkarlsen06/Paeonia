@@ -16,6 +16,8 @@ Latest finalized unit and UI evidence uses signed `1228bc2e87ff7093d9d854ae5d9a4
 
 Distinct publication identities and a shared pending-publication gate keep completion in the uploader. Incoming server history now merges independently of an editor overlay, and unreadable pending markers remain intact. The two final software landing blockers have passing regression coverage on this source. This closes those tested software paths, without establishing assistive-technology usability or a label.
 
+The signed implementation and evidence were fast-forwarded onto local `main`. The preapproved `scripts/deploy-backend` deployed `5b27fe9c` to `api.paeonia.no` and `relay.paeonia.no`. Schema validation and deployment completed; the hosted description-correction endpoint refused an unauthenticated caller with `42501`. [Deployment log](../.audit/accessibility/deployment-5b27fe9c.txt) and [limited smoke checks](../.audit/accessibility/deployment-5b27fe9c-smoke.json) retain the results. This does not verify an authenticated media journey. The public statement and App Store answers remain unpublished.
+
 | Evidence | Result and exact limit |
 | --- | --- |
 | Full iOS unit and integration suite, source `1228bc2e`, build 0623 | Finalized: 2,293 executions passed, representing 2,192 distinct methods, with 137 runs across 36 parameterized methods. Zero failures or skips. Pending-overlay history, unreadable pending markers and widget-refresh completion regressions passed. [Summary](../.audit/accessibility/final-1228bc2e/group1/summary.json), [case index](../.audit/accessibility/final-1228bc2e/group1/case-index.tsv). |

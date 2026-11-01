@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-11-01T05:37:23+00:00",
+  "deployedCommit": "5b27fe9cc2e8afc060a2614dfc86e84728bc467c",
+  "probeLimit": "An initial Python urllib health request received HTTP403. This check uses the installed curl client; it does not establish behavior for other clients.",
+  "backendHealth": {
+    "httpStatus": 200,
+    "body": "unknown"
+  },
+  "unauthenticatedDescriptionCorrection": {
+    "httpStatus": 200,
+    "response": {
+      "status": "error",
+      "errorMessage": "[Request ID: 54aae101b1b04ac6] Server Error",
+      "errorData": {
+        "code": "42501",
+        "message": "authenticated user required"
+      }
+    }
+  }
+}
