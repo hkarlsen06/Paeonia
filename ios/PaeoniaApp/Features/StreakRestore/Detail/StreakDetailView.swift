@@ -71,10 +71,8 @@ struct StreakDetailView: View {
     }
 
     var body: some View {
-        PaeoniaScreenScroll {
-            VStack(spacing: PaeoniaSpacing.space24) {
-                Spacer(minLength: PaeoniaSpacing.space16)
-
+        ScrollView {
+            VStack(spacing: PaeoniaSpacing.space16) {
                 hero
 
                 heading
@@ -90,8 +88,6 @@ struct StreakDetailView: View {
                         .modifier(StreakDetailReveal(shown: shouldShowDetails))
                 }
 
-                Spacer(minLength: PaeoniaSpacing.space16)
-
                 Button(action: onClose) {
                     Text(.streakDetailDone)
                 }
@@ -100,9 +96,10 @@ struct StreakDetailView: View {
                 .modifier(StreakDetailReveal(shown: shouldShowDetails))
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.vertical, PaeoniaSpacing.space32)
+            .padding(.vertical, PaeoniaSpacing.space24)
             .paeoniaReadableWidth()
         }
+        .scrollBounceBehavior(.basedOnSize)
         .background(.paeoniaSurfacePrimary)
         .onAppear(perform: revealCelebrationDetails)
     }

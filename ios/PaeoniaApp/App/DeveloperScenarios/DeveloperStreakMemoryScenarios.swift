@@ -69,10 +69,15 @@
         )
       case .streakAtRisk, .streakFrozen:
         let streak = statusStreak
-        VStack {
-          DailyStreakToolbarLabel(state: StreakPillState(streak))
-          StreakDetailView(streak: streak)
-        }
+        Color.paeoniaBackgroundPrimary
+          .overlay(alignment: .topTrailing) {
+            DailyStreakToolbarLabel(state: StreakPillState(streak))
+          }
+          .sheet(isPresented: .constant(true)) {
+            StreakDetailView(streak: streak)
+              .presentationDetents([.large])
+              .presentationBackground(.paeoniaSurfacePrimary)
+          }
       default:
         StreakDetailView(streak: healthyStreak)
       }

@@ -39057,19 +39057,19 @@
       }
     },
     "streakDetail.message" : {
-      "comment" : "Short, forgiving explanation that each partner must do one meaningful daily activity to keep the couple streak alive",
+      "comment" : "Explains that the shared streak grows only when both partners take part each day.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each of you does one small thing each day to keep the flame going. Answer questions, send a drawing, add a memory, or write a message. If a day goes by without both of you, the flame cools down. You can always light it again."
+            "value" : "Your streak grows when you both do something each day."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Begge gjør én liten ting hver dag for å holde flammen i live. Svar på spørsmål, send en tegning, legg til et minne eller skriv en melding. Hvis en dag går uten at dere begge har vært med, kjølner flammen. Dere kan alltid tenne den igjen."
+            "value" : "Rekken vokser når dere begge gjør noe hver dag."
           }
         }
       }

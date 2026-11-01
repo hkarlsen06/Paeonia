@@ -29,11 +29,23 @@ struct StreakMilestoneProgressView: View {
             }
             .accessibilityElement(children: .combine)
 
-            HStack(spacing: PaeoniaSpacing.space8) {
-                ForEach(StreakMilestones.badges(currentCount: currentCount, longestCount: longestCount)) { badge in
-                    badgeView(badge)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    badges
+                }
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: badgeSize), spacing: PaeoniaSpacing.space8)],
+                    spacing: PaeoniaSpacing.space8
+                ) {
+                    badges
                 }
             }
+        }
+    }
+
+    private var badges: some View {
+        ForEach(StreakMilestones.badges(currentCount: currentCount, longestCount: longestCount)) { badge in
+            badgeView(badge)
         }
     }
 
