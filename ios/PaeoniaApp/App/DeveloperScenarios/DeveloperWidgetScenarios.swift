@@ -5,6 +5,19 @@
   @MainActor
   struct DeveloperWidgetScenarioView: View {
     let scenario: DeveloperScenario
+    @State private var historyEditing = MediaAlternativeEditingService(
+      pending: InMemoryPendingSyncOperationRepository(),
+      cache: MediaAlternativeCacheUpdater(chat: InMemoryThreadChatCache(),
+                                          stories: DeveloperAvatarStoriesCache(StoriesSnapshot()),
+                                          daily: DeveloperLocalFlowSnapshotCache())
+    )
+
+    private var historyContext: ThreadChatContext {
+      var context = ThreadChatContext(coupleID: DeveloperScenarioFixture.coupleID)
+      context.participants.currentUserID = DeveloperScenarioFixture.currentUserID
+      context.operationProvider = DeveloperScenarioOperationProvider()
+      return context
+    }
 
     var body: some View {
       switch scenario {
@@ -32,6 +45,8 @@
           ),
           thumbnailLoader: NoOpWidgetRevisionThumbnailLoader()
         )
+        .environment(\.threadChatContext, historyContext)
+        .environment(\.mediaAlternativeEditingService, historyEditing)
       default:
         NavigationStack {
           WidgetDrawingView(
@@ -87,7 +102,7 @@
         activeRevisionAuthorUserID: DeveloperScenarioFixture.currentUserID,
         payloadMediaAssetID: UUID(),
         bounds: WidgetDrawingBounds(x: 0, y: 0, width: 260, height: 240, canvasSide: 320),
-        revisionCreatedAt: DeveloperScenarioFixture.now
+        revisionCreatedAt: DeveloperScenarioFixture.now, coupleID: DeveloperScenarioFixture.coupleID
       )
     }
     func signedPayloadURL(mediaAssetID _: UUID) throws -> URL? { nil }

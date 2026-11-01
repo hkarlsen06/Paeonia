@@ -48,6 +48,7 @@ extension PaeoniaWidgetRefreshService {
         let payloadMediaAssetID: UUID?
         let bounds: DrawingBounds?
         let revisionCreatedAt: Date?
+        var descriptionVersion: Int64?
 
         enum CodingKeys: String, CodingKey {
             case activeRevisionID = "active_revision_id"
@@ -55,6 +56,7 @@ extension PaeoniaWidgetRefreshService {
             case payloadMediaAssetID = "payload_media_asset_id"
             case bounds
             case revisionCreatedAt = "revision_created_at"
+            case descriptionVersion = "revision_description_version"
         }
     }
 
@@ -119,50 +121,7 @@ extension PaeoniaWidgetRefreshService {
         let authorName: String?
         let createdAt: Date
         var accessibilityText: String?
-    }
-
-    struct CurrentPayload: Codable {
-        let schemaVersion = 1
-        let revisionID: String
-        let authorName: String?
-        let createdAt: Date
-        let renderedAt: Date
-        let rendererVersion = 1
-        let privacyMode = "normal"
-        let isRedacted = false
-        let contentHash: String
-        let previews: [String: String]
-        /// The app requires this to read the payload, so leaving it out shows
-        /// the empty sketch on the app's home card.
-        let canvasSide: Double
-        var accessibilityText: String?
-
-        enum CodingKeys: String, CodingKey {
-            case schemaVersion
-            case revisionID = "revisionId"
-            case authorName
-            case createdAt
-            case renderedAt
-            case rendererVersion
-            case privacyMode
-            case isRedacted
-            case contentHash
-            case previews
-            case accessibilityText
-            case canvasSide
-        }
-
-        static var encoder: JSONEncoder {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            return encoder
-        }
-
-        static var decoder: JSONDecoder {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return decoder
-        }
+        var descriptionVersion: Int64?
     }
 
     /// The person's own name, saved by the app. A first-day drawing has no partner, so the server

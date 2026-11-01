@@ -1,4 +1,6 @@
+import CoreGraphics
 import Foundation
+import PencilKit
 import Testing
 @testable import PaeoniaApp
 
@@ -28,6 +30,27 @@ struct WidgetCanvasLiveFeedTests {
         #expect(env.transport.paths.value == ["widget:get_widget_canvas"])
         #expect(env.transport.args.value.first?["p_couple_id"] == "\"\(couple.uuidString)\"")
 
+        await env.stop()
+    }
+
+    @Test func sameRevisionDescriptionReachesPublishedMetadataWithoutAnotherDrawingSync() async throws {
+        let files = WidgetCanvasTestEnvironment()
+        defer { try? FileManager.default.removeItem(at: files.containerURL.deletingLastPathComponent()) }
+        let service = files.makeService()
+        let revision = UUID()
+        try await service.saveDescribedDrawing(makeNonEmptyDrawing().dataRepresentation(),
+                                               canvasSize: CGSize(width: 320, height: 320), authorName: "Partner",
+                                               createdAt: Date(), revisionID: revision, accessibilityText: "Original")
+        let before = try files.decodePayload()
+        let env = Env(me: me, couple: couple, descriptions: service)
+        env.lastSynced.mutate { $0 = revision.uuidString }
+        await env.start()
+        env.push(revision: revision, description: "A corrected sun", version: 2_000)
+        #expect(await waitUntil { (try? files.decodePayload().accessibilityText) == "A corrected sun" })
+        let after = try files.decodePayload()
+        #expect(after.previews == before.previews)
+        #expect(after.contentHash == before.contentHash)
+        #expect(env.syncer.callCount == 0)
         await env.stop()
     }
 
@@ -82,14 +105,14 @@ private final class Env: @unchecked Sendable {
     let feed: WidgetCanvasLiveFeed
     private var task: Task<Void, Never>?
 
-    init(me: UUID, couple: UUID?) {
+    init(me: UUID, couple: UUID?, descriptions: (any WidgetDrawingDescriptionCaching)? = nil) {
         session = SyncSession(userID: me, activeCoupleID: couple, relationshipCoupleID: couple)
         live = LiveQueryService(transport: transport)
         let lastSynced = lastSynced
         let syncer = syncer
         syncer.onSync = { revision in lastSynced.mutate { $0 = revision } }
         feed = WidgetCanvasLiveFeed(
-            syncer: syncer,
+            syncer: syncer, descriptions: descriptions,
             lastSyncedRevisionID: { lastSynced.value },
             storedIdentity: {
                 WidgetSyncIdentity(currentUserID: nil, currentDisplayName: "Me", partnerDisplayName: "Partner")
@@ -108,13 +131,18 @@ private final class Env: @unchecked Sendable {
         await task?.value
     }
 
-    func push(revision: UUID) {
+    func push(revision: UUID, description: String? = nil, version: Int64? = nil) {
         transport.lastRevision.mutate { $0 = revision.uuidString }
         let canvasID = UUID().uuidString.lowercased()
         let revisionID = revision.uuidString.lowercased()
+        let metadata: String
+        if let description, let version {
+            metadata = ",\"bounds\":{\"x\":0,\"y\":0,\"width\":1,\"height\":1,\"canvasSide\":320,"
+                + "\"accessibilityText\":\"\(description)\"},\"revision_description_version\":\(version)"
+        } else { metadata = "" }
         transport.send(
             """
-            [{"canvas_id":"\(canvasID)","active_revision_id":"\(revisionID)"}]
+            [{"canvas_id":"\(canvasID)","active_revision_id":"\(revisionID)"\(metadata)}]
             """
         )
     }

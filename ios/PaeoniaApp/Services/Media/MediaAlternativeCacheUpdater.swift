@@ -7,11 +7,13 @@ nonisolated struct MediaAlternativeCacheUpdater: Sendable {
     let topics: FileTopicsCache?
     let guessMySpot: (any GuessMySpotCaching)?
     let drawings: (any GamesCaching)?
+    let widgetCanvas: (any WidgetDrawingDescriptionCaching)?
     let creatures: (any ExquisiteCorpseCaching)?
 
     init(chat: any ThreadChatCaching, stories: any StoriesCaching, daily: any DailyChallengeSnapshotCaching,
          topics: FileTopicsCache? = nil, guessMySpot: (any GuessMySpotCaching)? = nil,
-         drawings: (any GamesCaching)? = nil, creatures: (any ExquisiteCorpseCaching)? = nil) {
+         drawings: (any GamesCaching)? = nil, creatures: (any ExquisiteCorpseCaching)? = nil,
+         widgetCanvas: (any WidgetDrawingDescriptionCaching)? = nil) {
         self.chat = chat
         self.stories = stories
         self.daily = daily
@@ -19,12 +21,13 @@ nonisolated struct MediaAlternativeCacheUpdater: Sendable {
         self.guessMySpot = guessMySpot
         self.drawings = drawings
         self.creatures = creatures
+        self.widgetCanvas = widgetCanvas
     }
 
     static let live = Self(chat: FileThreadChatCache.shared, stories: FileStoriesCache.shared,
                            daily: FileDailyChallengeSnapshotCache.live(), topics: .shared,
                            guessMySpot: FileGuessMySpotCache.shared, drawings: FileGamesCache.shared,
-                           creatures: FileExquisiteCorpseCache.shared)
+                           creatures: FileExquisiteCorpseCache.shared, widgetCanvas: WidgetCanvasService.shared)
 
     nonisolated struct Stamp: Sendable {
         let privacy: LocalPrivacyWriteGuard.Token
@@ -46,11 +49,19 @@ nonisolated struct MediaAlternativeCacheUpdater: Sendable {
         return await chat.purgeGeneration() == stamp.chat
     }
 
-    func apply(_ edit: MediaAlternativeEdit, ownerUserID: UUID, operation: SyncClientOperation, stamp: Stamp) async {
+    func apply(_ edit: MediaAlternativeEdit, ownerUserID: UUID, operation: SyncClientOperation, stamp: Stamp,
+               widgetRevisionVersion: Int64? = nil) async {
         await MediaAlternativeCacheWrites.shared.perform(
-            ownerUserID: ownerUserID, edit: edit, operation: operation, privacyToken: stamp.privacy
+            ownerUserID: ownerUserID, edit: edit, operation: operation, privacyToken: stamp.privacy,
+            widgetRevisionVersion: widgetRevisionVersion
         ) {
             await applyToCaches(edit, ownerUserID: ownerUserID, stamp: stamp)
+            if case let .widgetDrawing(revisionID) = edit.target, await isCurrent(stamp) {
+                let update: WidgetDrawingDescriptionUpdate = widgetRevisionVersion.map {
+                    .accepted(text: edit.text.trimmedNonEmpty, version: $0, operationID: operation.id)
+                } ?? .queued(text: edit.text, operationID: operation.id)
+                await widgetCanvas?.updateDescription(update, revisionID: revisionID, privacyToken: stamp.privacy)
+            }
         }
     }
 

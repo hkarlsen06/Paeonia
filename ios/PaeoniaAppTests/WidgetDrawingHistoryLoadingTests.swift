@@ -34,6 +34,50 @@ struct WidgetDrawingHistoryLoadingTests {
 
     // MARK: - Overlapping loads
 
+    @Test func historySharingRefusesAnotherIdentityOrRelationship() async throws {
+        let owner = UUID()
+        let couple = UUID()
+        let gateway = StubGateway(canvasState: makeState(coupleID: couple),
+                                  pages: [[makeSummary(createdAt: date(100))]])
+        let viewModel = WidgetDrawingHistoryViewModel(
+            gateway: gateway, identity: WidgetSyncIdentity(currentUserID: owner,
+                                                           currentDisplayName: "Alex", partnerDisplayName: "Robin")
+        )
+        await viewModel.loadInitialIfNeeded()
+        let item = try #require(viewModel.items.first)
+        var changed = ThreadChatContext(coupleID: UUID())
+        changed.participants.currentUserID = owner
+        await #expect(throws: MediaAlternativeEditingError.self) {
+            _ = try await viewModel.prepareShare(for: item, service: nil, context: changed)
+        }
+        changed.coupleID = couple
+        changed.participants.currentUserID = UUID()
+        await #expect(throws: MediaAlternativeEditingError.self) {
+            _ = try await viewModel.prepareShare(for: item, service: nil, context: changed)
+        }
+    }
+
+    @Test func olderHistoryReadCannotRollBackACorrectionObservedByANewerRead() async {
+        let revisionID = UUID()
+        let original = makeSummary(createdAt: date(100), revisionID: revisionID,
+                                   description: "Original sun", version: 1_000)
+        let corrected = makeSummary(createdAt: date(100), revisionID: revisionID,
+                                    description: "A sun above two hills", version: 1_001)
+        let gateway = GatedListGateway(canvasState: makeState(), heldCall: 2,
+                                      otherPages: [[original], [corrected]])
+        let viewModel = makeViewModel(gateway: gateway, pageSize: 10)
+        await viewModel.loadInitialIfNeeded()
+        let older = Task { await viewModel.refreshNewest() }
+        await gateway.waitUntilListIsHeld()
+        await viewModel.refreshNewest()
+        #expect(viewModel.items.first?.accessibilityText == "A sun above two hills")
+        await gateway.releaseHeldList(with: .success([original]))
+        await older.value
+        #expect(viewModel.items.first?.accessibilityText == "A sun above two hills")
+        #expect(viewModel.items.first?.descriptionVersion == 1_001)
+        #expect(viewModel.items.first?.createdAt == original.createdAt)
+    }
+
     @Test func retryWinsOverAnEarlierFirstPageLoadThatFinishesLate() async {
         let stale = makeSummary(createdAt: date(100))
         let fresh = makeSummary(createdAt: date(200))
@@ -127,24 +171,26 @@ struct WidgetDrawingHistoryLoadingTests {
         )
     }
 
-    private func makeSummary(createdAt: Date) -> WidgetDrawingRevisionSummary {
+    private func makeSummary(createdAt: Date, revisionID: UUID = UUID(), description: String? = nil,
+                             version: Int64? = nil) -> WidgetDrawingRevisionSummary {
         WidgetDrawingRevisionSummary(
-            revisionID: UUID(),
+            revisionID: revisionID,
             authorUserID: UUID(),
             payloadMediaAssetID: UUID(),
-            bounds: WidgetDrawingBounds(x: 0, y: 0, width: 10, height: 10, canvasSide: 320),
-            createdAt: createdAt
+            bounds: WidgetDrawingBounds(x: 0, y: 0, width: 10, height: 10, canvasSide: 320,
+                                        accessibilityText: description),
+            createdAt: createdAt, descriptionVersion: version
         )
     }
 
-    private func makeState() -> WidgetCanvasState {
+    private func makeState(coupleID: UUID? = nil) -> WidgetCanvasState {
         WidgetCanvasState(
             canvasID: UUID(),
             activeRevisionID: nil,
             activeRevisionAuthorUserID: nil,
             payloadMediaAssetID: nil,
             bounds: nil,
-            revisionCreatedAt: nil
+            revisionCreatedAt: nil, coupleID: coupleID
         )
     }
 

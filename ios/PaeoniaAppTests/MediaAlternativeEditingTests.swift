@@ -232,6 +232,26 @@ struct MediaAlternativeEditingTests {
         #expect(model.acceptedText == nil)
     }
 
+    @Test func widgetCorrectionSurvivesOutboxReopeningAndCannotBypassTheDrawingLimit() async throws {
+        let fixture = try Fixture()
+        defer { fixture.removeFiles() }
+        let target = MediaAlternativeTarget.widgetDrawing(revisionID: UUID())
+        let edit = MediaAlternativeEdit(coupleID: fixture.couple, target: target, text: "A sun over two hills")
+        try await fixture.queue(edit)
+        let reopened = MediaAlternativeEditingService(
+            pending: SwiftDataPendingSyncOperationRepository(container: fixture.localStore.container),
+            cache: fixture.caches
+        )
+        #expect(try await reopened.pendingEdit(ownerUserID: fixture.owner, coupleID: fixture.couple,
+                                               target: target)?.text == edit.text)
+        await #expect(throws: MediaAlternativeEditingError.self) {
+            try await fixture.queue(MediaAlternativeEdit(coupleID: fixture.couple, target: target,
+                                                         text: String(repeating: "a", count: 501)))
+        }
+        #expect(try await reopened.pendingEdit(ownerUserID: fixture.owner, coupleID: fixture.couple,
+                                               target: target)?.text == edit.text)
+    }
+
     @MainActor
     private struct Fixture {
         let owner = UUID()
@@ -284,14 +304,14 @@ private actor HoldingMediaAlternativeGateway {
     private var requestWaiters: [CheckedContinuation<Void, Never>] = []
     private var completion: CheckedContinuation<Void, Never>?
 
-    func update(_ edit: MediaAlternativeEdit, operation _: SyncClientOperation) async -> String? {
+    func update(_ edit: MediaAlternativeEdit, operation _: SyncClientOperation) async -> MediaAlternativeAcceptedText {
         await withCheckedContinuation { continuation in
             completion = continuation
             started = true
             requestWaiters.forEach { $0.resume() }
             requestWaiters = []
         }
-        return edit.text
+        return MediaAlternativeAcceptedText(accessibilityText: edit.text)
     }
     func waitForRequest() async {
         if started { return }

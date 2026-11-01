@@ -434,6 +434,7 @@ describe("reads", () => {
       client_renderer_version: "r1",
       client_validation_version: "v1",
       revision_created_at: expect.any(String),
+      revision_description_version: Date.parse(row.revision_created_at!),
       canvas_created_at: "2026-10-10T12:00:00.000Z",
       canvas_updated_at: expect.any(String),
       sync_updated_at: expect.any(String),

@@ -13,11 +13,13 @@ nonisolated enum WidgetDrawingHistoryFactory {
 }
 
 /// A paginated, newest-first timeline of the couple's saved drawings. Each entry
-/// shows who drew it above and when it was saved below. Read-only.
+/// shows who drew it above and when it was saved below. Authors can correct descriptions.
 struct WidgetDrawingHistoryView: View {
     @State private var viewModel: WidgetDrawingHistoryViewModel
     private let thumbnailLoader: any WidgetRevisionThumbnailLoading
     @State private var shareable: PaeoniaShareable?
+    @Environment(\.threadChatContext) private var context
+    @Environment(\.mediaAlternativeEditingService) private var editingService
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
@@ -65,10 +67,23 @@ struct WidgetDrawingHistoryView: View {
         .paeoniaTopBanner(bannerCenter)
         .task {
             await viewModel.loadInitialIfNeeded()
+            for await change in LocalStoreChanges.changes(in: .pendingOperations) {
+                guard !Task.isCancelled else { return }
+                guard change.ownerUserID == nil || change.ownerUserID == context.participants.currentUserID else {
+                    continue
+                }
+                await viewModel.refreshDescriptions(service: editingService, context: context)
+            }
+        }
+        .task(id: viewModel.items.map(\.id)) {
+            await viewModel.refreshDescriptions(service: editingService, context: context)
         }
         // The live canvas feed saved a new drawing while the timeline is open.
         .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetCanvasDidUpdate)) { _ in
-            Task { await viewModel.refreshNewest() }
+            Task {
+                await viewModel.refreshNewest()
+                await viewModel.refreshDescriptions(service: editingService, context: context)
+            }
         }
         .paeoniaShareSheet(item: $shareable)
     }
@@ -102,7 +117,7 @@ struct WidgetDrawingHistoryView: View {
                     WidgetDrawingHistoryRow(
                         item: item,
                         loader: thumbnailLoader,
-                        onShare: { shareable = viewModel.shareable(for: item) }
+                        onShare: { share(item) }
                     )
                     .task {
                         await viewModel.loadMoreIfNeeded(currentItem: item)
@@ -124,6 +139,16 @@ struct WidgetDrawingHistoryView: View {
             .padding(.vertical, PaeoniaSpacing.space20)
         }
         .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private func share(_ item: WidgetDrawingHistoryItem) {
+        Task {
+            do {
+                shareable = try await viewModel.prepareShare(for: item, service: editingService, context: context)
+            } catch {
+                bannerCenter.show(.error(message: String(localized: .mediaAccessibilityLoadFailed)))
+            }
+        }
     }
 
     /// Shown below the last row when an older page failed to load. The last row's
@@ -201,6 +226,9 @@ private struct WidgetDrawingHistoryRow: View {
                 onShare: onShare
             )
             .containerRelativeFrame(.horizontal) { width, _ in width * Self.widthFraction }
+
+            MediaAlternativeReadout(text: item.accessibilityText, isVoice: false, isDrawing: true,
+                                    editingTarget: item.isMine ? .widgetDrawing(revisionID: item.id) : nil)
 
             HStack(spacing: PaeoniaSpacing.space8) {
                 Text(item.createdAt, format: Date.FormatStyle(date: .abbreviated, time: .shortened))

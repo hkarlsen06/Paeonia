@@ -11,6 +11,7 @@ import Foundation
 nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
     let name = "widgetCanvas"
 
+    private let descriptions: (any WidgetDrawingDescriptionCaching)?
     private let syncer: any WidgetCanvasSyncing
     private let lastSyncedRevisionID: @Sendable () -> String?
     private let storedIdentity: @Sendable () -> WidgetSyncIdentity
@@ -19,6 +20,7 @@ nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
 
     init(
         syncer: any WidgetCanvasSyncing,
+        descriptions: (any WidgetDrawingDescriptionCaching)? = nil,
         lastSyncedRevisionID: @escaping @Sendable () -> String? = { WidgetCanvasSyncService.lastSyncedRevisionID() },
         storedIdentity: @escaping @Sendable () -> WidgetSyncIdentity = { WidgetSyncIdentityStore.shared.load() },
         hasPendingUpload: @escaping @Sendable () -> Bool = { WidgetPendingUploadStore.shared.hasPending },
@@ -29,6 +31,7 @@ nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
         }
     ) {
         self.syncer = syncer
+        self.descriptions = descriptions
         self.lastSyncedRevisionID = lastSyncedRevisionID
         self.storedIdentity = storedIdentity
         self.hasPendingUpload = hasPendingUpload
@@ -56,6 +59,14 @@ nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
             // the moment to retry a drawing that is still waiting to be sent,
             // even when the canvas itself did not change.
             let revisionID = rows.first?.activeRevisionID
+            if let state = rows.first, let revisionID, let version = state.descriptionVersion {
+                await descriptions?.updateDescription(.remote(text: state.bounds?.accessibilityText, version: version),
+                                                       revisionID: revisionID,
+                                                       privacyToken: LocalPrivacyWriteGuard.shared.token(
+                                                        ownerUserID: session.userID
+                                                       ))
+            }
+            guard !Task.isCancelled else { return }
             // Reactions on the drawing need the server's revision and its author.
             await recordLatestDrawing(revisionID, rows.first?.activeRevisionAuthorUserID)
             let isNewRevision = revisionID.map { $0.uuidString != lastSyncedRevisionID() } ?? false

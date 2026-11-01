@@ -69,6 +69,8 @@ nonisolated struct WidgetCanvasState: Decodable, Sendable {
     let payloadMediaAssetID: UUID?
     let bounds: WidgetDrawingBounds?
     let revisionCreatedAt: Date?
+    var descriptionVersion: Int64?
+    var coupleID: UUID?
 
     enum CodingKeys: String, CodingKey {
         case canvasID = "canvas_id"
@@ -77,6 +79,8 @@ nonisolated struct WidgetCanvasState: Decodable, Sendable {
         case payloadMediaAssetID = "payload_media_asset_id"
         case bounds
         case revisionCreatedAt = "revision_created_at"
+        case descriptionVersion = "revision_description_version"
+        case coupleID = "couple_id"
     }
 }
 

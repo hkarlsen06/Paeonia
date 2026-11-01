@@ -11,6 +11,7 @@ nonisolated struct WidgetDrawingRevisionSummary: Decodable, Sendable {
     let payloadMediaAssetID: UUID?
     let bounds: WidgetDrawingBounds?
     let createdAt: Date
+    var descriptionVersion: Int64?
 
     enum CodingKeys: String, CodingKey {
         case revisionID = "revision_id"
@@ -18,6 +19,7 @@ nonisolated struct WidgetDrawingRevisionSummary: Decodable, Sendable {
         case payloadMediaAssetID = "payload_media_asset_id"
         case bounds
         case createdAt = "created_at"
+        case descriptionVersion = "revision_description_version"
     }
 }
 

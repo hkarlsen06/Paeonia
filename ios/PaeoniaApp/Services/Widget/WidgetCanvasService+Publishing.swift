@@ -79,11 +79,8 @@ extension WidgetCanvasService {
 
         // Write the metadata last so it never references previews that do not
         // exist yet; the widget falls back to a placeholder otherwise.
-        let payload = Self.makePayload(publication, fileRevisionID: fileRevisionID, previews: previews)
-        let payloadData = try WidgetSharePayload.encoder().encode(payload)
-        let payloadURL = appGroupContainerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
-        try checkGenerations(generations)
-        try payloadData.write(to: payloadURL, options: .atomic)
+        try writePublicationMetadata(publication, fileRevisionID: fileRevisionID,
+                                     previews: previews, generations: generations, containerURL: appGroupContainerURL)
         didPublishPayload = true
 
         await reloader.reloadWidget()
@@ -94,6 +91,27 @@ extension WidgetCanvasService {
             olderThan: Date().addingTimeInterval(-Self.unreferencedPreviewRetention),
             fileManager: fileManager
         )
+    }
+
+    private func writePublicationMetadata(_ publication: WidgetCanvasPublication, fileRevisionID: String,
+                                          previews: [String: String], generations: WidgetCanvasGenerations,
+                                          containerURL: URL) throws {
+        try WidgetPayloadFileLock.withExclusiveAccess(in: containerURL) {
+            var payload = Self.makePayload(publication, fileRevisionID: fileRevisionID, previews: previews)
+            let payloadURL = containerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
+            // Rendering may have suspended while the author corrected this exact revision's text.
+            if let data = try? Data(contentsOf: payloadURL),
+               let current = try? WidgetSharePayload.decoder().decode(WidgetSharePayload.self, from: data),
+               current.revisionID == payload.revisionID, current.contentHash == payload.contentHash,
+               current.descriptionVersion != nil || current.pendingDescriptionOperationID != nil {
+                payload.accessibilityText = current.accessibilityText
+                payload.descriptionVersion = current.descriptionVersion
+                payload.pendingDescriptionOperationID = current.pendingDescriptionOperationID
+            }
+            let payloadData = try WidgetSharePayload.encoder().encode(payload)
+            try checkGenerations(generations)
+            try payloadData.write(to: payloadURL, options: .atomic)
+        }
     }
 
     /// Renders and writes one preview per Home Screen family. Returns the paths

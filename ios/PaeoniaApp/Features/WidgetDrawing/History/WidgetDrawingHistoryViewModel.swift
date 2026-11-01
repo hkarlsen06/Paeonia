@@ -14,6 +14,7 @@ nonisolated struct WidgetDrawingHistoryItem: Identifiable, Sendable, Equatable {
     let mediaAssetID: UUID
     let canvasSide: CGFloat
     var accessibilityText: String?
+    var descriptionVersion: Int64?
 }
 
 /// Loads the couple's past drawings newest-first, one page at a time, for the
@@ -52,8 +53,11 @@ final class WidgetDrawingHistoryViewModel {
     private let exporter: any WidgetRevisionThumbnailLoading
 
     private var canvasID: UUID?
+    private var loadedCoupleID: UUID?
     private var cursor: Cursor?
     private var seenRevisionIDs: Set<UUID> = []
+    private var pendingDescriptionOperations: [UUID: UUID] = [:]
+    private var descriptionsGeneration = 0
     private var didStartInitialLoad = false
     /// Bumped by every first-page load. A load, refresh, or older-page fetch that
     /// finds a different value after an `await` was overtaken by a newer first-page
@@ -118,6 +122,59 @@ final class WidgetDrawingHistoryViewModel {
             return
         }
         items.insert(contentsOf: newItems(from: page), at: 0)
+    }
+
+    /// The outbox is the durable local overlay until the server accepts the correction.
+    func refreshDescriptions(service: MediaAlternativeEditingService?, context: ThreadChatContext) async {
+        guard let service, let owner = context.participants.currentUserID, owner == identity.currentUserID,
+              let couple = context.coupleID, couple == loadedCoupleID else { return }
+        descriptionsGeneration += 1
+        let generation = descriptionsGeneration
+        let token = LocalPrivacyWriteGuard.shared.token(ownerUserID: owner)
+        for item in items where item.isMine {
+            let target = MediaAlternativeTarget.widgetDrawing(revisionID: item.id)
+            let pending = try? await service.pendingEdit(ownerUserID: owner, coupleID: couple, target: target)
+            guard generation == descriptionsGeneration, !Task.isCancelled,
+                  LocalPrivacyWriteGuard.shared.isCurrent(token) else { return }
+            guard let index = items.firstIndex(where: { $0.id == item.id }) else { continue }
+            if let pending {
+                pendingDescriptionOperations[item.id] = pending.operationID
+                items[index].accessibilityText = pending.text.trimmedNonEmpty
+            } else if pendingDescriptionOperations.removeValue(forKey: item.id) != nil {
+                let accepted = await MediaAlternativeCacheWrites.shared.acceptedWidgetDescription(
+                    ownerUserID: owner, target: target
+                )
+                guard generation == descriptionsGeneration, !Task.isCancelled,
+                      LocalPrivacyWriteGuard.shared.isCurrent(token),
+                      let currentIndex = items.firstIndex(where: { $0.id == item.id }) else { return }
+                if let accepted, items[currentIndex].descriptionVersion.map({ accepted.version >= $0 }) ?? true {
+                    items[currentIndex].accessibilityText = accepted.text.trimmedNonEmpty
+                    items[currentIndex].descriptionVersion = accepted.version
+                }
+            }
+        }
+    }
+
+    func prepareShare(for item: WidgetDrawingHistoryItem, service: MediaAlternativeEditingService?,
+                      context: ThreadChatContext) async throws -> PaeoniaShareable {
+        guard let owner = context.participants.currentUserID, owner == identity.currentUserID,
+              let couple = context.coupleID, couple == loadedCoupleID else {
+            throw MediaAlternativeEditingError.privacyChanged
+        }
+        let token = LocalPrivacyWriteGuard.shared.token(ownerUserID: owner)
+        var shared = items.first(where: { $0.id == item.id }) ?? item
+        if item.isMine, let service {
+            let pending = try await service.pendingEdit(ownerUserID: owner, coupleID: couple,
+                                                        target: .widgetDrawing(revisionID: item.id))
+            guard LocalPrivacyWriteGuard.shared.isCurrent(token), !Task.isCancelled else {
+                throw MediaAlternativeEditingError.privacyChanged
+            }
+            if let pending { shared.accessibilityText = pending.text.trimmedNonEmpty }
+        }
+        guard LocalPrivacyWriteGuard.shared.isCurrent(token), !Task.isCancelled else {
+            throw MediaAlternativeEditingError.privacyChanged
+        }
+        return shareable(for: shared)
     }
 
     /// What the share sheet offers for a drawing: the drawing at full quality on
@@ -197,6 +254,7 @@ final class WidgetDrawingHistoryViewModel {
                 }
                 // No canvas yet (e.g. not paired) means no drawings to show.
                 canvasID = nil
+                loadedCoupleID = nil
                 hasMore = false
                 phase = .loaded
                 return
@@ -205,6 +263,7 @@ final class WidgetDrawingHistoryViewModel {
                 return
             }
             canvasID = state.canvasID
+            loadedCoupleID = state.coupleID
             try await fetchUntilProgressOrEnd(generation: generation)
             if generation == loadGeneration {
                 phase = .loaded
@@ -267,11 +326,18 @@ final class WidgetDrawingHistoryViewModel {
     /// The showable rows of `page` not yet in the timeline, marked as seen.
     private func newItems(from page: [WidgetDrawingRevisionSummary]) -> [WidgetDrawingHistoryItem] {
         page.compactMap { summary -> WidgetDrawingHistoryItem? in
-            guard let mediaAssetID = summary.payloadMediaAssetID,
-                  !seenRevisionIDs.contains(summary.revisionID)
-            else {
+            guard let mediaAssetID = summary.payloadMediaAssetID else { return nil }
+            if let index = items.firstIndex(where: { $0.id == summary.revisionID }) {
+                guard pendingDescriptionOperations[summary.revisionID] == nil else { return nil }
+                if items[index].descriptionVersion == nil || summary.descriptionVersion.map({ version in
+                    items[index].descriptionVersion.map { version >= $0 } ?? true
+                }) == true {
+                    items[index].accessibilityText = summary.bounds?.accessibilityText
+                    items[index].descriptionVersion = summary.descriptionVersion
+                }
                 return nil
             }
+            guard !seenRevisionIDs.contains(summary.revisionID) else { return nil }
             seenRevisionIDs.insert(summary.revisionID)
             let isMine = summary.authorUserID != nil && summary.authorUserID == identity.currentUserID
             return WidgetDrawingHistoryItem(
@@ -281,7 +347,7 @@ final class WidgetDrawingHistoryViewModel {
                 createdAt: summary.createdAt,
                 mediaAssetID: mediaAssetID,
                 canvasSide: summary.bounds.map { CGFloat($0.canvasSide) } ?? WidgetDrawingViewModel.fallbackCanvasSide,
-                accessibilityText: summary.bounds?.accessibilityText
+                accessibilityText: summary.bounds?.accessibilityText, descriptionVersion: summary.descriptionVersion
             )
         }
     }

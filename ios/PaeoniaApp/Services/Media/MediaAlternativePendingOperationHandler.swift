@@ -1,23 +1,29 @@
 import Foundation
 
+nonisolated struct MediaAlternativeAcceptedText: Decodable, Sendable {
+    let accessibilityText: String?
+    var widgetRevisionVersion: Int64?
+    enum CodingKeys: String, CodingKey {
+        case accessibilityText = "accessibility_text"
+        case widgetRevisionVersion = "revision_description_version"
+    }
+}
+
 nonisolated protocol MediaAlternativeGateway: Sendable {
-    func update(_ edit: MediaAlternativeEdit, operation: SyncClientOperation) async throws -> String?
+    func update(_ edit: MediaAlternativeEdit, operation: SyncClientOperation) async throws
+        -> MediaAlternativeAcceptedText
 }
 
 nonisolated struct LiveMediaAlternativeGateway: MediaAlternativeGateway {
     let client: PaeoniaConvexClient
 
-    func update(_ edit: MediaAlternativeEdit, operation: SyncClientOperation) async throws -> String? {
-        let result: Response = try await client.mutation(
+    func update(_ edit: MediaAlternativeEdit, operation: SyncClientOperation) async throws
+        -> MediaAlternativeAcceptedText {
+        let result: MediaAlternativeAcceptedText = try await client.mutation(
             "media:update_accessibility_text",
             args: Request(edit: edit, operation: GameClientOperationFields(operation))
         )
-        return result.accessibilityText
-    }
-
-    private struct Response: Decodable {
-        let accessibilityText: String?
-        enum CodingKeys: String, CodingKey { case accessibilityText = "accessibility_text" }
+        return result
     }
 
     private struct Request: Encodable {
@@ -39,7 +45,7 @@ nonisolated struct LiveMediaAlternativeGateway: MediaAlternativeGateway {
         enum CodingKeys: String, CodingKey {
             case kind, messageID = "message_id", assetID = "media_asset_id"
             case answerID = "answer_id", storyID = "story_id", roundID = "round_id"
-            case partID = "part_id"
+            case partID = "part_id", revisionID = "revision_id"
         }
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
@@ -60,6 +66,9 @@ nonisolated struct LiveMediaAlternativeGateway: MediaAlternativeGateway {
             case let .drawAndGuess(roundID):
                 try container.encode("draw_and_guess", forKey: .kind)
                 try container.encode(roundID, forKey: .roundID)
+            case let .widgetDrawing(revisionID):
+                try container.encode("widget_drawing", forKey: .kind)
+                try container.encode(revisionID, forKey: .revisionID)
             case let .exquisiteCorpse(partID):
                 try container.encode("exquisite_corpse", forKey: .kind)
                 try container.encode(partID, forKey: .partID)
@@ -82,13 +91,18 @@ struct MediaAlternativePendingOperationHandler: PendingSyncOperationHandling {
         }
         let stamp = await cache.stamp(ownerUserID: operation.ownerUserID)
         let accepted = try await gateway.update(edit, operation: operation.operation)
+        if case .widgetDrawing = edit.target, accepted.widgetRevisionVersion == nil {
+            throw PendingSyncOperationPayloadError()
+        }
         let service = MediaAlternativeEditingService(pending: context.pendingOperationStore, cache: cache)
         let latest = try await service.pendingEdit(
             ownerUserID: operation.ownerUserID, coupleID: edit.coupleID, target: edit.target
         )
         if latest?.operationID == operation.operation.id {
-            await cache.apply(MediaAlternativeEdit(coupleID: edit.coupleID, target: edit.target, text: accepted ?? ""),
-                              ownerUserID: operation.ownerUserID, operation: operation.operation, stamp: stamp)
+            let normalized = MediaAlternativeEdit(coupleID: edit.coupleID, target: edit.target,
+                                                  text: accepted.accessibilityText ?? "")
+            await cache.apply(normalized, ownerUserID: operation.ownerUserID, operation: operation.operation,
+                              stamp: stamp, widgetRevisionVersion: accepted.widgetRevisionVersion)
         }
         return .succeeded
     }

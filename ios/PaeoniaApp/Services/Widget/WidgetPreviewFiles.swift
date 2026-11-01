@@ -5,29 +5,31 @@ nonisolated enum WidgetPreviewFiles {
     /// Removes the payload and the preview folder. Returns true when something
     /// was removed.
     static func removeWidgetVisibleFiles(in containerURL: URL, fileManager: FileManager) -> Bool {
-        var didRemoveSomething = false
-        let payloadURL = containerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
-        if fileManager.fileExists(atPath: payloadURL.path) {
-            try? fileManager.removeItem(at: payloadURL)
-            didRemoveSomething = true
-        }
+        (try? WidgetPayloadFileLock.withExclusiveAccess(in: containerURL) {
+            var didRemoveSomething = false
+            let payloadURL = containerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
+            if fileManager.fileExists(atPath: payloadURL.path) {
+                try? fileManager.removeItem(at: payloadURL)
+                didRemoveSomething = true
+            }
 
-        let previewsURL = containerURL.appendingPathComponent(
-            PaeoniaAppGroup.widgetPreviewsDirectory,
-            isDirectory: true
-        )
-        if fileManager.fileExists(atPath: previewsURL.path) {
-            try? fileManager.removeItem(at: previewsURL)
-            didRemoveSomething = true
-        }
+            let previewsURL = containerURL.appendingPathComponent(
+                PaeoniaAppGroup.widgetPreviewsDirectory,
+                isDirectory: true
+            )
+            if fileManager.fileExists(atPath: previewsURL.path) {
+                try? fileManager.removeItem(at: previewsURL)
+                didRemoveSomething = true
+            }
 
-        // The Lock Screen widgets keep names, dates and countdown titles here.
-        let lockScreenURL = containerURL.appendingPathComponent(LockScreenCache.relativePath)
-        if fileManager.fileExists(atPath: lockScreenURL.path) {
-            try? fileManager.removeItem(at: lockScreenURL)
-            didRemoveSomething = true
-        }
-        return didRemoveSomething
+            // The Lock Screen widgets keep names, dates and countdown titles here.
+            let lockScreenURL = containerURL.appendingPathComponent(LockScreenCache.relativePath)
+            if fileManager.fileExists(atPath: lockScreenURL.path) {
+                try? fileManager.removeItem(at: lockScreenURL)
+                didRemoveSomething = true
+            }
+            return didRemoveSomething
+        }) ?? false
     }
 
     /// Preview names include the revision so a new timeline never points at the

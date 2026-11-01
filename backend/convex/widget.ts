@@ -191,6 +191,7 @@ export const get_widget_canvas = query({
         payload_media_asset_id,
         ...rest,
         revision_created_at: visible ? revision!.created_at : null,
+        revision_description_version: visible ? Date.parse(revision!.updated_at) : null,
         canvas_created_at: canvas.created_at,
         canvas_updated_at: canvas.updated_at,
         sync_updated_at: latest(canvas.updated_at, revision?.updated_at, asset?.updated_at),
@@ -264,6 +265,7 @@ export const get_widget_drawing_revisions = query({
         ...payloadColumns(revision, asset, visible),
         created_at: revision.created_at,
         updated_at: revision.updated_at,
+        revision_description_version: visible ? Date.parse(revision.updated_at) : null,
         sync_updated_at: latest(revision.updated_at, asset.updated_at),
       };
     };

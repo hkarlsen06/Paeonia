@@ -19,7 +19,8 @@ nonisolated enum LiveFeedRegistry {
                 visibilityStore: stores.locationVisibilityStore,
                 pendingOperationStore: stores.pendingOperationStore
             ),
-            WidgetCanvasLiveFeed(syncer: WidgetCanvasSyncServiceFactory.makeDefault()),
+            WidgetCanvasLiveFeed(syncer: WidgetCanvasSyncServiceFactory.makeDefault(),
+                                 descriptions: WidgetCanvasService.shared),
             MemoryLiveFeed(memoryStore: stores.memoryStore, stateStore: stores.stateStore),
             DailyChallengeLiveFeed(cache: FileDailyChallengeSnapshotCache.live()),
             ThreadChatLiveFeed(cache: FileThreadChatCache.shared),

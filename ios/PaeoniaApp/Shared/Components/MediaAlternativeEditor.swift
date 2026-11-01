@@ -37,7 +37,11 @@ final class MediaAlternativeEditorModel {
     var isEditable: Bool { target != nil && ownerUserID != nil && coupleID != nil && service != nil }
     var isReadyToOpen: Bool { !isEditable || hasReadPending && !pendingReadFailed }
     var canEdit: Bool { isEditable && stamp != nil && isReadyToOpen }
-    var isTooLong: Bool { DailyAnswerDraft.measuredLength(of: text) > 10_000 }
+    var lengthError: LocalizedStringResource {
+        if case .widgetDrawing? = target { return .drawingDescriptionTooLong }
+        return .mediaAccessibilityTooLong
+    }
+    var isTooLong: Bool { DailyAnswerDraft.measuredLength(of: text) > (target?.maximumLength ?? 10_000) }
 
     func matches(target: MediaAlternativeTarget?, context: ThreadChatContext) -> Bool {
         self.target == target && ownerUserID == context.participants.currentUserID && coupleID == context.coupleID
@@ -150,7 +154,7 @@ struct MediaAlternativeEditor: View {
                 TextField(text: $model.text, axis: .vertical) { Text(title) }
                     .lineLimit(4...12)
                     .accessibilityIdentifier("media.alternative.text")
-                if model.isTooLong { Text(.mediaAccessibilityTooLong).foregroundStyle(.paeoniaErrorText) }
+                if model.isTooLong { Text(model.lengthError).foregroundStyle(.paeoniaErrorText) }
                 Text(isVoice ? LocalizedStringResource.mediaAccessibilityTranscriptHint
                      : isDrawing ? .drawingDescriptionHint : .mediaAccessibilityPhotoHelp)
                 Button(clearTitle, role: .destructive) { model.text = "" }

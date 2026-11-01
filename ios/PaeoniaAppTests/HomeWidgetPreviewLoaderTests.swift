@@ -109,13 +109,11 @@ private struct TestEnvironment {
             revisionID: UUID().uuidString,
             authorName: "Hjalmar",
             createdAt: Date(),
-            renderedAt: Date(),
+            renderedAt: Date(), privacyMode: privacyMode, isRedacted: isRedacted,
             contentHash: "sha256-test",
             previews: previews,
             canvasSide: 300
         )
-        payload.privacyMode = privacyMode
-        payload.isRedacted = isRedacted
         payload.schemaVersion = schemaVersion
 
         let payloadURL = containerURL.appendingPathComponent("Widget/current.json")

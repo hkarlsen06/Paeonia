@@ -89,7 +89,10 @@ enum PaeoniaWidgetRefreshService {
         guard !isPublished(revisionID: revisionID) else {
             // The drawing is on screen already. The server may name its author differently now,
             // for example after the person set a nickname for their partner on another device.
-            try relabelPublishedPayload(authorName: state.activeRevisionAuthorName, epoch: epoch)
+            try relabelPublishedPayload(authorName: state.activeRevisionAuthorName,
+                                        accessibilityText: state.bounds?.accessibilityText,
+                                        descriptionVersion: state.descriptionVersion,
+                                        revisionID: revisionID, epoch: epoch)
             return nil
         }
 
@@ -104,7 +107,7 @@ enum PaeoniaWidgetRefreshService {
             revisionID: revisionID,
             authorName: state.activeRevisionAuthorName,
             createdAt: state.revisionCreatedAt ?? .now,
-            accessibilityText: state.bounds?.accessibilityText
+            accessibilityText: state.bounds?.accessibilityText, descriptionVersion: state.descriptionVersion
         )
     }
 
@@ -245,31 +248,36 @@ enum PaeoniaWidgetRefreshService {
         epoch: Int,
         in containerURL: URL
     ) throws {
-        let payload = CurrentPayload(
+        let payload = WidgetSharePayload(
             revisionID: remoteDrawing.revisionID.uuidString.lowercased(),
             authorName: remoteDrawing.authorName?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             createdAt: remoteDrawing.createdAt,
-            renderedAt: .now,
+            renderedAt: .now, privacyMode: .normal, isRedacted: false,
             contentHash: remoteDrawing.contentHash,
             previews: previews,
             canvasSide: remoteDrawing.canvasSide,
-            accessibilityText: remoteDrawing.accessibilityText
+            accessibilityText: remoteDrawing.accessibilityText, descriptionVersion: remoteDrawing.descriptionVersion
         )
-        let payloadData = try CurrentPayload.encoder.encode(payload)
-
-        // Downloading and rendering take time. The user may have signed out, the
-        // app may have purged the widget, or the app may have saved a newer local
-        // drawing. Check again right before the write.
-        try requireUnchangedPrivacy(since: epoch)
-        guard shouldPublish(
-            remoteContentHash: remoteDrawing.contentHash, accessibilityText: remoteDrawing.accessibilityText
-        ) else {
-            throw RefreshError.superseded
+        try WidgetPayloadFileLock.withExclusiveAccess(in: containerURL) {
+            try requireUnchangedPrivacy(since: epoch)
+            guard shouldPublish(remoteContentHash: remoteDrawing.contentHash,
+                                accessibilityText: remoteDrawing.accessibilityText) else {
+                throw RefreshError.superseded
+            }
+            var current = payload
+            let url = containerURL.appendingPathComponent(payloadPath)
+            if let bytes = try? Data(contentsOf: url),
+               let stored = try? WidgetSharePayload.decoder().decode(WidgetSharePayload.self, from: bytes),
+               stored.revisionID == current.revisionID, stored.contentHash == current.contentHash {
+                if stored.pendingDescriptionOperationID != nil ||
+                    stored.descriptionVersion.map({ $0 > (current.descriptionVersion ?? -1) }) == true {
+                    current.accessibilityText = stored.accessibilityText
+                    current.descriptionVersion = stored.descriptionVersion
+                    current.pendingDescriptionOperationID = stored.pendingDescriptionOperationID
+                }
+            }
+            try WidgetSharePayload.encoder().encode(current).write(to: url, options: .atomic)
         }
-        try payloadData.write(
-            to: containerURL.appendingPathComponent(payloadPath),
-            options: .atomic
-        )
     }
 
     private static var containerURL: URL? {
@@ -343,33 +351,31 @@ extension PaeoniaWidgetRefreshService {
     /// stored one. The drawing and its previews stay as they are. Only the label changes, so a
     /// name change reaches this device without a new revision.
     @MainActor
-    private static func relabelPublishedPayload(authorName: String?, epoch: Int) throws {
+    private static func relabelPublishedPayload(authorName: String?, accessibilityText: String?,
+                                                descriptionVersion: Int64?, revisionID: UUID, epoch: Int) throws {
         guard let containerURL else {
             return
         }
-        let payloadURL = containerURL.appendingPathComponent(payloadPath)
-        guard let data = try? Data(contentsOf: payloadURL),
-              let stored = try? CurrentPayload.decoder.decode(CurrentPayload.self, from: data)
-        else {
-            return
+        _ = try WidgetSharePayload.updateFile(in: containerURL) { stored in
+            try requireUnchangedPrivacy(since: epoch)
+            guard !stored.isRedacted, stored.privacyMode == .normal,
+                  stored.revisionID.lowercased() == revisionID.uuidString.lowercased() else { return }
+            let name = authorName?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+            // A description update never changes author identity or drawing attribution.
+            if let descriptionVersion {
+                stored.applyDescription(.remote(text: accessibilityText, version: descriptionVersion))
+            }
+            if stored.authorName != name {
+                stored = WidgetSharePayload(
+                    revisionID: stored.revisionID, authorName: name, createdAt: stored.createdAt,
+                    renderedAt: stored.renderedAt, rendererVersion: stored.rendererVersion,
+                    privacyMode: stored.privacyMode, isRedacted: stored.isRedacted,
+                    contentHash: stored.contentHash, previews: stored.previews, canvasSide: stored.canvasSide,
+                    accessibilityText: stored.accessibilityText, descriptionVersion: stored.descriptionVersion,
+                    pendingDescriptionOperationID: stored.pendingDescriptionOperationID
+                )
+            }
         }
-        let name = authorName?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
-        guard stored.authorName != name else {
-            return
-        }
-        let relabeled = CurrentPayload(
-            revisionID: stored.revisionID,
-            authorName: name,
-            createdAt: stored.createdAt,
-            renderedAt: stored.renderedAt,
-            contentHash: stored.contentHash,
-            previews: stored.previews,
-            canvasSide: stored.canvasSide,
-            accessibilityText: stored.accessibilityText
-        )
-        let payloadData = try CurrentPayload.encoder.encode(relabeled)
-        try requireUnchangedPrivacy(since: epoch)
-        try payloadData.write(to: payloadURL, options: .atomic)
     }
 }
 
@@ -389,10 +395,13 @@ extension PaeoniaWidgetRefreshService {
         guard let containerURL, !hasPendingFirstDayUpload() else {
             return
         }
-        try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(payloadPath))
-        try? FileManager.default.removeItem(
-            at: containerURL.appendingPathComponent(previewsDirectory, isDirectory: true)
-        )
+        try? WidgetPayloadFileLock.withExclusiveAccess(in: containerURL) {
+            guard !hasPendingFirstDayUpload() else { return }
+            try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(payloadPath))
+            try? FileManager.default.removeItem(
+                at: containerURL.appendingPathComponent(previewsDirectory, isDirectory: true)
+            )
+        }
     }
 
     private static func hasPendingFirstDayUpload() -> Bool {

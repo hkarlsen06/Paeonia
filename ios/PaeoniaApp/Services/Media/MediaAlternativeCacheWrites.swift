@@ -9,12 +9,13 @@ actor MediaAlternativeCacheWrites {
         let operation: SyncClientOperation
         let privacyToken: LocalPrivacyWriteGuard.Token
         let text: String
+        let widgetRevisionVersion: Int64?
         let task: Task<Void, Never>
     }
     private var latest: [Key: Write] = [:]
 
     func perform(ownerUserID: UUID, edit: MediaAlternativeEdit, operation: SyncClientOperation,
-                 privacyToken: LocalPrivacyWriteGuard.Token,
+                 privacyToken: LocalPrivacyWriteGuard.Token, widgetRevisionVersion: Int64? = nil,
                  update: @escaping @Sendable () async -> Void) async {
         let key = Key(owner: ownerUserID, target: edit.target)
         let previous = latest[key]
@@ -24,11 +25,20 @@ actor MediaAlternativeCacheWrites {
             await previous?.task.value
             await update()
         }
-        latest[key] = Write(operation: operation, privacyToken: privacyToken, text: edit.text, task: task)
+        latest[key] = Write(operation: operation, privacyToken: privacyToken, text: edit.text,
+                            widgetRevisionVersion: widgetRevisionVersion, task: task)
         await task.value
     }
 
     func clear(ownerUserID: UUID) { latest = latest.filter { $0.key.owner != ownerUserID } }
+
+    func acceptedWidgetDescription(ownerUserID: UUID, target: MediaAlternativeTarget)
+        -> (text: String, version: Int64)? {
+        guard let write = latest[Key(owner: ownerUserID, target: target)],
+              LocalPrivacyWriteGuard.shared.isCurrent(write.privacyToken),
+              let version = write.widgetRevisionVersion else { return nil }
+        return (write.text, version)
+    }
 
     func acceptedText(ownerUserID: UUID, target: MediaAlternativeTarget) -> String? {
         guard let write = latest[Key(owner: ownerUserID, target: target)],

@@ -7,6 +7,9 @@ nonisolated enum MediaAlternativeTarget: Codable, Hashable, Sendable {
     case guessMySpot(roundID: UUID)
     case drawAndGuess(roundID: UUID)
     case exquisiteCorpse(partID: UUID)
+    case widgetDrawing(revisionID: UUID)
+
+    var maximumLength: Int { if case .widgetDrawing = self { 500 } else { 10_000 } }
 
     var scope: String {
         switch self {
@@ -16,6 +19,7 @@ nonisolated enum MediaAlternativeTarget: Codable, Hashable, Sendable {
         case let .guessMySpot(roundID): "guess-my-spot-alternative:\(roundID.uuidString.lowercased())"
         case let .drawAndGuess(roundID): "draw-and-guess-alternative:\(roundID.uuidString.lowercased())"
         case let .exquisiteCorpse(partID): "exquisite-corpse-alternative:\(partID.uuidString.lowercased())"
+        case let .widgetDrawing(revisionID): "widget-drawing-alternative:\(revisionID.uuidString.lowercased())"
         }
     }
 }
@@ -75,7 +79,9 @@ nonisolated struct MediaAlternativeEditingService: Sendable {
         operation: SyncClientOperation,
         stamp: MediaAlternativeCacheUpdater.Stamp
     ) async throws {
-        guard edit.text.unicodeScalars.count <= 10_000 else { throw MediaAlternativeEditingError.tooLong }
+        guard edit.text.unicodeScalars.count <= edit.target.maximumLength else {
+            throw MediaAlternativeEditingError.tooLong
+        }
         guard await cache.isCurrent(stamp) else { throw MediaAlternativeEditingError.privacyChanged }
         try Task.checkCancellation()
         try await pending.enqueue(PendingSyncOperationRequest(
