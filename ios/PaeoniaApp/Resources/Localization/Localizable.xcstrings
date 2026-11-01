@@ -32514,13 +32514,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "What you call %@"
+            "value" : "Nickname for %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hva du kaller %@"
+            "value" : "Kallenavn for %@"
           }
         }
       }
@@ -33580,6 +33580,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App"
+          }
+        }
+      }
+    },
+    "settings.section.you" : {
+      "comment" : "Header of the Us tab section with your profile, your photo decoration and your partner's nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deg"
           }
         }
       }

@@ -7,12 +7,7 @@ struct PartnerNicknameSettingsRow: View {
 
     var body: some View {
         NavigationLink {
-            PartnerNicknameView(
-                editor: editor,
-                partnerAccountName: partner?.accountName,
-                savedNickname: partner?.nickname
-            )
-            .analyticsScreen("settings_partner_nickname")
+            Self.destination(editor: editor, partner: partner)
         } label: {
             LabeledContent {
                 if let nickname = partner?.nickname {
@@ -30,6 +25,16 @@ struct PartnerNicknameSettingsRow: View {
             }
         }
         .accessibilityIdentifier("settings.partnerNickname")
+    }
+
+    /// The nickname screen. The partner's photo in the couple header opens it too.
+    static func destination(editor: PartnerNicknameEditorModel, partner: PartnerName?) -> some View {
+        PartnerNicknameView(
+            editor: editor,
+            partnerAccountName: partner?.accountName,
+            savedNickname: partner?.nickname
+        )
+        .analyticsScreen("settings_partner_nickname")
     }
 
     private var nameForCopy: String {

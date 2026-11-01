@@ -40,6 +40,7 @@
             currentUserID: DeveloperScenarioFixture.currentUserID,
             currentDisplayName: "Alex",
             partnerUserID: DeveloperScenarioFixture.partnerUserID,
+            partner: PartnerName(accountName: "Robin", nickname: nil),
             relationshipStartedOn: "2025-09-14",
             locationViewModel: locationViewModel,
             partnerName: "Robin",
