@@ -155,13 +155,18 @@ struct MediaAlternativeEditor: View {
                     .lineLimit(4...12)
                     .accessibilityIdentifier("media.alternative.text")
                 if model.isTooLong { Text(model.lengthError).foregroundStyle(.paeoniaErrorText) }
-                Text(isVoice ? LocalizedStringResource.mediaAccessibilityTranscriptHint
-                     : isDrawing ? .drawingDescriptionHint : .mediaAccessibilityPhotoHelp)
                 Button(clearTitle, role: .destructive) { model.text = "" }
                     .disabled(model.text.isEmpty)
                     .accessibilityIdentifier("media.alternative.clear")
             } else {
                 MediaAlternativeTextValue(text: model.text, isVoice: isVoice, isDrawing: isDrawing)
+            }
+        } footer: {
+            if model.isEditable {
+                Text(isVoice ? LocalizedStringResource.mediaAccessibilityTranscriptHint
+                     : isDrawing ? .drawingDescriptionHint : .mediaAccessibilityPhotoHelp)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextSecondary)
             }
         }
     }

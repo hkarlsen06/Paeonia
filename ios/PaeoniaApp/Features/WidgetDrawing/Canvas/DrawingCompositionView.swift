@@ -75,7 +75,10 @@ private struct DrawingCompositionView: View {
                             Text(.drawingDescriptionTooLong)
                                 .foregroundStyle(.paeoniaErrorText)
                         }
+                    } footer: {
                         Text(.drawingDescriptionHint)
+                            .font(PaeoniaTypography.body)
+                            .foregroundStyle(.paeoniaTextSecondary)
                     }
                 }
                 Section {
@@ -107,7 +110,6 @@ private struct DrawingCompositionView: View {
 
     private var compositionSection: some View {
         Section {
-            Text(.drawingComposeInstructions)
             Picker(selection: $selected) {
                 Text(.drawingComposeNew).tag(Optional<Int>.none)
                 ForEach(drawing.strokes.indices, id: \.self) { index in
@@ -144,6 +146,10 @@ private struct DrawingCompositionView: View {
             } label: { Text(.widgetDrawingUndoButton) }
             .disabled(undo.isEmpty)
             .accessibilityIdentifier("drawing.compose.undo")
+        } footer: {
+            Text(.drawingComposeInstructions)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
         }
     }
 

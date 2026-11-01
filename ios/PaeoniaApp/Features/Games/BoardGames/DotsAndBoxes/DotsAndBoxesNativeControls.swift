@@ -12,26 +12,19 @@ struct DotsAndBoxesNativeControls: View {
 
     var body: some View {
         Section {
-            Menu {
+            // Long box states need a full native list at accessibility text sizes.
+            Picker(selection: $inspectedBox) {
                 ForEach(0..<DotsAndBoxesBoard.boxTotal, id: \.self) { box in
-                    Button { inspectedBox = box } label: {
-                        HStack {
-                            boxLabel(box)
-                            if inspectedBox == box {
-                                Image(systemName: "checkmark").accessibilityHidden(true)
-                            }
-                        }
-                        .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-                    }
-                    .accessibilityAddTraits(inspectedBox == box ? .isSelected : [])
-                    .accessibilityIdentifier("dotsAndBoxes.native.box.\(box)")
+                    boxLabel(box)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .tag(box)
+                        .accessibilityIdentifier("dotsAndBoxes.native.box.\(box)")
                 }
             } label: {
                 Label(.dotsAndBoxesControlsChooseBox, systemImage: "square.grid.3x3")
-                    .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight, alignment: .leading)
-                    .contentShape(Rectangle())
+                    .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
             }
-            .accessibilityValue(boxLabel(inspectedBox))
+            .pickerStyle(.navigationLink)
             .accessibilityIdentifier("dotsAndBoxes.native.box")
         }
 

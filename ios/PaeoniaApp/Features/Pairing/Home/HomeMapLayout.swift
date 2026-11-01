@@ -436,7 +436,10 @@ extension HomeMapLayout {
                     .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity)
             } else if let couple {
-                HStack(spacing: 0) {
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space8))
+                    : AnyLayout(HStackLayout(spacing: 0))
+                layout {
                     HomeMapDistanceLine(
                         current: couple.current,
                         partner: couple.partner,

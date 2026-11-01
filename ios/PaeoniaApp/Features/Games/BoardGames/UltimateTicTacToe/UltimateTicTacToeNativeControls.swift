@@ -36,20 +36,19 @@ struct UltimateTicTacToeNativeControls: View {
         }
 
         Section {
-            Menu {
+            // Each board remains inspectable in a native scrolling list, including closed boards.
+            Picker(selection: $inspectedBoard) {
                 ForEach(0..<9) { index in
-                    Button { inspectedBoard = index } label: {
-                        selectionLabel(boardLabel(index), selected: inspectedBoard == index)
-                    }
-                    .accessibilityAddTraits(inspectedBoard == index ? .isSelected : [])
-                    .accessibilityIdentifier("ultimateTicTacToe.native.board.\(index)")
+                    boardLabel(index)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .tag(index)
+                        .accessibilityIdentifier("ultimateTicTacToe.native.board.\(index)")
                 }
             } label: {
                 Label(.ultimateTicTacToeControlsViewBoard, systemImage: "square.grid.3x3")
-                    .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight, alignment: .leading)
-                    .contentShape(Rectangle())
+                    .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
             }
-            .accessibilityValue(boardLabel(inspectedBoard))
+            .pickerStyle(.navigationLink)
             .accessibilityIdentifier("ultimateTicTacToe.native.board")
         } header: {
             boardLabel(inspectedBoard)

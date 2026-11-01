@@ -56,7 +56,7 @@ final class GameDrawingDescriptionUITests: XCTestCase {
 
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
-        let viewport = app.windows.firstMatch.frame.insetBy(dx: 0, dy: 120)
+        let viewport = gameJourneyViewport(in: app)
         for _ in 0..<20 {
             if element.exists && element.isHittable,
                viewport.contains(CGPoint(x: element.frame.midX, y: element.frame.midY)) { return }

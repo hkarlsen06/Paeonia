@@ -145,11 +145,12 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
 
     @MainActor
     private func viewBox(_ index: Int, in app: XCUIApplication) {
-        let boxes = app.buttons["dotsAndBoxes.native.box"]
+        let boxes = app.descendants(matching: .any)["dotsAndBoxes.native.box"].firstMatch
         scrollTo(boxes, in: app, scrollsDown: false)
         boxes.tap()
-        let choose = app.buttons["dotsAndBoxes.native.box.\(index)"]
-        XCTAssertTrue(choose.waitForExistence(timeout: 5))
+        let choose = app.descendants(matching: .any)["dotsAndBoxes.native.box.\(index)"].firstMatch
+        // Native lists can reopen around the selected row. Row zero is above that position.
+        scrollTo(choose, in: app, scrollsDown: index > 0)
         choose.tap()
         let state = app.staticTexts["dotsAndBoxes.box.\(index).state"]
         scrollTo(state, in: app)
@@ -158,17 +159,17 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
 
     @MainActor
     private func viewBoard(_ index: Int, in app: XCUIApplication) {
-        let boards = app.buttons["ultimateTicTacToe.native.board"]
+        let boards = app.descendants(matching: .any)["ultimateTicTacToe.native.board"].firstMatch
         scrollTo(boards, in: app, scrollsDown: false)
         boards.tap()
-        let choose = app.buttons["ultimateTicTacToe.native.board.\(index)"]
-        XCTAssertTrue(choose.waitForExistence(timeout: 5))
+        let choose = app.descendants(matching: .any)["ultimateTicTacToe.native.board.\(index)"].firstMatch
+        scrollTo(choose, in: app, scrollsDown: index > 0)
         choose.tap()
     }
 
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, scrollsDown: Bool = true) {
-        let viewport = app.windows.firstMatch.frame.insetBy(dx: 0, dy: 120)
+        let viewport = gameJourneyViewport(in: app)
         for _ in 0..<32 {
             if element.exists && element.isHittable,
                viewport.contains(CGPoint(x: element.frame.midX, y: element.frame.midY)) { return }

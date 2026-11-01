@@ -31,7 +31,10 @@ final class WidgetHistoryDescriptionUITests: XCTestCase {
         app.buttons["media.alternative.save"].tap()
         scrollTo(edit, app: app)
         edit.tap()
-        XCTAssertFalse(app.buttons["media.alternative.clear"].isEnabled)
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        // Reopening resets the Form scroll position. Find the row before reading its state.
+        scrollTo(clear, app: app)
+        XCTAssertFalse(clear.isEnabled)
         app.buttons["media.alternative.cancel"].tap()
     }
 

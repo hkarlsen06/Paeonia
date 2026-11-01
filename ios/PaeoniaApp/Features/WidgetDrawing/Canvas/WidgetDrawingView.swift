@@ -166,6 +166,8 @@ struct WidgetDrawingView: View {
         VStack(spacing: PaeoniaSpacing.space12) {
             WidgetDrawingCanvasHeader(viewModel: viewModel, partnerName: partnerName, showsSendStatus: showsSendStatus)
 
+            if dynamicTypeSize.isAccessibilitySize { compositionButton }
+
             drawingCanvas
                 .frame(height: dynamicTypeSize.isAccessibilitySize ? 280 : nil)
 
@@ -179,7 +181,7 @@ struct WidgetDrawingView: View {
                 WidgetDrawingSizeControlsView(viewModel: viewModel)
             }
 
-            DrawingCompositionButton { isCompositionPresented = true }
+            if !dynamicTypeSize.isAccessibilitySize { compositionButton }
             Text(viewModel.accessibilityText.trimmedNonEmpty ?? String(localized: .drawingGeometryMissing))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
@@ -187,6 +189,10 @@ struct WidgetDrawingView: View {
 
             bottomActions
         }
+    }
+
+    private var compositionButton: some View {
+        DrawingCompositionButton { isCompositionPresented = true }
     }
 
     private func showBanner(for failure: WidgetDrawingSaveFailure) {
