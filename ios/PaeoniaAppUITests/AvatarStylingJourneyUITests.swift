@@ -6,7 +6,10 @@ final class AvatarStylingJourneyUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "avatar-stories-new"
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments += [
+            "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+            "-avatar-frame-own", "flame", "-avatar-frame-partner", "silver",
+        ]
         app.launch()
 
         let own = app.buttons["stories.own"]
