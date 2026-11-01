@@ -26,19 +26,23 @@ struct ExquisiteCorpseRevealCredits: View {
     let parts: [ExquisiteCorpseRevealContent.Part]
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @AccessibilityPresentation(.media) private var showsMedia
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             creditLayout
             ForEach(parts) { part in
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                    Text(partLabel(part.kind))
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityValue(Text(part.drawing.map {
-                            DrawingGeometryDescription.text($0, side: GameCanvas.canonicalSide)
-                        } ?? ""))
+                    // Heads the description under it, which shows only with descriptions on.
+                    if showsMedia {
+                        Text(partLabel(part.kind))
+                            .font(PaeoniaTypography.caption)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityValue(Text(part.drawing.map {
+                                DrawingGeometryDescription.text($0, side: GameCanvas.canonicalSide)
+                            } ?? ""))
+                    }
                     MediaAlternativeReadout(text: part.accessibilityText, isVoice: false, isDrawing: true,
                         editingTarget: part.editingTarget, isCompact: true,
                         titleOverride: .mediaAccessibilityPartDescription(
