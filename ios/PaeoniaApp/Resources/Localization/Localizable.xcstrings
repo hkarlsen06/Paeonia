@@ -38876,6 +38876,24 @@
         }
       }
     },
+    "streak.detail.timeLeft" : {
+      "comment" : "Label before the countdown to the live streak deadline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tid igjen"
+          }
+        }
+      }
+    },
     "streak.flame.lost.accessibility" : {
       "comment" : "VoiceOver label for the streak flame when the streak is paused and can be restored. The argument is the number of days.",
       "extractionState" : "manual",
@@ -38890,6 +38908,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ dager på rad, satt på pause"
+          }
+        }
+      }
+    },
+    "streak.frozen.accessibility" : {
+      "comment" : "VoiceOver description of a live streak protected by an automatic freeze. Argument is the streak count and label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, protected by a freeze"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, beskyttet av en frys"
           }
         }
       }

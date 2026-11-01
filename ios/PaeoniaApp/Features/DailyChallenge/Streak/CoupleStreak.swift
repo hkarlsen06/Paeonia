@@ -74,6 +74,7 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     /// detail screen before purchase.
     var entryDestination: StreakEntryDestination {
         if isRestorable { return .restore }
+        if freezeSavedStreak && currentCount > 0 { return .detail }
         if StreakMilestones.isMilestone(currentCount) { return .milestone(currentCount) }
         return .detail
     }

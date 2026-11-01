@@ -52,6 +52,12 @@ enum StreakFlameMotion {
 // MARK: - Styles
 
 enum StreakFlameStyle {
+    static let ice = LinearGradient(
+        colors: [.paeoniaTextPrimary, .paeoniaInkBlue, .paeoniaInkBlue.opacity(0.65)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
     /// The empty flame: a dim vessel waiting to be filled.
     static let empty = LinearGradient(
         colors: [.paeoniaSurfaceHighlight.opacity(0.9), .paeoniaSurfaceSecondary.opacity(0.65)],
@@ -82,6 +88,26 @@ enum StreakFlameStyle {
         startPoint: .top,
         endPoint: .bottom
     )
+}
+
+/// A freeze protects the full streak. Keep its flame full and still, with a snowflake.
+struct FrozenStreakFlame: View {
+    var body: some View {
+        GeometryReader { geometry in
+            FlameShape()
+                .fill(StreakFlameStyle.ice)
+                .overlay {
+                    FlameShape().stroke(Color.paeoniaInkBlue, lineWidth: PaeoniaRadius.strokeEmphasis)
+                }
+                .overlay {
+                    Image(systemName: "snowflake")
+                        .font(.system(size: geometry.size.height * 0.32, weight: .medium))
+                        .foregroundStyle(.paeoniaBackgroundPrimary)
+                        .offset(y: geometry.size.height * 0.15)
+                }
+        }
+        .accessibilityHidden(true)
+    }
 }
 
 // MARK: - Flame art

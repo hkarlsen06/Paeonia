@@ -25,6 +25,8 @@ struct PaeoniaStreakFlame: View {
     /// `count` is then the lost streak length the restore would bring back. The
     /// "get it back" action lives in the surrounding surface, not here.
     var isBroken: Bool = false
+    /// A free freeze protects this live streak. Show a full ice flame without motion.
+    var isFrozen: Bool = false
     /// Tops the flame up to full with a pop, then keeps the living flicker, without
     /// the count-up or its rising ticks. A firm haptic lands with the pop the first
     /// time each day. For surfaces that show the streak on its own (e.g. the streak
@@ -102,7 +104,7 @@ struct PaeoniaStreakFlame: View {
 
     @ViewBuilder
     private var content: some View {
-        if isAnimating && !reduceMotion {
+        if isAnimating && !reduceMotion && !isFrozen {
             TimelineView(
                 .animation(minimumInterval: isToppedUp ? Self.ambientFrameInterval : nil, paused: isSettled)
             ) { timeline in
@@ -166,14 +168,20 @@ struct PaeoniaStreakFlame: View {
 
     private func flameView(_ frame: Frame) -> some View {
         // An unlit flame has no warm glow.
-        let alive = isUnlit ? 0 : Double(1 - frame.brokenness)
-        return StreakFlameArt(
-            level: frame.level,
-            phase: frame.phase,
-            flicker: frame.flicker,
-            brokenness: frame.brokenness,
-            width: flameWidth
-        )
+        let alive = isUnlit || isFrozen ? 0 : Double(1 - frame.brokenness)
+        return Group {
+            if isFrozen && !isBroken && !isUnlit {
+                FrozenStreakFlame()
+            } else {
+                StreakFlameArt(
+                    level: frame.level,
+                    phase: frame.phase,
+                    flicker: frame.flicker,
+                    brokenness: frame.brokenness,
+                    width: flameWidth
+                )
+            }
+        }
         .frame(width: flameWidth, height: flameHeight)
         .overlay {
             if frame.emits {
@@ -222,7 +230,8 @@ struct PaeoniaStreakFlame: View {
             return String(localized: .streakFlameLostAccessibility(count.formatted()))
         }
 
-        return "\(count) \(String(localized: .homeStreakLabel))"
+        let text = "\(count) \(String(localized: .homeStreakLabel))"
+        return isFrozen ? String(localized: .streakFrozenAccessibility(text)) : text
     }
 }
 
@@ -233,6 +242,7 @@ extension PaeoniaStreakFlame {
     private func start() {
         guard !hasStarted else { return }
         hasStarted = true
+        guard !isFrozen else { return }
 
         let celebrates = playsCelebration && !reduceMotion && !isBroken && count >= 1
         if celebrates {

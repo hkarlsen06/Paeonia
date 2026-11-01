@@ -31,6 +31,13 @@
       )
     }
 
+    private var statusStreak: CoupleStreak {
+      var streak = healthyStreak
+      streak.endsAt = .now.addingTimeInterval(5 * 3_600)
+      streak.freezeSavedStreak = scenario == .streakFrozen
+      return streak
+    }
+
     private func restoreView(for streak: CoupleStreak) -> some View {
       StreakRestoreView(
         viewModel: StreakRestoreViewModel(
@@ -60,6 +67,12 @@
           playsCelebration: true,
           ambientMotion: false
         )
+      case .streakAtRisk, .streakFrozen:
+        let streak = statusStreak
+        VStack {
+          DailyStreakToolbarLabel(state: StreakPillState(streak))
+          StreakDetailView(streak: streak)
+        }
       default:
         StreakDetailView(streak: healthyStreak)
       }

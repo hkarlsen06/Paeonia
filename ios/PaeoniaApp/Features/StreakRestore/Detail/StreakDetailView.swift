@@ -75,20 +75,7 @@ struct StreakDetailView: View {
             VStack(spacing: PaeoniaSpacing.space24) {
                 Spacer(minLength: PaeoniaSpacing.space16)
 
-                if isSaveDay {
-                    // The cooled flame with the days that come back, as on the restore offer.
-                    PaeoniaStreakFlame(count: streak.restorableCount, isBroken: true)
-                } else {
-                    PaeoniaStreakFlame(
-                        count: streak.currentCount,
-                        playsCelebration: playsCelebration,
-                        ambientMotion: ambientMotion && !playsCelebration
-                    )
-                    // The flame has no empty level of its own, so a streak that has not started
-                    // is dimmed here instead of showing a fully lit "0".
-                    .saturation(hasNotStarted ? 0.15 : 1)
-                    .opacity(hasNotStarted ? 0.8 : 1)
-                }
+                hero
 
                 heading
                     .modifier(StreakDetailReveal(shown: shouldShowDetails))
@@ -134,6 +121,25 @@ struct StreakDetailView: View {
         .multilineTextAlignment(.center)
     }
 
+    @ViewBuilder
+    private var hero: some View {
+        if isSaveDay {
+            // The cooled flame with the days that come back, as on the restore offer.
+            PaeoniaStreakFlame(count: streak.restorableCount, isBroken: true)
+        } else {
+            PaeoniaStreakFlame(
+                count: streak.currentCount,
+                playsCelebration: playsCelebration,
+                isFrozen: streak.freezeSavedStreak,
+                ambientMotion: ambientMotion && !playsCelebration
+            )
+            // The flame has no empty level of its own, so a streak that has not started
+            // is dimmed here instead of showing a fully lit "0".
+            .saturation(hasNotStarted ? 0.15 : 1)
+            .opacity(hasNotStarted ? 0.8 : 1)
+        }
+    }
+
     private var longestStat: some View {
         VStack(spacing: PaeoniaSpacing.space4) {
             Text(streak.longestCount, format: .number)
@@ -161,6 +167,24 @@ struct StreakDetailView: View {
             }
         } else if message == nil {
             VStack(spacing: PaeoniaSpacing.space16) {
+                if streak.currentCount > 0, let endsAt = streak.endsAt {
+                    TimelineView(.periodic(from: .now, by: 60)) { timeline in
+                        if endsAt > timeline.date {
+                            Label {
+                                HStack {
+                                    Text(.streakDetailTimeLeft)
+                                    Text(timerInterval: timeline.date...endsAt, countsDown: true, showsHours: true)
+                                        .monospacedDigit()
+                                        .fixedSize()
+                                }
+                            } icon: {
+                                Image(systemName: "hourglass")
+                            }
+                            .font(PaeoniaTypography.bodyEmphasis)
+                            .foregroundStyle(.paeoniaTextPrimary)
+                        }
+                    }
+                }
                 StreakMilestoneProgressView(currentCount: streak.currentCount, longestCount: streak.longestCount)
                 if let freezeNoteText {
                     freezeNote(freezeNoteText)

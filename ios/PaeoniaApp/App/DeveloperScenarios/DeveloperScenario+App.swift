@@ -17,7 +17,8 @@
       paywallLoading,
       pairedHome, questions, questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
-      streakHealthy, streakSaveHome, streakSaveDay, streakSaved, streakBroken, streakRestoreExpired, streakRestored,
+      streakHealthy, streakAtRisk, streakFrozen, streakSaveHome, streakSaveDay, streakSaved, streakBroken,
+      streakRestoreExpired, streakRestored,
       memoriesEmpty, memoriesPopulated, memoriesCards, memoryEditor, memoryDetail,
       countdownMissing, countdownUpcoming, countdownToday,
       locationNotSharing, locationCurrentMissing, locationLive, locationStale, homeMapOutage, homeMapOffline,
@@ -217,6 +218,12 @@
 
     static let streakHealthy = streak(
       "streak-healthy", "Streak · healthy", "Current and longest streak detail"
+    )
+    static let streakAtRisk = streak(
+      "streak-at-risk", "Streak · ending soon", "Five hours left to keep the streak"
+    )
+    static let streakFrozen = streak(
+      "streak-frozen", "Streak · frozen", "An automatic freeze protects the streak"
     )
     static let streakSaveHome = pairedApp(
       "streak-save-home", "Streak · free save on Home", "Home card and paused pill the day after a missed day",

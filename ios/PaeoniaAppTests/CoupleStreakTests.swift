@@ -261,6 +261,26 @@ struct CoupleStreakTests {
         #expect(state.changeDates == [atRiskFrom])
     }
 
+    @Test func frozenMilestoneOpensItsFreezeDetails() {
+        var streak = Self.streak(currentCount: 7, restorableCount: 0, deadline: nil)
+        streak.freezeSavedStreak = true
+        #expect(streak.entryDestination == .detail)
+        streak.freezeSavedStreak = false
+        #expect(streak.entryDestination == .milestone(7))
+    }
+
+    @Test func frozenPillRetainsTheCountAndWarnsBeforeItsExtendedDeadline() {
+        var streak = Self.streak(currentCount: 5, restorableCount: 0, deadline: nil)
+        streak.freezeSavedStreak = true
+        streak.endsAt = .now.addingTimeInterval(5 * 3_600)
+        let state = StreakPillState(streak).resolved(at: .now)
+
+        #expect(state.isFrozen)
+        #expect(state.displayCount == 5)
+        #expect(!state.usesMutedFlame)
+        #expect(state.isAtRisk)
+    }
+
     @Test func pillWithoutALiveStreakNeverShowsTheHourglass() {
         let endsAt = Date.now.addingTimeInterval(60)
         let zero = StreakPillState(count: 0, isRestorable: false, restorableCount: 0, endsAt: endsAt)

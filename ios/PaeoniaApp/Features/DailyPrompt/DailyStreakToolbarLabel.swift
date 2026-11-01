@@ -19,10 +19,11 @@ struct StreakPillState: Equatable {
     var endsAt: Date?
     /// The live streak ends within `atRiskLeadTime`. Set by `resolved(at:)`.
     private(set) var isAtRisk = false
+    var isFrozen = false
     private var isAvailable: Bool
 
     /// How long before the streak ends the pill starts showing the hourglass.
-    static let atRiskLeadTime: TimeInterval = 4 * 60 * 60
+    static let atRiskLeadTime: TimeInterval = 6 * 60 * 60
 
     static let hidden = StreakPillState(
         count: 0,
@@ -39,6 +40,7 @@ struct StreakPillState: Equatable {
         saveDeadline: Date? = nil,
         restoreDeadline: Date? = nil,
         endsAt: Date? = nil,
+        isFrozen: Bool = false,
         isAvailable: Bool = true
     ) {
         self.count = count
@@ -48,6 +50,7 @@ struct StreakPillState: Equatable {
         self.saveDeadline = saveDeadline
         self.restoreDeadline = restoreDeadline
         self.endsAt = endsAt
+        self.isFrozen = isFrozen
         self.isAvailable = isAvailable
     }
 
@@ -59,6 +62,7 @@ struct StreakPillState: Equatable {
         saveDeadline = streak.saveDeadline
         restoreDeadline = streak.restoreDeadline
         endsAt = streak.endsAt
+        isFrozen = streak.freezeSavedStreak && streak.currentCount > 0
         isAvailable = true
     }
 
@@ -158,17 +162,7 @@ struct DailyStreakToolbarLabel: View {
         // against it and the flame moves a little further away.
         // The hourglass hangs off the flame's top right corner, so it needs the same room.
         HStack(spacing: state.isMilestone || state.isAtRisk ? PaeoniaSpacing.space8 : PaeoniaSpacing.space4) {
-            FlameShape()
-                .fill(flameStyle(for: state))
-                .frame(width: flameHeight * 0.84, height: flameHeight)
-                .overlay(alignment: .topTrailing) {
-                    if state.isAtRisk {
-                        Image(systemName: "hourglass")
-                            .font(.system(size: flameHeight * 0.5, weight: .bold))
-                            .foregroundStyle(.paeoniaTextPrimary)
-                            .offset(x: flameHeight * 0.2, y: -flameHeight * 0.1)
-                    }
-                }
+            flame(for: state)
 
             HStack(spacing: PaeoniaSpacing.space2) {
                 if state.isMilestone {
@@ -198,6 +192,30 @@ struct DailyStreakToolbarLabel: View {
         .accessibilityHint(Text(verbatim: accessibilityHint(for: state)))
     }
 
+    private func flame(for state: StreakPillState) -> some View {
+        FlameShape()
+            .fill(flameStyle(for: state))
+            .frame(width: flameHeight * 0.84, height: flameHeight)
+            .overlay {
+                if state.isFrozen && !state.usesMutedFlame {
+                    Image(systemName: "snowflake")
+                        .font(.system(size: flameHeight * 0.42, weight: .bold))
+                        .foregroundStyle(.paeoniaBackgroundPrimary)
+                        .offset(y: flameHeight * 0.15)
+                        .accessibilityHidden(true)
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if state.isAtRisk {
+                    Image(systemName: "hourglass")
+                        .font(.system(size: flameHeight * 0.5, weight: .bold))
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .offset(x: flameHeight * 0.2, y: -flameHeight * 0.1)
+                        .accessibilityHidden(true)
+                }
+            }
+    }
+
     private func accessibilityHint(for state: StreakPillState) -> String {
         if state.isSavable { return String(localized: .streakSaveAction) }
         if state.isRestorable { return String(localized: .streakRestoreBrokenAction) }
@@ -212,6 +230,7 @@ struct DailyStreakToolbarLabel: View {
                 endPoint: .bottom
             )
         }
+        if state.isFrozen { return StreakFlameStyle.ice }
         return LinearGradient(
             colors: [.paeoniaAccentPrimary, .paeoniaInkGold],
             startPoint: .top,
@@ -222,7 +241,9 @@ struct DailyStreakToolbarLabel: View {
     /// A slipped streak must not read as a live "N day streak", so it says the streak
     /// is paused and how long it was.
     private func accessibilityLabel(for state: StreakPillState) -> String {
-        let streakText = "\(state.displayCount) \(String(localized: .homeStreakLabel))"
+        let countText = "\(state.displayCount) \(String(localized: .homeStreakLabel))"
+        let streakText = state.isFrozen && !state.usesMutedFlame
+            ? String(localized: .streakFrozenAccessibility(countText)) : countText
         if state.isAtRisk { return String(localized: .streakAtRiskPillAccessibility(streakText)) }
         if state.isMilestone { return String(localized: .streakMilestonePillAccessibility(streakText)) }
         if state.isSavable { return String(localized: .streakSavePillAccessibilityLabel(streakText)) }
