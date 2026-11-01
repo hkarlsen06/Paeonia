@@ -92,7 +92,7 @@ export const marketingEn = {
     items: [
       {
         title: 'See who is here',
-        description: 'A green label shows when your partner has a game open, and Home shows which one.',
+        description: 'A green label shows when your partner has a game open, and the Us tab shows which one.',
       },
       {
         title: 'Moves land at once',

@@ -92,7 +92,7 @@ export const marketingNo = {
     items: [
       {
         title: 'Se hvem som er her',
-        description: 'En grønn merkelapp viser når partneren din har et spill åpent, og Hjem viser hvilket.',
+        description: 'En grønn merkelapp viser når partneren din har et spill åpent, og Oss-fanen viser hvilket.',
       },
       {
         title: 'Trekk kommer med en gang',

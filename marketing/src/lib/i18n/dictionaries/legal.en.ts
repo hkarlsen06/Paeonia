@@ -69,7 +69,7 @@ export const legalEn = {
         heading: 'Subscription, billing, and refunds',
         paragraphs: [
           'Paeonia has no free version. One subscription covers both of you, and the partner who joins with an invite code does not pay.',
-          'Apple handles all payments. To change or cancel, open Settings on your iPhone, tap your name, then tap Subscriptions. You can also tap Manage subscription in the Us tab of Paeonia. Cancelling stops the next renewal, and you keep access until the paid period ends. Deleting the app or your account does not cancel a subscription.',
+          'Apple handles all payments. To change or cancel, open Settings on your iPhone, tap your name, then tap Subscriptions. You can also tap Manage subscription in the More tab of Paeonia. Cancelling stops the next renewal, and you keep access until the paid period ends. Deleting the app or your account does not cancel a subscription.',
           'Apple decides refunds, not Paeonia. Ask for one at reportaproblem.apple.com.',
           'If you paid and Paeonia is still locked, tap Restore purchases on the subscription screen. If your partner pays, ask them to tap Restore purchases on their phone.',
         ],
@@ -77,20 +77,20 @@ export const legalEn = {
       {
         heading: 'Delete your account',
         paragraphs: [
-          'Open the Us tab, scroll to Account, tap Delete account, and confirm. You can also delete it from the subscription screen. If you are paired, this ends your relationship. Shared content is hidden right away and deleted after about 30 days. If you cannot open the app, email contact@paeonia.no from the address on your account.',
+          'Open the More tab, scroll to Account, tap Delete account, and confirm. You can also delete it from the subscription screen. If you are paired, this ends your relationship. Shared content is hidden right away and deleted after about 30 days. If you cannot open the app, email contact@paeonia.no from the address on your account.',
           'Deleting your account does not cancel a subscription. Cancel it in your Apple Account settings.',
         ],
       },
       {
         heading: 'See, copy, or fix your data',
         paragraphs: [
-          'Open the Us tab, then Privacy and safety. You can ask to see what we store, ask for a copy, or ask for a correction. We email you at the address on your account, normally within a month.',
+          'Open the More tab, then Privacy and safety. You can ask to see what we store, ask for a copy, or ask for a correction. We email you at the address on your account, normally within a month.',
         ],
       },
       {
         heading: 'Safety and reports',
         paragraphs: [
-          'If something in your relationship feels unsafe, open the Us tab, then Privacy and safety, and tap Report and leave. We never show your report to the other person. We look at every report and reply within three working days. You can also email support@paeonia.no. If you are in danger, call your local emergency number first.',
+          'If something in your relationship feels unsafe, open the More tab, then Privacy and safety, and tap Report and leave. We never show your report to the other person. We look at every report and reply within three working days. You can also email support@paeonia.no. If you are in danger, call your local emergency number first.',
         ],
       },
       {
@@ -108,7 +108,7 @@ export const legalEn = {
       description: 'How Paeonia collects, uses, shares, and protects your personal data.',
     },
     title: 'Privacy Policy',
-    updated: 'Last updated 31 October 2026',
+    updated: 'Last updated 1 November 2026',
     sections: [
       {
         heading: 'Who this policy is for',
@@ -155,7 +155,7 @@ export const legalEn = {
       {
         heading: 'Stories, notes, and games',
         paragraphs: [
-          'A story is a photo with an optional caption. Your partner sees it on Home for 24 hours. After that it stays in the Stories section of Memories for both of you until the person who posted it deletes it. A note shows over your picture on Home for 24 hours and is then deleted.',
+          'A story is a photo with an optional caption. Your partner sees it in the Us tab for 24 hours. After that it stays in the Stories section of Memories for both of you until the person who posted it deletes it. A note shows over your picture on Home for 24 hours and is then deleted.',
           'Games save turns, drawings, words, guesses, and scores in your shared space. When you draw together live, the strokes pass through a relay run on Cloudflare. The relay forwards them to your partner while you draw and does not store them. A finished drawing is saved in your shared space like other content. Stories and games follow the same hide-then-delete rules as other content when a relationship ends.',
         ],
       },
@@ -178,7 +178,7 @@ export const legalEn = {
       {
         heading: 'Who we share data with',
         paragraphs: [
-          'These service providers process data for Paeonia, and only to run the service. Apple handles Sign in with Apple, App Store payments and subscriptions, and push notifications. Google handles Sign in with Google. Clerk handles sign-in and sessions. Cloudflare stores photos, voice messages, drawings, and other files in the EU, runs the live drawing relay, and delivers the website. OpenFreeMap provides the map on Home, and Apple Maps provides it on iPad or when OpenFreeMap is down. To draw the map, your phone asks them for the area on screen, so they receive your IP address and roughly where that area is, usually around you and your partner. They do not learn who you are in Paeonia. PostHog stores usage statistics and crash reports on its EU servers in Frankfurt, Germany, and keeps neither your IP address nor a location worked out from it. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. Each provider is subject to its own security and privacy obligations.',
+          'These service providers process data for Paeonia, and only to run the service. Apple handles Sign in with Apple, App Store payments and subscriptions, and push notifications. Google handles Sign in with Google. Clerk handles sign-in and sessions. Cloudflare stores photos, voice messages, drawings, and other files in the EU, runs the live drawing relay, and delivers the website. OpenFreeMap provides the map in the Us tab, and Apple Maps provides it on iPad or when OpenFreeMap is down. To draw the map, your phone asks them for the area on screen, so they receive your IP address and roughly where that area is, usually around you and your partner. They do not learn who you are in Paeonia. PostHog stores usage statistics and crash reports on its EU servers in Frankfurt, Germany, and keeps neither your IP address nor a location worked out from it. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. Each provider is subject to its own security and privacy obligations.',
           'We may disclose data when required by law, to protect a person or the service, or as part of a business reorganization with appropriate safeguards. Trusted support or moderation personnel may access the minimum data needed to resolve a request, review reported content, keep the service safe, complete a data request, or perform deletion and recovery work.',
           'We do not sell personal data. We do not use relationship content for advertising, and Paeonia does not include third-party advertising or cross-app tracking.',
         ],
@@ -204,7 +204,7 @@ export const legalEn = {
         heading: 'Leaving and deleting your account',
         paragraphs: [
           'Leaving a relationship hides the shared space from both partners immediately and starts the normal relationship-content deletion period. The other partner sees a one-time notice that the shared space closed.',
-          'To delete your account in the app, open the Us tab, scroll to Account, tap Delete account, and confirm. You can also delete it from the subscription screen. If you cannot open the app, email contact@paeonia.no from the address on your account and we will do it for you.',
+          'To delete your account in the app, open the More tab, scroll to Account, tap Delete account, and confirm. You can also delete it from the subscription screen. If you cannot open the app, email contact@paeonia.no from the address on your account and we will do it for you.',
           'Deleting your account removes or anonymizes your profile, ends an active relationship, disables location sharing and notifications, revokes active sessions, and queues remaining cleanup. Shared relationship content follows the same hidden-then-delete period. Records that must be kept for reports, subscriptions, security, data requests, or legal obligations are restricted and retained only for those purposes. Deleting your account also asks PostHog to delete your usage statistics and crash reports. PostHog finishes this within about a week.',
           'If you signed in with Apple, Paeonia asks Apple to disconnect the account when it can. If Paeonia still shows under Sign in with Apple in your Apple Account settings, you can stop using it there.',
           'Deleting Paeonia does not cancel an App Store subscription. You can manage or cancel the subscription in your Apple Account settings.',
@@ -227,8 +227,8 @@ export const legalEn = {
       {
         heading: 'Your choices and rights',
         paragraphs: [
-          'You can edit profile details, turn location sharing and notifications off, leave a relationship, block a partner, and delete your account from the app where those controls are available. To withdraw your consent to usage statistics and crash reports, open the Us tab, then Privacy and safety, and turn off Share usage statistics. Your phone stops sending them right away, and we ask PostHog to delete what it already has, which takes about a week. Something being sent at that exact moment can still arrive.',
-          'You may ask for access to or a copy of your data, correction, deletion, restriction, or another right available where you live. To get a copy yourself, open the Us tab, then Privacy and safety, then Download my data. It is free and needs no subscription. Paeonia prepares it in the background, usually within minutes, tells you when it is ready, and keeps it for three days. It holds your account data and everything you wrote, uploaded, or chose, as JSON files that other services can read, with your original photos, voice messages, and drawings. A README explains each file and how we use your data. It also holds the things you share with your partner as one, such as memories, countdowns, streaks, and game results, while you are together. It does not include what your partner wrote or uploaded, their location or settings, or reports about you, because that is other people\'s personal data. To ask for a correction, open Privacy and safety and tap Ask for a correction. We reply by email to the address on your account, normally within a month. The usage statistics PostHog keeps are not in the copy. If you agreed to share them, email contact@paeonia.no and we will fetch them for you. You can also write to contact@paeonia.no for anything else.',
+          'You can edit profile details, turn location sharing and notifications off, leave a relationship, block a partner, and delete your account from the app where those controls are available. To withdraw your consent to usage statistics and crash reports, open the More tab, then Privacy and safety, and turn off Share usage statistics. Your phone stops sending them right away, and we ask PostHog to delete what it already has, which takes about a week. Something being sent at that exact moment can still arrive.',
+          'You may ask for access to or a copy of your data, correction, deletion, restriction, or another right available where you live. To get a copy yourself, open the More tab, then Privacy and safety, then Download my data. It is free and needs no subscription. Paeonia prepares it in the background, usually within minutes, tells you when it is ready, and keeps it for three days. It holds your account data and everything you wrote, uploaded, or chose, as JSON files that other services can read, with your original photos, voice messages, and drawings. A README explains each file and how we use your data. It also holds the things you share with your partner as one, such as memories, countdowns, streaks, and game results, while you are together. It does not include what your partner wrote or uploaded, their location or settings, or reports about you, because that is other people\'s personal data. To ask for a correction, open Privacy and safety and tap Ask for a correction. We reply by email to the address on your account, normally within a month. The usage statistics PostHog keeps are not in the copy. If you agreed to share them, email contact@paeonia.no and we will fetch them for you. You can also write to contact@paeonia.no for anything else.',
           'You may also complain to your local data protection authority. In Norway, this is Datatilsynet. We may need to verify your identity before completing a request.',
         ],
       },
@@ -253,7 +253,7 @@ export const legalEn = {
       description: 'The terms that apply when you create an account or use Paeonia.',
     },
     title: 'Terms of Service',
-    updated: 'Last updated 18 October 2026',
+    updated: 'Last updated 1 November 2026',
     sections: [
       {
         heading: 'Agreement',
@@ -289,7 +289,7 @@ export const legalEn = {
         paragraphs: [
           'Paeonia has no free version. It works while one partner has an active subscription. One subscription covers both partners, and the partner who joins with an invite code does not pay. Every feature is included. A subscription belongs to the Apple Account and Paeonia account used to buy it. It does not move to an unrelated account or a different relationship on its own.',
           'Paeonia offers monthly and yearly subscriptions, and may offer a free trial to people who have not had one. The price, the length of each period, and the length of any trial are shown on the purchase screen before you confirm. Apple charges your Apple Account when you confirm the purchase, or when a free trial ends. The subscription renews automatically for the same period at the price shown in the App Store, unless you cancel at least 24 hours before the period ends. Apple charges the renewal within 24 hours before the period ends.',
-          'You can manage or cancel a subscription in Settings, then your name, then Subscriptions on your iPhone, or from the Subscription section of the Us tab in Paeonia. Cancelling stops the next renewal, and you keep access until the paid period ends. Apple handles refunds, and you can ask for one at reportaproblem.apple.com. Tap Restore purchases on the subscription screen or in the Us tab to bring back a purchase you already made, for example on a new phone.',
+          'You can manage or cancel a subscription in Settings, then your name, then Subscriptions on your iPhone, or from the Subscription section of the More tab in Paeonia. Cancelling stops the next renewal, and you keep access until the paid period ends. Apple handles refunds, and you can ask for one at reportaproblem.apple.com. Tap Restore purchases on the subscription screen or in the More tab to bring back a purchase you already made, for example on a new phone.',
           'If neither partner has active access, the shared space is locked until a subscription is restored or bought. Subscription expiry does not by itself end the relationship. Deleting your Paeonia account or the app does not cancel the App Store subscription.',
           'Paeonia may also sell one-time purchases, for example to bring back a streak that ended. A one-time purchase does not renew.',
         ],
@@ -311,7 +311,7 @@ export const legalEn = {
       {
         heading: 'Reports, blocks, and moderation',
         paragraphs: [
-          'Paeonia is a private space for two people and has no public posts, but these rules apply to everything you add. To report your partner, open the Us tab, then Privacy and safety, and tap Report and leave. Reporting ends the relationship, and you can also choose to block the person. You can also email support@paeonia.no. We review every report and reply within three working days. We may preserve reported material, review it, hide or remove content, restrict accounts or pairing, and take other proportionate steps to protect users and the service.',
+          'Paeonia is a private space for two people and has no public posts, but these rules apply to everything you add. To report your partner, open the More tab, then Privacy and safety, and tap Report and leave. Reporting ends the relationship, and you can also choose to block the person. You can also email support@paeonia.no. We review every report and reply within three working days. We may preserve reported material, review it, hide or remove content, restrict accounts or pairing, and take other proportionate steps to protect users and the service.',
           'We do not promise to monitor all private content. If anyone is in immediate danger, contact local emergency services. Reports made in bad faith or attempts to misuse safety tools may themselves violate these terms.',
         ],
       },
@@ -325,7 +325,7 @@ export const legalEn = {
       {
         heading: 'Deleting your account',
         paragraphs: [
-          'To delete your account, open the Us tab in Paeonia, scroll to Account, tap Delete account, and confirm. You can also delete it from the subscription screen. If you cannot open the app, email contact@paeonia.no from the address on your account. Deletion is permanent, ends an active relationship, removes or anonymizes your profile, and starts cleanup described in the Privacy Policy. Some limited records may be retained for reports, payments, safety, disputes, or legal obligations.',
+          'To delete your account, open the More tab in Paeonia, scroll to Account, tap Delete account, and confirm. You can also delete it from the subscription screen. If you cannot open the app, email contact@paeonia.no from the address on your account. Deletion is permanent, ends an active relationship, removes or anonymizes your profile, and starts cleanup described in the Privacy Policy. Some limited records may be retained for reports, payments, safety, disputes, or legal obligations.',
           'Cancel any App Store subscription separately in your Apple Account settings.',
         ],
       },
