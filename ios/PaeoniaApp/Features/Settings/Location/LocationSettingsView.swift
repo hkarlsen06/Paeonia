@@ -122,7 +122,6 @@ struct LocationSettingsView: View {
 
         if updates.prefersUpdatesWhileClosed, !updates.updatesWhileClosedActive {
             noteRows(
-                title: .settingsLocationWhileClosedNeedsAlwaysTitle,
                 message: .settingsLocationWhileClosedNeedsAlwaysMessage
             )
         }
@@ -137,11 +136,13 @@ struct LocationSettingsView: View {
     }
 
     @ViewBuilder
-    private func noteRows(title: LocalizedStringResource, message: LocalizedStringResource) -> some View {
+    private func noteRows(title: LocalizedStringResource? = nil, message: LocalizedStringResource) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            Text(title)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
+            if let title {
+                Text(title)
+                    .font(PaeoniaTypography.bodyEmphasis)
+                    .foregroundStyle(.paeoniaTextPrimary)
+            }
             Text(message)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)

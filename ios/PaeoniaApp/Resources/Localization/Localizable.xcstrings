@@ -31913,42 +31913,6 @@
         }
       }
     },
-    "privacySafety.introduction" : {
-      "comment" : "Intro text at the top of Privacy and safety when the person has a partner",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Download a copy of your data, ask us to correct it, and find help if something in your relationship feels unsafe."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Last ned en kopi av opplysningene dine, be oss rette dem, og finn hjelp hvis noe i forholdet ditt føles utrygt."
-          }
-        }
-      }
-    },
-    "privacySafety.introductionDataOnly" : {
-      "comment" : "Intro text at the top of Privacy and safety when the person has no partner",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Download a copy of the details we store about you, or ask us to correct them."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Last ned en kopi av opplysningene vi lagrer om deg, eller be oss rette dem."
-          }
-        }
-      }
-    },
     "privacySafety.loadFailed.message" : {
       "comment" : "Banner message when privacy requests cannot be loaded",
       "extractionState" : "manual",
@@ -33925,24 +33889,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "For å dele når Paeonia er lukket, åpne Innstillinger, trykk på Posisjon og velg Alltid."
-          }
-        }
-      }
-    },
-    "settings.location.whileClosed.needsAlways.title" : {
-      "comment" : "Location settings note title when sharing while the app is closed needs Always location access.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose Always in Settings"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg Alltid i Innstillinger"
           }
         }
       }
