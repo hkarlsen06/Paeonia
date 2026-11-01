@@ -196,8 +196,7 @@ struct ReportAndLeaveView: View {
         case .reasonRequired:
             bannerCenter.show(
                 .error(
-                    title: String(localized: .reportAndLeaveReasonRequiredTitle),
-                    message: String(localized: .reportAndLeaveReasonRequiredMessage)
+                    message: String(localized: .reportAndLeaveReasonRequiredTitle)
                 )
             )
         case let .submitFailed(failure):

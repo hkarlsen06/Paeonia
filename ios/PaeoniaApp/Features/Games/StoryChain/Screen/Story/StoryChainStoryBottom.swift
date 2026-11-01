@@ -80,8 +80,7 @@ struct StoryChainStoryBottom: View {
             StoryChainFinishedBottom(
                 finished: finished,
                 reveal: reveal,
-                canReact: viewModel.story?.hasUnsentName == false,
-                result: viewModel.story.map { .storyChain($0.story) }
+                canReact: viewModel.story?.hasUnsentName == false
             )
         }
     }

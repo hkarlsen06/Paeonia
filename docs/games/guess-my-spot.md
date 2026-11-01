@@ -345,7 +345,7 @@ Beats, in seconds after the reveal starts.
 | 4.95 | The verdict, as the flight settles. Both heads glow gold over 0.3 s (0.8 for So close and Close, 1 for Spot on), a 4 pt gold ring widens from the real pin's head from 36 to 72 pt and fades over 0.4 s, and the distance capsule pulses 1 to 1.1 and back. Far has no glow or ring. See below. |
 | 5.25 | The photo comes back: the result card rises 120 pt on a spring (0.3 s, bounce 0.1) with a 0.2 s fade, with the verdict at the leading edge above a square photo on the left and the scores on the right. The photo shows the place name and date. |
 | 5.55 | The shared total counts up over 0.7 s in 10 steps, with "+3,215" above it. |
-| 6.25 | The Chat and Your turn buttons appear side by side. The sender gets Continue instead of Your turn. |
+| 6.25 | The Your turn button appears. The sender gets Continue instead of Your turn. Chat stays in the toolbar. |
 
 Verdict.
 
@@ -365,7 +365,7 @@ Everything is tappable from 4.95. A tap jumps to the settled state, without repe
 
 Camera buttons. Once the reveal settles, three buttons in one glass capsule sit in the map's top leading corner, as the satellite button sits in its trailing one: your pin's head, a zoom out (`arrow.down.forward.and.arrow.up.backward`), and your partner's pin's head (`GuessMySpotRevealCameraButtons`). The distance capsule stays centered. Each moves the map with MapKit's own animation, to that pin as the landing frames the real spot, or out to both pins. The zoom out frames both pins between the buttons and the card, as tall as the card is now, since the flight's overview may use the card's room and the card would hide a pin. The zoom out always collapses the card first and frames the pins in the room the collapsed card leaves. Above the expanded card the globe fits two spots only about 90° apart, about 10,000 km, even at MapKit's widest view. A guess too far even for that stays centered in it at MapKit's widest view. Reduce Motion settles on the same view when both pins fit above the expanded card, and otherwise on the partner's pin, as the reveal ends, so the photo and the verdict stay up. The button for what the map shows now is dimmed and off, and all three turn on again once the map is moved by hand. VoiceOver reads them as "Show my pin", "Show both pins" and "Show Elena's pin".
 
-Buttons. A secondary "Chat" button sits beside the primary "Your turn" button. The sender gets "Continue" instead of "Your turn", which goes to the guess when the partner already sent the next photo, and to waiting otherwise. Leaving the reveal marks it seen once its verdict has shown. A reveal left before the verdict plays again next time.
+Buttons. Chat stays in the toolbar. The primary button says "Your turn". The sender gets "Continue" instead of "Your turn", which goes to the guess when the partner already sent the next photo, and to waiting otherwise. Leaving the reveal marks it seen once its verdict has shown. A reveal left before the verdict plays again next time.
 
 Held reveal. While the guess is on its way, the reveal holds at 0.00 with only the guess pin on the map. Routine queued guesses show no save-status line. After a failure on a working connection, "We couldn't send your move yet" and Try again appear, with "Your turn" under them. Stepping past a held reveal does not mark it seen. If the server refuses the guess because the round already has one, the screen plays the reveal of the guess the server has.
 

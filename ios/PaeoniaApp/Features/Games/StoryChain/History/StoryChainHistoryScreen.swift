@@ -112,7 +112,6 @@ struct StoryChainHistoryScreen: View {
         } else {
             PaeoniaEmptyStateView(
                 title: .storyChainHistoryEmptyTitle,
-                message: .storyChainHistoryEmptyMessage,
                 systemImage: "books.vertical"
             )
         }

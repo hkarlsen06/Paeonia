@@ -295,8 +295,7 @@ See "The reveal" for the beats. On the reveal and saved-creature detail, each dr
 | `history.cell.caption` | Creature %1$lld · %2$@ | Skapning %1$lld · %2$@ |
 | `history.cell.a11y` | Creature %1$lld, by you and %2$@ | Skapning %1$lld, av deg og %2$@ |
 | `history.cell.starred.a11y` | Creature %1$lld, by you and %2$@, starred | Skapning %1$lld, av deg og %2$@, stjernemerket |
-| `history.empty.title` | No creatures yet | Ingen skapninger ennå |
-| `history.empty.message` | Your creatures show up here when the legs are done. | Skapningene deres dukker opp her når beina er tegnet. |
+| `history.empty.title` | No finished creatures yet | Ingen ferdige skapninger ennå |
 | `history.emptyStarred.title` | No starred creatures | Ingen stjernemerkede skapninger |
 | `history.emptyStarred.message` | Tap the star on a creature you like, and it shows up here. | Trykk på stjernen på en skapning du liker, så dukker den opp her. |
 | `history.offline.message` | Connect to the internet to see your creatures. | Koble til internett for å se skapningene deres. |

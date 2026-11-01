@@ -58,9 +58,11 @@ struct PushPermissionPrimerView: View {
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(message)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
+                if let message {
+                    Text(message)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
             }
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
@@ -76,12 +78,12 @@ struct PushPermissionPrimerView: View {
         }
     }
 
-    private var message: LocalizedStringResource {
+    private var message: LocalizedStringResource? {
         switch ask {
         case .afterSharing:
             .notificationsPermissionPrimerMessage(partnerName)
         case .whileWaitingForPartner:
-            .notificationsPermissionPrimerWaitingMessage(partnerName)
+            nil
         }
     }
 

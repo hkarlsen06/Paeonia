@@ -126,7 +126,6 @@ struct ConsensioHistoryScreen: View {
         } else {
             PaeoniaEmptyStateView(
                 title: .consensioHistoryEmptyTitle,
-                message: .consensioHistoryEmptyMessage,
                 systemImage: "point.topleft.down.to.point.bottomright.curvepath"
             )
         }

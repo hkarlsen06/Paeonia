@@ -541,8 +541,7 @@ VoiceOver. A cell is one element, "Cat, drawn by Robin, starred" or "Cat, drawn 
 | `history.cell.caption` | by %1$@ · %2$@ | av %1$@ · %2$@ |
 | `history.cell.a11y` | %1$@, drawn by %2$@ | %1$@, tegnet av %2$@ |
 | `history.cell.starred.a11y` | %1$@, drawn by %2$@, starred | %1$@, tegnet av %2$@, stjernemerket |
-| `history.empty.title` | No drawings yet | Ingen tegninger ennå |
-| `history.empty.message` | Your drawings will show up here after your first round. | Tegningene deres dukker opp her etter første runde. |
+| `history.empty.title` | No finished drawings yet | Ingen ferdige tegninger ennå |
 | `history.emptyStarred.title` | No starred drawings | Ingen stjernemerkede tegninger |
 | `history.emptyStarred.message` | Tap the star on a drawing you like, and it shows up here. | Trykk på stjernen på en tegning du liker, så dukker den opp her. |
 | `history.offline.message` | Connect to the internet to see your drawings. | Koble til internett for å se tegningene deres. |

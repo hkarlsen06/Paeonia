@@ -143,7 +143,6 @@ struct ExquisiteCorpseHistoryScreen: View {
         } else {
             PaeoniaEmptyStateView(
                 title: .exquisiteCorpseHistoryEmptyTitle,
-                message: .exquisiteCorpseHistoryEmptyMessage,
                 systemImage: "square.grid.2x2"
             )
         }

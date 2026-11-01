@@ -2,7 +2,7 @@ import SwiftUI
 
 struct PaeoniaEmptyStateView<Action: View>: View {
     private let title: LocalizedStringResource
-    private let message: LocalizedStringResource
+    private let message: LocalizedStringResource?
     private let systemImage: String?
     private let illustration: ImageResource?
     private let action: Action
@@ -16,7 +16,7 @@ struct PaeoniaEmptyStateView<Action: View>: View {
 
     init(
         title: LocalizedStringResource,
-        message: LocalizedStringResource,
+        message: LocalizedStringResource? = nil,
         systemImage: String? = nil,
         illustration: ImageResource? = nil,
         @ViewBuilder action: () -> Action
@@ -38,9 +38,11 @@ struct PaeoniaEmptyStateView<Action: View>: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                     .accessibilityAddTraits(.isHeader)
 
-                Text(message)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
+                if let message {
+                    Text(message)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
             }
             .multilineTextAlignment(.center)
 
@@ -83,7 +85,7 @@ struct PaeoniaEmptyStateView<Action: View>: View {
 extension PaeoniaEmptyStateView where Action == EmptyView {
     init(
         title: LocalizedStringResource,
-        message: LocalizedStringResource,
+        message: LocalizedStringResource? = nil,
         systemImage: String? = nil,
         illustration: ImageResource? = nil
     ) {

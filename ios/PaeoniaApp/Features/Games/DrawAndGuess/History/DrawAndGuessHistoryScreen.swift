@@ -135,7 +135,6 @@ struct DrawAndGuessHistoryScreen: View {
         } else {
             PaeoniaEmptyStateView(
                 title: .gamesDrawAndGuessHistoryEmptyTitle,
-                message: .gamesDrawAndGuessHistoryEmptyMessage,
                 systemImage: "square.grid.2x2"
             )
         }

@@ -358,8 +358,7 @@ Empty states use `PaeoniaEmptyStateView`: no finished games yet (`point.3.connec
 | `history.row.startedOver` | Started over | Begynt på nytt |
 | `history.detail.melded` | Melded in %lld round / Melded in %lld rounds | Likt på %lld runde / Likt på %lld runder |
 | `history.detail.counted` | Counted | Telt med |
-| `history.empty.title` | No melds yet | Ingen treff ennå |
-| `history.empty.message` | Your finished games will show up here. | Spillene dere har fullført, dukker opp her. |
+| `history.empty.title` | No finished games yet | Ingen ferdige spill ennå |
 | `history.loadMore.failed` | We couldn't load older games. | Vi kunne ikke laste eldre spill. |
 | `history.offline.message` | Connect to the internet to see your finished games. | Koble til internett for å se spillene dere har fullført. |
 | `history.detail.round` | Round %lld | Runde %lld |

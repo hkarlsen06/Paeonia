@@ -322,8 +322,7 @@ The reveal. It should feel like closing a book you wrote together.
 | `history.title` | Our stories | Historiene våre |
 | `history.filter.all` / `.starred` | All / Starred | Alle / Stjernemerket |
 | `history.row.caption` | %1$@ · %2$lld lines | %1$@ · %2$lld linjer |
-| `history.empty.title` | No stories yet | Ingen historier ennå |
-| `history.empty.message` | Your stories will show up here when you finish your first one. | Historiene deres dukker opp her når dere er ferdige med den første. |
+| `history.empty.title` | No finished stories yet | Ingen ferdige historier ennå |
 | `history.emptyStarred.title` | No starred stories | Ingen stjernemerkede historier |
 | `history.emptyStarred.message` | Tap the star on a story you like, and it shows up here. | Trykk på stjernen på en historie du liker, så dukker den opp her. |
 | `star` / `starred` | Star / Starred | Stjernemerk / Stjernemerket |

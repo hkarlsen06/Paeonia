@@ -19,17 +19,3 @@ extension RemoteMindMeldGame {
             ))
     }
 }
-
-extension DrawAndGuessRoundView {
-    var conversationResult: GameConversationResult? {
-        guard state == .solved || state == .missed, let drawingMediaAssetID else { return nil }
-        return .drawAndGuess(
-            RemoteDrawAndGuessHistoryRound(
-                id: id, roundNumber: number, drawerUserID: drawerUserID, guesserUserID: guesserUserID,
-                word: word, difficulty: difficulty, points: points, state: state,
-                drawingMediaAssetID: drawingMediaAssetID, solveMs: solveMs, speedBonus: speedBonus,
-                firstTryBonus: firstTryBonus, hintsUsed: hintsUsed, attemptCount: attempts.count,
-                personalBest: personalBest, startedAt: startedAt, endedAt: endedAt
-            ), guesses: attempts.map(\.text))
-    }
-}

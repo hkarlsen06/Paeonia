@@ -219,7 +219,6 @@ struct MemoriesScreen: View {
                 .paeoniaReadableWidth()
             PaeoniaEmptyStateView(
                 title: .memoriesEmptyTitle,
-                message: .memoriesEmptyMessage,
                 illustration: .memoriesPhotoStack
             ) {
                 Button {

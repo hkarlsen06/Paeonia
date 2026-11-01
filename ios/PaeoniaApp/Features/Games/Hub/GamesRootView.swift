@@ -20,7 +20,7 @@ struct GamesRootView: View {
                         .toolbar {
                             if case let .game(kind) = destination {
                                 ToolbarItem(placement: .topBarTrailing) {
-                                    GameConversationButton(kind: kind, compact: true)
+                                    GameConversationButton(kind: kind)
                                 }
                             }
                         }

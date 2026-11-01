@@ -264,9 +264,6 @@ struct ConsensioRevealView: View {
                 Text(isPlacer ? .consensioHandoffContinue : .consensioHandoffPlace)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
-            if let round, !isHeld {
-                GameConversationButton(source: .consensio(round.id), result: .consensio(round))
-            }
         }
         .opacity(isShown ? 1 : 0)
         .offset(y: isShown || reduceMotion ? 0 : 12)
