@@ -53,8 +53,9 @@ extension HomeMapLibreView {
         if isMainRoad {
             layer.lineColor = constant(mainRoad)
             // Zoomed out to a continent, the sharper tiles carry every main road, a tangle
-            // at that size. The map is then only land and sea.
-            layer.lineOpacity = byZoom([4.5: 0, 6: 1])
+            // at that size. The map is then only land and sea. Closer in, the roads stay
+            // faint: the map shows where the partner is, not how to get there.
+            layer.lineOpacity = byZoom([4.5: 0, 6: 0.4])
             layer.lineWidth = constant(0.6)
         } else if id.hasPrefix("waterway") {
             layer.lineColor = constant(water)
