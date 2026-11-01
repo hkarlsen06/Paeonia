@@ -162,8 +162,8 @@ struct HomeMapMetrics {
     let framedBottom: CGFloat
     /// Where the avatars' centers may go, in the map's coordinates.
     let framedBox: CGRect
-    /// The open map, less half an avatar, so a held avatar stays whole and clear of the
-    /// bar and the first card.
+    /// Portrait centers that keep each marker's note, frame and action clear of the bar
+    /// and the first card.
     let avatarBounds: CGRect
     /// How far past `avatarBounds` an avatar fades out while the person looks around. It is
     /// gone by the time its middle reaches the screen's side.
@@ -173,36 +173,39 @@ struct HomeMapMetrics {
     /// The fade starts a little above the cards and runs to the bottom of the band.
     var fadeLength: CGFloat { Self.fadeHeight + 20 }
 
-    init(screen: HomeMapScreen, bandHeight: CGFloat, avatarSize: CGFloat, isNear: Bool) {
+    init(
+        screen: HomeMapScreen, bandHeight: CGFloat, avatarSize: CGFloat, isNear: Bool,
+        markerMeasurements: StoryMarkerMeasurements
+    ) {
         self.screen = screen
         self.bandHeight = max(0, bandHeight)
         framedBottom = max(0, bandHeight - Self.fadeHeight)
         let cardsTop = framedBottom + PaeoniaSpacing.space16
-        // The avatars are centered in the open map between the streak pill and the first
-        // card. The bar's glass is off at rest, so the pill is where the space starts.
-        // Together they sit side by side in the middle. Apart, they may go anywhere in that
-        // space with the same margin above and below, room for a note bubble each way, so
-        // the pair always stays centered.
+        // Keep the entire marker between the bar and the question, including its action.
         let pillBottom = screen.topInset + PaeoniaSpacing.compactButtonHeight + screen.additionalHeaderHeight
         let half = avatarSize / 2
         let width = screen.width
         // An avatar's edge never comes closer to the screen's sides than the cards do.
         let sideMargin = PaeoniaSpacing.screenHorizontalPadding
+        let halfWidth = max(half, markerMeasurements.halfWidth)
+        let top = pillBottom + PaeoniaSpacing.space8 + max(half, markerMeasurements.above)
+        let bottom = cardsTop - PaeoniaSpacing.space16 - max(half, markerMeasurements.below)
         avatarFade = half + sideMargin
         avatarBounds = CGRect(
-            x: half + sideMargin,
-            y: pillBottom + PaeoniaSpacing.space8 + half,
-            width: max(width - avatarSize - 2 * sideMargin, 1),
-            height: max(cardsTop - pillBottom - avatarSize - 2 * PaeoniaSpacing.space8 - PaeoniaSpacing.space32, 1)
+            x: halfWidth + sideMargin,
+            y: top,
+            width: max(width - 2 * halfWidth - 2 * sideMargin, 1),
+            height: max(bottom - top, 1)
         )
         if isNear {
-            framedBox = CGRect(x: 0, y: (pillBottom + cardsTop) / 2 - 1, width: width, height: 2)
+            framedBox = CGRect(x: 0, y: (top + bottom) / 2 - 1, width: width, height: 2)
         } else {
-            let margin = PaeoniaSpacing.space8 + 44 + half
-            let top = pillBottom + margin
-            let bottom = cardsTop - margin
+            // Frame the places on the map independently of the controls' safe bounds.
+            let margin = PaeoniaSpacing.space8 + PaeoniaSpacing.compactButtonHeight + half
+            let mapTop = pillBottom + margin
+            let mapBottom = cardsTop - margin
             let side = half + sideMargin
-            framedBox = CGRect(x: side, y: top, width: width - 2 * side, height: max(bottom - top, 1))
+            framedBox = CGRect(x: side, y: mapTop, width: width - 2 * side, height: max(mapBottom - mapTop, 1))
         }
     }
 

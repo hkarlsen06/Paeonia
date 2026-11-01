@@ -67,7 +67,8 @@ extension HomeMapLayout {
     /// Side by side in the middle of the open map, where the avatars wait while it loads.
     func waitingPoints(_ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
         let near = HomeMapMetrics(
-            screen: metrics.screen, bandHeight: metrics.bandHeight, avatarSize: avatarSize, isNear: true
+            screen: metrics.screen, bandHeight: metrics.bandHeight, avatarSize: avatarSize, isNear: true,
+            markerMeasurements: markerMeasurements
         )
         let center = CGPoint(x: near.framedBox.midX, y: near.framedBox.midY)
         let together = separated(HomeMapAvatarPoints(own: center, partner: center), isNear: true)
@@ -85,7 +86,11 @@ extension HomeMapLayout {
         // Wide enough that the two note bubbles never touch.
         let decorations = avatarStyling?.decorations ?? CoupleAvatarDecorations()
         let decoratedWidth = avatarSize * (1 + decorations.own.outset + decorations.partner.outset)
-        let minimum = max(StoryNoteBubble.maxWidth + PaeoniaSpacing.space8, decoratedWidth + PaeoniaSpacing.space16)
+        let minimum = max(
+            StoryNoteBubble.maxWidth + PaeoniaSpacing.space8,
+            decoratedWidth + PaeoniaSpacing.space16,
+            2 * markerMeasurements.halfWidth + PaeoniaSpacing.space8
+        )
         guard isNear else {
             // Apart: pushed away from each other along the line between the two places,
             // so north stays north, with room for a note bubble when one sits above the other.

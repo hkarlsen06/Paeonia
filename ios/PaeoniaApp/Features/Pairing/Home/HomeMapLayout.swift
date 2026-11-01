@@ -36,6 +36,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     @State private var heartTaps = 0
     @State var mapProjection: HomeMapProjection?
     @State private var mapLocations: HomeMapLocations?
+    @State var markerMeasurements = StoryMarkerMeasurements()
     @State var explorer = HomeMapExplorer()
     @State var isShowingMapDetails = false
 
@@ -158,7 +159,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         .frame(
             // Reserve the width while empty, so the arriving map cannot expand from the center.
             maxWidth: .infinity,
-            minHeight: reservesMapSpace ? screen.shortestBand : nil,
+            minHeight: reservesMapSpace ? shortestBand(screen) : nil,
             maxHeight: reservesMapSpace ? .infinity : nil,
             alignment: .top
         )
@@ -251,7 +252,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                     )
                 } : nil,
                 middle: !reservesMapSpace && hearts != nil && canSendHearts ? AnyView(rowHeart) : nil,
-                middleOverlap: Self.heartOverlap
+                middleOverlap: Self.heartOverlap,
+                onMarkerMeasurements: { markerMeasurements = $0 }
             )
         }
     }
@@ -259,9 +261,19 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     func metrics(_ couple: HomeMapCouple?, _ screen: HomeMapScreen, bandHeight: CGFloat) -> HomeMapMetrics {
         HomeMapMetrics(
             screen: screen,
-            bandHeight: max(bandHeight, screen.shortestBand),
+            bandHeight: max(bandHeight, shortestBand(screen)),
             avatarSize: avatarSize,
-            isNear: couple?.isNear ?? true
+            isNear: couple?.isNear ?? true,
+            markerMeasurements: markerMeasurements
+        )
+    }
+
+    private func shortestBand(_ screen: HomeMapScreen) -> CGFloat {
+        let pillBottom = screen.topInset + PaeoniaSpacing.compactButtonHeight + screen.additionalHeaderHeight
+        return max(
+            screen.shortestBand,
+            pillBottom + PaeoniaSpacing.space8 + markerMeasurements.above
+                + markerMeasurements.below + HomeMapMetrics.fadeHeight
         )
     }
 
