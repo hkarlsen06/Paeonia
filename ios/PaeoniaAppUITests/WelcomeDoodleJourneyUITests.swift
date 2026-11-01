@@ -52,27 +52,26 @@ final class WelcomeDoodleJourneyUITests: XCTestCase {
             let tile = app.descendants(matching: .any)["welcome.doodle"].firstMatch
             XCTAssertTrue(tile.waitForExistence(timeout: 10))
             trace(on: tile)
-            try SimulatorTextSizeSettings(testCase: self).withSize(.largestAccessibility) {
-                app.activate()
-                XCTAssertTrue(tile.waitForExistence(timeout: 10))
-                trace(on: tile)
-                let start = app.buttons["welcome.start"]
-                scrollTo(start, in: app)
-                start.tap()
-                let date = app.buttons["welcome.startDate.continue"]
-                XCTAssertTrue(date.waitForExistence(timeout: 5))
-                scrollTo(date, in: app)
-                date.tap()
-                let compose = app.buttons["drawing.compose"]
-                XCTAssertTrue(compose.waitForExistence(timeout: 15))
-                scrollTo(compose, in: app)
-                compose.tap()
-                let secondMark = app.staticTexts["drawing.geometry.mark.1"]
-                scrollTo(secondMark, in: app)
-                XCTAssertTrue(app.staticTexts["drawing.geometry.mark.0"].exists)
-                XCTAssertTrue(secondMark.exists, "Both strokes must reach the first drawing after reflow")
-                attachScreenshot(app, named: "welcome-two-strokes-after-AX5-reflow")
-            }
+            try SimulatorTextSizeSettings(testCase: self).growToLargestAccessibility()
+            app.activate()
+            XCTAssertTrue(tile.waitForExistence(timeout: 10))
+            trace(on: tile)
+            let start = app.buttons["welcome.start"]
+            scrollTo(start, in: app)
+            start.tap()
+            let date = app.buttons["welcome.startDate.continue"]
+            XCTAssertTrue(date.waitForExistence(timeout: 5))
+            scrollTo(date, in: app)
+            date.tap()
+            let compose = app.buttons["drawing.compose"]
+            XCTAssertTrue(compose.waitForExistence(timeout: 15))
+            scrollTo(compose, in: app)
+            compose.tap()
+            let secondMark = app.staticTexts["drawing.geometry.mark.1"]
+            scrollTo(secondMark, in: app)
+            XCTAssertTrue(app.staticTexts["drawing.geometry.mark.0"].exists)
+            XCTAssertTrue(secondMark.exists, "Both strokes must reach the first drawing after reflow")
+            attachScreenshot(app, named: "welcome-two-strokes-after-AX5-reflow")
         }
     }
 

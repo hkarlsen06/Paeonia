@@ -7,8 +7,7 @@ final class GuessMySpotDescriptionUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "guess-my-spot-check-found"
         app.launchArguments = [
-            "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
-            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"
+            "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
         app.launch()
         defer { app.terminate() }

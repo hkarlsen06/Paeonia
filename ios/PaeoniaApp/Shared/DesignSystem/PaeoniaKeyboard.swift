@@ -28,13 +28,8 @@ enum PaeoniaKeyboard {
 
 extension View {
     /// Shows a "Done" button above the keyboard that dismisses it.
-    ///
-    /// iOS 26 draws a `.keyboard` toolbar item as a glass capsule sitting right on
-    /// the keyboard, and padding only grows the capsule (FB22938104). So the shared
-    /// capsule is hidden and the button draws its own glass with a gap below it.
-    /// It stays a keyboard toolbar item, so it moves with the keyboard frame by
-    /// frame. A bar driven by keyboard notifications runs on its own timing and
-    /// jumps ahead of the keyboard.
+    /// The system positions this single item above the software keyboard and
+    /// at the bottom of the screen when a hardware keyboard is connected.
     func keyboardDoneToolbar() -> some View {
         modifier(KeyboardDoneButtonModifier())
     }
@@ -109,8 +104,7 @@ private struct KeyboardDoneButtonModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
+                ToolbarItem(placement: .keyboard) {
                     Button {
                         PaeoniaKeyboard.dismiss()
                     } label: {

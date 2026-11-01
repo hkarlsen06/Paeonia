@@ -56,7 +56,6 @@ struct ConsensioLineView: View {
             send: viewModel.sendInvite,
             identifier: "consensio.invite"
         )
-        .accessibilityIdentifier(role == .place ? "consensio.place" : "consensio.guess")
     }
 
     private var scale: some View {
@@ -82,6 +81,7 @@ struct ConsensioLineView: View {
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier(role == .place ? "consensio.place" : "consensio.guess")
             Text(role == .place ? .consensioPlaceQuestion : .consensioGuessQuestion(viewModel.partnerName))
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)

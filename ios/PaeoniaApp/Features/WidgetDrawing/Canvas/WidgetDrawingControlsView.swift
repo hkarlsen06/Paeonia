@@ -209,12 +209,14 @@ struct WidgetDrawingToolControlsView: View {
                     PaeoniaHaptics.selection()
                 } label: {
                     Image(systemName: tool.systemImageName)
+                        .accessibilityHidden(true)
                         .font(.system(size: 18, weight: .semibold))
                         .frame(width: Self.buttonSize, height: Self.buttonSize)
                         .foregroundStyle(toolForeground(for: tool))
                         .background(toolBackground(for: tool))
                         .clipShape(Capsule(style: .continuous))
                         .frame(minWidth: Self.buttonSize, maxWidth: .infinity)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(tool.accessibilityLabel))
@@ -273,6 +275,7 @@ struct WidgetDrawingToolControlsView: View {
                 .background(isEnabled ? Color.paeoniaSurfacePrimary : Color.clear)
                 .clipShape(Circle())
                 .frame(minWidth: Self.buttonSize, maxWidth: .infinity)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)

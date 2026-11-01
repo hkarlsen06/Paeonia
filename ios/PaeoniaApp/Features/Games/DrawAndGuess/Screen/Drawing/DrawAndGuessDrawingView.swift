@@ -6,6 +6,7 @@ struct DrawAndGuessDrawingView: View {
     @Bindable var viewModel: DrawAndGuessViewModel
 
     @State private var shownGuess: DrawAndGuessAttemptView?
+    @State private var isCompositionPresented = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -36,7 +37,9 @@ struct DrawAndGuessDrawingView: View {
                 identifier: "draw.canvas"
             )
         } footer: {
-            GameDrawingTools(board: board, showsComposition: !dynamicTypeSize.isAccessibilitySize)
+            GameDrawingTools(board: board, showsComposition: !dynamicTypeSize.isAccessibilitySize) {
+                isCompositionPresented = true
+            }
             if !dynamicTypeSize.isAccessibilitySize {
                 GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isGuessingGame: true,
                                              isLocked: board.isFinishing)
@@ -54,6 +57,10 @@ struct DrawAndGuessDrawingView: View {
             .accessibilityLabel(Text(.gamesDrawAndGuessDrawDoneA11Y(viewModel.partnerName)))
             .accessibilityIdentifier("draw.done")
         }
+        .drawingCompositionSheet(
+            isPresented: $isCompositionPresented,
+            drawing: board.drawing, side: board.canvasSide, isLocked: board.isFinishing
+        ) { board.applyEdit($0) }
         .modifier(WidgetDrawingPencilDoubleTap(viewModel: board))
         .gameClearDrawingToolbar(board: board, identifier: "draw.clear")
         .onChange(of: newestWrongGuessID) { _, id in
@@ -75,7 +82,7 @@ struct DrawAndGuessDrawingView: View {
     // Native creation stays before the gesture canvas when enlarged content must scroll.
     private var nativeCreation: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            DrawingCompositionButton(drawing: board.drawing, side: board.canvasSide) { board.applyEdit($0) }
+            DrawingCompositionButton { isCompositionPresented = true }
                 .disabled(board.isFinishing)
             GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isGuessingGame: true,
                                          isLocked: board.isFinishing)

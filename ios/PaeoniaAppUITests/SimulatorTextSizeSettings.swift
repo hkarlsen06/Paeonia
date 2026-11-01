@@ -1,8 +1,10 @@
 import CoreGraphics
 import XCTest
+import UIKit
 
-/// Changes the simulator's actual preference, so accessibility audits can still exercise live size changes.
-/// Keep the app free of -UIPreferredContentSizeCategoryName and dynamicTypeSize environment overrides.
+/// The device driver sets the actual system size before each cohort. Fail if that precondition is wrong.
+/// App launch overrides would prevent live reflow and do not establish a system-setting test.
+/// The separate live-change journey only grows from Large to AX5. Its caller restores the device afterward.
 @MainActor
 struct SimulatorTextSizeSettings {
     enum Size: Equatable { case standard, largestAccessibility }
@@ -16,28 +18,43 @@ struct SimulatorTextSizeSettings {
     private let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
 
     func withSize<Result>(_ size: Size, perform: () throws -> Result) throws -> Result {
-        try openLargerText()
-        let original = try snapshot()
-        defer {
-            do {
-                try openLargerText()
-                try apply(original)
-                settings.terminate()
-            } catch {
-                recordFailure("Could not restore the simulator's text size: \(error)")
-            }
-        }
-        let requested = Snapshot(largerAccessibilitySizes: size == .largestAccessibility,
-                                 sliderPosition: size == .largestAccessibility ? 1 : 0.5)
-        try apply(requested)
-        attachState(name: size == .largestAccessibility ? "Actual Settings AX5" : "Actual Settings standard text")
+        try require(size)
         return try perform()
+    }
+
+    func require(_ size: Size) throws {
+        let expected: UIContentSizeCategory = size == .largestAccessibility
+            ? .accessibilityExtraExtraExtraLarge : .large
+        let matches = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            MainActor.assumeIsolated { UIApplication.shared.preferredContentSizeCategory == expected }
+        }, object: nil)
+        guard XCTWaiter.wait(for: [matches], timeout: 5) == .completed else {
+            let actual = UIApplication.shared.preferredContentSizeCategory.rawValue
+            let message = "System text size must be \(expected.rawValue), but the test runner reports \(actual). "
+                + "Set the device preference before this cohort."
+            testCase.record(XCTIssue(type: .assertionFailure, compactDescription: message))
+            throw SettingsError.unavailable(message)
+        }
+        let actual = UIApplication.shared.preferredContentSizeCategory.rawValue
+        let state = XCTAttachment(string: "Actual UIKit preferredContentSizeCategory: \(actual). No app size override.")
+        state.name = "System text size precondition"
+        state.lifetime = .keepAlways
+        testCase.add(state)
+    }
+
+    /// Run last in the Large cohort. Restoration belongs to the bound device driver, even on failure.
+    func growToLargestAccessibility() throws {
+        try require(.standard)
+        try openLargerText()
+        try apply(Snapshot(largerAccessibilitySizes: true, sliderPosition: 1))
+        attachState(name: "Actual Settings AX5 after live change")
+        settings.terminate()
+        try require(.largestAccessibility)
     }
 
     private func openLargerText() throws {
         settings.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        // Relaunching Settings discards this controller and restores a different AX5 page.
-        // Resume it while the app audit runs so restoration uses the same native controls.
+        // Reuse the native Larger Text controller if the previous visit left it open.
         if settings.state == .runningBackground || settings.state == .runningForeground {
             settings.activate()
             if isLargerTextPage { return }
@@ -157,10 +174,5 @@ struct SimulatorTextSizeSettings {
     private func failure(_ message: String) -> SettingsError {
         attachState(name: "Text size setup failure")
         return .unavailable(message)
-    }
-
-    private func recordFailure(_ message: String) {
-        attachState(name: "Text size restoration failure")
-        testCase.record(XCTIssue(type: .assertionFailure, compactDescription: message))
     }
 }

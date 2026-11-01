@@ -8,6 +8,8 @@ struct BoardMarkEditorView: View {
     let color: Color
 
     @State private var model: BoardMarkEditorModel
+    @State private var isCompositionPresented = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
@@ -34,6 +36,11 @@ struct BoardMarkEditorView: View {
                 .toolbarColorScheme(.dark, for: .navigationBar)
                 .toolbar { cancelButton }
         }
+        .drawingCompositionSheet(
+            isPresented: $isCompositionPresented,
+            drawing: model.drawing, side: model.canvasSide,
+            isLocked: model.canvasSide <= 0 || model.isSaving, fixedInkColor: .white
+        ) { model.applyEdit($0) }
         // The sheet covers the app's top banner, so it mounts its own copy.
         // Otherwise a failed save would look like nothing happened.
         .paeoniaTopBanner(bannerCenter)
@@ -54,13 +61,13 @@ struct BoardMarkEditorView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
+                // Keep native creation before the gesture canvas when enlarged text
+                // pushes the tools below it. A swipe over PencilKit draws instead of scrolling.
+                if dynamicTypeSize.isAccessibilitySize { compositionButton }
+
                 canvas
 
-                DrawingCompositionButton(
-                    drawing: model.drawing, side: model.canvasSide,
-                    apply: model.applyEdit, fixedInkColor: .white
-                )
-                .disabled(model.canvasSide <= 0 || model.isSaving)
+                if !dynamicTypeSize.isAccessibilitySize { compositionButton }
 
                 editButtons
 
@@ -80,6 +87,11 @@ struct BoardMarkEditorView: View {
             .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
         }
         .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private var compositionButton: some View {
+        DrawingCompositionButton { isCompositionPresented = true }
+            .disabled(model.canvasSide <= 0 || model.isSaving)
     }
 
     @ToolbarContentBuilder

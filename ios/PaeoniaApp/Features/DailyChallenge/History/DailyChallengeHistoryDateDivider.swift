@@ -17,7 +17,7 @@ struct DailyChallengeHistoryDateDivider: View {
                 .multilineTextAlignment(.center)
                 // Long dates wrap at accessibility text sizes. The priority gives the
                 // text the row's width first; the rules take what is left.
-                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .layoutPriority(1)
 
             rule

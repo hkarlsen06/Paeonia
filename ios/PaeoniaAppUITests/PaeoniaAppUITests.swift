@@ -62,7 +62,9 @@ final class PaeoniaAppUITests: XCTestCase {
         XCTAssertTrue(photoButton.waitForExistence(timeout: 5))
         photoButton.tap()
         let firstPhoto = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
-        XCTAssertTrue(firstPhoto.waitForExistence(timeout: 10))
+        // At AX5, Photos places its privacy explanation before the virtualized grid.
+        for _ in 0..<12 where !firstPhoto.exists || !firstPhoto.isHittable { app.swipeUp() }
+        XCTAssertTrue(firstPhoto.waitForExistence(timeout: 5))
         firstPhoto.tap()
         let cropDone = app.buttons["imageCrop.done"]
         XCTAssertTrue(cropDone.waitForExistence(timeout: 5))

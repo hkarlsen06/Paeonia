@@ -189,6 +189,7 @@ struct DailyStreakToolbarLabel: View {
         // Breathing room so the toolbar's glass capsule doesn't crowd the flame and count.
         .padding(.horizontal, PaeoniaSpacing.space8)
         .padding(.vertical, PaeoniaSpacing.space4)
+        .frame(minWidth: PaeoniaSpacing.compactButtonHeight, minHeight: PaeoniaSpacing.compactButtonHeight)
         // Make the whole pill a tap target, not just the flame's opaque pixels. The
         // capsule hugs this padded frame, so the shape lines up with the visible glass.
         .contentShape(Capsule())

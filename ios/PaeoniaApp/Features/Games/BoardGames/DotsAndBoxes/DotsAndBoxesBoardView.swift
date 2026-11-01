@@ -116,20 +116,9 @@ struct DotsAndBoxesBoardView: View {
             .frame(maxWidth: DotsAndBoxesBoardGeometry.maxSide)
             .overlay(alignment: .topTrailing) {
                 GameBoardControls {
-                    ForEach(0..<DotsAndBoxesBoard.boxTotal, id: \.self) { box in
-                        Section {
-                            DotsAndBoxesAccessibilityLayer.boxLabel(
-                                board: board, box: box, me: me, partnerName: partnerLabel
-                            )
-                            .accessibilityIdentifier("dotsAndBoxes.box.\(box).state")
-                            ForEach(DotsAndBoxesSide.allCases) { side in
-                                let line = DotsAndBoxesBoard.lines(of: box)[side.rawValue]
-                                Button { onPlay(line) } label: { Text(side.action) }
-                                    .disabled(!canPlay || board.lines[line] != nil)
-                                    .accessibilityIdentifier("dotsAndBoxes.box.\(box).side.\(side.rawValue)")
-                            }
-                        }
-                    }
+                    DotsAndBoxesNativeControls(
+                        board: board, me: me, partnerName: partnerLabel, canPlay: canPlay, onPlay: onPlay
+                    )
                 }
             }
             .task(id: lastMove) { await playMove() }

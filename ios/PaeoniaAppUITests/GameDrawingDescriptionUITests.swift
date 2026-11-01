@@ -1,3 +1,4 @@
+import CoreGraphics
 import XCTest
 
 /// Production game views and their real draft/outbox logic. This does not run assistive technology.
@@ -31,6 +32,9 @@ final class GameDrawingDescriptionUITests: XCTestCase {
             let add = app.buttons["drawing.compose.apply"]
             scrollTo(add, in: app)
             add.tap()
+            let undo = app.buttons["drawing.compose.undo"]
+            scrollTo(undo, in: app)
+            XCTAssertTrue(undo.isEnabled, "Creating a shape must add a real editable mark")
             app.buttons["drawing.compose.done"].tap()
             let send = app.buttons[scenario == "draw-drawing" ? "draw.done" : "corpse.done"]
             scrollTo(send, in: app)
@@ -52,8 +56,16 @@ final class GameDrawingDescriptionUITests: XCTestCase {
 
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
-        XCTAssertTrue(element.waitForExistence(timeout: 10))
-        for _ in 0..<8 where !element.isHittable { app.swipeUp() }
+        let viewport = app.windows.firstMatch.frame.insetBy(dx: 0, dy: 120)
+        for _ in 0..<20 {
+            if element.exists && element.isHittable,
+               viewport.contains(CGPoint(x: element.frame.midX, y: element.frame.midY)) { return }
+            let goesUp = !element.exists || element.frame.midY > viewport.midY
+            // A drag over PencilKit draws. Scroll in the outer margin instead.
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.8 : 0.2))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.2 : 0.8))
+            start.press(forDuration: 0.01, thenDragTo: end)
+        }
         XCTAssertTrue(element.isHittable)
     }
 }

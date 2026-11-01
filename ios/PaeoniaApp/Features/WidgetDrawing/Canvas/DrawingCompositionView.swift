@@ -14,29 +14,35 @@ extension DrawingComposition.Shape {
     }
 }
 
-/// A visible alternative to tracing with a finger. Standard form controls work
-/// with VoiceOver, Voice Control, Switch Control and hardware keyboards.
+/// A visible alternative to tracing with a finger, using native form controls
+/// for speech, switch and keyboard interaction.
 struct DrawingCompositionButton: View {
-    let drawing: PKDrawing
-    let side: CGFloat
-    let apply: (PKDrawing) -> Void
-    var description: Binding<String>?
-    var fixedInkColor: UIColor?
-    @State private var isPresented = false
+    let action: () -> Void
 
     var body: some View {
-        Button { isPresented = true } label: {
+        Button(action: action) {
             Text(.drawingComposeTitle)
                 .fixedSize(horizontal: false, vertical: true)
         }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
-            .accessibilityIdentifier("drawing.compose")
-            .sheet(isPresented: $isPresented) {
-                DrawingCompositionView(
-                    drawing: drawing, sourceDrawing: drawing, side: side, apply: apply,
-                    description: description, fixedInkColor: fixedInkColor
-                )
-            }
+        .buttonStyle(PaeoniaSecondaryButtonStyle())
+        .accessibilityIdentifier("drawing.compose")
+    }
+}
+
+extension View {
+    /// Attach to the feature root, outside adaptive tool rows and canvas layouts,
+    /// so a drawing update or reflow cannot remove the sheet's presenter.
+    func drawingCompositionSheet(
+        isPresented: Binding<Bool>, drawing: PKDrawing, side: CGFloat, isLocked: Bool,
+        description: Binding<String>? = nil, fixedInkColor: UIColor? = nil,
+        apply: @escaping (PKDrawing) -> Void
+    ) -> some View {
+        sheet(isPresented: isPresented) {
+            DrawingCompositionView(
+                drawing: drawing, sourceDrawing: drawing, side: side, isLocked: isLocked,
+                apply: apply, description: description, fixedInkColor: fixedInkColor
+            )
+        }
     }
 }
 
@@ -44,6 +50,7 @@ private struct DrawingCompositionView: View {
     @State var drawing: PKDrawing
     let sourceDrawing: PKDrawing
     let side: CGFloat
+    let isLocked: Bool
     let apply: (PKDrawing) -> Void
     var description: Binding<String>?
     var fixedInkColor: UIColor?
@@ -75,6 +82,7 @@ private struct DrawingCompositionView: View {
                     DrawingGeometryReadout(drawing: drawing, side: side)
                 }
             }
+            .disabled(isLocked)
             .onChange(of: sourceDrawing) { _, latest in
                 // Keep this editing session's undo stack when PencilKit publishes a
                 // rendered copy of our own edits or the keyboard changes the canvas layout.
@@ -129,7 +137,7 @@ private struct DrawingCompositionView: View {
                 } label: { Text(.drawingComposeRemove) }
             }
             Button {
-                guard let previous = undo.popLast() else { return }
+                guard !isLocked, let previous = undo.popLast() else { return }
                 drawing = previous
                 selected = nil
                 apply(previous)
@@ -161,6 +169,7 @@ private struct DrawingCompositionView: View {
     }
 
     private func commit(_ next: PKDrawing) {
+        guard !isLocked else { return }
         undo.append(drawing)
         drawing = next
         apply(next)

@@ -1,3 +1,4 @@
+import CoreGraphics
 import XCTest
 
 final class GamesBoardAccessibilityUITests: XCTestCase {
@@ -7,6 +8,7 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
         let app = launch("dots-and-boxes-extra-turn")
         defer { app.terminate() }
         openControls(in: app)
+        viewBox(11, in: app)
         let closingSide = app.buttons["dotsAndBoxes.box.11.side.3"]
         scrollTo(closingSide, in: app)
         let box = app.staticTexts["dotsAndBoxes.box.11.state"]
@@ -16,13 +18,19 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
         waitFor(box, matching: NSPredicate(format: "label != %@", openBox))
         XCTAssertFalse(closingSide.isEnabled)
 
+        viewBox(0, in: app)
+        XCTAssertFalse(app.buttons["dotsAndBoxes.box.0.side.0"].isEnabled,
+                       "Already owned boxes stay inspectable without offering a move")
+        viewBox(14, in: app)
         let nextSide = app.buttons["dotsAndBoxes.box.14.side.1"]
         scrollTo(nextSide, in: app)
         let remainingSide = app.buttons["dotsAndBoxes.box.14.side.2"]
         scrollTo(remainingSide, in: app)
-        waitFor(nextSide, matching: NSPredicate(format: "enabled == true"))
         XCTAssertTrue(remainingSide.isEnabled)
+        scrollTo(nextSide, in: app, scrollsDown: false)
+        waitFor(nextSide, matching: NSPredicate(format: "enabled == true"))
         nextSide.tap()
+        scrollTo(remainingSide, in: app)
         waitFor(remainingSide, matching: NSPredicate(format: "enabled == false"))
     }
 
@@ -33,9 +41,12 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
         defer { app.terminate() }
         openControls(in: app)
         viewBoard(0, in: app)
-        XCTAssertFalse(app.buttons["ultimateTicTacToe.native.cell.1"].isEnabled)
+        let closedBoardCell = app.buttons["ultimateTicTacToe.native.cell.1"]
+        scrollTo(closedBoardCell, in: app)
+        XCTAssertFalse(closedBoardCell.isEnabled)
         viewBoard(6, in: app)
         let first = app.buttons["ultimateTicTacToe.native.cell.54"]
+        scrollTo(first, in: app)
         first.tap()
         waitFor(first, matching: NSPredicate(format: "isSelected == true"))
         let chosen = app.buttons["ultimateTicTacToe.native.cell.62"]
@@ -95,7 +106,9 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
         let add = app.buttons["drawing.compose.apply"]
         scrollTo(add, in: app)
         add.tap()
-        XCTAssertTrue(app.buttons["drawing.compose.undo"].isEnabled)
+        let undo = app.buttons["drawing.compose.undo"]
+        scrollTo(undo, in: app)
+        XCTAssertTrue(undo.isEnabled)
         app.buttons["drawing.compose.done"].tap()
         let save = app.buttons["boardGames.mark.save"]
         XCTAssertTrue(save.waitForExistence(timeout: 5))
@@ -110,8 +123,7 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = scenario
         app.launchArguments = [
-            "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
-            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"
+            "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
         app.launch()
         let next = app.buttons["games.tutorial.next"]
@@ -132,8 +144,23 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
     }
 
     @MainActor
+    private func viewBox(_ index: Int, in app: XCUIApplication) {
+        let boxes = app.buttons["dotsAndBoxes.native.box"]
+        scrollTo(boxes, in: app, scrollsDown: false)
+        boxes.tap()
+        let choose = app.buttons["dotsAndBoxes.native.box.\(index)"]
+        XCTAssertTrue(choose.waitForExistence(timeout: 5))
+        choose.tap()
+        let state = app.staticTexts["dotsAndBoxes.box.\(index).state"]
+        scrollTo(state, in: app)
+        XCTAssertTrue(state.exists)
+    }
+
+    @MainActor
     private func viewBoard(_ index: Int, in app: XCUIApplication) {
-        app.buttons["ultimateTicTacToe.native.board"].tap()
+        let boards = app.buttons["ultimateTicTacToe.native.board"]
+        scrollTo(boards, in: app, scrollsDown: false)
+        boards.tap()
         let choose = app.buttons["ultimateTicTacToe.native.board.\(index)"]
         XCTAssertTrue(choose.waitForExistence(timeout: 5))
         choose.tap()
@@ -141,9 +168,20 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
 
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, scrollsDown: Bool = true) {
-        for _ in 0..<12 where !element.isHittable {
-            if scrollsDown { app.swipeUp() }
-            else { app.swipeDown() }
+        let viewport = app.windows.firstMatch.frame.insetBy(dx: 0, dy: 120)
+        for _ in 0..<32 {
+            if element.exists && element.isHittable,
+               viewport.contains(CGPoint(x: element.frame.midX, y: element.frame.midY)) { return }
+            let goesUp: Bool
+            if element.exists {
+                goesUp = element.frame.midY > viewport.midY
+            } else {
+                goesUp = scrollsDown
+            }
+            // The outer margin belongs to the ScrollView, rather than the drawing canvas.
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.8 : 0.2))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: goesUp ? 0.2 : 0.8))
+            start.press(forDuration: 0.01, thenDragTo: end)
         }
         XCTAssertTrue(element.isHittable)
     }

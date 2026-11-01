@@ -55,7 +55,6 @@ struct ExquisiteCorpseScreen: View {
                 handoffLanded()
             }
         }
-        .accessibilityIdentifier("corpse.screen")
     }
 
     /// The game's menu, with "Our creatures".

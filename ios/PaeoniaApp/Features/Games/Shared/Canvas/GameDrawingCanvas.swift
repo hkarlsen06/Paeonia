@@ -38,6 +38,7 @@ struct GameDrawingCanvas: View {
 struct GameDrawingTools: View {
     let board: GameDrawingBoard
     var showsComposition = true
+    let onBuildWithShapes: () -> Void
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
@@ -62,7 +63,7 @@ struct GameDrawingTools: View {
             }
             WidgetDrawingSizeControlsView(viewModel: board)
             if showsComposition {
-                DrawingCompositionButton(drawing: board.drawing, side: board.canvasSide) { board.applyEdit($0) }
+                DrawingCompositionButton(action: onBuildWithShapes)
             }
         }
         .disabled(board.isFinishing)

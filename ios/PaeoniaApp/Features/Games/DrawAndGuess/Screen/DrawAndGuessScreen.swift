@@ -39,7 +39,6 @@ struct DrawAndGuessScreen: View {
             bannerCenter.show(notice.banner)
             viewModel.clearNotice()
         }
-        .accessibilityIdentifier("draw.screen")
     }
 
     /// The game's menu, with "Our drawings".

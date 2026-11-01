@@ -12,6 +12,7 @@ struct ExquisiteCorpseDrawingView: View {
     private let part: ExquisiteCorpsePartKind
     private let showsFirstHint: Bool
 
+    @State private var isCompositionPresented = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var board: GameDrawingBoard { viewModel.board }
@@ -62,7 +63,9 @@ struct ExquisiteCorpseDrawingView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            GameDrawingTools(board: board, showsComposition: !dynamicTypeSize.isAccessibilitySize)
+            GameDrawingTools(board: board, showsComposition: !dynamicTypeSize.isAccessibilitySize) {
+                isCompositionPresented = true
+            }
             if !dynamicTypeSize.isAccessibilitySize {
                 GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isLocked: viewModel.isFinishing)
             }
@@ -79,6 +82,10 @@ struct ExquisiteCorpseDrawingView: View {
             .accessibilityLabel(Text(.exquisiteCorpseDrawDoneA11Y(viewModel.partnerName)))
             .accessibilityIdentifier("corpse.done")
         }
+        .drawingCompositionSheet(
+            isPresented: $isCompositionPresented,
+            drawing: board.drawing, side: board.canvasSide, isLocked: viewModel.isFinishing
+        ) { board.applyEdit($0) }
         .modifier(WidgetDrawingPencilDoubleTap(viewModel: board))
         .gameClearDrawingToolbar(board: board, identifier: "corpse.clear")
         .onChange(of: viewModel.partnerPresence) { old, new in
@@ -90,7 +97,7 @@ struct ExquisiteCorpseDrawingView: View {
     // Native creation stays before the gesture canvas when enlarged content must scroll.
     private var nativeCreation: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            DrawingCompositionButton(drawing: board.drawing, side: board.canvasSide) { board.applyEdit($0) }
+            DrawingCompositionButton { isCompositionPresented = true }
                 .disabled(viewModel.isFinishing)
             GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isLocked: viewModel.isFinishing)
         }

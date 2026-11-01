@@ -17,6 +17,7 @@ struct WidgetDrawingView: View {
     private let showsSendStatus: Bool
     private let emptyCanvasHint: LocalizedStringResource?
     @State private var isHistoryPresented = false
+    @State private var isCompositionPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(ReactionStore.self) private var reactionStore: ReactionStore?
     @Environment(\.scenePhase) private var scenePhase
@@ -79,6 +80,13 @@ struct WidgetDrawingView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .toolbar { toolbarButtons }
         .paeoniaShareToolbar(showsShareButton ? viewModel.shareable : nil, identifier: "widgetDrawing.share")
+        .drawingCompositionSheet(
+            isPresented: $isCompositionPresented,
+            drawing: viewModel.drawing, side: viewModel.currentCanvasSide(), isLocked: false,
+            description: Binding(
+                get: { viewModel.accessibilityText }, set: { viewModel.updateAccessibilityText($0) }
+            )
+        ) { viewModel.applyEdit($0) }
         .sheet(isPresented: $isHistoryPresented) {
             if let historyViewModel, let historyThumbnailLoader {
                 WidgetDrawingHistoryView(
@@ -171,13 +179,7 @@ struct WidgetDrawingView: View {
                 WidgetDrawingSizeControlsView(viewModel: viewModel)
             }
 
-            DrawingCompositionButton(
-                drawing: viewModel.drawing, side: viewModel.currentCanvasSide(),
-                apply: { viewModel.applyEdit($0) },
-                description: Binding(
-                    get: { viewModel.accessibilityText }, set: { viewModel.updateAccessibilityText($0) }
-                )
-            )
+            DrawingCompositionButton { isCompositionPresented = true }
             Text(viewModel.accessibilityText.trimmedNonEmpty ?? String(localized: .drawingGeometryMissing))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)

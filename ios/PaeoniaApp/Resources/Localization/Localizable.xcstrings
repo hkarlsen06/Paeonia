@@ -10683,6 +10683,24 @@
         }
       }
     },
+    "dotsAndBoxes.controls.chooseBox" : {
+      "comment" : "Menu button in Dots and Boxes native controls. Opens all boxes so a person can inspect one and draw its sides without scrolling through every earlier box.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a box"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg en rute"
+          }
+        }
+      }
+    },
     "dotsAndBoxes.hub.subtitle" : {
       "comment" : "Dots and Boxes card on the Games tab before the couple has played it: what the game is.",
       "extractionState" : "manual",
