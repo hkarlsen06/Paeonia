@@ -75,7 +75,7 @@ nonisolated enum WidgetDrawingDescriptionUpdate: Sendable {
     case remote(text: String?, version: Int64)
 }
 
-extension WidgetSharePayload {
+nonisolated extension WidgetSharePayload {
     /// Re-read under the publication lock. Never write a caller's earlier snapshot back.
     static func updateFile(in containerURL: URL, _ update: (inout Self) throws -> Void) throws -> Bool {
         try WidgetPayloadFileLock.withExclusiveAccess(in: containerURL) {
