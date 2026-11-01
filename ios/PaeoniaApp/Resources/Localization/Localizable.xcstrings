@@ -2194,13 +2194,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your account was not deleted. Check your connection and try again."
+            "value" : "Check your connection and try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kontoen din ble ikke slettet. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Sjekk tilkoblingen og prøv igjen."
           }
         }
       }
@@ -2338,13 +2338,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We could not check if you are signed in. Try again."
+            "value" : "Try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke sjekke om du er logget inn. Prøv igjen."
+            "value" : "Prøv igjen."
           }
         }
       }
@@ -2374,13 +2374,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't sign you in. Check your connection and try again."
+            "value" : "Check your connection and try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi fikk ikke logget deg inn. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Sjekk tilkoblingen og prøv igjen."
           }
         }
       }
@@ -2410,13 +2410,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We could not sign you out. Try again."
+            "value" : "Try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke logge deg ut. Prøv igjen."
+            "value" : "Prøv igjen."
           }
         }
       }
@@ -5775,24 +5775,6 @@
         }
       }
     },
-    "consensio.history.empty.message" : {
-      "comment" : "Empty state of 'What we know'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your rounds show up here after the first guess."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rundene deres dukker opp her etter første gjetning."
-          }
-        }
-      }
-    },
     "consensio.history.empty.title" : {
       "comment" : "Empty state of 'What we know'.",
       "extractionState" : "manual",
@@ -5800,13 +5782,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nothing here yet"
+            "value" : "No finished rounds yet"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingenting her ennå"
+            "value" : "Ingen ferdige runder ennå"
           }
         }
       }
@@ -10125,24 +10107,6 @@
         }
       }
     },
-    "dailyChat.notifications.subtitle" : {
-      "comment" : "Explains the Messages switch in the notification settings. %@ is the partner's name",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a notification when %@ writes in a chat about a question, a memory or a story."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få et varsel når %@ skriver i en chat om et spørsmål, et minne eller en story."
-          }
-        }
-      }
-    },
     "dailyChat.notifications.title" : {
       "comment" : "Title of the notification switch for chat messages about questions and memories",
       "extractionState" : "manual",
@@ -11553,24 +11517,6 @@
         }
       }
     },
-    "exquisiteCorpse.history.empty.message" : {
-      "comment" : "Message when the couple has no finished creatures yet. The legs are the last part of a creature.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your creatures show up here when the legs are done."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skapningene deres dukker opp her når beina er tegnet."
-          }
-        }
-      }
-    },
     "exquisiteCorpse.history.empty.title" : {
       "comment" : "Title when the couple has no finished creatures yet.",
       "extractionState" : "manual",
@@ -11578,13 +11524,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No creatures yet"
+            "value" : "No finished creatures yet"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingen skapninger ennå"
+            "value" : "Ingen ferdige skapninger ennå"
           }
         }
       }
@@ -12221,6 +12167,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skapning %lld"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.body" : {
+      "comment" : "Compact body part credit beside its drawer avatar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Body"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kropp"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.head" : {
+      "comment" : "Compact body part credit beside its drawer avatar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Head"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hode"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.headAndLegs" : {
+      "comment" : "Compact combined body part credit beside the avatar of the person who drew both.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Head and legs"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hode og bein"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.legs" : {
+      "comment" : "Compact body part credit beside its drawer avatar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legs"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bein"
           }
         }
       }
@@ -12999,24 +13017,6 @@
         }
       }
     },
-    "games.conversation.chat" : {
-      "comment" : "Short button that opens the conversation about a finished game, beside its continue button.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chat"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chat"
-          }
-        }
-      }
-    },
     "games.conversation.distance" : {
       "comment" : "A photo guessing result. Arguments are the guesser name and the distance from the spot.",
       "extractionState" : "manual",
@@ -13049,6 +13049,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tegning fra dette spillet"
+          }
+        }
+      }
+    },
+    "games.conversation.empty.message" : {
+      "comment" : "Empty game chat explanation. The composer remains available below it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat while you play. Finished rounds will appear here too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snakk sammen mens dere spiller. Ferdige runder dukker også opp her."
+          }
+        }
+      }
+    },
+    "games.conversation.empty.title" : {
+      "comment" : "Title in a game chat before it has messages or finished rounds.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your game chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spillsamtalen deres"
           }
         }
       }
@@ -14517,24 +14553,6 @@
         }
       }
     },
-    "games.drawAndGuess.history.empty.message" : {
-      "comment" : "Text when the couple has no finished drawing yet.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your drawings will show up here after your first round."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegningene deres dukker opp her etter første runde."
-          }
-        }
-      }
-    },
     "games.drawAndGuess.history.empty.title" : {
       "comment" : "Heading when the couple has no finished drawing yet.",
       "extractionState" : "manual",
@@ -14542,13 +14560,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No drawings yet"
+            "value" : "No finished drawings yet"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingen tegninger ennå"
+            "value" : "Ingen ferdige tegninger ennå"
           }
         }
       }
@@ -16732,13 +16750,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't load it right now. Try again in a little while."
+            "value" : "Try again in a little while."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi fikk ikke lastet den akkurat nå. Prøv igjen om litt."
+            "value" : "Prøv igjen om en liten stund."
           }
         }
       }
@@ -17337,24 +17355,6 @@
         }
       }
     },
-    "games.setup.callTip.message" : {
-      "comment" : "Tip in the first-time Games setup that asks the couple to call each other while they play",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Call or FaceTime each other while you play. It's more fun when you can hear each other react."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ring eller FaceTime hverandre mens dere spiller. Det er morsommere når dere hører hverandre reagere."
-          }
-        }
-      }
-    },
     "games.setup.callTip.title" : {
       "comment" : "Heading of the tip in the first-time Games setup that asks the couple to call each other while they play",
       "extractionState" : "manual",
@@ -17362,13 +17362,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Play on a call"
+            "value" : "Call each other while you play"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spill mens dere snakker sammen"
+            "value" : "Ring hverandre mens dere spiller"
           }
         }
       }
@@ -17452,13 +17452,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pick how you like to play. You can change it later."
+            "value" : "You can change this later."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg hvordan dere vil spille. Dere kan endre det senere."
+            "value" : "Du kan endre dette senere."
           }
         }
       }
@@ -21400,31 +21400,31 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose the day you were born. %@ will see it too."
+            "value" : "%@ can see this too."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg dagen du ble født. %@ ser den også."
+            "value" : "%@ kan også se dette."
           }
         }
       }
     },
     "home.milestone.birthday.editor.partnerMessage" : {
-      "comment" : "Explanation above the picker for the partner's birthday. %@ is the partner's name",
+      "comment" : "Explains that the birthday appears in the couple shared milestones.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose %@'s birthday. You'll both see it in your milestones."
+            "value" : "This appears in your shared milestones."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg bursdagen til %@. Dere ser den begge i milepælene."
+            "value" : "Denne vises blant merkedagene deres."
           }
         }
       }
@@ -21580,13 +21580,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Something you're looking forward to? You'll both see the days count down."
+            "value" : "You both see this countdown."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noe dere gleder dere til? Dere ser begge dagene telle ned."
+            "value" : "Begge ser denne nedtellingen."
           }
         }
       }
@@ -21742,13 +21742,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose the day you got together. The change will appear for both of you."
+            "value" : "This changes the date for both of you."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg dagen dere ble sammen. Endringen vises for dere begge."
+            "value" : "Dette endrer datoen for dere begge."
           }
         }
       }
@@ -21814,13 +21814,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose the day your relationship started. Either of you can change it later."
+            "value" : "Either of you can change this later."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg dagen forholdet deres startet. Begge kan endre den senere."
+            "value" : "Begge kan endre dette senere."
           }
         }
       }
@@ -24945,24 +24945,6 @@
         }
       }
     },
-    "memories.empty.message" : {
-      "comment" : "Empty-state body on the Memories tab inviting the user to save a moment.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save a small moment from today."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre et lite øyeblikk fra i dag."
-          }
-        }
-      }
-    },
     "memories.empty.title" : {
       "comment" : "Empty-state title on the Memories tab when no memories exist yet.",
       "extractionState" : "manual",
@@ -26049,24 +26031,6 @@
         }
       }
     },
-    "mindMeld.history.empty.message" : {
-      "comment" : "Message of the empty state when the couple has no finished games.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your finished games will show up here."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spillene dere har fullført, dukker opp her."
-          }
-        }
-      }
-    },
     "mindMeld.history.empty.title" : {
       "comment" : "Title of the empty state when the couple has no finished games.",
       "extractionState" : "manual",
@@ -26074,13 +26038,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No melds yet"
+            "value" : "No finished games yet"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingen treff ennå"
+            "value" : "Ingen ferdige spill ennå"
           }
         }
       }
@@ -27153,24 +27117,6 @@
         }
       }
     },
-    "mindMeld.reveal.seeMelds" : {
-      "comment" : "Quiet button after a game ended that opens the list of finished games.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See our melds"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se treffene våre"
-          }
-        }
-      }
-    },
     "mindMeld.reveal.you" : {
       "comment" : "Label for the current player on the reveal. VoiceOver reads it before their word, as in 'You, OCEAN'.",
       "extractionState" : "manual",
@@ -27885,24 +27831,6 @@
         }
       }
     },
-    "notifications.permissionPrimer.waiting.message" : {
-      "comment" : "Message of the one later notification ask, shown right after the user answers a daily question their partner has not answered yet. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paeonia can let you know when %@ answers, so you can see what they wrote right away."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paeonia kan gi deg beskjed når %@ svarer, så du kan se svaret med en gang."
-          }
-        }
-      }
-    },
     "notifications.permissionPrimer.waiting.title" : {
       "comment" : "Title of the one later notification ask, shown right after the user answers a daily question their partner has not answered yet. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -28255,24 +28183,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Det stemmer"
-          }
-        }
-      }
-    },
-    "onboarding.firstDay.date.confirm.message" : {
-      "comment" : "Line under the date the partner set, asking the person to confirm it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Is that right?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stemmer det?"
           }
         }
       }
@@ -30833,42 +30743,6 @@
         }
       }
     },
-    "paywall.plan.detail.bothOfYou" : {
-      "comment" : "Detail line on the monthly plan card on the paywall. Says one subscription covers both partners.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For both of you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For dere begge"
-          }
-        }
-      }
-    },
-    "paywall.plan.detail.perMonth" : {
-      "comment" : "Detail line on the yearly plan card on the paywall. %@ is what the year works out to per month, for example '49 kr/mo'. Must stay short. The billed yearly price shows bigger beside it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, for both of you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, for dere begge"
-          }
-        }
-      }
-    },
     "paywall.plan.save" : {
       "comment" : "Badge on the yearly plan card. %@ is a percentage such as 32 %.",
       "extractionState" : "manual",
@@ -32039,24 +31913,6 @@
         }
       }
     },
-    "privacySafety.request.active.title" : {
-      "comment" : "Banner title when a duplicate active privacy request is avoided",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Already in progress"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Allerede under behandling"
-          }
-        }
-      }
-    },
     "privacySafety.request.failed.message" : {
       "comment" : "Banner message when a privacy request cannot be submitted because the phone is offline.",
       "extractionState" : "manual",
@@ -32989,24 +32845,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trusler"
-          }
-        }
-      }
-    },
-    "reportAndLeave.reasonRequired.message" : {
-      "comment" : "Banner message when no conduct report reason was chosen",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose the reason that fits best."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg grunnen som passer best."
           }
         }
       }
@@ -33983,24 +33821,6 @@
         }
       }
     },
-    "settings.notifications.dailyChallenge.subtitle" : {
-      "comment" : "Explains the notification for when the partner answers today's question first. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a notification when %@ answers today's question."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få et varsel når %@ svarer på dagens spørsmål."
-          }
-        }
-      }
-    },
     "settings.notifications.dailyChallenge.title" : {
       "comment" : "Toggle title: get notified when the partner answers today's question",
       "extractionState" : "manual",
@@ -34008,13 +33828,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Daily question"
+            "value" : "Daily question answers"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dagens spørsmål"
+            "value" : "Svar på dagens spørsmål"
           }
         }
       }
@@ -34056,19 +33876,19 @@
       }
     },
     "settings.notifications.games.subtitle" : {
-      "comment" : "Explains the games notification switch: invites, your turn, turn reminders and finished games. %@ is the partner's name.",
+      "comment" : "Description of this notification switch. The section heading already names the partner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a notification when %@ wants to play, when it's your turn, and when a game ends."
+            "value" : "Invites, turns and finished games."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få et varsel når %@ vil spille, når det er din tur, og når et spill er over."
+            "value" : "Invitasjoner, turer og ferdige spill."
           }
         }
       }
@@ -34146,19 +33966,19 @@
       }
     },
     "settings.notifications.lockScreenDetails.subtitle" : {
-      "comment" : "Explains the lock screen switch. Applies when the person has hidden previews in iOS Settings. %@ is the partner's name, used in an example of a locked notification. The example line is the partner's name, a colon, and the short line iOS shows for a new message.",
+      "comment" : "Description of this notification switch. The section heading already names the partner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If your phone hides previews, a locked notification only says something like \"New message\". Turn this on to also see who it's from, like \"%@: New message\". What they wrote stays hidden."
+            "value" : "Shows who sent it, even when iOS hides previews. Messages stay hidden."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hvis telefonen skjuler forhåndsvisning, står det bare noe som «Ny melding» på en låst skjerm. Slå på dette for også å se hvem det er fra, for eksempel «%@: Ny melding». Det de skrev, forblir skjult."
+            "value" : "Viser hvem som sendte den, også når iOS skjuler forhåndsvisninger. Meldingsinnholdet forblir skjult."
           }
         }
       }
@@ -34195,24 +34015,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Låseskjerm"
-          }
-        }
-      }
-    },
-    "settings.notifications.memories.subtitle" : {
-      "comment" : "Subtitle for the memories and stories notification preference. The placeholder is the partner's display name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a notification when %@ adds a memory or shares a story."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få et varsel når %@ legger til et minne eller deler en story."
           }
         }
       }
@@ -34254,19 +34056,19 @@
       }
     },
     "settings.notifications.partnerAnswered.subtitle" : {
-      "comment" : "Explains the new answers switch. It covers daily questions both partners answered and answers in Topics. %@ is the partner's name.",
+      "comment" : "Description of this notification switch. The section heading already names the partner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a notification when %@ answers a daily question you answered too, or answers something in Topics."
+            "value" : "Daily questions you've answered too, and Topics."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få et varsel når %@ svarer på et daglig spørsmål som du også har svart på, eller svarer på noe i Temaer."
+            "value" : "Dagens spørsmål som du også har svart på, og Temaer."
           }
         }
       }
@@ -34314,13 +34116,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a reminder at a time you choose if you haven't answered today's question."
+            "value" : "If you haven't answered today's question."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få en påminnelse til et tidspunkt du velger hvis du ikke har svart på dagens spørsmål."
+            "value" : "Hvis du ikke har svart på dagens spørsmål."
           }
         }
       }
@@ -34386,13 +34188,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't update your notification settings. Please try again."
+            "value" : "Please try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke oppdatere varselinnstillingene dine. Prøv igjen."
+            "value" : "Prøv igjen."
           }
         }
       }
@@ -34433,24 +34235,6 @@
         }
       }
     },
-    "settings.notifications.streakReminders.subtitle" : {
-      "comment" : "Explains that streak reminders are sent only to a partner who still needs to contribute",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a reminder when you still need to check in for your shared streak."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få en påminnelse når du fortsatt må sjekke inn for den felles rekken."
-          }
-        }
-      }
-    },
     "settings.notifications.streakReminders.title" : {
       "comment" : "Toggle title: get notified before the shared check-in expires",
       "extractionState" : "manual",
@@ -34458,13 +34242,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check-in reminders"
+            "value" : "Streak reminders"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Innsjekkpåminnelser"
+            "value" : "Påminnelser om rekken"
           }
         }
       }
@@ -34555,24 +34339,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Slå på varsler"
-          }
-        }
-      }
-    },
-    "settings.notifications.widgetAlerts.subtitle" : {
-      "comment" : "Explains the drawing-update notification. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a notification when %@ adds a new drawing."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få et varsel når %@ lager en ny tegning."
           }
         }
       }
@@ -35249,13 +35015,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This is what Paeonia has saved about your subscription. Apple handles all payments, so to change your plan or cancel, tap Manage subscription. If something here doesn't match what Apple shows, tap Restore purchases."
+            "value" : "Change or cancel your plan in the App Store. If the details look wrong, restore purchases."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dette er det Paeonia har lagret om abonnementet ditt. Apple tar seg av all betaling, så trykk på Administrer abonnement for å bytte plan eller si opp. Hvis noe her ikke stemmer med det Apple viser, trykk på Gjenopprett kjøp."
+            "value" : "Endre eller avslutt abonnementet i App Store. Gjenopprett kjøp hvis opplysningene ser feil ut."
           }
         }
       }
@@ -35805,13 +35571,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You can sign in with either one. Both open this same account. Tap one to unlink it."
+            "value" : "Either method opens this account. Tap one to unlink it."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du kan logge inn med begge. De åpner samme konto. Trykk på en for å koble den fra."
+            "value" : "Begge åpner denne kontoen. Trykk på en for å koble den fra."
           }
         }
       }
@@ -37850,24 +37616,6 @@
         }
       }
     },
-    "storyChain.history.empty.message" : {
-      "comment" : "Our stories, before any story is finished.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your stories will show up here when you finish your first one."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Historiene deres dukker opp her når dere er ferdige med den første."
-          }
-        }
-      }
-    },
     "storyChain.history.empty.title" : {
       "comment" : "Our stories, before any story is finished.",
       "extractionState" : "manual",
@@ -37875,13 +37623,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No stories yet"
+            "value" : "No finished stories yet"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingen historier ennå"
+            "value" : "Ingen ferdige historier ennå"
           }
         }
       }
@@ -38854,24 +38602,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bruk ordet %@"
-          }
-        }
-      }
-    },
-    "storyChain.write.mustUseHint" : {
-      "comment" : "Under the field while the line does not use the given word yet. %@ is the word in capitals.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use %@ to send."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bruk %@ for å sende."
           }
         }
       }
@@ -40082,42 +39812,6 @@
         }
       }
     },
-    "streakSaved.message" : {
-      "comment" : "Body of the celebration when both partners brought a broken streak back for free by both doing something today",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You both showed up today, so your streak keeps going."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dere var begge med i dag, så rekken fortsetter."
-          }
-        }
-      }
-    },
-    "streakSaved.title" : {
-      "comment" : "Title of the celebration when both partners brought a broken streak back for free",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You brought it back"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dere fikk den tilbake"
-          }
-        }
-      }
-    },
     "topics.answerNext" : {
       "comment" : "Button at the bottom of a topic screen that opens the next question to answer",
       "extractionState" : "manual",
@@ -41270,24 +40964,6 @@
         }
       }
     },
-    "welcome.drawing.landed.message" : {
-      "comment" : "First drawing before sign-in: under the Home Screen picture. The drawing appears on the partner's widget after they join.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your partner sees it on their Paeonia widget once you're connected."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partneren din ser den på Paeonia-widgeten sin når dere er koblet sammen."
-          }
-        }
-      }
-    },
     "welcome.drawing.landed.title" : {
       "comment" : "First drawing before sign-in: title above a picture of a phone Home Screen showing the drawing on the widget. 'Their' is the partner.",
       "extractionState" : "manual",
@@ -41295,13 +40971,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This will be waiting on their Home Screen"
+            "value" : "Ready for when your partner joins"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Den venter på Hjem-skjermen til partneren din"
+            "value" : "Klar til partneren din blir med"
           }
         }
       }
@@ -41752,24 +41428,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ferdig"
-          }
-        }
-      }
-    },
-    "widget.history.empty.message" : {
-      "comment" : "Empty drawing history message. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drawings you and %@ send will show up here."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegninger du og %@ sender, dukker opp her."
           }
         }
       }

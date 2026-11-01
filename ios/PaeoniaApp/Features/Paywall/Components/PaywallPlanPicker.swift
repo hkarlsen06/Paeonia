@@ -77,9 +77,11 @@ private struct PaywallPlanCard: View {
                         }
                     }
 
-                    Text(detail)
-                        .font(.subheadline)
-                        .foregroundStyle(.paeoniaTextSecondary)
+                    if let perMonth = plan.monthlyEquivalent {
+                        Text(verbatim: "\(perMonth.text)\(String(localized: .paywallPeriodMonthlyCompact))")
+                            .font(.subheadline)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -115,18 +117,6 @@ private struct PaywallPlanCard: View {
         // An unavailable price says so on the button below. Here it only leaves out
         // a placeholder that would never fill in.
         .opacity(plan.price == nil && !isLoading ? 0 : 1)
-    }
-
-    /// That one plan covers both partners and, for the year, what it works out to
-    /// per month. The trial is left out because the button and the terms under it
-    /// already say it. The per-month figure stays smaller than the billed price,
-    /// as App Store review requires.
-    private var detail: String {
-        guard let perMonth = plan.monthlyEquivalent else {
-            return String(localized: .paywallPlanDetailBothOfYou)
-        }
-        let perMonthText = "\(perMonth.text)\(String(localized: .paywallPeriodMonthlyCompact))"
-        return String(localized: .paywallPlanDetailPerMonth(perMonthText))
     }
 
     private func savingsBadge(_ percent: Int) -> some View {

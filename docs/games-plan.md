@@ -15,6 +15,13 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-11-01.
+
+- Mind Meld, Consensio and Guess my spot open history through their toolbar score capsules. Their adjacent menus omit history, and Mind Meld has no second history button on the result.
+
+- The tab bar stays visible in games and their histories on iPhone and iPad. Switching between Games and Chats keeps both routes in place. Games sets its tab bar visibility at the navigation root, so returning from chat keeps the same available height. Opening chat or returning to a game dismisses the previous screen's keyboard.
+- An empty game chat explains that the couple can chat while playing and that finished rounds will appear there. The composer remains available.
+
 Decided on 2026-10-31.
 
 - Board games offer a visible Board controls button opening native, scrollable controls. Four in a Row lists every cell and its owner before each column's drop button. Dots and Boxes offers a native list-style box picker, the selected box's full state, and four side buttons. Its spatial grid still exposes all 16 boxes and their custom actions. Ludo lists all four pawns, including base, shared track square and safety, home lane and finished state, with Roll and legal pawn buttons using the existing move callbacks. Ultimate Tic-Tac-Toe cells include their board number and selected state.
@@ -27,7 +34,7 @@ Decided on 2026-10-31.
 - Queued moves show no local-save or offline reassurance line. The board, word, drawing or story stays visible and sends automatically. Failed sends on a working connection keep their warning and retry action. Held reveals still wait for the server before showing the hidden result.
 
 - Game hub cards use `PaeoniaIllustratedCard` for the shared artwork, title, action and compact layout. `GameHubCardFrame` adds presence, scores and Not now. Daily questions use the shared card directly. Topic cards and illustrated cards share their waiting-content border and glow through `paeoniaCardSurface`.
-- Each couple has one ongoing chat per game type, available before, during and after play. The toolbar, result and history buttons all open that conversation in Chats. Completed rounds or matches appear among messages at their completion time as compact cards. Opening a card shows the existing full result or board replay. A message can reply to a result card, including the first message in the conversation. Result access still follows each game's reveal rules.
+- Each couple has one ongoing chat per game type, available before, during and after play. Games and their histories have one toolbar button that opens that conversation in Chats. Result screens have no second chat button. Completed rounds or matches appear among messages at their completion time as compact cards. Opening a card shows the existing full result or board replay. A message can reply to a result card, including the first message in the conversation. Result access still follows each game's reveal rules.
 - A game the partner has open appears at the top of Chats, even before either person writes. It shares the same row once the conversation has messages. Presence alone does not create a permanent empty chat. Opening chat keeps the Games route and unfinished input. Return to the game selects the retained Games tab. Live game data continues while Chats is open, but presence describes the screen actually open.
 - Incoming partner messages show the shared top banner with their preview and game name. There is no banner for the conversation already visible or for historical messages loaded when the app opens. Tapping a game message opens its conversation in Chats. Foreground APNs alerts stay suppressed, so the live summary feed owns these banners.
 - Game chat timelines merge messages and result references under one cursor. Indexed game histories own the results, and details load when a card opens. Deleting a Guess my spot round removes its result and photo without deleting the ongoing chat or unrelated messages. Messages keep the existing offline send queue.
@@ -35,7 +42,7 @@ Decided on 2026-10-31.
 - Story Chain skips the arrival animation for a line watched live during this visit and for the writer's own line. A pause in typing does not replay a watched line. A partner's line missed while away still writes itself in. The story and title fields explicitly enable system autocorrect.
 - Story Chain keeps optional writing controls in a compact toolbar beneath the draft and above the keyboard. "Give a word" and "Last line?" are quiet filled chips, with the counter beside Send. Long words and larger text sizes wrap the controls while keeping their tap targets and full accessibility labels.
 
-- Guess my spot uses a compact reveal card. The verdict centers above a square photo at the bottom left and scores on the right. The totals share the right edge, and earned points sit directly above their total. The distance stays above the map. Chat and Your turn share one button row, with Continue for the sender. The overview uses the full map while the controls are hidden, and the landing keeps the destination pin above them.
+- Guess my spot uses a compact reveal card. The verdict centers above a square photo at the bottom left and scores on the right. The totals share the right edge, and earned points sit directly above their total. The distance stays above the map. Your turn sits below the card, with Continue for the sender. Chat stays in the toolbar. The overview uses the full map while the controls are hidden, and the landing keeps the destination pin above them.
 
 - Games size their play area from the available window. Landscape boards and drawing canvases keep a centered pair of columns, with a narrower control column in smaller windows. The controls stay together beside the play area. Drawing tools, colors and size controls share its width, and tool rows scroll when their buttons cannot keep their tap targets. Odd Creatures unfolds in the center of the screen, then moves beside the credits as the camera pulls back. Consensio uses the readable width for its line, and Mind Meld uses larger reveal cards in both iPad orientations. Story Chain keeps its reading column, Guess my spot keeps its photo and map layout, and Ludo keeps its full-screen board.
 
@@ -103,7 +110,6 @@ Decided on 2026-10-12.
 - **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
 - **Tab order.** Home, Chats, Games, Memories, Us. Games sits in the middle.
 - **Tab badge.** The Games tab counts the turns, unseen results and open invites waiting for this person, except those put aside with "Not now". An unseen Draw & Guess result stays under "Right now" with a button to see the result and "Not now", even when the partner has the next turn. The badge loads at launch, before the tab is opened.
-- **Tab bar in a game.** On iPhone the tab bar hides while a game screen is open. On iPad it stays, because the iPad tab bar sits at the top and iPadOS 26 moves the game's content when it hides during the push.
 - **One ongoing game per kind.** A couple has at most one active game of each kind.
 - **Turn reminder.** When a move has waited 72 hours, the partner whose turn it is gets one reminder. There is never a second one for the same move.
 - **Live is not deferred.** When a game's design includes live play, live ships in the game's first version.

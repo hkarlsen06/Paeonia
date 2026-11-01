@@ -29,16 +29,8 @@ struct StoryChainComposer: View {
                 StoryChainDareCapsule(word: dare, isUsed: viewModel.lineCheck.usesDare == true)
             }
             field
-            if showsDareHint, let dare = viewModel.dareForMe {
-                Text(.storyChainWriteMustUseHint(dare.uppercased()))
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: showsDareHint)
         .onChange(of: isFocused) { _, focused in
             withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
                 ruleColor = focused ? .paeoniaAccentPrimary : .paeoniaBorder
@@ -104,15 +96,6 @@ struct StoryChainComposer: View {
         case .away: return .storyChainWriteLater(name)
         case .here, .writing, .choosing, .result: return .storyChainWriteHere(name)
         }
-    }
-
-    // MARK: Dare hint
-
-    /// The line is long enough to send, but it misses the dared word. Before that
-    /// the capsule above the field says it already.
-    private var showsDareHint: Bool {
-        let check = viewModel.lineCheck
-        return check.usesDare == false && !check.isTooShort && !check.isTooLong
     }
 }
 

@@ -380,8 +380,7 @@ VoiceOver reads a row as "Camping. Robin was at 70 percent, you guessed 62 perce
 |---|---|---|
 | `history.detail.placed` | %@ placed this one | %@ satte denne |
 | `history.detail.placedByYou` | You placed this one | Du satte denne |
-| `history.empty.message` | Your rounds show up here after the first guess. | Rundene deres dukker opp her etter første gjetning. |
-| `history.empty.title` | Nothing here yet | Ingenting her ennå |
+| `history.empty.title` | No finished rounds yet | Ingen ferdige runder ennå |
 | `history.failed.message` | We couldn't load your rounds. Try again in a little while. | Vi kunne ikke laste rundene deres. Prøv igjen om litt. |
 | `history.loadMore.failed` | We couldn't load older rounds. | Vi kunne ikke laste eldre runder. |
 | `history.offline.message` | Connect to the internet to see your rounds. | Koble til internett for å se rundene deres. |

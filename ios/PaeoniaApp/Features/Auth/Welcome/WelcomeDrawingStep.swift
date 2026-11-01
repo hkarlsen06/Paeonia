@@ -112,10 +112,6 @@ struct WelcomeDrawingStep: View {
                         .font(PaeoniaTypography.title)
                         .foregroundStyle(.paeoniaTextPrimary)
                         .accessibilityAddTraits(.isHeader)
-
-                    Text(.welcomeDrawingLandedMessage)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
                 }
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)

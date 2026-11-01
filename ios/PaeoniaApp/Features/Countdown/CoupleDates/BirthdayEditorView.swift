@@ -47,7 +47,7 @@ struct BirthdayEditorView: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
             Text(isOwnBirthday
                 ? .homeMilestoneBirthdayEditorOwnMessage(partnerName)
-                : .homeMilestoneBirthdayEditorPartnerMessage(partnerName))
+                : .homeMilestoneBirthdayEditorPartnerMessage)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)

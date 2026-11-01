@@ -180,7 +180,7 @@ The screen-by-screen design. It does not change the rules above. Copy keys start
 - No cards. Only repeated items with meaning get a fill (word rows, tiles, slots, chips): `.paeoniaSurfacePrimary` or `.paeoniaSurfaceSecondary`, `PaeoniaRadius.radius12` for tiles and slots, `radius16` for word rows.
 - One square. Drawing and replay use the same square, side = min(width, space left), so strokes never rescale between drawing and watching. Phases never resize it. The two results shrink it to 80% once, when the round ends (see Reveal).
 - Side from the real rows. On a phone `GamePhaseLayout` measures the rows above and below the square once they exist, and sets the side so the screen fits without scrolling when the width allows it (minimum 200 pt, then it scrolls). A result that is playing freezes the side the guess screen had, and the drawer's result screen takes the side the drawing screen had (`GameSideMemory`), so the square never jumps. At accessibility text sizes the tiles are tall and the screen scrolls.
-- No tab bar. `DrawAndGuessScreen` hides the tab bar (`.toolbar(.hidden, for: .tabBar)`). It comes back on the Games hub.
+- The tab bar stays visible while playing, so either person can switch to Chats and return to the game. `GamesRootView` sets its visibility at the navigation root.
 - Bottom clusters are pinned with `safeAreaInset(edge: .bottom)`, capped with `.paeoniaReadableWidth()`, buttons `PaeoniaSpacing.space12` apart. A text-only action keeps a `compactButtonHeight` hit target.
 - Phase change. The old screen fades out over `motionFast`. The new one fades in with a 12 pt rise over `PaeoniaMotion.meaningfulMoment`, 0.1 s later, so the titles of the two screens never sit over each other. Reduce Motion: cross-fade over `motionFast`, no rise.
 - Partner colors. Avatars are `PaeoniaProfilePhotoAvatar`, tinted `.paeoniaPartnerOne` for me and `.paeoniaPartnerTwo` for the partner.
@@ -541,8 +541,7 @@ VoiceOver. A cell is one element, "Cat, drawn by Robin, starred" or "Cat, drawn 
 | `history.cell.caption` | by %1$@ · %2$@ | av %1$@ · %2$@ |
 | `history.cell.a11y` | %1$@, drawn by %2$@ | %1$@, tegnet av %2$@ |
 | `history.cell.starred.a11y` | %1$@, drawn by %2$@, starred | %1$@, tegnet av %2$@, stjernemerket |
-| `history.empty.title` | No drawings yet | Ingen tegninger ennå |
-| `history.empty.message` | Your drawings will show up here after your first round. | Tegningene deres dukker opp her etter første runde. |
+| `history.empty.title` | No finished drawings yet | Ingen ferdige tegninger ennå |
 | `history.emptyStarred.title` | No starred drawings | Ingen stjernemerkede tegninger |
 | `history.emptyStarred.message` | Tap the star on a drawing you like, and it shows up here. | Trykk på stjernen på en tegning du liker, så dukker den opp her. |
 | `history.offline.message` | Connect to the internet to see your drawings. | Koble til internett for å se tegningene deres. |

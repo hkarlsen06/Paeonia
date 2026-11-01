@@ -55,13 +55,15 @@ struct MemoriesScreen: View {
                         .accessibilityLabel(Text(.memoriesMapOpenAccessibility))
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        openCreate()
-                    } label: {
-                        Image(systemName: "plus")
+                if !viewModel.hasLoadedOnce || !viewModel.timeline.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            openCreate()
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel(Text(.memoriesAddAccessibility))
                     }
-                    .accessibilityLabel(Text(.memoriesAddAccessibility))
                 }
             }
             .navigationDestination(isPresented: $isShowingStories) {
@@ -222,7 +224,6 @@ struct MemoriesScreen: View {
                 .paeoniaReadableWidth()
             PaeoniaEmptyStateView(
                 title: .memoriesEmptyTitle,
-                message: .memoriesEmptyMessage,
                 illustration: .memoriesPhotoStack
             ) {
                 Button {

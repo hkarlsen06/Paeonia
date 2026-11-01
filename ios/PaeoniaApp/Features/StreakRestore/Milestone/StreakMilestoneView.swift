@@ -28,17 +28,21 @@ struct StreakMilestoneView: View {
                 flame
 
                 VStack(spacing: PaeoniaSpacing.space8) {
-                    Text(isSave ? .streakSavedEyebrow : .streakMilestoneEyebrow)
-                        .paeoniaEyebrowStyle(foreground: Color.paeoniaInkGold)
+                    if !isSave {
+                        Text(.streakMilestoneEyebrow)
+                            .paeoniaEyebrowStyle(foreground: Color.paeoniaInkGold)
+                    }
 
-                    Text(isSave ? .streakSavedTitle : StreakMilestoneCopy.title(days: days))
+                    Text(isSave ? .streakSavedEyebrow : StreakMilestoneCopy.title(days: days))
                         .font(PaeoniaTypography.heroTitle)
                         .foregroundStyle(.paeoniaTextPrimary)
 
-                    Text(isSave ? .streakSavedMessage : StreakMilestoneCopy.message(days: days))
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if !isSave {
+                        Text(StreakMilestoneCopy.message(days: days))
+                            .font(PaeoniaTypography.body)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .multilineTextAlignment(.center)
                 .opacity(showDetails ? 1 : 0)

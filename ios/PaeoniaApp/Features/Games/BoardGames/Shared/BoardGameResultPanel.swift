@@ -10,8 +10,6 @@ struct BoardGameResultPanel: View {
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
     @Binding var isCollapsed: Bool
-    var conversationSource: GameConversationSource?
-    var conversationResult: GameConversationResult?
     let onPrimary: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -50,9 +48,6 @@ struct BoardGameResultPanel: View {
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .accessibilityIdentifier("boardGames.result.primary")
-            if let conversationSource {
-                GameConversationButton(source: conversationSource, result: conversationResult)
-            }
         }
         .frame(maxWidth: .infinity)
         .padding(PaeoniaSpacing.space20)

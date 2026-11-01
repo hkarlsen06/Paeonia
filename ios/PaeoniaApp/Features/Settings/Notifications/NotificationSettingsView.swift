@@ -58,35 +58,31 @@ struct NotificationSettingsView: View {
         Section {
             toggleRow(
                 .dailyChallenge,
-                title: .settingsNotificationsDailyChallengeTitle,
-                subtitle: .settingsNotificationsDailyChallengeSubtitle(partnerName)
+                title: .settingsNotificationsDailyChallengeTitle
             )
             // Covers both the daily "answered too" push and the Topics push.
             toggleRow(
                 .partnerAnswered,
                 title: .settingsNotificationsPartnerAnsweredTitle,
-                subtitle: .settingsNotificationsPartnerAnsweredSubtitle(partnerName)
+                subtitle: .settingsNotificationsPartnerAnsweredSubtitle
             )
             // Covers chats on questions and on memories.
             toggleRow(
                 .messages,
-                title: .dailyChatNotificationsTitle,
-                subtitle: .dailyChatNotificationsSubtitle(partnerName)
+                title: .dailyChatNotificationsTitle
             )
             toggleRow(
                 .widgetUpdates,
-                title: .settingsNotificationsWidgetAlertsTitle,
-                subtitle: .settingsNotificationsWidgetAlertsSubtitle(partnerName)
+                title: .settingsNotificationsWidgetAlertsTitle
             )
             toggleRow(
                 .memories,
-                title: .settingsNotificationsMemoriesTitle,
-                subtitle: .settingsNotificationsMemoriesSubtitle(partnerName)
+                title: .settingsNotificationsMemoriesTitle
             )
             toggleRow(
                 .games,
                 title: .settingsNotificationsGamesTitle,
-                subtitle: .settingsNotificationsGamesSubtitle(partnerName)
+                subtitle: .settingsNotificationsGamesSubtitle
             )
         } header: {
             Text(.settingsNotificationsPartnerSectionTitle(partnerName))
@@ -97,8 +93,7 @@ struct NotificationSettingsView: View {
         Section {
             toggleRow(
                 .streakReminders,
-                title: .settingsNotificationsStreakRemindersTitle,
-                subtitle: .settingsNotificationsStreakRemindersSubtitle
+                title: .settingsNotificationsStreakRemindersTitle
             )
             questionTimeRows
             toggleRow(
@@ -117,7 +112,7 @@ struct NotificationSettingsView: View {
             toggleRow(
                 .lockScreenDetails,
                 title: .settingsNotificationsLockScreenDetailsTitle,
-                subtitle: .settingsNotificationsLockScreenDetailsSubtitle(partnerName)
+                subtitle: .settingsNotificationsLockScreenDetailsSubtitle
             )
         } header: {
             Text(.settingsNotificationsLockScreenSectionTitle)
@@ -162,7 +157,7 @@ struct NotificationSettingsView: View {
     private func toggleRow(
         _ kind: NotificationPreferenceKind,
         title: LocalizedStringResource,
-        subtitle: LocalizedStringResource
+        subtitle: LocalizedStringResource? = nil
     ) -> some View {
         Toggle(
             isOn: Binding(
@@ -173,7 +168,7 @@ struct NotificationSettingsView: View {
             )
         ) {
             Text(title)
-            Text(subtitle)
+            if let subtitle { Text(subtitle) }
         }
         .disabled(!viewModel.isNotificationSettingsLoaded)
     }

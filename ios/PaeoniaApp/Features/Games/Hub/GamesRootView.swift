@@ -8,26 +8,19 @@ struct GamesRootView: View {
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
-    /// The iPad tab bar sits at the top and stays during a game. Hiding it in a push
-    /// lays the game out below the bar and moves it up when the push ends, and the bar
-    /// comes back late after a pop.
-    private let hidesTabBarInGame = UIDevice.current.userInterfaceIdiom != .pad
-
     var body: some View {
         NavigationStack(path: $path) {
             content
                 .analyticsScreen("games")
                 .paeoniaTabBackdrop()
-                // Hide the tab bar from the stack root, in the same update as the push. Hiding
-                // it from the pushed screen shifts the content and brings the bar back late.
-                .toolbar(hidesTabBarInGame && !path.isEmpty ? .hidden : .automatic, for: .tabBar)
+                .toolbar(.visible, for: .tabBar)
                 .navigationDestination(for: GamesDestination.self) { destination in
                     viewModel.screen(for: destination)
                         .analyticsScreen(destination.analyticsName)
                         .toolbar {
                             if case let .game(kind) = destination {
                                 ToolbarItem(placement: .topBarTrailing) {
-                                    GameConversationButton(kind: kind, compact: true)
+                                    GameConversationButton(kind: kind)
                                 }
                             }
                         }

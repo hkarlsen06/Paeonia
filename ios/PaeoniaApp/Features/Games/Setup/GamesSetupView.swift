@@ -66,10 +66,6 @@ struct GamesCallTip: View {
                 Text(.gamesSetupCallTipTitle)
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)
-                Text(.gamesSetupCallTipMessage)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

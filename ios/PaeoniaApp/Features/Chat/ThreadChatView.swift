@@ -40,6 +40,7 @@ struct ThreadChatView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.threadChatContext) private var chatContext
     @State private var isVisible = false
+    @State var composerHeight: CGFloat = 0
     @State private var photoViewer: PaeoniaImageViewerSelection?
     @State private var projectionStore = ThreadChatProjectionStore()
     @State private var timestampReveal = ThreadChatTimestampReveal()
@@ -189,6 +190,7 @@ struct ThreadChatView: View {
                     beginPhotoDraft: { viewModel.beginPhotoDraftEditing() },
                     onTextChanged: viewModel.draftChanged
                 )
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { composerHeight = $0 }
             },
             messageMenuAction: handleMenuAction
         )
@@ -221,6 +223,7 @@ struct ThreadChatView: View {
             await viewModel.loadOlderMessages()
         }
         .chatTheme(chatTheme)
+        .overlay { gameChatEmptyState }
         .overlay {
             ZStack {
                 ThreadChatNavigationGestureBridge { close() }

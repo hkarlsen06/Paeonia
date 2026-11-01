@@ -83,7 +83,6 @@ struct MindMeldHistoryScreen: View {
         } else {
             PaeoniaEmptyStateView(
                 title: .mindMeldHistoryEmptyTitle,
-                message: .mindMeldHistoryEmptyMessage,
                 systemImage: "point.3.connected.trianglepath.dotted"
             )
         }

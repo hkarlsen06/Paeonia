@@ -39,7 +39,12 @@ extension MainTabView {
             openGameChat(kind: kind, source: source, result: result)
         }
         context.returnGameKind = retainedReturnGame
-        if retainedReturnGame != nil { context.returnToGame = { selection.wrappedValue = .games } }
+        if retainedReturnGame != nil {
+            context.returnToGame = {
+                PaeoniaKeyboard.dismiss()
+                selection.wrappedValue = .games
+            }
+        }
         context.chatVisibilityChanged = { subject, isVisible in
             if isVisible {
                 visibleChatSubject = subject
@@ -79,6 +84,7 @@ extension MainTabView {
                 return nil
             }.last
         }
+        PaeoniaKeyboard.dismiss()
         selection.wrappedValue = .questions
         dailyChatQuestion = nil
         requestedConversationID = nil

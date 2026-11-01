@@ -5,28 +5,20 @@ struct GameConversationButton: View {
     let kind: GameKind
     var source: GameConversationSource?
     var result: GameConversationResult?
-    var compact = false
-    var title: LocalizedStringResource?
 
     @Environment(\.threadChatContext) private var context
 
-    init(source: GameConversationSource, result: GameConversationResult? = nil,
-         compact: Bool = false, title: LocalizedStringResource? = nil) {
+    init(source: GameConversationSource, result: GameConversationResult? = nil) {
         kind = source.kind
         self.source = source
         self.result = result
-        self.compact = compact
-        self.title = title
     }
 
-    init(kind: GameKind, compact: Bool = false, title: LocalizedStringResource? = nil) {
+    init(kind: GameKind) {
         self.kind = kind
-        self.compact = compact
-        self.title = title
     }
 
     private var resolvedTitle: LocalizedStringResource {
-        if let title { return title }
         guard let coupleID = context.coupleID else { return .gamesConversationOpen }
         return context.summaries?.summary(for: .game(GameChatSubject(coupleID: coupleID, kind: kind))) == nil
             ? .gamesConversationStart : .gamesConversationOpen
@@ -39,8 +31,7 @@ struct GameConversationButton: View {
 
     var body: some View {
         if context.isAvailable, context.openGameChat != nil {
-            if compact { button.buttonStyle(.plain) }
-            else { button.buttonStyle(PaeoniaSecondaryButtonStyle()) }
+            button.buttonStyle(.plain)
         }
     }
 
@@ -57,19 +48,12 @@ struct GameConversationButton: View {
                         }
                     }
             }
-                .labelStyle(GameConversationLabelStyle(compact: compact))
+                .labelStyle(.iconOnly)
         }
         .accessibilityLabel(
             Text(hasUnreadMessage ? .dailyChatCardUnreadTitle(context.participants.partnerName) : resolvedTitle)
         )
         .accessibilityIdentifier("game.conversation.open")
-    }
-}
-
-private struct GameConversationLabelStyle: LabelStyle {
-    let compact: Bool
-    func makeBody(configuration: Configuration) -> some View {
-        if compact { configuration.icon } else { Label(configuration).labelStyle(.titleAndIcon) }
     }
 }
 
@@ -80,7 +64,7 @@ extension View {
         toolbar {
             if let source {
                 ToolbarItem(placement: .topBarTrailing) {
-                    GameConversationButton(source: source, result: result, compact: true)
+                    GameConversationButton(source: source, result: result)
                 }
             }
         }

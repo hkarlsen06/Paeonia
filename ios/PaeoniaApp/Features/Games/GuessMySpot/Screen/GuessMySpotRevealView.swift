@@ -41,7 +41,6 @@ struct GuessMySpotRevealView: View {
     @State private var tap: GuessMySpotRevealTap?
     @AccessibilityFocusState private var isTitleFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var round: RemoteGuessMySpotRound? { viewModel.round }
 
@@ -279,24 +278,13 @@ struct GuessMySpotRevealView: View {
     @ViewBuilder
     private var actions: some View {
         let isShown = (isHeld && viewModel.isHeldOnPhone) || timeline.actionsShown
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space12))
-            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space12))
-        layout {
-            if let round, !isHeld {
-                GameConversationButton(
-                    source: .guessMySpot(round.id),
-                    result: .guessMySpot(round), title: .gamesConversationChat
-                )
-            }
-            Button {
-                PaeoniaHaptics.gameContinued()
-                viewModel.continueFromReveal()
-            } label: {
-                Text(isSender ? .guessMySpotHandoffContinue : .guessMySpotHandoffSend)
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
+        Button {
+            PaeoniaHaptics.gameContinued()
+            viewModel.continueFromReveal()
+        } label: {
+            Text(isSender ? .guessMySpotHandoffContinue : .guessMySpotHandoffSend)
         }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
         .opacity(isShown ? 1 : 0)
         .offset(y: isShown || reduceMotion ? 0 : 12)
         .allowsHitTesting(isShown)

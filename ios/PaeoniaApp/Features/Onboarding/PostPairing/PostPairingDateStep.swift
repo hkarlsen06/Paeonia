@@ -104,7 +104,7 @@ struct PostPairingDateStep: View {
     private func confirm(_ startedOn: String) -> some View {
         OnboardingStepScaffold(
             title: .onboardingFirstDayDateConfirmTitle(partnerName, Self.dateText(startedOn)),
-            message: .onboardingFirstDayDateConfirmMessage,
+            message: nil,
             placement: .standalone,
             primary: OnboardingStepAction(title: .onboardingFirstDayDateConfirmButton) {
                 PaeoniaHaptics.selection()

@@ -176,7 +176,6 @@ struct PrivacySafetyView: View {
         case .requestAlreadyActive:
             bannerCenter.show(
                 .info(
-                    title: String(localized: .privacySafetyRequestActiveTitle),
                     message: String(localized: .privacySafetyRequestActiveMessage)
                 )
             )

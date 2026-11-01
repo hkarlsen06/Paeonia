@@ -284,7 +284,7 @@ Buttons.
 
 - Miss: no title and no buttons. 1.4 s after the line draws, the round moves on by itself and the two words fall into the next round (see "Into the next round"). Nothing is lost, because the next round shows the same two words. With VoiceOver on, the title and a primary "Next round" stay, and the round waits for a tap.
 - Near miss: primary "Next round", which waits for a tap, and "Count it" (`PaeoniaQuietButtonStyle`). "Count it" turns the reveal into a meld in place. The near title and buttons fade out in 0.16 s, then the meld plays with the same gaps as above: the cards slide together, touch 0.24 s later with the bloom and `streakCelebrated()`, and "You melded!" fades up 0.5 s after the slide began.
-- Meld and got away: primary "Play again", and a quiet "See our melds".
+- Meld and got away: primary "Play again". The toolbar capsule opens "Our melds".
 
 Leaving the reveal (Next round, Play again, or back) marks it seen once its verdict has shown. A reveal left before the verdict plays again next time.
 
@@ -312,7 +312,6 @@ VoiceOver. On the verdict, one announcement: "You said OCEAN. Robin said SUSHI. 
 | `reveal.gotAway.line` | You came close. Want to try another? | Dere var nære. Vil dere prøve igjen? |
 | `reveal.next` | Next round | Neste runde |
 | `reveal.playAgain` | Play again | Spill igjen |
-| `reveal.seeMelds` | See our melds | Se treffene våre |
 | `reveal.missAnnouncement` | You said %1$@. %2$@ said %3$@. Not a match yet. | Du sa %1$@. %2$@ sa %3$@. Ikke likt ennå. |
 | `reveal.meldAnnouncement` | You both said %@. You melded! | Dere sa begge %@. Dere tenkte likt! |
 | `reveal.card.a11y` | %1$@, %2$@ | %1$@, %2$@ |
@@ -336,7 +335,7 @@ When a person opens a game whose ending they have already seen, the screen shows
 
 ### 5. Our melds
 
-Entry points: the melds capsule and the `…` menu in the toolbar of `MindMeldScreen`, "See our melds" on a finished reveal, a long press on the hub card or tile, and a quiet link on the hub card once the couple has a finished game.
+Entry points: the melds capsule in the toolbar of `MindMeldScreen`, a long press on the hub card or tile, and a quiet link on the hub card once the couple has a finished game.
 
 Layout, in one scroll view.
 
@@ -358,8 +357,7 @@ Empty states use `PaeoniaEmptyStateView`: no finished games yet (`point.3.connec
 | `history.row.startedOver` | Started over | Begynt på nytt |
 | `history.detail.melded` | Melded in %lld round / Melded in %lld rounds | Likt på %lld runde / Likt på %lld runder |
 | `history.detail.counted` | Counted | Telt med |
-| `history.empty.title` | No melds yet | Ingen treff ennå |
-| `history.empty.message` | Your finished games will show up here. | Spillene dere har fullført, dukker opp her. |
+| `history.empty.title` | No finished games yet | Ingen ferdige spill ennå |
 | `history.loadMore.failed` | We couldn't load older games. | Vi kunne ikke laste eldre spill. |
 | `history.offline.message` | Connect to the internet to see your finished games. | Koble til internett for å se spillene dere har fullført. |
 | `history.detail.round` | Round %lld | Runde %lld |
