@@ -228,7 +228,8 @@ struct StoryViewer: View {
     }
 
     private func touchGesture(width: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 0)
+        // The viewer moves with the drag, so measure outside its moving coordinate space.
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { value in
                 if touchStart == nil { touchStart = .now }
                 if value.translation.height > Self.touchSlop {
