@@ -22,13 +22,13 @@ extension HomeMapLayout {
             if !reduceMotion, mapTiles.tiles != .offline { return waitingPoints(metrics) }
             let framing = framing(couple, metrics)
             let raw = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
-            return separated(raw, isNear: couple.isNear).kept(inside: metrics.avatarBounds)
+            return fitted(separated(raw, isNear: couple.isNear), in: metrics)
         }
         let raw = HomeMapAvatarPoints(own: mapProjection.own, partner: mapProjection.partner)
         guard mapProjection.introProgress < 1 else {
             // While the person looks around, the avatars stay on the map, off its edges too.
             guard let start = explorer.start else {
-                return separated(raw, isNear: couple.isNear).kept(inside: metrics.avatarBounds)
+                return fitted(separated(raw, isNear: couple.isNear), in: metrics)
             }
             return raw.pinned(
                 zoomChange: pow(2, mapProjection.zoom - start.zoom),
@@ -46,14 +46,14 @@ extension HomeMapLayout {
     ) -> HomeMapAvatarPoints {
         let framing = framing(couple, metrics)
         let rawEnd = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
-        return raw.duringIntro(
+        let points = raw.duringIntro(
             rawStart: projection.introStart,
             waiting: waitingPoints(metrics),
             rawEnd: rawEnd,
-            end: separated(rawEnd, isNear: couple.isNear).kept(inside: metrics.avatarBounds),
+            end: fitted(separated(rawEnd, isNear: couple.isNear), in: metrics),
             progress: projection.introProgress
         )
-        .kept(inside: metrics.avatarBounds)
+        return fitted(points, in: metrics)
     }
 
     /// Smaller as the person zooms out from where they started looking around, so far
@@ -71,7 +71,27 @@ extension HomeMapLayout {
         )
         let center = CGPoint(x: near.framedBox.midX, y: near.framedBox.midY)
         let together = separated(HomeMapAvatarPoints(own: center, partner: center), isNear: true)
-        return together.kept(inside: near.avatarBounds)
+        return fitted(together, in: near)
+    }
+
+    /// Clamping to the map can bring markers together. Keep their complete content apart.
+    func fitted(_ points: HomeMapAvatarPoints, in metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
+        let kept = points.kept(inside: metrics.avatarBounds)
+        let horizontal = 2 * markerMeasurements.halfWidth + PaeoniaSpacing.space8
+        let vertical = markerMeasurements.above + markerMeasurements.below + PaeoniaSpacing.space8
+        guard abs(kept.own.x - kept.partner.x) < horizontal,
+              abs(kept.own.y - kept.partner.y) < vertical,
+              metrics.avatarBounds.width >= horizontal else { return kept }
+        let half = horizontal / 2
+        let middle = min(
+            max((kept.own.x + kept.partner.x) / 2, metrics.avatarBounds.minX + half),
+            metrics.avatarBounds.maxX - half
+        )
+        let direction: CGFloat = kept.own.x <= kept.partner.x ? 1 : -1
+        return HomeMapAvatarPoints(
+            own: CGPoint(x: middle - direction * half, y: kept.own.y),
+            partner: CGPoint(x: middle + direction * half, y: kept.partner.y)
+        )
     }
 
     /// The map fades in over the first half of the intro.

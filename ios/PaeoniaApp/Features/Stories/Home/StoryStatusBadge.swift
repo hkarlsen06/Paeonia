@@ -23,6 +23,7 @@ struct StoryBadgeStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .labelStyle(StoryActionLabelStyle())
             .font(.caption2.weight(.bold))
             .padding(.horizontal, PaeoniaSpacing.space8)
             .padding(.vertical, PaeoniaSpacing.space4)
@@ -31,5 +32,19 @@ struct StoryBadgeStyle: ViewModifier {
             .overlay(Capsule().strokeBorder(.paeoniaTextPrimary.opacity(0.7), lineWidth: 1))
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+private struct StoryActionLabelStyle: LabelStyle {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    func makeBody(configuration: Configuration) -> some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space4))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space4))
+        layout {
+            configuration.icon
+            configuration.title
+        }
     }
 }

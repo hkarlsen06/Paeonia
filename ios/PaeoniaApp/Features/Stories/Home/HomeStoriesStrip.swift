@@ -27,8 +27,10 @@ struct HomeStoriesStrip: View {
     /// The viewer's Add button closes it first, then the composer opens.
     @State private var composesAfterViewer = false
     @State private var isStyling = false
-    @State private var ownMeasurements = StoryMarkerMeasurements()
-    @State private var partnerMeasurements = StoryMarkerMeasurements()
+    @State private var ownSize: CGSize = .zero
+    @State private var partnerSize: CGSize = .zero
+    @State private var ownNoteHeight: CGFloat = 0
+    @State private var partnerNoteHeight: CGFloat = 0
     @Environment(\.avatarStyling) private var avatarStyling
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -170,8 +172,11 @@ struct HomeStoriesStrip: View {
     }
 
     private var markerMeasurements: StoryMarkerMeasurements {
-        var measurements = ownMeasurements
-        measurements.include(partnerMeasurements)
+        let diameter = avatarSize + 2 * StoryRingAvatar.ringGap
+        var measurements = StoryMarkerMeasurements(size: ownSize, noteHeight: ownNoteHeight, portraitDiameter: diameter)
+        measurements.include(StoryMarkerMeasurements(
+            size: partnerSize, noteHeight: partnerNoteHeight, portraitDiameter: diameter
+        ))
         return measurements
     }
 }
@@ -181,6 +186,7 @@ extension HomeStoriesStrip {
         let decoration = avatarStyling?.decorations.own ?? .none
         return VStack(spacing: 0) {
             noteSpace(note?.text, decoration: decoration)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { ownNoteHeight = $0 }
             ownAvatarButton(stories)
                 .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
                 .storyNoteBubble(clearance: decoration.noteClearance(photoSize: avatarSize)) {
@@ -201,12 +207,14 @@ extension HomeStoriesStrip {
         }
         .frame(width: markerWidth(decoration))
         .fixedSize(horizontal: false, vertical: true)
-        .storyMarkerPart(.ownContent)
-        .measureStoryMarkers { ownMeasurements = $0 }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { ownSize = $0 }
     }
 
     private func markerWidth(_ decoration: AvatarDecoration) -> CGFloat {
-        max(StoryNoteBubble.maxWidth, avatarSize + 2 * max(StoryRingAvatar.ringGap, avatarSize * decoration.outset))
+        let width = max(
+            StoryNoteBubble.maxWidth, avatarSize + 2 * max(StoryRingAvatar.ringGap, avatarSize * decoration.outset)
+        )
+        return dynamicTypeSize.isAccessibilitySize ? max(width, avatarSize + 2 * PaeoniaSpacing.space32) : width
     }
 
     private var actionClearance: CGFloat {
@@ -237,7 +245,6 @@ extension HomeStoriesStrip {
                 size: avatarSize,
                 decoration: avatarStyling?.decorations.own ?? .none
             )
-            .storyMarkerPart(.ownPortrait)
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { ownAvatarFrame = $0 }
         }
         .buttonStyle(.plain)
@@ -274,11 +281,14 @@ extension HomeStoriesStrip {
     private func partnerAvatar(_ stories: [Story], ring: StoryRingState, note: StoryNote?) -> some View {
         let decoration = avatarStyling?.decorations.partner ?? .none
         return VStack(spacing: 0) {
-            if let note {
-                noteSpace(note.text, decoration: decoration)
-            } else {
-                Color.clear.frame(height: decoration.noteClearance(photoSize: avatarSize))
+            VStack(spacing: 0) {
+                if let note {
+                    noteSpace(note.text, decoration: decoration)
+                } else {
+                    Color.clear.frame(height: decoration.noteClearance(photoSize: avatarSize))
+                }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { partnerNoteHeight = $0 }
             partnerAvatarButton(stories, ring: ring, decoration: decoration)
                 .storyNoteBubble(clearance: decoration.noteClearance(photoSize: avatarSize)) {
                     if let note {
@@ -298,8 +308,7 @@ extension HomeStoriesStrip {
         }
         .frame(width: markerWidth(decoration))
         .fixedSize(horizontal: false, vertical: true)
-        .storyMarkerPart(.partnerContent)
-        .measureStoryMarkers { partnerMeasurements = $0 }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { partnerSize = $0 }
     }
 
     /// The partner's portrait and action row form one story button.
@@ -316,7 +325,6 @@ extension HomeStoriesStrip {
                 size: avatarSize,
                 decoration: decoration
             )
-            .storyMarkerPart(.partnerPortrait)
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { partnerAvatarFrame = $0 }
             .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
             StoryStatusBadge(ring: ring == .noStory ? .seen : ring)
