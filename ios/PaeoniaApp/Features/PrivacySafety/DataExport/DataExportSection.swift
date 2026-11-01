@@ -5,13 +5,14 @@ import SwiftUI
 /// own presentation context mounts `paeoniaTopBanner` itself.
 struct DataExportSection: View {
     @Bindable var viewModel: DataExportViewModel
+    var showsTitle = true
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             switch viewModel.phase {
             case .loading:
-                header(.privacySafetyDataExportTitle, message: .privacySafetyDataExportDescription)
+                header(initialTitle, message: .privacySafetyDataExportDescription)
                 ProgressView()
                     .controlSize(.small)
                     .accessibilityLabel(Text(.privacySafetyLoading))
@@ -79,13 +80,13 @@ struct DataExportSection: View {
     // MARK: - States
 
     private func askContent(
-        title: LocalizedStringResource = .privacySafetyDataExportTitle,
+        title: LocalizedStringResource? = nil,
         message: LocalizedStringResource,
         button: LocalizedStringResource,
         isSending: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            header(title, message: message)
+            header(title ?? initialTitle, message: message)
 
             Toggle(isOn: $viewModel.includesFiles) {
                 Text(.privacySafetyDataExportIncludeFilesTitle)
@@ -190,11 +191,17 @@ struct DataExportSection: View {
 
     // MARK: - Pieces
 
-    private func header(_ title: LocalizedStringResource, message: LocalizedStringResource) -> some View {
+    private var initialTitle: LocalizedStringResource? {
+        showsTitle ? .privacySafetyDataExportTitle : nil
+    }
+
+    private func header(_ title: LocalizedStringResource?, message: LocalizedStringResource) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            Text(title)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
+            if let title {
+                Text(title)
+                    .font(PaeoniaTypography.bodyEmphasis)
+                    .foregroundStyle(.paeoniaTextPrimary)
+            }
 
             detail(message)
         }

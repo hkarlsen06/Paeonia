@@ -2518,13 +2518,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add a photo and a name. Your partner will see both."
+            "value" : "Your partner will see your name and photo."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Legg til et bilde og et navn. Partneren din ser begge."
+            "value" : "Partneren din ser navnet og bildet ditt."
           }
         }
       }
@@ -6939,24 +6939,6 @@
         }
       }
     },
-    "dailyChallenge.composer.photoAdded" : {
-      "comment" : "Label beside the selected photo thumbnail while writing an answer.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photo added"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bilde lagt til"
-          }
-        }
-      }
-    },
     "dailyChallenge.composer.sharingNote" : {
       "comment" : "Note below the answer composer explaining when partners can read both answers.",
       "extractionState" : "manual",
@@ -8278,13 +8260,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You both answered. Tap to read."
+            "value" : "You both answered."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dere har begge svart. Trykk for å lese."
+            "value" : "Dere har begge svart."
           }
         }
       }
@@ -26549,24 +26531,6 @@
         }
       }
     },
-    "onboarding.questionTime.custom.subtitle" : {
-      "comment" : "Small line under the Another time choice.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick your own"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg selv"
-          }
-        }
-      }
-    },
     "onboarding.questionTime.custom.title" : {
       "comment" : "Question reminder choice that opens a time picker.",
       "extractionState" : "manual",
@@ -30408,13 +30372,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If you turn this on, %@ cannot pair with you again. This choice is off by default."
+            "value" : "If you turn this on, %@ cannot pair with you again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hvis du slår på dette, kan %@ ikke koble seg til deg igjen. Dette valget er av som standard."
+            "value" : "Hvis du slår på dette, kan %@ ikke koble seg til deg igjen."
           }
         }
       }
@@ -30996,19 +30960,19 @@
       }
     },
     "search.empty.message" : {
-      "comment" : "Message shown when a search has no matches. %@ is what the person typed",
+      "comment" : "Recovery advice below No matches when a search returns no results.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nothing matches \"%@\". Try a shorter word, or check the spelling."
+            "value" : "Try a shorter word, or check the spelling."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingen treff på «%@». Prøv et kortere ord, eller sjekk stavemåten."
+            "value" : "Prøv et kortere ord, eller sjekk stavemåten."
           }
         }
       }
@@ -31434,13 +31398,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Location access for Paeonia is off, so %@ can't see where you are now."
+            "value" : "%@ can't see where you are now."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Posisjonstilgang for Paeonia er av, så %@ ser ikke hvor du er nå."
+            "value" : "%@ ser ikke hvor du er nå."
           }
         }
       }
@@ -35242,24 +35206,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Start med din egen linje"
-          }
-        }
-      }
-    },
-    "storyChain.choose.own.subtitle" : {
-      "comment" : "Line under 'Start with your own line'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Write the first sentence yourself."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skriv den første setningen selv."
           }
         }
       }

@@ -6,7 +6,6 @@ nonisolated enum GameConversationLoadState: Hashable {
 
 /// Full detail of an expanded finished-result card.
 struct GameConversationHeader: View {
-    let source: GameConversationSource
     let result: GameConversationResult?
     let participants: DailyChallengeParticipants
     var loadState = GameConversationLoadState.loading
@@ -16,16 +15,10 @@ struct GameConversationHeader: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space20) {
-            VStack(spacing: PaeoniaSpacing.space4) {
-                Text(source.kind.name)
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .accessibilityAddTraits(.isHeader)
-                if let result {
-                    Text(result.date, format: .dateTime.day().month(.abbreviated).year())
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
+            if let result {
+                Text(result.date, format: .dateTime.day().month(.abbreviated).year())
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
             }
             if let result {
                 content(result)
