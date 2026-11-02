@@ -17806,19 +17806,19 @@
       }
     },
     "games.tutorial.dots.photo.message" : {
-      "comment" : "Last Dots and Boxes card. Memories is the name of the app's Memories tab.",
+      "comment" : "Last Dots and Boxes card. The photos come from Memories, stories and Guess my spot.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The game ends when every line is drawn. If you have photos in Memories, each box you close shows a piece of one."
+            "value" : "The game ends when every line is drawn. If you've shared photos in Paeonia, each box you close shows a piece of one."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spillet er over når alle strekene er tegnet. Har dere bilder i Minner, viser hver rute dere lukker en bit av ett av dem."
+            "value" : "Spillet er over når alle strekene er tegnet. Har dere delt bilder i Paeonia, viser hver rute dere lukker en bit av ett av dem."
           }
         }
       }
