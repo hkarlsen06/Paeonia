@@ -3,7 +3,8 @@ import SwiftUI
 import UIKit
 
 /// The couple's map card on the Us tab in regular width (iPad). Compact width (iPhone) uses
-/// the MapLibre map in `HomeMapLayout` instead. With a map to show it is a 2:1 tile, square
+/// the MapLibre map in `HomeMapLayout`, falling back to this card if it cannot load.
+/// With a map to show it is a 2:1 tile, square
 /// on a wide iPad (`aspectRatio`). A dark-mode map fills the whole card, framed to show both
 /// partners with their avatars, with the live distance overlaid at the bottom. The map
 /// is rendered with `MKMapSnapshotter`, so the camera framing and pin placement are fully

@@ -6,7 +6,7 @@ import Testing
 struct HomeMapTileStatusTests {
     private let suite = "HomeMapTileStatusTests.\(UUID().uuidString)"
 
-    @Test func outageSurvivesRelaunchAndLateMapCompletion() async throws {
+    @Test func outageSurvivesLateMapCompletionAndRechecksOnRelaunch() async throws {
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let status = HomeMapTileStatus(defaults: defaults) { _ in throw URLError(.badServerResponse) }
@@ -15,14 +15,50 @@ struct HomeMapTileStatusTests {
         let retryAfter = try #require(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) as? Date)
         #expect(!status.showsMapHeader)
 
-        let restored = HomeMapTileStatus(defaults: defaults) { _ in
-            Issue.record("An outage must wait until its retry date before probing")
-        }
+        let restored = HomeMapTileStatus(defaults: defaults) { _ in }
         await restored.checkIfDue()
         status.mapLoaded()
-        #expect(!restored.showsMapHeader)
+        #expect(restored.showsMapHeader)
+        #expect(!status.showsMapHeader)
+        #expect(retryAfter > .now)
+        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) == nil)
+    }
+
+    @Test func failedLaunchCheckKeepsFallbackWithoutProbingAgainBeforeRetry() async throws {
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let retryAfter = Date.now.addingTimeInterval(3_600)
+        defaults.set(retryAfter, forKey: HomeMapTileStatus.retryAfterKey)
+        var checks = 0
+        let status = HomeMapTileStatus(defaults: defaults) { _ in
+            checks += 1
+            throw URLError(.badServerResponse)
+        }
+
+        await status.checkIfDue()
+        await status.checkIfDue()
+
+        #expect(checks == 1)
         #expect(!status.showsMapHeader)
         #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) as? Date == retryAfter)
+    }
+
+    @Test func cancelledLaunchCheckCanRetryBeforeTheSavedRetryDate() async throws {
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(Date.now.addingTimeInterval(3_600), forKey: HomeMapTileStatus.retryAfterKey)
+        var checks = 0
+        let status = HomeMapTileStatus(defaults: defaults) { _ in
+            checks += 1
+            if checks == 1 { throw CancellationError() }
+        }
+
+        await status.checkIfDue()
+        #expect(!status.showsMapHeader)
+        await status.checkIfDue()
+
+        #expect(status.showsMapHeader)
+        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) == nil)
     }
 
     @Test func offlineKeepsHeaderAndDoesNotRememberAnOutage() async throws {

@@ -15,7 +15,7 @@ nonisolated enum HomeMapTiles: Equatable, Sendable {
 }
 
 /// Works out `HomeMapTiles` from what the map reports and from quiet checks of OpenFreeMap.
-/// It remembers an outage across launches, so Home opens in the layout it will keep.
+/// It remembers an outage across launches and rechecks it when Home appears.
 @Observable
 final class HomeMapTileStatus {
     private(set) var tiles: HomeMapTiles
@@ -24,6 +24,7 @@ final class HomeMapTileStatus {
     @ObservationIgnored private let check: (URL) async throws -> Void
     @ObservationIgnored private var isChecking = false
     @ObservationIgnored private var loadRevision = 0
+    @ObservationIgnored private var needsLaunchCheck: Bool
 
     /// How long the map may take to draw before Home checks whether OpenFreeMap answers.
     static let loadTimeout: Duration = .seconds(10)
@@ -40,6 +41,7 @@ final class HomeMapTileStatus {
         self.styleURL = styleURL
         self.defaults = defaults
         self.check = check
+        needsLaunchCheck = defaults.object(forKey: Self.retryAfterKey) is Date
         tiles = (defaults.object(forKey: Self.retryAfterKey) as? Date)
             .map { .unavailable(retryAfter: $0) } ?? .trying
     }
@@ -64,6 +66,10 @@ final class HomeMapTileStatus {
 
     /// Checks right away when the person comes back to the app and the map could be back.
     func checkIfDue() async {
+        if needsLaunchCheck {
+            await checkTiles()
+            return
+        }
         switch tiles {
         case .offline:
             await checkTiles()
@@ -77,6 +83,7 @@ final class HomeMapTileStatus {
     /// While Home is on screen, checks every half minute while offline, and every few minutes
     /// from `retryAfter` on while OpenFreeMap is down. Returns when the map works again.
     func watch() async {
+        await checkIfDue()
         var hasChecked = false
         while let delay = nextCheck(afterCheck: hasChecked) {
             do {
@@ -90,6 +97,8 @@ final class HomeMapTileStatus {
     }
 
     private func nextCheck(afterCheck: Bool) -> Duration? {
+        // A previous Home visit may still be cancelling its probe. Try again once it ends.
+        if needsLaunchCheck { return .seconds(1) }
         switch tiles {
         case .trying, .available:
             return nil
@@ -121,6 +130,7 @@ final class HomeMapTileStatus {
         }
         // The map may have loaded meanwhile, and a cancelled check says nothing about OpenFreeMap.
         guard tiles == before, loadRevision == revision, !Task.isCancelled else { return }
+        needsLaunchCheck = false
         applyProbeResult(failure, mapDidNotLoad: mapDidNotLoad)
     }
 

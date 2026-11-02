@@ -31,6 +31,7 @@ struct HomeStoriesStrip: View {
     @State private var partnerSize: CGSize = .zero
     @State private var ownNoteHeight: CGFloat = 0
     @State private var partnerNoteHeight: CGFloat = 0
+    @AccessibilityPresentation(.controls) private var showsControls
     @Environment(\.avatarStyling) private var avatarStyling
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -200,7 +201,7 @@ extension HomeStoriesStrip {
                 }
             addButton
                 .padding(.top, actionClearance)
-            if arrange == nil {
+            if arrange == nil, showsControls {
                 name(Text(.storiesHomeYourStory))
                     .padding(.top, PaeoniaSpacing.space8)
             }
@@ -301,7 +302,7 @@ extension HomeStoriesStrip {
                         .accessibilityLabel(Text(.storiesNotePartnerAccessibility(people.partnerName, note.text)))
                     }
                 }
-            if arrange == nil {
+            if arrange == nil, showsControls {
                 name(Text(people.partnerName))
                     .padding(.top, PaeoniaSpacing.space8)
             }
