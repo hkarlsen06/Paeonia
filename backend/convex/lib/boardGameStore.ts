@@ -2,6 +2,7 @@ import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, orNull, withUpdatedAt } from "./db";
 import { canReadMediaAsset } from "./mediaAssets";
+import { roundWithPhoto } from "./gameMediaReferences";
 import { BOARD_RULES } from "./boardGameRules";
 import type { BoardGameKind, BoardRules } from "./boardGames";
 import { enqueueGamePush } from "./games";
@@ -83,9 +84,18 @@ export async function enqueueBoardGamePush(ctx: WriterCtx, game: BoardGame, acto
   });
 }
 
+/** The photos a Dots and Boxes game can hide: upload purpose and the parent kind it belongs to. */
+type MediaAsset = Doc<"media_assets">;
+const BOARD_PHOTO_SOURCES: Partial<Record<MediaAsset["upload_purpose"], MediaAsset["reserved_parent_kind"]>> = {
+  memory_photo: "memory_media",
+  story_photo: "story",
+  guess_my_spot_photo: "guess_my_spot_round",
+};
+
 /**
- * A random photo from the couple's Memories, as shown by `get_memories`: the memory and the link
- * are visible and not deleted, and the file is finished, visible and not queued for deletion.
+ * A random photo the couple shared: a Memories photo, a story, or a Guess my spot photo from a
+ * guessed round, so the board never shows a round's photo before the guesser does. The file must
+ * be readable, which also checks that its memory, story or round still exists.
  * Returns undefined when the couple has none.
  */
 export async function pickBoardGamePhoto(ctx: ReaderCtx, userId: string, coupleId: string): Promise<string | undefined> {
@@ -96,11 +106,12 @@ export async function pickBoardGamePhoto(ctx: ReaderCtx, userId: string, coupleI
     .order("desc")
     .take(PHOTO_SCAN_LIMIT);
   const candidates = assets.filter(
-    (asset) => asset.upload_purpose === "memory_photo" && asset.media_type === "image" && asset.reserved_parent_kind === "memory_media",
+    (asset) => asset.media_type === "image" && BOARD_PHOTO_SOURCES[asset.upload_purpose] === asset.reserved_parent_kind,
   );
   // Pick a random candidate and check it. A candidate that fails the full check is dropped, so the pick stays uniform among the readable ones.
   while (candidates.length > 0) {
     const [asset] = candidates.splice(Math.floor(Math.random() * candidates.length), 1);
+    if (asset.reserved_parent_kind === "guess_my_spot_round" && (await roundWithPhoto(ctx, asset.id))?.guessed_at === undefined) continue;
     if (await canReadMediaAsset(ctx, userId, asset)) return asset.id;
   }
   return undefined;

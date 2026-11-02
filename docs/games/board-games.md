@@ -12,11 +12,11 @@ Decided on 2026-10-13.
 
 - **Your own mark.** Each partner draws a mark once on the Paeonia canvas. It is printed on every Four in a Row disc they drop, fills every box they close in Dots and Boxes, and replaces X and O in Ultimate Tic-Tac-Toe. Until a partner draws one, their initial is their mark, so the first game starts at once. Either partner can redraw their own mark at any time.
 - **A bet.** The partner who starts a game can write a small bet, such as "Loser makes coffee". It sits under the board while they play, and the result says who claimed it.
-- **A hidden photo under Dots and Boxes.** The board sits over a random photo from the couple's Memories. Each closed box uncovers its piece of the photo, tinted in the color of the partner who closed it, and the last box shows the whole picture. A couple with no photos gets plain boxes.
+- **A hidden photo under Dots and Boxes.** The board sits over a random photo the couple shared: a Memories photo, a story, or a Guess my spot photo. Each closed box uncovers its piece of the photo, tinted in the color of the partner who closed it, and the last box shows the whole picture. A couple with no photos gets plain boxes.
 - **Play style changes only the score.** The board is always head to head. "Against each other" shows each partner's wins, which grow forever. "Together" hides the tally and shows how many games the couple has finished together, and the result says who won this one without keeping score.
 - **Dots and Boxes is 4 by 4 boxes.** That is 5 by 5 dots and 40 lines.
 - **Every move counts toward the streak.** Making a move records `game_turn_completed`. The streak needs only one action per partner per day, so more moves add nothing.
-- **The photo is random.** When a Dots and Boxes game starts, the server picks a random photo from the couple's Memories. Neither partner knows which one until boxes start closing.
+- **The photo is random.** When a Dots and Boxes game starts, the server picks a random photo from the couple's Memories, stories and Guess my spot rounds (decided on 2026-11-02). Neither partner knows which one until boxes start closing.
 - **Norwegian names.** Fire på rad, Prikker og streker and Ultimat bondesjakk.
 - **Gentle rematch.** When a game ends, either partner can tap "Play again". The partner who did not start the last game starts the new one.
 - **Past games.** Decided on 2026-10-15. The server keeps every finished game with its moves, and the couple can watch any of them again, faster than it was played. All four board games show them (see "Past games" under "Screens").
@@ -102,7 +102,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 
 ### The hidden photo
 
-- When a Dots and Boxes game starts, the server picks a random photo from the couple's Memories. It checks the photo again every time the game is read. A photo whose memory was deleted or hidden stops showing, and the board falls back to plain boxes.
+- When a Dots and Boxes game starts, the server picks a random photo from the couple's newest 500 files: a photo in a visible memory, a story photo, or the photo of a Guess my spot round that has been guessed. A round still waiting for its guess is skipped, so the board never shows the photo before the guesser does. The server checks the photo again every time the game is read. A photo whose memory was deleted or hidden, whose story was deleted, or whose round was deleted stops showing, and the board falls back to plain boxes.
 - The phone loads the photo the same way Memories does. The photo is never shown whole until the last box closes. Each closed box shows its own piece.
 - The phone has the whole photo, so a partner could in theory peek. Cheating is not a real risk between partners, the same reasoning as the Draw & Guess word.
 - A couple with no photos gets plain colored boxes with the owner's mark, and nothing on screen mentions a missing photo.

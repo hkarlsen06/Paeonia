@@ -169,7 +169,7 @@ export const get_board_game_history = query({
 /**
  * Gets or creates the couple's game of this kind and returns it in the shape of `get_board_games`.
  * The caller is player one of a new game and moves first. A new Dots and Boxes game gets a random
- * photo from the couple's Memories. Needs the game settings, so the app runs setup before this.
+ * photo the couple shared (see `pickBoardGamePhoto`). Needs the game settings, so the app runs setup before this.
  */
 export const ensure_board_game = mutation({
   args: { p_kind: boardGameKind },
