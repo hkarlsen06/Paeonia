@@ -6,7 +6,8 @@ extension MainTabView {
         switch item.destination {
         case let .questionChat(instanceID):
             startOpeningDailyChat(instanceID: instanceID)
-        case .drawingHistory:
+        case let .drawingHistory(revisionID):
+            lookBackDrawingRevisionID = revisionID
             isLookBackDrawingHistoryPresented = true
         case let .memory(id):
             selection.wrappedValue = .memories
@@ -19,14 +20,18 @@ extension MainTabView {
 
 extension View {
     /// The drawing history as a sheet over Home, the same screen the drawing screen opens.
-    func lookBackDrawingHistory(isPresented: Binding<Bool>, dependencies: RootFeatureDependencies) -> some View {
+    func lookBackDrawingHistory(
+        isPresented: Binding<Bool>, revisionID: UUID?, dependencies: RootFeatureDependencies
+    ) -> some View {
         sheet(isPresented: isPresented) {
             if let viewModel = dependencies.widgetHistoryViewModel,
                let thumbnailLoader = dependencies.widgetHistoryThumbnailLoader {
-                WidgetDrawingHistoryView(viewModel: viewModel, thumbnailLoader: thumbnailLoader)
+                WidgetDrawingHistoryView(
+                    viewModel: viewModel, thumbnailLoader: thumbnailLoader, initialRevisionID: revisionID
+                )
                     .analyticsScreen("drawing_history")
             } else {
-                WidgetDrawingHistoryView()
+                WidgetDrawingHistoryView(initialRevisionID: revisionID)
                     .analyticsScreen("drawing_history")
             }
         }

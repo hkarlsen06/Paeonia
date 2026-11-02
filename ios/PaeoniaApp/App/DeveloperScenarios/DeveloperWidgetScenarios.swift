@@ -33,17 +33,18 @@
           ),
           thumbnailLoader: NoOpWidgetRevisionThumbnailLoader()
         )
-      case .widgetHistoryPopulated:
+      case .widgetHistoryPopulated, .widgetHistoryFocused:
         WidgetDrawingHistoryView(
           viewModel: WidgetDrawingHistoryViewModel(
-            gateway: DeveloperWidgetHistoryGateway(),
+            gateway: DeveloperWidgetHistoryGateway(focused: scenario == .widgetHistoryFocused),
             identity: WidgetSyncIdentity(
               currentUserID: DeveloperScenarioFixture.currentUserID,
               currentDisplayName: "Alex",
               partnerDisplayName: "Robin"
             )
           ),
-          thumbnailLoader: NoOpWidgetRevisionThumbnailLoader()
+          thumbnailLoader: NoOpWidgetRevisionThumbnailLoader(),
+          initialRevisionID: scenario == .widgetHistoryFocused ? DeveloperWidgetHistoryGateway.focusID : nil
         )
         .environment(\.threadChatContext, historyContext)
         .environment(\.mediaAlternativeEditingService, historyEditing)
@@ -71,6 +72,8 @@
   }
 
   private struct DeveloperWidgetHistoryGateway: WidgetCanvasGateway {
+    static let focusID = UUID(uuidString: "11111111-1111-1111-1111-111111111145") ?? UUID()
+    var focused = false
     private let canvasID = UUID(uuidString: "99999999-9999-9999-9999-999999999999") ?? UUID()
 
     func getOrCreateCanvas() throws -> WidgetCanvasReference {
@@ -107,8 +110,22 @@
     }
     func signedPayloadURL(mediaAssetID _: UUID) throws -> URL? { nil }
     func listRevisions(
-      canvasID _: UUID, limit _: Int, createdBefore: Date?, createdBeforeRevisionID _: UUID?
+      canvasID _: UUID, limit: Int, createdBefore: Date?, createdBeforeRevisionID _: UUID?
     ) throws -> [WidgetDrawingRevisionSummary] {
+      if focused {
+        var page: [WidgetDrawingRevisionSummary] = []
+        for index in 0..<65 {
+          let date = DeveloperScenarioFixture.now.addingTimeInterval(-Double(index + 1) * 86_400)
+          if let createdBefore, date >= createdBefore { continue }
+          page.append(WidgetDrawingRevisionSummary(
+            revisionID: index == 45 ? Self.focusID : UUID(),
+            authorUserID: DeveloperScenarioFixture.currentUserID,
+            payloadMediaAssetID: UUID(), bounds: nil, createdAt: date
+          ))
+          if page.count == limit { break }
+        }
+        return page
+      }
       guard createdBefore == nil else { return [] }
       return [
         revision(author: DeveloperScenarioFixture.currentUserID, age: 3_600),

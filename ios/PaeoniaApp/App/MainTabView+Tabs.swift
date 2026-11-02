@@ -227,7 +227,10 @@ extension MainTabView {
                     )
                     .analyticsScreen("widget_drawing")
                 }
-                .lookBackDrawingHistory(isPresented: $isLookBackDrawingHistoryPresented, dependencies: dependencies)
+                .lookBackDrawingHistory(
+                    isPresented: $isLookBackDrawingHistoryPresented,
+                    revisionID: lookBackDrawingRevisionID, dependencies: dependencies
+                )
                 .onChange(of: widgetDrawingPresented.wrappedValue) { _, isPresented in
                     if !isPresented, dependencies.widgetDrawingViewModel?.hasSentDrawing == true {
                         actions.sentSomethingToPartner(.drawing)

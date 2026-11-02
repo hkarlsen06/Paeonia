@@ -17,20 +17,25 @@ nonisolated enum WidgetDrawingHistoryFactory {
 struct WidgetDrawingHistoryView: View {
     @State private var viewModel: WidgetDrawingHistoryViewModel
     private let thumbnailLoader: any WidgetRevisionThumbnailLoading
+    private let initialRevisionID: UUID?
     @State private var shareable: PaeoniaShareable?
     @Environment(\.threadChatContext) private var context
     @Environment(\.mediaAlternativeEditingService) private var editingService
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
-    init(viewModel: WidgetDrawingHistoryViewModel, thumbnailLoader: any WidgetRevisionThumbnailLoading) {
+    init(
+        viewModel: WidgetDrawingHistoryViewModel, thumbnailLoader: any WidgetRevisionThumbnailLoading,
+        initialRevisionID: UUID? = nil
+    ) {
         _viewModel = State(initialValue: viewModel)
         self.thumbnailLoader = thumbnailLoader
+        self.initialRevisionID = initialRevisionID
     }
 
     /// Production composition: a live gateway shared by the timeline reads and
     /// the thumbnail loader, with the last-known nicknames for labeling.
-    init() {
+    init(initialRevisionID: UUID? = nil) {
         let gateway = WidgetDrawingHistoryFactory.makeGateway()
         let loader = WidgetRevisionThumbnailLoader(gateway: gateway)
         self.init(
@@ -39,7 +44,7 @@ struct WidgetDrawingHistoryView: View {
                 identity: WidgetSyncIdentityStore.shared.load(),
                 exporter: loader
             ),
-            thumbnailLoader: loader
+            thumbnailLoader: loader, initialRevisionID: initialRevisionID
         )
     }
 
@@ -66,7 +71,7 @@ struct WidgetDrawingHistoryView: View {
         // A sheet draws its own banners, such as the one that says a star could not be saved.
         .paeoniaTopBanner(bannerCenter)
         .task {
-            await viewModel.loadInitialIfNeeded()
+            await viewModel.loadInitialIfNeeded(focusingOn: initialRevisionID)
             for await change in LocalStoreChanges.changes(in: .pendingOperations) {
                 guard !Task.isCancelled else { return }
                 guard change.ownerUserID == nil || change.ownerUserID == context.participants.currentUserID else {
@@ -111,34 +116,47 @@ struct WidgetDrawingHistoryView: View {
     }
 
     private var timeline: some View {
-        ScrollView {
-            LazyVStack(spacing: PaeoniaSpacing.space24) {
-                ForEach(viewModel.items) { item in
-                    WidgetDrawingHistoryRow(
-                        item: item,
-                        loader: thumbnailLoader,
-                        onShare: { share(item) }
-                    )
-                    .task {
-                        await viewModel.loadMoreIfNeeded(currentItem: item)
-                    }
-                }
-
-                if viewModel.isLoadingMore {
-                    ProgressView()
-                        .tint(.paeoniaAccentPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, PaeoniaSpacing.space8)
-                }
-
-                if viewModel.loadMoreFailed {
-                    loadMoreFailedRow
+        ScrollViewReader { proxy in
+            ScrollView {
+                timelineRows
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .task {
+                await Task.yield()
+                if let initialRevisionID, !Task.isCancelled {
+                    proxy.scrollTo(initialRevisionID, anchor: .top)
                 }
             }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.vertical, PaeoniaSpacing.space20)
         }
-        .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private var timelineRows: some View {
+        LazyVStack(spacing: PaeoniaSpacing.space24) {
+            ForEach(viewModel.items) { item in
+                WidgetDrawingHistoryRow(
+                    item: item,
+                    loader: thumbnailLoader,
+                    onShare: { share(item) }
+                )
+                .id(item.id)
+                .task {
+                    await viewModel.loadMoreIfNeeded(currentItem: item)
+                }
+            }
+
+            if viewModel.isLoadingMore {
+                ProgressView()
+                    .tint(.paeoniaAccentPrimary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, PaeoniaSpacing.space8)
+            }
+
+            if viewModel.loadMoreFailed {
+                loadMoreFailedRow
+            }
+        }
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.vertical, PaeoniaSpacing.space20)
     }
 
     private func share(_ item: WidgetDrawingHistoryItem) {

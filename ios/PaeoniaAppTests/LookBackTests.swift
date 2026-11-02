@@ -55,7 +55,7 @@ struct LookBackItemTests {
         }
         """
         let item = try JSONDecoder().decode(LookBackItem.self, from: Data(json.utf8))
-        #expect(item.destination == .drawingHistory)
+        #expect(item.destination == .drawingHistory(revisionID: LookBackIDs.instance))
         #expect(item.drawing?.canvasSide == nil)
         #expect(item.drawing?.authorUserID == LookBackIDs.partner)
     }

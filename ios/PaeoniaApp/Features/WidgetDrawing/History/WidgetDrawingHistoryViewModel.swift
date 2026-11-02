@@ -59,6 +59,7 @@ final class WidgetDrawingHistoryViewModel {
     private var pendingDescriptionOperations: [UUID: UUID] = [:]
     private var descriptionsGeneration = 0
     private var didStartInitialLoad = false
+    private var initialRevisionID: UUID?
     /// Bumped by every first-page load. A load, refresh, or older-page fetch that
     /// finds a different value after an `await` was overtaken by a newer first-page
     /// load and must stop without touching state.
@@ -81,7 +82,11 @@ final class WidgetDrawingHistoryViewModel {
         self.exporter = exporter
     }
 
-    func loadInitialIfNeeded() async {
+    func loadInitialIfNeeded(focusingOn revisionID: UUID? = nil) async {
+        if initialRevisionID != revisionID {
+            initialRevisionID = revisionID
+            didStartInitialLoad = false
+        }
         guard !didStartInitialLoad else {
             return
         }
@@ -270,7 +275,11 @@ final class WidgetDrawingHistoryViewModel {
             }
             canvasID = state.canvasID
             loadedCoupleID = state.coupleID
-            try await fetchUntilProgressOrEnd(generation: generation)
+            repeat {
+                try Task.checkCancellation()
+                try await fetchUntilProgressOrEnd(generation: generation)
+                guard generation == loadGeneration else { return }
+            } while hasMore && initialRevisionID.map { id in !items.contains { $0.id == id } } == true
             if generation == loadGeneration {
                 phase = .loaded
             }

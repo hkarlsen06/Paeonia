@@ -8,6 +8,34 @@ import Testing
 /// First-page, newest-page, and older-page loads that fail or overlap in time.
 @MainActor
 struct WidgetDrawingHistoryLoadingTests {
+    @Test func focusedDrawingLoadsOlderPagesBeforeShowingHistory() async {
+        let newest = makeSummary(createdAt: date(300))
+        let middle = makeSummary(createdAt: date(200))
+        let target = makeSummary(createdAt: date(100))
+        let gateway = StubGateway(canvasState: makeState(), pages: [[newest], [middle], [target]])
+        let viewModel = makeViewModel(gateway: gateway, pageSize: 1)
+
+        await viewModel.loadInitialIfNeeded(focusingOn: target.revisionID)
+
+        #expect(viewModel.phase == .loaded)
+        #expect(viewModel.items.map(\.id) == [newest.revisionID, middle.revisionID, target.revisionID])
+        #expect(gateway.listCursors.count == 3)
+        #expect(gateway.listCursors.last?.revisionID == middle.revisionID)
+    }
+
+    @Test func missingFocusedDrawingStopsAtTheEndOfHistory() async {
+        let newest = makeSummary(createdAt: date(300))
+        let gateway = StubGateway(canvasState: makeState(), pages: [[newest], []])
+        let viewModel = makeViewModel(gateway: gateway, pageSize: 1)
+
+        await viewModel.loadInitialIfNeeded(focusingOn: UUID())
+
+        #expect(viewModel.phase == .loaded)
+        #expect(viewModel.items.map(\.id) == [newest.revisionID])
+        #expect(!viewModel.hasMore)
+        #expect(gateway.listCursors.count == 2)
+    }
+
     @Test(arguments: [Optional("A newer server description"), nil])
     func pendingOverlayDoesNotChangeTheNewerServerTextOrVersion(newerText: String?) async throws {
         let owner = UUID()

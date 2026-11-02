@@ -169,6 +169,7 @@ struct MainTabView: View {
     @State var memoriesPath: [UUID] = []
     /// The drawing history, opened from the Home look-back card.
     @State var isLookBackDrawingHistoryPresented = false
+    @State var lookBackDrawingRevisionID: UUID?
     /// What the Games tab has open. A notification about a game sets it.
     @State var gamesPath: [GamesDestination] = []
     @State var gameChatDestination: GameChatDestination?

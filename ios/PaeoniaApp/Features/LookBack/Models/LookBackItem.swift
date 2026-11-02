@@ -97,7 +97,7 @@ nonisolated struct LookBackItem: Codable, Equatable, Sendable {
     /// Where a tap on the card goes.
     nonisolated enum Destination: Equatable {
         case questionChat(instanceID: UUID)
-        case drawingHistory
+        case drawingHistory(revisionID: UUID)
         case memory(id: UUID)
     }
 
@@ -105,7 +105,7 @@ nonisolated struct LookBackItem: Codable, Equatable, Sendable {
     var destination: Destination? {
         switch kind {
         case .question: question.map { .questionChat(instanceID: $0.instanceID) }
-        case .drawing: drawing.map { _ in .drawingHistory }
+        case .drawing: drawing.map { .drawingHistory(revisionID: $0.revisionID) }
         case .memory: memory.map { .memory(id: $0.memoryID) }
         }
     }

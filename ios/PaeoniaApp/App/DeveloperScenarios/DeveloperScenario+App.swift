@@ -23,7 +23,7 @@
       countdownMissing, countdownUpcoming, countdownToday,
       locationNotSharing, locationCurrentMissing, locationLive, locationStale, homeMapOutage, homeMapOffline,
       homeMapRecovery,
-      widgetDrawing, widgetHistoryEmpty, widgetHistoryPopulated,
+      widgetDrawing, widgetHistoryEmpty, widgetHistoryPopulated, widgetHistoryFocused,
       gamesSetup, gamesPartnerPicked, gamesHubYourTurn, gamesHubWaiting, gamesHubReveal, gamesHubPartnerHere,
       gamesHubBoardGames,
       notificationPrimer, settings, settingsPartnerPays, settingsNotificationsDenied, privacySafety, reportAndLeave,
@@ -298,6 +298,10 @@
     )
     static let widgetHistoryPopulated = widget(
       "widget-history-populated", "Widget · populated history", "Drawing history with both partners' revisions"
+    )
+
+    static let widgetHistoryFocused = widget(
+      "widget-history-focused", "Widget · focused history", "Opens an older drawing beyond the first page"
     )
 
     // MARK: Games tab
