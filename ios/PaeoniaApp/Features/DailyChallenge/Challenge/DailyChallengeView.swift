@@ -60,8 +60,9 @@ struct DailyChallengeScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
                     heroCard
+                    if isDayComplete { topicsEntry }
                     rowsList(attentionRows)
-                    topicsEntry
+                    if !isDayComplete { topicsEntry }
                     activeGameChats
                     rowsList(tabContent.recent)
                     topicsShelf
@@ -359,7 +360,8 @@ extension DailyChallengeScreen {
         isDayComplete && tabContent.attention.isEmpty && topicsCard?.hook == nil
     }
 
-    /// Topic navigation follows the outstanding rows and keeps private topic details inside.
+    /// Once today's challenge is answered, topic navigation stays above outstanding rows.
+    /// Private topic details remain inside their topic.
     @ViewBuilder
     var topicsEntry: some View {
         if let topicsCard, topicsCard.isShown, !isCalm {
