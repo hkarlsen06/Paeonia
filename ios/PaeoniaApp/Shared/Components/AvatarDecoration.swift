@@ -3,7 +3,7 @@ import SwiftUI
 nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
     case none, peony, ribbon, moon, candy
     case mischief, flame, rose, woodland, cosy, silver, halloween, christmas, winter
-    case rope, paint, jelly, racing, hearts, easter, norway, wildflowers, newyear, pride
+    case paint, jelly, racing, hearts, easter, norway, wildflowers, newyear, pride
 
     /// The largest frame extends this far beyond the photo. Reserve room for nearby content.
     static let maximumOutset: CGFloat = 0.28
@@ -24,7 +24,6 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .halloween: .avatarDecorationHalloween
         case .christmas: .avatarDecorationChristmas
         case .winter: .avatarDecorationWinter
-        case .rope: .avatarDecorationRope
         case .paint: .avatarDecorationPaint
         case .jelly: .avatarDecorationJelly
         case .racing: .avatarDecorationRacing
@@ -53,7 +52,6 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .halloween: .avatarFrameHalloween
         case .christmas: .avatarFrameChristmas
         case .winter: .avatarFrameWinter
-        case .rope: .avatarFrameRope
         case .paint: .avatarFramePaint
         case .jelly: .avatarFrameJelly
         case .racing: .avatarFrameRacing
@@ -84,7 +82,6 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .halloween: 1.63189
         case .christmas: 1.66898
         case .winter: 1.62578
-        case .rope: 2.09666
         case .paint: 2.21086
         case .jelly: 2.09635
         case .racing: 2.00480
@@ -111,7 +108,6 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .halloween: 0.15
         case .christmas: 0.23
         case .winter: 0.13
-        case .rope: 0.13
         case .paint: 0.19
         case .jelly: 0.14
         case .racing: 0.12
@@ -133,7 +129,7 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .halloween, .jelly: 0.06
         case .woodland: 0.09
         case .racing: 0.12
-        case .cosy, .rope, .newyear: 0.13
+        case .cosy, .newyear: 0.13
         case .easter: 0.14
         case .paint, .hearts, .norway: 0.15
         case .pride: 0.17

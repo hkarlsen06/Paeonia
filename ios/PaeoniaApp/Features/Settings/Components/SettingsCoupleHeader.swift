@@ -3,7 +3,7 @@ import SwiftUI
 /// The couple at the top of the More tab: both photos joined by a heart, both names,
 /// and how long they have been together.
 ///
-/// Tapping your own photo opens your profile, and the pencil badge says so. Tapping
+/// Tapping your own photo opens your profile. Tapping
 /// your partner's photo opens what you call them. The rows below open the same
 /// screens, for anyone who doesn't think to tap a photo.
 struct SettingsCoupleHeader: View {
@@ -46,7 +46,7 @@ struct SettingsCoupleHeader: View {
                 tappable(
                     person(
                         name: currentName, photo: currentProfilePhotoAssetID,
-                        tint: .paeoniaPartnerOne, decoration: decorations.own, showsEditBadge: onOpenProfile != nil
+                        tint: .paeoniaPartnerOne, decoration: decorations.own
                     ),
                     action: onOpenProfile,
                     label: Text(.settingsProfileSectionTitle),
@@ -62,7 +62,7 @@ struct SettingsCoupleHeader: View {
                 tappable(
                     person(
                         name: partnerName, photo: partnerProfilePhotoAssetID,
-                        tint: .paeoniaPartnerTwo, decoration: decorations.partner, showsEditBadge: false
+                        tint: .paeoniaPartnerTwo, decoration: decorations.partner
                     ),
                     action: onOpenPartner,
                     label: Text(.settingsPartnerNicknameRowTitle(partnerName)),
@@ -101,17 +101,12 @@ struct SettingsCoupleHeader: View {
     }
 
     private func person(
-        name: String, photo: UUID?, tint: Color, decoration: AvatarDecoration, showsEditBadge: Bool
+        name: String, photo: UUID?, tint: Color, decoration: AvatarDecoration
     ) -> some View {
         VStack(spacing: PaeoniaSpacing.space8) {
             PaeoniaDecoratedAvatar(
                 mediaAssetID: photo, name: name, tint: tint, size: avatarSize, decoration: decoration
             )
-            .overlay(alignment: .bottomTrailing) {
-                if showsEditBadge {
-                    editBadge
-                }
-            }
             .padding(.vertical, decorationClearance)
             .accessibilityHidden(true)
 
@@ -123,17 +118,6 @@ struct SettingsCoupleHeader: View {
         }
         .frame(width: dynamicTypeSize.isAccessibilitySize ? nil : columnWidth)
         .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : nil)
-    }
-
-    /// Sits on the photo's edge, like the edit badge on a contact card.
-    private var editBadge: some View {
-        Image(systemName: "pencil")
-            .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(.paeoniaBackgroundPrimary)
-            .frame(width: Self.heartCircleDiameter, height: Self.heartCircleDiameter)
-            .background(Circle().fill(.paeoniaAccentPrimary))
-            .overlay(Circle().stroke(.paeoniaBackgroundPrimary, lineWidth: 2))
-            .accessibilityHidden(true)
     }
 
     /// A line from photo to photo with the heart on it. The line overflows the

@@ -12,7 +12,12 @@ struct AvatarDecorationSettingsRow: View {
                 Label {
                     Text(.avatarDecorationTitle).foregroundStyle(.paeoniaTextPrimary)
                 } icon: {
-                    Image(systemName: "person.crop.circle").foregroundStyle(.paeoniaAccentPrimary)
+                    PaeoniaDecoratedAvatar(
+                        mediaAssetID: photoAssetID, name: name, tint: .paeoniaPartnerOne,
+                        size: 28, decoration: model.decorations.own == .none ? .peony : model.decorations.own
+                    )
+                    .padding(28 * AvatarDecoration.maximumOutset)
+                    .accessibilityHidden(true)
                 }
             }
             .accessibilityIdentifier("settings.avatarDecoration")

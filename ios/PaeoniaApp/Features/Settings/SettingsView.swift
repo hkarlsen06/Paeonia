@@ -152,7 +152,7 @@ struct SettingsView: View {
         }
         .listStyle(.insetGrouped)
         .paeoniaGroupedList(showsTabBackdrop: true)
-        .navigationTitle(Text(.mainTabSettings))
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $headerDestination) { destination in
             switch destination {
@@ -246,7 +246,11 @@ extension SettingsView {
                 Text(.settingsProfileSectionTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
             } icon: {
-                Image(systemName: "person.crop.circle.fill")
+                PaeoniaProfilePhotoAvatar(
+                    mediaAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID,
+                    name: profileRowName, tint: .paeoniaPartnerOne, size: 28
+                )
+                .accessibilityHidden(true)
             }
         }
         .accessibilityIdentifier("settings.profile")
