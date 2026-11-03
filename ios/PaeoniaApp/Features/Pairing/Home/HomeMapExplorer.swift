@@ -66,6 +66,11 @@ final class HomeMapExplorer {
         map != nil && areas.values.contains { $0.contains(point) }
     }
 
+    /// One-finger drags belong to the map only above the cards.
+    func isOverOpenMap(_ point: CGPoint) -> Bool {
+        map != nil && areas["map"]?.contains(point) == true
+    }
+
     func showBoth() {
         isExploring = false
         start = nil
@@ -120,18 +125,18 @@ final class HomeMapExplorer {
 }
 
 extension EnvironmentValues {
-    /// PROTOTYPE. Home's map, for views over it that pass a drag or a pinch on to it.
+    /// Home's map, for views over it that pass a pinch or rotation on to it.
     @Entry var homeMapExplorer: HomeMapExplorer?
 }
 
 extension View {
-    /// A drag or a pinch that starts on one of the explorer's areas moves Home's map. Taps
-    /// still reach the views here.
+    /// Pinches and rotations over registered areas move Home's map. One-finger drags
+    /// move it only on the open map, leaving the cards available for scrolling.
     func homeMapGestures(_ explorer: HomeMapExplorer) -> some View {
         gesture(HomeMapGesture(explorer: explorer))
     }
 
-    /// Marks this view as lying over Home's map, so a drag or a pinch on it moves the map.
+    /// Marks this view as lying over Home's map for pinches and rotations.
     func homeMapArea(_ name: String, _ explorer: HomeMapExplorer?) -> some View {
         modifier(HomeMapArea(name: name, explorer: explorer))
     }
@@ -143,7 +148,7 @@ extension View {
     }
 }
 
-/// One finger drags the map. Two drag it by their midpoint, zoom it by their spread and
+/// One finger drags the open map. Two drag it by their midpoint, zoom it by their spread and
 /// turn it by their twist.
 private struct HomeMapGesture: UIGestureRecognizerRepresentable {
     let explorer: HomeMapExplorer
@@ -205,6 +210,7 @@ final class HomeMapPanRecognizer: UIPanGestureRecognizer {
     private(set) var firstFingers: HomeMapFingers?
     /// Whether a finger of this gesture landed on the map.
     var touchedMap = false
+    var touchedOpenMap = false
 
     /// Nil for one finger.
     var fingers: HomeMapFingers? {
@@ -239,6 +245,7 @@ final class HomeMapPanRecognizer: UIPanGestureRecognizer {
         super.reset()
         firstFingers = nil
         touchedMap = false
+        touchedOpenMap = false
     }
 }
 
@@ -263,14 +270,17 @@ final class HomeMapGestureTracker: NSObject, UIGestureRecognizerDelegate {
     }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        if explorer.isOverMap(touch.location(in: nil)) {
-            (gestureRecognizer as? HomeMapPanRecognizer)?.touchedMap = true
+        if let pan = gestureRecognizer as? HomeMapPanRecognizer {
+            let point = touch.location(in: nil)
+            pan.touchedMap = pan.touchedMap || explorer.isOverMap(point)
+            pan.touchedOpenMap = pan.touchedOpenMap || explorer.isOverOpenMap(point)
         }
         return true
     }
 
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        (gestureRecognizer as? HomeMapPanRecognizer)?.touchedMap == true
+        guard let pan = gestureRecognizer as? HomeMapPanRecognizer, pan.touchedMap else { return false }
+        return pan.numberOfTouches == 2 || pan.touchedOpenMap
     }
 
     func gestureRecognizer(

@@ -296,12 +296,15 @@ extension PairedHomeView {
                 unreadChatsCard
                 milestoneAndWidget
                     .matchedGeometryEffect(id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: usesMapHeader)
-                lookBackCard
             }
             // On the map layout today's question sits on the page, with no card.
             .environment(\.dailyPromptIsInline, true)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.bottom, PaeoniaSpacing.space16)
+        } footer: {
+            lookBackCard
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.bottom, PaeoniaSpacing.space16)
         }
         // On the whole page, so the map and the avatars move with a card that changes height.
         .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: unreadChats.isEmpty)

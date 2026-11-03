@@ -9,7 +9,7 @@ import SwiftUI
 ///
 /// One view covers both, so the stories strip keeps its place when the map comes or goes,
 /// and a story or note the person is writing stays open.
-struct HomeMapLayout<Header: View, Sheet: View>: View {
+struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     let mapState: CoupleMapState
     let partnerName: String
     let stories: StoriesViewModel?
@@ -20,6 +20,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     let onRefresh: () async -> Void
     @ViewBuilder let header: Header
     @ViewBuilder let sheet: Sheet
+    @ViewBuilder let footer: Footer
 
     let avatarSize: Double = 72
     /// The kind of notice the person said "Not now" to. It shows again once the reason
@@ -57,10 +58,12 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             let couple = couple
             let screen = HomeMapScreen(geo: geo, additionalHeaderHeight: max(topBarHeight - Self.headerHeight, 0))
             ScrollView {
-                page(couple, screen)
-                    // One gesture for the whole page, so a pinch whose fingers land on an
-                    // avatar and on the open map still zooms.
-                    .homeMapGestures(explorer)
+                VStack(spacing: 0) {
+                    page(couple, screen)
+                    footer.fixedSize(horizontal: false, vertical: true)
+                }
+                // A pinch can span the map and the cards below it.
+                .homeMapGestures(explorer)
             }
             .scrollIndicators(.hidden)
             // Offline, the avatars move from where they wait for the map to their places.
@@ -115,7 +118,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                     noMapNotice
                 }
                 sheet
-                    // A drag or a pinch on today's envelope moves the map behind it.
+                    // A pinch or rotation on today's envelope moves the map behind it.
                     .environment(\.homeMapExplorer, couple == nil ? nil : explorer)
                     // The cards keep their own height, so only the map takes up the rest of the
                     // screen. A square tile sizes itself from the room it is offered, and would
@@ -136,7 +139,6 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)
         }
     }
-
 
     // MARK: Top
 
