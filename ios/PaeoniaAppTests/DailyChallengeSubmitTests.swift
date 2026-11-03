@@ -84,6 +84,35 @@ struct DailyChallengeSubmitTests {
     }
 
     @MainActor
+    @Test func homeCardStaysAnsweredUntilTheSnapshotCarriesTheSentAnswer() async throws {
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let viewModel = DailyChallengeViewModel(
+            service: RecordingDailyChallengeService(snapshots: [makeDailySnapshot(rows: [dailyQuestionRow()])]),
+            draftStore: InMemoryDailyChallengeDraftStore(), pendingOperationStore: pendingStore
+        )
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        let question = try #require(viewModel.snapshot.todayQuestion)
+        viewModel.setDraftText("Thinking of you", for: question.id)
+        await viewModel.submitAnswer(for: question)
+        let queued = try await pendingStore.inFlightOperations(
+            ownerUserID: TestDailyChallengeIDs.currentUser, kind: .submitDailyAnswer
+        )
+
+        // The server took the answer, but no snapshot that carries it has arrived yet.
+        try await pendingStore.markSucceeded(
+            clientOperationID: try #require(queued.first).operation.id, at: Date()
+        )
+        await viewModel.refreshSendingState(keepingSent: true)
+        #expect(viewModel.isSending(question.id))
+        #expect(viewModel.homeCardState.kind == .complete)
+
+        // A snapshot without the answer means it never landed.
+        await viewModel.reload()
+        #expect(!viewModel.isSending(question.id))
+        #expect(viewModel.homeCardState.kind != .complete)
+    }
+
+    @MainActor
     @Test func submitAnswerDoesNotWaitForSyncNudge() async throws {
         let baseSnapshot = makeDailySnapshot(rows: [
             dailyQuestionRow(),

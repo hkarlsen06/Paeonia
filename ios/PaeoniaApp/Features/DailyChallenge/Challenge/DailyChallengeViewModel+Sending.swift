@@ -82,7 +82,12 @@ extension DailyChallengeViewModel {
     /// Recomputes which questions still have a queued/in-flight answer, from the
     /// persisted operations — so the "sending" state survives relaunch and clears once
     /// the send finishes.
-    func refreshSendingState() async {
+    ///
+    /// `keepingSent` is for an outbox change. An answer that left the outbox then stays
+    /// until the next snapshot says whether it landed, because the outbox marks a send
+    /// finished before the snapshot that carries it arrives. Dropping it at once would
+    /// turn today's card back into the question for that moment.
+    func refreshSendingState(keepingSent: Bool = false) async {
         guard let currentUserID else {
             sendingAnswers = [:]
             return
@@ -99,7 +104,7 @@ extension DailyChallengeViewModel {
         // local entry; the reload that follows that send refreshes this again.
         guard generation == sendingGeneration, self.currentUserID == currentUserID else { return }
 
-        sendingAnswers = Dictionary(
+        let queued = Dictionary(
             operations.compactMap { operation -> (UUID, SendingAnswer)? in
                 guard let data = operation.requestData,
                       let payload = try? JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
@@ -110,6 +115,7 @@ extension DailyChallengeViewModel {
             },
             uniquingKeysWith: { first, _ in first }
         )
+        sendingAnswers = keepingSent ? sendingAnswers.merging(queued) { _, queued in queued } : queued
     }
 
     private static func sendingAnswer(

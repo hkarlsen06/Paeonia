@@ -297,6 +297,7 @@ extension DailyChallengeViewModel {
         var returnedAny = false
         for (instanceID, draft) in draftStore.drafts(for: userID) where answerDrafts[instanceID] == nil {
             answerDrafts[instanceID] = draft
+            sendingAnswers[instanceID] = nil
             returnedAny = true
         }
         if returnedAny {

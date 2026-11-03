@@ -25,7 +25,7 @@ extension DailyChallengeViewModel {
                     self.uploadSeenPartnerAnswers()
                 case .pendingOperations:
                     self.restoreReturnedDrafts(for: userID)
-                    await self.refreshSendingState()
+                    await self.refreshSendingState(keepingSent: true)
                 default:
                     break
                 }
