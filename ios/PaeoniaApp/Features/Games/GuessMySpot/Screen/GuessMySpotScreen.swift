@@ -21,7 +21,7 @@ struct GuessMySpotScreen: View {
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        .navigationTitle(Text(.guessMySpotTitle))
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(viewModel.showsCheck)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
@@ -111,12 +111,10 @@ struct GuessMySpotScreen: View {
 
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
-        // The reveal has no live row, so the partner's presence takes the title's place.
-        ToolbarItem(placement: .principal) {
-            if isReveal {
+        // The reveal has no live row, so presence stays in the toolbar.
+        if isReveal {
+            ToolbarItem(placement: .principal) {
                 GuessMySpotToolbarPresence(partner: viewModel.partner, isHere: viewModel.partnerStatus != .away)
-            } else {
-                PaeoniaFittingTitle(title: Text(.guessMySpotTitle))
             }
         }
         if viewModel.showsCheck {

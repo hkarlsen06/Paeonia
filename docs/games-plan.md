@@ -15,6 +15,10 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-11-03.
+
+- Game toolbars omit the game name to leave room for scores and controls. Drawing instructions and partner presence remain visible.
+
 Decided on 2026-11-01.
 
 - More > Accessibility controls the optional visible tools. Extra controls and media descriptions are switches that default to off. Paeonia still shows them while the system reports an active assistive technology. Board-control buttons, native scale inputs, place picking, shape creation and description panels use these preferences. Labels, native board semantics, text scaling, contrast, motion preferences and private game-state rules remain active. Hiding an authoring field preserves its draft and validation; invalid input and failed saves retain a recovery action.

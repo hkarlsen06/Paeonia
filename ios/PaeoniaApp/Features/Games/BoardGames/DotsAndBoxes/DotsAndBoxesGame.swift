@@ -28,7 +28,7 @@ struct DotsAndBoxesScreen: View {
     let history: GameHistoryLink?
 
     var body: some View {
-        BoardGameScreen(viewModel: viewModel, title: .dotsAndBoxesName, history: history) {
+        BoardGameScreen(viewModel: viewModel, history: history) {
             DotsAndBoxesBoardView(
                 board: viewModel.board,
                 lastMove: viewModel.lastMove,

@@ -43,7 +43,6 @@ struct LudoScreen: View {
     var body: some View {
         BoardGameScreen(
             viewModel: viewModel,
-            title: .ludoName,
             hint: roll.hint?.text,
             boardBleeds: true,
             history: history

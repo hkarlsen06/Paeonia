@@ -8,17 +8,3 @@ extension View {
             .navigationBarTitleDisplayMode(.inline)
     }
 }
-
-/// A custom principal item for a screen that sometimes replaces its title with presence.
-/// Large Content Viewer keeps the full title available within the compact control bar.
-struct PaeoniaFittingTitle: View {
-    let title: Text
-
-    var body: some View {
-        title
-            .font(.headline)
-            .lineLimit(1)
-            .accessibilityAddTraits(.isHeader)
-            .accessibilityShowsLargeContentViewer { title }
-    }
-}

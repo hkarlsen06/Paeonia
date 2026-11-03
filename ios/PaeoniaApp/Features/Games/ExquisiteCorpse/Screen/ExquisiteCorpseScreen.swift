@@ -24,7 +24,8 @@ struct ExquisiteCorpseScreen: View {
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        .paeoniaFittingNavigationTitle(Text(navigationTitle))
+        .navigationTitle(navigationTitle.map { Text($0) } ?? Text(""))
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { menu }
@@ -57,8 +58,8 @@ struct ExquisiteCorpseScreen: View {
         }
     }
 
-    private var navigationTitle: LocalizedStringResource {
-        guard viewModel.phase == .drawing else { return .exquisiteCorpseName }
+    private var navigationTitle: LocalizedStringResource? {
+        guard viewModel.phase == .drawing else { return nil }
         switch viewModel.part ?? .head {
         case .head: return .exquisiteCorpseDrawHead
         case .body: return .exquisiteCorpseDrawBody

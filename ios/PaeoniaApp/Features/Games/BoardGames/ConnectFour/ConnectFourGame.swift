@@ -31,7 +31,7 @@ struct ConnectFourScreen: View {
     let history: GameHistoryLink?
 
     var body: some View {
-        BoardGameScreen(viewModel: viewModel, title: .connectFourName, history: history) {
+        BoardGameScreen(viewModel: viewModel, history: history) {
             ConnectFourBoardView(
                 board: viewModel.board,
                 lastMove: viewModel.lastMove,

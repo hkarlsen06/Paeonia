@@ -44,7 +44,6 @@ struct UltimateTicTacToeScreen: View {
     var body: some View {
         BoardGameScreen(
             viewModel: viewModel,
-            title: .ultimateTicTacToeName,
             hint: pick.asksForBoard(on: viewModel.board, canPlay: viewModel.canPlay)
                 ? .ultimateTicTacToeHintChooseBoard : nil,
             history: history,

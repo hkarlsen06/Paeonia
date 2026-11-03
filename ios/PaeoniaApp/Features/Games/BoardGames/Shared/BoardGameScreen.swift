@@ -21,7 +21,6 @@ struct BoardGameScreenAction {
 /// `play`.
 struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
     @Bindable var viewModel: BoardGameViewModel<Board>
-    let title: LocalizedStringResource
     /// A game's own line in the status row, such as Ludo's "Roll again". While
     /// there is one, it shows instead of who is here, and the "Another turn"
     /// chip stays quiet because the hint already says it.
@@ -47,7 +46,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-            .paeoniaFittingNavigationTitle(Text(title))
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
             // A board that bleeds shows its scene under the bar too.
             .toolbarBackgroundVisibility(boardBleeds ? .hidden : .automatic, for: .navigationBar)

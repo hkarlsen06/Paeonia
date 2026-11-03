@@ -38,7 +38,8 @@ struct MindMeldScreen: View {
         }
         .task(id: wordFlight?.roundID) { await landWordFlight() }
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        .paeoniaFittingNavigationTitle(Text(.mindMeldTitle))
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { toolbarItems }
