@@ -8,7 +8,7 @@ The first opener starts. The starter chooses a 3 by 3, 4 by 4 or 5 by 5 box and 
 
 A tap selects and lifts a chocolate. Bite confirms it. Safe fillings are deterministic cosmetic choices. Once per game, before biting on their turn, a person may sniff an uneaten chocolate other than their own chili. Only they learn the answer. Norwegian uses "Lukt".
 
-A burn pauses for half a second before the chili and its owner's drawn mark appear, followed by both chilis, both notes and the bite order. Shared positions get "Same one!". Reduce Motion shows the settled reveal. The loser reads the winner's note first. The winner reads the loser's note as what they would have received.
+A burn pauses for half a second before the chili and its owner's drawn mark appear, followed by both chilis, the partner's note and the bite order. Shared positions get "Same one!". Reduce Motion shows the settled reveal. Each person sees only the note their partner wrote. The loser reads the winner's note as the note that counts. The winner reads the loser's note as what they escaped. If the partner wrote no note, no note card appears. This also applies to game-chat results and developer scenarios.
 
 Either person may request a rematch. The previous nonstarter chooses the new size and starts. Keep the last unseen result through a rematch. Against each other shows lifetime wins. Together shows lifetime completed games. Hiding and each bite count toward the couple streak.
 
@@ -38,9 +38,9 @@ The hub follows Ultimate Tic-Tac-Toe in the catalog. Its illustration is an open
 
 The player header and score capsule reuse the board games' components. An absent partner has no presence subtitle. The shared portrait ring shows presence and handles the arrival pulse. Together shows completed games. The score opens the game chat, where the couple's past boxes live. The Games navigation root supplies the chat button too. Piccante has no separate history screen.
 
-The box composes five transparent illustrations in the house 3D sticker style. Heart, drizzle and hazelnut chocolates share one overhead camera, gold cup and light. A bitten piece exposes cream filling, and the burned piece exposes chili filling. A checkmark identifies your lifted chocolate, and an arrow identifies your partner's. Chilis remain visible on your own piece, and a flame identifies the burned piece. Bite numbers and both owners' marks stay on the finished board. These shapes distinguish states without color.
+The box composes five transparent illustrations in the house 3D sticker style. Heart, drizzle and hazelnut chocolates share one overhead camera, gold cup and light. A bitten piece exposes cream filling, and the burned piece exposes chili filling. An outline follows the illustration's alpha silhouette in the player's color. Lifted chocolates scale up, rise slightly and cast a soft shadow. The same treatment shows the partner's live selection. Differentiate Without Color adds a light outer outline, and Reduce Motion keeps the lift static. VoiceOver announces selection. Chilis remain visible on your own piece, and a flame identifies the burned piece. Bite numbers and both owners' marks stay on the finished board. These shapes distinguish states without color.
 
-The finished box becomes smaller to make room for the notes. The winning note leads on warm paper, with its recipient above the message and writer below it. The unused note is smaller and tinted lavender. Its heading describes the alternate outcome from the viewer's perspective. Both notes show immediately and wrap with Dynamic Type.
+The finished box becomes smaller to make room for the notes. Only the partner's note appears, with its recipient above the message and writer below it. A winning partner's note uses warm paper. A losing partner's note uses lavender paper and describes what the winner escaped. The note shows immediately and wraps with Dynamic Type.
 
 ## Private sniff selection
 
@@ -71,7 +71,7 @@ The chosen second hub candidate imports at 900 by 622 pixels, aspect 1.447. Its 
 | `piccante-sniff` | Private sniff answer and partner's used indicator |
 | `piccante-burn` | Delayed burn reveal |
 | `piccante-same-one` | Both chilis share a chocolate |
-| `piccante-result` | Finished box, bite order and notes |
+| `piccante-result` | Finished box, bite order and the partner's note |
 
 Piccante scenarios accept `-paeonia-scenario-piccante-size 3`, `4` or `5`, `-paeonia-scenario-piccante-compact YES` for a 320-point play area, `-paeonia-scenario-piccante-winner YES` for the winner's result perspective, and `-paeonia-scenario-piccante-together YES` for the shared completed-game count.
 

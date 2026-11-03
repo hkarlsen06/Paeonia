@@ -22,8 +22,8 @@ struct PiccanteResultNotes: View {
                 .font(PaeoniaTypography.title)
                 .foregroundStyle(Color.paeoniaInkGold)
             }
-            ForEach(orderedChilis.indices, id: \.self) { index in
-                let chili = orderedChilis[index]
+            ForEach(partnerChilis.indices, id: \.self) { index in
+                let chili = partnerChilis[index]
                 if let note = chili.note {
                     notePaper(note, chili: chili)
                 }
@@ -40,7 +40,7 @@ struct PiccanteResultNotes: View {
                 .font(isWinning ? PaeoniaTypography.collectionTitle : Font.system(.body, design: .serif))
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text(signature(for: chili))
+            Text(.piccanteNoteFrom(partnerName))
                 .font(PaeoniaTypography.caption)
         }
         .foregroundStyle(PiccanteNoteColors.ink)
@@ -64,19 +64,12 @@ struct PiccanteResultNotes: View {
     }
 
     private func heading(for chili: PiccanteChili) -> LocalizedStringResource {
-        if chili.userID == game.winnerUserID {
-            return chili.userID == userID ? .piccanteNoteForPartner(partnerName) : .piccanteNoteForYou
-        }
-        return chili.userID == userID ? .piccanteNoteIfYouWon : .piccanteWouldHaveGot
+        chili.userID == game.winnerUserID ? .piccanteNoteForYou : .piccanteWouldHaveGot
     }
 
-    private func signature(for chili: PiccanteChili) -> LocalizedStringResource {
-        guard chili.userID == userID else { return .piccanteNoteFrom(partnerName) }
-        return chili.userID == game.winnerUserID ? .piccanteNoteFromYou : .piccanteNoteWrittenByYou(partnerName)
-    }
-
-    private var orderedChilis: [PiccanteChili] {
-        game.chilis.sorted { $0.userID == game.winnerUserID && $1.userID != game.winnerUserID }
+    private var partnerChilis: [PiccanteChili] {
+        guard let userID else { return [] }
+        return game.chilis.filter { $0.userID != userID }
     }
 }
 

@@ -18,7 +18,7 @@
         static let piccanteSameOne = piccanteScreen(
             "piccante-same-one", "Piccante · same one", "Both chilis in the same chocolate")
         static let piccanteResult = piccanteScreen(
-            "piccante-result", "Piccante · result", "The box, bite order and both notes")
+            "piccante-result", "Piccante · result", "The box, bite order and your partner's note")
         static let piccanteChoose = piccanteScreen(
             "piccante-choose", "Piccante · choose a box", "Pick a 3 by 3, 4 by 4 or 5 by 5 box")
         private static func piccanteScreen(_ id: String, _ title: String, _ detail: String) -> DeveloperScenario {

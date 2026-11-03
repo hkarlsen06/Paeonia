@@ -32448,19 +32448,19 @@
       }
     },
     "piccante.wouldHaveGot" : {
-      "comment" : "Heading on the unused note from your partner when you won. You would have received it if you had lost.",
+      "comment" : "Heading on the losing partner's unused note, shown only to the winner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "What you would have received"
+            "value" : "What you escaped"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lappen du kunne ha fått"
+            "value" : "Dette slapp du unna"
           }
         }
       }
