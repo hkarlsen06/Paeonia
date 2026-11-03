@@ -37,19 +37,11 @@ struct GameConversationButton: View {
 
     private var button: some View {
         Button { context.openGameChat?(kind, source, result) } label: {
-            Label { Text(resolvedTitle) } icon: {
-                Image(systemName: "bubble.left.and.bubble.right")
-                    .overlay(alignment: .topTrailing) {
-                        if hasUnreadMessage {
-                            Circle().fill(.paeoniaAccentPrimary)
-                                .frame(width: 10, height: 10)
-                                .offset(x: 4, y: -4)
-                                .accessibilityHidden(true)
-                        }
-                    }
-            }
+            Label { Text(resolvedTitle) } icon: { Image(systemName: "bubble.left.and.bubble.right") }
                 .labelStyle(.iconOnly)
         }
+        // A toolbar shows only the label's symbol, so drawing on it never appears. An empty badge is a dot.
+        .badge(hasUnreadMessage ? Text(verbatim: "") : nil)
         .accessibilityLabel(
             Text(hasUnreadMessage ? .dailyChatCardUnreadTitle(context.participants.partnerName) : resolvedTitle)
         )
