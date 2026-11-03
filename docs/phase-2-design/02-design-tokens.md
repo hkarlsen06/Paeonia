@@ -74,7 +74,7 @@ Implementation rule: expose spacing as static constants, not environment values.
 | --- | ---: | --- |
 | `radius8` | 8 | small controls, chips |
 | `radius12` | 12 | fields, small cards |
-| `radius16` | 16 | default cards |
+| `radius16` | 16 | buttons, thumbnails |
 | `radius20` | 20 | sheets, banners |
 | `radius28` | 28 | hero surfaces, paywall cards |
 | `card` | 31 | every card, the same as the tab bar's corners |
