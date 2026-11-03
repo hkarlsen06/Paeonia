@@ -18,7 +18,7 @@ struct SubjectConversationCard: View {
             .accessibilityIdentifier("chat.conversation.\(conversation.id.uuidString.lowercased())")
             .overlay {
                 if conversation.isUnread {
-                    RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
+                    RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
                         .strokeBorder(.paeoniaAccentPrimary, lineWidth: PaeoniaRadius.strokeEmphasis)
                 }
             }

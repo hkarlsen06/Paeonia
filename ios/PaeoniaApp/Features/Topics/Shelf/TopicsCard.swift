@@ -11,7 +11,7 @@ struct TopicsCard: View {
     let partnerPhotoAssetID: UUID?
     let onOpen: () -> Void
 
-    private let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
+    private let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
     var body: some View {
         Button(action: onOpen) {

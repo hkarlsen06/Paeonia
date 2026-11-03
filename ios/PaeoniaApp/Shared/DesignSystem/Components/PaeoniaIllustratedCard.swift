@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum PaeoniaIllustratedCardLayout {
-    static let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
+    static let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
     /// The canvas the picture is laid out on, in pixels. It is as wide as the card and
     /// anchored at the top, so one pixel is `cardWidth / 1024` points.

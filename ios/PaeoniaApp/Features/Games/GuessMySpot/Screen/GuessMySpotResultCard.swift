@@ -61,7 +61,7 @@ struct GuessMySpotResultCard: View {
         .padding(.bottom, isCollapsed ? PaeoniaSpacing.space4 : PaeoniaSpacing.space8)
         .frame(maxWidth: .infinity)
         .background {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
+            RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
                 .fill(.paeoniaSurfaceSecondary)
                 .allowsHitTesting(false)
         }

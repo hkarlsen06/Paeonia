@@ -29,7 +29,7 @@ struct DailyQuestionCard<Header: View, Footer: View>: View {
     }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             header

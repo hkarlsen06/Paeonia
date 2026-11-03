@@ -37,7 +37,7 @@ struct PaeoniaPrimaryButtonStyle: ButtonStyle {
     private var labelColor: Color { showsEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary }
 
     func makeBody(configuration: Configuration) -> some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
         return configuration.label
             .font(PaeoniaTypography.button)
@@ -79,7 +79,7 @@ struct PaeoniaSecondaryButtonStyle: ButtonStyle {
     private var labelColor: Color { showsEnabled ? .paeoniaTextPrimary : .paeoniaTextTertiary }
 
     func makeBody(configuration: Configuration) -> some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
         return configuration.label
             .font(PaeoniaTypography.button)
@@ -182,8 +182,8 @@ struct PaeoniaDestructiveButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
             .foregroundStyle(isEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary)
             .background(backgroundColor(isPressed: configuration.isPressed))
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous))
             .scaleEffect(configuration.isPressed && isEnabled && !reduceMotion ? 0.98 : 1)
             .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: configuration.isPressed)
     }

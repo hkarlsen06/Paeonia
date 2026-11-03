@@ -79,7 +79,7 @@ struct DailyChallengeReadCard: View {
         }
         .zoomSource(question.id, in: isAnswerable ? zoomNamespace : nil)
         .overlay {
-            let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
+            let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
             if isHighlighted {
                 shape.stroke(.paeoniaAccentPrimary, lineWidth: 2)
             } else if isNew {

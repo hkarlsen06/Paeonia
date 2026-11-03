@@ -8,9 +8,10 @@ nonisolated enum PaeoniaRadius {
     static let radius24: CGFloat = 24
     static let radius28: CGFloat = 28
     static let radiusFull: CGFloat = .greatestFiniteMagnitude
-    /// Every card's corners match the tab bar's. The bar is a 62 pt capsule, 20 pt in from the
-    /// screen's sides like the cards, so a card that meets its top edge shares its outline.
-    static let card: CGFloat = 31
+    /// The corners of every card and full-width button, the same as the tab bar's. The bar is
+    /// a 62 pt capsule, 20 pt in from the screen's sides like the cards, so a card that meets
+    /// its top edge shares its outline. A 52 pt button becomes a capsule.
+    static let standard: CGFloat = 31
 
     static let strokeHairline: CGFloat = 0.5
     static let strokeDefault: CGFloat = 1
