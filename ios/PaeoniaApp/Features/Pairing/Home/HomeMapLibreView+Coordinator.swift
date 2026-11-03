@@ -107,9 +107,13 @@ extension HomeMapLibreView {
             loadTask = Task { await tiles.mapDidNotLoad() }
         }
 
-        /// A map that has not drawn within `HomeMapTileStatus.loadTimeout` counts as failed.
+        /// A map that has not drawn within `HomeMapTileStatus.loadTimeout` of active app time
+        /// counts as failed. MapLibre draws nothing while the app is inactive, as when iOS
+        /// launches it behind the lock screen, so the wait starts over once the app is active.
         func watchLoad() {
             loadTask?.cancel()
+            loadTask = nil
+            guard UIApplication.shared.applicationState == .active else { return }
             loadTask = Task { [weak self] in
                 do {
                     try await Task.sleep(for: HomeMapTileStatus.loadTimeout)
@@ -120,6 +124,29 @@ extension HomeMapLibreView {
                 self.didFail = true
                 await tiles.mapDidNotLoad()
             }
+        }
+
+        override init() {
+            super.init()
+            let center = NotificationCenter.default
+            center.addObserver(self, selector: #selector(appDidBecomeActive),
+                               name: UIApplication.didBecomeActiveNotification, object: nil)
+            center.addObserver(self, selector: #selector(appWillResignActive),
+                               name: UIApplication.willResignActiveNotification, object: nil)
+        }
+
+        /// The map is still loading and no check of OpenFreeMap has started.
+        private var isWaitingForLoad: Bool { parent != nil && !isLoaded && !didFail }
+
+        @objc private func appDidBecomeActive() {
+            guard isWaitingForLoad else { return }
+            watchLoad()
+        }
+
+        @objc private func appWillResignActive() {
+            guard isWaitingForLoad else { return }
+            loadTask?.cancel()
+            loadTask = nil
         }
 
         func stopWatchingLoad() {
