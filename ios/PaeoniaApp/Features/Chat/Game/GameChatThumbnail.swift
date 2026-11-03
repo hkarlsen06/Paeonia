@@ -55,6 +55,7 @@ struct GameChatThumbnail: View {
         case .drawAndGuess: DrawAndGuessHubArtwork()
         case .exquisiteCorpse: ExquisiteCorpseHubArtwork()
         case .mindMeld: MindMeldHubArtwork()
+        case .piccante: PiccanteHubArtwork()
         case .consensio: ConsensioHubArtwork()
         case .guessMySpot: GuessMySpotHubArtwork()
         case .storyChain: StoryChainHubArtwork()

@@ -15,6 +15,7 @@ extension GameKind {
         case .guessMySpot: PaeoniaPalette.teal
         case .dotsAndBoxes: PaeoniaPalette.orange
         case .ultimateTicTacToe: PaeoniaPalette.periwinkle
+        case .piccante: PaeoniaPalette.orange
         case .storyChain: PaeoniaPalette.pink
         case .exquisiteCorpse: PaeoniaPalette.orchid
         }

@@ -359,6 +359,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await gamesCache.clearAll()
         await storyChainCache.clearAll()
         await mindMeldCache.clearAll()
+        await PiccanteCache.shared.clearAll()
         await consensioCache.clearAll()
         await guessMySpotCache.clearAll()
         // These are owned unsent photos and drafts, not a shared-media cache.

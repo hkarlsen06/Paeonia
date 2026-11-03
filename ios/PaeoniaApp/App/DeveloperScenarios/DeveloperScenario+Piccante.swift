@@ -1,0 +1,130 @@
+#if DEBUG
+    import SwiftUI
+
+    nonisolated extension DeveloperScenario {
+        static let piccante: [DeveloperScenario] = [
+            piccanteHide, piccanteBiting, piccanteLifted, piccanteSniff,
+            piccanteBurn, piccanteSameOne, piccanteResult, piccanteChoose,
+        ]
+        static let piccanteHide = piccanteScreen(
+            "piccante-hide", "Piccante · hiding", "Hide a chili and tuck in a note")
+        static let piccanteBiting = piccanteScreen(
+            "piccante-biting", "Piccante · biting", "Your turn to lift a chocolate and bite")
+        static let piccanteLifted = piccanteScreen(
+            "piccante-partner-lifted", "Piccante · partner lifted", "Robin has lifted a chocolate")
+        static let piccanteSniff = piccanteScreen("piccante-sniff", "Piccante · sniff", "Your private sniff answer")
+        static let piccanteBurn = piccanteScreen(
+            "piccante-burn", "Piccante · burn", "A chili glows and both secrets open")
+        static let piccanteSameOne = piccanteScreen(
+            "piccante-same-one", "Piccante · same one", "Both chilis in the same chocolate")
+        static let piccanteResult = piccanteScreen(
+            "piccante-result", "Piccante · result", "The box, bite order and both notes")
+        static let piccanteChoose = piccanteScreen(
+            "piccante-choose", "Piccante · choose a box", "Pick a 3 by 3, 4 by 4 or 5 by 5 box")
+        private static func piccanteScreen(_ id: String, _ title: String, _ detail: String) -> DeveloperScenario {
+            DeveloperScenario(id, title, detail, .games) { DeveloperPiccanteScenarioView(scenario: $0) }
+        }
+    }
+
+    @MainActor enum DeveloperPiccanteFixture {
+        static func state(for scenario: DeveloperScenario) -> RemotePiccanteState {
+            let me = DeveloperGamesFixture.me
+            let partner = DeveloperGamesFixture.partner
+            let finished = [DeveloperScenario.piccanteBurn, .piccanteSameOne, .piccanteResult].contains(scenario)
+            let size = 4
+            let game = RemotePiccanteGame(
+                id: DeveloperGamesFixture.gameID, gameNumber: 1, version: finished ? 8 : 5,
+                starterUserID: me, turnUserID: finished ? nil : scenario == .piccanteLifted ? partner : me,
+                phase: scenario == .piccanteChoose
+                    ? .choosing : scenario == .piccanteHide ? .hiding : finished ? .finished : .biting,
+                size: scenario == .piccanteChoose ? nil : size, myChili: scenario == .piccanteHide ? nil : 12,
+                myNote: scenario == .piccanteHide ? nil : "You owe me a back rub.",
+                partnerHidden: scenario != .piccanteHide,
+                mySniff: scenario == .piccanteSniff ? .init(tile: 6, hasChili: false) : nil,
+                partnerSniffUsed: scenario == .piccanteSniff,
+                bites: scenario == .piccanteHide || scenario == .piccanteChoose
+                    ? []
+                    : finished
+                        ? [
+                            .init(tile: 0, userID: partner), .init(tile: 3, userID: me),
+                            .init(tile: scenario == .piccanteSameOne ? 12 : 10, userID: me),
+                        ]
+                        : [.init(tile: 0, userID: partner), .init(tile: 3, userID: me)],
+                chilis: finished
+                    ? [
+                        .init(tile: 12, userID: me, note: "You owe me a back rub."),
+                        .init(
+                            tile: scenario == .piccanteSameOne ? 12 : 10, userID: partner,
+                            note: "Gotcha. A kiss when I see you."),
+                    ] : [],
+                winnerUserID: finished ? partner : nil, loserUserID: finished ? me : nil,
+                myWins: 3, partnerWins: finished ? 5 : 4, gamesFinished: finished ? 8 : 7,
+                startedAt: DeveloperGamesFixture.now, finishedAt: finished ? DeveloperGamesFixture.now : nil)
+            return RemotePiccanteState(
+                userID: me, coupleID: DeveloperScenarioFixture.coupleID, partnerUserID: partner,
+                dataEpoch: "piccante-scenario", game: game, unseenResult: finished ? game : nil)
+        }
+        static func configure(_ dependencies: inout GamesDependencies, for scenario: DeveloperScenario) {
+            let state = state(for: scenario)
+            dependencies.piccanteCache = InMemoryPiccanteCache(state: state)
+            dependencies.piccanteGateway = DeveloperPiccanteGateway(state: state)
+        }
+    }
+
+    actor DeveloperPiccanteGateway: PiccanteGateway {
+        var state: RemotePiccanteState
+        init(state: RemotePiccanteState) { self.state = state }
+        // swiftlint:disable async_without_await
+        func loadPiccante() async throws -> RemotePiccanteState { state }
+        func ensurePiccante() async throws -> RemotePiccanteState { state }
+        func sendPiccante(_ move: PiccanteMove, operation _: SyncClientOperation) async throws -> RemotePiccanteState {
+            guard move.action == .sniff, let tile = move.tile, var game = state.game,
+                  PiccanteRules.canSniff(tile, in: game, userID: state.userID) else {
+                throw UnavailableGamesGateway.Unavailable()
+            }
+            game.mySniff = PiccanteSniff(tile: tile, hasChili: tile == 10)
+            game.version += 1
+            state.game = game
+            return state
+        }
+        func loadPiccanteResult(number _: Int) async throws -> RemotePiccanteGame {
+            guard let game = state.game else { throw UnavailableGamesGateway.Unavailable() }
+            return game
+        }
+        // swiftlint:enable async_without_await
+    }
+
+    @MainActor private struct DeveloperPiccanteScenarioView: View {
+        let scenario: DeveloperScenario
+        @State private var model: PiccanteViewModel
+        init(scenario: DeveloperScenario) {
+            self.scenario = scenario
+            var dependencies = DeveloperGamesScenarioFactory.dependencies(for: scenario)
+            DeveloperPiccanteFixture.configure(&dependencies, for: scenario)
+            let model = PiccanteViewModel(dependencies: dependencies)
+            model.configure(participants: DeveloperGamesFixture.participants)
+            _model = State(initialValue: model)
+        }
+        var body: some View {
+            NavigationStack { PiccanteScreen(viewModel: model) }
+                .onChange(of: model.partnerHere, initial: true) { _, _ in
+                    if scenario == .piccanteLifted {
+                        model.partnerHere = true
+                        model.partnerSelected = 6
+                    }
+                }
+                .task {
+                    await model.reload()
+                    if scenario == .piccanteLifted {
+                        model.partnerHere = true
+                        model.partnerSelected = 6
+                    }
+                    if scenario == .piccanteHide {
+                        model.selected = 5
+                        model.note = "A kiss when I see you."
+                    }
+                    if scenario == .piccanteBiting { model.selected = 6 }
+                }
+        }
+    }
+#endif

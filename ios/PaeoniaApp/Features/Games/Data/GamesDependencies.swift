@@ -30,6 +30,11 @@ struct GamesDependencies {
     /// The Mind Meld relay room for the couple: presence and typing only.
     var makeMindMeldLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
 
+    // Piccante
+    var piccanteGateway: any PiccanteGateway = UnavailableGamesGateway()
+    var piccanteCache: any PiccanteCaching = InMemoryPiccanteCache()
+    var makePiccanteLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
+
     // Consensio
     var consensioGateway: any ConsensioGateway = UnavailableGamesGateway()
     var consensioCache: any ConsensioCaching = InMemoryConsensioCache()
@@ -83,6 +88,9 @@ struct GamesDependencies {
             mindMeldGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
             mindMeldCache: FileMindMeldCache.shared,
             makeMindMeldLive: { GameLiveRoom.make(.mindMeld, coupleID: $0) },
+            piccanteGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
+            piccanteCache: PiccanteCache.shared,
+            makePiccanteLive: { GameLiveRoom.make(.piccante, coupleID: $0) },
             consensioGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
             consensioCache: FileConsensioCache.shared,
             makeConsensioLive: { GameLiveRoom.make(.consensio, coupleID: $0) },

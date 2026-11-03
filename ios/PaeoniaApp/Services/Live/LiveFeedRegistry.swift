@@ -28,6 +28,7 @@ nonisolated enum LiveFeedRegistry {
             DrawAndGuessLiveFeed(cache: FileGamesCache.shared),
             StoryChainLiveFeed(cache: FileStoryChainCache.shared),
             MindMeldLiveFeed(cache: FileMindMeldCache.shared),
+            PiccanteLiveFeed(cache: PiccanteCache.shared),
             ConsensioLiveFeed(cache: FileConsensioCache.shared),
             GuessMySpotLiveFeed(cache: FileGuessMySpotCache.shared),
             ExquisiteCorpseLiveFeed(cache: FileExquisiteCorpseCache.shared),

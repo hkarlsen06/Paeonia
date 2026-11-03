@@ -40,6 +40,13 @@ struct GameChatPreviewContent<Fallback: View>: View {
                 .padding(PaeoniaSpacing.space24)
                 .background(.paeoniaSurfaceSecondary)
                 .clipped()
+        case .piccante(let game):
+            PiccanteBox(
+                game: game, shownBites: game.bites.count, revealsChilis: game.phase == .finished,
+                selected: nil, partnerSelected: nil, pendingTile: nil,
+                style: { $0 == ownerUserID ? styles.one : styles.two }, select: { _ in }, showsOwnChili: false
+            )
+            .padding(PaeoniaSpacing.space16)
         case .scale(let spot, let guess):
             ConsensioScale(
                 subject: "", leftEnd: "", rightEnd: "",

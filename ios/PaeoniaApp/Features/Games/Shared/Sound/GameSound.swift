@@ -38,6 +38,8 @@ nonisolated enum GameSound: String, CaseIterable, Sendable {
     case flip = "Flip"
     /// A page turned.
     case page = "Page"
+    case piccanteBite = "PiccanteBite"
+    case piccanteBurn = "PiccanteBurn"
 
     /// Plays the sound. `volume` from 0 to 1 scales it, usually with the strength of the
     /// haptic it goes with.

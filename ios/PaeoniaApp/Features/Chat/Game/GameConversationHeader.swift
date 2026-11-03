@@ -52,6 +52,10 @@ struct GameConversationHeader: View {
             ForEach(Array(guesses.enumerated()), id: \.offset) { _, guess in
                 Text(verbatim: guess).font(PaeoniaTypography.body)
             }
+        case .piccante(let game):
+            PiccanteBox(game: game, shownBites: game.bites.count, revealsChilis: true, selected: nil,
+                partnerSelected: nil, pendingTile: nil, style: people.style, select: { _ in })
+            PiccanteResultNotes(game: game, userID: participants.currentUserID, partnerName: participants.partnerName)
         case .consensio(let round):
             consensio(round)
         case .guessMySpot(let round):

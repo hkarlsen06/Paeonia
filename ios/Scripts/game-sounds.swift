@@ -260,6 +260,19 @@ struct Recipe {
 }
 
 let recipes: [Recipe] = [
+    Recipe(name: "PiccanteBite", peak: 0.36) {
+        var mix = Mix()
+        mix.add(thock(240, decay: 0.018, bright: 0.4))
+        mix.add(Biquad.lowpass(1_800).run(crackle(0.11, perSecond: 120)), gain: 0.3)
+        return mix.samples
+    },
+    Recipe(name: "PiccanteBurn", peak: 0.38) {
+        var mix = Mix()
+        mix.add(Biquad.lowpass(1_200).run(swell(0.4)), gain: 0.35)
+        mix.add(bar(e4, decay: 0.24), at: 0.08, gain: 0.65)
+        mix.add(bar(a3, decay: 0.3), at: 0.18, gain: 0.5)
+        return mix.samples
+    },
     // Shared by every game.
     Recipe(name: "Tap", variants: 4, peak: 0.42) {
         thock(215 * random.jitter(0.06), decay: 0.022)

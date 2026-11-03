@@ -9,6 +9,7 @@ nonisolated enum GameChatPreview: Equatable, Sendable {
     case words(String, String)
     case story(String)
     case scale(spot: Int, guess: Int)
+    case piccante(RemotePiccanteGame)
 
     /// The side of the square a preview is drawn in (`GameChatPreviewContent`), in points.
     static let side: CGFloat = 240
@@ -44,6 +45,10 @@ struct GameChatPreviewLoader {
             return await loadWords(userID: userID)
         case .storyChain:
             return await loadStory(userID: userID)
+        case .piccante:
+            let document = await dependencies.piccanteCache.document(ownerUserID: userID)
+            guard let game = document.state?.game else { return document.lastFinished.map(GameChatPreview.piccante) }
+            return .piccante(game.bites.isEmpty ? document.lastFinished ?? game : game)
         case .consensio:
             return await loadScale(userID: userID)
         }

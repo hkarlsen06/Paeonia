@@ -19,6 +19,7 @@ struct GameTutorial {
         case .ultimateTicTacToe: pages = Self.ultimateTicTacToePages(partnerName: partnerName)
         case .dotsAndBoxes: pages = Self.dotsAndBoxesPages(partnerName: partnerName)
         case .mindMeld: pages = Self.mindMeldPages(partnerName: partnerName)
+        case .piccante: pages = Self.piccantePages
         case .consensio: pages = Self.consensioPages(partnerName: partnerName)
         case .guessMySpot: pages = Self.guessMySpotPages(partnerName: partnerName)
         case .drawAndGuess, .exquisiteCorpse, .storyChain, .connectFour, .ludo: return nil
@@ -83,6 +84,14 @@ struct GameTutorial {
                 title: .gamesTutorialMindMeldMatchTitle,
                 message: .gamesTutorialMindMeldMatchMessage
             ),
+        ]
+    }
+
+    private static var piccantePages: [Page] {
+        [
+            Page(image: .gameTutorialPiccanteHide, title: .piccanteTutorialHideTitle, message: .piccanteTutorialHideMessage),
+            Page(image: .gameTutorialPiccanteBite, title: .piccanteTutorialBiteTitle, message: .piccanteTutorialBiteMessage),
+            Page(image: .gameTutorialPiccanteSniff, title: .piccanteTutorialSniffTitle, message: .piccanteTutorialSniffMessage),
         ]
     }
 

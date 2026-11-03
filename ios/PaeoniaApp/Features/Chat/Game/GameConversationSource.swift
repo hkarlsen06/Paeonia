@@ -14,6 +14,7 @@ nonisolated enum GameConversationSource: Hashable, Sendable, Codable, Identifiab
     case dotsAndBoxes(coupleID: UUID, number: Int)
     case ultimateTicTacToe(coupleID: UUID, number: Int)
     case ludo(coupleID: UUID, number: Int)
+    case piccante(coupleID: UUID, number: Int)
 
     var kind: GameKind {
         switch self {
@@ -26,6 +27,7 @@ nonisolated enum GameConversationSource: Hashable, Sendable, Codable, Identifiab
         case .connectFour: .connectFour
         case .dotsAndBoxes: .dotsAndBoxes
         case .ultimateTicTacToe: .ultimateTicTacToe
+        case .piccante: .piccante
         case .ludo: .ludo
         }
     }
@@ -36,7 +38,7 @@ nonisolated enum GameConversationSource: Hashable, Sendable, Codable, Identifiab
             .storyChain(let id), .exquisiteCorpse(let id):
             id
         case .connectFour(let coupleID, let number), .dotsAndBoxes(let coupleID, let number),
-            .ultimateTicTacToe(let coupleID, let number), .ludo(let coupleID, let number):
+            .ultimateTicTacToe(let coupleID, let number), .ludo(let coupleID, let number), .piccante(let coupleID, let number):
             Self.boardID(coupleID: coupleID, kind: kind, number: number)
         }
     }
@@ -46,6 +48,7 @@ nonisolated enum GameConversationSource: Hashable, Sendable, Codable, Identifiab
         case .connectFour: .connectFour(coupleID: coupleID, number: number)
         case .dotsAndBoxes: .dotsAndBoxes(coupleID: coupleID, number: number)
         case .ultimateTicTacToe: .ultimateTicTacToe(coupleID: coupleID, number: number)
+        case .piccante: .piccante(coupleID: coupleID, number: number)
         case .ludo: .ludo(coupleID: coupleID, number: number)
         default: nil
         }
@@ -77,7 +80,7 @@ nonisolated enum GameConversationSource: Hashable, Sendable, Codable, Identifiab
         case .guessMySpot: self = .guessMySpot(try container.decode(UUID.self, forKey: .id))
         case .storyChain: self = .storyChain(try container.decode(UUID.self, forKey: .id))
         case .exquisiteCorpse: self = .exquisiteCorpse(try container.decode(UUID.self, forKey: .id))
-        case .connectFour, .dotsAndBoxes, .ultimateTicTacToe, .ludo:
+        case .connectFour, .dotsAndBoxes, .ultimateTicTacToe, .ludo, .piccante:
             let coupleID = try container.decode(UUID.self, forKey: .coupleID)
             let number = try container.decode(Int.self, forKey: .gameNumber)
             guard number > 0, let source = Self.board(kind: kind, coupleID: coupleID, number: number) else {
@@ -95,7 +98,7 @@ nonisolated enum GameConversationSource: Hashable, Sendable, Codable, Identifiab
         case .drawAndGuess, .mindMeld, .consensio, .guessMySpot, .storyChain, .exquisiteCorpse:
             try container.encode(id, forKey: .id)
         case .connectFour(let coupleID, let number), .dotsAndBoxes(let coupleID, let number),
-            .ultimateTicTacToe(let coupleID, let number), .ludo(let coupleID, let number):
+            .ultimateTicTacToe(let coupleID, let number), .ludo(let coupleID, let number), .piccante(let coupleID, let number):
             try container.encode(coupleID, forKey: .coupleID)
             try container.encode(number, forKey: .gameNumber)
         }

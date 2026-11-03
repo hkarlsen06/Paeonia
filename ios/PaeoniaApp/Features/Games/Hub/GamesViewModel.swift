@@ -85,6 +85,7 @@ final class GamesViewModel {
     let drawAndGuess: DrawAndGuessHubModel
     let storyChain: StoryChainHubModel
     let mindMeld: MindMeldHubModel
+    let piccante: PiccanteHubModel
     let consensio: ConsensioHubModel
     let guessMySpot: GuessMySpotHubModel
     let exquisiteCorpse: ExquisiteCorpseHubModel
@@ -96,7 +97,7 @@ final class GamesViewModel {
     /// The built games, in `GameKind` order. A kind that is not here shows nowhere.
     var games: [any GameHubModel] {
         [
-            ludo, drawAndGuess, connectFour, mindMeld, consensio, guessMySpot, dotsAndBoxes, ultimateTicTacToe,
+            ludo, drawAndGuess, connectFour, mindMeld, consensio, guessMySpot, dotsAndBoxes, ultimateTicTacToe, piccante,
             storyChain, exquisiteCorpse,
         ]
     }
@@ -123,6 +124,7 @@ final class GamesViewModel {
         self.drawAndGuess = DrawAndGuessHubModel(dependencies: dependencies, game: drawAndGuess)
         storyChain = StoryChainHubModel(dependencies: dependencies)
         mindMeld = MindMeldHubModel(dependencies: dependencies)
+        piccante = PiccanteHubModel(dependencies: dependencies)
         consensio = ConsensioHubModel(dependencies: dependencies)
         guessMySpot = GuessMySpotHubModel(dependencies: dependencies)
         exquisiteCorpse = ExquisiteCorpseHubModel(dependencies: dependencies)

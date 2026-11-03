@@ -6,6 +6,7 @@ import Foundation
 nonisolated enum GamesNotice: Equatable, Sendable {
     case couldNotSaveSettings(PaeoniaFailure)
     case couldNotStartGame(PaeoniaFailure)
+    case piccanteSniffFailed(PaeoniaFailure)
     /// The picked word was no longer on offer, so new choices are shown.
     case wordRejected
     /// The same, and the drawing made for that word waits on the canvas of the next round.
@@ -44,6 +45,7 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         switch self {
         case .couldNotSaveSettings: .gamesNoticeSettingsFailedTitle
         case .couldNotStartGame: .gamesNoticeStartFailedTitle
+        case .piccanteSniffFailed: .piccanteSniffFailedTitle
         case .wordRejected, .wordRejectedDrawingKept: .gamesNoticeWordRejectedTitle
         case .drawingRejected: .gamesNoticeDrawingRejectedTitle
         case .drawingUnavailable: .gamesNoticeDrawingUnavailableTitle
@@ -62,10 +64,11 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         switch self {
         case .couldNotSaveSettings(.offline): .gamesNoticeSettingsFailedMessage
         case .couldNotStartGame(.offline): .gamesNoticeStartFailedMessage
+        case .piccanteSniffFailed(.offline): .piccanteSniffFailedOffline
         case .couldNotSendInvite(.offline): .gamesNoticeInviteFailedMessage
         case .couldNotHideGame(.offline): .gamesNoticeHideFailedMessage
         case .couldNotSaveSettings(.other), .couldNotStartGame(.other), .couldNotSendInvite(.other),
-             .couldNotHideGame(.other):
+             .couldNotHideGame(.other), .piccanteSniffFailed(.other):
             .commonActionFailedMessage
         case .wordRejected: .gamesNoticeWordRejectedMessage
         case .wordRejectedDrawingKept: .gamesNoticeWordRejectedKeptDrawingMessage

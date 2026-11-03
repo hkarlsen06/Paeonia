@@ -223,6 +223,7 @@
         boardGamesCache: DeveloperBoardGamesFixture.cache(for: scenario),
         memoryPhotos: DeveloperBoardPhotoProvider()
       )
+      DeveloperPiccanteFixture.configure(&dependencies, for: scenario)
       ExquisiteCorpseDeveloperScenarioFactory.configure(&dependencies, for: scenario)
       DeveloperGamesHubQuiet.configure(&dependencies, for: scenario)
       return DeveloperGuessMySpotScenarioFactory.configured(dependencies, for: scenario)

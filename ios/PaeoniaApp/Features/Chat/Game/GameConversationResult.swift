@@ -5,6 +5,7 @@ nonisolated enum GameConversationResult: Equatable, Sendable, Codable, Hashable 
     case mindMeld(RemoteMindMeldHistoryGame)
     case drawAndGuess(RemoteDrawAndGuessHistoryRound, guesses: [String])
     case consensio(RemoteConsensioRound)
+    case piccante(RemotePiccanteGame)
     case guessMySpot(RemoteGuessMySpotRound)
     case storyChain(RemoteStoryChainStory)
     case exquisiteCorpse(RemoteExquisiteCorpseFigure)
@@ -14,6 +15,7 @@ nonisolated enum GameConversationResult: Equatable, Sendable, Codable, Hashable 
         switch self {
         case .mindMeld(let game): game.endedAt ?? game.createdAt
         case .drawAndGuess(let round, _): round.date
+        case .piccante(let game): game.finishedAt ?? game.startedAt
         case .consensio(let round): round.guessedAt ?? round.placedAt
         case .guessMySpot(let round): round.guessedAt ?? round.sentAt
         case .storyChain(let story): story.finishedAt ?? story.createdAt
@@ -40,6 +42,7 @@ nonisolated enum GameConversationResult: Equatable, Sendable, Codable, Hashable 
                 try container.decode(RemoteDrawAndGuessHistoryRound.self, forKey: .result),
                 guesses: try container.decode([String].self, forKey: .guesses)
             )
+        case .piccante: self = .piccante(try container.decode(RemotePiccanteGame.self, forKey: .result))
         case .consensio: self = .consensio(try container.decode(RemoteConsensioRound.self, forKey: .result))
         case .guessMySpot: self = .guessMySpot(try container.decode(RemoteGuessMySpotRound.self, forKey: .result))
         case .storyChain: self = .storyChain(try container.decode(RemoteStoryChainStory.self, forKey: .result))
@@ -60,6 +63,9 @@ nonisolated enum GameConversationResult: Equatable, Sendable, Codable, Hashable 
             try container.encode(GameKind.drawAndGuess, forKey: .kind)
             try container.encode(round, forKey: .result)
             try container.encode(guesses, forKey: .guesses)
+        case .piccante(let game):
+            try container.encode(GameKind.piccante, forKey: .kind)
+            try container.encode(game, forKey: .result)
         case .consensio(let round):
             try container.encode(GameKind.consensio, forKey: .kind)
             try container.encode(round, forKey: .result)
