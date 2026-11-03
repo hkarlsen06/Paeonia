@@ -1,3 +1,4 @@
+import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
 import { badgeCountsForUser, queueBadgeUpdate } from "./lib/badges";
@@ -8,7 +9,8 @@ import { badgeCountsForUser, queueBadgeUpdate } from "./lib/badges";
 
 /** What waits for the caller, by tab, and the icon number. All zero without an entitled couple. */
 export const get_badges = query({
-  args: {},
+  // A fresh key renews the clock-dependent day and story-expiry window.
+  args: { p_refresh_key: v.optional(v.string()) },
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
     return await badgeCountsForUser(ctx, userId);

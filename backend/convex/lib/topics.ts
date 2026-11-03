@@ -202,14 +202,21 @@ export async function hasTopicWaiting(ctx: ReaderCtx, coupleId: string, userId: 
   return (await topicsWaitingCount(ctx, coupleId, userId)) > 0;
 }
 
-/** How many topic questions wait for `userId`: the Topics cards' "for you" counts added up. */
-export async function topicsWaitingCount(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+/** The topic question identities that wait for the viewer, including private topics. */
+export async function topicsWaitingQuestionIds(ctx: ReaderCtx, coupleId: string, userId: string): Promise<Set<string>> {
   const skipped = await skippedQuestionIds(ctx, coupleId);
-  let count = 0;
+  const waiting = new Set<string>();
   for (const topic of await activeTopics(ctx)) {
-    count += topicSummary(topic, skipped, await topicStates(ctx, topic, coupleId, userId, skipped)).for_you_count;
+    for (const [questionId, { own, partner, seen }] of await topicStates(ctx, topic, coupleId, userId, skipped)) {
+      if (partner !== null && (own === null || !seen)) waiting.add(questionId);
+    }
   }
-  return count;
+  return waiting;
+}
+
+/** How many topic questions wait for the viewer. */
+export async function topicsWaitingCount(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+  return (await topicsWaitingQuestionIds(ctx, coupleId, userId)).size;
 }
 
 /**

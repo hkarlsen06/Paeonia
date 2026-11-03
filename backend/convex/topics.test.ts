@@ -121,6 +121,20 @@ async function setup() {
 }
 
 describe("overview", () => {
+  test("counts a topic question once when its partner answer and chat are both unopened", async () => {
+    const { t, couple, a, b } = await setup();
+    const topic = await seedTopic(t, "travel", { count: 1 });
+    const instanceId = newUuid();
+    await answer(a, topic.questionIds[0], "My answer", instanceId);
+    await answer(b, topic.questionIds[0], "Their answer", instanceId);
+    await b.as.mutation(api.threads.create_daily_question_thread_with_message, {
+      ...op(), p_couple_id: couple.coupleId, p_question_id: topic.questionIds[0], p_body: "A reply",
+    });
+    expect(await a.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1 });
+    await a.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: instanceId });
+    expect(await a.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1 });
+  });
+
   test("lists topics in shelf order with the couple's counts", async () => {
     const { t, a, b } = await setup();
     const later = await seedTopic(t, "later", { sortOrder: 2, count: 2 });

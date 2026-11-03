@@ -813,6 +813,7 @@ export const get_conversation_threads = query({
         last_message_body: visible ? orNull(last.body) : null,
         last_message_media_type: orNull(lastMediaAsset?.media_type),
         viewer_read_through_at: orNull(viewerRead?.last_read_message_created_at),
+        viewer_read_through_message_id: orNull(viewerRead?.last_read_message_id),
         topic_key: orNull(topic?.key),
         private_topic: topic?.private ?? false,
       });

@@ -7,12 +7,11 @@ import type { ReaderCtx, WriterCtx } from "./db";
 import { gamesWaitingFor } from "./gameRegistry";
 import { insertNotificationOutbox, listActiveUserDevices, preferenceAllows } from "./notifications";
 import { addMs, nowIso } from "./time";
-import { topicsWaitingCount } from "./topics";
+import { topicsWaitingQuestionIds } from "./topics";
 
-// The app icon badge: how many things wait for this person in their couple. Only things that
-// wait for them count, one per item: an unread chat, a partner's answer they have not opened, a
-// game that waits on them, and the partner's story they have not seen. Reminders, streaks and the
-// trial notice never count. A kind the person switched off in Notifications does not count either.
+// The app icon counts outstanding conversations, games and unseen partner stories.
+// A question with both an unopened answer and unread messages counts once.
+// Reminders, streaks and the trial notice never count. Notification preferences filter the icon.
 // The server sends the number as `aps.badge`: in every alert, and in a badge-only push
 // (`queueBadgeUpdate`) when something was read on another phone.
 //
@@ -29,7 +28,7 @@ const BADGE_UPDATE_LOOKBACK_MS = 10 * 60 * 1000;
 
 /** What waits for one person, by the tab that shows it, and the number on the app icon. */
 export type BadgeCounts = {
-  /** Unread chats (questions, memories and stories), today's answers to open, and Topics questions that wait. */
+  /** Distinct chats and question conversations with an unread message or an outstanding answer. */
   questions: number;
   /** Games that wait on this person, and open invites. */
   games: number;
@@ -46,7 +45,10 @@ export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: st
   const coupleId = await getEntitledCoupleIdForUser(ctx, userId);
   if (coupleId === null) return NO_BADGES;
   const chats = await unreadChats(ctx, coupleId, userId);
-  const answers = (await answersWaiting(ctx, coupleId, userId, now)) + (await topicsWaitingCount(ctx, coupleId, userId));
+  const answers = await answersWaiting(ctx, coupleId, userId, now);
+  for (const questionId of await topicsWaitingQuestionIds(ctx, coupleId, userId)) {
+    answers.add(`question:${questionId}`);
+  }
   const stories = await unseenStories(ctx, coupleId, userId, now);
   const games = await gamesWaitingFor(ctx, coupleId, userId);
   const preference = await ctx.db
@@ -56,15 +58,17 @@ export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: st
   // Every counted kind has a switch, and a missing preference row blocks those kinds.
   const allows = (kind: Parameters<typeof preferenceAllows>[0]) =>
     preference !== null && preferenceAllows(kind, "alert", preference);
-  const icon =
-    // Every chat push, whatever the chat is about, follows the Messages switch.
-    (allows("thread_message_sent") ? chats : 0) +
-    (allows("partner_answered") ? answers : 0) +
+  // An unseen answer and an unread message can point to the same question card.
+  const iconConversations = new Set([
+    ...(allows("thread_message_sent") ? chats : []),
+    ...(allows("partner_answered") ? answers : []),
+  ]);
+  const icon = iconConversations.size +
     (allows("story_posted") ? stories : 0) +
     (allows("game_turn_ready") ? games : 0);
   return {
     // The Questions tab lists every chat: a question's, a memory's and a story's.
-    questions: chats + answers,
+    questions: new Set([...chats, ...answers]).size,
     games,
     us: stories,
     icon,
@@ -81,12 +85,12 @@ export async function badgeCountForUser(ctx: ReaderCtx, userId: string, now: str
  * phone, whatever they are about. A question chat counts only while it can be opened, like
  * `get_conversation_threads`.
  */
-async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Promise<Set<string>> {
   const threads = await ctx.db
     .query("conversation_threads")
     .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", coupleId))
     .collect();
-  let count = 0;
+  const waiting = new Set<string>();
   for (const thread of threads) {
     if (thread.deleted_at !== undefined || thread.moderation_status !== "visible") continue;
     const last = await ctx.db
@@ -108,11 +112,13 @@ async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Pr
         .query("daily_question_threads")
         .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
         .unique();
-      if (daily && !(await loadQuestionRounds(ctx, coupleId, daily.question_id)).some(isSharedRound)) continue;
+      if (!daily || !(await loadQuestionRounds(ctx, coupleId, daily.question_id)).some(isSharedRound)) continue;
+      waiting.add(`question:${daily.question_id}`);
+    } else {
+      waiting.add(`thread:${thread.id}`);
     }
-    count += 1;
   }
-  return count;
+  return waiting;
 }
 
 /**
@@ -120,10 +126,10 @@ async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Pr
  * see theirs, or one whose reveal is ready. Only the couple day running now, so an old question
  * never keeps the badge up.
  */
-async function answersWaiting(ctx: ReaderCtx, coupleId: string, userId: string, now: string): Promise<number> {
+async function answersWaiting(ctx: ReaderCtx, coupleId: string, userId: string, now: string): Promise<Set<string>> {
+  const waiting = new Set<string>();
   const day = await findCoupleDayAt(ctx, coupleId, now);
-  if (!day) return 0;
-  let count = 0;
+  if (!day) return waiting;
   for (const instance of await instancesOfDay(ctx, day.id)) {
     if (!isLive(instance)) continue;
     const answers = await visibleAnswersOf(ctx, instance.id);
@@ -132,9 +138,9 @@ async function answersWaiting(ctx: ReaderCtx, coupleId: string, userId: string, 
       .query("daily_answer_seen_states")
       .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id).eq("user_id", userId))
       .unique();
-    if (!seen) count += 1;
+    if (!seen) waiting.add(`question:${instance.question_id}`);
   }
-  return count;
+  return waiting;
 }
 
 /** The partner's stories still on the Us tab that this person has not opened. */

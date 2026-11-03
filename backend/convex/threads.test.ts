@@ -883,6 +883,25 @@ describe("delete_thread_message", () => {
 });
 
 describe("reads", () => {
+  test("conversation read cursors distinguish messages with the same timestamp", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    const [first] = await memoryThread(couple.second, memoryId, "One");
+    const [second] = await send(couple.second, first.thread_id, { p_body: "Two" });
+    const [lower, higher] = [first.message_id, second.message_id].sort();
+    await couple.first.as.mutation(api.chatPresence.mark_thread_read, {
+      p_thread_id: first.thread_id, p_message_id: lower,
+    });
+    const [summary] = await couple.first.as.query(api.threads.get_conversation_threads, {});
+    expect(summary).toMatchObject({
+      last_message_id: higher,
+      viewer_read_through_message_id: lower,
+      last_message_at: summary.viewer_read_through_at,
+    });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1 });
+  });
+
   test("get_conversation_threads lists threads with their last message, empty threads first", async () => {
     const t = newTest();
     const couple = await createCouple(t);
@@ -936,6 +955,7 @@ describe("reads", () => {
       last_message_body: "latest",
       last_message_media_type: null,
       viewer_read_through_at: null,
+      viewer_read_through_message_id: null,
     });
     expect(rows[2]).toMatchObject({ kind: "daily_question", daily_question_id: questionId, memory_id: null, last_message_body: "daily hello" });
     expect(rows[0]).toMatchObject({ last_message_id: null, last_message_at: null, last_message_body: null });

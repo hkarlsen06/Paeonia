@@ -99,6 +99,14 @@ describe("start_daily_challenge_snapshot", () => {
     ).rejects.toThrow(/23505.*client operation replay hash mismatch/);
   });
 
+  test("reports the shared anchor zone before the first couple day exists", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "America/Los_Angeles"] });
+    const [snapshot] = await couple.first.as.query(api.daily.get_today_daily_challenge_snapshot, {});
+    expect(snapshot.couple_day_id).toBeNull();
+    expect(snapshot.anchor_time_zone_id).toBe("America/Los_Angeles");
+  });
+
   test("returns the snapshot shape the app decodes", async () => {
     const { a } = await readyCouple();
     const [snapshot] = await a.as.query(api.daily.get_today_daily_challenge_snapshot, {});
@@ -774,6 +782,7 @@ describe("get_daily_challenge_snapshot", () => {
     expect(watched).toMatchObject({
       couple_day_id: dayId,
       local_date: "2026-10-10",
+      anchor_time_zone_id: "Europe/Oslo",
       starts_at: "2026-10-09T22:00:00.000Z",
       ends_at: "2026-10-10T22:00:00.000Z",
     });

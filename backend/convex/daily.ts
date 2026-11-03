@@ -4,7 +4,7 @@ import { internalMutation, mutation, query, type MutationCtx } from "./_generate
 import { canAccessCoupleContent, getCurrentEntitledCoupleId } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { runClientOperation } from "./lib/clientOperations";
-import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./lib/coupleDays";
+import { findCoupleDayAt, getOrCreateCoupleDayAt, resolveCoupleDayAnchor } from "./lib/coupleDays";
 import { getByUuid, type ReaderCtx } from "./lib/db";
 import {
   getDailyAnswerDetails,
@@ -183,6 +183,7 @@ async function snapshotRow(
 ) {
   const now = nowIso();
   const day = source.kind === "day" ? source.day : await findCoupleDayAt(ctx, coupleId, now);
+  const anchorTimeZoneId = day?.anchor_time_zone_id ?? (await resolveCoupleDayAnchor(ctx, coupleId)).anchor_time_zone_id;
   const questions =
     source.kind === "day"
       ? await getDailyQuestionsForCoupleDay(ctx, userId, source.day)
@@ -219,6 +220,7 @@ async function snapshotRow(
       answer_details: answerDetails,
       streak: { ...streak, ...participation },
       generated_at: generatedAt,
+      anchor_time_zone_id: anchorTimeZoneId,
       couple_day_id: day?.id ?? null,
       local_date: day?.local_date ?? null,
       starts_at: day?.starts_at ?? null,

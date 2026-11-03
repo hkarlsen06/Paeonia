@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
+import { seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
 import { op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple } from "./test.setup";
@@ -46,13 +47,67 @@ async function commentOnMemory(couple: TestCouple): Promise<{ threadId: string; 
 describe("get_badges", () => {
   test("refuses a caller who is not signed in", async () => {
     const t = newTest();
-    await expect(t.query(api.badges.get_badges, {})).rejects.toThrow();
+    await expect(t.query(api.badges.get_badges, { p_refresh_key: "renewed" })).rejects.toThrow();
   });
 
   test("is zero for someone without a couple", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
     expect(await user.as.query(api.badges.get_badges, {})).toEqual({ questions: 0, games: 0, us: 0, icon: 0 });
+  });
+
+  test.each([
+    { messages: true, answers: true, icon: 1 },
+    { messages: false, answers: true, icon: 1 },
+    { messages: true, answers: false, icon: 1 },
+    { messages: false, answers: false, icon: 0 },
+  ])("counts one daily conversation with both an unseen answer and a message, switches $messages/$answers", async ({ messages, answers, icon }) => {
+    const t = newTest();
+    await seedCatalog(t, textQuestions(3));
+    const couple = await createCouple(t);
+    const [snapshot] = await couple.first.as.mutation(api.daily.start_daily_challenge_snapshot, op());
+    const question = snapshot.questions[0];
+    for (const user of [couple.first, couple.second]) {
+      await user.as.mutation(api.daily.submit_daily_answer, {
+        ...op(), p_instance_id: question.instance_id, p_payload: { text: "An answer" },
+      });
+    }
+    const [message] = await couple.second.as.mutation(api.threads.create_daily_question_thread_with_message, {
+      ...op(), p_couple_id: couple.coupleId, p_question_id: question.question_id, p_body: "A reply",
+    });
+    await couple.first.as.mutation(api.identity.set_notification_preference, {
+      p_column: "messages_enabled", p_enabled: messages,
+    });
+    await couple.first.as.mutation(api.identity.set_notification_preference, {
+      p_column: "partner_answered_enabled", p_enabled: answers,
+    });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1, icon });
+    await couple.first.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: question.instance_id });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1, icon: messages ? 1 : 0 });
+    await couple.first.as.mutation(api.chatPresence.mark_thread_read, {
+      p_thread_id: message.thread_id, p_message_id: message.message_id,
+    });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0, icon: 0 });
+  });
+
+  test("old unseen daily answers leave the badge but unread messages in their chat still count", async () => {
+    const t = newTest();
+    await seedCatalog(t, textQuestions(3));
+    const couple = await createCouple(t);
+    const [snapshot] = await couple.first.as.mutation(api.daily.start_daily_challenge_snapshot, op());
+    const question = snapshot.questions[0];
+    for (const user of [couple.first, couple.second]) {
+      await user.as.mutation(api.daily.submit_daily_answer, {
+        ...op(), p_instance_id: question.instance_id, p_payload: { text: "An answer" },
+      });
+    }
+    vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
+    expect(await couple.first.as.query(api.badges.get_badges, { p_refresh_key: "next-day" }))
+      .toMatchObject({ questions: 0 });
+    await couple.second.as.mutation(api.threads.create_daily_question_thread_with_message, {
+      ...op(), p_couple_id: couple.coupleId, p_question_id: question.question_id, p_body: "A later reply",
+    });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1 });
   });
 
   test("counts the partner's unseen story for the partner only, until it is opened", async () => {
