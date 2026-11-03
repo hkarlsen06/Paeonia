@@ -54,7 +54,14 @@ struct GameConversationHeader: View {
             }
         case .piccante(let game):
             PiccanteBox(game: game, shownBites: game.bites.count, revealsChilis: true, selected: nil,
-                partnerSelected: nil, pendingTile: nil, style: people.style, select: { _ in })
+                partnerSelected: nil, pendingTile: nil, player: { owner in
+                    BoardGamePlayerInfo(
+                        name: owner == participants.currentUserID
+                            ? participants.currentDisplayName ?? people.name(for: owner) : participants.partnerName,
+                        photoAssetID: owner == participants.currentUserID
+                            ? participants.currentProfilePhotoAssetID : participants.partnerProfilePhotoAssetID,
+                        style: people.style(for: owner))
+                }, select: { _ in })
             PiccanteResultNotes(game: game, userID: participants.currentUserID, partnerName: participants.partnerName)
         case .consensio(let round):
             consensio(round)

@@ -91,17 +91,6 @@ extension PiccanteScreen {
         } else {
             box(game)
                 .frame(maxWidth: game.phase == .finished && viewModel.revealSettled ? 300 : 480)
-            if let bite = game.bites.prefix(viewModel.shownBites).last,
-                !(game.phase == .finished && bite.tile == game.bites.last?.tile)
-            {
-                Text(
-                    .piccanteLastBite(
-                        String(
-                            localized: PiccanteRules.flavor(
-                                gameID: game.id, number: game.gameNumber, tile: bite.tile)))
-                )
-                .font(PaeoniaTypography.caption).foregroundStyle(.paeoniaTextSecondary)
-            }
             controls(game)
         }
     }
@@ -120,7 +109,7 @@ extension PiccanteScreen {
     }
 
     private var players: some View {
-        BoardGamePlayersRow(
+        PiccantePlayersRow(
             me: viewModel.meInfo, partner: viewModel.partnerInfo, turn: viewModel.turnLabel,
             partnerName: viewModel.partnerName, partnerIsHere: viewModel.partnerHere)
     }
@@ -139,7 +128,8 @@ extension PiccanteScreen {
         PiccanteBox(
             game: game, shownBites: viewModel.shownBites, revealsChilis: viewModel.revealSettled,
             selected: viewModel.selected, partnerSelected: viewModel.partnerSelected, pendingTile: viewModel.heldTile,
-            style: { viewModel.style(for: $0) }, select: { viewModel.select($0) }, canSelect: viewModel.canAct)
+            player: { $0 == viewModel.userID ? viewModel.meInfo : viewModel.partnerInfo },
+            select: { viewModel.select($0) }, canSelect: viewModel.canAct)
     }
     @ViewBuilder private func controls(_ game: RemotePiccanteGame) -> some View {
         VStack(spacing: PaeoniaSpacing.space16) {

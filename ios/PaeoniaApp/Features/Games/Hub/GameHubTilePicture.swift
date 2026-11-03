@@ -7,6 +7,7 @@ struct GameHubTilePicture {
     let preview: GameChatPreview
     let drawings: GameHistoryDrawings
     let ownerUserID: UUID
+    let participants: GameParticipants
 }
 
 extension EnvironmentValues {
@@ -58,7 +59,8 @@ struct GameHubTileContent: View {
         GameChatPreviewContent(
             preview: picture.preview,
             drawings: picture.drawings,
-            ownerUserID: picture.ownerUserID
+            ownerUserID: picture.ownerUserID,
+            participants: picture.participants
         ) {
             Color.clear
         }

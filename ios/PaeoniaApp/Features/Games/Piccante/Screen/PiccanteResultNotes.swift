@@ -1,9 +1,8 @@
 import SwiftUI
 
 enum PiccanteNoteColors {
-    static let paper = Color.paeoniaInkGold.mix(with: .paeoniaTextPrimary, by: 0.82)
-    static let quietPaper = paper.mix(with: .paeoniaInkLavender, by: 0.28)
-    static let ink = Color.paeoniaTextInverse
+    static let paper = Color.paeoniaSurfacePrimary
+    static let ink = Color.paeoniaTextPrimary
 }
 
 struct PiccanteResultNotes: View {
@@ -32,12 +31,11 @@ struct PiccanteResultNotes: View {
     }
 
     private func notePaper(_ note: String, chili: PiccanteChili) -> some View {
-        let isWinning = chili.userID == game.winnerUserID
         return VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             Text(heading(for: chili))
                 .font(PaeoniaTypography.caption.weight(.semibold))
             Text(verbatim: note)
-                .font(isWinning ? PaeoniaTypography.collectionTitle : Font.system(.body, design: .serif))
+                .font(Font.system(.body, design: .serif))
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(.piccanteNoteFrom(partnerName))
@@ -45,12 +43,12 @@ struct PiccanteResultNotes: View {
         }
         .foregroundStyle(PiccanteNoteColors.ink)
         .multilineTextAlignment(.leading)
-        .padding(isWinning ? PaeoniaSpacing.space20 : PaeoniaSpacing.space16)
+        .padding(PaeoniaSpacing.space20)
         .padding(.trailing, PaeoniaSpacing.space8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .paeoniaCardSurface(
             in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius12),
-            fill: isWinning ? PiccanteNoteColors.paper : PiccanteNoteColors.quietPaper
+            fill: PiccanteNoteColors.paper
         )
         .overlay(alignment: .topTrailing) {
             PiccantePaperFold()
@@ -59,7 +57,6 @@ struct PiccanteResultNotes: View {
                 .padding(1)
                 .accessibilityHidden(true)
         }
-        .padding(.horizontal, isWinning ? 0 : PaeoniaSpacing.space8)
         .accessibilityElement(children: .combine)
     }
 

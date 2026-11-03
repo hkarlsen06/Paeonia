@@ -8,6 +8,7 @@ struct GameChatPreviewContent<Fallback: View>: View {
     let drawings: GameHistoryDrawings?
     /// Whose Games store a drawing's download is written to, so a finished download reloads.
     let ownerUserID: UUID?
+    let participants: GameParticipants
     @ViewBuilder let fallback: () -> Fallback
 
     var body: some View {
@@ -43,7 +44,16 @@ struct GameChatPreviewContent<Fallback: View>: View {
             PiccanteBox(
                 game: game, shownBites: game.bites.count, revealsChilis: game.phase == .finished,
                 selected: nil, partnerSelected: nil, pendingTile: nil,
-                style: { $0 == ownerUserID ? styles.one : styles.two }, select: { _ in }, showsOwnChili: false
+                player: {
+                    let mine = $0 == ownerUserID
+                    let name = mine ? participants.currentName : participants.partnerName
+                    return BoardGamePlayerInfo(
+                        name: name,
+                        photoAssetID: mine ? participants.currentPhotoAssetID : participants.partnerPhotoAssetID,
+                        style: BoardPieceStyle(
+                            color: mine ? .boardGameMine : .boardGamePartner, mark: nil,
+                            initial: BoardPieceStyle.initial(of: name), owner: mine ? .one : .two))
+                }, select: { _ in }, showsOwnChili: false
             )
             .padding(PaeoniaSpacing.space16)
         case .scale(let spot, let guess):

@@ -76,7 +76,8 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
     private func renderPicture() -> CGImage? {
         if let picture {
             let content = GameChatPreviewContent(
-                preview: picture.preview, drawings: picture.drawings, ownerUserID: picture.ownerUserID
+                preview: picture.preview, drawings: picture.drawings, ownerUserID: picture.ownerUserID,
+                participants: picture.participants
             ) { Color.clear }
             return GameHubPalettes.render(content.environment(bannerCenter), width: GameChatPreview.side)
         }

@@ -490,6 +490,7 @@ extension GamesViewModel {
     /// What the kind's hub tile shows in place of its objects.
     func tilePicture(for kind: GameKind) async -> GameHubTilePicture? {
         guard let userID = currentUserID, let preview = await chatPreview(for: kind) else { return nil }
-        return GameHubTilePicture(preview: preview, drawings: historyDrawings, ownerUserID: userID)
+        return GameHubTilePicture(
+            preview: preview, drawings: historyDrawings, ownerUserID: userID, participants: participants)
     }
 }

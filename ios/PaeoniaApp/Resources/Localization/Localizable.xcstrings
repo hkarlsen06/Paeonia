@@ -31763,24 +31763,6 @@
         }
       }
     },
-    "piccante.lastBite" : {
-      "comment" : "The filling in the last safely eaten chocolate. The placeholder is the localized filling name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Last bite: %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Siste bit: %@"
-          }
-        }
-      }
-    },
     "piccante.loading" : {
       "comment" : "Piccante game. loading.",
       "extractionState" : "manual",
@@ -32232,37 +32214,37 @@
       }
     },
     "piccante.tile.burned" : {
-      "comment" : "VoiceOver description of the chocolate that ended the game, with its bite number.",
+      "comment" : "VoiceOver description of the eaten chocolate that ended the game.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bite %lld, burned by a chili"
+            "value" : "Eaten, burned by a chili"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bit %lld, brent av en chili"
+            "value" : "Spist, brent av en chili"
           }
         }
       }
     },
     "piccante.tile.eaten" : {
-      "comment" : "Piccante game. tile eaten.",
+      "comment" : "VoiceOver description of an eaten chocolate, followed by its filling.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bite %1$lld, %2$@"
+            "value" : "Eaten, %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bit %1$lld, %2$@"
+            "value" : "Spist, %@"
           }
         }
       }

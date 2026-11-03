@@ -5,7 +5,7 @@ extension PiccanteViewModel {
         BoardGamePlayerInfo(
             name: participants.currentName, photoAssetID: participants.currentPhotoAssetID,
             style: BoardPieceStyle(
-                color: .boardGameMine, mark: myMark,
+                color: .boardGameMine, mark: nil,
                 initial: BoardPieceStyle.initial(of: participants.currentName), owner: .one))
     }
 
@@ -13,7 +13,7 @@ extension PiccanteViewModel {
         BoardGamePlayerInfo(
             name: partnerName, photoAssetID: participants.partnerPhotoAssetID,
             style: BoardPieceStyle(
-                color: .boardGamePartner, mark: partnerMark,
+                color: .boardGamePartner, mark: nil,
                 initial: BoardPieceStyle.initial(of: partnerName), owner: .two))
     }
 

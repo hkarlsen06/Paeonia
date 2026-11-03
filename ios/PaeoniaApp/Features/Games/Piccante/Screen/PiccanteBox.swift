@@ -7,7 +7,7 @@ struct PiccanteBox: View {
     let selected: Int?
     let partnerSelected: Int?
     let pendingTile: Int?
-    let style: (UUID) -> BoardPieceStyle
+    let player: (UUID) -> BoardGamePlayerInfo
     let select: (Int) -> Void
     var canSelect = false
     var showsOwnChili = true
@@ -27,9 +27,9 @@ struct PiccanteBox: View {
                 } label: {
                     PiccanteTile(
                         tile: tile,
-                        bite: eaten.firstIndex { $0.tile == tile }.map { $0 + 1 },
+                        isEaten: eaten.contains { $0.tile == tile },
                         chilis: revealsChilis
-                            ? game.chilis.filter { $0.tile == tile }.map { style($0.userID) } : [],
+                            ? game.chilis.filter { $0.tile == tile }.map { player($0.userID) } : [],
                         isOwnChili: showsOwnChili && game.myChili == tile,
                         isHiding: game.phase == .hiding && selected == tile,
                         isOpening: !revealsChilis && game.phase == .finished && game.bites.last?.tile == tile,
@@ -64,21 +64,21 @@ struct PiccanteBox: View {
 
     func label(_ tile: Int) -> String {
         var words = [String(localized: .piccanteTilePosition(tile / size + 1, tile % size + 1))]
-        if let index = eaten.firstIndex(where: { $0.tile == tile }) {
+        if eaten.contains(where: { $0.tile == tile }) {
             if game.phase == .finished && game.bites.last?.tile == tile {
                 words.append(String(localized: revealsChilis
-                    ? .piccanteTileBurned(index + 1) : .piccanteOpeningChocolate))
+                    ? .piccanteTileBurned : .piccanteOpeningChocolate))
             } else {
                 let flavor = String(
                     localized: PiccanteRules.flavor(
                         gameID: game.id, number: game.gameNumber, tile: tile))
-                words.append(String(localized: .piccanteTileEaten(index + 1, flavor)))
+                words.append(String(localized: .piccanteTileEaten(flavor)))
             }
         }
         if showsOwnChili && game.myChili == tile { words.append(String(localized: .piccanteYourChili)) }
         if revealsChilis {
             for chili in game.chilis where chili.tile == tile {
-                words.append(String(localized: .piccanteChiliOwner(style(chili.userID).initial)))
+                words.append(String(localized: .piccanteChiliOwner(player(chili.userID).name)))
             }
         }
         if selected == tile { words.append(String(localized: .piccanteSelected)) }

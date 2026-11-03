@@ -109,25 +109,4 @@ extension PiccanteViewModel {
         }
         await reload()
     }
-    func loadMarks() async {
-        guard let userID, let state else { return }
-        var marks = await dependencies.boardGamesCache.document(ownerUserID: userID).marks
-        if marks == nil { marks = try? await dependencies.boardGamesGateway.loadMarks() }
-        for (mine, mark) in [(true, marks?.mine), (false, marks?.partner)] {
-            guard let mark, let data = BoardMarkRenderer.data(fromBase64: mark.drawing),
-                let image = await BoardMarkRenderer.image(
-                    from: data, cacheKey: "piccante:\(mine ? userID : state.partnerUserID):\(mark.updatedAt)")
-            else { continue }
-            guard self.userID == userID, participants.coupleID == state.coupleID, !Task.isCancelled else { return }
-            if mine { myMark = image } else { partnerMark = image }
-        }
-    }
-    func style(for owner: UUID) -> BoardPieceStyle {
-        let mine = owner == userID
-        return BoardPieceStyle(
-            color: mine ? .boardGameMine : .boardGamePartner,
-            mark: mine ? myMark : partnerMark,
-            initial: BoardPieceStyle.initial(of: mine ? participants.currentName : partnerName),
-            owner: mine ? .one : .two)
-    }
 }

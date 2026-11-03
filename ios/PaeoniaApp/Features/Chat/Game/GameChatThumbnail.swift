@@ -36,7 +36,13 @@ struct GameChatThumbnail: View {
             GameChatPreviewContent(
                 preview: preview,
                 drawings: context.gameDrawings,
-                ownerUserID: context.participants.currentUserID
+                ownerUserID: context.participants.currentUserID,
+                participants: GameParticipants(
+                    currentUserID: context.participants.currentUserID,
+                    partnerName: context.participants.partnerName,
+                    currentName: context.participants.currentDisplayName ?? "",
+                    currentPhotoAssetID: context.participants.currentProfilePhotoAssetID,
+                    partnerPhotoAssetID: context.participants.partnerProfilePhotoAssetID)
             ) {
                 artwork
             }

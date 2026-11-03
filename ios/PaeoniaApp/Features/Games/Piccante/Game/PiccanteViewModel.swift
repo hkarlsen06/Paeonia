@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import UIKit
 
 @MainActor @Observable
 final class PiccanteViewModel {
@@ -20,8 +19,6 @@ final class PiccanteViewModel {
     var isSaving = false
     var isSendFailing = false
     var playStyle = GamePlayStyle.against
-    var myMark: UIImage?
-    var partnerMark: UIImage?
     let reactions = GameLiveReactions()
     @ObservationIgnored let dependencies: GamesDependencies
     @ObservationIgnored var sync: (@MainActor @Sendable () async -> Void)?
@@ -76,8 +73,6 @@ final class PiccanteViewModel {
             selected = nil
             partnerSelected = nil
             note = ""
-            myMark = nil
-            partnerMark = nil
             deferredResult = nil
             lastMove = nil
         }
@@ -93,7 +88,6 @@ final class PiccanteViewModel {
         loops.beginHeartbeat()
         startLive()
         await refresh()
-        await loadMarks()
     }
     func stop(markResultSeen: Bool = true) {
         if markResultSeen, revealSettled, let game, game.phase == .finished, let userID {
