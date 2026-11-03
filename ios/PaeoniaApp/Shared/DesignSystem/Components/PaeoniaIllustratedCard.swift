@@ -41,9 +41,9 @@ nonisolated enum PaeoniaIllustratedCardLayout {
         /// The whole scene, as on the Us tab, the daily question card and the hub's tiles.
         static let full = Scene(top: 0, textTop: 720, objectScale: 1, badgeAlignment: .top)
         /// The Games hub's full cards: the bare wall of the badge zone is cut away, the
-        /// objects shrink to half, and the badge moves to the top left corner, so two cards
-        /// fit on one screen.
-        static let hubBanner = Scene(top: 175, textTop: 490, objectScale: 0.5, badgeAlignment: .topLeading)
+        /// objects shrink to 70 percent, and the badge moves to the top left corner, so the
+        /// next card's name shows on the same screen.
+        static let hubBanner = Scene(top: 110, textTop: 520, objectScale: 0.7, badgeAlignment: .topLeading)
     }
 }
 

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A game's latest public content (`GameChatPreview`) in a 240-point square. The chat
-/// thumbnail and the hub's tiles both draw it, scaled to their size. `fallback` shows
+/// thumbnail and the hub's tiles both draw it, scaled to their size, on their own background. `fallback` shows
 /// while a drawing loads or when it can't.
 struct GameChatPreviewContent<Fallback: View>: View {
     let preview: GameChatPreview
@@ -38,7 +38,6 @@ struct GameChatPreviewContent<Fallback: View>: View {
                 .foregroundStyle(.paeoniaTextPrimary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(PaeoniaSpacing.space24)
-                .background(.paeoniaSurfaceSecondary)
                 .clipped()
         case .piccante(let game):
             PiccanteBox(
@@ -92,7 +91,7 @@ private struct GameChatDrawingThumbnail<Fallback: View>: View {
     }
 
     var body: some View {
-        Color.paeoniaBackgroundPrimary.overlay {
+        Color.clear.overlay {
             if images.count == assetIDs.count, !images.isEmpty {
                 VStack(spacing: 0) {
                     ForEach(images.indices, id: \.self) { index in

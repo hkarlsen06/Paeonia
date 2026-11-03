@@ -33,7 +33,7 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
                 backdrop(size: backdropSize, top: backdropTop, textTop: textTop)
                 Group {
                     if let picture {
-                        GameHubFramedPicture(picture: picture)
+                        GameHubTileContent(picture: picture, tint: kind?.hubWallTint)
                     } else {
                         scene(isPlayed || reduceMotion ? 1 : 0)
                             .animation(reduceMotion ? nil : .linear(duration: duration).delay(delay), value: isPlayed)

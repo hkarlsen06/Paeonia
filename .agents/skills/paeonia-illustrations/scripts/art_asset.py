@@ -103,7 +103,7 @@ TEXT_LINES = [
 CARD_HEIGHT_BELOW_TEXT = 260
 # Where the card's text starts, in canvas pixels. Keep in step with the `textTop` of
 # PaeoniaIllustratedCardLayout.Scene: `full` and `hubBanner`.
-TEXT_TOPS = [("card", 720), ("hub card", 490)]
+TEXT_TOPS = [("card", 720), ("hub card", 520)]
 # Each game's wall tint (GameKind.hubWallTint), the walls they cover, and the opacity of
 # the `color` blend. Keep in step with GameHubWallTint.swift and GameHubBackdrop.
 WALL_TINTS = [
