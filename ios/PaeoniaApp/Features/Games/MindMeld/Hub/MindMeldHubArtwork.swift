@@ -5,7 +5,7 @@ import SwiftUI
 /// both partners say the same word. It follows `docs/games/hub-artwork.md`.
 struct MindMeldHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1.4) { progress in
+        GameHubArtwork(kind: .mindMeld, duration: 1.4) { progress in
             MindMeldHubScene(progress: progress)
         }
     }

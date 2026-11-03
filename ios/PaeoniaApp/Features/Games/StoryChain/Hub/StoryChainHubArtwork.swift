@@ -6,7 +6,7 @@ import SwiftUI
 /// `docs/games/hub-artwork.md`.
 struct StoryChainHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1.2) { progress in
+        GameHubArtwork(kind: .storyChain, duration: 1.2) { progress in
             StoryChainHubScene(progress: progress)
         }
     }

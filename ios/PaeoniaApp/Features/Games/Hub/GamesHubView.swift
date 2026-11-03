@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// The built games. "Right now" shows full cards for the games the partner is in, then
-/// the games waiting for this person. Every other game is a small tile in a grid below,
-/// in catalog order, so the whole catalog fits in about two screens. Without a game for
-/// "Right now", the grid is all there is and has no heading. A wide iPad shows two
-/// columns of full cards.
+/// The built games, under the days the couple played together. "Right now" shows full
+/// cards for the games the partner is in, then the games waiting for this person. Without
+/// one, "Today's pick" shows one game the couple has not played lately. Every other game is
+/// a small tile in a grid below, played most recently first, showing the couple's latest
+/// content for the game. A wide iPad shows two columns of full cards.
 ///
 /// A move in a game can move its card between the two while the game is open. The card
 /// the game opened from then keeps its place on screen, so closing the game lands on it.
@@ -88,15 +88,25 @@ struct GamesHubView: View {
     private var sections: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
             let featured = viewModel.hubFeaturedGames
+            let pick = viewModel.hubTodaysPick
+            if viewModel.playDays.total > 0 {
+                GamesHubPlayDays(playDays: viewModel.playDays)
+                    .padding(.bottom, -PaeoniaSpacing.space12)
+            }
             if !featured.isEmpty {
                 section(.gamesHubSectionRightNow) {
                     featuredGrid(featured)
                 }
+            } else if let pick {
+                section(.gamesHubSectionTodaysPick) {
+                    featuredGrid([pick])
+                }
             }
-            section(featured.isEmpty ? nil : .gamesHubSectionMore) {
+            section(featured.isEmpty && pick == nil ? nil : .gamesHubSectionMore) {
                 LazyVGrid(columns: gridColumns, spacing: PaeoniaSpacing.space16) {
                     ForEach(viewModel.hubGridGames, id: \.kind) { game in
                         card(for: game, isCompact: true)
+                            .gameHubTilePicture(for: game.kind, viewModel: viewModel)
                     }
                 }
             }
@@ -131,6 +141,7 @@ struct GamesHubView: View {
         }
         if let card = game.card(viewModel.cardContext(for: game.kind, isOnHub: true), open: openFromCard) {
             card.environment(\.gameHubCardIsCompact, isCompact)
+                .environment(\.paeoniaIllustratedScene, isCompact ? .full : .hubBanner)
                 .contentShape(.contextMenuPreview, PaeoniaIllustratedCardLayout.shape)
                 .contextMenu { menuItems(for: game, open: openFromCard) }
                 .id(game.kind)

@@ -6,7 +6,7 @@ import SwiftUI
 /// between the two. It follows `docs/games/hub-artwork.md`.
 struct ConsensioHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1.6) { progress in
+        GameHubArtwork(kind: .consensio, duration: 1.6) { progress in
             ConsensioHubScene(progress: progress)
         }
     }

@@ -22,7 +22,7 @@
         betweenStories(for: scenario)
       case .storyChainWritingLast:
         Fixture.lastLine()
-      case .storyChainWaitingLive, .storyChainWaitingAway, .storyChainReadingReactions:
+      case .storyChainWaitingLive, .storyChainWaitingAway, .storyChainReadingReactions, .gamesHubQuiet:
         Fixture.writing(lines: 7)
       case .storyChainNaming:
         Fixture.titling(namedBy: Fixture.me)

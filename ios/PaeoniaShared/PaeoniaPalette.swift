@@ -23,6 +23,9 @@ nonisolated enum PaeoniaPalette {
     static let orange = Color(paeoniaHex: 0xE8_91_5D)
     static let mint = Color(paeoniaHex: 0x82_BA_A5)
     static let green = Color(paeoniaHex: 0x5B_B9_8B)
+    static let teal = Color(paeoniaHex: 0x3F_B5_B0)
+    static let periwinkle = Color(paeoniaHex: 0x8E_9C_F2)
+    static let orchid = Color(paeoniaHex: 0xC4_6F_D0)
 }
 
 nonisolated enum PaeoniaBrandColors {

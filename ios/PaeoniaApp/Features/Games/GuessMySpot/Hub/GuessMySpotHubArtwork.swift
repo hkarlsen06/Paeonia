@@ -6,7 +6,7 @@ import SwiftUI
 /// `docs/games/hub-artwork.md`.
 struct GuessMySpotHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1.6) { progress in
+        GameHubArtwork(kind: .guessMySpot, duration: 1.6) { progress in
             GuessMySpotHubScene(progress: progress)
         }
     }

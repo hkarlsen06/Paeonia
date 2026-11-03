@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum PaeoniaIllustratedCardLayout {
+nonisolated enum PaeoniaIllustratedCardLayout {
     static let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
     /// The canvas the picture is laid out on, in pixels. It is as wide as the card and
@@ -8,7 +8,7 @@ enum PaeoniaIllustratedCardLayout {
     static let canvasSize = CGSize(width: 1_024, height: 1_536)
     /// How far down the scene reaches, as a share of the card's width. The card's text
     /// starts below it, so the scene keeps its shape at every card width.
-    static let sceneShare: CGFloat = 720 / 1_024
+    static let sceneShare = Scene.full.share
     /// The backdrop goes out of focus under the text: a Gaussian blur that fades in over
     /// `blurFadeIn` points, starting `blurLead` points above where the text starts.
     static let blurRadius: CGFloat = 20
@@ -16,6 +16,40 @@ enum PaeoniaIllustratedCardLayout {
     static let blurFadeIn: CGFloat = 40
     static let shadowAtTitle = 0.25
     static let shadowAtBottom = 0.5
+
+    /// The rows of the canvas a full card's picture shows above its text, and how large
+    /// the scene's objects stand in them.
+    struct Scene: Sendable {
+        /// The canvas row at the top of the picture.
+        let top: CGFloat
+        /// The canvas row where the text starts. `art_asset.py text` checks the backdrop from here down.
+        let textTop: CGFloat
+        /// The objects' size against the backdrop. The scene shrinks toward the middle of
+        /// the main object's lower edge, which keeps the gap above the text in proportion.
+        let objectScale: CGFloat
+        /// Where the badge floats. Beside the objects when the picture is too short to hold
+        /// it above them.
+        let badgeAlignment: Alignment
+
+        /// The picture's height as a share of the card's width.
+        var share: CGFloat { (textTop - top) / canvasSize.width }
+
+        /// Where the main object's lower edge lands, in canvas rows.
+        var objectBase: CGFloat { textTop - (Self.full.textTop - Self.fullObjectBase) * objectScale }
+
+        static let fullObjectBase: CGFloat = 640
+        /// The whole scene, as on the Us tab, the daily question card and the hub's tiles.
+        static let full = Scene(top: 0, textTop: 720, objectScale: 1, badgeAlignment: .top)
+        /// The Games hub's full cards: the bare wall of the badge zone is cut away, the
+        /// objects shrink to half, and the badge moves to the top left corner, so two cards
+        /// fit on one screen.
+        static let hubBanner = Scene(top: 175, textTop: 490, objectScale: 0.5, badgeAlignment: .topLeading)
+    }
+}
+
+extension EnvironmentValues {
+    /// The scene a full illustrated card shows. Tiles always show the whole scene.
+    @Entry var paeoniaIllustratedScene = PaeoniaIllustratedCardLayout.Scene.full
 }
 
 /// An illustrated card with a title, status, primary action and optional content.
@@ -43,6 +77,7 @@ struct PaeoniaIllustratedCard<Artwork: View, Badge: View, Header: View, Extras: 
     var isCompact = false
     var fillsHeight = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.paeoniaIllustratedScene) private var scene
 
     private var shape: RoundedRectangle { PaeoniaIllustratedCardLayout.shape }
 
@@ -59,7 +94,7 @@ struct PaeoniaIllustratedCard<Artwork: View, Badge: View, Header: View, Extras: 
             // The picture opens the destination too. VoiceOver uses the primary button.
             Button(action: open) {
                 Color.clear
-                    .aspectRatio(1 / PaeoniaIllustratedCardLayout.sceneShare, contentMode: .fit)
+                    .aspectRatio(1 / scene.share, contentMode: .fit)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -70,9 +105,11 @@ struct PaeoniaIllustratedCard<Artwork: View, Badge: View, Header: View, Extras: 
         }
         // Grid cards can fill their row's height, with extra room at the bottom.
         .frame(maxHeight: fillsHeight ? .infinity : nil, alignment: .top)
-        .overlay(alignment: .top) {
+        .overlay(alignment: scene.badgeAlignment) {
             if !dynamicTypeSize.isAccessibilitySize {
-                badge().padding(.top, PaeoniaSpacing.space12)
+                badge()
+                    .padding(.top, PaeoniaSpacing.space12)
+                    .padding(.leading, scene.badgeAlignment == .topLeading ? PaeoniaSpacing.space12 : 0)
             }
         }
         .modifier(framing)

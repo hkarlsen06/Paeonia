@@ -102,4 +102,36 @@ extension GamesPhaseTests {
         // the partner did not just open it.
         #expect(opened([.mindMeld, .ludo], [.ludo]) == nil)
     }
+
+    @Test func todaysPickTakesTurnsThroughTheGamesNobodyOpenedThisWeek() {
+        let now = GameFixture.now
+        let catalog = GameKind.allCases
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        // The play times move along with the day, so only the turn changes.
+        func pick(_ lastPlayed: [GameKind: Date], day: Int, kinds: [GameKind] = GameKind.allCases) -> GameKind? {
+            let shift = TimeInterval(day) * 86_400
+            return GamesViewModel.todaysPick(
+                kinds,
+                lastPlayed: lastPlayed.mapValues { $0.addingTimeInterval(shift) },
+                today: LockScreenCalendarDate(containing: now.addingTimeInterval(shift), in: utc)
+            )
+        }
+
+        let daysAgo = { (days: Double) in now.addingTimeInterval(-days * 86_400) }
+        // Ludo and Draw & Guess were opened this week. Four in a Row was opened 8 days ago
+        // and Mind Meld never, so both count as rested, in catalog order.
+        let played: [GameKind: Date] = [
+            .ludo: daysAgo(1), .drawAndGuess: daysAgo(6.9), .connectFour: daysAgo(8),
+        ]
+        let rested = catalog.filter { $0 != .ludo && $0 != .drawAndGuess }
+        // Each rested game gets a day before any comes back.
+        #expect(Set((0..<rested.count).map { pick(played, day: $0) }) == Set(rested))
+        #expect(pick(played, day: rested.count) == pick(played, day: 0))
+
+        // Every game was opened this week: the one played longest ago.
+        let busy: [GameKind: Date] = [.ludo: daysAgo(1), .mindMeld: daysAgo(3), .consensio: daysAgo(2)]
+        #expect(pick(busy, day: 5, kinds: [.ludo, .mindMeld, .consensio]) == .mindMeld)
+        #expect(pick([:], day: 3, kinds: []) == nil)
+    }
 }

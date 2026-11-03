@@ -26,7 +26,7 @@
       homeMapRecovery,
       widgetDrawing, widgetHistoryEmpty, widgetHistoryPopulated, widgetHistoryFocused,
       gamesSetup, gamesPartnerPicked, gamesHubYourTurn, gamesHubWaiting, gamesHubReveal, gamesHubPartnerHere,
-      gamesHubBoardGames,
+      gamesHubBoardGames, gamesHubQuiet,
       notificationPrimer, settings, settingsPartnerPays, settingsNotificationsDenied, privacySafety, reportAndLeave,
       deepLinkDailyToday, deepLinkDailyReveal, deepLinkWidget, deepLinkStreak, deepLinkSubscription,
     ]
@@ -333,6 +333,11 @@
       "games-hub-board-games", "Games · hub with the board games",
       "All four cards: Four in a Row on your move, Dots and Boxes with Robin in it, "
         + "Ultimate Tic-Tac-Toe won by Robin",
+      .games
+    )
+    static let gamesHubQuiet = pairedApp(
+      "games-hub-quiet", "Games · hub, nothing waiting",
+      "Today's pick, a 4-day streak, and tiles with the couple's boards, drawing, creature, words and story",
       .games
     )
 

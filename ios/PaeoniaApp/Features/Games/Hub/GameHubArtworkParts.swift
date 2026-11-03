@@ -6,39 +6,46 @@ import SwiftUI
 /// in the canvas's pixels, so it keeps its shape at every card width. It plays once when
 /// the card appears, as `progress` runs from 0 to 1 at an even pace. With Reduce Motion it
 /// starts finished. VoiceOver skips the picture, since the card says the same in words.
+///
+/// `kind` tints the backdrop's walls in the game's color. On a hub tile with the couple's
+/// own content (`gameHubTilePicture`), that picture stands in place of the scene.
 struct GameHubArtwork<Scene: View & Animatable>: View {
+    var kind: GameKind?
     let duration: TimeInterval
     var delay: TimeInterval = 0.4
     let scene: (_ progress: Double) -> Scene
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.paeoniaIllustratedScene) private var layout
+    @Environment(\.gameHubTilePicture) private var picture
     @State private var isPlayed = false
 
     var body: some View {
         GeometryReader { proxy in
             let canvasSize = PaeoniaIllustratedCardLayout.canvasSize
             let scale = proxy.size.width / canvasSize.width
-            let textTop = proxy.size.width * PaeoniaIllustratedCardLayout.sceneShare
+            let textTop = proxy.size.width * layout.share
             let backdropSize = CGSize(width: proxy.size.width, height: canvasSize.height * scale)
+            let backdropTop = -layout.top * scale
+            let objectScale = scale * layout.objectScale
+            let base = PaeoniaIllustratedCardLayout.Scene.fullObjectBase
             ZStack(alignment: .topLeading) {
-                GameHubBackdrop()
-                    .frame(width: backdropSize.width, height: backdropSize.height)
-                GameHubBackdrop()
-                    .frame(width: backdropSize.width, height: backdropSize.height)
-                    .blur(radius: PaeoniaIllustratedCardLayout.blurRadius, opaque: true)
-                    .mask(alignment: .top) {
-                        VStack(spacing: 0) {
-                            Color.clear
-                                .frame(height: textTop - PaeoniaIllustratedCardLayout.blurLead)
-                            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                                .frame(height: PaeoniaIllustratedCardLayout.blurFadeIn)
-                            Color.black
-                        }
+                backdrop(size: backdropSize, top: backdropTop, textTop: textTop)
+                Group {
+                    if let picture {
+                        GameHubFramedPicture(picture: picture)
+                    } else {
+                        scene(isPlayed || reduceMotion ? 1 : 0)
+                            .animation(reduceMotion ? nil : .linear(duration: duration).delay(delay), value: isPlayed)
                     }
-                scene(isPlayed || reduceMotion ? 1 : 0)
-                    .animation(reduceMotion ? nil : .linear(duration: duration).delay(delay), value: isPlayed)
-                    .frame(width: canvasSize.width, height: canvasSize.height)
-                    .scaleEffect(scale, anchor: .topLeading)
+                }
+                .frame(width: canvasSize.width, height: canvasSize.height)
+                .scaleEffect(objectScale, anchor: .topLeading)
+                // The middle of the main object's lower edge lands where the layout puts it.
+                .offset(
+                    x: canvasSize.width / 2 * (scale - objectScale),
+                    y: (layout.objectBase - layout.top) * scale - base * objectScale
+                )
             }
         }
         // The backdrop ends in deep plum, so a card taller than the canvas continues it.
@@ -48,17 +55,76 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
         .accessibilityHidden(true)
         .onAppear { isPlayed = true }
     }
+
+    /// The backdrop, sharp above the text and out of focus under it.
+    private func backdrop(size: CGSize, top: CGFloat, textTop: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            GameHubBackdrop(tint: kind?.hubWallTint)
+                .frame(width: size.width, height: size.height)
+                .offset(y: top)
+            GameHubBackdrop(tint: kind?.hubWallTint)
+                .frame(width: size.width, height: size.height)
+                .offset(y: top)
+                .blur(radius: PaeoniaIllustratedCardLayout.blurRadius, opaque: true)
+                .mask(alignment: .top) {
+                    VStack(spacing: 0) {
+                        Color.clear
+                            .frame(height: textTop - PaeoniaIllustratedCardLayout.blurLead)
+                        LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                            .frame(height: PaeoniaIllustratedCardLayout.blurFadeIn)
+                        Color.black
+                    }
+                }
+        }
+    }
 }
 
 /// The backdrop every hub card shares: a room at night, its left wall lit pink and its
-/// right wall lavender, the two partners' worlds. The corner where they meet is behind the
-/// middle of the scene, and the floor in front is where the game's objects stand. Below
-/// the scene the floor darkens to deep plum, so the card's text reads on it.
+/// right wall lavender. The corner where they meet is behind the middle of the scene, and
+/// the floor in front is where the game's objects stand. Below the scene the floor darkens
+/// to deep plum, so the card's text reads on it. A game's `tint` colors the walls and
+/// keeps their light and shade (a `color` blend), so every game has its own room in the
+/// same house. The floor stays as it is.
 struct GameHubBackdrop: View {
+    var tint: Color?
+
+    /// Keep in step with `TINT_OPACITY` and `TINT_SHADE` in `art_asset.py`. The shade keeps
+    /// a cream object 3:1 from the tinted wall behind it.
+    static let tintOpacity = 0.85
+    static let tintShade = 0.1
+
     var body: some View {
         Image(.gameHubBackdrop)
             .resizable()
+            .overlay {
+                if let tint {
+                    tint.opacity(Self.tintOpacity)
+                        .blendMode(.color)
+                        .mask { GameHubWalls().blur(radius: 1) }
+                }
+            }
+            .overlay {
+                if tint != nil {
+                    Color.black.opacity(Self.tintShade)
+                        .mask { GameHubWalls().blur(radius: 1) }
+                }
+            }
+            .compositingGroup()
             .accessibilityHidden(true)
+    }
+}
+
+/// The two walls of the backdrop, down to where they meet the floor, measured on the image.
+nonisolated private struct GameHubWalls: Shape {
+    func path(in rect: CGRect) -> Path {
+        let canvas = PaeoniaIllustratedCardLayout.canvasSize
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: rect.minX + rect.width * x / canvas.width, y: rect.minY + rect.height * y / canvas.height)
+        }
+        var path = Path()
+        path.addLines([point(0, 0), point(1_024, 0), point(1_024, 316), point(514, 250), point(0, 325)])
+        path.closeSubpath()
+        return path
     }
 }
 

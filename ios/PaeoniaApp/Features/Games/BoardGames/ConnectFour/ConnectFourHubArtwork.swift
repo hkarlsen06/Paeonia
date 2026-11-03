@@ -6,7 +6,7 @@ import SwiftUI
 /// `docs/games/hub-artwork.md`.
 struct ConnectFourHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1.6) { progress in
+        GameHubArtwork(kind: .connectFour, duration: 1.6) { progress in
             ConnectFourHubScene(progress: progress)
         }
     }

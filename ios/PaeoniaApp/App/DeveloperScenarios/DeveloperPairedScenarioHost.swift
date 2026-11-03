@@ -99,7 +99,7 @@
         .memories
       case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting, .gamesHubReveal,
         .gamesHubPartnerHere, .exquisiteCorpseHubYourTurn, .exquisiteCorpseHubPartnerDrawing,
-        .exquisiteCorpseHubReveal, .exquisiteCorpseHubNotStarted, .gamesHubBoardGames:
+        .exquisiteCorpseHubReveal, .exquisiteCorpseHubNotStarted, .gamesHubBoardGames, .gamesHubQuiet:
         .games
       default:
         .us

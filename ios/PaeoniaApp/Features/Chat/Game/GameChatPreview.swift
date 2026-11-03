@@ -9,6 +9,9 @@ nonisolated enum GameChatPreview: Equatable, Sendable {
     case words(String, String)
     case story(String)
     case scale(spot: Int, guess: Int)
+
+    /// The side of the square a preview is drawn in (`GameChatPreviewContent`), in points.
+    static let side: CGFloat = 240
 }
 
 nonisolated struct GameChatBoardPreview: Equatable, Sendable {

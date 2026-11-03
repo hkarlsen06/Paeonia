@@ -67,7 +67,7 @@ A white or cream object, like paper, reads as some fringe because its own edge i
 
 For a hub card, ask for two candidates of the main object and keep the better one. Compose the card on a render of the backdrop before you write code, with the objects at their planned places, and check it against the zones in `docs/games/hub-artwork.md`. Look at it next to the other cards: the same camera, the same size, the same light.
 
-If you change the backdrop, check the card's text against it. `text` lays the card frame's shadow and blur over it and checks every line against the contrast it needs:
+If you change the backdrop, a game's wall tint, or where a card's text starts, run `text`. It lays the card frame's shadow and blur over the backdrop and checks every line against the contrast it needs, for a full card and a hub card, on the bare backdrop and with each game's wall tint. It also checks that a cream object stands out 3:1 from each tinted wall. Its tint list and numbers follow `GameHubWallTint.swift`, `GameHubBackdrop` and `PaeoniaIllustratedCardLayout.Scene`:
 
 ```bash
 /tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py text /tmp/paeonia-art/backdrop.png

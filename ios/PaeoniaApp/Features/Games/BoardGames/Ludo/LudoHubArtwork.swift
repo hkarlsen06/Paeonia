@@ -6,7 +6,7 @@ import SwiftUI
 /// dome glows gold. It follows `docs/games/hub-artwork.md`.
 struct LudoHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1.8) { progress in
+        GameHubArtwork(kind: .ludo, duration: 1.8) { progress in
             LudoHubScene(progress: progress)
         }
     }

@@ -6,7 +6,7 @@ import SwiftUI
 /// `docs/games/hub-artwork.md`.
 struct UltimateTicTacToeHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1) { progress in
+        GameHubArtwork(kind: .ultimateTicTacToe, duration: 1) { progress in
             UltimateTicTacToeHubScene(progress: progress)
         }
     }

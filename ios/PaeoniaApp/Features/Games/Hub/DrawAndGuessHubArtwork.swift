@@ -5,7 +5,7 @@ import SwiftUI
 /// in the card's language, to the right of the paper. It follows `docs/games/hub-artwork.md`.
 struct DrawAndGuessHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1.4) { progress in
+        GameHubArtwork(kind: .drawAndGuess, duration: 1.4) { progress in
             DrawAndGuessHubScene(progress: progress)
         }
     }

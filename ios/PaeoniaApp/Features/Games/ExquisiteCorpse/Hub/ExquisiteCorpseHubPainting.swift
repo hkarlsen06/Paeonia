@@ -6,7 +6,7 @@ import SwiftUI
 /// come together. It follows `docs/games/hub-artwork.md`.
 struct ExquisiteCorpseHubPainting: View {
     var body: some View {
-        GameHubArtwork(duration: 1.6) { progress in
+        GameHubArtwork(kind: .exquisiteCorpse, duration: 1.6) { progress in
             ExquisiteCorpseHubScene(progress: progress)
         }
     }

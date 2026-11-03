@@ -15,6 +15,8 @@ nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
     /// The games this person put aside with "Not now" whose turn, result or invite has
     /// not changed since. They count toward no badge and stay out of "Right now".
     var hiddenKinds: [GameKind] = []
+    /// The days both partners had a game open, counted on the couple day `today`.
+    var playDays = RemoteGamePlayDays()
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
@@ -23,6 +25,7 @@ nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
         case settings
         case presence
         case hiddenKinds = "hidden_kinds"
+        case playDays = "play_days"
     }
 
     func clearingPresence() -> Self {
@@ -59,4 +62,14 @@ nonisolated struct RemoteGamePresence: Codable, Equatable, Sendable {
         case lastInviteAt = "last_invite_at"
         case lastPlayedAt = "last_played_at"
     }
+}
+
+/// The couple days on which both partners had a game open. The server counts them on
+/// the couple day `today`, so both phones show the same numbers.
+nonisolated struct RemoteGamePlayDays: Codable, Equatable, Sendable {
+    /// Days in a row up to today. Until today ends, a day without play yet keeps the
+    /// run that ended yesterday.
+    var streak = 0
+    var total = 0
+    var today = LockScreenCalendarDate(year: 1_970, month: 1, day: 1)
 }

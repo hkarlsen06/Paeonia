@@ -210,6 +210,9 @@
       if scenario == .gamesHubBoardGames {
         return hubSetups
       }
+      if scenario == .gamesHubQuiet {
+        return quietHubSetups
+      }
       return setupByScenario[scenario].map { [$0] } ?? []
     }
 
@@ -324,6 +327,13 @@
       Setup(game: .ludo, moves: Moves.ludoPartnerTurn, tallies: ludoTallies),
     ]
 
+    /// Every board game waits for Robin.
+    private static let quietHubSetups = [
+      Setup(game: .connectFour, moves: Moves.connectFourMidGame, iStart: false, stake: coffee),
+      Setup(game: .dotsAndBoxes, moves: Moves.dotsAndBoxesPartnerTurn),
+      Setup(game: .ludo, moves: Moves.ludoPartnerTurn, tallies: ludoTallies),
+    ]
+
     // MARK: Cache
 
     static func boardGames(for scenario: DeveloperScenario) -> RemoteBoardGames {
@@ -372,7 +382,7 @@
     /// The board game this scenario opens full screen. Nil for every other
     /// scenario, including the hub.
     @MainActor var boardGame: DeveloperBoardGame? {
-      guard self != .gamesHubBoardGames else { return nil }
+      guard self != .gamesHubBoardGames, self != .gamesHubQuiet else { return nil }
       return DeveloperBoardGamesFixture.setups(for: self).first?.game
     }
   }

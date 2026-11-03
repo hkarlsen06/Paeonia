@@ -73,6 +73,8 @@ final class GamesViewModel {
     private(set) var partnerGameKinds: [GameKind] = []
     /// When either partner last had each game open. A game neither ever opened is missing.
     private(set) var lastPlayed: [GameKind: Date] = [:]
+    /// The days both partners played, for the hub's header.
+    private(set) var playDays = RemoteGamePlayDays()
     /// The games this person put aside with "Not now", from the overview and from taps
     /// still on their way to the server. They stay out of "Right now" while it is their turn.
     private var hiddenKinds: Set<GameKind> = []
@@ -141,13 +143,6 @@ final class GamesViewModel {
         ).compactMap { game($0) }
     }
 
-    /// The hub's grid of small cards: every other game, played most recently first.
-    var hubGridGames: [any GameHubModel] {
-        let featured = hubFeaturedGames.map(\.kind)
-        return Self.recentFirst(games.map(\.kind).filter { !featured.contains($0) }, lastPlayed: lastPlayed)
-            .compactMap { game($0) }
-    }
-
     /// The game the partner opened most recently, while they have it open. The
     /// Us tab shows its card.
     var partnerGame: (any GameHubModel)? {
@@ -167,7 +162,7 @@ final class GamesViewModel {
         games.lazy.compactMap { $0.screen(for: destination) }.first
     }
 
-    private var currentUserID: UUID? {
+    var currentUserID: UUID? {
         participants.currentUserID
     }
 
@@ -183,6 +178,7 @@ final class GamesViewModel {
             overview = nil
             partnerGameKinds = []
             lastPlayed = [:]
+            playDays = RemoteGamePlayDays()
             hiddenKinds = []
             hidingKinds = []
             screen = .loading
@@ -216,10 +212,7 @@ final class GamesViewModel {
         if partnerGameKinds != newPartnerGameKinds {
             partnerGameKinds = newPartnerGameKinds
         }
-        let newLastPlayed = Self.lastPlayed(in: overview)
-        if lastPlayed != newLastPlayed {
-            lastPlayed = newLastPlayed
-        }
+        updatePlayHistory()
         updateHiddenKinds()
         if settings != overview?.settings {
             settings = overview?.settings
@@ -399,6 +392,35 @@ extension GamesViewModel {
         }
     }
 
+    /// The one full card while nothing waits under "Right now".
+    var hubTodaysPick: (any GameHubModel)? {
+        guard hubFeaturedGames.isEmpty else { return nil }
+        return Self.todaysPick(
+            games.map(\.kind),
+            lastPlayed: lastPlayed,
+            today: playDays.today
+        ).flatMap { game($0) }
+    }
+
+    /// The hub's grid of small cards: every other game, played most recently first.
+    var hubGridGames: [any GameHubModel] {
+        let full = hubFeaturedGames.map(\.kind) + [hubTodaysPick?.kind].compactMap { $0 }
+        return Self.recentFirst(games.map(\.kind).filter { !full.contains($0) }, lastPlayed: lastPlayed)
+            .compactMap { game($0) }
+    }
+
+    /// When each game was last played and the days played together, from the overview.
+    private func updatePlayHistory() {
+        let newLastPlayed = Self.lastPlayed(in: overview)
+        if lastPlayed != newLastPlayed {
+            lastPlayed = newLastPlayed
+        }
+        let newPlayDays = overview?.playDays ?? RemoteGamePlayDays()
+        if playDays != newPlayDays {
+            playDays = newPlayDays
+        }
+    }
+
     private func updateHiddenKinds() {
         let newHiddenKinds = Set(overview?.hiddenKinds ?? []).union(hidingKinds)
         if hiddenKinds != newHiddenKinds {
@@ -453,49 +475,6 @@ extension GamesViewModel {
             await reload()
         }
     }
-
-    /// The games the partner has open, in the server's order.
-    nonisolated static func partnerGames(in overview: RemoteGamesOverview?) -> [GameKind] {
-        (overview?.presence ?? []).filter(\.partnerPresent).map(\.kind)
-    }
-
-    /// When either partner last had each game open, for the games ever opened.
-    nonisolated static func lastPlayed(in overview: RemoteGamesOverview?) -> [GameKind: Date] {
-        var lastPlayed: [GameKind: Date] = [:]
-        for entry in overview?.presence ?? [] {
-            lastPlayed[entry.kind] = entry.lastPlayedAt
-        }
-        return lastPlayed
-    }
-
-    /// The game the partner just opened. Both lists are freshest first. Leaving
-    /// one of two open games opens nothing.
-    nonisolated static func openedPartnerGame(from old: [GameKind], to new: [GameKind]) -> GameKind? {
-        new.first { !old.contains($0) }
-    }
-
-    /// The games the partner is in, then the games waiting for this person, played
-    /// most recently first.
-    nonisolated static func featuredOrder(
-        _ kinds: [GameKind],
-        partnerGames: [GameKind],
-        yourTurn: Set<GameKind>,
-        lastPlayed: [GameKind: Date]
-    ) -> [GameKind] {
-        let catalog = GameKind.allCases.filter(kinds.contains)
-        let rest = catalog.filter { !partnerGames.contains($0) }
-        let waiting = recentFirst(rest.filter(yourTurn.contains), lastPlayed: lastPlayed)
-        return partnerGames.filter(catalog.contains) + waiting
-    }
-
-    /// The games played most recently first, then the games neither partner ever
-    /// opened in catalog order.
-    nonisolated static func recentFirst(_ kinds: [GameKind], lastPlayed: [GameKind: Date]) -> [GameKind] {
-        let catalog = GameKind.allCases.filter(kinds.contains)
-        let played = catalog.filter { lastPlayed[$0] != nil }
-            .sorted { lastPlayed[$0, default: .distantPast] > lastPlayed[$1, default: .distantPast] }
-        return played + catalog.filter { lastPlayed[$0] == nil }
-    }
 }
 
 extension GamesViewModel {
@@ -504,5 +483,11 @@ extension GamesViewModel {
         let preview = await GameChatPreviewLoader(dependencies: dependencies).load(for: kind, userID: userID)
         guard participants.currentUserID == userID, !Task.isCancelled else { return nil }
         return preview
+    }
+
+    /// What the kind's hub tile shows in place of its objects.
+    func tilePicture(for kind: GameKind) async -> GameHubTilePicture? {
+        guard let userID = currentUserID, let preview = await chatPreview(for: kind) else { return nil }
+        return GameHubTilePicture(preview: preview, drawings: historyDrawings, ownerUserID: userID)
     }
 }

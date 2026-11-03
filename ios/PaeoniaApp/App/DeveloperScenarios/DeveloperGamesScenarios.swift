@@ -35,7 +35,7 @@
           game: Fixture.game(state: .choosingWord, turn: Fixture.me, roundID: nil),
           choices: Fixture.choices
         )
-      case .gamesHubWaiting, .drawWaitingForGuess, .drawWatchingHints, .gamesHubBoardGames:
+      case .gamesHubWaiting, .drawWaitingForGuess, .drawWatchingHints, .gamesHubBoardGames, .gamesHubQuiet:
         return Fixture.state(
           settings: mine,
           game: Fixture.game(state: .guessing, turn: Fixture.partner),
@@ -189,8 +189,7 @@
       let drawState = state(for: scenario)
       let cache = InMemoryGamesCache(
         state: drawState,
-        overview: DeveloperMindMeldScenarioFactory.overview(for: scenario, drawAndGuess: drawState)
-          ?? DeveloperBoardGamesFixture.overview(for: scenario, drawAndGuess: drawState),
+        overview: overview(for: scenario, drawAndGuess: drawState),
         ownerUserID: DeveloperGamesFixture.me
       )
       let storyChainCache = InMemoryStoryChainCache(
@@ -225,7 +224,17 @@
         memoryPhotos: DeveloperBoardPhotoProvider()
       )
       ExquisiteCorpseDeveloperScenarioFactory.configure(&dependencies, for: scenario)
+      DeveloperGamesHubQuiet.configure(&dependencies, for: scenario)
       return DeveloperGuessMySpotScenarioFactory.configured(dependencies, for: scenario)
+    }
+
+    /// The overview a hub scenario sets, or nil to keep the one its Draw & Guess state implies.
+    private static func overview(
+      for scenario: DeveloperScenario, drawAndGuess state: RemoteDrawAndGuessState
+    ) -> RemoteGamesOverview? {
+      DeveloperGamesHubQuiet.overview(for: scenario, drawAndGuess: state)
+        ?? DeveloperMindMeldScenarioFactory.overview(for: scenario, drawAndGuess: state)
+        ?? DeveloperBoardGamesFixture.overview(for: scenario, drawAndGuess: state)
     }
 
     private static func seededDrawingStore(isLoading: Bool) -> InMemoryGameDrawingStore {

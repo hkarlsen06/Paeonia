@@ -5,7 +5,7 @@ import SwiftUI
 /// the photo's sun coming up through the boxes. It follows `docs/games/hub-artwork.md`.
 struct DotsAndBoxesHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1.8) { progress in
+        GameHubArtwork(kind: .dotsAndBoxes, duration: 1.8) { progress in
             DotsAndBoxesHubScene(progress: progress)
         }
     }

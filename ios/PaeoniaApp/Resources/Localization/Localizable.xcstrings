@@ -16347,6 +16347,90 @@
         }
       }
     },
+    "games.hub.playDays.streak" : {
+      "comment" : "Games tab, top of the screen: how many days in a row both partners played a game. %lld is the number of days, always 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day in a row"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days in a row"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag på rad"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager på rad"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "games.hub.playDays.total" : {
+      "comment" : "Games tab, top of the screen: on how many days both partners have played a game, counting every day since they started. %lld is the number of days.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day played together"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days played together"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag spilt sammen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager spilt sammen"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "games.hub.section.more" : {
       "comment" : "Games tab heading above the grid of the other games, shown under the Right now cards",
       "extractionState" : "manual",
@@ -16379,6 +16463,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Akkurat nå"
+          }
+        }
+      }
+    },
+    "games.hub.section.todaysPick" : {
+      "comment" : "Games tab heading above the one game suggested for today, shown when no game is waiting",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's pick"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spill"
           }
         }
       }

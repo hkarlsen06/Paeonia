@@ -28,7 +28,7 @@
         return Fixture.playing(Fixture.revealedRounds(1) + [Fixture.open(2)])
       case .gamesHubYourTurn:
         return Fixture.playing(Fixture.revealedRounds(1) + [Fixture.open(2, partnerLocked: true)])
-      case .mindMeldWaiting, .gamesHubWaiting:
+      case .mindMeldWaiting, .gamesHubWaiting, .gamesHubQuiet:
         return Fixture.playing(Fixture.revealedRounds(2) + [Fixture.open(3, mine: "sea")])
       case .mindMeldWaitingOffline:
         // The word is only in the pending queue (`DeveloperMindMeldScenarioView.seed`).
