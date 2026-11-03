@@ -12,6 +12,7 @@ struct GuessMySpotScoreLine: View {
     let points: Int
     /// How many of this round's points have counted up so far.
     let countedPoints: Int
+    var isCompact = false
 
     private var shown: GuessMySpotScore {
         score.counting(points: points, counted: countedPoints, guesserIsMe: guesserIsMe)
@@ -34,9 +35,10 @@ struct GuessMySpotScoreLine: View {
                     }
                 }
             case let .against(mine, theirs):
-                // The card's row spacing, so the avatars sit as far apart as the
-                // title sits from the photo.
-                VStack(alignment: .trailing, spacing: PaeoniaSpacing.space12) {
+                let layout = isCompact
+                    ? AnyLayout(HStackLayout(alignment: .bottom, spacing: PaeoniaSpacing.space16))
+                    : AnyLayout(VStackLayout(alignment: .trailing, spacing: PaeoniaSpacing.space12))
+                layout {
                     column(me, tint: .paeoniaPartnerOne, total: mine, grows: guesserIsMe)
                     column(partner, tint: .paeoniaPartnerTwo, total: theirs, grows: !guesserIsMe)
                 }
@@ -48,10 +50,11 @@ struct GuessMySpotScoreLine: View {
     }
 
     private func column(_ player: GamePlayer, tint: Color, total: Int, grows: Bool) -> some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
+        HStack(alignment: isCompact ? .bottom : .center, spacing: PaeoniaSpacing.space8) {
             avatar(player, tint: tint)
             totalLine(total, grows: grows)
         }
+        .frame(maxWidth: isCompact ? .infinity : nil)
     }
 
     private func totalLine(_ total: Int, grows: Bool) -> some View {
@@ -60,13 +63,15 @@ struct GuessMySpotScoreLine: View {
                 Text(.guessMySpotRevealPoints(GuessMySpotText.number(points)))
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaAccentPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(isCompact ? 0.1 : 0.5)
                     .opacity(countedPoints > 0 ? 1 : 0)
             }
             Text(verbatim: GuessMySpotText.number(total))
                 .font(PaeoniaTypography.title.monospacedDigit())
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.5)
+                .minimumScaleFactor(isCompact ? 0.1 : 0.5)
                 .contentTransition(.numericText(value: Double(total)))
         }
     }

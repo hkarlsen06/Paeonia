@@ -131,7 +131,8 @@ struct GuessMySpotResultCard: View {
             score: viewModel.score,
             guesserIsMe: round?.guesserUserID == viewModel.currentUserID,
             points: plan.points,
-            countedPoints: countedPoints
+            countedPoints: countedPoints,
+            isCompact: isCollapsed
         )
     }
 
