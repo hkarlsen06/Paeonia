@@ -18,7 +18,7 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-11-03.
 
-- Piccante uses plain round player portraits with the shared presence ring and score capsule. Together counts finished games. The board composes illustrated chocolates in gold cups, empty wrappers with crumbs for eaten tiles, and chili pieces for burns. Selection outlines, round owner avatars and a flame identify states without bite numbers. Only the partner's note appears, on a dark plum card with light text. Finished boxes stay in the game chat.
+- Piccante uses plain round player portraits with the shared presence ring and score capsule. Together counts finished games. The board composes nine illustrated chocolate varieties in gold cups. Both phones use the same arrangement, with no identical neighbors. Eaten tiles leave empty wrappers with crumbs, and burns reveal chili pieces. Selection outlines, round owner avatars and a flame identify states without bite numbers. Only the partner's note appears, on a dark plum card with light text. Finished boxes stay in the game chat.
 
 - A game chat opened from a game or a game history shows as a sheet over that screen instead of switching to Chats. This covers the toolbar chat button and a partner message's banner, even for another game's chat. The sheet opens at half height so the board stays visible, and grows to full height when the keyboard comes up. Closing or swiping it down shows the game again with its unfinished input. Result cards open their full result or replay inside the sheet. A game chat opened from Chats, or from a link or banner while no game is open, still opens in Chats.
 

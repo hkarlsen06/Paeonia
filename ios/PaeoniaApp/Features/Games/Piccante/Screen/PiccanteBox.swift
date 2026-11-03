@@ -26,7 +26,7 @@ struct PiccanteBox: View {
                     select(tile)
                 } label: {
                     PiccanteTile(
-                        tile: tile,
+                        variety: variety(tile),
                         isEaten: eaten.contains { $0.tile == tile },
                         chilis: revealsChilis
                             ? game.chilis.filter { $0.tile == tile }.map { player($0.userID) } : [],
@@ -60,6 +60,12 @@ struct PiccanteBox: View {
         .aspectRatio(1, contentMode: .fit)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: selected)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: partnerSelected)
+    }
+
+    private func variety(_ tile: Int) -> Int {
+        let offset = PiccanteRules.flavorIndex(gameID: game.id, number: game.gameNumber, tile: 0)
+        // Stepping four through nine varieties uses them all, with distinct neighbors at widths 3, 4 and 5.
+        return (offset + tile * 4) % 9
     }
 
     func label(_ tile: Int) -> String {

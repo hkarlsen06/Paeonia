@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Illustrated pieces share a camera and cup size. Overlays describe the game state.
 struct PiccanteTile: View {
-    let tile: Int
+    let variety: Int
     let isEaten: Bool
     let chilis: [BoardGamePlayerInfo]
     let isOwnChili: Bool
@@ -47,10 +47,16 @@ struct PiccanteTile: View {
     private var artwork: ImageResource {
         if isBurned { return .gameHubPiccanteBurned }
         if isEaten && !isOpening { return .gameHubPiccanteWrapper }
-        switch tile % 3 {
+        switch variety {
         case 0: return .gameHubPiccanteHeart
         case 1: return .gameHubPiccanteDrizzle
-        default: return .gameHubPiccanteNut
+        case 2: return .gameHubPiccanteNut
+        case 3: return .gameHubPiccanteGoldDrizzle
+        case 4: return .gameHubPiccanteWhiteTruffle
+        case 5: return .gameHubPiccanteRosette
+        case 6: return .gameHubPiccantePraline
+        case 7: return .gameHubPiccanteLavenderStripes
+        default: return .gameHubPiccanteFlower
         }
     }
 
