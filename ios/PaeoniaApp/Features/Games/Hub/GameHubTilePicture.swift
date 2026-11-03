@@ -46,43 +46,28 @@ private struct GameHubTilePictureLoader: ViewModifier {
     }
 }
 
-/// The couple's content on a hub tile, in the canvas's pixels.
+/// The couple's content on a hub tile, in the canvas's pixels, like an album cover: a
+/// dark see-through square with rounded corners and a drop shadow, on the backdrop made
+/// from its own colors.
 struct GameHubTileContent: View {
     let picture: GameHubTilePicture
-    let tint: Color?
 
     var body: some View {
         let side: CGFloat = 640
-        let base = CGPoint(x: 512, y: 676)
         let shape = RoundedRectangle(cornerRadius: 64, style: .continuous)
-        ZStack {
-            Ellipse()
-                .fill(.black.opacity(0.35))
-                .frame(width: side * 0.85, height: 40)
-                .blur(radius: 16)
-                .position(x: base.x, y: base.y + 6)
-            GameChatPreviewContent(
-                preview: picture.preview,
-                drawings: picture.drawings,
-                ownerUserID: picture.ownerUserID
-            ) {
-                Color.clear
-            }
-            .scaleEffect(side / GameChatPreview.side)
-            .frame(width: side, height: side)
-            .background {
-                ZStack {
-                    Color.paeoniaBackgroundPrimary
-                    (tint ?? .clear).opacity(0.62)
-                    LinearGradient(
-                        colors: [.white.opacity(0.12), .black.opacity(0.18)], startPoint: .top, endPoint: .bottom
-                    )
-                }
-            }
-            .clipShape(shape)
-            .shadow(color: .black.opacity(0.3), radius: 30, y: 18)
-            .position(x: base.x, y: base.y - side / 2)
+        GameChatPreviewContent(
+            preview: picture.preview,
+            drawings: picture.drawings,
+            ownerUserID: picture.ownerUserID
+        ) {
+            Color.clear
         }
+        .scaleEffect(side / GameChatPreview.side)
+        .frame(width: side, height: side)
+        .background(Color.paeoniaBackgroundSecondary.opacity(0.55))
+        .clipShape(shape)
+        .shadow(color: .black.opacity(0.35), radius: 30, y: 18)
+        .position(x: 512, y: 676 - side / 2)
         .allowsHitTesting(false)
     }
 }

@@ -70,7 +70,7 @@ final class PiccanteHubModel: GameHubModel {
 
 struct PiccanteHubArtwork: View {
     var body: some View {
-        GameHubArtwork(duration: 1.6) { PiccanteHubScene(progress: $0) }
+        GameHubArtwork(kind: .piccante, duration: 1.6) { PiccanteHubScene(progress: $0) }
     }
 }
 

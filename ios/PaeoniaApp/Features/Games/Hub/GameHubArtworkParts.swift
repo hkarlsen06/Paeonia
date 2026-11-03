@@ -1,14 +1,14 @@
 import SwiftUI
 
-/// A hub card's picture: the shared backdrop, as wide as the card and anchored at the
-/// top, with the game's scene on it. Under the card's text the backdrop goes out of focus
-/// with a Gaussian blur, so the picture carries on behind the text. The scene is laid out
-/// in the canvas's pixels, so it keeps its shape at every card width. It plays once when
-/// the card appears, as `progress` runs from 0 to 1 at an even pace. With Reduce Motion it
-/// starts finished. VoiceOver skips the picture, since the card says the same in words.
+/// A hub card's picture: the game's scene on a moving backdrop in the colors of the scene
+/// itself (`GameHubFluidBackdrop`), behind the whole card. The scene is laid out in the
+/// canvas's pixels, so it keeps its shape at every card width. It plays once when the card
+/// appears, as `progress` runs from 0 to 1 at an even pace. With Reduce Motion it starts
+/// finished. VoiceOver skips the picture, since the card says the same in words.
 ///
-/// `kind` tints the backdrop's walls in the game's color. On a hub tile with the couple's
-/// own content (`gameHubTilePicture`), that picture stands in place of the scene.
+/// On a hub tile with the couple's own content (`gameHubTilePicture`), that content stands
+/// in place of the scene, and the backdrop takes its colors. Without a `kind`, as on the
+/// daily question card, the scene stands in the painted room (`GameHubBackdrop`) instead.
 struct GameHubArtwork<Scene: View & Animatable>: View {
     var kind: GameKind?
     let duration: TimeInterval
@@ -18,22 +18,33 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.paeoniaIllustratedScene) private var layout
     @Environment(\.gameHubTilePicture) private var picture
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter: PaeoniaBannerCenter?
     @State private var isPlayed = false
+
+    private var paletteSource: GameHubPaletteSource? {
+        if let picture { return .content(picture.preview) }
+        return kind.map { .illustration($0) }
+    }
 
     var body: some View {
         GeometryReader { proxy in
             let canvasSize = PaeoniaIllustratedCardLayout.canvasSize
             let scale = proxy.size.width / canvasSize.width
-            let textTop = proxy.size.width * layout.share
-            let backdropSize = CGSize(width: proxy.size.width, height: canvasSize.height * scale)
-            let backdropTop = -layout.top * scale
             let objectScale = scale * layout.objectScale
             let base = PaeoniaIllustratedCardLayout.Scene.fullObjectBase
             ZStack(alignment: .topLeading) {
-                backdrop(size: backdropSize, top: backdropTop, textTop: textTop)
+                if let paletteSource {
+                    GameHubFluidBackdrop(palette: GameHubPalettes.shared[paletteSource] ?? .fallback)
+                } else {
+                    room(
+                        size: CGSize(width: proxy.size.width, height: canvasSize.height * scale),
+                        top: -layout.top * scale,
+                        textTop: proxy.size.width * layout.share
+                    )
+                }
                 Group {
                     if let picture {
-                        GameHubTileContent(picture: picture, tint: kind?.hubWallTint)
+                        GameHubTileContent(picture: picture)
                     } else {
                         scene(isPlayed || reduceMotion ? 1 : 0)
                             .animation(reduceMotion ? nil : .linear(duration: duration).delay(delay), value: isPlayed)
@@ -48,21 +59,38 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
                 )
             }
         }
-        // The backdrop ends in deep plum, so a card taller than the canvas continues it.
+        // The room ends in deep plum, so a card taller than the canvas continues it.
         .background(Color.paeoniaBackgroundSecondary)
         .clipped()
         .dynamicTypeSize(.large)
         .accessibilityHidden(true)
         .onAppear { isPlayed = true }
+        .task(id: paletteSource) {
+            guard let paletteSource else { return }
+            await GameHubPalettes.shared.load(paletteSource, drawings: picture?.drawings, render: renderPicture)
+        }
     }
 
-    /// The backdrop, sharp above the text and out of focus under it.
-    private func backdrop(size: CGSize, top: CGFloat, textTop: CGFloat) -> some View {
+    /// The card's picture drawn small, for its palette. An image renderer starts with an
+    /// empty environment, and the board views in the couple's content read the banner center.
+    private func renderPicture() -> CGImage? {
+        if let picture {
+            let content = GameChatPreviewContent(
+                preview: picture.preview, drawings: picture.drawings, ownerUserID: picture.ownerUserID
+            ) { Color.clear }
+            return GameHubPalettes.render(content.environment(bannerCenter), width: GameChatPreview.side)
+        }
+        let canvas = PaeoniaIllustratedCardLayout.canvasSize
+        return GameHubPalettes.render(scene(1).frame(width: canvas.width, height: canvas.height), width: canvas.width)
+    }
+
+    /// The room, sharp above the text and out of focus under it.
+    private func room(size: CGSize, top: CGFloat, textTop: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
-            GameHubBackdrop(tint: kind?.hubWallTint)
+            GameHubBackdrop()
                 .frame(width: size.width, height: size.height)
                 .offset(y: top)
-            GameHubBackdrop(tint: kind?.hubWallTint)
+            GameHubBackdrop()
                 .frame(width: size.width, height: size.height)
                 .offset(y: top)
                 .blur(radius: PaeoniaIllustratedCardLayout.blurRadius, opaque: true)
@@ -79,52 +107,15 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
     }
 }
 
-/// The backdrop every hub card shares: a room at night, its left wall lit pink and its
+/// The daily question card's backdrop: a room at night, its left wall lit pink and its
 /// right wall lavender. The corner where they meet is behind the middle of the scene, and
-/// the floor in front is where the game's objects stand. Below the scene the floor darkens
-/// to deep plum, so the card's text reads on it. A game's `tint` colors the walls and
-/// keeps their light and shade (a `color` blend), so every game has its own room in the
-/// same house. The floor stays as it is.
+/// the floor in front is where the objects stand. Below the scene the floor darkens to
+/// deep plum, so the card's text reads on it.
 struct GameHubBackdrop: View {
-    var tint: Color?
-
-    /// Keep in step with `TINT_OPACITY` and `TINT_SHADE` in `art_asset.py`. The shade keeps
-    /// a cream object 3:1 from the tinted wall behind it.
-    static let tintOpacity = 0.85
-    static let tintShade = 0.1
-
     var body: some View {
         Image(.gameHubBackdrop)
             .resizable()
-            .overlay {
-                if let tint {
-                    tint.opacity(Self.tintOpacity)
-                        .blendMode(.color)
-                        .mask { GameHubWalls().blur(radius: 1) }
-                }
-            }
-            .overlay {
-                if tint != nil {
-                    Color.black.opacity(Self.tintShade)
-                        .mask { GameHubWalls().blur(radius: 1) }
-                }
-            }
-            .compositingGroup()
             .accessibilityHidden(true)
-    }
-}
-
-/// The two walls of the backdrop, down to where they meet the floor, measured on the image.
-nonisolated private struct GameHubWalls: Shape {
-    func path(in rect: CGRect) -> Path {
-        let canvas = PaeoniaIllustratedCardLayout.canvasSize
-        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: rect.minX + rect.width * x / canvas.width, y: rect.minY + rect.height * y / canvas.height)
-        }
-        var path = Path()
-        path.addLines([point(0, 0), point(1_024, 0), point(1_024, 316), point(514, 250), point(0, 325)])
-        path.closeSubpath()
-        return path
     }
 }
 

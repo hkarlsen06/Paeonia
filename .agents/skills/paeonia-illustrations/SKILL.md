@@ -7,7 +7,7 @@ description: Make illustrated raster assets for the Paeonia iOS app with Codex i
 
 Every illustration in the app looks like it came from one sticker set. You get that by holding four things fixed on every asset: the **style block**, a **style reference** from the approved set, the **checks**, and the **import**. Only the subject and its composition change.
 
-Every asset is an **object**: one thing on a transparent background, such as a peony, a game disc or a game board, that code places and animates. The one exception is the backdrop all hub cards share (`GameHubBackdrop`), an opaque 1024 by 1536 painting of a room. Each card places its game's objects on it. Read `docs/games/hub-artwork.md` before you brief objects for a hub card. It has the zones, the camera and the beats.
+Every asset is an **object**: one thing on a transparent background, such as a peony, a game disc or a game board, that code places and animates. The one exception is the daily question card's backdrop (`GameHubBackdrop`), an opaque 1024 by 1536 painting of a room. Game cards have no painted backdrop: the app colors each one from its own objects (`GameHubPalette`), so the objects' colors decide the card's colors. Read `docs/games/hub-artwork.md` before you brief objects for a hub card. It has the zones, the camera and the beats.
 
 The approved set lives in `ios/PaeoniaApp/Resources/Assets.xcassets/GameHub/`. `GameHubPeony` and `GameHubConnectFourDiscPink` are the clearest examples of the object style, and `GameHubLudoBoard` and `GameHubStoryChainNotebook` of the hub card objects.
 
@@ -65,9 +65,9 @@ It prints corner alpha, the share of pale fringe on the cutout's edge, and the o
 
 A white or cream object, like paper, reads as some fringe because its own edge is pale. Judge those by eye on the preview.
 
-For a hub card, ask for two candidates of the main object and keep the better one. Compose the card on a render of the backdrop before you write code, with the objects at their planned places, and check it against the zones in `docs/games/hub-artwork.md`. Look at it next to the other cards: the same camera, the same size, the same light.
+For a hub card, ask for two candidates of the main object and keep the better one. Compose the card on deep plum before you write code, with the objects at their planned places, and check it against the zones in `docs/games/hub-artwork.md`. The app colors a game card's backdrop from these objects, so their colors also decide how the card stands apart from its neighbors. Look at it next to the other cards: the same camera, the same size, the same light.
 
-If you change the backdrop, a game's wall tint, or where a card's text starts, run `text`. It lays the card frame's shadow and blur over the backdrop and checks every line against the contrast it needs, for a full card and a hub card, on the bare backdrop and with each game's wall tint. It also checks that a cream object stands out 3:1 from each tinted wall. Its tint list and numbers follow `GameHubWallTint.swift`, `GameHubBackdrop` and `PaeoniaIllustratedCardLayout.Scene`:
+Game cards need no contrast run, since `GameHubPalette` caps their backdrop's colors. If you change the daily question card's room or where a card's text starts, run `text`. It lays the card frame's shadow and blur over the room and checks every line against the contrast it needs, for a full card and a hub card. It also checks that a cream object stands out 3:1 from the wall. Its numbers follow `GameHubBackdrop` and `PaeoniaIllustratedCardLayout.Scene`:
 
 ```bash
 /tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py text /tmp/paeonia-art/backdrop.png

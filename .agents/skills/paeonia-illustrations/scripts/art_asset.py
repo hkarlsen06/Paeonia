@@ -10,10 +10,9 @@ Run with a Python that has Pillow, outside the repository:
 
 `check` reports each file's size, alpha, corners, edge fringe and the object's
 bounds, and writes a preview on the plum background to /tmp/paeonia-art-preview.png.
-`text` simulates the hub card's shadow and blur on a 1024 x 1536 card backdrop and checks
+`text` simulates the card's shadow and blur on a 1024 x 1536 card backdrop and checks
 each line of the card's text against the contrast docs/games/hub-artwork.md asks for, with
-the text where a full card and a hub card start it, on the bare backdrop and with each
-game's wall tint.
+the text where a full card and a hub card start it.
 `import` trims the transparent margin, scales the longest side down to the given
 pixel count (three times the largest size the app shows it at), and writes a
 universal imageset. With --opaque it keeps the whole image and writes a JPEG. Run `import` from the repository root.
@@ -104,64 +103,14 @@ CARD_HEIGHT_BELOW_TEXT = 260
 # Where the card's text starts, in canvas pixels. Keep in step with the `textTop` of
 # PaeoniaIllustratedCardLayout.Scene: `full` and `hubBanner`.
 TEXT_TOPS = [("card", 720), ("hub card", 520)]
-# Each game's wall tint (GameKind.hubWallTint), the walls they cover, and the opacity of
-# the `color` blend. Keep in step with GameHubWallTint.swift and GameHubBackdrop.
-WALL_TINTS = [
-    ("ludo", 0xF2B84B), ("draw and guess", 0xFF8084), ("four in a row", 0x6FB1F0),
-    ("mind meld", 0xB99CF2), ("consensio", 0x82BAA5), ("guess my spot", 0x3FB5B0),
-    ("dots and boxes", 0xE8915D), ("ultimate tic-tac-toe", 0x8E9CF2), ("story chain", 0xEF5094),
-    ("odd creatures", 0xC46FD0),
-]
-WALLS = [(0, 0), (1024, 0), (1024, 316), (514, 250), (0, 325)]
-TINT_OPACITY = 0.85
-# A tinted wall is also shaded this much darker, so a cream object still stands out from it.
-TINT_SHADE = 0.1
-# The wall behind the top of the main object's spot, in canvas pixels, and the cream of the
-# frame around a tile's picture, which must stand out from it by 3:1.
+# The wall behind the top of the main object's spot, in canvas pixels, and the cream of an
+# object, which must stand out from it by 3:1.
 WALL_BEHIND_OBJECT = (212, 200, 812, 248)
 CREAM = BLUSH
 
 
 def mix(a, b, t):
     return tuple(x * (1 - t) + y * t for x, y in zip(a, b))
-
-
-def tinted(image, hexcolor):
-    """The backdrop with its walls in a `color` blend of the tint (the PDF blend mode:
-    the tint's hue and saturation at the wall's luminosity), at TINT_OPACITY. `image` may
-    be the backdrop at any size."""
-    from PIL import ImageDraw, ImageFilter
-
-    def lum(c):
-        return 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]
-
-    def set_lum(c, target):
-        c = [v + target - lum(c) for v in c]
-        lo, hi, l = min(c), max(c), lum(c)
-        if lo < 0:
-            c = [l + (v - l) * l / (l - lo) for v in c]
-        if hi > 1:
-            c = [l + (v - l) * (1 - l) / (hi - l) for v in c]
-        return c
-
-    scale = image.size[0] / 1024
-    mask = Image.new("L", image.size, 0)
-    ImageDraw.Draw(mask).polygon([(x * scale, y * scale) for x, y in WALLS], fill=255)
-    mask = mask.filter(ImageFilter.GaussianBlur(max(1, 3 * scale)))
-    tint = [((hexcolor >> shift) & 255) / 255 for shift in (16, 8, 0)]
-    out = image.copy()
-    pixels, weights = out.load(), mask.load()
-    for y in range(out.size[1]):
-        for x in range(out.size[0]):
-            weight = weights[x, y] / 255 * TINT_OPACITY
-            if weight:
-                base = [v / 255 for v in pixels[x, y]]
-                blend = set_lum(tint, lum(base))
-                shade = 1 - TINT_SHADE * weights[x, y] / 255
-                pixels[x, y] = tuple(
-                    round(255 * shade * (b * (1 - weight) + t * weight)) for b, t in zip(base, blend)
-                )
-    return out
 
 
 def wall_contrast(small):
@@ -178,24 +127,21 @@ def contrast(a, b):
 def text(paths):
     """Simulate the frame's shadow and blur on a 1024 x 1536 card backdrop and check every
     text line against the contrast it needs, at the narrowest card (335 pt), for each text
-    top, on the bare backdrop and with each wall tint. Each line's worst point is its 0.5th
-    percentile, so a stray pixel does not count."""
+    top. Each line's worst point is its 0.5th percentile, so a stray pixel does not count."""
     failed = False
     for path in paths:
         image = Image.open(path).convert("RGB")
+        name = os.path.basename(path)
         if image.size != (1024, 1536):
-            print(f"FAIL {os.path.basename(path)}: {image.size[0]}x{image.size[1]}, expected 1024x1536")
+            print(f"FAIL {name}: {image.size[0]}x{image.size[1]}, expected 1024x1536")
             failed = True
             continue
-        small = image.resize((256, 384))
-        variants = [("no tint", small)] + [(name, tinted(small, color)) for name, color in WALL_TINTS]
-        for tint_name, backdrop in variants:
-            ratio = wall_contrast(backdrop)
-            failed |= ratio < 3
-            print(f"{'ok  ' if ratio >= 3 else 'FAIL'} {os.path.basename(path)}, {tint_name}: object on wall {ratio:.1f}")
+        backdrop = image.resize((256, 384))
+        ratio = wall_contrast(backdrop)
+        failed |= ratio < 3
+        print(f"{'ok  ' if ratio >= 3 else 'FAIL'} {name}: object on wall {ratio:.1f}")
         for label, top in TEXT_TOPS:
-            for tint_name, backdrop in variants:
-                failed |= text_lines(f"{os.path.basename(path)}, {label}, {tint_name}", backdrop, top)
+            failed |= text_lines(f"{name}, {label}", backdrop, top)
     return 1 if failed else 0
 
 
