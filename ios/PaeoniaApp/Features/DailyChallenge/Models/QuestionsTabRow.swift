@@ -110,8 +110,7 @@ nonisolated enum QuestionsTabRow: Identifiable, Equatable, Sendable {
         return lhs.id.uuidString < rhs.id.uuidString
     }
 
-    /// Today's list: the questions it shows and the memory and story chats from `today`,
-    /// in Questions tab order.
+    /// The top list includes today's rows and older unread conversations.
     static func todayRows(
         questions: [DailyChallengeQuestion],
         conversations: [SubjectConversation],
@@ -119,7 +118,7 @@ nonisolated enum QuestionsTabRow: Identifiable, Equatable, Sendable {
         isNew: (DailyChallengeQuestion) -> Bool = { _ in false }
     ) -> [Self] {
         let rows = questions.map(Self.question)
-            + conversations.filter { $0.isToday(today) }.map(Self.conversation)
+            + conversations.filter { $0.isToday(today) || $0.isUnread }.map(Self.conversation)
         return rows.sorted { questionsTabOrder($0, $1, isNew: isNew) }
     }
 }

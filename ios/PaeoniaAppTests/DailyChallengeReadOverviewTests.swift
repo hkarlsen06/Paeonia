@@ -56,7 +56,7 @@ struct DailyChallengeReadOverviewTests {
         )
     }
 
-    @Test func todaysMemoryAndStoryChatsJoinTodaysListAndAnUnreadOneRanksWithTheNew() {
+    @Test func todaysMemoryAndStoryChatsJoinTodaysListAndOlderUnreadChatsRankWithTheNew() {
         let t0 = TestDailyChallengeIDs.answerDate
         let t1 = t0.addingTimeInterval(600)
         let t2 = t1.addingTimeInterval(600)
@@ -97,12 +97,27 @@ struct DailyChallengeReadOverviewTests {
         )
 
         // The unread memory and story sit with the new question, by time, under the to-do.
-        // The read ones sort by time with the rest. Chats from an earlier day are not here,
-        // even a memory dated today.
+        // The read ones sort by time with the rest. Older unread chats also stay above
+        // the read timeline until opened.
         #expect(
             rows.map(\.id)
-                == [awaiting, unreadMemory.id, newAnswer, unreadStory.id, recent, readStory.id, readMemory.id]
+                == [awaiting, unreadMemory.id, newAnswer, unreadStory.id, earlierStory.id, earlierMemory.id,
+                    recent, readStory.id, readMemory.id]
         )
+    }
+
+    @Test func readingAnOlderConversationReturnsItToHistoryWithoutDuplicates() {
+        let now = TestDailyChallengeIDs.answerDate
+        let today = MemoryTimeline.localDateString(for: now)
+        let unread = storyConversation(postedAt: now.addingTimeInterval(-86_400), isUnread: true)
+        let read = SubjectConversation(subject: unread.subject, summary: unread.summary, isUnread: false)
+
+        let top = QuestionsTabRow.todayRows(questions: [], conversations: [unread], today: today)
+        #expect(top.map(\.id) == [unread.id])
+
+        #expect(QuestionsTabRow.todayRows(questions: [], conversations: [read], today: today).isEmpty)
+        let afterReading = DailyChallengeHistory.adding([read], before: today, to: [])
+        #expect(afterReading.flatMap(\.rows).map(\.id) == [read.id])
     }
 
     @Test func aPartnerAnswerIsNewUntilYouHaveSeenIt() throws {

@@ -93,6 +93,9 @@ struct DailyChallengeScreen: View {
             .onChange(of: viewModel.snapshot.coupleDayID) {
                 Task { await reloadEarlierDays() }
             }
+            .onChange(of: AppBadges.shared.counts.questions) {
+                Task { await reloadEarlierDays() }
+            }
             .onChange(of: historyViewModel?.notice) { _, notice in
                 showHistoryBanner(for: notice)
             }
@@ -370,7 +373,7 @@ extension DailyChallengeScreen {
             DailyChallengeEarlierDaysView(
                 history: historyViewModel,
                 viewModel: viewModel,
-                conversations: ordinaryConversations,
+                conversations: ordinaryConversations.filter { !$0.isUnread },
                 today: viewModel.snapshot.todayLocalDate,
                 storyPeople: storyPeople,
                 shownQuestionIDs: Set(readQuestions.map(\.id)),
@@ -419,13 +422,25 @@ extension DailyChallengeScreen {
                 || (!question.isCurrentDay && question.isAwaitingCurrentUserAnswer)
         }
         let topics = topicsCard?.waitingQuestions ?? []
-        guard !topics.isEmpty else { return daily }
-        return (daily + topics).sorted {
+        let shownIDs = Set((daily + topics).map(\.id))
+        var shownChats = Set((daily + topics).map(\.questionID))
+        let earlier = historyViewModel?.days(adding: [], before: viewModel.snapshot.todayLocalDate, excluding: shownIDs)
+            .flatMap(\.rows).compactMap { row -> DailyChallengeQuestion? in
+                guard case .question(let question) = row else { return nil }
+                if viewModel.hasNewPartnerAnswer(question) {
+                    shownChats.insert(question.questionID)
+                    return question
+                }
+                guard question.isChatAvailable, viewModel.hasUnreadChat(for: question.questionID),
+                      shownChats.insert(question.questionID).inserted else { return nil }
+                return question
+            } ?? []
+        return (daily + topics + earlier).sorted {
             DailyChallengeSnapshot.questionsTabOrder($0, $1, isNew: viewModel.hasNewFromPartner)
         }
     }
 
-    /// Today's list: `readQuestions` and the chats about today's memories and stories.
+    /// The top list includes older unread chats as well as today's rows.
     private var todayRows: [QuestionsTabRow] {
         QuestionsTabRow.todayRows(
             questions: readQuestions.filter { !isDayComplete || $0.id != viewModel.snapshot.todayQuestion?.id },
