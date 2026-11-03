@@ -111,7 +111,7 @@ struct StreakPillState: Equatable {
     var usesMutedFlame: Bool { displayCount == 0 || isPaused }
 
     /// The live count sits on a milestone, which lasts until the couple's next day
-    /// counts. The pill shows a small gold dot, and tapping it replays the moment.
+    /// counts. The pill shows a glowing gold number, and tapping it replays the moment.
     var isMilestone: Bool { !isPaused && StreakMilestones.isMilestone(count) }
 }
 
@@ -158,22 +158,17 @@ struct DailyStreakToolbarLabel: View {
     }
 
     private func label(for state: StreakPillState) -> some View {
-        // On a milestone day the gold dot belongs to the number, so it sits right
-        // against it and the flame moves a little further away.
-        HStack(spacing: state.isMilestone ? PaeoniaSpacing.space8 : PaeoniaSpacing.space4) {
+        HStack(spacing: PaeoniaSpacing.space4) {
             flame(for: state)
 
-            HStack(spacing: PaeoniaSpacing.space2) {
-                if state.isMilestone {
-                    Circle()
-                        .fill(Color.paeoniaInkGold)
-                        .frame(width: 6, height: 6)
-                        .shadow(color: .paeoniaInkGold, radius: 3)
-                }
-
-                Text(state.displayCount, format: .number)
-                    .monospacedDigit()
-            }
+            Text(state.displayCount, format: .number)
+                .monospacedDigit()
+                .foregroundStyle(
+                    state.isMilestone ? .paeoniaInkGold
+                        : state.isPaused ? .paeoniaTextSecondary : .paeoniaTextPrimary
+                )
+                .shadow(color: .paeoniaInkGold.opacity(state.isMilestone ? 0.8 : 0), radius: 4)
+                .shadow(color: .paeoniaInkGold.opacity(state.isMilestone ? 0.4 : 0), radius: 8)
 
             if state.isAtRisk {
                 Image(systemName: "hourglass")
