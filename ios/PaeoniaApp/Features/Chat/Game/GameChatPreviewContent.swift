@@ -19,6 +19,7 @@ struct GameChatPreviewContent<Fallback: View>: View {
         switch preview {
         case .board(let board):
             GameChatBoardThumbnail(kind: board.kind, moves: board.moves, me: board.me, colors: board.colors)
+                .environment(\.gameBoardShowsControls, false)
                 .padding(PaeoniaSpacing.space16)
         case .drawing(let id):
             drawing([id])
