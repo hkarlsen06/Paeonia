@@ -144,8 +144,9 @@ struct HomeMapScreen {
         visibleBottom = topInset + geo.size.height
     }
 
-    /// The page's height when the cards fit: the last card ends just above the tab bar.
-    var fillHeight: CGFloat { visibleBottom - PaeoniaSpacing.space8 }
+    /// The page's height when the cards fit. It ends at the top of the tab bar, so the
+    /// footer's card starts level with the bar and shares its outline.
+    var fillHeight: CGFloat { visibleBottom }
     /// At least room for the avatars, plus the fade.
     var shortestBand: CGFloat { topInset + additionalHeaderHeight + 212 + HomeMapMetrics.fadeHeight }
     /// The map view's own height: the tallest the band can be.

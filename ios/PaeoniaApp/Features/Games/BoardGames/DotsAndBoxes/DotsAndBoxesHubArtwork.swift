@@ -41,7 +41,7 @@ private struct DotsAndBoxesHubScene: View, Animatable {
 #Preview {
     DotsAndBoxesHubArtwork()
         .frame(width: 335, height: 420)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+        .clipShape(PaeoniaIllustratedCardLayout.shape)
         .padding()
         .background(.paeoniaBackgroundPrimary)
 }

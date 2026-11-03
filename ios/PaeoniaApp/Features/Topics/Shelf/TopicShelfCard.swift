@@ -7,7 +7,7 @@ struct TopicShelfCard: View {
     let topic: TopicSummary
     let newCount: Int
 
-    private let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+    private let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
 
     private var tint: Color {
         TopicStyle.tint(for: topic.id)

@@ -133,7 +133,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
             // ScrollView also asks for an ideal width. Keep that probe at the viewport width,
             // so the square tiles never start narrow and animate out of their first positions.
             .frame(width: screen.width)
-            // With the map, the page fills the screen down to just above the tab bar, and
+            // With the map, the page fills the screen down to the top of the tab bar, and
             // the map takes whatever the cards leave. One layout pass sizes both, so they
             // move together when a card changes height.
             .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)

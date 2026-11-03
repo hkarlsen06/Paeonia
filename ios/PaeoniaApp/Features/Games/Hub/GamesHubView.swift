@@ -131,10 +131,7 @@ struct GamesHubView: View {
         }
         if let card = game.card(viewModel.cardContext(for: game.kind, isOnHub: true), open: openFromCard) {
             card.environment(\.gameHubCardIsCompact, isCompact)
-                .contentShape(
-                    .contextMenuPreview,
-                    PaeoniaIllustratedCardLayout.shape(isCompact: isCompact)
-                )
+                .contentShape(.contextMenuPreview, PaeoniaIllustratedCardLayout.shape)
                 .contextMenu { menuItems(for: game, open: openFromCard) }
                 .id(game.kind)
                 .matchedGeometryEffect(id: game.kind, in: cardSpace)

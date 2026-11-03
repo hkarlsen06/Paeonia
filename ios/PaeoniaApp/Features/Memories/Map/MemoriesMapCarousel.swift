@@ -47,7 +47,7 @@ struct MemoriesMapCarousel: View {
     /// the date. Titles and places stay on one line at standard text sizes. At
     /// accessibility sizes they wrap and the photo moves above the text.
     private func card(_ entry: MemoryMapEntry) -> some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
         let layout = dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space12))
             : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space12))

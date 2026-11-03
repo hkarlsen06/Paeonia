@@ -46,7 +46,7 @@ private struct ExquisiteCorpseHubScene: View, Animatable {
 #Preview {
     ExquisiteCorpseHubPainting()
         .frame(width: 335, height: 420)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+        .clipShape(PaeoniaIllustratedCardLayout.shape)
         .padding()
         .background(.paeoniaBackgroundPrimary)
 }

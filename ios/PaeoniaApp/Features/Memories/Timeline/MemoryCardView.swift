@@ -27,7 +27,7 @@ struct MemoryCardView: View {
                 StoredReactionBadge(target: .memory(record.snapshot.memoryID))
             }
         }
-        .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 

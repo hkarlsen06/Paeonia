@@ -274,7 +274,7 @@ extension View {
     /// The plum tile with a thin edge and a soft shadow that `HomeWidgetCard` draws the
     /// widget on, for other pictures of the widget.
     func homeWidgetCardSurface() -> some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
 
         return background(.paeoniaBackgroundPrimary)
             .clipShape(shape)

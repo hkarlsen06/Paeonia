@@ -13,7 +13,7 @@ struct PaeoniaCard<Content: View>: View {
     }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
 
         content
             .padding(padding)

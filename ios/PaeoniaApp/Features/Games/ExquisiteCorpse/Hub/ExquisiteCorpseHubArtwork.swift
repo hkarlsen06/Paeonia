@@ -301,7 +301,7 @@ nonisolated private struct ExquisiteCorpseHubCrayonTip: Shape {
 #if DEBUG
 #Preview {
     ExquisiteCorpseHubArtwork()
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+        .clipShape(PaeoniaIllustratedCardLayout.shape)
         .padding()
         .background(.paeoniaBackgroundPrimary)
 }

@@ -33,7 +33,7 @@ struct GuessMySpotRecordsCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(
             .regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.7)),
-            in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+            in: RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
         )
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space8)

@@ -15,7 +15,7 @@ struct PickMatchCard: View {
     private let avatarSize: CGFloat = 44
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.card, style: .continuous)
         Group {
             if isSamePick {
                 samePick
