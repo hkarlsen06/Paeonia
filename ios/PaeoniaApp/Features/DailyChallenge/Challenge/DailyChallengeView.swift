@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Outstanding conversations come first, followed by game presence, today's prompt
-/// and handled content. Earlier answer rounds remain available in dated history.
+/// Today's unanswered challenge stays first. Outstanding conversations follow it,
+/// then game presence and handled content. Earlier answer rounds remain in history.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
     /// Namespace for the daily question zoom transition. The hero card and each
@@ -59,10 +59,10 @@ struct DailyChallengeScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                    rowsList(tabContent.attention)
+                    heroCard
+                    rowsList(attentionRows)
                     topicsEntry
                     activeGameChats
-                    heroCard
                     rowsList(tabContent.recent)
                     topicsShelf
                     earlierDays
@@ -170,10 +170,7 @@ struct DailyChallengeScreen: View {
     @ViewBuilder
     private var heroCard: some View {
         let state = viewModel.homeCardState
-        let shownToday = viewModel.snapshot.todayQuestion.map {
-            tabContent.shownQuestionIDs.contains($0.id)
-        } ?? false
-        if !isDayComplete && !shownToday {
+        if !isDayComplete {
             DailyPromptCard(
                 state: DailyChallengeCardState(
                     kind: state.kind, hasPartnerAnsweredToday: state.hasPartnerAnsweredToday

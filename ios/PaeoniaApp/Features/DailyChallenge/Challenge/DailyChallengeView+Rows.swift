@@ -16,6 +16,17 @@ extension DailyChallengeScreen {
         )
     }
 
+    /// The daily prompt already offers today's answer action. Keep a separate row
+    /// only when it opens an unread conversation from an earlier shared round.
+    var attentionRows: [QuestionsTabRow] {
+        tabContent.attention.filter { row in
+            guard viewModel.homeCardState.kind != .complete,
+                  case .question(let question) = row,
+                  question.id == viewModel.snapshot.todayQuestion?.id else { return true }
+            return viewModel.hasUnreadChat(for: question.questionID)
+        }
+    }
+
     @ViewBuilder
     func rowsList(_ rows: [QuestionsTabRow]) -> some View {
         if !rows.isEmpty {
