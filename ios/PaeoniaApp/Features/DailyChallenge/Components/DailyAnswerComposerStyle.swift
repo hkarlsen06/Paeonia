@@ -65,12 +65,14 @@ struct DailyAnswerFlowHeader: View {
             }
             .frame(maxWidth: .infinity)
 
+            // The middle stretches to fill whatever is left, so it must not take
+            // width the badge and Skip need to stay on one line.
             if question?.hasPartnerAnswer == true {
-                partnerBadge
+                partnerBadge.layoutPriority(1)
             }
 
             if canSkip {
-                skipButton
+                skipButton.layoutPriority(1)
             }
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
