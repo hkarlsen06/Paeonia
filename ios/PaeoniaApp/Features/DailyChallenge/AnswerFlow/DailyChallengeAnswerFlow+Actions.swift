@@ -46,8 +46,6 @@ extension DailyChallengeAnswerFlow {
         if revealsPartnerAnswer { prepared.revealsPartnerAnswer = true }
         guard chat == nil else { return }
         withAnimation(PaeoniaMotion.stateChange) { chat = prepared }
-        heldQuestion = nil
-        committedAnswerHold = nil
     }
 
     func skipCurrent() async {

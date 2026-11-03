@@ -65,7 +65,8 @@ struct DailyPartnerAnswerFlow: View {
                     privacyOperationProvider: privacyOperationProvider,
                     onReportedAndLeft: onReportedAndLeft,
                     onClose: dismiss,
-                    onNext: onNext
+                    onNext: onNext,
+                    waitingContent: { answering }
                 )
                 .transition(.opacity)
             } else {
@@ -140,7 +141,7 @@ struct DailyPartnerAnswerFlow: View {
     }
 
     private var isSubmitting: Bool {
-        viewModel.submittingQuestionID == question.id || phase == .sending
+        viewModel.submittingQuestionID == question.id || phase != .composing
     }
 
     private var isPrimaryDisabled: Bool {

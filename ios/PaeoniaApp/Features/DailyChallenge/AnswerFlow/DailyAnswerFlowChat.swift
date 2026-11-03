@@ -9,7 +9,7 @@ import SwiftUI
 /// Until the reply unlocks, the chat's waiting page shows the user's answer. After the
 /// couple's day ends, today's snapshot can drop the exchange, so the chat keeps its own
 /// copy of the question instead of going back to the unanswered one.
-struct DailyAnswerFlowChat: View {
+struct DailyAnswerFlowChat<WaitingContent: View>: View {
     let chat: ThreadChatViewModel
     let viewModel: DailyChallengeViewModel
     var submittedAnswer: DailySendingPreview?
@@ -20,6 +20,9 @@ struct DailyAnswerFlowChat: View {
     /// Moves on to the topic's next question. Nil for a daily question.
     var onNext: (() -> Void)?
 
+    @ViewBuilder var waitingContent: () -> WaitingContent
+
+    @State private var didWaitForReveal = false
     @State private var reportTarget: PrivacyReportTarget?
 
     /// The live copy of the chat's question, carrying the partner's reply once it unlocks.
@@ -28,6 +31,27 @@ struct DailyAnswerFlowChat: View {
     }
 
     var body: some View {
+        Group {
+            if chat.revealsPartnerAnswer, !chat.isChatAvailable, !didWaitForReveal {
+                waitingContent()
+            } else {
+                conversation
+            }
+        }
+        .onChange(of: question, initial: true) { _, question in
+            if let question { chat.refreshQuestion(question) }
+        }
+        .task {
+            // Keep the filled composer during the usual send-to-reveal handoff.
+            // A slow upload still opens the waiting page so the person can move on.
+            do {
+                try await Task.sleep(for: .seconds(1))
+                didWaitForReveal = true
+            } catch { }
+        }
+    }
+
+    private var conversation: some View {
         NavigationStack {
             ThreadChatView(
                 viewModel: chat,

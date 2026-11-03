@@ -47,14 +47,12 @@ struct DailyChallengeAnswerFlow: View {
                     privacySafetyService: privacySafetyService,
                     privacyOperationProvider: privacyOperationProvider,
                     onReportedAndLeft: onReportedAndLeft,
-                    onClose: dismiss
+                    onClose: dismiss,
+                    waitingContent: { answeringPresentation }
                 )
                 .transition(.opacity)
             } else {
-                phaseContent
-                    .paeoniaReadableWidth()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background { PaeoniaGlowBackground() }
+                answeringPresentation
             }
         }
         .task(id: currentQuestion?.id) {
@@ -72,6 +70,13 @@ struct DailyChallengeAnswerFlow: View {
             }
         }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
+    }
+
+    private var answeringPresentation: some View {
+        phaseContent
+            .paeoniaReadableWidth()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background { PaeoniaGlowBackground() }
     }
 }
 
