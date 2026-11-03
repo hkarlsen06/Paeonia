@@ -31,13 +31,17 @@
             let me = DeveloperGamesFixture.me
             let partner = DeveloperGamesFixture.partner
             let finished = [DeveloperScenario.piccanteBurn, .piccanteSameOne, .piccanteResult].contains(scenario)
-            let size = 4
+            let size = boxSize
+            let iWon = UserDefaults.standard.bool(forKey: "paeonia-scenario-piccante-winner")
+            let myTile = min(12, size * size - 1)
+            let partnerTile = scenario == .piccanteSameOne ? myTile : min(10, size * size - 2)
             let game = RemotePiccanteGame(
                 id: DeveloperGamesFixture.gameID, gameNumber: 1, version: finished ? 8 : 5,
                 starterUserID: me, turnUserID: finished ? nil : scenario == .piccanteLifted ? partner : me,
                 phase: scenario == .piccanteChoose
                     ? .choosing : scenario == .piccanteHide ? .hiding : finished ? .finished : .biting,
-                size: scenario == .piccanteChoose ? nil : size, myChili: scenario == .piccanteHide ? nil : 12,
+                size: scenario == .piccanteChoose ? nil : size,
+                myChili: scenario == .piccanteHide ? nil : myTile,
                 myNote: scenario == .piccanteHide ? nil : "You owe me a back rub.",
                 partnerHidden: scenario != .piccanteHide,
                 mySniff: scenario == .piccanteSniff ? .init(tile: 6, hasChili: false) : nil,
@@ -47,22 +51,25 @@
                     : finished
                         ? [
                             .init(tile: 0, userID: partner), .init(tile: 3, userID: me),
-                            .init(tile: scenario == .piccanteSameOne ? 12 : 10, userID: me),
+                            .init(tile: partnerTile, userID: iWon ? partner : me),
                         ]
                         : [.init(tile: 0, userID: partner), .init(tile: 3, userID: me)],
                 chilis: finished
                     ? [
-                        .init(tile: 12, userID: me, note: "You owe me a back rub."),
-                        .init(
-                            tile: scenario == .piccanteSameOne ? 12 : 10, userID: partner,
-                            note: "Gotcha. A kiss when I see you."),
+                        .init(tile: myTile, userID: me, note: "You owe me a back rub."),
+                        .init(tile: partnerTile, userID: partner, note: "Gotcha. A kiss when I see you."),
                     ] : [],
-                winnerUserID: finished ? partner : nil, loserUserID: finished ? me : nil,
+                winnerUserID: finished ? (iWon ? me : partner) : nil,
+                loserUserID: finished ? (iWon ? partner : me) : nil,
                 myWins: 3, partnerWins: finished ? 5 : 4, gamesFinished: finished ? 8 : 7,
                 startedAt: DeveloperGamesFixture.now, finishedAt: finished ? DeveloperGamesFixture.now : nil)
             return RemotePiccanteState(
                 userID: me, coupleID: DeveloperScenarioFixture.coupleID, partnerUserID: partner,
                 dataEpoch: "piccante-scenario", game: game, unseenResult: finished ? game : nil)
+        }
+        private static var boxSize: Int {
+            let requested = UserDefaults.standard.integer(forKey: "paeonia-scenario-piccante-size")
+            return [3, 4, 5].contains(requested) ? requested : 4
         }
         static func configure(_ dependencies: inout GamesDependencies, for scenario: DeveloperScenario) {
             let state = state(for: scenario)
@@ -79,7 +86,8 @@
         func ensurePiccante() async throws -> RemotePiccanteState { state }
         func sendPiccante(_ move: PiccanteMove, operation _: SyncClientOperation) async throws -> RemotePiccanteState {
             guard move.action == .sniff, let tile = move.tile, var game = state.game,
-                  PiccanteRules.canSniff(tile, in: game, userID: state.userID) else {
+                PiccanteRules.canSniff(tile, in: game, userID: state.userID)
+            else {
                 throw UnavailableGamesGateway.Unavailable()
             }
             game.mySniff = PiccanteSniff(tile: tile, hasChili: tile == 10)
@@ -106,25 +114,36 @@
             _model = State(initialValue: model)
         }
         var body: some View {
-            NavigationStack { PiccanteScreen(viewModel: model) }
-                .onChange(of: model.partnerHere, initial: true) { _, _ in
-                    if scenario == .piccanteLifted {
-                        model.partnerHere = true
-                        model.partnerSelected = 6
-                    }
+            NavigationStack {
+                PiccanteScreen(viewModel: model)
+                    .frame(maxWidth: compactWidth)
+            }
+            .onChange(of: model.playStyle, initial: true) { _, _ in
+                if UserDefaults.standard.bool(forKey: "paeonia-scenario-piccante-together") {
+                    model.playStyle = .together
                 }
-                .task {
-                    await model.reload()
-                    if scenario == .piccanteLifted {
-                        model.partnerHere = true
-                        model.partnerSelected = 6
-                    }
-                    if scenario == .piccanteHide {
-                        model.selected = 5
-                        model.note = "A kiss when I see you."
-                    }
-                    if scenario == .piccanteBiting { model.selected = 6 }
+            }
+            .onChange(of: model.partnerHere, initial: true) { _, _ in
+                if scenario == .piccanteLifted {
+                    model.partnerHere = true
+                    model.partnerSelected = 6
                 }
+            }
+            .task {
+                await model.reload()
+                if scenario == .piccanteLifted {
+                    model.partnerHere = true
+                    model.partnerSelected = 6
+                }
+                if scenario == .piccanteHide {
+                    model.selected = 5
+                    model.note = "A kiss when I see you."
+                }
+                if scenario == .piccanteBiting { model.selected = 6 }
+            }
+        }
+        private var compactWidth: CGFloat {
+            UserDefaults.standard.bool(forKey: "paeonia-scenario-piccante-compact") ? 320 : .infinity
         }
     }
 #endif

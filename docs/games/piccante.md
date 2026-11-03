@@ -34,6 +34,14 @@ Size choice, hiding with optional note, waiting, biting with selection and sniff
 
 The hub follows Ultimate Tic-Tac-Toe in the catalog. Its illustration is an open chocolate box with a warm glowing chocolate and small chili. Three tutorial cards teach hiding with a note, biting and own-chili danger, and the sniff. Every tile reads its row, column, filling, own chili and selection to VoiceOver. Extra controls open a native Board controls list.
 
+## Visual presentation
+
+The player header and score capsule reuse the board games' components. An absent partner has no presence subtitle. The shared portrait ring shows presence and handles the arrival pulse. Together shows completed games. The score opens the game chat, where the couple's past boxes live. The Games navigation root supplies the chat button too. Piccante has no separate history screen.
+
+The box composes five transparent illustrations in the house 3D sticker style. Heart, drizzle and hazelnut chocolates share one overhead camera, gold cup and light. A bitten piece exposes cream filling, and the burned piece exposes chili filling. A checkmark identifies your lifted chocolate, and an arrow identifies your partner's. Chilis remain visible on your own piece, and a flame identifies the burned piece. Bite numbers and both owners' marks stay on the finished board. These shapes distinguish states without color.
+
+The finished box becomes smaller to make room for the notes. The winning note leads on warm paper, with its recipient above the message and writer below it. The unused note is smaller and tinted lavender. Its heading describes the alternate outcome from the viewer's perspective. Both notes show immediately and wrap with Dynamic Type.
+
 ## Private sniff selection
 
 Sniff opens its own private tile picker. It never reuses or broadcasts the lifted bite selection. Otherwise the partner could infer the sniffed tile when the used indicator appears. Closing the picker leaves the public bite selection unchanged. The partner learns only that a sniff was used.
@@ -45,6 +53,8 @@ Sniff opens its own private tile picker. It never reuses or broadcasts the lifte
 The phone overlays queued operations in client order. Seen marks change per-person result metadata without advancing the game version. An offline bite holds its chocolate while the server decides the outcome. A stale move is dropped immediately, refreshes the authoritative box and shows the shared recovery banner. A stale rematch quietly loads the game the partner already started.
 
 ## Artwork and sound
+
+The board pieces are `GameHubPiccanteHeart`, `GameHubPiccanteDrizzle`, `GameHubPiccanteNut`, `GameHubPiccanteBitten` and `GameHubPiccanteBurned`. Each transparent PNG is 450 pixels tall, with an aspect ratio between 0.993 and 0.996. They display at less than 150 points. The illustration skill's alpha and fringe checks pass for all five. The board draws only the tray and game-state overlays around those images.
 
 The chosen second hub candidate imports at 900 by 622 pixels, aspect 1.447. Its 600-pixel canvas width puts its lower edge at 640. The warm beat sits over the front-right chocolate near 0.80 across and 0.70 down. Three separate tutorial stickers show the tucked note, the bitten chili and the sniff. All cutouts pass the illustration checker and were inspected on plum.
 
@@ -62,5 +72,7 @@ The chosen second hub candidate imports at 900 by 622 pixels, aspect 1.447. Its 
 | `piccante-burn` | Delayed burn reveal |
 | `piccante-same-one` | Both chilis share a chocolate |
 | `piccante-result` | Finished box, bite order and notes |
+
+Piccante scenarios accept `-paeonia-scenario-piccante-size 3`, `4` or `5`, `-paeonia-scenario-piccante-compact YES` for a 320-point play area, `-paeonia-scenario-piccante-winner YES` for the winner's result perspective, and `-paeonia-scenario-piccante-together YES` for the shared completed-game count.
 
 Pure iOS tests cover selection legality, one sniff, note scalars, restored epochs, held bites and queued seen/size/hide ordering. The UI journey checks that a successful private sniff preserves the public lifted chocolate. Backend tests cover access to every public function, rules, private projections, stale moves, idempotency, rematches, waiting keys and cleanup.

@@ -18,6 +18,8 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-11-03.
 
+- Piccante uses the board games' player portraits, presence ring and score capsule. Together counts finished games. The board composes illustrated chocolates in gold cups, matched to the hub artwork, with bitten and chili pieces. Code adds selection symbols, bite numbers and a flame on the burned piece. The winning note leads on warm paper with its writer and recipient. The unused note sits quieter and says whose alternate outcome it describes. Finished boxes stay in the game chat.
+
 - A game chat opened from a game or a game history shows as a sheet over that screen instead of switching to Chats. This covers the toolbar chat button and a partner message's banner, even for another game's chat. The sheet opens at half height so the board stays visible, and grows to full height when the keyboard comes up. Closing or swiping it down shows the game again with its unfinished input. Result cards open their full result or replay inside the sheet. A game chat opened from Chats, or from a link or banner while no game is open, still opens in Chats.
 
 - Game chats show a miniature of the current board or visible game content instead of a controller. An empty rematch keeps the last finished board until the first new move. Odd Creatures shows only a completed creature, Mind Meld only revealed word pairs, and Consensio only revealed pins. A game without cached visible content uses its own hub illustration. Thumbnails follow the owner-scoped local caches and queued board moves without marking a result as seen.

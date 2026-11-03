@@ -31656,19 +31656,19 @@
       }
     },
     "piccante.hide.hint" : {
-      "comment" : "Piccante game. hide hint.",
+      "comment" : "Only the person hiding the chili can see their choice.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pick a chocolate. Your partner will not see where you hide your chili."
+            "value" : "Only you can see where you hide your chili."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg en sjokoladebit. Partneren din får ikke se hvor du gjemmer chilien."
+            "value" : "Bare du ser hvor du gjemmer chilien din."
           }
         }
       }
@@ -31763,6 +31763,24 @@
         }
       }
     },
+    "piccante.lastBite" : {
+      "comment" : "The filling in the last safely eaten chocolate. The placeholder is the localized filling name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last bite: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siste bit: %@"
+          }
+        }
+      }
+    },
     "piccante.loading" : {
       "comment" : "Piccante game. loading.",
       "extractionState" : "manual",
@@ -31777,6 +31795,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Åpner esken"
+          }
+        }
+      }
+    },
+    "piccante.note.forPartner" : {
+      "comment" : "Heading on the winning note when you won. It is addressed to the partner who lost.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Til %@"
+          }
+        }
+      }
+    },
+    "piccante.note.forYou" : {
+      "comment" : "Heading on the winning note when you lost. This note applies to you.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Til deg"
+          }
+        }
+      }
+    },
+    "piccante.note.from" : {
+      "comment" : "Signature on a note from the partner. The placeholder is the private partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra %@"
+          }
+        }
+      }
+    },
+    "piccante.note.fromYou" : {
+      "comment" : "Signature on the winning note that you wrote to your partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra deg"
           }
         }
       }
@@ -31799,6 +31889,24 @@
         }
       }
     },
+    "piccante.note.ifYouWon" : {
+      "comment" : "Heading on your unused note after you lost the game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you had won"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvis du hadde vunnet"
+          }
+        }
+      }
+    },
     "piccante.note.placeholder" : {
       "comment" : "Piccante game. note placeholder.",
       "extractionState" : "manual",
@@ -31813,6 +31921,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Legg ved en lapp om du vil"
+          }
+        }
+      }
+    },
+    "piccante.note.writtenByYou" : {
+      "comment" : "Signature on your note for your partner. The placeholder is the private partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your note for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din lapp til %@"
           }
         }
       }
@@ -31867,42 +31993,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du bet i din egen chili"
-          }
-        }
-      }
-    },
-    "piccante.partner.away" : {
-      "comment" : "Piccante game. partner away.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not here right now"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ikke her akkurat nå"
-          }
-        }
-      }
-    },
-    "piccante.partner.here" : {
-      "comment" : "Piccante game. partner here.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Here with you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Her med deg"
           }
         }
       }
@@ -32015,20 +32105,20 @@
         }
       }
     },
-    "piccante.sniff.failed.title" : {
-      "comment" : "Piccante sniff failure. Do not reveal the chocolate or its contents.",
+    "piccante.sniff.action" : {
+      "comment" : "Piccante game. sniff action.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't sniff that chocolate"
+            "value" : "Sniff"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fikk ikke luktet på sjokoladen"
+            "value" : "Lukt"
           }
         }
       }
@@ -32051,20 +32141,20 @@
         }
       }
     },
-    "piccante.sniff.action" : {
-      "comment" : "Piccante game. sniff action.",
+    "piccante.sniff.failed.title" : {
+      "comment" : "Piccante sniff failure. Do not reveal the chocolate or its contents.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sniff"
+            "value" : "We couldn't sniff that chocolate"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lukt"
+            "value" : "Fikk ikke luktet på sjokoladen"
           }
         }
       }
@@ -32137,6 +32227,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du %1$lld · %2$lld partner"
+          }
+        }
+      }
+    },
+    "piccante.tile.burned" : {
+      "comment" : "VoiceOver description of the chocolate that ended the game, with its bite number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bite %lld, burned by a chili"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bit %lld, brent av en chili"
           }
         }
       }
@@ -32339,32 +32447,14 @@
         }
       }
     },
-    "piccante.winnersNote" : {
-      "comment" : "Piccante game. winnersNote.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The winning note"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vinnerens lapp"
-          }
-        }
-      }
-    },
     "piccante.wouldHaveGot" : {
-      "comment" : "Piccante game. wouldHaveGot.",
+      "comment" : "Heading on the unused note from your partner when you won. You would have received it if you had lost.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The note you would have got"
+            "value" : "What you would have received"
           }
         },
         "nb" : {
