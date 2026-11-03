@@ -351,3 +351,9 @@ Most backend changes should start by reading `backend/AGENTS.md` and the module 
 - `marketing/static/.well-known/apple-app-site-association`: Universal Links file.
 
 Do not route backend traffic through the marketing app. `paeonia.no` is public web and Universal Links; `api.paeonia.no` is the Convex API.
+
+## Piccante
+
+- `ios/PaeoniaApp/Features/Games/Piccante/` owns the chocolate box, hiding, bites, private sniff, queued outcome, live selection, burn reveal, result and hub model. `App/DeveloperScenarios/DeveloperScenario+Piccante.swift` owns the developer scenarios.
+- `backend/convex/piccante.ts` owns the public contract. `backend/convex/lib/piccante.ts` owns rules, private projections, registry hooks, reminders and cleanup. Tables use the `piccante_` prefix. Game chat stores completed result references by game number.
+- `docs/games/piccante.md` owns rules and screens. `Resources/Assets.xcassets/GameHub/GameHubPiccanteBox.imageset` and the three Piccante assets under `GameTutorial` own illustrated art. Bite and burn sounds come from `ios/Scripts/game-sounds.swift`.

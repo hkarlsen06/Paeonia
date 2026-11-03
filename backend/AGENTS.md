@@ -334,7 +334,7 @@ PostHog usage statistics are in the EU project 309819. `posthog-cli` on this Mac
 
 ## Games
 
-Draw & Guess, Story Chain and the board games (Four in a Row, Dots and Boxes, Ultimate Tic-Tac-Toe) are built. Story Chain's design is in `docs/games/story-chain.md`, its opening lines and dare words are in `backend/games/story-chain/`, and `backend/scripts/story-chain/play.mjs` plays the partner from the command line. `GAME_KINDS` in `lib/validators.ts` lists all ten kinds, and the shared functions in `games.ts` accept every one of them. The design is in `docs/games/draw-and-guess.md`, `docs/games/board-games.md` and `docs/games-plan.md`. Function arguments and results are documented in the comments of `convex/games.ts` and `convex/drawAndGuess.ts`.
+Draw & Guess, Story Chain and the board games (Four in a Row, Dots and Boxes, Ultimate Tic-Tac-Toe) are built. Story Chain's design is in `docs/games/story-chain.md`, its opening lines and dare words are in `backend/games/story-chain/`, and `backend/scripts/story-chain/play.mjs` plays the partner from the command line. `GAME_KINDS` in `lib/validators.ts` lists all eleven kinds, and the shared functions in `games.ts` accept every one of them. The design is in `docs/games/draw-and-guess.md`, `docs/games/board-games.md` and `docs/games-plan.md`. Function arguments and results are documented in the comments of `convex/games.ts` and `convex/drawAndGuess.ts`.
 
 A new game adds its entries at these points and edits no other game:
 
