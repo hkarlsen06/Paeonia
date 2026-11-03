@@ -221,6 +221,9 @@ if [ "$EXIT_CODE" -eq 0 ]; then
     # A hung test fails after two minutes instead of holding the simulator lock.
     -test-timeouts-enabled YES
     -default-test-execution-time-allowance 120
+    # A failure otherwise runs `simctl diagnose`, which held the simulator for ten minutes.
+    # The result bundle still keeps the failure, screenshots and UI hierarchy.
+    -collect-test-diagnostics never
     test-without-building
     ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}
   )
