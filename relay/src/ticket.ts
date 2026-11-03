@@ -21,6 +21,7 @@ export const ALLOWED_CHANNELS: readonly string[] = [
   "ultimate_tic_tac_toe",
   "ludo",
   "consensio",
+  "piccante",
   "guess_my_spot",
 ];
 

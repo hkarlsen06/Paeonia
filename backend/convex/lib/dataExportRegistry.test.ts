@@ -122,6 +122,17 @@ describe("what a shared row shows", () => {
     expect(shapeRow(round, { ...open, drawer_user_id: me }, me)).toHaveProperty("word", "giraffe");
   });
 
+  test("Piccante exports only my hidden choices and never my partner's note or sniff", () => {
+    const state = { phase: "biting", chilis: [{ tile: 2, user_id: me, note: "Mine" }, { tile: 8, user_id: partner, note: "Secret" }],
+      sniffs: [{ tile: 3, user_id: me, has_chili: false }, { tile: 5, user_id: partner, has_chili: true }] };
+    expect(shapeRow(spec("piccante_games"), { state }, me)).toMatchObject({ state: {
+      chilis: [{ tile: 2, user_id: me, note: "Mine" }], sniffs: [{ tile: 3, user_id: me, has_chili: false }] } });
+    const finished = shapeRow(spec("piccante_results"), { state: { ...state, phase: "finished" } }, me);
+    expect(finished).toMatchObject({ state: { chilis: [{ tile: 2, user_id: me, note: "Mine" }, { tile: 8, user_id: partner }] } });
+    expect(JSON.stringify(finished)).not.toContain("Secret");
+    expect(JSON.stringify(finished)).not.toContain('"tile":5');
+  });
+
   test("a Consensio spot stays hidden from the guesser until they guess", () => {
     const round = spec("consensio_rounds");
     const waiting = { placer_user_id: partner, spot: 0.4 };

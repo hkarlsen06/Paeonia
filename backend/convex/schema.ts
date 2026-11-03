@@ -28,6 +28,7 @@ import {
 } from "./lib/validators";
 import { gameChatSource } from "./lib/gameChatSubjects";
 import { LUDO_COLORS } from "./lib/ludo";
+import { piccanteTables } from "./lib/piccante";
 import { consensioTables } from "./lib/consensio";
 import { guessMySpotTables } from "./lib/guessMySpot";
 import { mindMeldTables } from "./lib/mindMeld";
@@ -1847,6 +1848,7 @@ export default defineSchema({
   ...mindMeldTables,
   // Consensio: consensio_games, consensio_rounds, consensio_used_topics (lib/consensio.ts, docs/games/consensio.md).
   ...consensioTables,
+  ...piccanteTables,
   // Guess my spot: guess_my_spot_games, guess_my_spot_rounds (lib/guessMySpot.ts, docs/games/guess-my-spot.md).
   ...guessMySpotTables,
   // Exquisite corpse (docs/games/exquisite-corpse.md). Four tables, deleted with the couple's other game rows (lib/exquisiteCorpse.ts).

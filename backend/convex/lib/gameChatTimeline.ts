@@ -11,7 +11,7 @@ export type GameChatResultReference = { source: GameChatSource; finished_at: str
 
 export function normalizeGameChatCursor(cursor: GameChatCursor | undefined, kind: GameChatKind): GameChatCursor | undefined {
   if (!cursor) return undefined;
-  const board = ["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo"].includes(kind);
+  const board = ["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo", "piccante"].includes(kind);
   if (cursor.item_kind === "result" && board) {
     if (!/^\d{16}$/.test(cursor.key) || !Number.isSafeInteger(Number(cursor.key)) || Number(cursor.key) < 1) fail("23514", "invalid game timeline cursor");
     return { ...cursor, at: timestampArg(cursor.at) };
@@ -107,6 +107,16 @@ export async function gameChatResults(ctx: ReaderCtx, coupleId: string, kind: Ga
         if (row.finished_at === undefined) continue;
         references.push({ source: { kind, id: row.id }, finished_at: row.finished_at, key: row.id });
       }
+      break;
+    }
+    case "piccante": {
+      const older = await ctx.db.query("piccante_results")
+        .withIndex("by_couple_id_finished_at_game_number", q => before ? q.eq("couple_id", coupleId).lt("finished_at", before.at) : q.eq("couple_id", coupleId))
+        .order("desc").take(limit);
+      const tied = before?.item_kind === "result" ? await ctx.db.query("piccante_results")
+        .withIndex("by_couple_id_finished_at_game_number", q => q.eq("couple_id", coupleId).eq("finished_at", before.at).lt("game_number", Number(before.key)))
+        .order("desc").take(limit) : [];
+      for (const row of [...tied, ...older]) references.push({ source: { kind, couple_id: coupleId, game_number: row.game_number }, finished_at: row.finished_at, key: String(row.game_number).padStart(16, "0") });
       break;
     }
     case "connect_four": case "dots_and_boxes": case "ultimate_tic_tac_toe": case "ludo": {

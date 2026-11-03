@@ -15,6 +15,7 @@ import { uuidArg } from "./lib/ids";
 type Returned<Query> = Query extends RegisteredQuery<infer Visibility, infer Args, infer Value> ? Awaited<Value> : never;
 
 type Result =
+  | { kind: "piccante"; result: NonNullable<Returned<typeof import("./piccante").get_piccante_result>> }
   | { kind: "mind_meld"; result: Returned<typeof import("./mindMeld").get_mind_meld_history>["games"][number] }
   | { kind: "draw_and_guess"; result: NonNullable<Returned<typeof import("./drawAndGuess").get_draw_and_guess_history_round>>; guesses: string[] }
   | { kind: "consensio"; result: Returned<typeof import("./consensio").get_consensio_history>["rounds"][number] }
@@ -70,6 +71,11 @@ export const get_game_conversation = query({
       case "exquisite_corpse": {
         const result = await ctx.runQuery(api.exquisiteCorpse.get_exquisite_corpse_figure, { p_figure_id: game.row.id });
         if (!result) return fail("42501", "finished creature is not available");
+        return { kind: game.kind, result };
+      }
+      case "piccante": {
+        const result = await ctx.runQuery(api.piccante.get_piccante_result, { p_game_number: game.row.game_number });
+        if (!result) return fail("42501", "finished game is not available");
         return { kind: game.kind, result };
       }
       case "board": {

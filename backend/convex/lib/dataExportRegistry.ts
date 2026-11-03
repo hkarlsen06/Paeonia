@@ -130,6 +130,19 @@ function drawAndGuessRound(row: Row, me: string): Row {
   return row.drawer_user_id === me || over ? row : without(row, ["word", "word_id"]);
 }
 
+/** Export only the person's hidden choices and their written note. */
+function piccanteExport(row: Row, me: string): Row {
+  if (!isRecord(row.state)) return row;
+  const state = { ...row.state };
+  if (Array.isArray(state.chilis)) state.chilis = state.chilis.flatMap(chili => {
+    if (!isRecord(chili)) return [];
+    if (chili.user_id === me) return [chili];
+    return state.phase === "finished" ? [without(chili, ["note"])] : [];
+  });
+  if (Array.isArray(state.sniffs)) state.sniffs = state.sniffs.filter(sniff => isRecord(sniff) && sniff.user_id === me);
+  return { ...row, state };
+}
+
 /** Consensio: the guesser never sees the spot before guessing. */
 function consensioRound(row: Row, me: string): Row {
   const hidden = row.placer_user_id !== me && row.guess === undefined;
@@ -669,6 +682,12 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   mind_meld_words: yours("by_couple_id", "user_id", {
     group: "games",
     about: { en: "The words you picked in Mind Meld.", nb: "Ordene du valgte i Tenk likt." },
+  }),
+  piccante_games: shared("by_couple_id", {
+    group: "games", about: { en: "Your Piccante game, including your own hidden chili and note.", nb: "Piccante-spillet deres, med din egen skjulte chili og beskjed." }, select: piccanteExport,
+  }),
+  piccante_results: shared("by_couple_id", {
+    group: "games", about: { en: "Finished Piccante boxes, bite order and your notes.", nb: "Ferdige Piccante-esker, rekkefølgen på bitene og beskjedene dine." }, select: piccanteExport,
   }),
   consensio_games: shared("by_couple_id", {
     group: "games",

@@ -9,7 +9,7 @@ import { gameKind, literals } from "./validators";
 export const boardChatKind = literals("connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo");
 export const gameChatSource = v.union(
   v.object({ kind: literals("draw_and_guess", "mind_meld", "consensio", "guess_my_spot", "story_chain", "exquisite_corpse"), id: v.string() }),
-  v.object({ kind: boardChatKind, couple_id: v.string(), game_number: v.number() }),
+  v.object({ kind: v.union(boardChatKind, v.literal("piccante")), couple_id: v.string(), game_number: v.number() }),
 );
 export type GameChatSource = Infer<typeof gameChatSource>;
 export type GameChatKind = Infer<typeof gameKind>;
@@ -60,10 +60,16 @@ export async function finishedGameForChat(ctx: ReaderCtx, coupleId: string, sour
       const row = await getByUuid(ctx, "exquisite_corpse_figures", source.id);
       return row?.couple_id === coupleId && row.finished_at !== undefined ? { kind: source.kind, row } : null;
     }
+    case "piccante": {
+      if (source.couple_id !== coupleId) return null;
+      const row = await ctx.db.query("piccante_results").withIndex("by_couple_id_game_number", q => q.eq("couple_id", coupleId).eq("game_number", source.game_number)).unique();
+      return row ? { kind: source.kind, row } : null;
+    }
     case "connect_four": case "dots_and_boxes": case "ultimate_tic_tac_toe": case "ludo":
       if (source.couple_id !== coupleId) return null;
+      const kind = source.kind;
       const row = await ctx.db.query("board_game_history")
-        .withIndex("by_couple_id_kind_game_number", q => q.eq("couple_id", coupleId).eq("kind", source.kind).eq("game_number", source.game_number))
+        .withIndex("by_couple_id_kind_game_number", q => q.eq("couple_id", coupleId).eq("kind", kind).eq("game_number", source.game_number))
         .unique();
       return row ? { kind: "board" as const, row } : null;
   }

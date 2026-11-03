@@ -1,5 +1,6 @@
 import { canAccessCoupleContent } from "./access";
 import { boardGameBackend } from "./boardGameBackend";
+import { piccanteBackend } from "./piccante";
 import { consensioBackend } from "./consensio";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { drawAndGuessBackend } from "./drawAndGuess";
@@ -51,6 +52,7 @@ export const GAME_BACKENDS: Record<GameKind, GameBackend | null> = {
   connect_four: boardGameBackend,
   dots_and_boxes: boardGameBackend,
   ultimate_tic_tac_toe: boardGameBackend,
+  piccante: piccanteBackend,
   ludo: boardGameBackend,
   consensio: consensioBackend,
   guess_my_spot: guessMySpotBackend,

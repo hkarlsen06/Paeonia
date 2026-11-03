@@ -153,6 +153,10 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
       resultBody: "Se hvordan det endte.",
     },
   },
+  piccante: {
+    en: { name: "Piccante", turnReadyBody: "The chocolates are waiting for you.", resultTitle: actor => `${actor} finished your game of Piccante`, resultBody: "See how it ended." },
+    nb: { name: "Piccante", turnReadyBody: "Sjokoladen venter på deg.", resultTitle: actor => `${actor} avsluttet spillet deres i Piccante`, resultBody: "Se hvordan det endte." },
+  },
   consensio: {
     en: {
       name: "Consensio",

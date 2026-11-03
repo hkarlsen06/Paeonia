@@ -109,6 +109,15 @@ async function seedGames(t: TestConvex, couple: TestCouple): Promise<GameChatSou
       });
       sources.push({ kind, couple_id: couple.coupleId, game_number: 1 });
     }
+    const piccanteId = newUuid();
+    const state = { game_number: 1, starter_user_id: a, partner_user_id: b, phase: "finished" as const,
+      size: 3, chilis: [{ tile: 0, user_id: a, note: "Tea?" }, { tile: 8, user_id: b }], sniffs: [],
+      bites: [{ tile: 0, user_id: b }], winner_user_id: a, loser_user_id: b, started_at: now, finished_at: now };
+    await ctx.db.insert("piccante_games", { id: piccanteId, couple_id: couple.coupleId, version: 4, state,
+      wins_by_user: { [a]: 1 }, games_finished: 1, turn_started_at: now, created_at: now, updated_at: now });
+    await ctx.db.insert("piccante_results", { id: newUuid(), game_id: piccanteId, couple_id: couple.coupleId,
+      game_number: 1, state, seen_by_user_ids: [], finished_at: now });
+    sources.push({ kind: "piccante", couple_id: couple.coupleId, game_number: 1 });
     return sources;
   });
 }
@@ -135,9 +144,9 @@ test("every finished game supports one shared conversation and refuses another c
     const messages = await couple.second.as.query(api.threads.get_thread_messages, { p_thread_id: first.thread_id, p_limit: 50 });
     expect(messages.messages.map(message => message.body).sort()).toEqual(["I have no idea", "What was that?"]);
   }
-  expect(await t.run(ctx => ctx.db.query("game_threads").collect())).toHaveLength(10);
+  expect(await t.run(ctx => ctx.db.query("game_threads").collect())).toHaveLength(11);
   const summaries = await couple.first.as.query(api.threads.get_conversation_threads, {});
-  expect(summaries.filter(row => row.kind === "game")).toHaveLength(10);
+  expect(summaries.filter(row => row.kind === "game")).toHaveLength(11);
   expect(summaries.every(row => sources.some(source => source.kind === row.game_kind))).toBe(true);
 });
 

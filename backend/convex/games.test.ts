@@ -362,6 +362,7 @@ describe("presence and invites for every kind", () => {
       ultimate_tic_tac_toe: "paeonia://games/ultimate-tic-tac-toe",
       ludo: "paeonia://games/ludo",
       consensio: "paeonia://games/consensio",
+      piccante: "paeonia://games/piccante",
       guess_my_spot: "paeonia://games/guess-my-spot",
     });
     for (const kind of GAME_KINDS) expect(links[kind]).toBe(gameDeepLink(kind));
@@ -428,6 +429,7 @@ describe("registry", () => {
     expect(GAME_BACKENDS.dots_and_boxes).not.toBeNull();
     expect(GAME_BACKENDS.ultimate_tic_tac_toe).not.toBeNull();
     expect(GAME_BACKENDS.ludo).not.toBeNull();
+    expect(GAME_BACKENDS.piccante).not.toBeNull();
     expect(Object.keys(GAME_BACKENDS)).toEqual([...GAME_KINDS]);
   });
 

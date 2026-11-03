@@ -103,6 +103,7 @@ export const GAME_KINDS = [
   "connect_four",
   "dots_and_boxes",
   "ultimate_tic_tac_toe",
+  "piccante",
   "ludo",
   "consensio",
   "guess_my_spot",
