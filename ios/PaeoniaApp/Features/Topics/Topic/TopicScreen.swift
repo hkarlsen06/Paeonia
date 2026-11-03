@@ -121,18 +121,14 @@ struct TopicScreen: View {
         }
     }
 
-    /// Partner answers and messages to open, which open the question's page, then
-    /// questions to answer, which open the answer flow.
+    /// Outstanding questions follow partner activity time, whether they open a chat or an answer flow.
     @ViewBuilder
     private func forYouSection(_ sections: TopicSections) -> some View {
         if !sections.waiting.isEmpty {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
                 sectionTitle(Text(.topicsSectionForYou))
-                ForEach(sections.newFromPartner) { item in
-                    row(item, opensFlow: false)
-                }
-                ForEach(sections.forYou) { item in
-                    row(item, opensFlow: true)
+                ForEach(sections.waiting) { item in
+                    row(item, opensFlow: item.state(isSending: dailyChallenge.isSending(item.id)) == .forYou)
                 }
             }
         }

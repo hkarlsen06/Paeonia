@@ -1,9 +1,7 @@
 import SwiftUI
 
-/// Today's question, topic questions and conversations. After answering, today's
-/// card shows its conversation status and opens the chat. Earlier questions waiting
-/// for the user stay inside that card as locked rows. Other question, memory and
-/// story conversations follow in today's list or under their earlier day.
+/// Outstanding conversations come first, followed by game presence, today's prompt
+/// and handled content. Earlier answer rounds remain available in dated history.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
     /// Namespace for the daily question zoom transition. The hero card and each
@@ -32,12 +30,12 @@ struct DailyChallengeScreen: View {
     var partnerGameKinds: Set<GameKind> = []
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.threadChatContext) var chatContext
 
     /// The earlier days under today's list. Built once the signed-in user is known, and
     /// kept while a chat is open on top of this screen.
-    @State private var historyViewModel: DailyChallengeHistoryViewModel?
+    @State var historyViewModel: DailyChallengeHistoryViewModel?
     @State private var highlightedQuestionIDs: Set<UUID> = []
     @State private var reportTarget: PrivacyReportTarget?
     /// Hides the tab bar while a chat is about to open, before the push starts. Hiding
@@ -61,16 +59,12 @@ struct DailyChallengeScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                    activeGameChats
-
-                    heroCard
-
+                    rowsList(tabContent.attention)
                     topicsEntry
-
-                    todayList
-
+                    activeGameChats
+                    heroCard
+                    rowsList(tabContent.recent)
                     topicsShelf
-
                     earlierDays
                 }
                 // The hero shrinking to one row moves everything under it with a glide.
@@ -91,9 +85,6 @@ struct DailyChallengeScreen: View {
             }
             // A new day turns yesterday's questions into earlier days.
             .onChange(of: viewModel.snapshot.coupleDayID) {
-                Task { await reloadEarlierDays() }
-            }
-            .onChange(of: AppBadges.shared.counts.questions) {
                 Task { await reloadEarlierDays() }
             }
             .onChange(of: historyViewModel?.notice) { _, notice in
@@ -176,43 +167,23 @@ struct DailyChallengeScreen: View {
         viewModel.homeCardState.kind == .complete
     }
 
+    @ViewBuilder
     private var heroCard: some View {
         let state = viewModel.homeCardState
-        return Group {
-            if state.kind == .complete, let question = viewModel.snapshot.todayQuestion {
-                DailyChallengeReadCard(
-                    question: question,
-                    participants: viewModel.participants,
-                    sending: viewModel.sendingPreview(for: question),
-                    isHighlighted: highlightedQuestionIDs.contains(question.id),
-                    lastMessagePreview: viewModel.threadPreview(for: question.questionID),
-                    hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
-                    hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
-                    onOpen: { openChat(question) },
-                    completionState: state,
-                    onOpenPartnerQuestion: openLockedPartnerQuestion
-                )
-                .id(question.id)
-                .transition(.opacity)
-            } else {
-                DailyPromptCard(
-                    state: state,
-                    partnerName: viewModel.participants.partnerName,
-                    partnerPhotoAssetID: viewModel.participants.partnerProfilePhotoAssetID,
-                    onAnswer: onOpenAnswerFlow,
-                    onOpenPartnerQuestion: openLockedPartnerQuestion
-                )
-                .transition(.opacity)
-            }
+        let shownToday = viewModel.snapshot.todayQuestion.map {
+            tabContent.shownQuestionIDs.contains($0.id)
+        } ?? false
+        if !isDayComplete && !shownToday {
+            DailyPromptCard(
+                state: DailyChallengeCardState(
+                    kind: state.kind, hasPartnerAnsweredToday: state.hasPartnerAnsweredToday
+                ),
+                partnerName: viewModel.participants.partnerName,
+                partnerPhotoAssetID: viewModel.participants.partnerProfilePhotoAssetID,
+                onAnswer: onOpenAnswerFlow
+            )
+            .zoomSource(DailyFlowZoom.questions, in: zoomNamespace)
         }
-        .zoomSource(DailyFlowZoom.questions, in: zoomNamespace)
-    }
-
-    /// A locked row on the hero card opens the same flow as the question's own row in
-    /// the list below.
-    private func openLockedPartnerQuestion(_ id: UUID) {
-        guard let question = viewModel.snapshot.questions.first(where: { $0.id == id }) else { return }
-        onAnswerPartnerQuestion(question)
     }
 
     /// Pull to refresh reloads today's questions and the earlier days together.
@@ -248,11 +219,11 @@ struct DailyChallengeScreen: View {
 
     /// Reads the chat from the phone and hides the tab bar, then pushes the chat, so
     /// it opens complete with nothing moving in after.
-    private func openChat(_ question: DailyChallengeQuestion) {
+    func openChat(_ question: DailyChallengeQuestion, newest: Bool = false) {
         guard !isOpeningChat else { return }
         withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { isOpeningChat = true }
         Task {
-            await viewModel.prepareChat(for: question)
+            await viewModel.prepareChat(for: question, focusesNewest: newest)
             await Task.yield()
             chatQuestion.wrappedValue = question
         }
@@ -289,7 +260,7 @@ struct DailyChallengeScreen: View {
             return
         }
 
-        let shownIDs = Set(readQuestions.map(\.id))
+        let shownIDs = tabContent.shownQuestionIDs
         let questionIDs = focusedIDs.filter(shownIDs.contains)
         guard let firstID = questionIDs.first else {
             focusedQuestionIDs.wrappedValue = []
@@ -316,33 +287,8 @@ struct DailyChallengeScreen: View {
 }
 
 extension DailyChallengeScreen {
-    /// Today's questions and story chats in one list.
     @ViewBuilder
-    private var todayList: some View {
-        let rows = todayRows
-        if !rows.isEmpty {
-            // One list for everything. Questions still waiting for you are pinned
-            // on top, then cards with a partner answer or message you haven't seen
-            // (so nothing new is buried); everything else follows by most recent
-            // answer. A question you can still answer opens its flow. A row you
-            // have answered opens the question's page with the answers and the
-            // chat. Answering reveals the reply in the flow itself, so it's fine
-            // that the row then re-sorts down here.
-            VStack(spacing: PaeoniaSpacing.space12) {
-                ForEach(rows) { row in
-                    todayRow(row)
-                }
-            }
-            // A refreshed snapshot re-sorts, adds, or removes cards with
-            // a glide instead of reflowing the list in one frame — e.g.
-            // an answered question settling down into the
-            // timeline, or a new card arriving mid-session.
-            .animation(PaeoniaMotion.stateChange, value: rows.map(\.id))
-        }
-    }
-
-    @ViewBuilder
-    private func todayRow(_ row: QuestionsTabRow) -> some View {
+    func todayRow(_ row: QuestionsTabRow) -> some View {
         switch row {
         case .question(let question):
             DailyChallengeReadCard(
@@ -354,8 +300,9 @@ extension DailyChallengeScreen {
                 onAnswer: { onAnswerPartnerQuestion(question) },
                 lastMessagePreview: viewModel.threadPreview(for: question.questionID),
                 hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
-                hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
-                onOpen: { openChat(question) },
+                hasNewPartnerAnswer: (question.isCurrentDay || question.topicKey != nil)
+                    && viewModel.hasNewPartnerAnswer(question),
+                onOpen: { openChat(question, newest: viewModel.hasUnreadChat(for: question.questionID)) },
                 topicTitle: topicsCard?.title(of: question)
             )
             .id(question.id)
@@ -375,9 +322,10 @@ extension DailyChallengeScreen {
                 viewModel: viewModel,
                 conversations: ordinaryConversations.filter { !$0.isUnread },
                 today: viewModel.snapshot.todayLocalDate,
+                timeZone: viewModel.snapshot.timeZone,
                 storyPeople: storyPeople,
-                shownQuestionIDs: Set(readQuestions.map(\.id)),
-                onOpenChat: openChat,
+                shownQuestionIDs: tabContent.shownQuestionIDs,
+                onOpenChat: { openChat($0) },
                 onOpenConversation: openConversation,
                 onRetry: { Task { await historyViewModel.load() } }
             )
@@ -410,66 +358,11 @@ extension DailyChallengeScreen {
         return { storyViewer = StoryViewerContent(stories: [story], startIndex: 0, mode: .archive) }
     }
 
-    /// Every read card in one list: questions the user answered (or whose answer still
-    /// sends), questions from earlier days the partner answered, and the topic questions
-    /// waiting for the user. Before the user answers, today's question is the hero card.
-    /// The ordering (to-dos, then anything new from the partner, then by most recent
-    /// answer) is `DailyChallengeSnapshot.questionsTabOrder`.
-    private var readQuestions: [DailyChallengeQuestion] {
-        let daily = viewModel.snapshot.readOverviewQuestions(isNew: viewModel.hasNewFromPartner).filter { question in
-            question.hasOwnAnswer
-                || viewModel.isSending(question.id)
-                || (!question.isCurrentDay && question.isAwaitingCurrentUserAnswer)
-        }
-        let topics = topicsCard?.waitingQuestions ?? []
-        let shownIDs = Set((daily + topics).map(\.id))
-        var shownChats = Set((daily + topics).map(\.questionID))
-        let earlier = historyViewModel?.days(adding: [], before: viewModel.snapshot.todayLocalDate, excluding: shownIDs)
-            .flatMap(\.rows).compactMap { row -> DailyChallengeQuestion? in
-                guard case .question(let question) = row else { return nil }
-                if viewModel.hasNewPartnerAnswer(question) {
-                    shownChats.insert(question.questionID)
-                    return question
-                }
-                guard question.isChatAvailable, viewModel.hasUnreadChat(for: question.questionID),
-                      shownChats.insert(question.questionID).inserted else { return nil }
-                return question
-            } ?? []
-        return (daily + topics + earlier).sorted {
-            DailyChallengeSnapshot.questionsTabOrder($0, $1, isNew: viewModel.hasNewFromPartner)
-        }
-    }
-
-    /// The top list includes older unread chats as well as today's rows.
-    private var todayRows: [QuestionsTabRow] {
-        QuestionsTabRow.todayRows(
-            questions: readQuestions.filter { !isDayComplete || $0.id != viewModel.snapshot.todayQuestion?.id },
-            conversations: ordinaryConversations,
-            today: viewModel.snapshot.todayLocalDate,
-            isNew: viewModel.hasNewFromPartner
-        )
-    }
-
-    /// The tab is calm when the user has answered today's question and nothing in the
-    /// topics or the list waits for them or holds something they haven't seen, such as
-    /// a memory or story chat with an unread message. Waiting on the partner is calm. A
-    /// calm tab shows every topic instead of the Topics card.
     private var isCalm: Bool {
-        guard isDayComplete,
-              let topicsCard,
-              topicsCard.hook == nil,
-              topicsCard.waitingQuestions.isEmpty,
-              !conversations.contains(where: \.isUnread)
-        else { return false }
-        return !readQuestions.contains { question in
-            question.isAwaitingCurrentUserAnswer
-                || viewModel.hasNewPartnerAnswer(question)
-                || viewModel.hasUnreadChat(for: question.questionID)
-        }
+        isDayComplete && tabContent.attention.isEmpty && topicsCard?.hook == nil
     }
 
-    /// The Topics card while the tab is not calm. Always under the daily card, so the
-    /// daily question comes first.
+    /// Topic navigation follows the outstanding rows and keeps private topic details inside.
     @ViewBuilder
     var topicsEntry: some View {
         if let topicsCard, topicsCard.isShown, !isCalm {

@@ -15,7 +15,7 @@
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
       paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallPairedEnded, paywallPairedPaymentFailed,
       paywallLoading,
-      pairedHome, questions, questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
+      pairedHome, questions, chatsAttention, questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
       streakHealthy, streakAtRisk, streakFrozen, streakSaveHome, streakSaveDay, streakSaved, streakBroken,
       streakRestoreExpired, streakRestored,

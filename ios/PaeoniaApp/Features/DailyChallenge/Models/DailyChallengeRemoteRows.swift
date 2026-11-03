@@ -5,6 +5,7 @@ nonisolated struct DailyChallengeRemoteSnapshotRow: Codable, Equatable, Sendable
     let answerDetails: [DailyAnswerDetailRow]
     let streak: CoupleStreakRow?
     let generatedAt: Date
+    var anchorTimeZoneID = "UTC"
     /// The couple day this snapshot is for, and when it ends. Both are nil when
     /// today has no couple day yet.
     var coupleDayID: UUID?
@@ -15,6 +16,7 @@ nonisolated struct DailyChallengeRemoteSnapshotRow: Codable, Equatable, Sendable
         case answerDetails = "answer_details"
         case streak
         case generatedAt = "generated_at"
+        case anchorTimeZoneID = "anchor_time_zone_id"
         case coupleDayID = "couple_day_id"
         case endsAt = "ends_at"
     }
@@ -24,10 +26,8 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
     let coupleDayID: UUID
     let coupleID: UUID
     let localDate: String
-    /// The couple-local date the question effectively belongs to — the day of its most
-    /// recent answer. Returned by the history read model so an exchange completed after
-    /// midnight lands on the day it was finished, not the day its question was given.
-    /// Absent on the "today" read model; callers fall back to `localDate`.
+    /// The backend's recorded date for the latest answer, in that day's anchor zone.
+    /// The Chats timeline groups answer instants in the snapshot's shared zone instead.
     let effectiveLocalDate: String?
     let startsAt: Date
     let endsAt: Date
@@ -263,7 +263,8 @@ extension DailyChallengeRemoteSnapshotRow {
                 rows: questions,
                 answerDetails: answerDetails,
                 locale: locale,
-                refreshedAt: generatedAt
+                refreshedAt: generatedAt,
+                anchorTimeZoneID: anchorTimeZoneID
             ),
             streak: streak?.streak ?? .none
         )

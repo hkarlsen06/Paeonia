@@ -21,6 +21,7 @@ nonisolated struct ConversationThreadRow: Decodable {
     let lastMessageMediaType: String?
     /// How far this user has read the chat, from any of their devices.
     let viewerReadThroughAt: Date?
+    let viewerReadThroughMessageID: UUID?
     let topicKey: String?
     let privateTopic: Bool?
 
@@ -53,6 +54,7 @@ nonisolated struct ConversationThreadRow: Decodable {
             lastMessageBody: previewIsVisible ? lastMessageBody : nil,
             lastMessageMediaType: previewIsVisible ? lastMessageMediaType : nil,
             viewerReadThroughAt: viewerReadThroughAt,
+            viewerReadThroughMessageID: viewerReadThroughMessageID,
             topicKey: topicKey,
             isPrivateTopic: privateTopic
         )
@@ -78,6 +80,7 @@ nonisolated struct ConversationThreadRow: Decodable {
         case lastMessageBody = "last_message_body"
         case lastMessageMediaType = "last_message_media_type"
         case viewerReadThroughAt = "viewer_read_through_at"
+        case viewerReadThroughMessageID = "viewer_read_through_message_id"
         case topicKey = "topic_key"
         case privateTopic = "private_topic"
     }

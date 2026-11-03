@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The card under the daily question on the Questions tab. It opens the Topics shelf,
+/// Topic navigation on the Chats tab. It opens the Topics shelf,
 /// says what the partner answered (`TopicsHook`), and shows the three topics with the
 /// most going on. It is quieter than the daily card above it and glows only while
 /// something waits for this person.

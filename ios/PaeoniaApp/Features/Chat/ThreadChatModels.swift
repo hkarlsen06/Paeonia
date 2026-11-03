@@ -13,8 +13,9 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
     let lastMessageBody: String?
     /// The media type of the newest message's first attachment ("image" or "voice").
     var lastMessageMediaType: String?
-    /// How far this user has read the chat on any of their devices, from the server.
+    /// The timestamp and message ID read on any device, compared as one cursor.
     var viewerReadThroughAt: Date?
+    var viewerReadThroughMessageID: UUID?
     /// The topic of a topic question's chat, nil for a daily question.
     var topicKey: String?
     /// The chat belongs to a private topic (Flirt), so nothing about it shows outside it.
@@ -35,10 +36,14 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
 
     /// The newest message came from the partner after the user last read the chat:
     /// `readThrough` on this phone, or `viewerReadThroughAt` on any of their devices.
-    func isUnread(by userID: UUID, readThrough: Date?) -> Bool {
-        guard let lastMessageAt, let sender = lastMessageSenderUserID, sender != userID else { return false }
-        guard let readThrough = [readThrough, viewerReadThroughAt].compactMap(\.self).max() else { return true }
-        return lastMessageAt > readThrough
+    func isUnread(by userID: UUID, readThrough: ThreadChatMessageCursor?) -> Bool {
+        guard let lastMessageAt, let lastMessageID,
+              let sender = lastMessageSenderUserID, sender != userID else { return false }
+        let serverRead = viewerReadThroughAt.flatMap { date in
+            viewerReadThroughMessageID.map { ThreadChatMessageCursor(createdAt: date, messageID: $0) }
+        }
+        guard let newestRead = [readThrough, serverRead].compactMap(\.self).max() else { return true }
+        return ThreadChatMessageCursor(createdAt: lastMessageAt, messageID: lastMessageID) > newestRead
     }
 }
 
@@ -54,9 +59,14 @@ nonisolated struct ThreadChatMessagePage: Equatable, Sendable {
 }
 
 /// The oldest message the phone has. The next page of older messages comes before it.
-nonisolated struct ThreadChatMessageCursor: Equatable, Sendable {
+nonisolated struct ThreadChatMessageCursor: Codable, Comparable, Sendable {
     let createdAt: Date
     let messageID: UUID
+
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        (lhs.createdAt, lhs.messageID.uuidString.lowercased())
+            < (rhs.createdAt, rhs.messageID.uuidString.lowercased())
+    }
 }
 
 nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable {

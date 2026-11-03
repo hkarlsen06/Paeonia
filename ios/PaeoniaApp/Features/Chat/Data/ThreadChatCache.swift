@@ -93,11 +93,11 @@ protocol ThreadChatCaching: Actor {
         unlessPurgedSince generation: Int
     ) -> Bool
     /// When this user last saw each thread, keyed by thread id. Only kept on this phone.
-    func readMarks(ownerUserID: UUID) -> [UUID: Date]
-    /// Records that the user has seen the thread up to `date`. An older date changes
+    func readMarks(ownerUserID: UUID) -> [UUID: ThreadChatMessageCursor]
+    /// Records that the user has seen the thread up to `cursor`. An older cursor changes
     /// nothing. Returns whether it wrote.
     @discardableResult
-    func markRead(ownerUserID: UUID, threadID: UUID, through date: Date) -> Bool
+    func markRead(ownerUserID: UUID, threadID: UUID, through cursor: ThreadChatMessageCursor) -> Bool
     /// Questions whose page the user has opened since the partner's answer showed up.
     /// Only kept on this phone.
     func seenPartnerAnswers(ownerUserID: UUID) -> Set<UUID>
@@ -157,9 +157,9 @@ extension ThreadChatCaching {
         subjectID _: UUID,
         unlessPurgedSince _: Int
     ) -> Bool { false }
-    func readMarks(ownerUserID _: UUID) -> [UUID: Date] { [:] }
+    func readMarks(ownerUserID _: UUID) -> [UUID: ThreadChatMessageCursor] { [:] }
     @discardableResult
-    func markRead(ownerUserID _: UUID, threadID _: UUID, through _: Date) -> Bool { false }
+    func markRead(ownerUserID _: UUID, threadID _: UUID, through _: ThreadChatMessageCursor) -> Bool { false }
     func seenPartnerAnswers(ownerUserID _: UUID) -> Set<UUID> { [] }
     @discardableResult
     func markPartnerAnswerSeen(ownerUserID _: UUID, instanceID _: UUID) -> Bool { false }
@@ -344,20 +344,20 @@ actor FileThreadChatCache: ThreadChatCaching {
         return true
     }
 
-    func readMarks(ownerUserID: UUID) -> [UUID: Date] {
+    func readMarks(ownerUserID: UUID) -> [UUID: ThreadChatMessageCursor] {
         Dictionary(
-            core(ownerUserID).readThroughByThreadID.compactMap { key, date in
-                UUID(uuidString: key).map { ($0, date) }
+            core(ownerUserID).readThroughByThreadID.compactMap { key, cursor in
+                UUID(uuidString: key).map { ($0, cursor) }
             },
             uniquingKeysWith: max
         )
     }
 
     @discardableResult
-    func markRead(ownerUserID: UUID, threadID: UUID, through date: Date) -> Bool {
+    func markRead(ownerUserID: UUID, threadID: UUID, through cursor: ThreadChatMessageCursor) -> Bool {
         let key = threadID.uuidString
-        if let current = core(ownerUserID).readThroughByThreadID[key], current >= date { return false }
-        return updateCore(ownerUserID) { $0.readThroughByThreadID[key] = date }
+        if let current = core(ownerUserID).readThroughByThreadID[key], current >= cursor { return false }
+        return updateCore(ownerUserID) { $0.readThroughByThreadID[key] = cursor }
     }
 
     func seenPartnerAnswers(ownerUserID: UUID) -> Set<UUID> {

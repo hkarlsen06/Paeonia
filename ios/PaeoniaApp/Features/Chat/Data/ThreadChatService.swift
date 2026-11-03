@@ -35,10 +35,10 @@ protocol ThreadChatServicing: Actor {
     /// the cache. The stream ends when the caller's task is cancelled.
     nonisolated func liveMessageUpdates(ownerUserID: UUID, subjectID: UUID, threadID: UUID) -> AsyncStream<Void>
     /// When the user last saw each thread on this phone, keyed by thread id.
-    func chatReadMarks(ownerUserID: UUID) async -> [UUID: Date]
-    /// Records that the user has seen the thread up to `date`, and tells the
+    func chatReadMarks(ownerUserID: UUID) async -> [UUID: ThreadChatMessageCursor]
+    /// Records that the user has seen the thread up to `cursor`, and tells the
     /// unread badges to update when that moved the mark forward.
-    func markThreadRead(ownerUserID: UUID, threadID: UUID, through date: Date) async
+    func markThreadRead(ownerUserID: UUID, threadID: UUID, through cursor: ThreadChatMessageCursor) async
     /// Questions whose page the user has opened since the partner's answer showed up,
     /// on this phone.
     func seenPartnerAnswers(ownerUserID: UUID) async -> Set<UUID>
@@ -204,8 +204,8 @@ extension ThreadChatServicing {
         operation _: SyncClientOperation
     ) throws -> ThreadChatMessage { throw ThreadChatServiceError.unavailable }
 
-    func chatReadMarks(ownerUserID _: UUID) -> [UUID: Date] { [:] }
-    func markThreadRead(ownerUserID _: UUID, threadID _: UUID, through _: Date) {}
+    func chatReadMarks(ownerUserID _: UUID) -> [UUID: ThreadChatMessageCursor] { [:] }
+    func markThreadRead(ownerUserID _: UUID, threadID _: UUID, through _: ThreadChatMessageCursor) {}
     func seenPartnerAnswers(ownerUserID _: UUID) -> Set<UUID> { [] }
     func markPartnerAnswerSeen(ownerUserID _: UUID, instanceID _: UUID) {}
 
@@ -421,7 +421,7 @@ actor ThreadChatService: ThreadChatServicing {
         await cache.discardFailed(ownerUserID: ownerUserID, clientOperationID: clientOperationID)
     }
 
-    func chatReadMarks(ownerUserID: UUID) async -> [UUID: Date] {
+    func chatReadMarks(ownerUserID: UUID) async -> [UUID: ThreadChatMessageCursor] {
         await cache.readMarks(ownerUserID: ownerUserID)
     }
 
@@ -480,8 +480,8 @@ actor ThreadChatService: ThreadChatServicing {
         gateway.livePresence(coupleID: coupleID, subject: subject)
     }
 
-    func markThreadRead(ownerUserID: UUID, threadID: UUID, through date: Date) async {
-        guard await cache.markRead(ownerUserID: ownerUserID, threadID: threadID, through: date) else { return }
+    func markThreadRead(ownerUserID: UUID, threadID: UUID, through cursor: ThreadChatMessageCursor) async {
+        guard await cache.markRead(ownerUserID: ownerUserID, threadID: threadID, through: cursor) else { return }
         LocalStoreChanges.post(.threadChat, ownerUserID: ownerUserID)
     }
 

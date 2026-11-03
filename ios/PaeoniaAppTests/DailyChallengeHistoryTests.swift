@@ -8,14 +8,17 @@ struct DailyChallengeHistoryTests {
     private static let day2 = "2026-06-26"
     private static let day3 = "2026-06-27"
 
+    private func answerInstant(on day: String, hour: Int = 12) -> Date {
+        (DailyChallengeHistory.parseLocalDate(day) ?? .distantPast).addingTimeInterval(Double(hour) * 3_600)
+    }
+
     /// A row the user answered on `localDate`, at `answeredAt`.
     private func answeredOwnRow(
         localDate: String,
         answeredAt: Date,
         ownAnswerID: UUID = UUID()
     ) -> DailyQuestionRow {
-        // A couple day is unique per date; grouping keys on localDate, so a fresh
-        // couple-day id per row keeps the fixtures realistic without affecting it.
+        // Each seeded day has its own id; grouping uses the actual latest answer instant.
         dailyQuestionRow(
             coupleDayID: UUID(),
             localDate: localDate,
@@ -37,10 +40,10 @@ struct DailyChallengeHistoryTests {
 
     @Test func groupsByLocalDateNewestFirst() {
         let questions = historyQuestions([
-            answeredOwnRow(localDate: Self.day1, answeredAt: TestDailyChallengeIDs.answerDate),
-            answeredOwnRow(localDate: Self.day3, answeredAt: TestDailyChallengeIDs.answerDate),
-            answeredOwnRow(localDate: Self.day2, answeredAt: TestDailyChallengeIDs.answerDate),
-            answeredOwnRow(localDate: Self.day2, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day1, answeredAt: answerInstant(on: Self.day1)),
+            answeredOwnRow(localDate: Self.day3, answeredAt: answerInstant(on: Self.day3)),
+            answeredOwnRow(localDate: Self.day2, answeredAt: answerInstant(on: Self.day2)),
+            answeredOwnRow(localDate: Self.day2, answeredAt: answerInstant(on: Self.day2)),
         ])
 
         let days = DailyChallengeHistory.grouped(questions)
@@ -92,12 +95,10 @@ struct DailyChallengeHistoryTests {
     }
 
     @Test func placesQuestionInLatestAnswerDayNotInstanceDay() {
-        // Instance seeded yesterday (day2): the partner answered before midnight, the
-        // viewer answered after midnight today (day3). The backend hands us that latest
-        // day as effectiveLocalDate, and grouping must bucket the exchange under it —
-        // not under the instance's seed day — so it never hides on the previous day.
-        let beforeMidnight = TestDailyChallengeIDs.answerDate
-        let afterMidnight = beforeMidnight.addingTimeInterval(3 * 3_600)
+        // The shared date follows the last answer's instant rather than the seed day
+        // or the backend's historical date label.
+        let beforeMidnight = answerInstant(on: Self.day2, hour: 23)
+        let afterMidnight = beforeMidnight.addingTimeInterval(2 * 3_600)
 
         let carried = dailyQuestionRow(
             localDate: Self.day2,
@@ -117,7 +118,7 @@ struct DailyChallengeHistoryTests {
 
     @Test func storyChatsGoUnderTheDayTheirStoryWasPosted() {
         let posted = TestDailyChallengeIDs.answerDate
-        let storyDay = MemoryTimeline.localDateString(for: posted)
+        let storyDay = MemoryTimeline.localDateString(for: posted, timeZone: .gmt)
         let question = answeredOwnRow(localDate: storyDay, answeredAt: posted.addingTimeInterval(-3_600))
         let sameDay = storyConversation(postedAt: posted)
         let olderDay = storyConversation(postedAt: posted.addingTimeInterval(-3 * 86_400))
@@ -139,7 +140,7 @@ struct DailyChallengeHistoryTests {
 
     @Test func memoryChatsGoUnderTheDayTheMemoryWasAddedNotItsDate() {
         let added = TestDailyChallengeIDs.answerDate
-        let addedDay = MemoryTimeline.localDateString(for: added)
+        let addedDay = MemoryTimeline.localDateString(for: added, timeZone: .gmt)
         let question = answeredOwnRow(localDate: addedDay, answeredAt: added.addingTimeInterval(3_600))
         let story = storyConversation(postedAt: added.addingTimeInterval(1_800))
         let oldMemory = memoryConversation(addedAt: added, memoryDate: "2019-07-14")
@@ -155,6 +156,23 @@ struct DailyChallengeHistoryTests {
         // question and story. The one added today stays out of the earlier days.
         #expect(days.map(\.localDate) == [addedDay])
         #expect(days[0].rows.map(\.id) == [question.instanceID, story.id, oldMemory.id])
+    }
+
+    @Test func questionAndConversationDatesUseTheSameSharedZone() throws {
+        let zone = try #require(TimeZone(identifier: "America/Los_Angeles"))
+        let instant = try #require(ISO8601DateFormatter().date(from: "2026-11-03T23:30:00Z"))
+        let question = answeredOwnRow(localDate: "2026-11-02", answeredAt: instant)
+        let story = storyConversation(postedAt: instant)
+        let memory = memoryConversation(addedAt: instant, memoryDate: "2019-01-01")
+        let days = DailyChallengeHistory.adding(
+            [story, memory], before: "2026-11-04",
+            to: DailyChallengeHistory.grouped(historyQuestions([question]), timeZone: zone),
+            timeZone: zone
+        )
+        #expect(days.map(\.localDate) == ["2026-11-03"])
+        #expect(Set(days.flatMap(\.rows).map(\.id)) == [question.instanceID, story.id, memory.id])
+        let easternZone = try #require(TimeZone(identifier: "Europe/Oslo"))
+        #expect(MemoryTimeline.localDateString(for: instant, timeZone: easternZone) == "2026-11-04")
     }
 
     @Test func parsesLocalDateToUTCMidnight() {

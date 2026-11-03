@@ -53,6 +53,7 @@ nonisolated final class DailyChallengeLiveWriteClock: @unchecked Sendable {
                 answerDetails: current.answerDetails.map {
                     $0.applyingMediaAlternative(answerID: answerID, text: text, ownerUserID: ownerUserID)
                 }, streak: current.streak, generatedAt: current.generatedAt,
+                anchorTimeZoneID: current.anchorTimeZoneID,
                 coupleDayID: current.coupleDayID, endsAt: current.endsAt
             ), ownerUserID: ownerUserID)
             counts[ownerUserID, default: 0] += 1

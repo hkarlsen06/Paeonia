@@ -8,6 +8,24 @@
         private var storedGames: [UUID: [UUID: GameConversationResult]] = [:]
         private var storedTimelines: [UUID: [UUID: GameChatTimeline]] = [:]
         private var generation = 0
+        private var storedReadMarks: [UUID: [UUID: ThreadChatMessageCursor]] = [:]
+        private var seenAnswers: [UUID: Set<UUID>] = [:]
+
+        func readMarks(ownerUserID: UUID) -> [UUID: ThreadChatMessageCursor] {
+            storedReadMarks[ownerUserID] ?? [:]
+        }
+
+        func markRead(ownerUserID: UUID, threadID: UUID, through cursor: ThreadChatMessageCursor) -> Bool {
+            if let current = storedReadMarks[ownerUserID]?[threadID], current >= cursor { return false }
+            storedReadMarks[ownerUserID, default: [:]][threadID] = cursor
+            return true
+        }
+
+        func seenPartnerAnswers(ownerUserID: UUID) -> Set<UUID> { seenAnswers[ownerUserID] ?? [] }
+
+        func markPartnerAnswerSeen(ownerUserID: UUID, instanceID: UUID) -> Bool {
+            seenAnswers[ownerUserID, default: []].insert(instanceID).inserted
+        }
 
         func updateMediaAlternative(
             _ edit: MediaAlternativeEdit, ownerUserID: UUID, unlessPurgedSince generation: Int
@@ -207,6 +225,8 @@
         }
 
         func clearAll() {
+            storedReadMarks = [:]
+            seenAnswers = [:]
             generation += 1
             storedSummaries = [:]
             storedMessages = [:]

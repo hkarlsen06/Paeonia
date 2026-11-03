@@ -4,7 +4,7 @@ import UIKit
 @testable import PaeoniaApp
 
 struct DailyChallengeReadOverviewTests {
-    @Test func readOverviewQuestionsPinAwaitingAnswerThenMostRecent() {
+    @Test func readOverviewSeparatesExpiredDailyAnswersFromCurrentActivity() {
         let t1 = TestDailyChallengeIDs.answerDate
         let t2 = t1.addingTimeInterval(3_600)
         let t3 = t2.addingTimeInterval(3_600)
@@ -43,17 +43,21 @@ struct DailyChallengeReadOverviewTests {
             ),
         ])
 
-        // One list: the to-do is pinned on top despite being the oldest, then the rest
-        // by most recent answer (today at t3, the finished one at t2). Pure recency
-        // would have put the to-do last.
-        #expect(snapshot.readOverviewQuestions().map(\.id) == [awaiting, today, finished])
-
-        // Something new on the oldest finished exchange moves it above the timeline,
-        // but still below the to-do.
-        #expect(
-            snapshot.readOverviewQuestions(isNew: { $0.id == finished }).map(\.id)
-                == [awaiting, finished, today]
+        let quiet = QuestionsTabContent(
+            current: snapshot.questions, topics: [], history: [], conversations: [],
+            today: "2026-06-27", timeZone: .gmt,
+            attentionDate: { $0.attentionDate(seen: [], unreadMessageAt: nil) }
         )
+        #expect(quiet.attention.isEmpty)
+        #expect(quiet.recent.map(\.id) == [today, finished, awaiting])
+
+        let withMessage = QuestionsTabContent(
+            current: snapshot.questions, topics: [], history: [], conversations: [],
+            today: "2026-06-27", timeZone: .gmt,
+            attentionDate: { $0.attentionDate(seen: [], unreadMessageAt: $0.id == finished ? t3 : nil) }
+        )
+        #expect(withMessage.attention.map(\.id) == [finished])
+        #expect(withMessage.recent.map(\.id) == [today, awaiting])
     }
 
     @Test func todaysMemoryAndStoryChatsJoinTodaysListAndOlderUnreadChatsRankWithTheNew() {
@@ -70,7 +74,10 @@ struct DailyChallengeReadOverviewTests {
                 instanceID: awaiting,
                 partnerAnswerID: UUID(), partnerAnsweredAt: t0.addingTimeInterval(-3_600), isCurrentDay: false
             ),
-            dailyQuestionRow(instanceID: newAnswer, ownAnswerID: UUID(), ownAnsweredAt: t1),
+            dailyQuestionRow(
+                instanceID: newAnswer, ownAnswerID: UUID(), ownAnsweredAt: t0,
+                partnerAnswerID: UUID(), partnerAnsweredAt: t1, canViewPartnerAnswer: true
+            ),
             dailyQuestionRow(
                 coupleDayID: UUID(), localDate: "2026-06-25",
                 instanceID: recent,
@@ -89,21 +96,15 @@ struct DailyChallengeReadOverviewTests {
             isUnread: true
         )
 
-        let rows = QuestionsTabRow.todayRows(
-            questions: snapshot.questions,
+        let content = QuestionsTabContent(
+            current: snapshot.questions, topics: [], history: [],
             conversations: [readStory, earlierStory, unreadStory, readMemory, unreadMemory, earlierMemory],
-            today: MemoryTimeline.localDateString(for: t0),
-            isNew: { $0.id == newAnswer }
+            today: MemoryTimeline.localDateString(for: t0, timeZone: .gmt), timeZone: .gmt,
+            attentionDate: { $0.attentionDate(seen: [], unreadMessageAt: nil) }
         )
-
-        // The unread memory and story sit with the new question, by time, under the to-do.
-        // The read ones sort by time with the rest. Older unread chats also stay above
-        // the read timeline until opened.
-        #expect(
-            rows.map(\.id)
-                == [awaiting, unreadMemory.id, newAnswer, unreadStory.id, earlierStory.id, earlierMemory.id,
-                    recent, readStory.id, readMemory.id]
-        )
+        #expect(content.attention.map(\.id) == [unreadMemory.id, newAnswer, unreadStory.id,
+                                                earlierStory.id, earlierMemory.id])
+        #expect(content.recent.map(\.id) == [recent, readStory.id, readMemory.id, awaiting])
     }
 
     @Test func readingAnOlderConversationReturnsItToHistoryWithoutDuplicates() {
@@ -112,10 +113,15 @@ struct DailyChallengeReadOverviewTests {
         let unread = storyConversation(postedAt: now.addingTimeInterval(-86_400), isUnread: true)
         let read = SubjectConversation(subject: unread.subject, summary: unread.summary, isUnread: false)
 
-        let top = QuestionsTabRow.todayRows(questions: [], conversations: [unread], today: today)
-        #expect(top.map(\.id) == [unread.id])
-
-        #expect(QuestionsTabRow.todayRows(questions: [], conversations: [read], today: today).isEmpty)
+        func content(_ conversation: SubjectConversation) -> QuestionsTabContent {
+            QuestionsTabContent(
+                current: [], topics: [], history: [], conversations: [conversation],
+                today: today, timeZone: .current, attentionDate: { _ in nil }
+            )
+        }
+        #expect(content(unread).attention.map(\.id) == [unread.id])
+        #expect(content(read).attention.isEmpty)
+        #expect(content(read).recent.isEmpty)
         let afterReading = DailyChallengeHistory.adding([read], before: today, to: [])
         #expect(afterReading.flatMap(\.rows).map(\.id) == [read.id])
     }

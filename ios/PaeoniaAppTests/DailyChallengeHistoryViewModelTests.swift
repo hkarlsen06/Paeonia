@@ -113,6 +113,22 @@ struct DailyChallengeHistoryViewModelTests {
         #expect(days.map(\.localDate) == [Self.day1])
     }
 
+    @MainActor
+    @Test func cachedConversationsRemainWhileQuestionHistoryLoadsAndFails() async {
+        let service = GatedHistoryService()
+        let viewModel = DailyChallengeHistoryViewModel(service: service, currentUserID: HistoryTestIDs.currentUser)
+        let conversation = storyConversation(postedAt: HistoryTestIDs.answerDate, isUnread: false)
+        let before = viewModel.days(adding: [conversation], before: "2026-07-01", excluding: [])
+        #expect(before.flatMap(\.rows).map(\.id) == [conversation.id])
+        let load = Task { await viewModel.load() }
+        await waitForHistory { await service.loadHistoryCount == 1 }
+        await service.finish(call: 0, with: .failure(URLError(.notConnectedToInternet)))
+        await load.value
+        #expect(viewModel.state == .failed(.offline))
+        let after = viewModel.days(adding: [conversation], before: "2026-07-01", excluding: [])
+        #expect(after.flatMap(\.rows).map(\.id) == [conversation.id])
+    }
+
     // MARK: - Earlier days next to today's list
 
     @MainActor
@@ -153,7 +169,7 @@ private enum HistoryTestIDs {
 private func makeQuestion(localDate: String) -> DailyChallengeQuestion {
     makeQuestion(
         localDate: localDate,
-        ownAnsweredAt: HistoryTestIDs.answerDate,
+        ownAnsweredAt: DailyChallengeHistory.parseLocalDate(localDate)?.addingTimeInterval(43_200),
         partnerAnsweredAt: nil
     )
 }

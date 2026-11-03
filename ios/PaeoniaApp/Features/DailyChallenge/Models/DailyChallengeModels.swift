@@ -326,8 +326,8 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     let localDate: String
     /// The couple-local date this question effectively belongs to — the day of its most
     /// recent answer. Matches `localDate` for live/today questions; in history it can be
-    /// a later day when an exchange was finished after midnight. The history overview
-    /// groups on this so a late-night exchange shows under the day it was completed.
+    /// a later day when an exchange was finished after midnight. Chats groups the actual
+    /// latest answer time in its snapshot's shared timezone.
     let effectiveLocalDate: String
     let startsAt: Date
     let endsAt: Date
@@ -507,4 +507,15 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     func hasNewPartnerAnswer(seen: Set<UUID>) -> Bool {
         hasRevealedPartnerAnswer && partnerAnswerSeenAt == nil && !seen.contains(id)
     }
+    /// Only the running daily question and topic answers remain outstanding without a message.
+    func attentionDate(seen: Set<UUID>, unreadMessageAt: Date?) -> Date? {
+        var dates: [Date] = []
+        if isCurrentDay || topicKey != nil, let partnerAnswer,
+           !hasOwnAnswer || hasNewPartnerAnswer(seen: seen) {
+            dates.append(partnerAnswer.answeredAt)
+        }
+        if isChatAvailable, let unreadMessageAt { dates.append(unreadMessageAt) }
+        return dates.max()
+    }
+
 }

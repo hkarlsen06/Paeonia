@@ -55,7 +55,6 @@ final class ThreadChatViewModel {
     /// The page opens on the question's newest day instead of on `question`'s own day.
     private let focusesNewest: Bool
     /// The day the page scrolls to when it opens. Nil means the newest day.
-    private var focusedInstanceID: UUID? { focusesNewest ? nil : question?.id }
     /// The partner's answer on the opened day plays its reveal when it shows, once. Set
     /// before the page reads the chat, because that read marks the answer seen.
     @ObservationIgnored var revealsPartnerAnswer = false
@@ -99,6 +98,8 @@ final class ThreadChatViewModel {
     let reactionEditor = ReactionEditor()
     /// True while the chat is on screen and the app is in front, so reading counts.
     private var isScreenActive = false
+    private var visibleNewestMessageID: UUID?
+    private var visiblePartnerAnswerIDs: Set<UUID> = []
     /// Which days the server has heard, during this visit, that the partner's answer was
     /// seen, or is hearing it now.
     private var answerSeenUploads: [UUID: AnswerSeenUpload] = [:]
@@ -114,8 +115,8 @@ final class ThreadChatViewModel {
     private var seenFailedOperationIDs: Set<UUID>?
 
     /// Opens the chat of `subject`. A question's chat passes its `question`, the day the page
-    /// opened from, and `focusesNewest` opens the page on the question's newest day instead,
-    /// for a chat opened from a message or the Home card. A memory's or a story's chat passes
+    /// opened from. `focusesNewest` targets the latest message for a message-driven opening.
+    /// A memory's or a story's chat passes
     /// the `header` that says what the conversation is about.
     init(
         subject: ThreadChatSubject,
@@ -147,8 +148,8 @@ final class ThreadChatViewModel {
         self.syncAfterLocalChange = syncAfterLocalChange
     }
 
-    /// A question's chat. `focusesNewest` opens the page on the question's newest day instead
-    /// of on `question`'s own day.
+    /// A question's chat. Message-driven openings target the latest message;
+    /// archival openings target the supplied answer round.
     convenience init(
         question: DailyChallengeQuestion,
         participants: DailyChallengeParticipants,
@@ -172,7 +173,8 @@ final class ThreadChatViewModel {
     /// Where the page opens: the newest message when people have written after the day
     /// it opens on, otherwise the start of that day.
     var openingScroll: DailyChatRounds.OpeningScroll {
-        DailyChatRounds.openingScroll(rounds: rounds, focusing: focusedInstanceID, messages: messages)
+        if focusesNewest { return .newestMessage }
+        return DailyChatRounds.openingScroll(rounds: rounds, focusing: question?.id, messages: messages)
     }
 
     func refreshParticipants(_ participants: DailyChallengeParticipants) {
@@ -297,34 +299,57 @@ final class ThreadChatViewModel {
             if newestPartnerMessageID != nil || newestPartner != nil { presence.partnerMessageArrived() }
             newestPartnerMessageID = newestPartner
         }
-        await markShownAsSeen(ownerUserID: ownerUserID)
+        await markVisibleContentAsSeen()
         markReadOnServerIfActive()
         markAnswerSeenOnServerIfActive()
     }
 
-    /// The screen is open, so everything it shows counts as seen: every revealed partner
-    /// answer, the delivered messages, and their notifications.
-    private func markShownAsSeen(ownerUserID: UUID) async {
-        for round in rounds where round.hasRevealedPartnerAnswer {
+    /// Loading a page does not mean its rows were on screen. The view reports visibility.
+    func setNewestMessageVisible(_ isVisible: Bool) {
+        visibleNewestMessageID = isVisible ? newestDeliveredMessage?.id : nil
+        markReadOnServerIfActive()
+        Task { await markVisibleContentAsSeen() }
+    }
+
+    func setPartnerAnswerVisible(_ answerID: UUID, isVisible: Bool) {
+        if isVisible { visiblePartnerAnswerIDs.insert(answerID) }
+        else { visiblePartnerAnswerIDs.remove(answerID) }
+        markAnswerSeenOnServerIfActive()
+        Task { await markVisibleContentAsSeen() }
+    }
+
+    var newestDeliveredMessage: ThreadChatMessage? {
+        messages.last { !$0.isSending && !$0.sendFailed && $0.threadID != nil }
+    }
+
+    private var visiblePartnerRounds: [DailyChallengeQuestion] {
+        rounds.filter { round in
+            round.hasRevealedPartnerAnswer
+                && round.partnerAnswer.map { visiblePartnerAnswerIDs.contains($0.id) } == true
+        }
+    }
+
+    private func markVisibleContentAsSeen() async {
+        guard isScreenActive, let ownerUserID = participants.currentUserID else { return }
+        let visibleRounds = visiblePartnerRounds
+        guard !visibleRounds.isEmpty || visibleNewestMessageID != nil else { return }
+        for round in visibleRounds {
             await service.markPartnerAnswerSeen(ownerUserID: ownerUserID, instanceID: round.id)
         }
-        // Notification Center can be slow to answer, so the chat doesn't wait on it.
-        let shownMessageIDs = Set(messages.map(\.id))
-        let shownInstanceIDs = Set(rounds.map(\.id))
-        let isQuestionChat = question != nil
-        Task {
-            if isQuestionChat {
-                await DeliveredNotifications.clearQuestion(
-                    instanceIDs: shownInstanceIDs,
-                    shownMessageIDs: shownMessageIDs
-                )
-            } else {
-                await DeliveredNotifications.clearMessages(shownMessageIDs)
-            }
+        let newest = newestDeliveredMessage
+        let seenMessage = newest.flatMap { $0.id == visibleNewestMessageID ? $0 : nil }
+        if let seenMessage, let threadID = seenMessage.threadID {
+            await service.markThreadRead(
+                ownerUserID: ownerUserID, threadID: threadID,
+                through: ThreadChatMessageCursor(createdAt: seenMessage.createdAt, messageID: seenMessage.id)
+            )
         }
-        let newestDelivered = messages.filter { !$0.isSending && !$0.sendFailed }.map(\.createdAt).max()
-        if let threadID, let newestDelivered {
-            await service.markThreadRead(ownerUserID: ownerUserID, threadID: threadID, through: newestDelivered)
+        let shownMessageIDs = seenMessage == nil ? Set<UUID>() : Set(messages.map(\.id))
+        let shownInstanceIDs = Set(visibleRounds.map(\.id))
+        if question != nil {
+            await DeliveredNotifications.clearQuestion(instanceIDs: shownInstanceIDs, shownMessageIDs: shownMessageIDs)
+        } else {
+            await DeliveredNotifications.clearMessages(shownMessageIDs)
         }
     }
 
@@ -473,6 +498,7 @@ extension ThreadChatViewModel {
     func setScreenActive(_ isActive: Bool) {
         isScreenActive = isActive
         if isActive {
+            Task { await markVisibleContentAsSeen() }
             markReadOnServerIfActive()
             markAnswerSeenOnServerIfActive()
         } else {
@@ -490,7 +516,8 @@ extension ThreadChatViewModel {
     /// server has, while the chat is on screen.
     private func markReadOnServerIfActive() {
         guard isScreenActive,
-              let newest = messages.last(where: { !$0.isSending && !$0.sendFailed && $0.threadID != nil }),
+              let newest = newestDeliveredMessage,
+              newest.id == visibleNewestMessageID,
               let threadID = newest.threadID
         else { return }
         presence.markRead(threadID: threadID, messageID: newest.id)
@@ -502,7 +529,7 @@ extension ThreadChatViewModel {
     /// page. Questions from today are also sent from the Questions tab.
     private func markAnswerSeenOnServerIfActive() {
         guard isScreenActive else { return }
-        for round in rounds where round.hasRevealedPartnerAnswer && round.partnerAnswerSeenAt == nil {
+        for round in visiblePartnerRounds where round.partnerAnswerSeenAt == nil {
             guard answerSeenUploads[round.id] == nil else { continue }
             answerSeenUploads[round.id] = .sending
             let instanceID = round.id

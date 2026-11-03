@@ -39,8 +39,8 @@ nonisolated struct SubjectConversation: Identifiable, Equatable, Sendable {
 
     /// Whether the row sits in today's list rather than under an earlier day. A row dated
     /// after `today` (the phone's day turned before the couple's) counts as today.
-    func isToday(_ today: String) -> Bool {
-        localDate >= today
+    func isToday(_ today: String, timeZone: TimeZone = .current) -> Bool {
+        MemoryTimeline.localDateString(for: startedAt, timeZone: timeZone) >= today
     }
 
     /// The card that opens the chat, the same one the memory page or the story viewer uses.
@@ -75,34 +75,7 @@ nonisolated enum QuestionsTabRow: Identifiable, Equatable, Sendable {
         }
     }
 
-    /// Questions tab order. A question the partner answered that the user can still
-    /// answer comes first, then rows with something new from the partner (a question's
-    /// answer or chat message, an unread message about a memory or a story), then the
-    /// rest. Within each tier the newest comes first (`timelineOrder`).
-    static func questionsTabOrder(
-        _ lhs: Self,
-        _ rhs: Self,
-        isNew: (DailyChallengeQuestion) -> Bool = { _ in false }
-    ) -> Bool {
-        func tier(_ row: Self) -> Int {
-            switch row {
-            case .question(let question):
-                if question.isAwaitingCurrentUserAnswer { return 0 }
-                return isNew(question) ? 1 : 2
-            case .conversation(let conversation):
-                return conversation.isUnread ? 1 : 2
-            }
-        }
-        let lhsTier = tier(lhs)
-        let rhsTier = tier(rhs)
-        if lhsTier != rhsTier {
-            return lhsTier < rhsTier
-        }
-        return timelineOrder(lhs, rhs)
-    }
-
-    /// Newest first, then a stable id tiebreak. Today's list uses it within a tier, and
-    /// each earlier day uses it for its rows.
+    /// Handled rows use their historical timestamp, then a stable UUID tie-break.
     static func timelineOrder(_ lhs: Self, _ rhs: Self) -> Bool {
         if lhs.sortDate != rhs.sortDate {
             return lhs.sortDate > rhs.sortDate
@@ -110,15 +83,4 @@ nonisolated enum QuestionsTabRow: Identifiable, Equatable, Sendable {
         return lhs.id.uuidString < rhs.id.uuidString
     }
 
-    /// The top list includes today's rows and older unread conversations.
-    static func todayRows(
-        questions: [DailyChallengeQuestion],
-        conversations: [SubjectConversation],
-        today: String,
-        isNew: (DailyChallengeQuestion) -> Bool = { _ in false }
-    ) -> [Self] {
-        let rows = questions.map(Self.question)
-            + conversations.filter { $0.isToday(today) || $0.isUnread }.map(Self.conversation)
-        return rows.sorted { questionsTabOrder($0, $1, isNew: isNew) }
-    }
 }

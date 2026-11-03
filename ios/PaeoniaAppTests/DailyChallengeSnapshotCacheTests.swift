@@ -95,6 +95,33 @@ final class InMemoryDailyChallengeSnapshotCache: DailyChallengeSnapshotCaching, 
 // MARK: - File cache tests
 
 struct DailyChallengeSnapshotCacheTests {
+    @Test func sharedTimeZoneSurvivesCacheAndControlsUnstartedDayDate() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var row = sampleSnapshotRow()
+        row.anchorTimeZoneID = "America/Los_Angeles"
+        FileDailyChallengeSnapshotCache(directoryURL: directory).save(row, ownerUserID: CacheTestIDs.ownerUserID)
+        let reopened = FileDailyChallengeSnapshotCache(directoryURL: directory)
+        let cached = try #require(reopened.load(ownerUserID: CacheTestIDs.ownerUserID))
+        let snapshot = cached.loadResult(currentUserID: CacheTestIDs.ownerUserID).snapshot
+        #expect(snapshot.timeZone.identifier == "America/Los_Angeles")
+        let instant = try #require(ISO8601DateFormatter().date(from: "2026-11-04T01:00:00Z"))
+        let unstarted = DailyChallengeSnapshot.empty(
+            currentUserID: CacheTestIDs.ownerUserID, refreshedAt: instant, anchorTimeZoneID: snapshot.anchorTimeZoneID
+        )
+        #expect(unstarted.todayLocalDate == "2026-11-03")
+    }
+
+    @Test func snapshotWireFormatRequiresSharedTimeZone() throws {
+        let data = try JSONEncoder().encode(sampleSnapshotRow())
+        var fields = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        fields.removeValue(forKey: "anchor_time_zone_id")
+        let missingZone = try JSONSerialization.data(withJSONObject: fields)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(DailyChallengeRemoteSnapshotRow.self, from: missingZone)
+        }
+    }
+
     @Test func authoredMediaTextSurvivesFileCacheAndDetailProjection() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -107,13 +134,21 @@ struct DailyChallengeSnapshotCacheTests {
         )
         let row = DailyChallengeRemoteSnapshotRow(
             questions: sample.questions, answerDetails: [detail], streak: sample.streak,
-            generatedAt: sample.generatedAt
+            generatedAt: sample.generatedAt, anchorTimeZoneID: "America/Los_Angeles"
         )
         FileDailyChallengeSnapshotCache(directoryURL: directory).save(row, ownerUserID: CacheTestIDs.ownerUserID)
         let reopened = FileDailyChallengeSnapshotCache(directoryURL: directory)
         let cached = try #require(reopened.load(ownerUserID: CacheTestIDs.ownerUserID)?.answerDetails.first)
         #expect(cached.detail.mediaAccessibilityText == "Vi ler sammen. En hund bjeffer.")
         #expect(cached.detail.textBody == "A separate caption")
+        let clock = DailyChallengeLiveWriteClock()
+        clock.updateMediaAlternative(
+            answerID: detail.answerID, text: "Updated description", ownerUserID: CacheTestIDs.ownerUserID,
+            since: clock.count(ownerUserID: CacheTestIDs.ownerUserID), cache: reopened
+        )
+        let updated = try #require(reopened.load(ownerUserID: CacheTestIDs.ownerUserID))
+        #expect(updated.anchorTimeZoneID == row.anchorTimeZoneID)
+        #expect(updated.answerDetails.first?.detail.mediaAccessibilityText == "Updated description")
     }
 
     @Test func loadForDifferentOwnerReturnsNil() {

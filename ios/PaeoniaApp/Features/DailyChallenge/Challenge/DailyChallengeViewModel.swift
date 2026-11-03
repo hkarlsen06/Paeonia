@@ -85,7 +85,7 @@ final class DailyChallengeViewModel {
     var streak = CoupleStreak.none
     var threadSummariesByQuestionID: [UUID: ThreadChatSummary] = [:]
     /// When the user last saw each chat on this phone, keyed by thread id.
-    var chatReadMarks: [UUID: Date] = [:]
+    var chatReadMarks: [UUID: ThreadChatMessageCursor] = [:]
     /// Questions whose page the user has opened since the partner's answer showed up.
     var seenPartnerAnswerIDs: Set<UUID> = []
     /// Seen answers being sent to the server right now, so a second trigger doesn't

@@ -11,7 +11,7 @@ import Observation
 @Observable
 final class ThreadChatSummaries {
     private(set) var summaries: [ThreadChatSubject: ThreadChatSummary] = [:]
-    private var readMarks: [UUID: Date] = [:]
+    private var readMarks: [UUID: ThreadChatMessageCursor] = [:]
     private var currentUserID: UUID?
     @ObservationIgnored private let service: any ThreadChatServicing
 

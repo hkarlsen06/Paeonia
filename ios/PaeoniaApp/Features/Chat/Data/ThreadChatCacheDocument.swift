@@ -12,7 +12,7 @@ nonisolated struct ThreadChatCoreDocument: Codable, Equatable {
     static let seenAnswerLimit = 1_000
 
     var summaries: [ThreadChatSummary] = []
-    var readThroughByThreadID: [String: Date] = [:]
+    var readThroughByThreadID: [String: ThreadChatMessageCursor] = [:]
     var seenPartnerAnswerInstanceIDs: [String] = []
 
     /// Forgets the oldest ids past the limit. An answer that old no longer shows as new.
@@ -87,6 +87,7 @@ nonisolated extension ThreadChatCoreDocument {
             lastMessageSenderUserID: message.senderUserID,
             lastMessageBody: message.body,
             viewerReadThroughAt: summary.viewerReadThroughAt,
+            viewerReadThroughMessageID: summary.viewerReadThroughMessageID,
             topicKey: summary.topicKey,
             isPrivateTopic: summary.isPrivateTopic
         )
@@ -108,6 +109,7 @@ nonisolated extension ThreadChatCoreDocument {
             lastMessageSenderUserID: nil,
             lastMessageBody: nil,
             viewerReadThroughAt: summary.viewerReadThroughAt,
+            viewerReadThroughMessageID: summary.viewerReadThroughMessageID,
             topicKey: summary.topicKey,
             isPrivateTopic: summary.isPrivateTopic
         )
@@ -127,6 +129,7 @@ nonisolated extension ThreadChatCoreDocument {
                 lastMessageSenderUserID: send.senderUserID,
                 lastMessageBody: send.body,
                 viewerReadThroughAt: summary.viewerReadThroughAt,
+                viewerReadThroughMessageID: summary.viewerReadThroughMessageID,
                 topicKey: summary.topicKey,
                 isPrivateTopic: summary.isPrivateTopic
             )

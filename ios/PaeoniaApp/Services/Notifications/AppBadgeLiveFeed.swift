@@ -19,27 +19,41 @@ nonisolated struct AppBadgeLiveFeed: LiveFeed {
         }
 
         var lastIcon: Int?
-        let results = live.subscribe("badges:get_badges", as: AppBadgeCounts.self)
+        while !Task.isCancelled {
+            let previousIcon = lastIcon
+            // A fresh key also refreshes clock-based eligibility, such as a day ending.
+            lastIcon = await withTaskGroup(of: Int?.self) { group in
+                group.addTask { await follow(live: live, previousIcon: previousIcon) }
+                group.addTask {
+                    try? await Task.sleep(for: .seconds(60))
+                    return nil
+                }
+                let first = (await group.next()).flatMap { $0 }
+                group.cancelAll()
+                let remaining = (await group.next()).flatMap { $0 }
+                return first ?? remaining ?? previousIcon
+            }
+        }
+    }
+
+    private func follow(live: LiveQueryService, previousIcon: Int?) async -> Int? {
+        var lastIcon = previousIcon
+        let results = live.subscribe(
+            "badges:get_badges", args: ["p_refresh_key": UUID().uuidString], as: AppBadgeCounts.self
+        )
         for await result in results {
-            guard !Task.isCancelled else {
-                return
-            }
-            guard case let .value(counts) = result else {
-                continue
-            }
+            guard !Task.isCancelled else { break }
+            guard case let .value(counts) = result else { continue }
             await AppBadges.shared.update(counts)
             let icon = max(0, counts.icon)
-            guard icon != lastIcon else {
-                continue
-            }
+            guard icon != lastIcon else { continue }
             await Self.setBadge(icon)
             if lastIcon != nil {
-                // Best effort: a missed sync only leaves another phone's number
-                // stale until its next push or its next launch.
                 try? await PaeoniaConvexClientProvider.shared.client().mutation("badges:sync_badge")
             }
             lastIcon = icon
         }
+        return lastIcon
     }
 
     /// Nothing waits: zero on the icon and on every tab.

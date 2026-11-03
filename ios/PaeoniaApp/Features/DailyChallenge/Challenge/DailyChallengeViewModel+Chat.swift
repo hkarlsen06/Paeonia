@@ -79,6 +79,12 @@ extension DailyChallengeViewModel {
         hasNewPartnerAnswer(question) || (question.isChatAvailable && hasUnreadChat(for: question.questionID))
     }
 
+    func attentionDate(for question: DailyChallengeQuestion) -> Date? {
+        let unreadAt = hasUnreadChat(for: question.questionID)
+            ? threadSummariesByQuestionID[question.questionID]?.lastMessageAt : nil
+        return question.attentionDate(seen: seenPartnerAnswerIDs, unreadMessageAt: unreadAt)
+    }
+
     /// Chats with a partner message the user has not opened yet, newest first.
     var unreadChats: [ThreadChatSummary] {
         guard let currentUserID else { return [] }

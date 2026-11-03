@@ -52,6 +52,9 @@ struct ThreadChatView: View {
     /// when the list does.
     @State private var openedWithoutRounds = false
     @State private var didRevealPartnerAnswer = false
+    @State private var viewportFrame = CGRect.zero
+    @State private var readVisibilityReady = false
+    @State private var openingReadTask: Task<Void, Never>?
 
     init(
         viewModel: ThreadChatViewModel,
@@ -79,6 +82,7 @@ struct ThreadChatView: View {
                 waitingPage
             }
         }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewportFrame = $0 }
         .paeoniaReadableWidth()
         .paeoniaScreenBackground()
         .navigationTitle(navigationTitle)
@@ -102,8 +106,17 @@ struct ThreadChatView: View {
         .task(id: viewModel.expandedGameResultIDs) {
             await viewModel.observeExpandedGameResults()
         }
-        .onAppear { isVisible = true; updateVisibility() }
-        .onDisappear { isVisible = false; updateVisibility() }
+        .onAppear {
+            isVisible = true
+            updateVisibility()
+            if didApplyOpeningScroll { resumeReadVisibility() }
+        }
+        .onDisappear {
+            isVisible = false
+            readVisibilityReady = false
+            openingReadTask?.cancel()
+            updateVisibility()
+        }
         .onChange(of: scenePhase) { updateVisibility() }
         .onChange(of: viewModel.presence.partnerIsTyping) { _, isTyping in
             guard isTyping else { return }
@@ -238,6 +251,13 @@ struct ThreadChatView: View {
         .onAppear { applyOpeningScroll() }
     }
 
+    private var messageViewport: CGRect {
+        CGRect(
+            x: viewportFrame.minX, y: viewportFrame.minY, width: viewportFrame.width,
+            height: max(0, viewportFrame.height - (viewModel.isChatAvailable ? composerHeight : 0))
+        )
+    }
+
     private func messageRow(_ row: ThreadChatRow, messageFrame: Binding<CGRect>?) -> some View {
         let reactable = reactableItem(row)
         return ThreadChatMessageRow(
@@ -259,6 +279,14 @@ struct ThreadChatView: View {
             timestampReveal: timestampReveal,
             messageFrame: messageFrame
         )
+        .modifier(ThreadChatReadVisibility(viewport: messageViewport, enabled: readVisibilityReady) { visible in
+            if let message = row.message, message.id == viewModel.newestDeliveredMessage?.id {
+                viewModel.setNewestMessageVisible(visible)
+            }
+            if let answer = row.answer, !row.isCurrentUser {
+                viewModel.setPartnerAnswerVisible(answer.answerID, isVisible: visible)
+            }
+        })
         .id(row.id)
     }
 
@@ -441,6 +469,16 @@ extension ThreadChatView {
         }
     }
 
+    private func resumeReadVisibility() {
+        readVisibilityReady = false
+        openingReadTask?.cancel()
+        openingReadTask = Task {
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+            readVisibilityReady = true
+        }
+    }
+
     /// The page opens on the day it was opened from, or on the newest message when people
     /// have written since that day began. The chat is usually read before the screen
     /// opens, so this runs as the list first fills, not after it was shown. A page that
@@ -455,6 +493,7 @@ extension ThreadChatView {
         } else {
             return
         }
+        resumeReadVisibility()
         switch viewModel.openingScroll {
         case .newestMessage:
             break

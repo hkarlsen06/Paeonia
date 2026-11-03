@@ -45,11 +45,11 @@ struct DailyChallengeReadCard: View {
     /// reply. When sending, the row shows the "saved, sending" preview instead, so this
     /// stays false.
     private var isAnswerable: Bool {
-        sending == nil && question.isAwaitingCurrentUserAnswer
+        sending == nil && question.isAwaitingCurrentUserAnswer && !isUnread
     }
 
     private var opensPage: Bool {
-        (question.hasOwnAnswer || (completionState != nil && sending != nil)) && onOpen != nil
+        (question.hasOwnAnswer || isUnread || sending != nil) && onOpen != nil
     }
 
     private var isUnread: Bool {
@@ -100,8 +100,10 @@ struct DailyChallengeReadCard: View {
                 card
             }
         }
-        .accessibilityIdentifier(completionState == nil
-            ? "daily.question.\(question.id.uuidString)" : "daily.done.openConversation")
+        .accessibilityIdentifier(
+            completionState != nil || (question.isCurrentDay && (question.hasOwnAnswer || sending != nil))
+                ? "daily.done.openConversation" : "daily.question.\(question.id.uuidString)"
+        )
     }
 
     private var card: some View {
@@ -184,6 +186,7 @@ struct DailyChallengeReadCard: View {
 
     /// What the row says about the question, in the order the cases can happen.
     private var statusText: Text {
+        if isUnread { return Text(.dailyChatCardUnreadTitle(participants.partnerName)) }
         if isAnswerable {
             return Text(.dailyChallengePartnerHiddenMessage(participants.partnerName))
         }

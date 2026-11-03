@@ -200,7 +200,8 @@ extension TopicsViewModel {
         return TopicSections(
             items: displayedItems(for: key),
             isSending: isSending,
-            hasNewFromPartner: hasNewFromPartner
+            hasNewFromPartner: hasNewFromPartner,
+            attentionDate: { [dailyChallenge] in dailyChallenge?.attentionDate(for: $0) }
         )
     }
 

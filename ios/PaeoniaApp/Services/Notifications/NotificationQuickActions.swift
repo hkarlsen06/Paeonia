@@ -139,9 +139,15 @@ nonisolated enum NotificationQuickActionHandler {
             replyTo: nil,
             operation: operation
         )
-        // Answering a message means reading it, so the partner sees it as read.
-        await service.markThreadRead(ownerUserID: ownerUserID, threadID: threadID, through: Date())
+        // The reply reads the pushed message, not messages that arrived after it.
         if let messageID = push.messageID {
+            let cached = await service.cachedMessages(ownerUserID: ownerUserID, subjectID: subject.id)
+            if let message = cached.first(where: { $0.id == messageID }) {
+                await service.markThreadRead(
+                    ownerUserID: ownerUserID, threadID: threadID,
+                    through: ThreadChatMessageCursor(createdAt: message.createdAt, messageID: messageID)
+                )
+            }
             await service.markThreadReadOnServer(threadID: threadID, messageID: messageID)
         }
     }

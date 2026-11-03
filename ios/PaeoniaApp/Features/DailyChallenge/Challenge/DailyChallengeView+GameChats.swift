@@ -3,19 +3,28 @@ import SwiftUI
 extension DailyChallengeScreen {
     var ordinaryConversations: [SubjectConversation] {
         conversations.filter {
-            if case .game(let game) = $0.subject { return !partnerGameKinds.contains(game.kind) }
+            if case .game(let game) = $0.subject { return $0.isUnread || !partnerGameKinds.contains(game.kind) }
             return true
+        }
+    }
+
+    private var quietGameKinds: [GameKind] {
+        GameKind.allCases.filter { kind in
+            partnerGameKinds.contains(kind) && !conversations.contains {
+                guard case .game(let game) = $0.subject else { return false }
+                return game.kind == kind && $0.isUnread
+            }
         }
     }
 
     var activeGameChats: some View {
         Group {
-            if let coupleID, !partnerGameKinds.isEmpty {
+            if let coupleID, !quietGameKinds.isEmpty {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
                     Text(.gamesConversationPartnerPlaying(viewModel.participants.partnerName))
                         .font(PaeoniaTypography.sectionTitle)
                         .foregroundStyle(.paeoniaTextPrimary)
-                    ForEach(partnerGameKinds.sorted { $0.rawValue < $1.rawValue }, id: \.self) { kind in
+                    ForEach(quietGameKinds, id: \.self) { kind in
                         activeGameChat(kind: kind, coupleID: coupleID)
                     }
                 }

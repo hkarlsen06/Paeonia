@@ -9,6 +9,10 @@ struct ThreadChatViewModelTests {
         let viewModel = fixture.makeViewModel()
         await fixture.gateway.setAnswerSeenFailure(true)
         await viewModel.load()
+        viewModel.setScreenActive(true)
+        if let answerID = fixture.question.partnerAnswer?.id {
+            viewModel.setPartnerAnswerVisible(answerID, isVisible: true)
+        }
 
         // Coming back to the page tries again after a failure.
         for _ in 0..<200 where await fixture.gateway.answerSeenCallCount < 2 {
@@ -33,6 +37,38 @@ struct ThreadChatViewModelTests {
             try? await Task.sleep(for: .milliseconds(5))
         }
         #expect(await fixture.gateway.answerSeenCallCount == callsAfterSuccess)
+    }
+
+    @Test func messageDrivenOpeningTargetsMessagesBeforeTheRoundCacheLoads() {
+        let viewModel = ChatTestFixture().makeViewModel(focusesNewest: true)
+        guard case .newestMessage = viewModel.openingScroll else {
+            Issue.record("An unread conversation must open its messages, not an answer round")
+            return
+        }
+    }
+
+    @Test func loadingAHistoricalPageDoesNotReadItsUnseenMessages() async throws {
+        let fixture = ChatTestFixture()
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = FileThreadChatCache(directoryURL: directory)
+        let service = ThreadChatService(
+            gateway: fixture.gateway, cache: cache, pendingOperationStore: fixture.pendingStore
+        )
+        await fixture.gateway.setRemote(
+            summaries: [fixture.summary], messages: [fixture.remoteMessage(body: "Newest")]
+        )
+        let viewModel = fixture.makeViewModel(service: service)
+        viewModel.setScreenActive(true)
+        await viewModel.load()
+
+        #expect(await cache.readMarks(ownerUserID: fixture.ownerUserID).isEmpty)
+        #expect(await cache.seenPartnerAnswers(ownerUserID: fixture.ownerUserID).isEmpty)
+        viewModel.setNewestMessageVisible(true)
+        let becameRead = await waitUntil {
+            await cache.readMarks(ownerUserID: fixture.ownerUserID)[fixture.threadID]?.messageID == fixture.messageID
+        }
+        #expect(becameRead)
     }
 
     @Test func firstSendQueuesLazyThreadCreationAndOptimisticMessage() async throws {

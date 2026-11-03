@@ -129,6 +129,11 @@ struct ThreadChatReadMarkTests {
     private let me = UUID()
     private let partner = UUID()
     private let sentAt = Date(timeIntervalSince1970: 1_000)
+    private let newestID = UUID(uuidString: "ffffffff-ffff-ffff-ffff-ffffffffffff") ?? UUID()
+
+    private func cursor(_ date: Date) -> ThreadChatMessageCursor {
+        ThreadChatMessageCursor(createdAt: date, messageID: newestID)
+    }
 
     private func summary(threadID: UUID = UUID(), sender: UUID?) -> ThreadChatSummary {
         ThreadChatSummary(
@@ -148,10 +153,29 @@ struct ThreadChatReadMarkTests {
         let fromPartner = summary(sender: partner)
 
         #expect(fromPartner.isUnread(by: me, readThrough: nil))
-        #expect(fromPartner.isUnread(by: me, readThrough: sentAt.addingTimeInterval(-1)))
-        #expect(!fromPartner.isUnread(by: me, readThrough: sentAt))
+        #expect(fromPartner.isUnread(by: me, readThrough: cursor(sentAt.addingTimeInterval(-1))))
+        #expect(!fromPartner.isUnread(by: me, readThrough: cursor(sentAt)))
         #expect(!summary(sender: me).isUnread(by: me, readThrough: nil))
         #expect(!summary(sender: nil).isUnread(by: me, readThrough: nil))
+    }
+
+    @Test func equalTimestampsKeepTheHigherUnreadMessageIDOutstanding() throws {
+        let earlier = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
+        let later = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
+        var fromPartner = ThreadChatSummary(
+            threadID: UUID(), coupleID: UUID(), subject: .question(UUID()), createdAt: sentAt,
+            updatedAt: sentAt, lastMessageID: later, lastMessageAt: sentAt,
+            lastMessageSenderUserID: partner, lastMessageBody: "Second"
+        )
+        let firstCursor = ThreadChatMessageCursor(createdAt: sentAt, messageID: earlier)
+        let secondCursor = ThreadChatMessageCursor(createdAt: sentAt, messageID: later)
+        #expect(fromPartner.isUnread(by: me, readThrough: firstCursor))
+        #expect(!fromPartner.isUnread(by: me, readThrough: secondCursor))
+        fromPartner.viewerReadThroughAt = sentAt
+        fromPartner.viewerReadThroughMessageID = earlier
+        #expect(fromPartner.isUnread(by: me, readThrough: nil))
+        fromPartner.viewerReadThroughMessageID = later
+        #expect(!fromPartner.isUnread(by: me, readThrough: nil))
     }
 
     @Test func theFileCacheKeepsTheNewestReadMarkUntilAPurge() async {
@@ -161,15 +185,32 @@ struct ThreadChatReadMarkTests {
         let cache = FileThreadChatCache(directoryURL: directory)
         let threadID = UUID()
 
-        #expect(await cache.markRead(ownerUserID: me, threadID: threadID, through: sentAt))
-        let movedBack = await cache.markRead(ownerUserID: me, threadID: threadID, through: sentAt - 5)
+        #expect(await cache.markRead(ownerUserID: me, threadID: threadID, through: cursor(sentAt)))
+        let movedBack = await cache.markRead(ownerUserID: me, threadID: threadID, through: cursor(sentAt - 5))
         #expect(!movedBack)
         let reopened = FileThreadChatCache(directoryURL: directory)
-        #expect(await reopened.readMarks(ownerUserID: me) == [threadID: sentAt])
+        #expect(await reopened.readMarks(ownerUserID: me) == [threadID: cursor(sentAt)])
         #expect(await cache.readMarks(ownerUserID: partner).isEmpty)
 
         await cache.clearAll()
         #expect(await cache.readMarks(ownerUserID: me).isEmpty)
+    }
+
+    @Test func theFileCacheAdvancesTheMessageIDWithinOneTimestamp() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = FileThreadChatCache(directoryURL: directory)
+        let threadID = UUID()
+        let lowerID = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
+        let higherID = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
+        let lower = ThreadChatMessageCursor(createdAt: sentAt, messageID: lowerID)
+        let higher = ThreadChatMessageCursor(createdAt: sentAt, messageID: higherID)
+
+        #expect(await cache.markRead(ownerUserID: me, threadID: threadID, through: lower))
+        #expect(await cache.markRead(ownerUserID: me, threadID: threadID, through: higher))
+        let reopened = FileThreadChatCache(directoryURL: directory)
+        #expect(await reopened.readMarks(ownerUserID: me)[threadID] == higher)
+        #expect(await cache.markRead(ownerUserID: me, threadID: threadID, through: lower) == false)
     }
 
     @Test func aSavedReadMarkKeepsTheServerMilliseconds() async throws {
@@ -183,19 +224,20 @@ struct ThreadChatReadMarkTests {
         )
 
         await FileThreadChatCache(directoryURL: directory)
-            .markRead(ownerUserID: me, threadID: threadID, through: serverTime)
+            .markRead(ownerUserID: me, threadID: threadID, through: cursor(serverTime))
         let readThrough = await FileThreadChatCache(directoryURL: directory).readMarks(ownerUserID: me)[threadID]
 
         // The thread list from the server carries the same milliseconds, so the chat stays read.
-        #expect(readThrough == serverTime)
+        #expect(readThrough == cursor(serverTime))
     }
 
     @Test func aReadOnAnotherDeviceClearsTheUnreadMark() {
         var fromPartner = summary(sender: partner)
         fromPartner.viewerReadThroughAt = sentAt
+        fromPartner.viewerReadThroughMessageID = fromPartner.lastMessageID
 
         #expect(!fromPartner.isUnread(by: me, readThrough: nil))
-        #expect(!fromPartner.isUnread(by: me, readThrough: sentAt - 5))
+        #expect(!fromPartner.isUnread(by: me, readThrough: cursor(sentAt - 5)))
     }
 
     @Test func theFileCacheKeepsSeenPartnerAnswersUntilAPurge() async {

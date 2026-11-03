@@ -54,22 +54,24 @@ final class DailyChallengeHistoryViewModel {
         }
     }
 
-    /// The loaded days with the memory and story chats from before `today`, without the
-    /// questions in `shownIDs`, newest day first. The Questions tab lists today's
-    /// questions above, so a question that is there never shows again under an earlier
-    /// day. A day left with nothing in it is dropped.
+    /// The loaded rounds, before a screen chooses its shared date groups.
+    var questions: [DailyChallengeQuestion] {
+        guard case .content(let days) = state else { return [] }
+        return days.flatMap(\.rows).compactMap { row in
+            guard case .question(let question) = row else { return nil }
+            return question
+        }
+    }
+
+    /// Cached conversations remain available while question history loads or fails.
     func days(
         adding conversations: [SubjectConversation],
         before today: String,
-        excluding shownIDs: Set<UUID>
+        excluding shownIDs: Set<UUID>,
+        timeZone: TimeZone = .gmt
     ) -> [DailyChallengeHistoryDay] {
-        let loaded: [DailyChallengeHistoryDay]
-        switch state {
-        case .content(let days): loaded = days
-        case .empty: loaded = []
-        case .loading, .failed: return []
-        }
-        let days = DailyChallengeHistory.adding(conversations, before: today, to: loaded)
+        let loaded = DailyChallengeHistory.grouped(questions, timeZone: timeZone)
+        let days = DailyChallengeHistory.adding(conversations, before: today, to: loaded, timeZone: timeZone)
         return DailyChallengeHistory.removing(shownIDs, from: days)
     }
 

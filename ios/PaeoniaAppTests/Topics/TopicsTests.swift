@@ -109,6 +109,24 @@ struct TopicModelTests {
         #expect(skipped.state(isSending: false) == .skipped)
     }
 
+    @Test func outstandingTopicRowsFollowActivityTimeInsteadOfAnswerState() throws {
+        let built = try items()
+        let started = try #require(built.first { $0.question.questionID == TopicIDs.startedQuestion })
+        let other = TopicQuestionItem(
+            question: previewHistoryQuestion(
+                localDate: "2026-10-18", prompt: "Another question", ownText: "Mine", partnerText: "Theirs"
+            ),
+            sortOrder: 2, isSkipped: false
+        )
+        let time = Date(timeIntervalSince1970: 1_792_320_000)
+        let sections = TopicSections(
+            items: [other, started], isSending: { _ in false },
+            hasNewFromPartner: { $0.id == other.id },
+            attentionDate: { $0.id == started.id ? time : time - 60 }
+        )
+        #expect(sections.waiting.map(\.id) == [started.id, other.id])
+    }
+
     @Test func aPartnerAnswerNotOpenedYetWaitsOnTopButIsNotAnsweredAgain() throws {
         let built = try items()
         let started = try #require(built.first { $0.question.questionID == TopicIDs.startedQuestion })

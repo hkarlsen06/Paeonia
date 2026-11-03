@@ -90,18 +90,21 @@ nonisolated struct TopicSections: Equatable, Sendable {
     var waitingForPartner: [TopicQuestionItem] = []
     var together: [TopicQuestionItem] = []
     var skipped: [TopicQuestionItem] = []
+    private var attentionDates: [UUID: Date] = [:]
 
     /// `hasNewFromPartner` says whether this person still has to open the partner's
     /// answer or a partner message on a question both answered.
     init(
         items: [TopicQuestionItem],
         isSending: (UUID) -> Bool,
-        hasNewFromPartner: (DailyChallengeQuestion) -> Bool = { _ in false }
+        hasNewFromPartner: (DailyChallengeQuestion) -> Bool = { _ in false },
+        attentionDate: (DailyChallengeQuestion) -> Date? = { $0.partnerAnswer?.answeredAt }
     ) {
         let ordered = items.sorted {
             ($0.sortOrder, $0.question.questionKey) < ($1.sortOrder, $1.question.questionKey)
         }
         for item in ordered {
+            attentionDates[item.id] = attentionDate(item.question)
             switch item.state(isSending: isSending(item.id)) {
             case .forYou: forYou.append(item)
             case .upNext: upNext.append(item)
@@ -113,10 +116,14 @@ nonisolated struct TopicSections: Equatable, Sendable {
         }
     }
 
-    /// What waits for this person: something new from the partner to open, then
-    /// questions to answer. The Questions tab lists these with the daily questions.
+    /// Outstanding answers and messages, newest activity first, as on the Chats tab.
     var waiting: [TopicQuestionItem] {
-        newFromPartner + forYou
+        (newFromPartner + forYou).sorted {
+            let lhs = attentionDates[$0.id] ?? .distantPast
+            let rhs = attentionDates[$1.id] ?? .distantPast
+            if lhs != rhs { return lhs > rhs }
+            return $0.id.uuidString < $1.id.uuidString
+        }
     }
 
     /// What "Answer the next one" opens: a question the partner already answered

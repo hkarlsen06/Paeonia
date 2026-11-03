@@ -11,13 +11,19 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
     let coupleDayID: UUID?
     let questions: [DailyChallengeQuestion]
     let refreshedAt: Date
+    var anchorTimeZoneID = "UTC"
 
-    static func empty(currentUserID: UUID?, refreshedAt: Date = Date()) -> DailyChallengeSnapshot {
+    var timeZone: TimeZone { TimeZone(identifier: anchorTimeZoneID) ?? .gmt }
+
+    static func empty(
+        currentUserID: UUID?, refreshedAt: Date = Date(), anchorTimeZoneID: String = "UTC"
+    ) -> DailyChallengeSnapshot {
         DailyChallengeSnapshot(
             currentUserID: currentUserID,
             coupleDayID: nil,
             questions: [],
-            refreshedAt: refreshedAt
+            refreshedAt: refreshedAt,
+            anchorTimeZoneID: anchorTimeZoneID
         )
     }
 
@@ -60,38 +66,15 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         return lhs.id.uuidString < rhs.id.uuidString
     }
 
-    /// The Questions tab's single read list, sorted by `questionsTabOrder`. What the user
-    /// has seen is view-model state, so the caller passes `isNew`. The view decides which
-    /// of these show as rows (sending is view-model state too).
-    func readOverviewQuestions(
-        isNew: (DailyChallengeQuestion) -> Bool = { _ in false }
-    ) -> [DailyChallengeQuestion] {
-        questions.sorted {
-            Self.questionsTabOrder($0, $1, isNew: isNew)
-        }
-    }
-
-    /// Questions tab order for questions alone (`QuestionsTabRow.questionsTabOrder`).
-    /// Once the user answers or opens a card it drops into the timeline, so the next new
-    /// card is on top.
-    static func questionsTabOrder(
-        _ lhs: DailyChallengeQuestion,
-        _ rhs: DailyChallengeQuestion,
-        isNew: (DailyChallengeQuestion) -> Bool = { _ in false }
-    ) -> Bool {
-        QuestionsTabRow.questionsTabOrder(.question(lhs), .question(rhs), isNew: isNew)
-    }
-
     /// The couple-local date (`yyyy-MM-dd`) of the active day. Nil before today's
     /// question exists.
     var currentDayLocalDate: String? {
         todayQuestion?.localDate
     }
 
-    /// The date today's list stands for: the active day, or before today's day has
-    /// started, the phone's date when this snapshot was read.
+    /// The shared date for the active day, or the snapshot's date in the couple's zone.
     var todayLocalDate: String {
-        currentDayLocalDate ?? MemoryTimeline.localDateString(for: refreshedAt)
+        currentDayLocalDate ?? MemoryTimeline.localDateString(for: refreshedAt, timeZone: timeZone)
     }
 
     /// When the active couple day ends. Nil when no day is active.
@@ -114,7 +97,8 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
                 carried.isCurrentDay = false
                 return carried
             },
-            refreshedAt: refreshedAt
+            refreshedAt: now,
+            anchorTimeZoneID: anchorTimeZoneID
         )
     }
 
@@ -161,7 +145,8 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         rows: [DailyQuestionRow],
         answerDetails: [DailyAnswerDetailRow],
         locale: Locale = .current,
-        refreshedAt: Date = Date()
+        refreshedAt: Date = Date(),
+        anchorTimeZoneID: String = "UTC"
     ) -> DailyChallengeSnapshot {
         let questions = DailyChallengeQuestion.list(
             rows: rows,
@@ -175,7 +160,8 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
             currentUserID: currentUserID,
             coupleDayID: currentCoupleDayID,
             questions: questions,
-            refreshedAt: refreshedAt
+            refreshedAt: refreshedAt,
+            anchorTimeZoneID: anchorTimeZoneID
         )
     }
 }

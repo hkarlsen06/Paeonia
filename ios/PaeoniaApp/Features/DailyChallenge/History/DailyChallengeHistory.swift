@@ -19,26 +19,23 @@ nonisolated struct DailyChallengeHistoryDay: Identifiable, Equatable, Sendable {
 /// answered questions into day groups, newest day first. Kept free of SwiftUI and
 /// networking so the ordering rules are easy to unit test.
 nonisolated enum DailyChallengeHistory {
-    /// Groups answered questions by their effective couple-local date — the day of
-    /// their most recent answer — and returns the days newest-first. Within a day,
-    /// questions are ordered by their most recent answer (latest first), then by slot,
-    /// so the whole list reads most-recent-first and stays stable and deterministic.
-    ///
-    /// Grouping on `effectiveLocalDate` (not the instance's seed day) is what keeps a
-    /// late-night exchange — partner answered before midnight, you answered after —
-    /// under the day it was actually finished.
-    static func grouped(_ questions: [DailyChallengeQuestion]) -> [DailyChallengeHistoryDay] {
-        Dictionary(grouping: questions, by: \.effectiveLocalDate)
-            .map { effectiveLocalDate, dayQuestions in
-                DailyChallengeHistoryDay(
-                    localDate: effectiveLocalDate,
-                    date: parseLocalDate(effectiveLocalDate) ?? dayQuestions.first?.startsAt ?? .distantPast,
-                    // Most-recently-answered first within a day, the same ordering the
-                    // Questions tab's single list uses within a tier.
-                    rows: dayQuestions.map(QuestionsTabRow.question).sorted(by: QuestionsTabRow.timelineOrder)
-                )
-            }
-            .sorted { $0.localDate > $1.localDate }
+    /// Groups the latest answer time in the same shared zone as the conversation rows.
+    /// Days and rows are newest first, with UUIDs breaking equal-time ties.
+    static func grouped(
+        _ questions: [DailyChallengeQuestion],
+        timeZone: TimeZone = .gmt
+    ) -> [DailyChallengeHistoryDay] {
+        Dictionary(grouping: questions) {
+            MemoryTimeline.localDateString(for: $0.latestAnswerDate, timeZone: timeZone)
+        }
+        .map { localDate, dayQuestions in
+            DailyChallengeHistoryDay(
+                localDate: localDate,
+                date: parseLocalDate(localDate) ?? .distantPast,
+                rows: dayQuestions.map(QuestionsTabRow.question).sorted(by: QuestionsTabRow.timelineOrder)
+            )
+        }
+        .sorted { $0.localDate > $1.localDate }
     }
 
     /// The days with the chats about memories and stories from before `today` added under
@@ -47,9 +44,12 @@ nonisolated enum DailyChallengeHistory {
     static func adding(
         _ conversations: [SubjectConversation],
         before today: String,
-        to days: [DailyChallengeHistoryDay]
+        to days: [DailyChallengeHistoryDay],
+        timeZone: TimeZone = .gmt
     ) -> [DailyChallengeHistoryDay] {
-        let earlier = Dictionary(grouping: conversations.filter { !$0.isToday(today) }, by: \.localDate)
+        let earlier = Dictionary(grouping: conversations.filter { !$0.isToday(today, timeZone: timeZone) }) {
+            MemoryTimeline.localDateString(for: $0.startedAt, timeZone: timeZone)
+        }
         guard !earlier.isEmpty else { return days }
         var daysByDate = Dictionary(uniqueKeysWithValues: days.map { ($0.localDate, $0) })
         for (localDate, chats) in earlier {

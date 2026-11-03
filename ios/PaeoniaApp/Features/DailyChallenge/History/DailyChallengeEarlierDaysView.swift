@@ -13,6 +13,7 @@ struct DailyChallengeEarlierDaysView: View {
     /// was added or the story posted.
     let conversations: [SubjectConversation]
     let today: String
+    var timeZone: TimeZone = .gmt
     let storyPeople: StoryPeople
     /// The questions today's list shows. They are not repeated here.
     let shownQuestionIDs: Set<UUID>
@@ -22,6 +23,11 @@ struct DailyChallengeEarlierDaysView: View {
 
     var body: some View {
         Group {
+            let days = history.days(
+                adding: conversations, before: today, excluding: shownQuestionIDs, timeZone: timeZone
+            )
+            if !days.isEmpty { dayList(days) }
+
             switch history.state {
             case .loading:
                 ProgressView()
@@ -31,12 +37,7 @@ struct DailyChallengeEarlierDaysView: View {
             case .failed(let failure):
                 failedState(failure)
             case .empty, .content:
-                // Nothing left once today's list shows every question. Leaving the
-                // stack out keeps the Questions list from adding a gap for it.
-                let days = history.days(adding: conversations, before: today, excluding: shownQuestionIDs)
-                if !days.isEmpty {
-                    dayList(days)
-                }
+                EmptyView()
             }
         }
         .animation(PaeoniaMotion.stateChange, value: history.state)
@@ -55,8 +56,8 @@ struct DailyChallengeEarlierDaysView: View {
                                 question: question,
                                 participants: viewModel.participants,
                                 lastMessagePreview: viewModel.threadPreview(for: question.questionID),
-                                hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
-                                hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
+                                hasUnreadChat: false,
+                                hasNewPartnerAnswer: false,
                                 onOpen: { onOpenChat(question) }
                             )
                         case .conversation(let conversation):
