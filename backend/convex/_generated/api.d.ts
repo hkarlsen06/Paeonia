@@ -84,6 +84,7 @@ import type * as lib_gameChatSubjects from "../lib/gameChatSubjects.js";
 import type * as lib_gameChatTimeline from "../lib/gameChatTimeline.js";
 import type * as lib_gameDrawingDescriptions from "../lib/gameDrawingDescriptions.js";
 import type * as lib_gameMediaReferences from "../lib/gameMediaReferences.js";
+import type * as lib_gamePlayDays from "../lib/gamePlayDays.js";
 import type * as lib_gameRegistry from "../lib/gameRegistry.js";
 import type * as lib_gameWords from "../lib/gameWords.js";
 import type * as lib_games from "../lib/games.js";
@@ -248,6 +249,7 @@ declare const fullApi: ApiFromModules<{
   "lib/gameChatTimeline": typeof lib_gameChatTimeline;
   "lib/gameDrawingDescriptions": typeof lib_gameDrawingDescriptions;
   "lib/gameMediaReferences": typeof lib_gameMediaReferences;
+  "lib/gamePlayDays": typeof lib_gamePlayDays;
   "lib/gameRegistry": typeof lib_gameRegistry;
   "lib/gameWords": typeof lib_gameWords;
   "lib/games": typeof lib_games;
