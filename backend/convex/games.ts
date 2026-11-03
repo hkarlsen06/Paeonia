@@ -4,8 +4,10 @@ import { mutation, query } from "./_generated/server";
 import { getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
+import { resolveCoupleDayAnchor } from "./lib/coupleDays";
 import { orNull, type WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
+import { gamePlayDayStats } from "./lib/gamePlayDays";
 import {
   answerGameInvite,
   enqueueGamePush,
@@ -87,11 +89,12 @@ function withSeen(userIds: string[], userId: string): string[] {
 
 /**
  * What the Games tab and every game share, for the caller. Subscribe to it. The presence component
- * marks a closed screen offline, and the app judges the invite time. The one clock read is in
+ * marks a closed screen offline, and the app judges the invite time. One clock read is in
  * `hidden_kinds`, which counts a partner's invite as a wait for 15 minutes. A subscriber may keep a
- * kind visible after that until the next write, which is harmless.
+ * kind visible after that until the next write, which is harmless. The other is today's date in
+ * `play_days`.
  *
- * Result: `{ user_id, partner_user_id, couple_id, settings, presence, hidden_kinds }`. `partner_user_id` is null
+ * Result: `{ user_id, partner_user_id, couple_id, settings, presence, hidden_kinds, play_days }`. `partner_user_id` is null
  * without an active partner, and `settings` is null until the couple sets them. `presence` has one
  * entry per game kind (in `GAME_KINDS` order) that either partner has open or has ever opened, or
  * the caller sent an invite for, and leaves the other kinds out. An entry is `{ kind, my_present,
@@ -99,6 +102,11 @@ function withSeen(userIds: string[], userId: string): string[] {
  * invite for that kind, or null. `last_played_at` is when either partner last had the game open, or
  * null when neither ever opened it. `hidden_kinds` lists the kinds the caller put aside with "Not now"
  * (`hide_waiting_game`) whose waits have not changed since, in `GAME_KINDS` order.
+ *
+ * `play_days` is `{ streak, total, today }`: the couple days on which both partners had a game open,
+ * in a row up to today (or up to yesterday while today has no such day yet) and in total
+ * (`gamePlayDayStats`), and `today`, the couple day they were counted on. A subscriber may see
+ * yesterday's numbers after midnight until the next write, which is harmless.
  */
 export const get_games_overview = query({
   args: {},
@@ -137,6 +145,12 @@ export const get_games_overview = query({
 
     const hiddenKinds: GameKind[] = await ctx.runQuery(internal.gameHooks.hidden_game_kinds, { couple_id: coupleId, user_id: userId });
 
+    const playDays = await ctx.db
+      .query("game_play_days")
+      .withIndex("by_couple_id_day", (q) => q.eq("couple_id", coupleId))
+      .collect();
+    const { local_date: today } = await resolveCoupleDayAnchor(ctx, coupleId);
+
     return {
       user_id: userId,
       partner_user_id: partnerId,
@@ -144,6 +158,7 @@ export const get_games_overview = query({
       settings: settings ? settingsJson(settings) : null,
       presence,
       hidden_kinds: hiddenKinds,
+      play_days: gamePlayDayStats(playDays, partnerId === null ? null : [userId, partnerId], today),
     };
   },
 });
@@ -206,7 +221,8 @@ export const send_game_invite = mutation({
  * The open game screen. The app sends `true` when the screen opens and every 30 seconds
  * after, and `false` when it closes. The presence component marks the screen closed 60
  * seconds after the last `true`, such as when the app was killed. Each call also moves the
- * game's last played time forward (`recordPlayed`), and a `true` answers the partner's invite to the game.
+ * game's last played time forward (`recordPlayed`), and a `true` counts the caller as playing on today's
+ * couple day (`recordPlayDay`) and answers the partner's invite to the game.
  */
 export const set_game_presence = mutation({
   args: { p_kind: gameKind, p_present: v.boolean() },
@@ -216,7 +232,11 @@ export const set_game_presence = mutation({
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     await setPresent(ctx, gameRoom(coupleId, args.p_kind), userId, args.p_present, GAME_PRESENCE_TIMEOUT_MS);
     await recordPlayed(ctx, coupleId, args.p_kind, args.p_present);
-    if (args.p_present) await answerGameInvite(ctx, coupleId, args.p_kind, userId);
+    if (args.p_present) {
+      // A close can arrive after midnight, so only an open counts the day.
+      await recordPlayDay(ctx, coupleId, userId);
+      await answerGameInvite(ctx, coupleId, args.p_kind, userId);
+    }
     return null;
   },
 });
@@ -236,6 +256,23 @@ async function recordPlayed(ctx: WriterCtx, coupleId: string, kind: GameKind, pr
     await ctx.db.insert("game_plays", { couple_id: coupleId, kind, last_played_at: now });
   } else if (!present || row.last_played_at <= addMs(now, -PLAYED_AT_INTERVAL_MS)) {
     await ctx.db.patch(row._id, { last_played_at: now });
+  }
+}
+
+/**
+ * Adds the caller to the people who had a game open on today's couple day. Only each person's first
+ * call of the day writes, so the heartbeats leave the overview subscriptions alone.
+ */
+async function recordPlayDay(ctx: WriterCtx, coupleId: string, userId: string): Promise<void> {
+  const { local_date: day } = await resolveCoupleDayAnchor(ctx, coupleId);
+  const row = await ctx.db
+    .query("game_play_days")
+    .withIndex("by_couple_id_day", (q) => q.eq("couple_id", coupleId).eq("day", day))
+    .unique();
+  if (!row) {
+    await ctx.db.insert("game_play_days", { couple_id: coupleId, day, user_ids: [userId] });
+  } else if (!row.user_ids.includes(userId)) {
+    await ctx.db.patch(row._id, { user_ids: [...row.user_ids, userId] });
   }
 }
 

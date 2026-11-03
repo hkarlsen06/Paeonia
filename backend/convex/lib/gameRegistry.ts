@@ -167,7 +167,7 @@ export async function sendDueGameTurnReminders(ctx: WriterCtx, now: string): Pro
 }
 
 /**
- * Deletes every game row of a couple: the shared settings, invites, play times and hidden waits, then each game's own rows.
+ * Deletes every game row of a couple: the shared settings, invites, play times, play days and hidden waits, then each game's own rows.
  * Returns the number of rows deleted. Presence went when the relationship ended
  * (`endRelationshipForPair`). Drawing media is queued for deletion by the couple media sweep in
  * `cleanupCoupleContent`.
@@ -178,6 +178,7 @@ export async function deleteCoupleGameRows(ctx: WriterCtx, coupleId: string): Pr
     ...(await ctx.db.query("game_settings").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()),
     ...(await ctx.db.query("game_invites").withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId)).collect()),
     ...(await ctx.db.query("game_plays").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect()),
+    ...(await ctx.db.query("game_play_days").withIndex("by_couple_id_day", (q) => q.eq("couple_id", coupleId)).collect()),
     ...(await ctx.db.query("game_hidden_waits").withIndex("by_couple_id_user_id_kind", (q) => q.eq("couple_id", coupleId)).collect()),
   ];
   for (const row of shared) {

@@ -132,8 +132,67 @@ describe("get_games_overview", () => {
       settings: null,
       presence: [],
       hidden_kinds: [],
+      play_days: { streak: 0, total: 0, today: "2026-10-10" },
     });
     expect((await s.b.as.query(api.games.get_games_overview, {})).partner_user_id).toBe(s.a.userId);
+  });
+
+  test("counts the couple days both partners had a game open, in a row and in total", async () => {
+    const s = await startCouple();
+    const open = (user: typeof s.a, kind: "ludo" | "mind_meld") =>
+      user.as.mutation(api.games.set_game_presence, { p_kind: kind, p_present: true });
+    const playDays = async () => (await s.b.as.query(api.games.get_games_overview, {})).play_days;
+    const day = 86_400_000;
+
+    // Day 1 both play, in different games. Day 2 only one partner plays, with many heartbeats.
+    await open(s.a, "ludo");
+    await open(s.b, "mind_meld");
+    expect(await playDays()).toEqual({ streak: 1, total: 1, today: "2026-10-10" });
+    vi.setSystemTime(new Date(START + day));
+    await open(s.a, "ludo");
+    tick(30);
+    await open(s.a, "ludo");
+    expect(await playDays()).toEqual({ streak: 1, total: 1, today: "2026-10-11" });
+    // Day 3 both play, so the streak starts again at 1. On day 4 it holds until someone misses the day.
+    vi.setSystemTime(new Date(START + 2 * day));
+    await open(s.b, "ludo");
+    await open(s.a, "mind_meld");
+    vi.setSystemTime(new Date(START + 3 * day));
+    expect(await playDays()).toEqual({ streak: 1, total: 2, today: "2026-10-13" });
+    vi.setSystemTime(new Date(START + 4 * day));
+    expect(await playDays()).toEqual({ streak: 0, total: 2, today: "2026-10-14" });
+
+    const rows = await s.t.run((ctx) => ctx.db.query("game_play_days").collect());
+    expect(rows.map((row) => [row.day, row.user_ids.length])).toEqual([
+      ["2026-10-10", 2],
+      ["2026-10-11", 1],
+      ["2026-10-12", 2],
+    ]);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a play day is the couple day, which follows the partner whose clock is furthest behind", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "America/Los_Angeles"] });
+    // 01:00 on 2026-10-11 in Oslo is still 16:00 on 2026-10-10 in Los Angeles.
+    vi.setSystemTime(new Date("2026-10-10T23:00:00.000Z"));
+    await couple.first.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: true });
+    // 23:30 in Los Angeles, the same couple day, though Oslo's date moved on long ago.
+    vi.setSystemTime(new Date("2026-10-11T06:30:00.000Z"));
+    await couple.second.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: true });
+    expect((await couple.first.as.query(api.games.get_games_overview, {})).play_days).toEqual({
+      streak: 1,
+      total: 1,
+      today: "2026-10-10",
+    });
+    // At midnight in Los Angeles a new couple day starts, and the streak waits for it.
+    vi.setSystemTime(new Date("2026-10-11T07:30:00.000Z"));
+    expect((await couple.first.as.query(api.games.get_games_overview, {})).play_days).toEqual({
+      streak: 1,
+      total: 1,
+      today: "2026-10-11",
+    });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("returns the couple's settings once set", async () => {
@@ -451,8 +510,8 @@ describe("registry", () => {
     await other.first.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
     await s.a.as.mutation(api.games.send_game_invite, { p_kind: "connect_four" });
     await s.b.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
-    await s.a.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: false });
-    await other.first.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: false });
+    await s.a.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: true });
+    await other.first.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: true });
     const { game_id } = await s.a.as.mutation(api.drawAndGuess.ensure_draw_and_guess_game, {});
     expect(game_id).toBeDefined();
     await other.first.as.mutation(api.drawAndGuess.ensure_draw_and_guess_game, {});
@@ -460,10 +519,10 @@ describe("registry", () => {
     const deleteCoupleRows = vi.fn<GameBackend["deleteCoupleRows"]>(async () => 5);
     GAME_BACKENDS.mind_meld = { ...nullBackend, deleteCoupleRows };
     try {
-      // 1 settings + 2 invites + 1 play time, 1 game and its used words from Draw & Guess, 5 from the fake entry.
+      // 1 settings + 2 invites + 1 play time + 1 play day, 1 game and its used words from Draw & Guess, 5 from the fake entry.
       const usedWords = (await s.t.run((ctx) => ctx.db.query("game_used_words").collect())).filter((row) => row.couple_id === s.couple.coupleId);
       expect(usedWords).toHaveLength(3);
-      expect(await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.couple.coupleId))).toBe(1 + 2 + 1 + 1 + 3 + 5);
+      expect(await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.couple.coupleId))).toBe(1 + 2 + 1 + 1 + 1 + 3 + 5);
       expect(deleteCoupleRows).toHaveBeenCalledWith(expect.anything(), s.couple.coupleId);
     } finally {
       GAME_BACKENDS.mind_meld = null;
@@ -473,6 +532,7 @@ describe("registry", () => {
       settings: (await ctx.db.query("game_settings").collect()).map((row) => row.couple_id),
       invites: (await ctx.db.query("game_invites").collect()).map((row) => row.couple_id),
       plays: (await ctx.db.query("game_plays").collect()).map((row) => row.couple_id),
+      playDays: (await ctx.db.query("game_play_days").collect()).map((row) => row.couple_id),
       games: (await ctx.db.query("games").collect()).map((row) => row.couple_id),
     }));
     // The other couple keeps everything.
@@ -480,6 +540,7 @@ describe("registry", () => {
       settings: [other.coupleId],
       invites: [],
       plays: [other.coupleId],
+      playDays: [other.coupleId],
       games: [other.coupleId],
     });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);

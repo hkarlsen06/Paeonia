@@ -1618,7 +1618,7 @@ export default defineSchema({
 
   // ---- games (new in Convex, see games.ts and docs/games/draw-and-guess.md) ----
   // Every games table has a couple_id index. Relationship cleanup deletes the rows (lib/gameRegistry.ts).
-  // game_settings, game_invites, game_plays, and game_hidden_waits are shared by every game kind. The presence component keeps who
+  // game_settings, game_invites, game_plays, game_play_days, and game_hidden_waits are shared by every game kind. The presence component keeps who
   // has a game open (lib/presence.ts). games, game_moves, game_guesses, and
   // game_used_words belong to Draw & Guess (lib/drawAndGuess.ts).
 
@@ -1750,6 +1750,14 @@ export default defineSchema({
     kind: gameKind,
     last_played_at: ts,
   }).index("by_couple_id_kind", ["couple_id", "kind"]),
+
+  // Who had any game open on each couple day (`resolveCoupleDayAnchorAt`, a YYYY-MM-DD date), so the
+  // Games tab can count the days both partners played. Each user id appears once. (couple_id, day) is unique.
+  game_play_days: defineTable({
+    couple_id: uuid,
+    day: v.string(),
+    user_ids: v.array(uuid),
+  }).index("by_couple_id_day", ["couple_id", "day"]),
 
   // What a person put aside with "Not now" on the Games tab: the keys of the waits of one game kind
   // when they tapped it (`GameWait` in lib/games.ts). A wait whose key is here neither counts toward
