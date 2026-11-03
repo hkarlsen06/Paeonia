@@ -14,12 +14,7 @@ struct GameConversationHeader: View {
     private var people: GameConversationPeople { GameConversationPeople(participants: participants) }
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space20) {
-            if let result {
-                Text(result.date, format: .dateTime.day().month(.abbreviated).year())
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-            }
+        VStack(spacing: PaeoniaSpacing.space8) {
             if let result {
                 content(result)
             } else if loadState == .removed {
@@ -40,11 +35,6 @@ struct GameConversationHeader: View {
                 }
             }
         }
-        .padding(PaeoniaSpacing.space16)
-        .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
-        .background(.paeoniaSurfaceSecondary, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius20))
-        .padding(.horizontal, PaeoniaSpacing.space12)
-        .padding(.vertical, PaeoniaSpacing.space12)
         .frame(maxWidth: .infinity)
         .accessibilityIdentifier("game.conversation.result")
     }
@@ -96,7 +86,7 @@ struct GameConversationHeader: View {
     }
 
     private func mindMeld(_ game: RemoteMindMeldHistoryGame) -> some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
+        VStack(spacing: PaeoniaSpacing.space8) {
             HStack {
                 Text(.dailyChallengeChoiceYou).foregroundStyle(.paeoniaPartnerOne)
                 Spacer()
@@ -109,7 +99,7 @@ struct GameConversationHeader: View {
                         mine: $0.myWord, theirs: $0.partnerWord,
                         isMeld: $0.outcome == .match || $0.countedByUserID != nil, isCounted: $0.countedByUserID != nil
                     )
-                }, style: .detail)
+                }, style: .detail, rowSpacing: PaeoniaSpacing.space8)
             Text(.mindMeldHistoryRowRounds(game.rounds.count))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)

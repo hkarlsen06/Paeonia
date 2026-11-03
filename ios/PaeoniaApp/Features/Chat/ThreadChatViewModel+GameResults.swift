@@ -8,6 +8,8 @@ extension ThreadChatViewModel {
         await withTaskGroup(of: Void.self) { group in
             for source in sources {
                 group.addTask { [weak self, service, coupleID] in
+                    await self?.loadGameResult(source)
+                    guard !Task.isCancelled else { return }
                     let updates = service.liveGameResultUpdates(
                         ownerUserID: ownerID, coupleID: coupleID, source: source)
                     for await _ in updates {
@@ -61,6 +63,7 @@ extension ThreadChatViewModel {
             }
         }
         guard gameReferences.contains(where: { $0.source == source }) else { return }
+        collapsedGameResultIDs.remove(source.id)
         expandedGameResultIDs.insert(source.id)
         await loadGameResult(source)
         focusedGameResultID = source.id
@@ -68,15 +71,11 @@ extension ThreadChatViewModel {
 
     func toggleGameResult(_ reference: GameChatResultReference) async {
         if expandedGameResultIDs.contains(reference.id) {
+            collapsedGameResultIDs.insert(reference.id)
             expandedGameResultIDs.remove(reference.id)
         } else {
+            collapsedGameResultIDs.remove(reference.id)
             expandedGameResultIDs.insert(reference.id)
-            await loadGameResult(reference.source)
-        }
-    }
-
-    func refreshExpandedGameResults() async {
-        for reference in gameReferences where expandedGameResultIDs.contains(reference.id) {
             await loadGameResult(reference.source)
         }
     }

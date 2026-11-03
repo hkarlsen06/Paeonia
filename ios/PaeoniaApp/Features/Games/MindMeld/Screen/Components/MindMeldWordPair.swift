@@ -111,12 +111,13 @@ struct MindMeldTrailView: View {
 
     let pairs: [Pair]
     var style: Style = .compact
+    var rowSpacing: CGFloat?
 
     private static let detailWidestLine: CGFloat = 120
     private static let detailNarrowestLine: CGFloat = 16
 
     var body: some View {
-        VStack(spacing: style == .compact ? PaeoniaSpacing.space4 : PaeoniaSpacing.space20) {
+        VStack(spacing: rowSpacing ?? (style == .compact ? PaeoniaSpacing.space4 : PaeoniaSpacing.space20)) {
             ForEach(pairs.indices, id: \.self) { index in
                 switch style {
                 case .compact: compactRow(pairs[index])

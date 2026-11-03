@@ -152,6 +152,33 @@ struct GameChatTimelineTests {
         #expect(await cache.gameTimeline(ownerUserID: ownerID, subjectID: subject.id) == nil)
     }
 
+    @Test func defaultsExpandLatestAndDiscussedGamesAndRespectManualCollapse() async {
+        let fixture = ChatTestFixture()
+        let service = fixture.makeService()
+        let oldest = result(at: 10)
+        let middle = result(at: 30)
+        let latest = result(at: 40)
+        let sent = message(at: Date(timeIntervalSince1970: 20))
+        let generation = await fixture.cache.purgeGeneration()
+        await fixture.cache.saveGameTimeline(
+            .init(messages: [sent], results: [oldest, middle, latest], hasMore: false),
+            ownerUserID: ownerID, subjectID: subject.id, older: false, unlessPurgedSince: generation)
+        let model = ThreadChatViewModel(
+            subject: .game(subject), coupleID: coupleID,
+            participants: .init(currentUserID: ownerID, partnerDisplayName: "Robin"), service: service)
+        await model.prepare()
+        #expect(model.gameResultCards.filter(\.isExpanded).map(\.reference.id) == [oldest.id, latest.id])
+        await model.toggleGameResult(oldest)
+        await model.prepare()
+        #expect(model.gameResultCards.filter(\.isExpanded).map(\.reference.id) == [latest.id])
+        let newerMessage = message(at: Date(timeIntervalSince1970: 35))
+        await fixture.cache.saveGameTimeline(
+            .init(messages: [sent, newerMessage], results: [oldest, middle, latest], hasMore: false),
+            ownerUserID: ownerID, subjectID: subject.id, older: false, unlessPurgedSince: generation)
+        await model.prepare()
+        #expect(model.gameResultCards.filter(\.isExpanded).map(\.reference.id) == [middle.id, latest.id])
+    }
+
     private func result(at time: TimeInterval) -> GameChatResultReference {
         let source = GameConversationSource.mindMeld(UUID())
         return .init(

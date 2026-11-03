@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The result's contents load only after the person opens this card.
+/// A finished game and its optional details share one compact card.
 struct GameChatResultRow: View {
     let card: GameChatResultCard
     let participants: DailyChallengeParticipants
@@ -10,31 +10,33 @@ struct GameChatResultRow: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            Button(action: onToggle) {
-                summary
+            HStack(spacing: PaeoniaSpacing.space4) {
+                Button(action: onToggle) { summary }
+                .buttonStyle(.plain)
+                .accessibilityValue(
+                    Text(card.isExpanded ? .gamesConversationResultExpanded : .gamesConversationResultCollapsed)
+                )
+                .accessibilityIdentifier(
+                    "game.conversation.result.\(card.reference.id.uuidString.lowercased())")
+                if card.isExpanded {
+                    Button(action: onReply) {
+                        Image(systemName: "arrowshape.turn.up.left")
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .accessibilityLabel(Text(.dailyChatActionReply))
+                    .accessibilityIdentifier("game.conversation.result.reply")
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityValue(
-                Text(card.isExpanded ? .gamesConversationResultExpanded : .gamesConversationResultCollapsed)
-            )
-            .accessibilityIdentifier(
-                "game.conversation.result.\(card.reference.id.uuidString.lowercased())")
             if card.isExpanded {
                 GameConversationHeader(
                     result: card.result, participants: participants,
                     loadState: card.loadState, onRetry: onRetry)
-                Button(action: onReply) {
-                    Label {
-                        Text(.dailyChatActionReply)
-                    } icon: {
-                        Image(systemName: "arrowshape.turn.up.left")
-                    }
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .accessibilityIdentifier("game.conversation.result.reply")
             }
         }
+        .padding(PaeoniaSpacing.space12)
+        .background(.paeoniaSurfaceSecondary, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
         .padding(.horizontal, PaeoniaSpacing.space12)
         .padding(.vertical, PaeoniaSpacing.space8)
         .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
@@ -48,10 +50,10 @@ struct GameChatResultRow: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                 Text(.gamesConversationResultTitle)
-                    .font(PaeoniaTypography.bodyEmphasis)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
                     .foregroundStyle(.paeoniaTextPrimary)
                 Text(
-                    card.reference.finishedAt, format: .dateTime.day().month(.abbreviated).hour().minute()
+                    card.reference.finishedAt, format: .dateTime.day().month(.abbreviated).year().hour().minute()
                 )
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
@@ -61,8 +63,7 @@ struct GameChatResultRow: View {
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .accessibilityHidden(true)
         }
-        .padding(PaeoniaSpacing.space12)
-        .background(
-            .paeoniaSurfaceSecondary, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
     }
 }

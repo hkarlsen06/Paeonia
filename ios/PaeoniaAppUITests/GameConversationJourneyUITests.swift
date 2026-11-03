@@ -105,7 +105,7 @@ final class GameConversationJourneyUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.firstMatch.buttons.element(boundBy: 1).isSelected)
         let result = app.buttons["game.conversation.result.a9000000-0000-4000-8000-000000000001"]
         XCTAssertTrue(result.waitForExistence(timeout: 10), app.debugDescription)
-        result.tap()
+        // The latest finished game opens with the conversation.
         for word in ["OCEAN", "SUSHI", "SALT", "FISH", "SEA", "NET", "BOAT"] {
             XCTAssertTrue(app.staticTexts[word].firstMatch.waitForExistence(timeout: 5))
         }

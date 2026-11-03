@@ -78,6 +78,7 @@ final class ThreadChatViewModel {
     var gameReferences: [GameChatResultReference] = []
     var gameResults: [UUID: GameConversationResult] = [:]
     var expandedGameResultIDs: Set<UUID> = []
+    var collapsedGameResultIDs: Set<UUID> = []
     var gameResultLoadStates: [UUID: GameConversationLoadState] = [:]
     var focusedGameResultID: UUID?
     /// The message, answer or finished result the next send replies to.
@@ -214,7 +215,6 @@ final class ThreadChatViewModel {
             do {
                 try await service.refreshGameTimeline(ownerUserID: ownerUserID, subject: game)
                 await readStore(ownerUserID: ownerUserID)
-                await refreshExpandedGameResults()
             } catch {
                 if !error.isCancellation { notice = .loadFailed(PaeoniaFailure(error)) }
             }
@@ -391,6 +391,14 @@ private extension ThreadChatViewModel {
         let validIDs = Set(gameReferences.map(\.id))
         gameResults = gameResults.filter { validIDs.contains($0.key) }
         expandedGameResultIDs.formIntersection(validIDs)
+        collapsedGameResultIDs.formIntersection(validIDs)
+        let latest = gameReferences.max { ($0.finishedAt, $0.key) < ($1.finishedAt, $1.key) }
+        let newestMessageAt = messages.map(\.createdAt).max()
+        expandedGameResultIDs.formUnion(gameReferences.filter { reference in
+            !collapsedGameResultIDs.contains(reference.id)
+                && (reference.id == latest?.id
+                    || newestMessageAt.map { $0 > reference.finishedAt } == true)
+        }.map(\.id))
         if case let .gameResult(result)? = replyTarget, !validIDs.contains(result.id) { replyTarget = nil }
     }
 }

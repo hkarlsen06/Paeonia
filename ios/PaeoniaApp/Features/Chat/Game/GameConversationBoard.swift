@@ -6,7 +6,7 @@ struct GameConversationBoard: View {
     let people: GameConversationPeople
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
+        VStack(spacing: PaeoniaSpacing.space8) {
             if let winner = game.winnerUserID {
                 Text(.gamesConversationWinner(people.name(for: winner)))
                     .font(PaeoniaTypography.sectionTitle)
@@ -53,6 +53,7 @@ struct GameConversationBoard: View {
 private struct GameConversationBoardReplay<Board: BoardGameRules, Content: View>: View {
     let people: GameConversationPeople
     let content: (BoardGameReplayBoard<Board>) -> Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var model: BoardGameReplayModel<Board>
 
     init(
@@ -69,6 +70,7 @@ private struct GameConversationBoardReplay<Board: BoardGameRules, Content: View>
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
             content(replay)
+                .frame(maxWidth: 260)
             HStack {
                 Button {
                     if model.isPlaying { model.pause() } else { model.play() }
@@ -85,13 +87,21 @@ private struct GameConversationBoardReplay<Board: BoardGameRules, Content: View>
                 )
                 .accessibilityLabel(Text(.boardGamesReplaySliderA11Y))
                 .accessibilityValue(Text(.boardGamesReplayProgress(model.step, model.moveCount)))
+                if !dynamicTypeSize.isAccessibilitySize {
+                    progress
+                }
             }
             .tint(.paeoniaAccentPrimary)
             .disabled(model.moveCount == 0)
-            Text(.boardGamesReplayProgress(model.step, model.moveCount))
-                .font(PaeoniaTypography.caption)
+            if dynamicTypeSize.isAccessibilitySize { progress }
         }
         .onDisappear { model.pause() }
+    }
+
+    private var progress: some View {
+        Text(.boardGamesReplayProgress(model.step, model.moveCount))
+            .font(PaeoniaTypography.caption)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var replay: BoardGameReplayBoard<Board> {
