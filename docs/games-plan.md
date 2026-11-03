@@ -17,6 +17,8 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-11-03.
 
+- Guess my spot discards blurred previews of completed rounds, including late relay messages. Waiting for the next photo shows the partner until they pick a new one. A new preview received during the previous reveal stays available.
+
 - Game toolbars omit the game name to leave room for scores and controls. Drawing instructions and partner presence remain visible.
 
 Decided on 2026-11-01.

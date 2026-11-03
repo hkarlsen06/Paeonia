@@ -115,6 +115,10 @@ extension GuessMySpotViewModel {
         if partnerMapView != nil, status != .guessing || !isWaitingForGuess {
             partnerMapView = nil
         }
+        // A completed round's preview must not appear when the partner picks again.
+        if let preview = partnerPhotoPreview, isCompletedPreviewRound(preview.roundID) {
+            partnerPhotoPreview = nil
+        }
         // A partner who left without sending took their photo with them.
         if partnerPhotoPreview != nil, status == .away, phase == .waitingForPhoto {
             partnerPhotoPreview = nil
@@ -251,7 +255,8 @@ extension GuessMySpotViewModel {
         case let .photoPreview(roundID, jpeg):
             // Kept in any phase: the partner may pick their photo while this person
             // still watches the last reveal.
-            guard phase != .send, partnerPhotoPreview?.roundID != roundID,
+            guard phase != .send, !isCompletedPreviewRound(roundID),
+                  partnerPhotoPreview?.roundID != roundID,
                   let preview = GuessMySpotPhotoPreview(roundID: roundID, jpeg: jpeg)
             else { return }
             partnerPhotoPreview = preview
@@ -259,6 +264,12 @@ extension GuessMySpotViewModel {
             if phase != .guess {
                 partnerPhotoPreview = nil
             }
+        }
+    }
+
+    private func isCompletedPreviewRound(_ roundID: UUID) -> Bool {
+        [state?.currentRound, state?.previousRound].contains { round in
+            round?.id == roundID && round?.isGuessed == true
         }
     }
 

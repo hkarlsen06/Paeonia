@@ -316,6 +316,7 @@
       guard let role = partnerRole(in: scenario) else { return live }
       let taps = scenario == .guessMySpotWaitLive
       let picks = scenario == .guessMySpotWaitChoosing
+      let nextPhotoRoundID = UUID()
       Task { @MainActor [weak live] in
         var step = 0
         while let live {
@@ -327,10 +328,10 @@
             feed(.guessMap(roundID: roundID, view: liveViews[step % liveViews.count]), to: live)
             step += 1
           }
-          // Robin picks the harbor photo after a moment.
-          if picks, step == 1,
+          // A late preview from the completed round arrives first. Robin picks a new photo later.
+          if picks, step == 1 || step == 6,
              let jpeg = await GuessMySpotPhotoPreview.jpeg(from: photoData(.guessMySpotScenarioHarbor)) {
-            feed(.photoPreview(roundID: roundID, jpeg: jpeg), to: live)
+            feed(.photoPreview(roundID: step == 1 ? roundID : nextPhotoRoundID, jpeg: jpeg), to: live)
           }
           if picks { step += 1 }
           try? await Task.sleep(for: .seconds(taps ? 2.2 : 2))
