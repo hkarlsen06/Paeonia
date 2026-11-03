@@ -53,7 +53,7 @@ struct ThreadChatView: View {
     @State private var openedWithoutRounds = false
     @State private var didRevealPartnerAnswer = false
     @State private var viewportFrame = CGRect.zero
-    @State private var readVisibilityReady = false
+    @State private var readViewport = ThreadChatReadViewport()
     @State private var openingReadTask: Task<Void, Never>?
 
     init(
@@ -83,6 +83,7 @@ struct ThreadChatView: View {
             }
         }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewportFrame = $0 }
+        .onChange(of: messageViewport, initial: true) { readViewport.frame = messageViewport }
         .paeoniaReadableWidth()
         .paeoniaScreenBackground()
         .navigationTitle(navigationTitle)
@@ -113,7 +114,7 @@ struct ThreadChatView: View {
         }
         .onDisappear {
             isVisible = false
-            readVisibilityReady = false
+            readViewport.isReady = false
             openingReadTask?.cancel()
             updateVisibility()
         }
@@ -279,7 +280,7 @@ struct ThreadChatView: View {
             timestampReveal: timestampReveal,
             messageFrame: messageFrame
         )
-        .modifier(ThreadChatReadVisibility(viewport: messageViewport, enabled: readVisibilityReady) { visible in
+        .modifier(ThreadChatReadVisibility(viewport: readViewport) { visible in
             if let message = row.message, message.id == viewModel.newestDeliveredMessage?.id {
                 viewModel.setNewestMessageVisible(visible)
             }
@@ -470,12 +471,12 @@ extension ThreadChatView {
     }
 
     private func resumeReadVisibility() {
-        readVisibilityReady = false
+        readViewport.isReady = false
         openingReadTask?.cancel()
         openingReadTask = Task {
             try? await Task.sleep(for: .milliseconds(250))
             guard !Task.isCancelled else { return }
-            readVisibilityReady = true
+            readViewport.isReady = true
         }
     }
 

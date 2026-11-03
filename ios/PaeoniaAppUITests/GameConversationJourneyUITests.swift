@@ -52,6 +52,58 @@ final class GameConversationJourneyUITests: XCTestCase {
         reopenFromChats(in: app)
     }
 
+    /// Reading a partner's message, in the sheet over the game or in Chats, clears its unread mark.
+    @MainActor
+    func testReadingGameChatClearsUnreadMark() throws {
+        let app = launchGameFlow()
+        XCTAssertTrue(app.textFields["mindMeld.field"].waitForExistence(timeout: 10), app.debugDescription)
+        let open = app.buttons["game.conversation.open"].firstMatch
+        let banner = app.buttons["app.banner.open"]
+        let moves = app.tables.firstMatch.staticTexts.matching(NSPredicate(format: "label == %@", "Your move!"))
+
+        app.buttons["developer.gameChat.receive"].tap()
+        assertUnread(open, true)
+        dismissBanner(banner)
+        open.tap()
+        assertChatSheetOverGame(in: app)
+        XCTAssertTrue(moves.firstMatch.waitForExistence(timeout: 5))
+        app.buttons["chat.sheet.close"].tap()
+        assertUnread(open, false)
+
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let tabs = app.tabBars.firstMatch
+        XCTAssertTrue(tabs.waitForExistence(timeout: 5))
+        tabs.buttons.element(boundBy: 1).tap()
+        app.buttons["developer.gameChat.receive"].tap()
+        let conversation = app.buttons["chat.conversation.11181706-63f4-43d9-5210-140fa90e1fce"]
+        for _ in 0..<4 where !conversation.isHittable { app.swipeUp() }
+        assertUnread(conversation, true)
+        dismissBanner(banner)
+        conversation.tap()
+        let secondMove = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 2"), object: moves)
+        XCTAssertEqual(XCTWaiter.wait(for: [secondMove], timeout: 10), .completed, app.debugDescription)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        assertUnread(conversation, false)
+    }
+
+    /// A message banner stays until it is swiped away, and it covers the top bar.
+    @MainActor
+    private func dismissBanner(_ banner: XCUIElement) {
+        XCTAssertTrue(banner.waitForExistence(timeout: 5))
+        // A quick swipe can land as a tap, which opens the chat.
+        let start = banner.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -150)))
+        XCTAssertTrue(banner.waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor
+    private func assertUnread(_ element: XCUIElement, _ unread: Bool, line: UInt = #line) {
+        let format = unread ? "label CONTAINS %@" : "NOT (label CONTAINS %@)"
+        let predicate = NSPredicate(format: format, "New message from")
+        let state = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        XCTAssertEqual(XCTWaiter.wait(for: [state], timeout: 10), .completed, element.debugDescription, line: line)
+    }
+
     @MainActor
     func testEmptyGameChatSheetOverUnfinishedStory() throws {
         let app = launchGameFlow(gameID: "storyChain")
