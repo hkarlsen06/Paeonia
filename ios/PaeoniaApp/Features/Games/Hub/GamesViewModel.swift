@@ -497,3 +497,12 @@ extension GamesViewModel {
         return played + catalog.filter { lastPlayed[$0] == nil }
     }
 }
+
+extension GamesViewModel {
+    func chatPreview(for kind: GameKind) async -> GameChatPreview? {
+        guard let userID = participants.currentUserID else { return nil }
+        let preview = await GameChatPreviewLoader(dependencies: dependencies).load(for: kind, userID: userID)
+        guard participants.currentUserID == userID, !Task.isCancelled else { return nil }
+        return preview
+    }
+}

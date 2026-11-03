@@ -38,6 +38,7 @@ extension MainTabView {
                 onReportedAndLeft: actions.leftRelationship
             )
         )
+        context.gamePreview = { kind in await gamesViewModel.chatPreview(for: kind) }
         context.openGameChat = { kind, source, result in
             openGameChat(kind: kind, source: source, result: result)
         }

@@ -10,10 +10,14 @@
   /// own in `DeveloperScenario+<Game>.swift` as static members and one list.
   /// Code elsewhere matches them like enum cases, as in `case .drawDrawing:`.
   nonisolated struct DeveloperScenario: Hashable, Identifiable, Sendable {
+    static let gameChatPreviews = DeveloperScenario(
+      "game-chat-previews", "Game chat previews", "Game conversation thumbnails", .games
+    ) { _ in DeveloperGameChatPreviews() }
+
     /// Every scenario, in menu order within each category. A new game adds its
     /// list here.
     static let allCases: [DeveloperScenario] =
-      [gamePresenceControls, accessibilityColors] + keyboardDiagnostics
+      [gamePresenceControls, accessibilityColors, gameChatPreviews] + keyboardDiagnostics
       + app + accessNotices + firstSteps + memoriesMap + inviter + dailyCard
       + drawAndGuess + storyChain + mindMeld + consensio + guessMySpot + exquisiteCorpse + boardGames
 

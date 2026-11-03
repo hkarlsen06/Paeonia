@@ -36,8 +36,8 @@ extension DailyChallengeScreen {
             } label: {
                 PaeoniaCard {
                     HStack(spacing: PaeoniaSpacing.space12) {
-                        Image(systemName: "bubble.left.and.bubble.right")
-                            .foregroundStyle(.paeoniaAccentPrimary)
+                        GameChatThumbnail(kind: kind)
+                            .frame(width: 56, height: 56)
                         Text(kind.name)
                             .font(PaeoniaTypography.bodyEmphasis)
                             .foregroundStyle(.paeoniaTextPrimary)

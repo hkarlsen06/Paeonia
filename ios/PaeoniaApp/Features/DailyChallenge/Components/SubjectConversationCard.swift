@@ -43,7 +43,9 @@ struct SubjectConversationCard: View {
     /// The photo, or for a memory with only notes, the Memories tab's mark.
     @ViewBuilder
     private var thumbnail: some View {
-        if let photoAssetID = header.photoAssetID {
+        if let game = header.gameSubject {
+            GameChatThumbnail(kind: game.kind)
+        } else if let photoAssetID = header.photoAssetID {
             MemoryMediaImageView(
                 mediaAssetID: photoAssetID,
                 height: Self.photoSize,
@@ -54,9 +56,7 @@ struct SubjectConversationCard: View {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
                 .fill(.paeoniaSurfaceSecondary)
                 .overlay {
-                    Image(
-                        systemName: header.gameSubject == nil ? MainTab.memories.systemImage : MainTab.games.systemImage
-                    )
+                    Image(systemName: MainTab.memories.systemImage)
                         .font(PaeoniaTypography.bodyEmphasis)
                         .foregroundStyle(.paeoniaMemory)
                         .accessibilityHidden(true)

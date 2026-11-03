@@ -17,6 +17,8 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-11-03.
 
+- Game chats show a miniature of the current board or visible game content instead of a controller. An empty rematch keeps the last finished board until the first new move. Odd Creatures shows only a completed creature, Mind Meld only revealed word pairs, and Consensio only revealed pins. A game without cached visible content uses its own hub illustration. Thumbnails follow the owner-scoped local caches and queued board moves without marking a result as seen.
+
 - Guess my spot discards blurred previews of completed rounds, including late relay messages. Waiting for the next photo shows the partner until they pick a new one. A new preview received during the previous reveal stays available.
 
 - Game toolbars omit the game name to leave room for scores and controls. Drawing instructions and partner presence remain visible.
