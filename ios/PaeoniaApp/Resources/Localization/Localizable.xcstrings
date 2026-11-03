@@ -13431,24 +13431,6 @@
         }
       }
     },
-    "games.conversation.return" : {
-      "comment" : "Chat toolbar action that returns to the retained game screen. Argument is the game name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Return to %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilbake til %@"
-          }
-        }
-      }
-    },
     "games.conversation.spot" : {
       "comment" : "A Consensio result. Arguments are the placer name and the scale value.",
       "extractionState" : "manual",

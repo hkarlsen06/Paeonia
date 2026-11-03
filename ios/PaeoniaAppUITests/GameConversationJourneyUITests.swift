@@ -6,7 +6,7 @@ final class GameConversationJourneyUITests: XCTestCase {
     }
 
     @MainActor
-    func testChatDuringGameAndReturnToUnfinishedWord() throws {
+    func testChatSheetOverGameKeepsUnfinishedWord() throws {
         let app = launchGameFlow()
         let word = app.textFields["mindMeld.field"]
         XCTAssertTrue(word.waitForExistence(timeout: 10), app.debugDescription)
@@ -16,32 +16,44 @@ final class GameConversationJourneyUITests: XCTestCase {
         app.buttons["game.conversation.open"].firstMatch.tap()
         replyToFinishedRound(in: app)
 
-        app.buttons["game.conversation.return"].tap()
+        app.buttons["chat.sheet.close"].tap()
         XCTAssertTrue(word.waitForExistence(timeout: 5))
         XCTAssertEqual(word.value as? String, "CLOUD")
+
+        // A partner message's banner opens the same sheet over the game.
         app.buttons["developer.gameChat.receive"].tap()
         let banner = app.buttons["app.banner.open"]
         XCTAssertTrue(banner.waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertTrue(banner.label.contains("Your move!"))
         banner.tap()
         XCTAssertTrue(app.staticTexts["What was that?"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Your move!"].firstMatch.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.tabBars.firstMatch.buttons.element(boundBy: 1).isSelected)
+        let moves = app.tables.firstMatch.staticTexts.matching(NSPredicate(format: "label == %@", "Your move!"))
+        XCTAssertTrue(moves.firstMatch.waitForExistence(timeout: 5))
+        assertChatSheetOverGame(in: app)
+        swipeDownChatSheet(in: app)
+        XCTAssertTrue(word.waitForExistence(timeout: 5))
+        XCTAssertEqual(word.value as? String, "CLOUD")
 
-        app.buttons["developer.gameChat.receive"].tap()
+        // A message that arrives while its chat is on screen shows no banner.
+        app.buttons["developer.gameChat.receiveLater"].tap()
+        app.buttons["game.conversation.open"].firstMatch.tap()
+        assertChatSheetOverGame(in: app)
+        let secondMove = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 2"), object: moves)
+        XCTAssertEqual(XCTWaiter.wait(for: [secondMove], timeout: 10), .completed, app.debugDescription)
         XCTAssertFalse(banner.waitForExistence(timeout: 2))
-        reopenFromChats(in: app)
-        app.buttons["game.conversation.return"].tap()
+        app.buttons["chat.sheet.close"].tap()
         XCTAssertTrue(word.waitForExistence(timeout: 5))
         XCTAssertEqual(word.value as? String, "CLOUD")
         let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Unfinished game retained after messages and Chats"
+        attachment.name = "Unfinished game kept under the chat sheet"
         attachment.lifetime = .keepAlways
         add(attachment)
+
+        reopenFromChats(in: app)
     }
 
     @MainActor
-    func testEmptyGameChatAndReturnToUnfinishedStory() throws {
+    func testEmptyGameChatSheetOverUnfinishedStory() throws {
         let app = launchGameFlow(gameID: "storyChain")
         let draft = app.textViews.firstMatch
         XCTAssertTrue(draft.waitForExistence(timeout: 10))
@@ -52,6 +64,7 @@ final class GameConversationJourneyUITests: XCTestCase {
 
         let emptyState = app.descendants(matching: .any)["game.conversation.empty"].firstMatch
         XCTAssertTrue(emptyState.waitForExistence(timeout: 10), app.debugDescription)
+        assertChatSheetOverGame(in: app)
         let message = app.descendants(matching: .any)["chat.composer.field"].firstMatch
         message.tap()
         message.typeText("Where should the story go next?")
@@ -59,22 +72,21 @@ final class GameConversationJourneyUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Where should the story go next?"].waitForExistence(timeout: 5))
         XCTAssertFalse(emptyState.exists)
 
-        app.buttons["game.conversation.return"].tap()
+        app.buttons["chat.sheet.close"].tap()
         XCTAssertTrue(draft.waitForExistence(timeout: 5))
         XCTAssertEqual(draft.value as? String, "The ladder led to another door.")
         XCTAssertFalse(app.keyboards.firstMatch.exists)
-        let tabs = app.tabBars.firstMatch
-        XCTAssertFalse(tabs.exists)
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
 
         app.buttons["game.conversation.open"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Where should the story go next?"].waitForExistence(timeout: 5))
-        XCTAssertTrue(tabs.waitForExistence(timeout: 5))
-        tabs.buttons.element(boundBy: 2).tap()
+        assertChatSheetOverGame(in: app)
+        swipeDownChatSheet(in: app)
         XCTAssertTrue(draft.waitForExistence(timeout: 5))
         XCTAssertEqual(draft.value as? String, "The ladder led to another door.")
-        XCTAssertFalse(tabs.exists)
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
         let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Story draft and full-screen game retained after chat"
+        attachment.name = "Story draft and full-screen game kept under the chat sheet"
         attachment.lifetime = .keepAlways
         add(attachment)
     }
@@ -102,15 +114,22 @@ final class GameConversationJourneyUITests: XCTestCase {
     private func replyToFinishedRound(in app: XCUIApplication) {
         let field = app.descendants(matching: .any)["chat.composer.field"]
         XCTAssertTrue(field.waitForExistence(timeout: 10))
-        XCTAssertTrue(app.tabBars.firstMatch.buttons.element(boundBy: 1).isSelected)
+        assertChatSheetOverGame(in: app)
         let result = app.buttons["game.conversation.result.a9000000-0000-4000-8000-000000000001"]
         XCTAssertTrue(result.waitForExistence(timeout: 10), app.debugDescription)
-        // The latest finished game opens with the conversation.
+        // The latest finished game opens with the conversation. The board under the sheet
+        // shows some of the same words, so look only in the chat.
+        let chat = app.tables.firstMatch
         for word in ["OCEAN", "SUSHI", "SALT", "FISH", "SEA", "NET", "BOAT"] {
-            XCTAssertTrue(app.staticTexts[word].firstMatch.waitForExistence(timeout: 5))
+            XCTAssertTrue(chat.staticTexts[word].firstMatch.waitForExistence(timeout: 5))
         }
         let reply = app.buttons["game.conversation.result.reply"]
-        for _ in 0..<5 where !reply.isHittable { app.swipeUp() }
+        // The half-height sheet can leave the card's header under its navigation bar.
+        for _ in 0..<5 where !reply.isHittable {
+            let center = chat.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let distance: CGFloat = reply.frame.midY < chat.frame.midY ? 150 : -150
+            center.press(forDuration: 0.05, thenDragTo: center.withOffset(CGVector(dx: 0, dy: distance)))
+        }
         XCTAssertTrue(reply.waitForExistence(timeout: 5))
         reply.tap()
         field.tap()
@@ -119,14 +138,36 @@ final class GameConversationJourneyUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["What was that?"].waitForExistence(timeout: 5))
     }
 
+    /// Leaves the game, then opens its chat from Chats, where it still opens in the tab.
     @MainActor
     private func reopenFromChats(in app: XCUIApplication) {
         app.navigationBars.buttons.element(boundBy: 0).tap()
+        let tabs = app.tabBars.firstMatch
+        XCTAssertTrue(tabs.waitForExistence(timeout: 5))
+        tabs.buttons.element(boundBy: 1).tap()
         let conversation = app.buttons["chat.conversation.11181706-63f4-43d9-5210-140fa90e1fce"]
         for _ in 0..<4 where !conversation.isHittable { app.swipeUp() }
         XCTAssertTrue(conversation.waitForExistence(timeout: 10), app.debugDescription)
         conversation.tap()
         XCTAssertTrue(app.staticTexts["What was that?"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["chat.sheet.close"].exists)
+        XCTAssertTrue(tabs.buttons.element(boundBy: 1).isSelected)
+    }
+
+    /// The chat is a sheet over the game: the Games tab stays selected, so its tab bar stays hidden.
+    @MainActor
+    private func assertChatSheetOverGame(in app: XCUIApplication) {
+        XCTAssertTrue(app.buttons["chat.sheet.close"].waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
+    }
+
+    @MainActor
+    private func swipeDownChatSheet(in app: XCUIApplication) {
+        let close = app.buttons["chat.sheet.close"]
+        let bar = close.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .withOffset(CGVector(dx: 120, dy: 0))
+        bar.press(forDuration: 0.1, thenDragTo: bar.withOffset(CGVector(dx: 0, dy: 700)))
+        XCTAssertTrue(close.waitForNonExistence(timeout: 5))
     }
 
     @MainActor

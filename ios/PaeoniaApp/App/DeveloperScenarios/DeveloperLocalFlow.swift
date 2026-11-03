@@ -43,24 +43,39 @@
       .overlay(alignment: .bottomTrailing) {
         if let gameFlow = environment.gameConversationFlow,
            UserDefaults.standard.bool(forKey: "paeonia-game-chat-test-events") {
-          Button {
-            Task { await gameFlow.receivePartnerMessage() }
-          } label: {
-            Image(systemName: "envelope.badge.fill")
-              .frame(width: 44, height: 44)
+          VStack(spacing: PaeoniaSpacing.space8) {
+            // A sheet covers these buttons, so this one delivers after the chat sheet opens.
+            receiveButton("Receive game message later", systemImage: "clock.badge", id: "receiveLater") {
+              try? await Task.sleep(for: .seconds(4))
+              await gameFlow.receivePartnerMessage()
+            }
+            receiveButton("Receive game message", systemImage: "envelope.badge.fill", id: "receive") {
+              await gameFlow.receivePartnerMessage()
+            }
           }
-          .foregroundStyle(.paeoniaTextPrimary)
-          .background(.paeoniaSurfacePrimary, in: Circle())
           .padding(.trailing, PaeoniaSpacing.space8)
           .padding(.bottom, 80)
-          .accessibilityLabel("Receive game message")
-          .accessibilityIdentifier("developer.gameChat.receive")
         }
       }
       .task(id: environment.rootViewModel.state) {
         guard environment.rootViewModel.state == .paired else { return }
         await environment.prepareHomeLaunch()
       }
+    }
+
+    private func receiveButton(
+      _ label: String, systemImage: String, id: String, action: @escaping @MainActor () async -> Void
+    ) -> some View {
+      Button {
+        Task { await action() }
+      } label: {
+        Image(systemName: systemImage)
+          .frame(width: 44, height: 44)
+      }
+      .foregroundStyle(.paeoniaTextPrimary)
+      .background(.paeoniaSurfacePrimary, in: Circle())
+      .accessibilityLabel(label)
+      .accessibilityIdentifier("developer.gameChat.\(id)")
     }
   }
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Opens the root-owned chat in Chats while Games retains its current screen.
+/// Opens the game's chat through the root. On a game screen it opens as a sheet over the game.
 struct GameConversationButton: View {
     let kind: GameKind
     var source: GameConversationSource?

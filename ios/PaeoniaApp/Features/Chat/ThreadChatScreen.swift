@@ -27,6 +27,7 @@ struct ThreadChatScreen: View {
                                 Image(systemName: "xmark")
                             }
                             .accessibilityLabel(Text(.commonClose))
+                            .accessibilityIdentifier("chat.sheet.close")
                         }
                     }
             }
@@ -45,17 +46,6 @@ struct ThreadChatScreen: View {
             onClose: onClose,
             onOpenHeader: onOpenHeader
         )
-        .toolbar {
-            if viewModel.subject.kind == .game, let kind = context.returnGameKind,
-                let returnToGame = context.returnToGame {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { returnToGame() } label: {
-                        Text(.gamesConversationReturn(String(localized: kind.name)))
-                    }
-                    .accessibilityIdentifier("game.conversation.return")
-                }
-            }
-        }
         // Here and not on the screen under the chat, which SwiftUI does not update while covered.
         .onChange(of: memoryHeader) { _, header in
             if let header { viewModel.header = header }

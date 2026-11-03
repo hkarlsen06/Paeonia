@@ -173,8 +173,9 @@ struct MainTabView: View {
     /// What the Games tab has open. A notification about a game sets it.
     @State var gamesPath: [GamesDestination] = []
     @State var gameChatDestination: GameChatDestination?
+    /// A game chat opened from a game screen, shown as a sheet over the game.
+    @State var gameChatSheet: GameChatDestination?
     @State var openingGameChatID: UUID?
-    @State var gameChatReturnKind: GameKind?
     @State var gameChatReturn = GameChatReturnTransition()
     @State var visibleChatSubject: ThreadChatSubject?
     @State var messageNoticeStartedAt = Date()

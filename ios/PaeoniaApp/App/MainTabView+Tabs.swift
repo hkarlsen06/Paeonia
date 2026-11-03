@@ -47,6 +47,8 @@ extension MainTabView {
             gameChatReturn.waitsForKeyboard = false
         }
         .onChange(of: selection.wrappedValue) { _, _ in
+            // The game under the sheet is no longer on screen.
+            gameChatSheet = nil
             gameChatReturn.isPending = false
             gameChatReturn.waitsForKeyboard = false
             gameChatReturn.layoutReadyFrame = nil
@@ -150,6 +152,15 @@ extension MainTabView {
 
     private var gamesTab: some View {
         GamesRootView(viewModel: gamesViewModel, path: $gamesPath, tabBarVisibility: gameTabBarVisibility)
+            .sheet(item: $gameChatSheet) { destination in
+                ThreadChatScreen(
+                    viewModel: destination.viewModel,
+                    embedsNavigationStack: true,
+                    onClose: { gameChatSheet = nil }
+                )
+                // Half height leaves the board visible. The keyboard raises the sheet to full height.
+                .presentationDetents([.medium, .large])
+            }
     }
 
     var gamesParticipants: GameParticipants {

@@ -17,7 +17,7 @@ extension MainTabView {
         messageNoticeStartedAt = Date()
         visibleChatSubject = nil
         gameChatDestination = nil
-        gameChatReturnKind = nil
+        gameChatSheet = nil
         openingGameChatID = nil
     }
 
@@ -42,10 +42,6 @@ extension MainTabView {
         context.openGameChat = { kind, source, result in
             openGameChat(kind: kind, source: source, result: result)
         }
-        context.returnGameKind = retainedReturnGame
-        if retainedReturnGame != nil {
-            context.returnToGame = { selectTab(.games) }
-        }
         context.chatVisibilityChanged = { subject, isVisible in
             if isVisible {
                 visibleChatSubject = subject
@@ -59,11 +55,6 @@ extension MainTabView {
         return context
     }
 
-    var retainedReturnGame: GameKind? {
-        guard let kind = gameChatReturnKind, gamesPath.contains(.game(kind)) else { return nil }
-        return kind
-    }
-
     var retainedGameKinds: Set<GameKind> {
         guard selection.wrappedValue == .questions else { return [] }
         return Set(gamesPath.compactMap { destination in
@@ -72,23 +63,24 @@ extension MainTabView {
         })
     }
 
-    /// Every game entry opens this Chats destination. Returning selects the retained Games tab.
+    /// Opens a game's chat. With a game screen open in Games, the chat opens as a sheet over
+    /// it, so the game stays on screen. Anywhere else it opens in Chats.
     func openGameChat(
         kind: GameKind, source: GameConversationSource? = nil, result: GameConversationResult? = nil
     ) {
         guard let coupleID = identity.coupleID else { return }
         let subject = GameChatSubject(coupleID: coupleID, kind: kind)
-        let existing = gameChatDestination.flatMap { $0.subject == subject ? $0 : nil }
-        if selection.wrappedValue == .games {
-            gameChatReturnKind = gamesPath.compactMap { destination in
-                if case let .game(openKind) = destination { return openKind }
-                return nil
-            }.last
+        let opensOverGame = selection.wrappedValue == .games && !gamesPath.isEmpty
+        let existing = (opensOverGame ? gameChatSheet : gameChatDestination)
+            .flatMap { $0.subject == subject ? $0 : nil }
+        if opensOverGame {
+            PaeoniaKeyboard.dismiss()
+        } else {
+            selectTab(.questions)
+            dailyChatQuestion = nil
+            requestedConversationID = nil
+            if existing == nil { questionsPath = [] }
         }
-        selectTab(.questions)
-        dailyChatQuestion = nil
-        requestedConversationID = nil
-        if existing == nil { questionsPath = [] }
         let requestID = UUID()
         openingGameChatID = requestID
         Task { @MainActor in
@@ -101,7 +93,8 @@ extension MainTabView {
             guard openingGameChatID == requestID, identity.coupleID == coupleID, let model else { return }
             if let source { await model.focusGameResult(source: source, result: result) }
             guard openingGameChatID == requestID, identity.coupleID == coupleID else { return }
-            gameChatDestination = GameChatDestination(subject: subject, viewModel: model)
+            let destination = GameChatDestination(subject: subject, viewModel: model)
+            if opensOverGame { gameChatSheet = destination } else { gameChatDestination = destination }
             openingGameChatID = nil
         }
     }
