@@ -71,7 +71,7 @@ extension HomeMapLibreView {
     /// A value that changes smoothly with the zoom level, between the given stops.
     private static func byZoom(_ stops: [Double: Any]) -> NSExpression {
         NSExpression(
-            format: "mgl_interpolate:withCurveType:parameters:stops:($zoomLevel, 'linear', nil, %@)",
+            format: "FUNCTION($zoomLevel, 'mgl_interpolateWithCurveType:parameters:stops:', 'linear', nil, %@)",
             stops as NSDictionary
         )
     }
