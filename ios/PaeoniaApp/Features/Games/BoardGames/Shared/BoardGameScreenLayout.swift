@@ -71,14 +71,19 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
 
     // MARK: Rows
 
-    private var playersRow: some View {
-        BoardGamePlayersRow(
-            me: content.me,
-            partner: content.partner,
-            turn: content.turn,
-            partnerName: content.partner.name,
-            partnerIsHere: content.partnerStatus == .here
-        )
+    @ViewBuilder private var playersRow: some View {
+        if boardBleeds {
+            LudoPlayersRow(
+                me: content.me, partner: content.partner, turn: content.turn,
+                partnerName: content.partner.name, partnerIsHere: content.partnerStatus == .here
+            )
+        } else {
+            GamePlayersRow(
+                me: content.me, partner: content.partner, turn: content.turn,
+                partnerName: content.partner.name, partnerIsHere: content.partnerStatus == .here,
+                showsMarks: true
+            )
+        }
     }
 
     @ViewBuilder

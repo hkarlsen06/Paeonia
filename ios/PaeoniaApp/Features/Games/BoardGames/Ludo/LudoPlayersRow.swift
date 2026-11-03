@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Both players. My avatar is on the leading side, my partner's on the trailing
+/// Ludo players. My avatar is on the leading side, my partner's on the trailing
 /// side. Whoever's turn it is, or whoever won, gets glass in their piece color, a
 /// slightly larger avatar and a bold name. A steady green ring on my partner's avatar shows
 /// they have the game open. At accessibility text sizes the row stacks.
-struct BoardGamePlayersRow: View {
+struct LudoPlayersRow: View {
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
     let turn: BoardGameTurnLabel
@@ -144,46 +144,11 @@ private extension View {
     }
 }
 
-/// An avatar with their mark in a small badge at the bottom trailing edge. On
-/// the player's turn it grows a little. A steady green ring
-/// shows the player has the game open.
-struct BoardGamePlayerAvatar: View {
-    let player: BoardGamePlayerInfo
-    let isActive: Bool
-    var isHere = false
-    var size: CGFloat = 44
-
-    private static let badgeSize: CGFloat = 20
-    private static let activeScale: CGFloat = 1.1
-
-    var body: some View {
-        BoardGameAvatar(player: player, size: size)
-            .gamePresenceRing(isHere)
-            .overlay(alignment: .bottomTrailing) {
-                badge.offset(x: 4, y: 4)
-            }
-            .scaleEffect(isActive ? Self.activeScale : 1)
-    }
-
-    private var badge: some View {
-        Circle()
-            .fill(player.style.color)
-            .frame(width: Self.badgeSize, height: Self.badgeSize)
-            .overlay {
-                BoardMarkView(style: player.style, tint: .paeoniaTextInverse)
-                    .padding(3)
-            }
-            .overlay {
-                Circle().strokeBorder(.paeoniaBackgroundSecondary, lineWidth: PaeoniaRadius.strokeEmphasis)
-            }
-    }
-}
-
 #if DEBUG
 #Preview("Turns") {
     VStack(spacing: PaeoniaSpacing.space24) {
         ForEach([BoardGameTurnLabel.yourTurn, .partnerTurn, .youWon, .partnerWon, .draw], id: \.self) { turn in
-            BoardGamePlayersRow(
+            LudoPlayersRow(
                 me: BoardGamePreviewData.me,
                 partner: BoardGamePreviewData.partner,
                 turn: turn,
@@ -199,7 +164,7 @@ struct BoardGamePlayerAvatar: View {
 }
 
 #Preview("Accessibility size") {
-    BoardGamePlayersRow(
+    LudoPlayersRow(
         me: BoardGamePreviewData.me,
         partner: BoardGamePreviewData.partner,
         turn: .partnerTurn,

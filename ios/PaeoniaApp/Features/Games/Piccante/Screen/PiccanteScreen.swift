@@ -14,7 +14,12 @@ struct PiccanteScreen: View {
     @State private var sniffTile: Int?
 
     var body: some View {
-        ScrollView { content }
+        GeometryReader { proxy in
+            ScrollView {
+                content(minimumHeight: viewModel.game?.phase == .choosing ? proxy.size.height : 0)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
             .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -53,7 +58,7 @@ struct PiccanteScreen: View {
 }
 
 extension PiccanteScreen {
-    fileprivate var content: some View {
+    fileprivate func content(minimumHeight: CGFloat) -> some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             if let game = viewModel.game {
                 gameContent(game)
@@ -72,6 +77,7 @@ extension PiccanteScreen {
                 ProgressView().tint(.paeoniaAccentPrimary)
             }
         }
+        .frame(minHeight: max(0, minimumHeight - PaeoniaSpacing.screenHorizontalPadding * 2))
         .padding(PaeoniaSpacing.screenHorizontalPadding)
         .paeoniaReadableWidth()
     }
@@ -81,18 +87,27 @@ extension PiccanteScreen {
             scoreControl(score).frame(maxWidth: .infinity, alignment: .leading)
         }
         players
+        if game.phase == .choosing {
+            VStack(spacing: PaeoniaSpacing.space16) {
+                status
+                chooseSize
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxHeight: .infinity)
+        } else {
+            status
+            box(game)
+                .frame(maxWidth: game.phase == .finished && viewModel.revealSettled ? 300 : 480)
+            controls(game)
+        }
+    }
+
+    private var status: some View {
         Text(viewModel.status)
             .font(PaeoniaTypography.sectionTitle)
             .foregroundStyle(.paeoniaTextPrimary)
             .multilineTextAlignment(.center)
             .accessibilityIdentifier("piccante.status")
-        if game.phase == .choosing {
-            chooseSize
-        } else {
-            box(game)
-                .frame(maxWidth: game.phase == .finished && viewModel.revealSettled ? 300 : 480)
-            controls(game)
-        }
     }
 
     @ViewBuilder fileprivate func scoreControl(_ score: BoardGameScore) -> some View {
@@ -109,7 +124,7 @@ extension PiccanteScreen {
     }
 
     private var players: some View {
-        PiccantePlayersRow(
+        GamePlayersRow(
             me: viewModel.meInfo, partner: viewModel.partnerInfo, turn: viewModel.turnLabel,
             partnerName: viewModel.partnerName, partnerIsHere: viewModel.partnerHere)
     }

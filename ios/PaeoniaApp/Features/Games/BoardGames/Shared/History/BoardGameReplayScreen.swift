@@ -52,13 +52,19 @@ struct BoardGameReplayScreen<Board: BoardGameRules>: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            BoardGamePlayersRow(
-                me: playerInfo(players.meInfo, as: model.me),
-                partner: playerInfo(players.partnerInfo, as: model.me.other),
-                turn: turn,
-                partnerName: players.partnerName,
-                partnerIsHere: false
-            )
+            if players.kind == .ludo {
+                LudoPlayersRow(
+                    me: playerInfo(players.meInfo, as: model.me),
+                    partner: playerInfo(players.partnerInfo, as: model.me.other),
+                    turn: turn, partnerName: players.partnerName, partnerIsHere: false
+                )
+            } else {
+                GamePlayersRow(
+                    me: playerInfo(players.meInfo, as: model.me),
+                    partner: playerInfo(players.partnerInfo, as: model.me.other),
+                    turn: turn, partnerName: players.partnerName, partnerIsHere: false, showsMarks: true
+                )
+            }
             Spacer(minLength: 0)
             boardView(replayBoard)
                 .frame(maxWidth: .infinity)

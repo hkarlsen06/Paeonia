@@ -16,6 +16,10 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-11-04.
+
+- Piccante, Four in a Row, Dots and Boxes and Ultimate Tic-Tac-Toe share plain round player portraits, with names below and a bold name for the turn. Board games keep their mark badges and accessibility owner symbols. Ludo keeps its glass player cards over its 3D board. All use the shared presence ring and score capsule. Piccante centers the choose-size title, box and buttons together below the portraits. At large text sizes the screen scrolls.
+
 Decided on 2026-11-03.
 
 - Piccante uses plain round player portraits with the shared presence ring and score capsule. Together counts finished games. The board composes nine illustrated chocolate varieties in gold cups. Both phones use the same arrangement, with no identical neighbors. Eaten tiles leave empty wrappers with crumbs, and burns reveal chili pieces. Selection outlines, round owner avatars and a flame identify states without bite numbers. Only the partner's note appears, on a dark plum card with light text. Finished boxes stay in the game chat.
