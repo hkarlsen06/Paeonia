@@ -31,10 +31,11 @@ struct PiccanteScreen: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) { GameMenu(history: nil, showTutorial: { tutorial = true }) }
             }
-            .gameInviteToolbar(
+            .gameMenuInvite(
                 invite: viewModel.invite, partnerName: viewModel.partnerName, send: { await viewModel.sendInvite() },
                 identifier: "piccante.invite"
             )
+            .gameMenuInviteHost()
             .gameTutorial(GameTutorial(kind: .piccante, partnerName: viewModel.partnerName), isPresented: $tutorial)
             .gameLiveReactions(viewModel.reactions)
             .sheet(isPresented: $boardControls) { nativeControls }

@@ -119,6 +119,13 @@ nonisolated enum GuessMySpotText {
         value.formatted(.number.locale(locale))
     }
 
+    /// A total for the score capsule. From 100,000 it rounds down to thousands,
+    /// as "216k", so both totals fit on one line beside the toolbar buttons.
+    static func total(_ value: Int, locale: Locale = .current) -> String {
+        guard value >= 100_000 else { return number(value, locale: locale) }
+        return value.formatted(.number.notation(.compactName).rounded(rule: .down).locale(locale))
+    }
+
     /// `YYYY-MM-DD` as a long date, such as "June 12, 2024", or nil for anything else.
     static func takenOn(_ day: String?, locale: Locale = .current) -> String? {
         guard let date = GuessMySpotDay.date(from: day) else { return nil }

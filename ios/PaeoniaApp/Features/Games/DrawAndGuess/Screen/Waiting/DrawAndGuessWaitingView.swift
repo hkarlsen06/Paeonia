@@ -45,7 +45,7 @@ struct DrawAndGuessWaitingView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .gameInviteToolbar(
+        .gameMenuInvite(
             invite: viewModel.invite,
             partnerName: viewModel.partnerName,
             send: viewModel.sendInvite,

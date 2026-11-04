@@ -53,13 +53,14 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             .toolbarBackgroundVisibility(boardBleeds ? .hidden : .automatic, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar { toolbarItems }
-            // A board that bleeds has room for the invite under it. The others keep it in the toolbar.
-            .gameInviteToolbar(
+            // A board that bleeds has room for the invite under it. The others keep it in the menu.
+            .gameMenuInvite(
                 invite: boardBleeds ? .hidden : invite,
                 partnerName: viewModel.partnerName,
                 send: viewModel.sendInvite,
                 identifier: "boardGames.invite"
             )
+            .gameMenuInviteHost()
             .boardGameScoreToolbar(
                 score: viewModel.score,
                 me: viewModel.meInfo,

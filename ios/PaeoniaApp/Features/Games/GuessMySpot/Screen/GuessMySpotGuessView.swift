@@ -48,7 +48,7 @@ struct GuessMySpotGuessView: View {
         } bottom: {
             lockButton
         }
-        .gameInviteToolbar(
+        .gameMenuInvite(
             invite: viewModel.invite,
             partnerName: viewModel.partnerName,
             send: viewModel.sendInvite,

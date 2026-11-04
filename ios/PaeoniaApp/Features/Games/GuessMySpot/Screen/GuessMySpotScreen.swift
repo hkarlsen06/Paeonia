@@ -27,6 +27,7 @@ struct GuessMySpotScreen: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { toolbarItems }
+        .gameMenuInviteHost()
         .preferredColorScheme(.dark)
         // A swipe on the map pans it. Only the left edge goes back.
         .background(GameEdgeSwipeOnly())

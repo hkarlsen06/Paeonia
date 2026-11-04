@@ -5,8 +5,8 @@ import SwiftUI
 /// connects them. The word checks run in the view model as the person types.
 ///
 /// At normal text sizes the phase fits above the keyboard without scrolling. The
-/// partner and the round share the top line, the invite is a bell in the
-/// toolbar, and only the last rounds of the trail show.
+/// partner and the round share the top line, the invite sits in the game's
+/// menu, and only the last rounds of the trail show.
 struct MindMeldWriteView: View {
     @Bindable var viewModel: MindMeldViewModel
     /// False while the "How to play" cards are open or about to open.
@@ -40,7 +40,7 @@ struct MindMeldWriteView: View {
         } bottom: {
             lockInButton
         }
-        .gameInviteToolbar(
+        .gameMenuInvite(
             invite: viewModel.invite,
             partnerName: viewModel.partnerName,
             send: viewModel.sendInvite,

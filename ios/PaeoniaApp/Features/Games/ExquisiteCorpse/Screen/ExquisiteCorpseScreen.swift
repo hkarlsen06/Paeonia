@@ -29,6 +29,7 @@ struct ExquisiteCorpseScreen: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { menu }
+        .gameMenuInviteHost()
         .favoriteToolbarItem(
             viewModel.figure.map { .corpseFigure($0.id) },
             isShown: viewModel.phase == .reveal,

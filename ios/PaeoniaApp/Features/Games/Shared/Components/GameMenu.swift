@@ -19,8 +19,9 @@ struct GameHistoryLink {
     }
 }
 
-/// The "•••" menu in a game's toolbar. A game puts its own items, such as
-/// Mind Meld's "Start over", in `extra`, under the shared ones.
+/// The "•••" menu in a game's toolbar. The invite to play comes first while
+/// there is one (`gameMenuInvite`). A game puts its own items, such as Mind
+/// Meld's "Start over", in `extra`, under the shared ones.
 struct GameMenu<Extra: View>: View {
     let history: GameHistoryLink?
     /// Opens the history instead of pushing `history.destination`, for a game
@@ -30,8 +31,20 @@ struct GameMenu<Extra: View>: View {
     var showTutorial: (() -> Void)?
     @ViewBuilder var extra: () -> Extra
 
+    @Environment(\.gameMenuInviteItem) private var invite
+
     var body: some View {
         Menu {
+            if let invite {
+                Button(action: invite.tap) {
+                    Label {
+                        Text(invite.sentUntil == nil ? .gamesInviteButton(invite.partnerName) : .gamesInviteSent)
+                    } icon: {
+                        Image(systemName: invite.sentUntil == nil ? "bell" : "bell.fill")
+                    }
+                }
+                .accessibilityIdentifier(invite.sentUntil == nil ? invite.identifier : "\(invite.identifier).sent")
+            }
             GameMenuItems(history: history, openHistory: openHistory, editMark: editMark, showTutorial: showTutorial)
             extra()
         } label: {

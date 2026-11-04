@@ -67,7 +67,7 @@ struct StoryChainStoryView: View {
         }
         .favoriteToolbarItem(finishedStoryTarget, identifier: "storyChain.star")
         .paeoniaShareToolbar(finishedShareable, identifier: "storyChain.share")
-        .gameInviteToolbar(
+        .gameMenuInvite(
             invite: isPartnersTurn ? viewModel.invite : .hidden,
             partnerName: viewModel.partnerName,
             send: viewModel.sendInvite,

@@ -50,7 +50,7 @@ struct ConsensioLineView: View {
         } bottom: {
             lockButton
         }
-        .gameInviteToolbar(
+        .gameMenuInvite(
             invite: role == .guess ? viewModel.invite : .hidden,
             partnerName: viewModel.partnerName,
             send: viewModel.sendInvite,

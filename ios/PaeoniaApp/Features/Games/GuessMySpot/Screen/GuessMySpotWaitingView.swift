@@ -30,7 +30,7 @@ struct GuessMySpotWaitingView: View {
                 waitingForPhoto
             }
         }
-        .gameInviteToolbar(
+        .gameMenuInvite(
             invite: viewModel.invite,
             partnerName: viewModel.partnerName,
             send: viewModel.sendInvite,

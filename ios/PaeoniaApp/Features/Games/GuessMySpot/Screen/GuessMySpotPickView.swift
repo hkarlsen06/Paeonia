@@ -46,8 +46,8 @@ struct GuessMySpotPickView: View {
             viewModel.pickFailed = false
             bannerCenter.show(.error(message: String(localized: .guessMySpotPickUnreadable)))
         }
-        .gameInviteToolbar(
-            // The picker stays alive under the check, so the bell goes with it.
+        .gameMenuInvite(
+            // The picker stays alive under the check, so the invite goes with it.
             invite: viewModel.showsCheck ? .hidden : viewModel.invite,
             partnerName: viewModel.partnerName,
             send: viewModel.sendInvite,

@@ -16,16 +16,16 @@ struct GuessMySpotScoreCapsule: View {
                 Image(systemName: "heart.fill")
                     .foregroundStyle(.paeoniaAccentPrimary)
                     .accessibilityHidden(true)
-                Text(verbatim: GuessMySpotText.number(total))
+                Text(verbatim: GuessMySpotText.total(total))
                     .contentTransition(.numericText(value: Double(total)))
             case let .against(mine, theirs):
                 HStack(spacing: PaeoniaSpacing.space4) {
                     GameAvatar(player: me, isMe: true, size: 20)
-                    Text(verbatim: GuessMySpotText.number(mine))
+                    Text(verbatim: GuessMySpotText.total(mine))
                 }
                 HStack(spacing: PaeoniaSpacing.space4) {
                     GameAvatar(player: partner, isMe: false, size: 20)
-                    Text(verbatim: GuessMySpotText.number(theirs))
+                    Text(verbatim: GuessMySpotText.total(theirs))
                 }
             }
         }

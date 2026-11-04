@@ -40,7 +40,7 @@ struct ConsensioChooseView: View {
             .disabled(!viewModel.canStart)
             .accessibilityIdentifier("consensio.choose.start")
         }
-        .gameInviteToolbar(
+        .gameMenuInvite(
             invite: viewModel.invite,
             partnerName: viewModel.partnerName,
             send: viewModel.sendInvite,

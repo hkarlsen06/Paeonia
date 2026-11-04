@@ -48,7 +48,7 @@ struct ExquisiteCorpseWatchView: View {
         } bottom: {
             EmptyView()
         }
-        .exquisiteCorpseInviteToolbar(viewModel)
+        .exquisiteCorpseMenuInvite(viewModel)
         .onChange(of: viewModel.partnerDonePulse) { _, _ in
             // The view model's attention cue taps once the part reaches the server.
             AccessibilityNotification.Announcement(String(localized: title)).post()

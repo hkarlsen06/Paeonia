@@ -14,9 +14,9 @@ struct ExquisiteCorpsePartnerAvatar: View {
 }
 
 extension View {
-    /// "Tell [Name] you want to play" in the toolbar, while the partner is not in the game.
-    func exquisiteCorpseInviteToolbar(_ viewModel: ExquisiteCorpseViewModel) -> some View {
-        gameInviteToolbar(
+    /// "Tell [Name] you want to play" in the game's menu, while the partner is not in the game.
+    func exquisiteCorpseMenuInvite(_ viewModel: ExquisiteCorpseViewModel) -> some View {
+        gameMenuInvite(
             invite: viewModel.invite,
             partnerName: viewModel.partnerName,
             send: viewModel.sendInvite,

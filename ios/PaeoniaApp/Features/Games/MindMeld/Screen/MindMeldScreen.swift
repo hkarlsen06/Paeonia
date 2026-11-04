@@ -43,6 +43,7 @@ struct MindMeldScreen: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { toolbarItems }
+        .gameMenuInviteHost()
         .alert(Text(.mindMeldRestartTitle), isPresented: $isConfirmingRestart) {
             Button(role: .cancel) {} label: { Text(.mindMeldRestartCancel) }
             Button(role: .destructive) {

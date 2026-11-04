@@ -142,8 +142,13 @@
         return state(game: game(turn: Fixture.me), current: lakeRound(sender: Fixture.partner, guess: lake, seen: true))
       case .guessMySpotWaitChoosing:
         return state(game: game(turn: Fixture.partner), current: harbor(sender: Fixture.me, guess: bergen, seen: true))
-      case .guessMySpotWaitLive, .guessMySpotWaitLater:
+      case .guessMySpotWaitLive:
         return state(game: game(turn: Fixture.partner), current: harbor(sender: Fixture.me))
+      case .guessMySpotWaitLater:
+        // Totals in the hundreds of thousands, as a long-running couple has.
+        return state(
+          game: game(turn: Fixture.partner, points: 488_348, mine: 216_563), current: harbor(sender: Fixture.me)
+        )
       case .guessMySpotGuess, .guessMySpotRevealHeld:
         return state(game: game(turn: Fixture.me), current: lakeRound(sender: Fixture.partner, hidden: true))
       case .guessMySpotRevealSpotOn, .guessMySpotRevealClose, .guessMySpotRevealFar, .guessMySpotRevealWorld:

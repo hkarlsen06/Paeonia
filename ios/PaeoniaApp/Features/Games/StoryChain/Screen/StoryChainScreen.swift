@@ -25,6 +25,7 @@ struct StoryChainScreen: View {
         .gameLiveReactions(viewModel.liveReactions)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { menu }
+        .gameMenuInviteHost()
         .preferredColorScheme(.dark)
         .task { await viewModel.start() }
         .onDisappear { viewModel.stop() }

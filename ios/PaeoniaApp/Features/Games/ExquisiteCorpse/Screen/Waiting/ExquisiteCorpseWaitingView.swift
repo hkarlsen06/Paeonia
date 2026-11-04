@@ -71,7 +71,7 @@ struct ExquisiteCorpseAwayView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .exquisiteCorpseInviteToolbar(viewModel)
+        .exquisiteCorpseMenuInvite(viewModel)
         // The partner's phone changes the title and ring while this screen is
         // open. Everything moves to its new place together.
         .animation(PaeoniaMotion.stateChange, value: viewModel.partnerPresence)
