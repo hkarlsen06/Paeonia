@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 
 /// The Memories tab: a calm timeline of the couple's saved moments, newest first. Each
@@ -86,6 +87,12 @@ struct MemoriesScreen: View {
             }
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active { viewModel.flushDraft() }
+            }
+            // `initial` covers a cold launch, where Siri's request is set before this screen exists.
+            .onChange(of: viewModel.isNewMemoryRequested, initial: true) { _, isRequested in
+                guard isRequested else { return }
+                viewModel.isNewMemoryRequested = false
+                isCreating = true
             }
             .sheet(isPresented: $isCreating, onDismiss: { viewModel.flushDraft() }) {
                 // The view model keeps the draft and saves it on the device, so a swipe-down
@@ -195,6 +202,8 @@ struct MemoriesScreen: View {
                 MemoryCardView(record: record)
             }
             .buttonStyle(.plain)
+            // Siri can tell which memory "this one" is from what is on screen.
+            .appEntityIdentifier(EntityIdentifier(for: MemoryAlbumEntity.self, identifier: record.snapshot.memoryID))
         }
     }
 

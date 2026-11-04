@@ -17,6 +17,25 @@ extension MemoriesViewModel {
         }
     }
 
+    /// Siri brought photos from another app for a new memory. They join the new-memory draft,
+    /// which keeps whatever the person had started, and the Memories screen opens the form.
+    /// Before the tab has loaded `userID`'s draft, the photos go into the stored draft, which
+    /// the tab then loads.
+    func startNewMemory(adding photos: [Data], for userID: UUID?) {
+        guard let userID else { return }
+        let added = photos.map { MemoryDraftPhoto(data: $0) }
+        if currentUserID == userID {
+            var next = draft
+            next.photos += added
+            updateDraft(next)
+        } else {
+            var stored = draftStore.draft(for: userID) ?? MemoryDraft()
+            stored.photos += added
+            draftStore.setDraft(stored, for: userID)
+        }
+        isNewMemoryRequested = true
+    }
+
     /// Saves typed text that is still waiting for its delayed save. Call when the form
     /// closes or the app leaves the foreground.
     func flushDraft() {

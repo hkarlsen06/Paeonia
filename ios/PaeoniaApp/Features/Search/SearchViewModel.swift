@@ -49,11 +49,12 @@ final class SearchViewModel {
         self.pause = pause
     }
 
-    /// Clears the last search and loads what the phone searches. Call it when the screen opens.
-    func begin(loadContent: @MainActor () async -> SearchLocalContent) async {
+    /// Clears the last search, types `query` in, and loads what the phone searches. Call it when
+    /// the screen opens.
+    func begin(query: String = "", loadContent: @MainActor () async -> SearchLocalContent) async {
         isOpen = true
         clear()
-        query = ""
+        self.query = query
         content = await loadContent()
         // The person may have typed while the content loaded.
         if SearchQuery(query).isSearchable { restart() }

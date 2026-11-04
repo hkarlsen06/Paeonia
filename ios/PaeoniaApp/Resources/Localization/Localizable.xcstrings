@@ -37754,6 +37754,582 @@
         }
       }
     },
+    "siri.access.noAccess" : {
+      "comment" : "What Siri says when the couple has no subscription, so Paeonia can't be used.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia needs a subscription for this. Open the app to see your options."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia trenger et abonnement for dette. Åpne appen for å se valgene dine."
+          }
+        }
+      }
+    },
+    "siri.access.notPaired" : {
+      "comment" : "What Siri says when someone asks it to do something in Paeonia before they are connected with their partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Paeonia and connect with your partner first."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Paeonia og koble deg til partneren din først."
+          }
+        }
+      }
+    },
+    "siri.access.signedOut" : {
+      "comment" : "What Siri says when someone asks it to do something in Paeonia while nobody is signed in on the phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Paeonia and sign in first."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Paeonia og logg inn først."
+          }
+        }
+      }
+    },
+    "siri.appLock.continue" : {
+      "comment" : "What Siri says before it opens Paeonia, when the person turned on the app's lock and must unlock it first.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock Paeonia to continue."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås opp Paeonia for å fortsette."
+          }
+        }
+      }
+    },
+    "siri.appLock.stillLocked" : {
+      "comment" : "What Siri says when Paeonia's lock stayed locked, so it could not finish.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia is still locked. Unlock it and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia er fortsatt låst. Lås den opp og prøv igjen."
+          }
+        }
+      }
+    },
+    "siri.dates.attendee.accepted" : {
+      "comment" : "Siri: a person said yes to a calendar event.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Going"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer"
+          }
+        }
+      }
+    },
+    "siri.dates.attendee.declined" : {
+      "comment" : "Siri: a person said no to a calendar event.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not going"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer ikke"
+          }
+        }
+      }
+    },
+    "siri.dates.attendee.person" : {
+      "comment" : "Siri: the kind of attendee of a calendar event, a person.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Person"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Person"
+          }
+        }
+      }
+    },
+    "siri.dates.attendee.tentative" : {
+      "comment" : "Siri: a person said maybe to a calendar event.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maybe"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kanskje"
+          }
+        }
+      }
+    },
+    "siri.dates.birthdayKeepsName" : {
+      "comment" : "What Siri says when asked to rename a birthday. Only the day can change.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A birthday keeps its name. You can change the date."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En bursdag beholder navnet sitt. Du kan endre datoen."
+          }
+        }
+      }
+    },
+    "siri.dates.calendarTitle" : {
+      "comment" : "Name of the couple's calendar in Siri and Shortcuts: their countdowns and both partners' birthdays.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Our dates"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datoene våre"
+          }
+        }
+      }
+    },
+    "siri.dates.gone" : {
+      "comment" : "What Siri says when the countdown or birthday it was asked about was deleted.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That date isn't in Paeonia anymore."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den datoen finnes ikke i Paeonia lenger."
+          }
+        }
+      }
+    },
+    "siri.dates.repeatUnsupported" : {
+      "comment" : "What Siri says when asked to repeat a date weekly or monthly. Paeonia dates repeat every year or never.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A date in Paeonia can repeat every year, or not at all."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En dato i Paeonia kan gjentas hvert år, eller ikke i det hele tatt."
+          }
+        }
+      }
+    },
+    "siri.dates.span.all" : {
+      "comment" : "Siri: change or delete every time of a date that repeats.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle gangene"
+          }
+        }
+      }
+    },
+    "siri.dates.span.future" : {
+      "comment" : "Siri: change or delete this time and every later time of a date that repeats.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This and later times"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne og senere ganger"
+          }
+        }
+      }
+    },
+    "siri.dates.span.this" : {
+      "comment" : "Siri: change or delete only this time of a date that repeats.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This time only"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare denne gangen"
+          }
+        }
+      }
+    },
+    "siri.dates.status.cancelled" : {
+      "comment" : "Siri: a calendar event's status when it was called off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelled"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avlyst"
+          }
+        }
+      }
+    },
+    "siri.dates.status.confirmed" : {
+      "comment" : "Siri: a calendar event's status when it is going to happen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bekreftet"
+          }
+        }
+      }
+    },
+    "siri.dates.status.tentative" : {
+      "comment" : "Siri: a calendar event's status when it might happen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maybe"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kanskje"
+          }
+        }
+      }
+    },
+    "siri.dates.titleMissing" : {
+      "comment" : "What Siri says when asked to add a countdown without a name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give the countdown a name."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi nedtellingen et navn."
+          }
+        }
+      }
+    },
+    "siri.memories.albumType.memory" : {
+      "comment" : "Siri: the kind of photo album Paeonia has, a memory the couple made.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minne"
+          }
+        }
+      }
+    },
+    "siri.memories.assetType.photo" : {
+      "comment" : "Siri: the kind of item in a memory, a photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilde"
+          }
+        }
+      }
+    },
+    "siri.memories.filter.original" : {
+      "comment" : "Siri: a photo's filter when it has none, so it looks as it was taken.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original"
+          }
+        }
+      }
+    },
+    "siri.memories.gone" : {
+      "comment" : "What Siri says when the memory it was asked about was deleted.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That memory isn't in Paeonia anymore."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det minnet finnes ikke i Paeonia lenger."
+          }
+        }
+      }
+    },
+    "siri.memories.nameMissing" : {
+      "comment" : "What Siri says when asked to rename a memory to an empty name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give the memory a name."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi minnet et navn."
+          }
+        }
+      }
+    },
+    "siri.photos.incomingTitle" : {
+      "comment" : "Name Siri shows for a photo from another app that is about to go into a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt bilde"
+          }
+        }
+      }
+    },
+    "siri.photos.nameTheMemory" : {
+      "comment" : "What Siri says as it opens the new memory form with photos from another app. The person types a title and saves.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give the memory a name, then save it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi minnet et navn, og lagre det."
+          }
+        }
+      }
+    },
+    "siri.photos.noneToAdd" : {
+      "comment" : "What Siri says when it was asked to add photos to a memory but got none.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There were no photos to add."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det var ingen bilder å legge til."
+          }
+        }
+      }
+    },
+    "siri.photos.notInMemory" : {
+      "comment" : "What Siri says when asked to take a photo out of a memory it is not in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That photo isn't in this memory."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det bildet er ikke i dette minnet."
+          }
+        }
+      }
+    },
+    "siri.photos.tooMany" : {
+      "comment" : "What Siri says when too many photos would go into a memory. %@ is the most photos each partner can add to one memory (5).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A memory can have up to %@ of your photos."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et minne kan ha opptil %@ av bildene dine."
+          }
+        }
+      }
+    },
+    "siri.photos.unavailable" : {
+      "comment" : "What Siri says when a memory photo could not be loaded to send or add somewhere.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo can't be opened right now. Try again later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette bildet kan ikke åpnes akkurat nå. Prøv igjen senere."
+          }
+        }
+      }
+    },
+    "siri.photos.unreadable" : {
+      "comment" : "What Siri says when a file it was given for a memory is not a photo Paeonia can open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One of the photos couldn't be opened. Try another one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et av bildene kunne ikke åpnes. Prøv et annet."
+          }
+        }
+      }
+    },
     "stories.archive.empty.message" : {
       "comment" : "Message when the couple has no stories yet. %@ is the partner's name.",
       "extractionState" : "manual",

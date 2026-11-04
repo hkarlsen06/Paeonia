@@ -19,6 +19,13 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     /// `paeonia://memories/memory?memoryId=...`: opens one memory. `showsComments` (`&comments=1`)
     /// is for a comment push, so the memory opens on its comments.
     case memory(memoryID: UUID, showsComments: Bool)
+    /// Siri's "open this photo": one memory, on one of its photos. No URL opens it.
+    case memoryPhoto(memoryID: UUID, mediaAssetID: UUID)
+    /// Siri brought photos from another app for a new memory. Opens the new-memory form with
+    /// them. They wait in `MemoryPhotoInbox` until then. No URL opens it.
+    case newMemory(photoIDs: [UUID])
+    /// Siri's in-app search: opens Search with `term` typed in. No URL opens it.
+    case search(term: String)
     /// `paeonia://stories`: opens Home, where the ring shows the stories.
     case stories
     /// `paeonia://stories/story?storyId=...`: opens one story in the viewer. `showsReplies`

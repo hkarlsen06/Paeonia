@@ -92,16 +92,27 @@ extension RootView {
             self.deepLink = nil
         case .dailyReveal, .dailyToday, .dailyChat, .gameChat, .coupleChat, .topics:
             selectTabForDeepLink(.questions)
-        case .memories, .memory:
+        case .memories, .memory, .memoryPhoto, .newMemory:
             selectTabForDeepLink(.memories)
+        case .search:
+            // Search opens over the tab that is showing.
+            selectTabForDeepLink(viewModel.selectedMainTab)
         case .game:
             selectTabForDeepLink(.games)
         case .streak, .stories, .story, .us, .dates, .firstDayAnswer:
             selectTabForDeepLink(.us)
-        case .subscription:
+        case .subscription, .dataExport:
+            openAccountLink(deepLink)
+        }
+    }
+
+    /// App Store subscription management, or the data download screen.
+    @MainActor
+    private func openAccountLink(_ deepLink: PaeoniaDeepLink) {
+        if deepLink == .subscription {
             openURL(PaeoniaDeepLink.appStoreSubscriptionsURL)
             self.deepLink = nil
-        case .dataExport:
+        } else {
             openDataExport()
         }
     }

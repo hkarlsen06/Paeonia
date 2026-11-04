@@ -298,8 +298,8 @@ extension MainTabView {
         }
 
         switch deepLink {
-        case .widgetDrawing:
-            actions.openWidgetDrawing()
+        case .widgetDrawing, .search:
+            openOverCurrentScreen(deepLink)
             self.deepLink.wrappedValue = nil
         case .subscription, .dataExport:
             // RootView owns these: it opens App Store subscription management or the
@@ -308,7 +308,7 @@ extension MainTabView {
             break
         case .dailyReveal, .dailyChat, .dailyToday, .gameChat, .coupleChat, .topics:
             await handleQuestionsDeepLink(deepLink)
-        case .memories, .memory:
+        case .memories, .memory, .memoryPhoto, .newMemory:
             await openMemories(for: deepLink)
         case let .game(kind):
             await openGame(kind, for: deepLink)
@@ -340,24 +340,53 @@ extension MainTabView {
         self.deepLink.wrappedValue = nil
     }
 
+    /// The drawing screen, or Search with the words Siri heard.
+    private func openOverCurrentScreen(_ deepLink: PaeoniaDeepLink) {
+        if case let .search(term) = deepLink {
+            openSearch(term: term)
+        } else {
+            actions.openWidgetDrawing()
+        }
+    }
+
     /// Opens the Memories tab. A link to one memory also opens it, after reading the memories
-    /// when it is not on this phone yet. A memory that is gone leaves the person on the timeline.
+    /// when it is not on this phone yet, on its comments or on one photo when the link asks. A
+    /// memory that is gone leaves the person on the timeline. Photos Siri brought for a new
+    /// memory open the new-memory form with them.
     private func openMemories(for deepLink: PaeoniaDeepLink) async {
         selection.wrappedValue = .memories
-        if case let .memory(memoryID, showsComments) = deepLink {
-            if memoriesViewModel.record(for: memoryID) == nil {
-                await memoriesViewModel.refresh()
-                guard isCurrent(deepLink) else { return }
-            }
-            if memoriesViewModel.record(for: memoryID) != nil {
-                memoriesPath = [memoryID]
+        switch deepLink {
+        case let .memory(memoryID, showsComments):
+            guard await showMemory(memoryID, for: deepLink, then: {
                 if showsComments { memoriesViewModel.commentsRequestedMemoryID = memoryID }
-            }
-        } else {
+            }) else { return }
+        case let .memoryPhoto(memoryID, mediaAssetID):
+            guard await showMemory(memoryID, for: deepLink, then: {
+                memoriesViewModel.requestedPhotoID = mediaAssetID
+            }) else { return }
+        case let .newMemory(photoIDs):
+            memoriesPath = []
+            memoriesViewModel.startNewMemory(adding: MemoryPhotoInbox.take(photoIDs), for: identity.currentUserID)
+        default:
             await memoriesViewModel.refresh()
             guard isCurrent(deepLink) else { return }
         }
         self.deepLink.wrappedValue = nil
+    }
+
+    /// Pushes the memory's screen and runs `then`, after a refresh when the memory is not on
+    /// this phone yet. A memory that is gone stays closed. False when a newer link replaced
+    /// this one meanwhile.
+    private func showMemory(_ memoryID: UUID, for deepLink: PaeoniaDeepLink, then: () -> Void) async -> Bool {
+        if memoriesViewModel.record(for: memoryID) == nil {
+            await memoriesViewModel.refresh()
+            guard isCurrent(deepLink) else { return false }
+        }
+        if memoriesViewModel.record(for: memoryID) != nil {
+            memoriesPath = [memoryID]
+            then()
+        }
+        return true
     }
 
     private func openStreak(for deepLink: PaeoniaDeepLink) async {

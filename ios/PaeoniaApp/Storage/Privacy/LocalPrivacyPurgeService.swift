@@ -32,6 +32,7 @@ nonisolated protocol LocalPrivateContentPurging: Sendable {
 actor LocalPrivacyPurgeService: LocalPrivacyPurging {
     private let recordStore: any LocalPrivacyRecordPurging
     private let privateContentPurger: any LocalPrivateContentPurging
+    private let entityIndex: any SiriEntityIndexClearing
     private let retryStore: any LocalPrivacyPurgeRetryStoring
     private let retryDelay: Duration
     private let automaticallyRetry: Bool
@@ -41,12 +42,14 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
     init(
         recordStore: any LocalPrivacyRecordPurging,
         privateContentPurger: any LocalPrivateContentPurging = LiveLocalPrivateContentPurger(),
+        entityIndex: any SiriEntityIndexClearing = SiriEntityIndexer.shared,
         retryStore: any LocalPrivacyPurgeRetryStoring = UserDefaultsLocalPrivacyPurgeRetryStore.shared,
         retryDelay: Duration = .seconds(30),
         automaticallyRetry: Bool = true
     ) {
         self.recordStore = recordStore
         self.privateContentPurger = privateContentPurger
+        self.entityIndex = entityIndex
         self.retryStore = retryStore
         self.retryDelay = retryDelay
         self.automaticallyRetry = automaticallyRetry
@@ -151,6 +154,9 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
                 clearAccessSnapshot: clearAccessSnapshot
             )
         }
+        // Every scope hides the couple's content, so Spotlight and Siri forget all of it. A
+        // failure keeps the request queued, and the retry removes both again.
+        try await entityIndex.removeAllEntities()
     }
 
     private func scheduleRetryIfNeeded() {
@@ -289,6 +295,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
             FileThreadChatPhotoDraftStore.shared.clearAll()
             dailyAnswerMediaDraftStore.clearAll()
             Self.removeTemporaryVoiceFiles(in: temporaryDirectory)
+            MemoryPhotoInbox.clearAll()
             if !keepsFirstDayUpload {
                 WidgetPendingUploadStore.shared.clearAll()
             }

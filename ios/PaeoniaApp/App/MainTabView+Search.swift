@@ -21,9 +21,14 @@ extension MainTabView {
     }
 
     func openSearch() {
+        openSearch(term: "")
+    }
+
+    /// `term` is typed in for Siri's in-app search.
+    func openSearch(term: String) {
         isSearchPresented = true
         let search = models.search
-        Task { await search.begin(loadContent: { await localSearchContent() }) }
+        Task { await search.begin(query: term, loadContent: { await localSearchContent() }) }
     }
 
     /// Memories and stories as the phone holds them. Memories are read from the store, because the

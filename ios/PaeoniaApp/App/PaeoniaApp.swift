@@ -36,6 +36,12 @@ struct PaeoniaApp: App {
         }
         _rootViewModel = State(initialValue: viewModel)
         _locationViewModel = State(initialValue: LocationMapViewModel())
+        if usesClerk, Self.opensProductionRoot {
+            // Siri and Spotlight act for the account the root signs in. Intents can launch the
+            // app in the background, so the index follows writes without a screen.
+            SiriAppContext.shared.connect(to: viewModel)
+            SiriEntityIndexer.shared.start()
+        }
     }
 
     var body: some Scene {

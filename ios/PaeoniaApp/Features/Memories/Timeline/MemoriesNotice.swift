@@ -53,7 +53,7 @@ enum MemoriesNotice: Equatable {
         }
     }
 
-    private var message: LocalizedStringResource {
+    var message: LocalizedStringResource {
         switch self {
         case .photoUploadFailed:
             .memoriesNoticePhotoFailedMessage

@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import UIKit
 
@@ -22,6 +23,8 @@ struct MemoryDetailView: View {
     @State private var wasRemovedWhileEditing = false
     @State private var isConfirmingDelete = false
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
+    /// The media asset id of the photo the carousel shows. Nil shows the first.
+    @State private var shownPhotoID: UUID?
 
     private let photoCarouselHeight: CGFloat = 320
     private let photoCarouselPageControlInset: CGFloat = PaeoniaSpacing.space40
@@ -80,6 +83,9 @@ struct MemoryDetailView: View {
             Text(.memoriesDeleteMessage)
         }
         .paeoniaImageViewer(selection: $imageViewerSelection)
+        .memoryOnScreenForSiri(
+            memoryID, title: record?.snapshot.title, viewModel: viewModel, shownPhotoID: $shownPhotoID
+        )
     }
 
     private func content(for record: MemoryRecord) -> some View {
@@ -132,7 +138,11 @@ struct MemoryDetailView: View {
 
     private func photoGallery(for record: MemoryRecord) -> some View {
         let mediaItems = visibleMedia(for: record)
-        return TabView {
+        let selection = Binding<UUID?>(
+            get: { shownPhotoID ?? mediaItems.first?.mediaAssetID },
+            set: { shownPhotoID = $0 }
+        )
+        return TabView(selection: selection) {
             ForEach(mediaItems, id: \.memoryMediaID) { media in
                 MemoryMediaImageView(
                     mediaAssetID: media.mediaAssetID,
@@ -152,6 +162,10 @@ struct MemoryDetailView: View {
                     Task { await viewModel.savePhotoToLibrary(mediaAssetID: media.mediaAssetID) }
                 }
                 .padding(.bottom, mediaItems.count > 1 ? photoCarouselPageControlInset : 0)
+                .tag(Optional(media.mediaAssetID))
+                .appEntityIdentifier(
+                    EntityIdentifier(for: MemoryPhotoEntity.self, identifier: .saved(mediaAssetID: media.mediaAssetID))
+                )
             }
         }
         .tabViewStyle(.page(indexDisplayMode: mediaItems.count > 1 ? .automatic : .never))

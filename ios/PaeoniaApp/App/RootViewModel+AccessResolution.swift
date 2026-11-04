@@ -181,7 +181,7 @@ extension RootViewModel {
         await startSyncIfNeeded()
     }
 
-    private func syncedAccessResolution(
+    func syncedAccessResolution(
         for session: AuthSession,
         hasPendingInvite: Bool
     ) async -> AccessRouteResolution? {

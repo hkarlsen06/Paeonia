@@ -52,6 +52,11 @@ final class MemoriesViewModel {
     /// Set by a comment push (`PaeoniaDeepLink.memory` with `showsComments`) to the memory whose
     /// comments should open. The memory's detail screen clears it once it shows them.
     var commentsRequestedMemoryID: UUID?
+    /// Set by Siri's "open this photo" (`PaeoniaDeepLink.memoryPhoto`) to the photo the open
+    /// memory should show. The memory's detail screen clears it once it shows the photo.
+    var requestedPhotoID: UUID?
+    /// Set when Siri brought photos for a new memory. The Memories screen opens the form and clears it.
+    var isNewMemoryRequested = false
 
     /// The in-progress new-memory form. It lives here, not in the sheet or the screen,
     /// so a swipe-down or the tab being torn down keeps the work. Changes are saved per

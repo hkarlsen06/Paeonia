@@ -78,14 +78,15 @@ final class CoupleDatesViewModel {
         hasLoaded = true
     }
 
-    /// Adds a countdown when `id` is nil, otherwise edits that one.
+    /// Adds a countdown with `newID` when `id` is nil, otherwise edits that one.
     @discardableResult
     func saveCountdown(
         id: UUID?,
         title: String,
         on day: Date,
         repeatsYearly: Bool = false,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        newID: UUID = UUID()
     ) async -> Bool {
         let title = String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(CustomCountdown.maxTitleLength))
         guard !title.isEmpty else { return false }
@@ -95,7 +96,7 @@ final class CoupleDatesViewModel {
             return false
         }
         let countdown = CustomCountdown(
-            id: id ?? UUID(),
+            id: id ?? newID,
             title: title,
             targetDate: PairingStartDate(date: day, calendar: calendar).rawValue,
             repeatsYearly: repeatsYearly

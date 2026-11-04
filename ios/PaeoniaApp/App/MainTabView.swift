@@ -357,6 +357,10 @@ struct MainTabView: View {
             bannerCenter.show(notice.banner)
             favoritesStore.clearNotice()
         }
+        // Access was settled before this screen showed, so Spotlight can catch up.
+        .task(id: identity.currentUserID) {
+            await SiriEntityIndexer.shared.refresh()
+        }
         // The Memories tab and the memory chats on the Questions tab both read the memories.
         .task(id: identity.currentUserID) {
             memoriesViewModel.setLocalChangeSyncHandler(actions.syncAfterLocalChange)

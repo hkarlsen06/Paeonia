@@ -51,6 +51,9 @@ final class AppLockModel {
     /// it only became inactive.
     @ObservationIgnored private var backgroundedAt: ContinuousClock.Instant?
     @ObservationIgnored private var hasBecomeActive = false
+    /// Counts the times the app became active, so a Siri action that brought the app to the
+    /// front can tell when the lock has decided whether the time away locked it.
+    @ObservationIgnored private(set) var activationCount = 0
 
     init(
         store: any AppLockPersisting = UserDefaultsAppLockStore(),
@@ -108,6 +111,7 @@ final class AppLockModel {
         }
         let isFirstActivation = !hasBecomeActive
         hasBecomeActive = true
+        activationCount += 1
         publishCover()
         if isLocked, returnedFromBackground || isFirstActivation {
             Task { await unlock() }

@@ -263,13 +263,17 @@ nonisolated enum RelationshipMilestoneError: Equatable, Sendable {
     case countdownLimit
 
     var message: String {
+        String(localized: resource)
+    }
+
+    var resource: LocalizedStringResource {
         switch self {
         case .futureDate:
-            String(localized: .homeMilestoneErrorFutureDate)
+            .homeMilestoneErrorFutureDate
         case .saveFailed:
-            String(localized: .homeMilestoneErrorSaveFailed)
+            .homeMilestoneErrorSaveFailed
         case .countdownLimit:
-            String(localized: .homeMilestoneErrorCountdownLimit(CustomCountdown.maxCount.formatted()))
+            .homeMilestoneErrorCountdownLimit(CustomCountdown.maxCount.formatted())
         }
     }
 }

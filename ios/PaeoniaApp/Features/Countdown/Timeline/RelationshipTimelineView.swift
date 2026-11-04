@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 
 /// Sheet opened from the Us tab milestone card: the couple's milestone history and
@@ -197,8 +198,16 @@ struct RelationshipTimelineView: View {
             : Text(.homeMilestoneTimelineTogetherFor(Self.togetherText(startedOn: startedOn, now: now)))
     }
 
-    @ViewBuilder
     private func eventRow(for event: CoupleDateEvent, isPast: Bool) -> some View {
+        // Siri can tell which date "this one" is from what is on screen.
+        eventButton(for: event, isPast: isPast)
+            .appEntityIdentifier(
+                event.coupleDateID.map { EntityIdentifier(for: CoupleDateEntity.self, identifier: $0) }
+            )
+    }
+
+    @ViewBuilder
+    private func eventButton(for event: CoupleDateEvent, isPast: Bool) -> some View {
         if let editor = CoupleDateEditor(event), coupleDates != nil {
             // The couple's own dates open their editor. Milestones come from the start
             // date, which the pencil edits.
