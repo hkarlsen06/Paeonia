@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { piccanteBackend } from "./lib/piccante";
+import type { GameChatSource } from "./lib/gameChatSubjects";
 import { endCouple, failure, op } from "./media.testing";
 import { createCouple, createSignedInUser, newTest, type TestUser } from "./test.setup";
 const view = (u: TestUser) => u.as.query(api.piccante.get_piccante, {});
@@ -45,7 +46,7 @@ describe("Piccante authorization", () => {
     }
   });
   test("another entitled couple cannot mutate the named game or read its result", async () => {
-    const s = await ready();
+    const s = await setup();
     const other = (await createCouple(s.t)).first;
     const args = { ...await s.args(), ...op() };
     const calls = [
@@ -64,6 +65,39 @@ describe("Piccante authorization", () => {
   });
 });
 describe("Piccante integration", () => {
+  test("choosing owes neither person a move, and a competing choice fails at the version check", async () => {
+    const s = await setup();
+    for (const u of [s.a, s.b]) {
+      expect((await view(u)).game).toMatchObject({ phase: "choosing", turn_user_id: null });
+      expect(await s.t.run(ctx => piccanteBackend.waitingFor!(ctx, s.couple.coupleId, u.userId))).toEqual([]);
+    }
+    const stale = await s.args();
+    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    expect(await s.t.run(ctx => piccanteBackend.sendDueTurnReminders!(ctx, nextWeek))).toBe(0);
+    const chosen = await s.b.as.mutation(api.piccante.choose_piccante_size, { ...await s.args(s.b), p_size: 5 });
+    expect(chosen.game).toMatchObject({ starter_user_id: s.b.userId, turn_user_id: s.b.userId, phase: "hiding", size: 5 });
+    expect((await failure(s.a.as.mutation(api.piccante.choose_piccante_size, { ...stale, p_size: 3 }))).code).toBe("40001");
+    expect((await view(s.a)).game).toMatchObject({ starter_user_id: s.b.userId, size: 5 });
+    expect((await failure(s.a.as.mutation(api.piccante.hide_piccante_chili, { ...await s.args(), p_tile: 1 }))).code).toBe("42501");
+    await s.b.as.mutation(api.piccante.hide_piccante_chili, { ...await s.args(s.b), p_tile: 1 });
+    expect((await view(s.a)).game!.turn_user_id).toBe(s.a.userId);
+  });
+  test("game chat keeps an unseen ending private until its viewer marks it seen", async () => {
+    const s = await ready();
+    await s.b.as.mutation(api.piccante.bite_piccante_chocolate, { ...await s.args(s.b), p_tile: 1 });
+    await s.a.as.mutation(api.piccante.bite_piccante_chocolate, { ...await s.args(), p_tile: 8 });
+    const source = { kind: "piccante", couple_id: s.couple.coupleId, game_number: 1 } satisfies GameChatSource;
+    const result = await s.b.as.query(api.gameConversations.get_game_conversation, {
+      p_couple_id: s.couple.coupleId, p_source: source,
+    });
+    expect(result).toMatchObject({ kind: "piccante", result: {
+      phase: "biting", chilis: [], my_chili: null, my_note: null, winner_user_id: null,
+      bites: [{ tile: 1, user_id: s.b.userId }],
+    } });
+    await s.b.as.mutation(api.piccante.mark_piccante_result_seen, { ...op(), p_game_id: s.gameId, p_game_number: 1 });
+    expect(await s.b.as.query(api.piccante.get_piccante_result, { p_game_number: 1 }))
+      .toMatchObject({ phase: "finished", loser_user_id: s.a.userId });
+  });
   test("hides secrets, sniffs privately, reveals own-chili burn and stores game chat result", async () => {
     const s = await ready();
     expect((await view(s.b)).game).toMatchObject({ my_chili: 8, my_note: "You owe me cake", chilis: [], phase: "biting", turn_user_id: s.b.userId });
@@ -76,7 +110,7 @@ describe("Piccante integration", () => {
     expect(end.game).toMatchObject({ phase: "finished", winner_user_id: s.a.userId, my_wins: 1, games_finished: 1 });
     expect(end.game!.chilis).toHaveLength(2);
     expect(end.unseen_result!.game_number).toBe(1);
-    expect(await s.a.as.query(api.piccante.get_piccante_result, { p_game_number: 1 })).toMatchObject({ phase: "finished" });
+    expect(await s.a.as.query(api.piccante.get_piccante_result, { p_game_number: 1 })).toMatchObject({ phase: "biting", chilis: [], bites: [] });
     const timeline = await s.a.as.query(api.gameConversations.get_game_chat_timeline, { p_couple_id: s.couple.coupleId, p_game_kind: "piccante", p_limit: 20 });
     expect(JSON.stringify(timeline)).toContain("piccante");
   });

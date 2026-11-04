@@ -104,5 +104,5 @@ export const get_piccante_result = query({ args: { p_game_number: v.number() }, 
   const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
   const game = await getPiccanteGame(ctx, coupleId);
   const result = await ctx.db.query("piccante_results").withIndex("by_couple_id_game_number", q => q.eq("couple_id", coupleId).eq("game_number", args.p_game_number)).unique();
-  return result && game ? piccanteView(result.state, game, userId) : null;
+  return result && game ? piccanteView(result.state, game, userId, result.seen_by_user_ids.includes(userId)) : null;
 } });

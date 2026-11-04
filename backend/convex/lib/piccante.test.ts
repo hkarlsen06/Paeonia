@@ -9,6 +9,17 @@ function hidden(first = 0, second = 8) {
   return apply(s, "b", { kind: "hide", tile: second, note: "My secret!" });
 }
 describe("Piccante rules", () => {
+  test("either member can choose and becomes the first hider", () => {
+    const initial = newPiccanteState("a", "b", 1, now);
+    expect(initial.turn_user_id).toBeUndefined();
+    expect(() => apply(initial, "outsider", { kind: "size", size: 3 })).toThrow();
+    for (const chooser of ["a", "b"]) {
+      const sized = apply(initial, chooser, { kind: "size", size: 5 });
+      expect(sized).toMatchObject({ starter_user_id: chooser, turn_user_id: chooser, phase: "hiding", size: 5 });
+      expect(sized.partner_user_id).toBe(chooser === "a" ? "b" : "a");
+      expect(() => apply(sized, sized.partner_user_id, { kind: "hide", tile: 0 })).toThrow();
+    }
+  });
   test("starter hides first, second hider bites first, safe bites alternate", () => {
     const s = hidden();
     expect(s.turn_user_id).toBe("b");
@@ -56,7 +67,7 @@ describe("Piccante rules", () => {
   test("rematch swaps starter and resets secrets", () => {
     expect(() => apply(hidden(), "a", { kind: "rematch" })).toThrow();
     const finished = apply(hidden(), "b", { kind: "bite", tile: 0 });
-    expect(apply(finished, "a", { kind: "rematch" })).toMatchObject({ game_number: 2, starter_user_id: "b", turn_user_id: "b", phase: "choosing", chilis: [], bites: [], sniffs: [] });
+    expect(apply(finished, "a", { kind: "rematch" })).toMatchObject({ game_number: 2, starter_user_id: "b", phase: "choosing", chilis: [], bites: [], sniffs: [] });
   });
   test("projection never contains partner chili, note or sniff before completion", () => {
     const state = apply(hidden(), "b", { kind: "sniff", tile: 0 });
