@@ -62,7 +62,7 @@ The chosen second hub candidate imports at 900 by 622 pixels, aspect 1.447. Its 
 
 ## Sounds
 
-The developer selected these CC0 recordings by ear, including the Freesound HQ previews. Freesound sources use lossy HQ MP3 previews, not the original downloads. Bite D uses the original BigSoundBank WAV. All prepared WAVs are mono 44.1 kHz signed 16-bit PCM, normalized to about -3 dBFS. Import changes only the container to CAF, preserving the PCM samples. These files are recordings, not recipes. `ios/Scripts/game-sounds.swift` writes only its synthesized recipe outputs and leaves recordings untouched.
+The developer picked these CC0 recordings by ear. Every file is cut from its author's original WAV at the source interval listed below. All prepared WAVs are mono 44.1 kHz signed 16-bit PCM, normalized to about -3 dBFS. Import changes only the container to CAF, preserving the PCM samples. These files are recordings, not recipes. `ios/Scripts/game-sounds.swift` writes only its synthesized recipe outputs and leaves recordings untouched.
 
 The shared player randomly picks among five bite variants without consecutive repeats. Bite plays at 0.30 on the Bite tap and on the partner's replayed bite, without repeating this person's bite on the server response. Burn plays at 0.30 at the start of the staged reveal. Lift replaces the shared tap at 0.18 when this person selects a chocolate. A successful private sniff plays at 0.20. Queuing a hide plays at 0.22. The Same one chime plays at 0.18 when its reveal appears. Reduce Motion skips replay and reveal sounds as before. The audio session stays ambient. The silent switch mutes game sounds. A partner's lift over this person's chili still plays only its heartbeat haptic.
 
@@ -77,7 +77,7 @@ Imported from `bites/bite-a.wav`.
 - License: CC0 1.0 Universal.
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Original title: Crunchy Bite
-- Download: https://cdn.freesound.org/previews/535/535012_166713-hq.mp3
+- Download: original WAV, https://freesound.org/people/ursenfuns/sounds/535012/download/
 - Edits: source interval 0.340 to 0.940 s; common bite processing listed above.
 
 ### GameSoundPiccanteBite2.caf
@@ -89,7 +89,7 @@ Imported from `bites/bite-b.wav`.
 - License: CC0 1.0 Universal.
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Original title: Eating A Biscuit or Cookie
-- Download: https://cdn.freesound.org/previews/752/752128_4889106-hq.mp3
+- Download: original WAV, https://freesound.org/people/black_trillium/sounds/752128/download/
 - Edits: source interval 1.670 to 2.230 s; common bite processing listed above.
 
 ### GameSoundPiccanteBite3.caf
@@ -101,7 +101,7 @@ Imported from `bites/bite-c.wav`.
 - License: CC0 1.0 Universal.
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Original title: crunch
-- Download: https://cdn.freesound.org/previews/844/844811_8175347-hq.mp3
+- Download: original WAV, https://freesound.org/people/SammygoodTunes/sounds/844811/download/
 - Edits: source interval 0.045 to 0.565 s; common bite processing listed above.
 
 ### GameSoundPiccanteBite4.caf
@@ -125,7 +125,7 @@ Imported from `bites/bite-e.wav`.
 - License: CC0 1.0 Universal.
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Original title: apple - bite 01.wav
-- Download: https://cdn.freesound.org/previews/398/398756_5923045-hq.mp3
+- Download: original WAV, https://freesound.org/people/Anthousai/sounds/398756/download/
 - Edits: source interval 0.860 to 1.440 s; common bite processing listed above.
 
 ### GameSoundPiccanteBurn1.caf
@@ -137,7 +137,7 @@ Imported from `burn.wav`.
 - License: CC0 1.0 Universal.
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Original title: Sizzle / Acid Burn
-- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/382/382313_460876-hq.mp3
+- Download: original WAV, https://freesound.org/people/bottles/sounds/382313/download/
 - Edits: Extracted source interval 0.120 to 1.320 s; downmixed to mono; removed DC; 70 Hz high-pass and 5500 Hz low-pass, both second-order; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
 
 ### GameSoundPiccanteLift1.caf
@@ -149,7 +149,7 @@ Imported from `lift.wav`.
 - License: CC0 1.0 Universal.
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Original title: paper, thin, tracing, blueprint, rustle.wav
-- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/632/632220_3784464-hq.mp3
+- Download: original WAV, https://freesound.org/people/golovlev.sound/sounds/632220/download/
 - Edits: Extracted source interval 3.650 to 4.070 s; downmixed to mono; removed DC; 70 Hz high-pass and 5500 Hz low-pass, both second-order; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
 
 ### GameSoundPiccanteSniff1.caf
@@ -161,7 +161,7 @@ Imported from `sniff.wav`.
 - License: CC0 1.0 Universal.
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Original title: Sniffing.wav
-- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/202/202101_3756348-hq.mp3
+- Download: original WAV, https://freesound.org/people/spookymodem/sounds/202101/download/
 - Edits: Extracted source interval 1.640 to 1.870 s; downmixed to mono; removed DC; 70 Hz high-pass and 5500 Hz low-pass, both second-order; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
 
 ### GameSoundPiccanteHide1.caf
@@ -173,7 +173,7 @@ Imported from `hide.wav`.
 - License: CC0 1.0 Universal.
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Original title: Paper drawn with rustle
-- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/360/360646_1196472-hq.mp3
+- Download: original WAV, https://freesound.org/people/Mafon2/sounds/360646/download/
 - Edits: Extracted source interval 1.020 to 1.320 s; downmixed to mono; removed DC; 70 Hz high-pass and 5500 Hz low-pass, both second-order; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
 
 ### GameSoundPiccanteSameOne1.caf
@@ -185,8 +185,8 @@ Imported from `same-one.wav`.
 - License: CC0 1.0 Universal.
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Original title: Bell Sound
-- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/852/852531_13228046-hq.mp3
-- Edits: Extracted source interval 0.000 to 0.700 s; downmixed to mono; removed DC; 70 Hz high-pass and 4800 Hz low-pass, both second-order; layered a second recorded hit at +160 ms, resampled to about a major third higher; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
+- Download: original WAV, https://freesound.org/people/Seth_Makes_Sounds/sounds/852531/download/
+- Edits: Extracted source interval 0.000 to 0.700 s; downmixed to mono; removed DC; 70 Hz high-pass and 4800 Hz low-pass, both second-order; layered the same hit at +160 ms, resampled 1.26 times faster (a major third higher) and 1.33 times louder; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
 
 ## Developer scenarios
 
