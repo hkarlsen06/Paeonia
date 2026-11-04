@@ -243,11 +243,11 @@ actor LiveThreadChatGateway: ThreadChatGateway {
                 let live = LiveQueryService(transport: ConvexLiveTransport(connection: .shared))
                 let results = live.subscribe(
                     "chatPresence:get_chat_presence",
+                    // The couple chat has no subject id, so the key is left out.
                     args: [
                         "p_couple_id": coupleID.uuidString.lowercased(),
                         "p_subject_kind": subject.kind.rawValue,
-                        "p_subject_id": subject.id.uuidString.lowercased()
-                    ],
+                    ].merging(subject.serverID.map { ["p_subject_id": $0.uuidString.lowercased()] } ?? [:]) { $1 },
                     as: PresenceRow.self
                 )
                 var latest = ThreadChatPresence.none

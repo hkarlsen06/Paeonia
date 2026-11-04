@@ -6,6 +6,9 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     /// A question's chat. A couple has one chat per question.
     case dailyChat(questionID: UUID)
     case gameChat(kind: GameKind)
+    /// `paeonia://chat`: the couple chat ("Just us"), the one chat that is not about anything
+    /// in particular. A message push in it opens it.
+    case coupleChat
     case dailyToday(coupleDayID: UUID?)
     /// "Answer now" at the end of the first day sequence. Opens today's question over Home,
     /// so closing it lands on Home with the things to try. No URL opens it.
@@ -83,6 +86,18 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
 
         guard let url = components.url else {
             preconditionFailure("Invalid Paeonia daily chat URL")
+        }
+        return url
+    }
+
+    /// Mirrors `coupleChatDeepLink` in `backend/convex/lib/deepLinks.ts`.
+    static var coupleChatURL: URL {
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = "chat"
+
+        guard let url = components.url else {
+            preconditionFailure("Invalid Paeonia couple chat URL")
         }
         return url
     }
@@ -205,6 +220,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         "stories": .stories,
         "us": .us,
         "dates": .dates,
+        "chat": .coupleChat,
         "streak": .streak,
     ]
 

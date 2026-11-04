@@ -32,6 +32,7 @@ nonisolated struct ConversationThreadRow: Decodable {
         case "memory": memoryID.map(ThreadChatSubject.memory)
         case "story": storyID.map(ThreadChatSubject.story)
         case "game": gameKind.map { .game(GameChatSubject(coupleID: coupleID, kind: $0)) }
+        case "couple": .couple
         default: nil
         }
     }

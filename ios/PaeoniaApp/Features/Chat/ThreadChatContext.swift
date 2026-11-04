@@ -29,7 +29,7 @@ struct ThreadChatContext {
     /// The chat view model for `subject`, read from this phone's copy so its first frame is complete.
     /// Nil without a couple.
     @MainActor
-    func makeViewModel(subject: ThreadChatSubject, header: ThreadChatHeader) async -> ThreadChatViewModel? {
+    func makeViewModel(subject: ThreadChatSubject, header: ThreadChatHeader?) async -> ThreadChatViewModel? {
         guard let coupleID else { return nil }
         let viewModel = ThreadChatViewModel(
             subject: subject,

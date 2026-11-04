@@ -331,6 +331,7 @@ extension MainTabView {
             focusedQuestionIDs: $focusedDailyQuestionIDs,
             chatQuestion: $dailyChatQuestion,
             requestedConversationID: $requestedConversationID,
+            isCoupleChatRequested: $isCoupleChatRequested,
             onOpenAnswerFlow: { openAnswerFlow(source: .questions) },
             onTapStreak: openStreakDetails,
             onRefresh: {

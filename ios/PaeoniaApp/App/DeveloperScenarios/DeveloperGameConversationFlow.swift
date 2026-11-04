@@ -57,7 +57,8 @@
   private actor DeveloperGameConversationGateway: ThreadChatGateway {
     private var summaries: [ThreadChatSummary] = []
     private var messages: [ThreadChatMessage] = []
-    private let threadID = UUID()
+    /// One thread per chat, such as the Mind Meld chat and the couple chat.
+    private var threadIDs: [ThreadChatSubject: UUID] = [:]
     private let result: GameConversationResult?
 
     init(result: GameConversationResult?) {
@@ -98,10 +99,10 @@
         results: reference.flatMap { $0.source.kind == subject.kind ? [$0] : nil } ?? [], hasMore: false)
     }
 
-    func loadMessages(threadID _: UUID, subjectID _: UUID, before _: ThreadChatMessageCursor?)
+    func loadMessages(threadID: UUID, subjectID _: UUID, before _: ThreadChatMessageCursor?)
       -> ThreadChatMessagePage
     {
-      ThreadChatMessagePage(messages: messages, hasMore: false)
+      ThreadChatMessagePage(messages: messages.filter { $0.threadID == threadID }, hasMore: false)
     }
 
     func createThreadWithMessage(
@@ -114,10 +115,12 @@
     }
 
     func sendMessage(
-      threadID _: UUID, body: String, mediaAssetIDs _: [UUID], replyTo: ThreadChatItemID?,
+      threadID: UUID, body: String, mediaAssetIDs _: [UUID], replyTo: ThreadChatItemID?,
       operation: SyncClientOperation
     ) throws -> ThreadChatMessageResponse {
-      guard let summary = summaries.first else { throw ThreadChatServiceError.unavailable }
+      guard let summary = summaries.first(where: { $0.threadID == threadID }) else {
+        throw ThreadChatServiceError.unavailable
+      }
       return record(
         body: body, subject: summary.subject, coupleID: summary.coupleID,
         replyTo: replyTo, operation: operation)
@@ -130,20 +133,23 @@
     )
       -> ThreadChatMessageResponse
     {
+      let threadID = threadIDs[subject] ?? UUID()
+      threadIDs[subject] = threadID
       let message = ThreadChatMessage(
         id: UUID(), threadID: threadID, subjectID: subject.id, senderUserID: senderUserID,
         body: body, createdAt: operation.localCreatedAt, clientOperationID: operation.id,
         isSending: false, replyTo: replyTo
       )
       messages.append(message)
-      summaries = [
+      let firstInThread = messages.first { $0.threadID == threadID } ?? message
+      summaries.removeAll { $0.subject == subject }
+      summaries.append(
         ThreadChatSummary(
           threadID: threadID, coupleID: coupleID, subject: subject,
-          createdAt: messages[0].createdAt, updatedAt: message.createdAt,
+          createdAt: firstInThread.createdAt, updatedAt: message.createdAt,
           lastMessageID: message.id, lastMessageAt: message.createdAt,
           lastMessageSenderUserID: message.senderUserID, lastMessageBody: body
-        )
-      ]
+        ))
       return ThreadChatMessageResponse(threadID: threadID, messageID: message.id)
     }
   }

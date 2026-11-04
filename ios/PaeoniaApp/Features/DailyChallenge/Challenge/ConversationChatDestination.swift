@@ -1,6 +1,6 @@
 import Foundation
 
-/// A memory's or a story's chat, read from the phone before it is pushed.
+/// A memory's, a story's or the couple's chat, read from the phone before it is pushed.
 struct ConversationChatDestination: Hashable, Identifiable {
     let id: UUID
     let viewModel: ThreadChatViewModel
@@ -15,6 +15,13 @@ struct ConversationChatDestination: Hashable, Identifiable {
         } else {
             story = nil
         }
+    }
+
+    /// The couple chat, which is about nothing in particular.
+    init(coupleChat viewModel: ThreadChatViewModel) {
+        id = ThreadChatSubject.coupleChatID
+        self.viewModel = viewModel
+        story = nil
     }
 
     static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }

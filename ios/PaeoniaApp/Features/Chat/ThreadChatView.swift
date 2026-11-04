@@ -160,6 +160,7 @@ struct ThreadChatView: View {
         case .memory: Text(.memoriesCommentsTitle)
         case .story: Text(.storiesRepliesTitle)
         case .game: Text(verbatim: viewModel.header?.title ?? String(localized: .gamesConversationNavigationTitle))
+        case .couple: Text(.chatsCoupleChatTitle)
         }
     }
 

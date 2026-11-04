@@ -306,7 +306,7 @@ extension MainTabView {
             // data download screen, then consumes the link. Acting here as well would
             // race the root task.
             break
-        case .dailyReveal, .dailyChat, .dailyToday, .gameChat, .topics:
+        case .dailyReveal, .dailyChat, .dailyToday, .gameChat, .coupleChat, .topics:
             await handleQuestionsDeepLink(deepLink)
         case .memories, .memory:
             await openMemories(for: deepLink)
@@ -416,9 +416,18 @@ extension MainTabView {
 
     /// Links into the Questions tab refresh first, so a partner's answer or a
     /// new day is on screen before the question is focused or opened.
+    /// A game's chat and the couple chat open at once. They need no refresh first.
+    private func chatOpener(for deepLink: PaeoniaDeepLink) -> (() -> Void)? {
+        switch deepLink {
+        case let .gameChat(kind): { openGameChat(kind: kind) }
+        case .coupleChat: { openCoupleChat() }
+        default: nil
+        }
+    }
+
     private func handleQuestionsDeepLink(_ deepLink: PaeoniaDeepLink) async {
-        if case let .gameChat(kind) = deepLink {
-            openGameChat(kind: kind)
+        if let openChat = chatOpener(for: deepLink) {
+            openChat()
             self.deepLink.wrappedValue = nil
             return
         }

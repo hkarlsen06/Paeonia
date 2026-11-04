@@ -99,6 +99,15 @@ extension MainTabView {
         }
     }
 
+    /// Opens the couple chat in Chats, over whatever that tab had pushed.
+    func openCoupleChat() {
+        selectTab(.questions)
+        dailyChatQuestion = nil
+        gameChatDestination = nil
+        questionsPath = []
+        isCoupleChatRequested = true
+    }
+
     /// The live summary feed supplies authorized previews even when APNs is unavailable.
     func announcePartnerMessage(
         previous: [ThreadChatSubject: ThreadChatSummary], current: [ThreadChatSubject: ThreadChatSummary]
@@ -114,30 +123,29 @@ extension MainTabView {
         }.sorted { ($0.lastMessageAt ?? .distantPast) < ($1.lastMessageAt ?? .distantPast) }
         for summary in arrivals {
             guard let preview = summary.lastMessagePreview else { continue }
-            let title: String
-            let action: () -> Void
-            switch summary.subject {
-            case .game(let game):
+            var title = reactionPartnerName
+            if case .game(let game) = summary.subject {
                 title = String(
                     localized: .gamesChatMessageTitle(reactionPartnerName, String(localized: game.kind.name))
                 )
-                action = { openGameChat(kind: game.kind) }
-            case .question(let id):
-                title = reactionPartnerName
-                action = { PaeoniaNotificationRouter.shared.route(.dailyChat(questionID: id)) }
-            case .memory(let id):
-                title = reactionPartnerName
-                action = { PaeoniaNotificationRouter.shared.route(.memory(memoryID: id, showsComments: true)) }
-            case .story(let id):
-                title = reactionPartnerName
-                action = { PaeoniaNotificationRouter.shared.route(.story(storyID: id, showsReplies: true)) }
             }
             bannerCenter.show(
                 .info(
                     title: title, message: preview,
-                    imageData: PaeoniaAppGroup.partnerAvatarData(), action: action
+                    imageData: PaeoniaAppGroup.partnerAvatarData(), action: openChatAction(for: summary.subject)
                 )
             )
+        }
+    }
+
+    /// What tapping a partner message's banner opens: the chat it arrived in.
+    private func openChatAction(for subject: ThreadChatSubject) -> () -> Void {
+        switch subject {
+        case .game(let game): { openGameChat(kind: game.kind) }
+        case .question(let id): { PaeoniaNotificationRouter.shared.route(.dailyChat(questionID: id)) }
+        case .memory(let id): { PaeoniaNotificationRouter.shared.route(.memory(memoryID: id, showsComments: true)) }
+        case .story(let id): { PaeoniaNotificationRouter.shared.route(.story(storyID: id, showsReplies: true)) }
+        case .couple: { openCoupleChat() }
         }
     }
 }

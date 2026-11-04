@@ -11,6 +11,8 @@ struct DailyChallengeScreen: View {
     var focusedQuestionIDs: Binding<[UUID]> = .constant([])
     var chatQuestion: Binding<DailyChallengeQuestion?> = .constant(nil)
     var requestedConversationID: Binding<UUID?> = .constant(nil)
+    /// Set by the couple chat's push and deep link. The screen opens the chat and clears it.
+    var isCoupleChatRequested: Binding<Bool> = .constant(false)
     var onOpenAnswerFlow: () -> Void = {}
     var onTapStreak: () -> Void = {}
     var onRefresh: (() async -> Void)?
@@ -41,9 +43,9 @@ struct DailyChallengeScreen: View {
     /// Hides the tab bar while a chat is about to open, before the push starts. Hiding
     /// it from the pushed chat instead would bring it back only after the back swipe
     /// ends. Same approach as Tidex's chat.
-    @State private var isOpeningChat = false
-    /// The memory's or story's chat pushed on top of this screen.
-    @State private var conversationChat: ConversationChatDestination?
+    @State var isOpeningChat = false
+    /// The memory's, story's or the couple's chat pushed on top of this screen.
+    @State var conversationChat: ConversationChatDestination?
     /// The story opened from its chat's header card, over the chat.
     @State private var storyViewer: StoryViewerContent?
 
@@ -59,6 +61,7 @@ struct DailyChallengeScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+                    coupleChatCard
                     heroCard
                     if isDayComplete { topicsEntry }
                     rowsList(attentionRows)
@@ -137,13 +140,14 @@ struct DailyChallengeScreen: View {
         .requestedConversation(
             id: requestedConversationID, conversations: conversations, isOpening: isOpeningChat, open: openConversation
         )
+        .onChange(of: isCoupleChatRequested.wrappedValue, initial: true) { _, isRequested in
+            guard isRequested else { return }
+            isCoupleChatRequested.wrappedValue = false
+            openCoupleChat()
+        }
         .navigationDestination(item: $conversationChat) { destination in
             ThreadChatScreen(viewModel: destination.viewModel, onOpenHeader: openStoryAction(destination.story))
-                .analyticsScreen(
-                    destination.viewModel.subject.kind == .game
-                        ? "game_conversation"
-                        : destination.viewModel.subject.kind == .memory ? "memory_comments" : "story_replies"
-                )
+                .analyticsScreen(Self.analyticsScreenName(of: destination.viewModel.subject.kind))
                 .id(destination.id)
                 .fullScreenCover(item: $storyViewer) { content in
                     if let stories {
@@ -331,7 +335,7 @@ extension DailyChallengeScreen {
     }
 
     /// Opens a memory's or a story's chat the same way: read from the phone first, then pushed.
-    private func openConversation(_ conversation: SubjectConversation) {
+    func openConversation(_ conversation: SubjectConversation) {
         if case let .game(game) = conversation.subject {
             chatContext.openGameChat?(game.kind, nil, nil)
             return

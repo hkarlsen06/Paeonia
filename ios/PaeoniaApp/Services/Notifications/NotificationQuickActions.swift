@@ -19,6 +19,8 @@ nonisolated enum PaeoniaNotificationActionID {
 /// notification service extension keeps when it rewrites an alert.
 nonisolated struct NotificationQuickActionPush: Sendable, Equatable {
     let type: String?
+    /// Where the push opens. `chat` is the couple chat, which has no subject id.
+    let route: String?
     let coupleID: UUID?
     let threadID: UUID?
     let messageID: UUID?
@@ -33,6 +35,7 @@ nonisolated struct NotificationQuickActionPush: Sendable, Equatable {
             (userInfo[key] as? String).flatMap(UUID.init(uuidString:))
         }
         type = userInfo["type"] as? String
+        route = userInfo["route"] as? String
         coupleID = uuid("couple_id")
         threadID = uuid("thread_id")
         messageID = uuid("message_id")
@@ -43,8 +46,9 @@ nonisolated struct NotificationQuickActionPush: Sendable, Equatable {
         gameKind = (userInfo["game_kind"] as? String).flatMap(GameKind.init(rawValue:))
     }
 
-    /// The question, memory, story or game discussed in a message push.
+    /// The question, memory, story or game discussed in a message push, or the couple chat.
     var chatSubject: ThreadChatSubject? {
+        if type == "thread_message_sent", route == "chat" { return .couple }
         if let questionID { return .question(questionID) }
         if let memoryID { return .memory(memoryID) }
         if let storyID { return .story(storyID) }

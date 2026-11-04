@@ -39,7 +39,7 @@ nonisolated struct TypingRequest: Encodable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(coupleID, forKey: .coupleID)
         try container.encode(subject.kind.rawValue, forKey: .subjectKind)
-        try container.encode(subject.id, forKey: .subjectID)
+        if let subjectID = subject.serverID { try container.encode(subjectID, forKey: .subjectID) }
         try container.encode(isTyping, forKey: .isTyping)
     }
 }
@@ -82,13 +82,13 @@ nonisolated struct ThreadMessagesRequest: Encodable {
     }
 }
 
-/// Starts the chat of a question, a memory or a story with its first message. Each kind has
+/// Starts the chat of a question, a memory, a story, a game or the couple with its first message. Each kind has
 /// its own server function (`ThreadChatSubject.Kind.createThreadFunction`) and names its
 /// subject with its own argument.
 nonisolated struct CreateThreadMessageRequest: Encodable {
     /// The couple the message was written in. The server refuses it if the user has since
-    /// left that couple, instead of posting it to whichever couple they are in now. Only a
-    /// question's chat names it: a memory and a story belong to one couple already.
+    /// left that couple, instead of posting it to whichever couple they are in now. A memory
+    /// and a story belong to one couple already, so their chats leave it out.
     let coupleID: UUID
     let subject: ThreadChatSubject
     let body: String
@@ -149,6 +149,8 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
             try container.encode(coupleID, forKey: .coupleID)
             try container.encode(source.kind, forKey: .gameKind)
             try container.encodeIfPresent(replyToGameResultSource, forKey: .replyToGameResultSource)
+        case .couple:
+            try container.encode(coupleID, forKey: .coupleID)
         }
         try container.encode(body, forKey: .body)
         try container.encode(mediaAssetIDs, forKey: .mediaAssetIDs)

@@ -58,6 +58,8 @@ private struct DeveloperChatsAttentionHost: View {
             )
         }
         .environment(PaeoniaBannerCenter())
+        // A couple and both people, so the pinned couple chat card shows, still empty.
+        .environment(\.threadChatContext, ThreadChatContext(coupleID: coupleID, participants: model.participants))
         .preferredColorScheme(.dark)
         .task {
             await model.configure(

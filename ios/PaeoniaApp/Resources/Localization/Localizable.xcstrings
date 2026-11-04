@@ -4869,6 +4869,96 @@
         }
       }
     },
+    "chats.coupleChat.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the pinned Just us card on the Chats tab. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just us, your chat with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare oss, chatten din med %@"
+          }
+        }
+      }
+    },
+    "chats.coupleChat.empty" : {
+      "comment" : "Line on the pinned Just us card before anyone has written in the chat. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write to %@ about anything"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv til %@ om hva som helst"
+          }
+        }
+      }
+    },
+    "chats.coupleChat.preview" : {
+      "comment" : "Newest message on the pinned Just us card. %1$@ is who wrote it (the partner's name, or You), %2$@ is the message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "chats.coupleChat.title" : {
+      "comment" : "Name of the couple's own chat, which is not about any question or memory. Shown on the card pinned at the top of the Chats tab and as the title of that chat.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just us"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare oss"
+          }
+        }
+      }
+    },
+    "chats.coupleChat.you" : {
+      "comment" : "Name used for the user's own newest message on the pinned Just us card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
+          }
+        }
+      }
+    },
     "common.actionFailed.message" : {
       "comment" : "Message of a banner when an action, such as starting a game or sending an invite, failed. Shown when the phone is online but the server failed, so it must not blame the connection.",
       "extractionState" : "manual",

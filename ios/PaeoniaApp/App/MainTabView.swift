@@ -163,6 +163,8 @@ struct MainTabView: View {
     @State var focusedDailyQuestionIDs: [UUID] = []
     @State var dailyChatQuestion: DailyChallengeQuestion?
     @State var requestedConversationID: UUID?
+    /// Asks the Questions tab to open the couple chat, for its push and deep link.
+    @State var isCoupleChatRequested = false
     /// What the Questions tab has pushed: the Topics shelf and a topic.
     @State var questionsPath: [QuestionsDestination] = []
     /// The Memories tab's stack, so the Home look-back card can open a memory in it.
