@@ -160,6 +160,7 @@ extension MainTabView {
                 )
                 // Half height leaves the board visible. The keyboard raises the sheet to full height.
                 .presentationDetents([.medium, .large])
+                .presentationContentInteraction(.scrolls)
             }
     }
 
