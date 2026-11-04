@@ -233,6 +233,7 @@ private final class DraftFixture {
                 dailyAnswerMediaCache: nil, memoryMediaCache: nil, profilePhotoCache: nil,
                 guessMySpotCache: cache, guessMySpotPhotos: photos
             ),
+            entityIndex: FakeSpotlightIndex(),
             retryStore: InMemoryLocalPrivacyPurgeRetryStore(), automaticallyRetry: false
         )
     }

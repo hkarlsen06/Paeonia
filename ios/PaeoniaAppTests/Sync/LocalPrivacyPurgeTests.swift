@@ -106,6 +106,7 @@ struct LocalPrivacyPurgeTests {
         let purger = LocalPrivacyPurgeService(
             recordStore: recordStore,
             privateContentPurger: filePurger,
+            entityIndex: FakeSpotlightIndex(),
             retryStore: retryStore,
             automaticallyRetry: false
         )
@@ -143,6 +144,7 @@ struct LocalPrivacyPurgeTests {
         let purger = LocalPrivacyPurgeService(
             recordStore: recordStore,
             privateContentPurger: RecordingPrivateContentPurger(),
+            entityIndex: FakeSpotlightIndex(),
             retryStore: retryStore,
             automaticallyRetry: false
         )
@@ -220,6 +222,7 @@ struct LocalPrivacyPurgeTests {
         let purger = LocalPrivacyPurgeService(
             recordStore: recordStore,
             privateContentPurger: RecordingPrivateContentPurger(),
+            entityIndex: FakeSpotlightIndex(),
             retryStore: FailingLocalPrivacyPurgeRetryStore(),
             automaticallyRetry: false
         )
@@ -348,6 +351,7 @@ private struct LivePurgeFixture {
                 profilePhotoCache: nil,
                 guessMySpotPhotos: guessMySpotPhotos
             ),
+            entityIndex: FakeSpotlightIndex(),
             retryStore: InMemoryLocalPrivacyPurgeRetryStore(),
             automaticallyRetry: false
         )

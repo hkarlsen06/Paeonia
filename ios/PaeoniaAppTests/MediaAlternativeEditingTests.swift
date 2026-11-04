@@ -183,6 +183,7 @@ struct MediaAlternativeEditingTests {
         let purge = LocalPrivacyPurgeService(
             recordStore: SwiftDataLocalPrivacyRecordStore(container: fixture.localStore.container),
             privateContentPurger: MetadataTestPrivateContentPurger(),
+            entityIndex: FakeSpotlightIndex(),
             retryStore: UserDefaultsLocalPrivacyPurgeRetryStore(defaults: defaults), automaticallyRetry: false
         )
         #expect(await purge.purge(ownerUserID: fixture.owner, scope: .departingUser) == .completed)
