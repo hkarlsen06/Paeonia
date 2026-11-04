@@ -113,7 +113,7 @@ Live runs whenever both partners have the game open. Without the partner there, 
 - **The real spot never goes over the relay.** No message type the relay can carry has a field for it, and the placing phone sends nothing about its marker. A test checks the message type.
 - **The reveal.** The guess goes to Convex. The guesser's phone opens the reveal at once and plays it as soon as the server answers with the real spot. The placer's phone plays it when the live feed delivers the guessed round, usually within 300 ms.
 - **Lost connection.** The relay reconnects as in Draw & Guess. The live marker on the placer's screen fades out, and the status falls back to the async wording until the relay is back.
-- **Invite.** The bell at the leading edge of the toolbar, with the shared invite rules in `docs/games-plan.md`.
+- **Invite.** The first item in the `…` menu, with the shared invite rules in `docs/games-plan.md`.
 
 ## Async
 
@@ -137,7 +137,7 @@ Placing a marker counts toward the couple's streak through the `game_turn_comple
 | `game_turn_ready` | The partner locked in a marker. | Your turn in Consensio / Din tur i Consensio | Make your guess. / Gjør gjetningen din. |
 | `game_turn_ready`, step `guessed` | The partner guessed your marker and then placed one for you within 5 minutes. | [Name] guessed and left you one to guess / [Name] har gjettet og lagt igjen en til deg | See how close they got. / Se hvor nær gjetningen var. |
 | `game_result` | The partner guessed your marker and placed nothing for 5 minutes. Goes to the placer. | [Name] made a guess / [Name] har gjettet | See how close they got. / Se hvor nær gjetningen var. |
-| `game_invite` | Invite bell. | [Name] wants to play Consensio with you / [Name] vil spille Consensio med deg | Shared invite body. |
+| `game_invite` | Invite to play. | [Name] wants to play Consensio with you / [Name] vil spille Consensio med deg | Shared invite body. |
 | `game_turn_reminder` | The turn waited 72 hours. Once per turn. | Your turn in Consensio / Din tur i Consensio | Shared reminder body. |
 
 - A guess queues the result push 5 minutes ahead (`enqueueGamePush` gets an optional delay, a small addition to the shared helper). A guesser almost always places the next marker in the same sitting, so the placer usually gets one push, not two. When the next placement comes first, it sends the `guessed` step and the drain drops the waiting result push.
@@ -163,7 +163,7 @@ Copy keys start with `consensio.`, so their Swift symbols start with `consensio`
 
 - One screen, `ConsensioScreen`, opened from the Games tab and from the pushes. It shows one phase at a time, picked by `ConsensioResolver` from the server's state, the queued moves, and what this person has seen. The view body holds no rules.
 - Look. `.paeoniaScreenBackground(.paeoniaBackgroundSecondary)`, `.preferredColorScheme(.dark)`, inline title "Consensio", dark toolbar.
-- Toolbar trailing. The score capsule with `heart.fill` and the shared total, which opens "What we know" (VoiceOver: "What we know, 142 points together"). Then a `…` menu with "What we know" and "How to play". The invite bell sits at the leading edge while the partner is away.
+- Toolbar trailing. The score capsule with `heart.fill` and the shared total, which opens "What we know" (VoiceOver: "What we know, 142 points together"). Then a `…` menu with "What we know" and "How to play", and above them the invite while the partner is away.
 - Phase change. Cross-fade plus a 12 pt rise over `PaeoniaMotion.meaningfulMoment`. Reduce Motion: cross-fade over `motionFast`.
 - The pinned bottom uses `paeoniaBottomBar`, capped with `.paeoniaReadableWidth()`. Every phase uses `.paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)`.
 - Avatars are `PaeoniaProfilePhotoAvatar`, `.paeoniaPartnerOne` for me and `.paeoniaPartnerTwo` for the partner.
@@ -491,7 +491,7 @@ Relationship cleanup deletes the three tables with the other game rows.
 | `consensio-place` | Placing, with a topic chosen |
 | `consensio-wait-choosing` | Waiting while the partner picks a topic |
 | `consensio-wait-live` | Waiting for the guess, with the partner's live marker moving |
-| `consensio-wait-later` | Waiting for the guess, partner away, invite bell |
+| `consensio-wait-later` | Waiting for the guess, partner away, invite in the menu |
 | `consensio-guess` | Guessing |
 | `consensio-reveal-spot-on` | Reveal, 2% off, guesser side |
 | `consensio-reveal-close` | Reveal, 14% off, guesser side |

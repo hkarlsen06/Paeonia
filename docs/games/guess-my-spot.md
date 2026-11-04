@@ -132,7 +132,7 @@ Live runs whenever both partners have the game open. Without the partner there, 
 - **The real spot never goes over the relay.** No message has a field for a pin or a spot, and the preview is re-encoded without the photo's metadata. A test checks the message fields and that the preview has no location.
 - **The reveal.** The guess goes to Convex. The guesser's phone opens the reveal at once and plays it as soon as the server answers with the real spot. The sender's phone plays it when the live feed delivers the guessed round.
 - **Lost connection.** The relay reconnects as in Draw & Guess. The waiting map stays where the partner's map last was and can be moved again, and the status falls back to the async wording.
-- **Invite.** The bell at the leading edge of the toolbar, with the shared invite rules.
+- **Invite.** The first item in the `…` menu, with the shared invite rules.
 
 ## Async
 
@@ -156,7 +156,7 @@ Sending a photo counts toward the couple's streak through `game_turn_completed`.
 | `game_turn_ready` | The partner sent a photo. | Your turn in Guess my spot / Din tur i Gjett hvor | Guess where the photo was taken. / Gjett hvor bildet er tatt. |
 | `game_turn_ready`, step `guessed` | The partner guessed your photo and sent one back within 1 minute. | [Name] guessed and sent you a photo / [Name] har gjettet og sendt deg et bilde | See how close they got. / Se hvor nær gjetningen var. |
 | `game_result` | The partner guessed your photo and sent nothing for 1 minute. | [Name] made a guess / [Name] har gjettet | See how close they got. / Se hvor nær gjetningen var. |
-| `game_invite` | Invite bell. | [Name] wants to play Guess my spot with you / [Name] vil spille Gjett hvor med deg | Shared invite body. |
+| `game_invite` | Invite to play. | [Name] wants to play Guess my spot with you / [Name] vil spille Gjett hvor med deg | Shared invite body. |
 | `game_turn_reminder` | The turn waited 72 hours. Once per turn. | Your turn in Guess my spot / Din tur i Gjett hvor | Shared reminder body. |
 
 - Never show the photo, a place or the points. The payload holds only ids and the deep link `paeonia://games/guess-my-spot`.
@@ -192,7 +192,7 @@ Copy keys start with `guessMySpot.`, so their Swift symbols start with `guessMyS
 - One screen, `GuessMySpotScreen`, opened from the Games tab and from the pushes. It shows one phase at a time, picked by `GuessMySpotResolver` from the server's state, the queued moves, and what this person has seen.
 - Look. `.paeoniaScreenBackground(.paeoniaBackgroundSecondary)`, `.preferredColorScheme(.dark)`, inline title "Guess my spot", dark toolbar.
 - Toolbar title. On the reveal, the partner's 24 pt portrait and name replace the title, with the shared presence ring while they have the game open. The other screens show their presence in the live row.
-- Toolbar trailing. The score capsule, which opens "Our guesses". Together: `heart.fill` and the shared total. Against each other: each partner's avatar with their own points. Then a `…` menu with "Our guesses" and "How to play". The invite bell sits at the leading edge while the partner is away.
+- Toolbar trailing. The score capsule, which opens "Our guesses". Together: `heart.fill` and the shared total. Against each other: each partner's avatar with their own points. From 100,000 a total rounds down to thousands ("216k"), so the capsule stays on one line. Then a `…` menu with "Our guesses" and "How to play", and above them the invite while the partner is away.
 - Phase change. Cross-fade plus a 12 pt rise over `PaeoniaMotion.meaningfulMoment`. Reduce Motion: cross-fade.
 - A photo picked but not sent lives in the view model only. Leaving the screen keeps it until the app closes, so a look at "Our guesses" loses nothing.
 
@@ -236,7 +236,7 @@ Layout, top to bottom.
 
 1. Title "Pick a photo" (`title`), subtitle "Somewhere you've been. [Name] guesses where." The first turn of a new game says "Send a photo from somewhere you've been. [Name] guesses where it was taken." instead.
 2. The inline picker fills the rest of the screen, with its own albums at the top. Its bottom bar is hidden, and one tap picks a photo.
-3. The invite bell sits at the leading edge of the toolbar while the partner is away.
+3. The invite sits in the `…` menu while the partner is away.
 
 Tapping a photo plays `selection()` and `tap`, reads it, and opens the check. While the photo loads, a spinner covers the picker after 0.3 s.
 
@@ -521,7 +521,7 @@ Errors follow Consensio: `42501` for access, `23514` for rules ("this round alre
 | `guess-my-spot-check-missing` | The check, with a photo that had none |
 | `guess-my-spot-wait-choosing` | Waiting while the partner picks a photo, then their blurred photo arriving |
 | `guess-my-spot-wait-live` | Waiting for the guess, following the partner's map as it moves |
-| `guess-my-spot-wait-later` | Waiting for the guess, partner away, invite bell |
+| `guess-my-spot-wait-later` | Waiting for the guess, partner away, totals in the hundreds of thousands, invite in the menu |
 | `guess-my-spot-guess` | Guessing |
 | `guess-my-spot-reveal-spot-on` | Reveal, about 460 m off, guesser side, from the guess screen |
 | `guess-my-spot-reveal-close` | Reveal, about 110 km off, guesser side, from the guess screen |

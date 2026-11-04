@@ -255,7 +255,7 @@ The page is the heart of the game, so it gets the care a book would.
 ### 3. Waiting while the partner writes
 
 - The page stays. Under it, the partner's live draft when they write live.
-- Bottom, one line of status: "[Name] is writing" with three breathing dots while the live draft is moving; "[Name] is here" in the game; "Waiting for [Name]" with "We'll tell you when it's your turn." when away, plus the invite bell at the leading edge of the toolbar.
+- Bottom, one line of status: "[Name] is writing" with three breathing dots while the live draft is moving; "[Name] is here" in the game; "Waiting for [Name]" with "We'll tell you when it's your turn." when away, plus the invite in the `…` menu.
 - When the partner's line lands and the turn is mine, the composer rises in with `cardReveal` and the dare capsule if there is one. A watched line needs no arrival animation, so the composer can open as soon as the server passes the turn. An unseen live submission keeps the status row until its animation finishes, through `StoryChainViewModel.bottomPhase`. The page moves with the new bottom using `meaningfulMoment`. The composer starts to rise 0.12 s after the status row starts to fade.
 
 | Key | English | Norwegian |

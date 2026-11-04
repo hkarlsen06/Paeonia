@@ -194,14 +194,14 @@ Layout, top to bottom. At normal text sizes the whole phase is meant to fit abov
 3. The trail so far, when round 3 or later: the two rounds before the last pair, in a compact column above it, at `caption` size in `.paeoniaTextTertiary`. The plus signs line up in the middle, with my word right-aligned before it and the partner's left-aligned after it. "Our melds" keeps the whole trail.
 4. The field. One large centered text field in `PaeoniaTypography.title`, `radius16`, `.paeoniaSurfaceSecondary`, 64 pt tall, `autocorrectionDisabled`, no autocapitalization, `submitLabel(.done)`. It takes focus when the phase opens. Placeholder "Type a word".
 5. Under the field, one line: a validation message (`exclamationmark.circle`, `caption`, `.paeoniaErrorText`) or, in round 1, the quiet "Surprise me" button (`dice`).
-6. Pinned bottom, above the keyboard while it is open: primary "Lock in" (`lock.fill`). The invite bell sits in the toolbar while the partner is away. Lock in is disabled while the field is empty or a message shows. Return only closes the keyboard, because a locked word is final and a stray tap on Done must not lock it in.
+6. Pinned bottom, above the keyboard while it is open: primary "Lock in" (`lock.fill`). The invite sits in the `…` menu while the partner is away. Lock in is disabled while the field is empty or a message shows. Return only closes the keyboard, because a locked word is final and a stray tap on Done must not lock it in.
 
 Partner status. A 24 pt avatar and one line:
 
 - "[Name] locked in" with `lock.fill` in `.paeoniaAccentPrimary`, when the server says so. It arrives with `cardReveal`. The portrait ring shows presence independently of the locked word. The shared turn cue taps the phone, also when the partner locked in before this screen opened its write phase. VoiceOver announces it.
 - "[Name] is typing" with the shared three dots that brighten in turn. Reduce Motion keeps the dots still.
 - "[Name] is here" when the partner has the game open but isn't typing.
-- "[Name] will answer later" in `.paeoniaTextTertiary` when the partner is away. The invite bell shows in the toolbar until the partner arrives.
+- "[Name] will answer later" in `.paeoniaTextTertiary` when the partner is away. The invite shows in the `…` menu until the partner arrives.
 
 Validation. Too long, too many words, no letter, and repeats show inline as the person types, with an announcement. Lock in on an invalid word fires `validationError()`.
 
@@ -240,7 +240,7 @@ Layout, centered.
 3. Title. "[Name] is typing" while live typing, "[Name] is here" while present, and "Waiting for [Name]" while away.
 4. Hint. "We'll show both words at the same time." When the partner is away: "We'll tell you when [Name] locks in."
 5. The offline line when the lock-in is still on the phone.
-6. Toolbar, only while the partner is not in the game: the invite bell at the leading edge of the toolbar.
+6. Toolbar, only while the partner is not in the game: the invite in the `…` menu.
 
 When the partner locks in while this screen is open, the reveal starts at once.
 
