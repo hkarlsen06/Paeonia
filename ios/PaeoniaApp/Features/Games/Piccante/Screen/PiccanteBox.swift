@@ -11,6 +11,18 @@ struct PiccanteBox: View {
     let select: (Int) -> Void
     var canSelect = false
     var showsOwnChili = true
+    var showsSniff = true
+    var revealsBurn: Bool?
+    var burnShake = 0
+    var currentUserID: UUID?
+    var selectable: ((Int) -> Bool)?
+    var tileIdentifierPrefix = "piccante.tile"
+
+    private var lastPartnerBite: PiccanteBite? {
+        guard let currentUserID, selected == nil, game.phase == .biting else { return nil }
+        return eaten.last { $0.userID != currentUserID }
+    }
+    private var burnIsVisible: Bool { revealsBurn ?? revealsChilis }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var size: Int { game.size ?? 3 }
@@ -26,22 +38,25 @@ struct PiccanteBox: View {
                     select(tile)
                 } label: {
                     PiccanteTile(
-                        variety: variety(tile),
+                        variety: PiccanteRules.variety(gameID: game.id, number: game.gameNumber, tile: tile),
                         isEaten: eaten.contains { $0.tile == tile },
                         chilis: revealsChilis
                             ? game.chilis.filter { $0.tile == tile }.map { player($0.userID) } : [],
-                        isOwnChili: showsOwnChili && game.myChili == tile,
+                        isOwnChili: showsOwnChili && game.myChili == tile && (game.phase != .finished || revealsChilis),
                         isHiding: game.phase == .hiding && selected == tile,
-                        isOpening: !revealsChilis && game.phase == .finished && game.bites.last?.tile == tile,
-                        isBurned: revealsChilis && game.phase == .finished && game.bites.last?.tile == tile,
+                        isOpening: !burnIsVisible && game.phase == .finished && game.bites.last?.tile == tile,
+                        isBurned: burnIsVisible && game.phase == .finished && game.bites.last?.tile == tile,
                         isSelected: selected == tile, isPartnerSelected: partnerSelected == tile,
-                        isPending: pendingTile == tile)
+                        isPending: pendingTile == tile,
+                        sniff: showsSniff && game.mySniff?.tile == tile ? game.mySniff : nil,
+                        lastBiter: lastPartnerBite?.tile == tile ? lastPartnerBite.map { player($0.userID) } : nil,
+                        burnShake: burnShake)
                 }
                 .buttonStyle(PiccanteTileButtonStyle())
-                .disabled(!canSelect || eaten.contains { $0.tile == tile })
+                .disabled(!canSelect || eaten.contains { $0.tile == tile } || selectable?(tile) == false)
                 .accessibilityLabel(label(tile))
                 .accessibilityAddTraits(selected == tile ? [.isSelected] : [])
-                .accessibilityIdentifier("piccante.tile.\(tile)")
+                .accessibilityIdentifier("\(tileIdentifierPrefix).\(tile)")
             }
         }
         .padding(PaeoniaSpacing.space12)
@@ -62,24 +77,25 @@ struct PiccanteBox: View {
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: partnerSelected)
     }
 
-    private func variety(_ tile: Int) -> Int {
-        let offset = PiccanteRules.flavorIndex(gameID: game.id, number: game.gameNumber, tile: 0)
-        // Stepping four through nine varieties uses them all, with distinct neighbors at widths 3, 4 and 5.
-        return (offset + tile * 4) % 9
-    }
-
     func label(_ tile: Int) -> String {
         var words = [String(localized: .piccanteTilePosition(tile / size + 1, tile % size + 1))]
         if eaten.contains(where: { $0.tile == tile }) {
             if game.phase == .finished && game.bites.last?.tile == tile {
-                words.append(String(localized: revealsChilis
+                words.append(String(localized: burnIsVisible
                     ? .piccanteTileBurned : .piccanteOpeningChocolate))
             } else {
-                let flavor = String(
-                    localized: PiccanteRules.flavor(
-                        gameID: game.id, number: game.gameNumber, tile: tile))
-                words.append(String(localized: .piccanteTileEaten(flavor)))
+                words.append(String(localized: .piccanteTileEaten))
             }
+        }
+        if !eaten.contains(where: { $0.tile == tile }) {
+            let variety = PiccanteRules.variety(gameID: game.id, number: game.gameNumber, tile: tile)
+            words.append(String(localized: variety.name))
+        }
+        if let lastPartnerBite, lastPartnerBite.tile == tile {
+            words.append(String(localized: .piccantePartnerLastBite(player(lastPartnerBite.userID).name)))
+        }
+        if showsSniff, let sniff = game.mySniff, sniff.tile == tile, !eaten.contains(where: { $0.tile == tile }) {
+            words.append(String(localized: sniff.hasChili ? .piccanteSniffMarkedHot : .piccanteSniffMarkedSafe))
         }
         if showsOwnChili && game.myChili == tile { words.append(String(localized: .piccanteYourChili)) }
         if revealsChilis {

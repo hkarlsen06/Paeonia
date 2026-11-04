@@ -17,6 +17,16 @@ extension PiccanteViewModel {
                 initial: BoardPieceStyle.initial(of: partnerName), owner: .two))
     }
 
+    var visibleScore: BoardGameScore? {
+        guard let score, !score.isEmpty, game?.phase != .finished || revealSettled else { return nil }
+        return score
+    }
+
+    var showsBiteHint: Bool {
+        guard let game else { return false }
+        return game.gameNumber == 1 && !game.bites.contains { $0.userID == userID }
+    }
+
     var score: BoardGameScore? {
         guard let game else { return nil }
         return playStyle == .against
@@ -26,6 +36,7 @@ extension PiccanteViewModel {
 
     var turnLabel: BoardGameTurnLabel {
         guard let game else { return .draw }
+        if game.phase == .choosing { return .draw }
         if game.phase == .finished {
             guard revealSettled else { return .draw }
             return game.winnerUserID == userID ? .youWon : .partnerWon

@@ -45,6 +45,34 @@ struct GameChatPreviewTests {
                 == .board(.init(kind: .connectFour, moves: winningMoves, me: .one)))
     }
 
+    @Test func unseenPiccanteEndingStaysOutOfPreviewsIncludingDuringRematch() async throws {
+        let finished = DeveloperPiccanteFixture.state(for: .piccanteResult)
+        let end = try #require(finished.game)
+        let cache = InMemoryPiccanteCache(state: finished)
+        var dependencies = DeveloperGamesScenarioFactory.dependencies(for: .piccanteResult)
+        dependencies.piccanteCache = cache
+        let loader = GameChatPreviewLoader(dependencies: dependencies)
+        func check() async throws {
+            let preview = await loader.load(for: .piccante, userID: finished.userID)
+            guard case .piccante(let box) = preview else { Issue.record("Expected a box"); return }
+            #expect(box.bites == Array(end.bites.dropLast()))
+            #expect(box.chilis.isEmpty)
+            #expect(box.myChili == nil)
+            #expect(box.phase != .finished)
+            #expect(box.winnerUserID == nil)
+        }
+        try await check()
+        var rematch = DeveloperPiccanteFixture.state(for: .piccanteChoose)
+        rematch.game?.gameNumber = 2
+        rematch.game?.version = end.version + 1
+        rematch.unseenResult = end
+        await cache.saveState(rematch, ownerUserID: finished.userID)
+        try await check()
+        rematch.unseenResult = nil
+        await cache.saveState(rematch, ownerUserID: finished.userID)
+        #expect(await loader.load(for: .piccante, userID: finished.userID) == .piccante(end))
+    }
+
     private func loader(_ state: RemoteExquisiteCorpseState) -> GameChatPreviewLoader {
         var dependencies = DeveloperGamesScenarioFactory.dependencies(for: .exquisiteCorpseReveal)
         dependencies.exquisiteCorpseCache = InMemoryExquisiteCorpseCache(state: state, ownerUserID: me)

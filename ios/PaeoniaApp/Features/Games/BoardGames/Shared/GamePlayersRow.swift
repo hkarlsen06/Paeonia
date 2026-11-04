@@ -12,6 +12,7 @@ struct GamePlayersRow: View {
 
     @Environment(\.showsBoardOwnerSymbols) private var showsOwnerSymbols
     @ScaledMetric(relativeTo: .caption) private var ownerSymbolSide: CGFloat = 10
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
@@ -30,6 +31,7 @@ struct GamePlayersRow: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: turn)
     }
 
     private var stacked: some View {
@@ -43,10 +45,11 @@ struct GamePlayersRow: View {
         let active = turn.isActive(forMe: isMe)
         return VStack(spacing: PaeoniaSpacing.space8) {
             if showsMarks {
-                BoardGamePlayerAvatar(player: player, isActive: false, isHere: !isMe && partnerIsHere, size: 48)
+                BoardGamePlayerAvatar(player: player, isActive: active, isHere: !isMe && partnerIsHere, size: 48)
             } else {
                 BoardGameAvatar(player: player, size: 48)
                     .gamePresenceRing(!isMe && partnerIsHere)
+                    .scaleEffect(active ? 1.1 : 1)
             }
             HStack(spacing: PaeoniaSpacing.space4) {
                 if showsMarks && showsOwnerSymbols {

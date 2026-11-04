@@ -92,3 +92,19 @@ nonisolated struct RemotePiccanteState: Codable, Equatable, Sendable {
         return (game?.version ?? 0) < (other.game?.version ?? 0)
     }
 }
+
+nonisolated extension RemotePiccanteGame {
+    func preview(hidingResult: Bool) -> Self {
+        guard phase == .finished, hidingResult else { return self }
+        var box = self
+        box.phase = .biting
+        box.bites = Array(bites.dropLast())
+        box.chilis = []
+        box.myChili = nil
+        box.myNote = nil
+        box.mySniff = nil
+        box.winnerUserID = nil
+        box.loserUserID = nil
+        return box
+    }
+}

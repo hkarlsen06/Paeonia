@@ -30,7 +30,7 @@ struct PiccantePendingOperationHandler: PendingSyncOperationHandling {
         } catch let error as PaeoniaConvexError {
             let stale = BoardGameServerRejection.isStale(error)
             if stale, move.action == .rematch {
-                return await readAfterRematch(operation)
+                return await readAfterRematch(operation, move: move)
             }
             if !stale {
                 guard await GameServerRejection.shouldDrop(
@@ -49,9 +49,18 @@ struct PiccantePendingOperationHandler: PendingSyncOperationHandling {
         }
     }
 
-    private func readAfterRematch(_ operation: PendingSyncOperationSnapshot) async -> PendingSyncOperationSendResult {
+    private func readAfterRematch(_ operation: PendingSyncOperationSnapshot, move: PiccanteMove) async
+        -> PendingSyncOperationSendResult
+    {
         await readStateAfterAcceptedMove(operation) {
-            let state = try await gateway.loadPiccante()
+            var state = try await gateway.loadPiccante()
+            if let current = state.game, current.gameNumber > move.gameNumber {
+                let seen = PiccanteMove(
+                    action: .seen, gameID: move.gameID, gameNumber: move.gameNumber,
+                    expectedVersion: current.version)
+                let seenOperation = await MainActor.run { SyncClientOperationFactory.shared.makeOperation() }
+                state = try await gateway.sendPiccante(seen, operation: seenOperation)
+            }
             await cache.saveState(state, ownerUserID: operation.ownerUserID)
             LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
         }

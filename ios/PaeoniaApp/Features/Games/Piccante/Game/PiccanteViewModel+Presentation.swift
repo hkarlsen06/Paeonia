@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 import Observation
 
 extension PiccanteViewModel {
@@ -8,34 +8,54 @@ extension PiccanteViewModel {
         let ownLastBite = game.bites.lastIndex { $0.userID == userID }.map { $0 + 1 } ?? 0
         let fallback = game.phase == .finished ? min(ownLastBite, max(0, game.bites.count - 1)) : ownLastBite
         let count = shown?.number == number ? min(shown?.bites ?? 0, game.bites.count) : fallback
-        shownBites = count
-        revealSettled = game.phase == .finished && count == game.bites.count
+        shownBites = reduceMotion ? game.bites.count : count
+        revealSettled = game.phase == .finished && shownBites == game.bites.count
+        noteRevealed = revealSettled
         replayTask = Task { [weak self] in
             guard let self else { return }
-            for index in count..<game.bites.count {
-                guard !Task.isCancelled, self.game?.gameNumber == number else { break }
-                if !reduceMotion { try? await Task.sleep(for: .seconds(0.32)) }
-                guard !Task.isCancelled else { break }
-                shownBites = index + 1
-                GameSound.piccanteBite.play(volume: 0.55)
-                PaeoniaHaptics.selection()
-                if game.phase == .finished && index == game.bites.count - 1 {
-                    if !reduceMotion { try? await Task.sleep(for: .seconds(0.5)) }
-                    guard !Task.isCancelled else { break }
-                    revealSettled = true
-                    PaeoniaHaptics.answerRevealed()
-                    GameSound.piccanteBurn.play(volume: 0.55)
-                }
-                if let userID {
-                    await dependencies.piccanteCache.saveShown(
-                        .init(number: number, bites: shownBites), ownerUserID: userID)
-                }
-            }
-            if game.bites.isEmpty { revealSettled = false }
+            await replayBites(in: game, from: count)
+            guard !Task.isCancelled else { return }
             replayTask = nil
-            if self.game?.bites.count != game.bites.count { await reload() }
+            if self.game?.gameNumber != number || self.game?.bites.count != game.bites.count { await reload() }
         }
     }
+    private func replayBites(in game: RemotePiccanteGame, from count: Int) async {
+        if !reduceMotion {
+            for index in count..<game.bites.count {
+                try? await Task.sleep(for: .seconds(0.32))
+                guard !Task.isCancelled, self.game?.gameNumber == game.gameNumber else { return }
+                shownBites = index + 1
+                if game.bites[index].userID != userID {
+                    GameSound.piccanteBite.play(volume: 0.55)
+                    PaeoniaHaptics.selection()
+                }
+                if game.phase == .finished && index == game.bites.count - 1 { await revealBurn() }
+                guard !Task.isCancelled else { return }
+                await saveShown(number: game.gameNumber)
+            }
+        } else {
+            await saveShown(number: game.gameNumber)
+        }
+    }
+
+    private func revealBurn() async {
+        burnShake += 1
+        PaeoniaHaptics.answerRevealed()
+        GameSound.piccanteBurn.play(volume: 0.55)
+        try? await Task.sleep(for: .seconds(0.4))
+        guard !Task.isCancelled else { return }
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { revealSettled = true }
+        try? await Task.sleep(for: .seconds(0.24))
+        guard !Task.isCancelled else { return }
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.28)) { noteRevealed = true }
+    }
+
+    private func saveShown(number: Int) async {
+        if let userID {
+            await dependencies.piccanteCache.saveShown(.init(number: number, bites: shownBites), ownerUserID: userID)
+        }
+    }
+
     func queueSeenOnExit(_ game: RemotePiccanteGame, userID: UUID) {
         let dependencies = dependencies
         let sync = sync
@@ -94,6 +114,12 @@ extension PiccanteViewModel {
         partnerSelected = message.selection.flatMap { tile in
             tile >= 0 && tile < (game.size ?? 0) * (game.size ?? 0) && !game.bites.contains(where: { $0.tile == tile })
                 ? tile : nil
+        }
+        if partnerSelected != lastHeartbeatLift {
+            if partnerSelected != nil, partnerSelected == game.myChili {
+                PaeoniaHaptics.revealBuildUp(intensity: 0.35)
+            }
+            lastHeartbeatLift = partnerSelected
         }
     }
     func react(_ reaction: GameLiveReaction) {

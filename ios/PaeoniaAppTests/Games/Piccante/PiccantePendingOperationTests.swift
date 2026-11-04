@@ -56,6 +56,45 @@ struct PiccantePendingOperationTests {
         #expect(model.game?.version == game.version + 2)
     }
 
+    @Test func losingRematchRaceMarksThePreviousResultSeenWithoutConsumingAVersion() async throws {
+        let finished = DeveloperPiccanteFixture.state(for: .piccanteResult)
+        let old = try #require(finished.game)
+        var server = finished
+        server.game?.gameNumber += 1
+        server.game?.version += 1
+        server.game?.phase = .choosing
+        server.game?.turnUserID = nil
+        let gateway = RematchRacePiccanteGateway(state: server)
+        let cache = InMemoryPiccanteCache(state: finished)
+        let rematch = PiccanteMove(action: .rematch, gameID: old.id, gameNumber: old.gameNumber,
+                                  expectedVersion: old.version)
+        let operation = try snapshot(.piccanteRematch, rematch, owner: server.userID)
+        let handler = PiccantePendingOperationHandler(operationKind: .piccanteRematch, gateway: gateway, cache: cache)
+        #expect(try await handler.send(operation, context: syncContext(pending)) == .succeeded)
+        let saved = await cache.document(ownerUserID: server.userID).state
+        #expect(saved?.unseenResult == nil)
+        #expect(saved?.game?.version == server.game?.version)
+        #expect(saved?.game?.gameNumber == old.gameNumber + 1)
+        #expect(await gateway.seenNumbers == [old.gameNumber])
+        #expect(await cache.takeRefused(ownerUserID: server.userID).isEmpty)
+    }
+
+    @Test func refusedHideRestoresSelectionAfterResolvingAuthoritativeState() async throws {
+        let state = DeveloperPiccanteFixture.state(for: .piccanteHide)
+        let game = try #require(state.game)
+        let cache = InMemoryPiccanteCache(state: state)
+        await cache.refuse(PiccanteMove(action: .hide, gameID: game.id, gameNumber: game.gameNumber,
+            expectedVersion: game.version, tile: 5, note: "A kiss"), ownerUserID: state.userID)
+        var dependencies = GamesTestEnvironment(state: nil).dependencies()
+        dependencies.piccanteCache = cache
+        let model = PiccanteViewModel(dependencies: dependencies)
+        model.configure(participants: GameParticipants(currentUserID: state.userID, coupleID: state.coupleID,
+                                                       partnerName: "Robin"))
+        await model.reload()
+        #expect(model.selected == 5)
+        #expect(model.note == "A kiss")
+    }
+
     @Test(arguments: [PiccanteAction.bite, .rematch])
     func staleRefusalRefreshesImmediately(action: PiccanteAction) async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -89,9 +128,28 @@ private struct RejectingPiccanteGateway: PiccanteGateway {
     func loadPiccante() throws -> RemotePiccanteState { state }
     func ensurePiccante() throws -> RemotePiccanteState { state }
     func sendPiccante(_ move: PiccanteMove, operation: SyncClientOperation) throws -> RemotePiccanteState {
+        if move.action == .seen { return state }
         throw PaeoniaConvexError.server(code: "40001", message: "the game has changed")
     }
     func loadPiccanteResult(number: Int) throws -> RemotePiccanteGame {
         try #require(state.game)
     }
 }
+
+private actor RematchRacePiccanteGateway {
+    var state: RemotePiccanteState
+    var seenNumbers: [Int] = []
+    init(state: RemotePiccanteState) { self.state = state }
+    func loadPiccante() -> RemotePiccanteState { state }
+    func ensurePiccante() -> RemotePiccanteState { state }
+    func sendPiccante(_ move: PiccanteMove, operation: SyncClientOperation) throws -> RemotePiccanteState {
+        guard move.action == .seen else {
+            throw PaeoniaConvexError.server(code: "40001", message: "the game has changed")
+        }
+        seenNumbers.append(move.gameNumber)
+        if state.unseenResult?.gameNumber == move.gameNumber { state.unseenResult = nil }
+        return state
+    }
+    func loadPiccanteResult(number: Int) throws -> RemotePiccanteGame { try #require(state.game) }
+}
+extension RematchRacePiccanteGateway: PiccanteGateway {}

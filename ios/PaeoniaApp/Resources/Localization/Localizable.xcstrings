@@ -31260,7 +31260,7 @@
       }
     },
     "piccante.bite.hint" : {
-      "comment" : "Piccante game. bite hint.",
+      "comment" : "Instruction before the first bite.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -31272,7 +31272,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Løft en bit, og smak. Din egen chili brenner også."
+            "value" : "Løft en sjokoladebit, og ta en bit. Din egen chili brenner også."
           }
         }
       }
@@ -31327,6 +31327,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld × %2$lld sjokoladebiter"
+          }
+        }
+      }
+    },
+    "piccante.chat.unseen" : {
+      "comment" : "Game chat keeps the ending hidden until the viewer opens Piccante.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Piccante to reveal this box."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Piccante for å se hva som skjedde."
           }
         }
       }
@@ -31417,186 +31435,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esken er åpnet"
-          }
-        }
-      }
-    },
-    "piccante.flavor.caramel" : {
-      "comment" : "Piccante game. flavor caramel.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salted caramel"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salt karamell"
-          }
-        }
-      }
-    },
-    "piccante.flavor.coconut" : {
-      "comment" : "Piccante game. flavor coconut.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Coconut cream"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kokoskrem"
-          }
-        }
-      }
-    },
-    "piccante.flavor.coffee" : {
-      "comment" : "Piccante game. flavor coffee.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Coffee ganache"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kaffekrem"
-          }
-        }
-      }
-    },
-    "piccante.flavor.hazelnut" : {
-      "comment" : "Piccante game. flavor hazelnut.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Roasted hazelnut"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ristet hasselnøtt"
-          }
-        }
-      }
-    },
-    "piccante.flavor.marzipan" : {
-      "comment" : "Piccante game. flavor marzipan.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marzipan"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marsipan"
-          }
-        }
-      }
-    },
-    "piccante.flavor.mint" : {
-      "comment" : "Piccante game. flavor mint.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Peppermint"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Peppermynte"
-          }
-        }
-      }
-    },
-    "piccante.flavor.nougat" : {
-      "comment" : "Piccante game. flavor nougat.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Soft nougat"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Myk nougat"
-          }
-        }
-      }
-    },
-    "piccante.flavor.orange" : {
-      "comment" : "Piccante game. flavor orange.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Orange truffle"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Appelsintrøffel"
-          }
-        }
-      }
-    },
-    "piccante.flavor.raspberry" : {
-      "comment" : "Piccante game. flavor raspberry.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raspberry cream"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bringebærkrem"
-          }
-        }
-      }
-    },
-    "piccante.flavor.vanilla" : {
-      "comment" : "Piccante game. flavor vanilla.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vanilla cream"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vaniljekrem"
           }
         }
       }
@@ -31781,24 +31619,6 @@
         }
       }
     },
-    "piccante.note.forPartner" : {
-      "comment" : "Heading on the winning note when you won. It is addressed to the partner who lost.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Til %@"
-          }
-        }
-      }
-    },
     "piccante.note.forYou" : {
       "comment" : "Heading on the winning note when you lost. This note applies to you.",
       "extractionState" : "manual",
@@ -31835,92 +31655,20 @@
         }
       }
     },
-    "piccante.note.fromYou" : {
-      "comment" : "Signature on the winning note that you wrote to your partner.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "From you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fra deg"
-          }
-        }
-      }
-    },
-    "piccante.note.hint" : {
-      "comment" : "Piccante game. note hint.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One line, up to 60 characters"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Én linje, opptil 60 tegn"
-          }
-        }
-      }
-    },
-    "piccante.note.ifYouWon" : {
-      "comment" : "Heading on your unused note after you lost the game.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "If you had won"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hvis du hadde vunnet"
-          }
-        }
-      }
-    },
     "piccante.note.placeholder" : {
-      "comment" : "Piccante game. note placeholder.",
+      "comment" : "Optional note field. The argument is the partner name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leave a note, if you like"
+            "value" : "What does %@ owe you if they lose?"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Legg ved en lapp om du vil"
-          }
-        }
-      }
-    },
-    "piccante.note.writtenByYou" : {
-      "comment" : "Signature on your note for your partner. The placeholder is the private partner name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your note for %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Din lapp til %@"
+            "value" : "Hva skylder %@ deg hvis du vinner?"
           }
         }
       }
@@ -31975,6 +31723,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du bet i din egen chili"
+          }
+        }
+      }
+    },
+    "piccante.partner.lastBite" : {
+      "comment" : "VoiceOver on the latest wrapper eaten by the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s last bite"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den siste biten til %@"
           }
         }
       }
@@ -32051,6 +31817,24 @@
         }
       }
     },
+    "piccante.sameOne.headline" : {
+      "comment" : "Shared result headline when both chilis are in the same chocolate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both picked the same one!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere valgte den samme sjokoladebiten!"
+          }
+        }
+      }
+    },
     "piccante.selected" : {
       "comment" : "Piccante game. selected.",
       "extractionState" : "manual",
@@ -32088,7 +31872,7 @@
       }
     },
     "piccante.sniff.action" : {
-      "comment" : "Piccante game. sniff action.",
+      "comment" : "Button to privately smell one chocolate.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -32100,7 +31884,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lukt"
+            "value" : "Lukt på en"
           }
         }
       }
@@ -32155,6 +31939,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rad %1$lld, kolonne %2$lld skjuler en chili."
+          }
+        }
+      }
+    },
+    "piccante.sniff.markedHot" : {
+      "comment" : "Private VoiceOver mark on a chocolate hiding a chili.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sniff found a chili"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du luktet en chili"
+          }
+        }
+      }
+    },
+    "piccante.sniff.markedSafe" : {
+      "comment" : "Private VoiceOver mark on a safely sniffed chocolate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sniff found no chili"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du luktet ingen chili"
           }
         }
       }
@@ -32232,19 +32052,19 @@
       }
     },
     "piccante.tile.eaten" : {
-      "comment" : "VoiceOver description of an eaten chocolate, followed by its filling.",
+      "comment" : "VoiceOver state of an empty wrapper.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eaten, %@"
+            "value" : "Eaten"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spist, %@"
+            "value" : "Spist"
           }
         }
       }
@@ -32286,7 +32106,7 @@
       }
     },
     "piccante.tutorial.bite.message" : {
-      "comment" : "Piccante game. tutorial bite message.",
+      "comment" : "Tutorial about taking a bite.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -32298,7 +32118,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bytt på å løfte og smake på sjokoladebitene. Den som biter i en chili taper, også om det er deres egen."
+            "value" : "Bytt på å løfte en sjokoladebit og ta en bit. Den som biter i en chili taper, også om det er deres egen."
           }
         }
       }
@@ -32322,19 +32142,19 @@
       }
     },
     "piccante.tutorial.hide.message" : {
-      "comment" : "Piccante game. tutorial hide message.",
+      "comment" : "Tutorial about hiding a chili and an optional note.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each of you hides one chili. Add a secret note for the end. Your partner sees neither until the box opens."
+            "value" : "Each of you hides one chili. Add what your partner owes you if they lose. They see neither until the box opens."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dere gjemmer én chili hver. Legg ved en hemmelig lapp til slutt. Partneren din ser ingen av delene før esken åpnes."
+            "value" : "Dere gjemmer én chili hver. Skriv hva partneren din skylder deg hvis de taper. Partneren din ser ingen av delene før esken åpnes."
           }
         }
       }
@@ -32358,7 +32178,7 @@
       }
     },
     "piccante.tutorial.sniff.message" : {
-      "comment" : "Piccante game. tutorial sniff message.",
+      "comment" : "Tutorial about the private sniff.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -32370,7 +32190,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Én gang per spill kan du lukte på en sjokoladebit før du smaker. Bare du får vite om den skjuler en chili. Så tar du en bit."
+            "value" : "Én gang per spill kan du lukte på en sjokoladebit før du tar en bit. Bare du får vite om den skjuler en chili. Så tar du en bit."
           }
         }
       }
@@ -32389,6 +32209,168 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stol på nesen én gang"
+          }
+        }
+      }
+    },
+    "piccante.variety.goldDrizzle" : {
+      "comment" : "VoiceOver name of the dark chocolate with gold drizzle.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark chocolate with gold drizzle"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mørk sjokolade med gyllen glasur"
+          }
+        }
+      }
+    },
+    "piccante.variety.heart" : {
+      "comment" : "VoiceOver name of the illustrated pink heart variety.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pink heart chocolate"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjokolade med rosa hjerte"
+          }
+        }
+      }
+    },
+    "piccante.variety.lavenderFlower" : {
+      "comment" : "VoiceOver name of the illustrated lavender flower variety.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lavender flower chocolate"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjokolade med lavendelfarget blomst"
+          }
+        }
+      }
+    },
+    "piccante.variety.lavenderStripes" : {
+      "comment" : "VoiceOver name of the white chocolate with lavender stripes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "White chocolate with lavender stripes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvit sjokolade med lavendelfargede striper"
+          }
+        }
+      }
+    },
+    "piccante.variety.nutFlower" : {
+      "comment" : "VoiceOver name of the illustrated nut flower variety.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nut flower chocolate"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjokolade med nøtteblomst"
+          }
+        }
+      }
+    },
+    "piccante.variety.pinkStripes" : {
+      "comment" : "VoiceOver name of the illustrated pink striped variety.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pink striped chocolate"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjokolade med rosa striper"
+          }
+        }
+      }
+    },
+    "piccante.variety.praline" : {
+      "comment" : "VoiceOver name of the illustrated square praline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Square praline"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Firkantet pralin"
+          }
+        }
+      }
+    },
+    "piccante.variety.rosette" : {
+      "comment" : "VoiceOver name of the illustrated pink rosette variety.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pink rosette chocolate"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjokolade med rosa rosett"
+          }
+        }
+      }
+    },
+    "piccante.variety.whiteTruffle" : {
+      "comment" : "VoiceOver name of the illustrated white truffle.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "White truffle"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvit trøffel"
           }
         }
       }
@@ -32429,6 +32411,42 @@
         }
       }
     },
+    "piccante.waiting.hiding" : {
+      "comment" : "Status while the partner hides. The argument is their name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is hiding a chili"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjemmer en chili"
+          }
+        }
+      }
+    },
+    "piccante.waiting.picking" : {
+      "comment" : "Status while the partner picks. The argument is their name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is picking a chocolate"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ velger en sjokoladebit"
+          }
+        }
+      }
+    },
     "piccante.wouldHaveGot" : {
       "comment" : "Heading on the losing partner's unused note, shown only to the winner.",
       "extractionState" : "manual",
@@ -32443,24 +32461,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dette slapp du unna"
-          }
-        }
-      }
-    },
-    "piccante.you" : {
-      "comment" : "Piccante game. you.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du"
           }
         }
       }

@@ -5,6 +5,7 @@
         static let piccante: [DeveloperScenario] = [
             piccanteHide, piccanteBiting, piccanteLifted, piccanteSniff,
             piccanteBurn, piccanteSameOne, piccanteResult, piccanteChoose,
+            piccanteChooseSecond, piccanteSniffHot, piccanteHub,
         ]
         static let piccanteHide = piccanteScreen(
             "piccante-hide", "Piccante · hiding", "Hide a chili and tuck in a note")
@@ -21,6 +22,13 @@
             "piccante-result", "Piccante · result", "The box and your partner's note")
         static let piccanteChoose = piccanteScreen(
             "piccante-choose", "Piccante · choose a box", "Pick a 3 by 3, 4 by 4 or 5 by 5 box")
+        static let piccanteChooseSecond = piccanteScreen(
+            "piccante-choose-second", "Piccante · second chooser", "Open the unchosen box as the second partner")
+        static let piccanteSniffHot = piccanteScreen(
+            "piccante-sniff-hot", "Piccante · hot sniff", "A private chili mark on the board")
+        static let piccanteHub = DeveloperScenario(
+            "piccante-hub", "Piccante · hub card", "The finished box on the Games card", .games
+        ) { _ in DeveloperPiccanteHubScenarioView() }
         private static func piccanteScreen(_ id: String, _ title: String, _ detail: String) -> DeveloperScenario {
             DeveloperScenario(id, title, detail, .games) { DeveloperPiccanteScenarioView(scenario: $0) }
         }
@@ -37,16 +45,20 @@
             let partnerTile = scenario == .piccanteSameOne ? myTile : min(10, size * size - 2)
             let game = RemotePiccanteGame(
                 id: DeveloperGamesFixture.gameID, gameNumber: 1, version: finished ? 8 : 5,
-                starterUserID: me, turnUserID: finished ? nil : scenario == .piccanteLifted ? partner : me,
-                phase: scenario == .piccanteChoose
+                starterUserID: scenario == .piccanteChooseSecond ? partner : me,
+                turnUserID: finished || [.piccanteChoose, .piccanteChooseSecond].contains(scenario)
+                    ? nil : scenario == .piccanteLifted ? partner : me,
+                phase: [.piccanteChoose, .piccanteChooseSecond].contains(scenario)
                     ? .choosing : scenario == .piccanteHide ? .hiding : finished ? .finished : .biting,
-                size: scenario == .piccanteChoose ? nil : size,
-                myChili: scenario == .piccanteHide ? nil : myTile,
+                size: [.piccanteChoose, .piccanteChooseSecond].contains(scenario) ? nil : size,
+                myChili: scenario == .piccanteHide || [.piccanteChoose, .piccanteChooseSecond].contains(scenario)
+                    ? nil : myTile,
                 myNote: scenario == .piccanteHide ? nil : "You owe me a back rub.",
                 partnerHidden: scenario != .piccanteHide,
-                mySniff: scenario == .piccanteSniff ? .init(tile: 6, hasChili: false) : nil,
+                mySniff: scenario == .piccanteSniff ? .init(tile: 6, hasChili: false)
+                    : scenario == .piccanteSniffHot ? .init(tile: 10, hasChili: true) : nil,
                 partnerSniffUsed: scenario == .piccanteSniff,
-                bites: scenario == .piccanteHide || scenario == .piccanteChoose
+                bites: scenario == .piccanteHide || [.piccanteChoose, .piccanteChooseSecond].contains(scenario)
                     ? []
                     : finished
                         ? [

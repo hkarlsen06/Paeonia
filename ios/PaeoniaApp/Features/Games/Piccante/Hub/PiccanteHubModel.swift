@@ -15,7 +15,10 @@ final class PiccanteHubModel: GameHubModel {
         self.dependencies = dependencies
         game = PiccanteViewModel(dependencies: dependencies)
     }
-    var isYourTurn: Bool { state?.unseenResult != nil || state?.game?.turnUserID == userID && userID != nil }
+    var isYourTurn: Bool {
+        state?.unseenResult != nil
+            || state?.game?.phase != .choosing && state?.game?.turnUserID == userID && userID != nil
+    }
     func configure(participants: GameParticipants) {
         userID = participants.currentUserID
         game.configure(participants: participants)
@@ -41,25 +44,22 @@ final class PiccanteHubModel: GameHubModel {
                 artwork: { PiccanteHubArtwork() }, badge: { self.badge }, extras: { EmptyView() }))
     }
     private func status(partner: String) -> LocalizedStringResource {
-        if state?.unseenResult != nil || state?.game?.phase == .finished { return .piccanteHubResult }
+        if state?.unseenResult != nil { return .piccanteHubResult }
+        if let game = state?.game, game.phase == .finished {
+            return game.winnerUserID == userID ? .boardGamesHubStatusYouWon : .boardGamesHubStatusPartnerWon(partner)
+        }
+        if state?.game?.phase == .choosing { return .piccanteChooseTitle }
         if isYourTurn { return .piccanteHubTurn }
-        if state?.game != nil { return .piccanteWaiting(partner) }
+        if let game = state?.game {
+            return game.phase == .hiding ? .piccanteWaitingHiding(partner) : .piccanteWaitingPicking(partner)
+        }
         return .piccanteHubNew
     }
     @ViewBuilder private var badge: some View {
-        if let game = state?.game {
-            Group {
-                if playStyle == .against {
-                    Text(.piccanteTally(game.myWins, game.partnerWins))
-                } else {
-                    Text(.piccanteGamesTogether(game.gamesFinished))
-                }
-            }
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(.paeoniaTextPrimary)
-            .padding(.horizontal, PaeoniaSpacing.space12)
-            .padding(.vertical, PaeoniaSpacing.space4)
-            .gameCapsuleStyle()
+        if let current = state?.game, state?.unseenResult == nil {
+            let score: BoardGameScore = playStyle == .against
+                ? .against(mine: current.myWins, partner: current.partnerWins) : .together(games: current.gamesFinished)
+            if !score.isEmpty { BoardGameScoreCapsule(score: score, me: game.meInfo, partner: game.partnerInfo) }
         }
     }
     func screen(for destination: GamesDestination) -> AnyView? {

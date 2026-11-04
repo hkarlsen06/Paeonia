@@ -8,9 +8,16 @@ final class PiccanteViewModel {
     var participants = GameParticipants()
     var selected: Int?
     var partnerSelected: Int?
-    var note = ""
+    var note = "" {
+        didSet {
+            let capped = PiccanteRules.cappedNote(note)
+            if note != capped { note = capped }
+        }
+    }
     var shownBites = 0
     var revealSettled = false
+    var noteRevealed = false
+    var burnShake = 0
     var heldTile: Int?
     var partnerHere = false
     var invite: GameInviteState = .hidden
@@ -32,6 +39,7 @@ final class PiccanteViewModel {
     @ObservationIgnored var attention = GameAttentionCue()
     @ObservationIgnored var deferredResult: Int?
     @ObservationIgnored var localInviteSentAt: Date?
+    @ObservationIgnored var lastHeartbeatLift: Int?
     @ObservationIgnored var lastMove: PiccanteMove?
     @ObservationIgnored var reloadGate = GameReloadGate()
     var reduceMotion = false
@@ -45,16 +53,24 @@ final class PiccanteViewModel {
     var userID: UUID? { participants.currentUserID }
     var partnerName: String { participants.partnerName }
     var isMyTurn: Bool { game?.turnUserID == userID && userID != nil }
-    var canAct: Bool { isMyTurn && !isSaving && heldTile == nil && shownBites == game?.bites.count }
+    var canAct: Bool {
+        (game?.phase == .choosing || isMyTurn) && !isSaving && heldTile == nil && shownBites == game?.bites.count
+    }
     var status: LocalizedStringResource {
         guard let game else { return .piccanteLoading }
         if heldTile != nil { return .piccanteWaitingBite }
         if game.phase == .finished {
             if !revealSettled { return .piccanteOpeningChocolate }
-            if game.myChili == game.bites.last?.tile && game.loserUserID == userID { return .piccanteOwnBurn }
+            if Set(game.chilis.map(\.tile)).count == 1 { return .piccanteSameOneHeadline }
+            if game.myChili == game.bites.last?.tile && game.loserUserID == userID {
+                return .piccanteOwnBurn
+            }
             return game.loserUserID == userID ? .piccanteGotYou(partnerName) : .piccanteYouGot(partnerName)
         }
-        if !isMyTurn { return .piccanteWaiting(partnerName) }
+        if game.phase == .choosing { return .piccanteChooseTitle }
+        if !isMyTurn {
+            return game.phase == .hiding ? .piccanteWaitingHiding(partnerName) : .piccanteWaitingPicking(partnerName)
+        }
         switch game.phase {
         case .choosing: return .piccanteChooseTitle
         case .hiding: return .piccanteHideTitle
@@ -90,7 +106,7 @@ final class PiccanteViewModel {
         await refresh()
     }
     func stop(markResultSeen: Bool = true) {
-        if markResultSeen, revealSettled, let game, game.phase == .finished, let userID {
+        if markResultSeen, noteRevealed, let game, game.phase == .finished, let userID {
             queueSeenOnExit(game, userID: userID)
         }
         running = false
@@ -136,14 +152,6 @@ final class PiccanteViewModel {
         guard self.userID == userID, document.state.map({ $0.coupleID == participants.coupleID }) ?? true else {
             return
         }
-        let refused = await dependencies.piccanteCache.takeRefused(ownerUserID: userID)
-        if !refused.isEmpty {
-            notice = .moveRejected
-            if let hide = refused.last(where: { $0.action == .hide }) {
-                note = hide.note ?? ""
-                selected = hide.tile
-            }
-        }
         var operationsInFlight: [PendingSyncOperationSnapshot] = []
         var sendFailed = false
         do {
@@ -167,6 +175,7 @@ final class PiccanteViewModel {
             live.map { $0.partnerActivity != .away } == true
             || overview?.presence(for: .piccante)?.partnerPresent == true
         if !partnerHere { partnerSelected = nil }
+        if !partnerHere { lastHeartbeatLift = nil }
         invite = GameInviteState.make(
             lastInviteAt: overview?.presence(for: .piccante)?.lastInviteAt,
             localSentAt: localInviteSentAt, partnerIsHere: partnerHere, now: dependencies.now())
@@ -178,6 +187,7 @@ final class PiccanteViewModel {
         if !PiccanteRules.keepsSelection(from: game, to: next) {
             selected = nil
             partnerSelected = nil
+            lastHeartbeatLift = nil
         }
         game = next
         if versionChanged { sendSelection() }
@@ -193,6 +203,20 @@ final class PiccanteViewModel {
                         ? "\(game.gameNumber):\(game.phase.rawValue):\(game.bites.count)" : nil,
                     partnerStep: game.partnerSniffUsed ? "sniff:\(game.gameNumber)" : nil), isActive: running && active)
         }
+        await restoreRefusedMoves(ownerUserID: userID)
+    }
+    private func restoreRefusedMoves(ownerUserID: UUID) async {
+        let refused = await dependencies.piccanteCache.takeRefused(ownerUserID: ownerUserID)
+        guard userID == ownerUserID else { return }
+        if !refused.isEmpty {
+            notice = .moveRejected
+            if let hide = refused.last(where: {
+                $0.action == .hide && $0.gameID == game?.id && $0.gameNumber == game?.gameNumber
+            }), game?.phase == .hiding, game?.myChili == nil, isMyTurn {
+                note = hide.note ?? ""
+                selected = hide.tile
+            }
+        }
     }
     func select(_ tile: Int) {
         guard let game, canAct, !game.bites.contains(where: { $0.tile == tile }) else { return }
@@ -200,54 +224,5 @@ final class PiccanteViewModel {
         PaeoniaHaptics.selection()
         GameSound.tap.play(volume: 0.4)
         sendSelection()
-    }
-    func act(_ action: PiccanteAction, size: Int? = nil, tile: Int? = nil) async {
-        guard let game, let userID, !isSaving else { return }
-        let chosen = tile ?? selected
-        if action == .seen, !revealSettled { return }
-        if action == .hide, chosen == nil || !PiccanteRules.validNote(note) { return }
-        if action == .bite, chosen.map({ PiccanteRules.canBite($0, in: game, userID: userID) }) != true { return }
-        if action == .sniff, chosen.map({ PiccanteRules.canSniff($0, in: game, userID: userID) }) != true { return }
-        let move = PiccanteMove(
-            action: action, gameID: game.id, gameNumber: game.gameNumber,
-            expectedVersion: game.version, tile: action == .hide || action == .bite || action == .sniff ? chosen : nil,
-            size: size,
-            note: action == .hide && !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? note.trimmingCharacters(in: .whitespacesAndNewlines) : nil)
-        isSaving = true
-        defer { isSaving = false }
-        let operation = dependencies.operationProvider.makeOperation()
-        if action == .sniff {
-            do {
-                let loaded = try await dependencies.piccanteGateway.sendPiccante(move, operation: operation)
-                await dependencies.piccanteCache.saveState(loaded, ownerUserID: userID)
-                await reload()
-            } catch { notice = .piccanteSniffFailed(PaeoniaFailure(error)) }
-            return
-        }
-        do {
-            try await dependencies.pendingOperationStore.enqueue(
-                PendingSyncOperationRequest(
-                    ownerUserID: userID,
-                    operation: operation, operationKind: action.pendingKind,
-                    idempotencyScope: "piccante:\(game.id):\(game.gameNumber):\(action.rawValue):\(game.version)",
-                    requestData: try JSONEncoder().encode(move)))
-            lastMove = move
-            if action == .seen || action == .rematch { deferredResult = game.gameNumber }
-            if action == .hide { note = "" }
-            await reload()
-            LocalStoreChanges.post(.games, ownerUserID: userID)
-            if let sync { Task { await sync() } }
-        } catch { notice = .couldNotSaveMove }
-    }
-    func continueResult() async {
-        guard let game else { return }
-        await act(.seen)
-        deferredResult = game.gameNumber
-        await reload()
-    }
-    func retry() async {
-        await sync?()
-        await refresh()
     }
 }

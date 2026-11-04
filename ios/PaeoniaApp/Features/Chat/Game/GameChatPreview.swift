@@ -46,12 +46,18 @@ struct GameChatPreviewLoader {
         case .storyChain:
             return await loadStory(userID: userID)
         case .piccante:
-            let document = await dependencies.piccanteCache.document(ownerUserID: userID)
-            guard let game = document.state?.game else { return document.lastFinished.map(GameChatPreview.piccante) }
-            return .piccante(game.bites.isEmpty ? document.lastFinished ?? game : game)
+            return await loadPiccante(userID: userID)
         case .consensio:
             return await loadScale(userID: userID)
         }
+    }
+
+    private func loadPiccante(userID: UUID) async -> GameChatPreview? {
+        let document = await dependencies.piccanteCache.document(ownerUserID: userID)
+        let current = document.state?.game
+        let box = current?.bites.isEmpty == false ? current : document.lastFinished ?? current
+        guard let game = box else { return nil }
+        return .piccante(game.preview(hidingResult: document.state?.unseenResult?.gameNumber == game.gameNumber))
     }
 
     private func loadStory(userID: UUID) async -> GameChatPreview? {

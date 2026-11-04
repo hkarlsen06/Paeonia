@@ -52,6 +52,26 @@ struct PiccanteRulesTests {
         #expect(PiccanteRules.validNote("\n A kiss \n"))
     }
 
+    @Test func noteInputCapsUnicodeScalarsAndRemovesLineBreaks() {
+        let note = PiccanteRules.cappedNote(String(repeating: "e\u{301}", count: 40))
+        #expect(note.unicodeScalars.count == 60)
+        #expect(PiccanteRules.validNote(note))
+        #expect(PiccanteRules.cappedNote("A\nB\tC") == "ABC")
+    }
+
+    @Test(arguments: [3, 4, 5]) func illustratedVarietiesKeepDistinctNeighbors(size: Int) {
+        let id = DeveloperGamesFixture.gameID
+        for tile in 0..<(size * size) {
+            let variety = PiccanteRules.variety(gameID: id, number: 1, tile: tile)
+            if tile % size + 1 < size {
+                #expect(variety != PiccanteRules.variety(gameID: id, number: 1, tile: tile + 1))
+            }
+            if tile + size < size * size {
+                #expect(variety != PiccanteRules.variety(gameID: id, number: 1, tile: tile + size))
+            }
+        }
+    }
+
     @Test func restoreEpochAcceptsLowerVersions() {
         let old = DeveloperPiccanteFixture.state(for: .piccanteResult)
         var lower = DeveloperPiccanteFixture.state(for: .piccanteBiting)
@@ -108,6 +128,18 @@ struct PiccanteResolverTests {
         #expect(resolution.game?.phase == .hiding)
     }
 
+    @Test func eitherChooserOwnsTheQueuedHideAndRematchHasNoTurn() throws {
+        var state = DeveloperPiccanteFixture.state(for: .piccanteChooseSecond)
+        state.game?.turnUserID = nil
+        let game = try #require(state.game)
+        let choose = PiccanteMove(action: .choose, gameID: game.id, gameNumber: game.gameNumber,
+                                  expectedVersion: game.version, size: 5)
+        let chosen = PiccanteResolver.resolve(state: state, pending: [choose], deferredResult: nil)
+        #expect(chosen.game?.starterUserID == state.userID)
+        #expect(chosen.game?.turnUserID == state.userID)
+        #expect(chosen.game?.phase == .hiding)
+    }
+
     @Test func repeatedSeenWritesDoNotChangeRematchVersion() async throws {
         let state = DeveloperPiccanteFixture.state(for: .piccanteResult)
         let game = try #require(state.game)
@@ -119,6 +151,7 @@ struct PiccanteResolverTests {
         #expect(resolved.game?.gameNumber == game.gameNumber + 1)
         #expect(resolved.game?.version == game.version + 1)
         #expect(resolved.game?.phase == .choosing)
+        #expect(resolved.game?.turnUserID == nil)
         let cache = InMemoryPiccanteCache(state: state)
         var seenState = state
         seenState.unseenResult = nil

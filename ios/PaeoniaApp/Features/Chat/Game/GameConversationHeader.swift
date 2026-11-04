@@ -53,16 +53,7 @@ struct GameConversationHeader: View {
                 Text(verbatim: guess).font(PaeoniaTypography.body)
             }
         case .piccante(let game):
-            PiccanteBox(game: game, shownBites: game.bites.count, revealsChilis: true, selected: nil,
-                partnerSelected: nil, pendingTile: nil, player: { owner in
-                    BoardGamePlayerInfo(
-                        name: owner == participants.currentUserID
-                            ? participants.currentDisplayName ?? people.name(for: owner) : participants.partnerName,
-                        photoAssetID: owner == participants.currentUserID
-                            ? participants.currentProfilePhotoAssetID : participants.partnerProfilePhotoAssetID,
-                        style: people.style(for: owner))
-                }, select: { _ in })
-            PiccanteResultNotes(game: game, userID: participants.currentUserID, partnerName: participants.partnerName)
+            piccante(game)
         case .consensio(let round):
             consensio(round)
         case .guessMySpot(let round):
@@ -73,6 +64,28 @@ struct GameConversationHeader: View {
             creature(figure)
         case .board(let kind, let game):
             GameConversationBoard(kind: kind, game: game, people: people)
+        }
+    }
+
+    private func piccante(_ game: RemotePiccanteGame) -> some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            if game.phase != .finished {
+                Text(.piccanteChatUnseen).font(PaeoniaTypography.body).foregroundStyle(.paeoniaTextSecondary)
+                if let url = URL(string: "paeonia://games/piccante") {
+                    Link(destination: url) { Text(.piccanteHubOpen) }
+                        .buttonStyle(PaeoniaSecondaryButtonStyle())
+                }
+            }
+            PiccanteBox(game: game, shownBites: game.bites.count, revealsChilis: game.phase == .finished, selected: nil,
+                partnerSelected: nil, pendingTile: nil, player: { owner in
+                    BoardGamePlayerInfo(
+                        name: owner == participants.currentUserID
+                            ? participants.currentDisplayName ?? people.name(for: owner) : participants.partnerName,
+                        photoAssetID: owner == participants.currentUserID
+                            ? participants.currentProfilePhotoAssetID : participants.partnerProfilePhotoAssetID,
+                        style: people.style(for: owner))
+                }, select: { _ in }, showsOwnChili: game.phase == .finished)
+            PiccanteResultNotes(game: game, userID: participants.currentUserID, partnerName: participants.partnerName)
         }
     }
 

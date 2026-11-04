@@ -100,7 +100,7 @@ actor InMemoryPiccanteCache: PiccanteCaching {
         return documents[ownerUserID]?.refusals.count { $0 == operationID } ?? 0
     }
     func refuse(_ move: PiccanteMove, ownerUserID: UUID) {
-        documents[ownerUserID, default: PiccanteDocument()].refused = true
+        documents[ownerUserID, default: PiccanteDocument()].refusedMoves.append(move)
     }
     func takeRefused(ownerUserID: UUID) -> [PiccanteMove] {
         let moves = documents[ownerUserID]?.refusedMoves ?? []

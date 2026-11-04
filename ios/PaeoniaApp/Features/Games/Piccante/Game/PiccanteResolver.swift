@@ -24,6 +24,8 @@ nonisolated enum PiccanteResolver {
             guard move.gameNumber == current.gameNumber else { continue }
             switch move.action {
             case .choose:
+                game?.starterUserID = state.userID
+                game?.turnUserID = state.userID
                 game?.size = move.size
                 game?.phase = .hiding
                 game?.version += 1
@@ -40,7 +42,7 @@ nonisolated enum PiccanteResolver {
                 game?.gameNumber += 1
                 game?.version += 1
                 game?.starterUserID = starter
-                game?.turnUserID = starter
+                game?.turnUserID = nil
                 game?.phase = .choosing
                 game?.size = nil
                 game?.myChili = nil
