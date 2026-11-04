@@ -222,7 +222,7 @@ final class PiccanteViewModel {
         guard let game, canAct, !game.bites.contains(where: { $0.tile == tile }) else { return }
         selected = tile
         PaeoniaHaptics.selection()
-        GameSound.tap.play(volume: 0.4)
+        GameSound.piccanteLift.play(volume: 0.18)
         sendSelection()
     }
 }

@@ -60,7 +60,133 @@ The whole board pieces are `GameHubPiccanteHeart`, `GameHubPiccanteDrizzle`, `Ga
 
 The chosen second hub candidate imports at 900 by 622 pixels, aspect 1.447. Its 600-pixel canvas width puts its lower edge at 640. The warm beat sits over the front-right chocolate near 0.80 across and 0.70 down. Three separate tutorial stickers show the tucked note, the bitten chili and the sniff. All cutouts pass the illustration checker and were inspected on plum.
 
-`PiccanteBite` is a short low chocolate crack with a soft body. The Bite tap plays its crunch and haptic immediately. The server response does not repeat them. A partner's live lift over this person's own chili plays one soft heartbeat haptic per distinct lift. `PiccanteBurn` is a low filtered swell with two warm notes. Recipes live in `ios/Scripts/game-sounds.swift`; generated CAF files use the shared ambient sound player.
+## Sounds
+
+The developer selected these CC0 recordings by ear, including the Freesound HQ previews. Freesound sources use lossy HQ MP3 previews, not the original downloads. Bite D uses the original BigSoundBank WAV. All prepared WAVs are mono 44.1 kHz signed 16-bit PCM, normalized to about -3 dBFS. Import changes only the container to CAF, preserving the PCM samples. These files are recordings, not recipes. `ios/Scripts/game-sounds.swift` writes only its synthesized recipe outputs and leaves recordings untouched.
+
+The shared player randomly picks among five bite variants without consecutive repeats. Bite plays at 0.30 on the Bite tap and on the partner's replayed bite, without repeating this person's bite on the server response. Burn plays at 0.30 at the start of the staged reveal. Lift replaces the shared tap at 0.18 when this person selects a chocolate. A successful private sniff plays at 0.20. Queuing a hide plays at 0.22. The Same one chime plays at 0.18 when its reveal appears. Reduce Motion skips replay and reveal sounds as before. The audio session stays ambient. The silent switch mutes game sounds. A partner's lift over this person's chili still plays only its heartbeat haptic.
+
+Common bite processing was extraction, downmix, resampling, DC removal, second-order 40 Hz high-pass, 2 ms fade-in, 18 ms fade-out and peak normalization to -3 dBFS. No pitch shift, layering, time stretch, reverb or synthetic mouth sound was added to the bites. The rice-cake source already includes its author's mix.
+
+### GameSoundPiccanteBite1.caf
+
+Imported from `bites/bite-a.wav`.
+
+- Source: https://freesound.org/people/ursenfuns/sounds/535012/
+- Author: ursenfuns
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: Crunchy Bite
+- Download: https://cdn.freesound.org/previews/535/535012_166713-hq.mp3
+- Edits: source interval 0.340 to 0.940 s; common bite processing listed above.
+
+### GameSoundPiccanteBite2.caf
+
+Imported from `bites/bite-b.wav`.
+
+- Source: https://freesound.org/people/black_trillium/sounds/752128/
+- Author: black_trillium
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: Eating A Biscuit or Cookie
+- Download: https://cdn.freesound.org/previews/752/752128_4889106-hq.mp3
+- Edits: source interval 1.670 to 2.230 s; common bite processing listed above.
+
+### GameSoundPiccanteBite3.caf
+
+Imported from `bites/bite-c.wav`.
+
+- Source: https://freesound.org/people/SammygoodTunes/sounds/844811/
+- Author: SammygoodTunes
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: crunch
+- Download: https://cdn.freesound.org/previews/844/844811_8175347-hq.mp3
+- Edits: source interval 0.045 to 0.565 s; common bite processing listed above.
+
+### GameSoundPiccanteBite4.caf
+
+Imported from `bites/bite-d.wav`.
+
+- Source: https://bigsoundbank.com/manger-une-biscotte-s0407.html
+- Author: Joseph SARDIN
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: Eat a Rusk
+- Download: https://bigsoundbank.com/UPLOAD/bwf-en/0407.wav
+- Edits: source interval 0.040 to 0.600 s; common bite processing listed above.
+
+### GameSoundPiccanteBite5.caf
+
+Imported from `bites/bite-e.wav`.
+
+- Source: https://freesound.org/people/Anthousai/sounds/398756/
+- Author: Anthousai
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: apple - bite 01.wav
+- Download: https://cdn.freesound.org/previews/398/398756_5923045-hq.mp3
+- Edits: source interval 0.860 to 1.440 s; common bite processing listed above.
+
+### GameSoundPiccanteBurn1.caf
+
+Imported from `burn.wav`.
+
+- Source page: https://freesound.org/people/bottles/sounds/382313/
+- Author: bottles
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: Sizzle / Acid Burn
+- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/382/382313_460876-hq.mp3
+- Edits: Extracted source interval 0.120 to 1.320 s; downmixed to mono; removed DC; 70 Hz high-pass and 5500 Hz low-pass, both second-order; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
+
+### GameSoundPiccanteLift1.caf
+
+Imported from `lift.wav`.
+
+- Source page: https://freesound.org/people/golovlev.sound/sounds/632220/
+- Author: golovlev.sound
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: paper, thin, tracing, blueprint, rustle.wav
+- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/632/632220_3784464-hq.mp3
+- Edits: Extracted source interval 3.650 to 4.070 s; downmixed to mono; removed DC; 70 Hz high-pass and 5500 Hz low-pass, both second-order; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
+
+### GameSoundPiccanteSniff1.caf
+
+Imported from `sniff.wav`.
+
+- Source page: https://freesound.org/people/spookymodem/sounds/202101/
+- Author: spookymodem
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: Sniffing.wav
+- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/202/202101_3756348-hq.mp3
+- Edits: Extracted source interval 1.640 to 1.870 s; downmixed to mono; removed DC; 70 Hz high-pass and 5500 Hz low-pass, both second-order; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
+
+### GameSoundPiccanteHide1.caf
+
+Imported from `hide.wav`.
+
+- Source page: https://freesound.org/people/Mafon2/sounds/360646/
+- Author: Mafon2
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: Paper drawn with rustle
+- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/360/360646_1196472-hq.mp3
+- Edits: Extracted source interval 1.020 to 1.320 s; downmixed to mono; removed DC; 70 Hz high-pass and 5500 Hz low-pass, both second-order; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
+
+### GameSoundPiccanteSameOne1.caf
+
+Imported from `same-one.wav`.
+
+- Source page: https://freesound.org/people/Seth_Makes_Sounds/sounds/852531/
+- Author: Seth_Makes_Sounds
+- License: CC0 1.0 Universal.
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Original title: Bell Sound
+- Download used: lossy Freesound HQ MP3 preview, not original. https://cdn.freesound.org/previews/852/852531_13228046-hq.mp3
+- Edits: Extracted source interval 0.000 to 0.700 s; downmixed to mono; removed DC; 70 Hz high-pass and 4800 Hz low-pass, both second-order; layered a second recorded hit at +160 ms, resampled to about a major third higher; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
 
 ## Developer scenarios
 

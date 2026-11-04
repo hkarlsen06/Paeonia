@@ -15,7 +15,7 @@ extension PiccanteViewModel {
             note: action == .hide && !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 ? note.trimmingCharacters(in: .whitespacesAndNewlines) : nil)
         if action == .bite {
-            GameSound.piccanteBite.play(volume: 0.55)
+            GameSound.piccanteBite.play(volume: 0.3)
             PaeoniaHaptics.selection()
         }
         isSaving = true
@@ -25,6 +25,8 @@ extension PiccanteViewModel {
             do {
                 let loaded = try await dependencies.piccanteGateway.sendPiccante(move, operation: operation)
                 await dependencies.piccanteCache.saveState(loaded, ownerUserID: userID)
+                PaeoniaHaptics.selection()
+                GameSound.piccanteSniff.play(volume: 0.2)
                 await reload()
             } catch { notice = .piccanteSniffFailed(PaeoniaFailure(error)) }
             return
@@ -38,7 +40,11 @@ extension PiccanteViewModel {
                     requestData: try JSONEncoder().encode(move)))
             lastMove = move
             if action == .seen || action == .rematch { deferredResult = game.gameNumber }
-            if action == .hide { note = "" }
+            if action == .hide {
+                note = ""
+                PaeoniaHaptics.selection()
+                GameSound.piccanteHide.play(volume: 0.22)
+            }
             await reload()
             LocalStoreChanges.post(.games, ownerUserID: userID)
             if let sync { Task { await sync() } }

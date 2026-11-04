@@ -26,7 +26,7 @@ extension PiccanteViewModel {
                 guard !Task.isCancelled, self.game?.gameNumber == game.gameNumber else { return }
                 shownBites = index + 1
                 if game.bites[index].userID != userID {
-                    GameSound.piccanteBite.play(volume: 0.55)
+                    GameSound.piccanteBite.play(volume: 0.3)
                     PaeoniaHaptics.selection()
                 }
                 if game.phase == .finished && index == game.bites.count - 1 { await revealBurn() }
@@ -41,13 +41,16 @@ extension PiccanteViewModel {
     private func revealBurn() async {
         burnShake += 1
         PaeoniaHaptics.answerRevealed()
-        GameSound.piccanteBurn.play(volume: 0.55)
+        GameSound.piccanteBurn.play(volume: 0.3)
         try? await Task.sleep(for: .seconds(0.4))
         guard !Task.isCancelled else { return }
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { revealSettled = true }
         try? await Task.sleep(for: .seconds(0.24))
         guard !Task.isCancelled else { return }
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.28)) { noteRevealed = true }
+        if !reduceMotion, let game, Set(game.chilis.map(\.tile)).count == 1 {
+            GameSound.piccanteSameOne.play(volume: 0.18)
+        }
     }
 
     private func saveShown(number: Int) async {

@@ -2,7 +2,8 @@ import Foundation
 
 /// The games' sound effects. Each one is a file, or a few numbered variants, named
 /// `GameSound<rawValue><n>.caf` in Resources/GameSounds. `ios/Scripts/game-sounds.swift`
-/// makes them.
+/// makes the synthesized sounds. Piccante uses recorded CC0 audio, documented in
+/// `docs/games/piccante.md`.
 nonisolated enum GameSound: String, CaseIterable, Sendable {
     /// A wooden tap for picking something: a tile, a word, a board.
     case tap = "Tap"
@@ -40,6 +41,10 @@ nonisolated enum GameSound: String, CaseIterable, Sendable {
     case page = "Page"
     case piccanteBite = "PiccanteBite"
     case piccanteBurn = "PiccanteBurn"
+    case piccanteLift = "PiccanteLift"
+    case piccanteSniff = "PiccanteSniff"
+    case piccanteHide = "PiccanteHide"
+    case piccanteSameOne = "PiccanteSameOne"
 
     /// Plays the sound. `volume` from 0 to 1 scales it, usually with the strength of the
     /// haptic it goes with.
