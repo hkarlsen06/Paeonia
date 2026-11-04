@@ -19,9 +19,8 @@ import {
 import {
   activeInstanceOfDay,
   ensureDailyQuestion,
-  getDailyQuestionsForCoupleDay,
   getDailyQuestionsHistory,
-  getTodayDailyQuestionsForContext,
+  readDailyQuestionsForFrame,
   insertDailyQuestionInstance,
   pickDailyQuestionVersion,
   visibleAnswersOf,
@@ -35,7 +34,7 @@ import {
   readCoupleStreak,
   type CoupleStreak,
 } from "./lib/streaks";
-import { addDaysToInstant, nowIso } from "./lib/time";
+import { addDaysToInstant, localDateOf, nowIso } from "./lib/time";
 
 /**
  * Daily questions and answers. Writes are mutations. Reads are queries, so the iOS
@@ -184,16 +183,21 @@ async function snapshotRow(
   const now = nowIso();
   const day = source.kind === "day" ? source.day : await findCoupleDayAt(ctx, coupleId, now);
   const anchorTimeZoneId = day?.anchor_time_zone_id ?? (await resolveCoupleDayAnchor(ctx, coupleId)).anchor_time_zone_id;
-  const questions =
-    source.kind === "day"
-      ? await getDailyQuestionsForCoupleDay(ctx, userId, source.day)
-      : await getTodayDailyQuestionsForContext(ctx, userId, coupleId);
-  await addRoundInfo(ctx, userId, coupleId, questions);
+  const questionTimeZoneId = source.kind === "day" ? anchorTimeZoneId
+    : (await resolveCoupleDayAnchor(ctx, coupleId)).anchor_time_zone_id;
+  const { questions, loaded } = await readDailyQuestionsForFrame(ctx, userId, coupleId, {
+    now: source.kind === "day" ? source.day.starts_at : now,
+    anchorTimeZoneId: questionTimeZoneId,
+    todayLocalDate: source.kind === "day" ? source.day.local_date : localDateOf(now, questionTimeZoneId),
+    currentDay: day,
+  });
+  await addRoundInfo(ctx, userId, coupleId, questions, loaded);
   const answerDetails = await getDailyAnswerDetailsForContext(
     ctx,
     questions.map((row) => row.couple_day_id),
     userId,
     coupleId,
+    loaded,
   );
   const participation = day
     ? await getCoupleStreakParticipationForDay(ctx, coupleId, userId, day.id)
@@ -253,8 +257,8 @@ export const start_daily_challenge_snapshot = mutation({
 /**
  * Today's snapshot by the server clock. A query, so it is right for one-shot reads. Convex reruns a query only
  * when data it read changes, so a result that depends on the clock can come back stale after midnight, even to a
- * new subscription with the same arguments. `p_day_key` is ignored. A client changes it once per day (for
- * example to the previous day's `ends_at`) so each day is a separate cached query. Subscribers that know their
+ * new subscription with the same arguments. `p_day_key` is ignored. The client supplies a fresh key whenever discovery starts
+ * so an earlier cached result cannot keep it on an expired day. Subscribers that know their
  * couple day should use `get_daily_challenge_snapshot` instead.
  */
 export const get_today_daily_challenge_snapshot = query({

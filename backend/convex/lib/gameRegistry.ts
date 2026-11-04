@@ -103,10 +103,14 @@ export async function gamePushStillWanted(
  * invites that are still open. The board games share one backend, which gives the waits of all of
  * them, so each backend runs once. The caller checks couple access.
  */
-async function gameWaits(ctx: ReaderCtx, coupleId: string, userId: string): Promise<GameWait[]> {
+async function gameWaits(
+  ctx: ReaderCtx, coupleId: string, userId: string, kinds: readonly GameKind[] = GAME_KINDS,
+): Promise<GameWait[]> {
   const waits = await openGameInvitesFor(ctx, coupleId, userId);
-  for (const backend of new Set(registered())) waits.push(...((await backend.waitingFor?.(ctx, coupleId, userId)) ?? []));
-  return waits;
+  for (const backend of new Set(kinds.map((kind) => GAME_BACKENDS[kind]))) {
+    if (backend) waits.push(...((await backend.waitingFor?.(ctx, coupleId, userId)) ?? []));
+  }
+  return waits.filter((wait) => kinds.includes(wait.kind));
 }
 
 /** The wait keys `userId` hid with "Not now", by kind. */
@@ -135,7 +139,7 @@ export async function gamesWaitingFor(ctx: ReaderCtx, coupleId: string, userId: 
 export async function hiddenGameKinds(ctx: ReaderCtx, coupleId: string, userId: string): Promise<GameKind[]> {
   const hidden = await hiddenWaitKeys(ctx, coupleId, userId);
   if (hidden.size === 0) return [];
-  const waits = await gameWaits(ctx, coupleId, userId);
+  const waits = await gameWaits(ctx, coupleId, userId, [...hidden.keys()]);
   return GAME_KINDS.filter((kind) => {
     const keys = hidden.get(kind);
     return keys !== undefined && waits.every((wait) => wait.kind !== kind || keys.has(wait.key));

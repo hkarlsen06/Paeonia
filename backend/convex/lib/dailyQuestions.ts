@@ -1,5 +1,4 @@
 import type { Doc } from "../_generated/dataModel";
-import { findCoupleDayAt, resolveCoupleDayAnchor } from "./coupleDays";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, requireByUuid } from "./db";
 import { fail, uniqueViolation } from "./errors";
@@ -225,46 +224,19 @@ type TodayFrame = {
   currentDay: Doc<"couple_days"> | null;
 };
 
-/** Port of `internal.get_today_daily_questions_for_context`. */
-export async function getTodayDailyQuestionsForContext(
-  ctx: ReaderCtx,
-  currentUserId: string,
-  coupleId: string,
-): Promise<DailyQuestionRow[]> {
-  const now = nowIso();
-  const anchor = await resolveCoupleDayAnchor(ctx, coupleId);
-  return await todayQuestionsForFrame(ctx, currentUserId, coupleId, {
-    now,
-    anchorTimeZoneId: anchor.anchor_time_zone_id,
-    todayLocalDate: localDateOf(now, anchor.anchor_time_zone_id),
-    currentDay: await findCoupleDayAt(ctx, coupleId, now),
-  });
-}
+/** Rows already read while selecting today's questions, shared with snapshot assembly. */
+export type LoadedDailyQuestion = {
+  day: Doc<"couple_days">;
+  instance: Doc<"daily_question_instances">;
+  answers: Doc<"daily_question_answers">[];
+};
 
-/**
- * The today read model for one specific couple day, taking "today" from the day's
- * own window and anchor zone instead of the clock. The result changes only when
- * the data it reads changes, so a subscribed query stays valid until then.
- */
-export async function getDailyQuestionsForCoupleDay(
-  ctx: ReaderCtx,
-  currentUserId: string,
-  day: Doc<"couple_days">,
-): Promise<DailyQuestionRow[]> {
-  return await todayQuestionsForFrame(ctx, currentUserId, day.couple_id, {
-    now: day.starts_at,
-    anchorTimeZoneId: day.anchor_time_zone_id,
-    todayLocalDate: day.local_date,
-    currentDay: day,
-  });
-}
-
-async function todayQuestionsForFrame(
+export async function readDailyQuestionsForFrame(
   ctx: ReaderCtx,
   currentUserId: string,
   coupleId: string,
   frame: TodayFrame,
-): Promise<DailyQuestionRow[]> {
+): Promise<{ questions: DailyQuestionRow[]; loaded: LoadedDailyQuestion[] }> {
   const { now, currentDay, todayLocalDate } = frame;
 
   type Selected = {
@@ -274,11 +246,14 @@ async function todayQuestionsForFrame(
     answers: Doc<"daily_question_answers">[];
   };
   const selected: Selected[] = [];
+  const loaded: LoadedDailyQuestion[] = [];
 
   if (currentDay) {
     for (const instance of await instancesOfDay(ctx, currentDay.id)) {
       if (isLive(instance)) {
-        selected.push({ day: currentDay, instance, isCurrentDay: true, answers: await visibleAnswersOf(ctx, instance.id) });
+        const item = { day: currentDay, instance, answers: await visibleAnswersOf(ctx, instance.id) };
+        loaded.push(item);
+        selected.push({ ...item, isCurrentDay: true });
       }
     }
   }
@@ -298,6 +273,7 @@ async function todayQuestionsForFrame(
     for (const instance of await instancesOfDay(ctx, day.id)) {
       if (!isLive(instance)) continue;
       const answers = await visibleAnswersOf(ctx, instance.id);
+      loaded.push({ day, instance, answers });
       const viewerAnswer = answers.find((answer) => answer.user_id === currentUserId);
       const otherAnswer = answers.find((answer) => answer.user_id !== currentUserId);
       const latest = [viewerAnswer?.created_at, otherAnswer?.created_at]
@@ -342,7 +318,7 @@ async function todayQuestionsForFrame(
   });
   const result = rows.map((item) => item.row);
   await addSeenStates(ctx, currentUserId, result);
-  return result;
+  return { questions: result, loaded };
 }
 
 /** Port of `internal.get_daily_questions_history`: every instance the viewer answered, newest local day first. */

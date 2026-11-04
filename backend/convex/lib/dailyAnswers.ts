@@ -20,6 +20,7 @@ import {
   isTopicInstance,
   isVisibleAnswer,
   visibleAnswersOf,
+  type LoadedDailyQuestion,
 } from "./dailyQuestions";
 
 /**
@@ -184,13 +185,15 @@ export async function getDailyAnswerDetailsForContext(
   coupleDayIds: string[],
   userId: string,
   coupleId: string,
+  loaded: LoadedDailyQuestion[],
 ): Promise<DailyAnswerDetailRow[]> {
   const rows: { row: DailyAnswerDetailRow; startsAt: string }[] = [];
   for (const dayId of new Set(coupleDayIds)) {
-    const day = await getByUuid(ctx, "couple_days", dayId);
+    const day = loaded.find((item) => item.day.id === dayId)?.day;
     if (!day || day.couple_id !== coupleId) continue;
     for (const instance of await instancesOfDay(ctx, day.id)) {
-      const answers = await visibleAnswersOf(ctx, instance.id);
+      const answers = loaded.find((item) => item.instance.id === instance.id)?.answers
+        ?? await visibleAnswersOf(ctx, instance.id);
       const viewerAnswered = answers.some((answer) => answer.user_id === userId);
       for (const answer of answers) {
         const canView = answer.user_id === userId || viewerAnswered;

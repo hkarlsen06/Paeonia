@@ -743,10 +743,9 @@ export const get_conversation_threads = query({
 
     const rows = [];
     for (const thread of threads) {
-      const daily = await ctx.db
-        .query("daily_question_threads")
-        .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
-        .unique();
+      const daily = thread.kind === "daily_question"
+        ? await ctx.db.query("daily_question_threads").withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id)).unique()
+        : null;
       // A question chat opens only while some day of the question has both answers visible.
       // Leave it out once they are deleted or hidden, so the app never lists a chat the
       // user can't open.
@@ -759,14 +758,12 @@ export const get_conversation_threads = query({
       if (thread.kind === "game" && !game) continue;
       // A topic question's chat says which topic it is in.
       const topic = daily ? await topicOfQuestion(ctx, daily.question_id) : null;
-      const memory = await ctx.db
-        .query("memory_threads")
-        .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
-        .unique();
-      const story = await ctx.db
-        .query("story_threads")
-        .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
-        .unique();
+      const memory = thread.kind === "memory"
+        ? await ctx.db.query("memory_threads").withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id)).unique()
+        : null;
+      const story = thread.kind === "story"
+        ? await ctx.db.query("story_threads").withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id)).unique()
+        : null;
       const last = await ctx.db
         .query("thread_messages")
         .withIndex("by_thread_id_created_at_id", (q) => q.eq("thread_id", thread.id))

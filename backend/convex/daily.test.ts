@@ -138,7 +138,10 @@ describe("start_daily_challenge_snapshot", () => {
     await expect(t.mutation(api.daily.start_daily_challenge_snapshot, op())).rejects.toThrow(/42501.*authenticated user required/);
     const lonely = await createSignedInUser(t);
     await expect(start(lonely)).rejects.toThrow(/42501.*active entitled couple access is required/);
+    await expect(t.query(api.daily.get_today_daily_challenge_snapshot, {})).rejects.toThrow(/42501.*authenticated user required/);
+    await expect(lonely.as.query(api.daily.get_today_daily_challenge_snapshot, {})).rejects.toThrow(/42501.*active entitled couple access is required/);
     const unpaid = await createCouple(t, { entitled: false });
+    await expect(unpaid.first.as.query(api.daily.get_today_daily_challenge_snapshot, {})).rejects.toThrow(/42501.*active entitled couple access is required/);
     await expect(start(unpaid.first)).rejects.toThrow(/42501.*active entitled couple access is required/);
   });
 
