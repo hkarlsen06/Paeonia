@@ -8,12 +8,12 @@ import { visibleAnswersOf } from "./lib/dailyQuestions";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
 import { chatTypingRoom, onlineUserIds, setPresent } from "./lib/presence";
-import { isChatSubjectAvailable, threadIdOfSubject, threadSubjectArgs, threadSubjectOf } from "./lib/threadSubjects";
+import { isChatSubjectAvailable, subjectRoomKey, threadIdOfSubject, threadSubjectArgs, threadSubjectOf } from "./lib/threadSubjects";
 import { nowIso } from "./lib/time";
 
 // Typing dots and read receipts for chats, and the "seen" mark on a partner's answer. New in
 // Convex; there was no SQL version. A chat is named by its subject (`lib/threadSubjects.ts`): a
-// daily question, a memory or a story. Typing is kept by the presence component
+// daily question, a memory, a story, a game kind, or the couple chat, which has no id. Typing is kept by the presence component
 // (lib/presence.ts), and chat reads are small rows. The app writes both while a chat is open and
 // reads them through one live query, `get_chat_presence`. Seen answers show up in the daily
 // question rows.
@@ -49,7 +49,7 @@ export const set_chat_typing = mutation({
     if (!(await isChatSubjectAvailable(ctx, coupleId, subject))) {
       return fail("22023", "chat subject was not found");
     }
-    await setPresent(ctx, chatTypingRoom(coupleId, subject.id), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
+    await setPresent(ctx, chatTypingRoom(coupleId, subjectRoomKey(subject)), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
     return null;
   },
 });
@@ -143,7 +143,7 @@ export const get_chat_presence = query({
     const subject = threadSubjectOf(args);
     if (!(await canAccessCoupleContent(ctx, userId, coupleId))) return empty;
 
-    const typing = (await onlineUserIds(ctx, chatTypingRoom(coupleId, subject.id))).some((id) => id !== userId);
+    const typing = (await onlineUserIds(ctx, chatTypingRoom(coupleId, subjectRoomKey(subject)))).some((id) => id !== userId);
 
     const threadId = await threadIdOfSubject(ctx, coupleId, subject);
     const read = threadId

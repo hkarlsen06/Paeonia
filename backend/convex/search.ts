@@ -182,6 +182,9 @@ class CoupleSearch {
         }
         return { question_id: null, memory_id: memory.id, story_id: null, context_title: memory.title, topic_title: null };
       }
+      case "couple":
+        // The couple chat is about nothing in particular, so it has no title to show.
+        return { question_id: null, memory_id: null, story_id: null, context_title: null, topic_title: null };
       case "story": {
         // The replies outlive the story's 24 hours on Home, but not the story itself.
         const link = await this.ctx.db

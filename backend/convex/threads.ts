@@ -15,7 +15,7 @@ import { dailyQuestionThreadLink, isSharedRound, loadQuestionRounds } from "./li
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
-import { memoryDeepLink, storyDeepLink } from "./lib/deepLinks";
+import { coupleChatDeepLink, memoryDeepLink, storyDeepLink } from "./lib/deepLinks";
 import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import { queueThreadMessageMediaAssetsIfOrphaned } from "./lib/mediaOrphans";
 import { enqueueNotificationForUser, enqueuePartnerNotification } from "./lib/notifications";
@@ -146,6 +146,7 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
   };
   Object.assign(payload, threadPushRoute(subject));
   if (subject.kind === "game") {
+    // The game chat's route needs the kind, which only the link row has.
     const link = await ctx.db.query("game_threads").withIndex("by_thread_id", q => q.eq("thread_id", thread.id)).unique();
     if (link) {
       payload.game_kind = link.game_kind;
@@ -171,10 +172,13 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
 
 /**
  * Where a chat push opens. The payload carries the subject's id, so the app finds the chat
- * without a lookup: the question's chat, the memory's comments or the story's replies.
+ * without a lookup: the question's chat, the memory's comments or the story's replies. The couple
+ * chat needs no id, and the push keeps the thread and message ids like every chat push.
  */
 function threadPushRoute(subject: ThreadSubject): Record<string, string> {
   switch (subject.kind) {
+    case "couple":
+      return { route: "chat", deeplink: coupleChatDeepLink };
     case "daily_question":
       return {
         route: "daily",
@@ -725,6 +729,40 @@ export const create_game_thread_with_message = mutation({
         });
       }
       const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids, reply);
+      return { thread_id: threadId, message_id: messageId };
+    });
+    return [stored];
+  },
+});
+
+/**
+ * Writes in the couple chat, the one chat a couple has that is not about anything in particular.
+ * The first message starts its thread, and later ones that were queued before the phone knew the
+ * thread join it. The caller names the couple, so a message queued offline in one couple never
+ * lands in the chat of a couple the user joined later.
+ */
+export const create_couple_thread_with_message = mutation({
+  args: {
+    p_couple_id: v.string(),
+    p_body: v.optional(v.union(v.null(), v.string())),
+    p_media_asset_ids: nullableMediaIds,
+    ...clientOperationArgs,
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = uuidArg(args.p_couple_id);
+    if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
+      return fail("42501", "active entitled couple access is required");
+    }
+    const stored = await runClientOperation(ctx, userId, toClientOperation(args, {
+      kind: "create_couple_thread_with_message", scope: "conversation_threads",
+      request: ["create_couple_thread_with_message", coupleId, ...mediaFingerprint(args.p_body, args.p_media_asset_ids)],
+    }), async () => {
+      await consumeRateLimit(ctx, "threadMessage", userId);
+      const threadId =
+        (await threadIdOfSubject(ctx, coupleId, { kind: "couple" })) ??
+        (await insertConversationThread(ctx, { couple_id: coupleId, kind: "couple", created_by_user_id: userId }));
+      const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids);
       return { thread_id: threadId, message_id: messageId };
     });
     return [stored];

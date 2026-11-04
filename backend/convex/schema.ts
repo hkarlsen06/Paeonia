@@ -579,6 +579,8 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_couple_id_created_at", ["couple_id", "created_at"])
     .index("by_couple_id_moderation_status_deleted_at", ["couple_id", "moderation_status", "deleted_at"])
+    // Finds the couple chat, the one `couple` thread a couple has. It needs no link table.
+    .index("by_couple_id_kind", ["couple_id", "kind"])
     .index("by_created_by_user_id", ["created_by_user_id"])
     .index("by_moderated_by", ["moderated_by"])
     .index("by_moderation_report_id", ["moderation_report_id"]),

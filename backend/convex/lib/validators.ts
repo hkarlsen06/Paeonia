@@ -15,8 +15,11 @@ export const moderationStatus = literals(
   "rejected",
 );
 
-/** What a chat thread is about: a daily question, a memory (comments) or a story (replies). */
-export const threadKind = literals("daily_question", "memory", "story", "game");
+/**
+ * What a chat thread is about: a daily question, a memory (comments), a story (replies), a game
+ * kind, or nothing in particular (`couple`, the one chat a couple always has).
+ */
+export const threadKind = literals("daily_question", "memory", "story", "game", "couple");
 
 export const authProvider = literals("apple", "google", "unknown");
 export const avatarDecoration = literals("none", "peony", "ribbon", "moon", "candy",

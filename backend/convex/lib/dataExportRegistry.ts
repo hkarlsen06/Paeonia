@@ -458,8 +458,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   conversation_threads: shared("by_couple_id_created_at", {
     group: "chat",
     about: {
-      en: "The chats you and your partner have, one for each question and each memory.",
-      nb: "Samtalene du og partneren din har, én for hvert spørsmål og hvert minne.",
+      en: "The chats you and your partner have: Just us, and one for each question and each memory.",
+      nb: "Samtalene du og partneren din har: Bare oss, og én for hvert spørsmål og hvert minne.",
     },
   }),
   thread_messages: own("sender_user_id", "by_sender_user_id_created_at", {
