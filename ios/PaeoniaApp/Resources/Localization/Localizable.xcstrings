@@ -37934,6 +37934,24 @@
         }
       }
     },
+    "siri.daily.loadFailed" : {
+      "comment" : "Siri could not load or start the current daily question. Do not describe it as an expired question.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't get today's question. Open Paeonia and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klarte ikke å hente dagens spørsmål. Åpne Paeonia og prøv igjen."
+          }
+        }
+      }
+    },
     "siri.daily.needsApp" : {
       "comment" : "Siri daily question tool metadata or spoken result.",
       "extractionState" : "manual",
@@ -38007,19 +38025,19 @@
       }
     },
     "siri.daily.read.description" : {
-      "comment" : "Siri daily question tool metadata or spoken result.",
+      "comment" : "Description of the Siri action that reads the shared daily question, starting the day if needed.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get today's exact daily question before answering it."
+            "value" : "Get today's question for your couple, even if nobody has opened it in the app yet."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hent dagens spørsmål før du svarer på det."
+            "value" : "Hent dagens spørsmål for dere, også før noen har åpnet det i appen."
           }
         }
       }

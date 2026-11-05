@@ -1,6 +1,32 @@
 import Foundation
 
 extension DailyChallengeViewModel {
+    /// Asking for today's question starts the shared day, just like opening it in the app.
+    func todayQuestionForSiri(
+        couple: SiriCouple, authorize: @MainActor () async throws -> Bool
+    ) async throws -> DailyChallengeQuestion {
+        guard try await authorize(), currentUserID == couple.ownerUserID else {
+            throw SiriFailure(.siriAccessSignedOut)
+        }
+        try Task.checkCancellation()
+        if snapshot.endingCurrentDay(ifEndedBy: now()).todayQuestion == nil {
+            await startToday()
+        }
+        guard try await authorize(), currentUserID == couple.ownerUserID else {
+            throw SiriFailure(.siriAccessSignedOut)
+        }
+        try Task.checkCancellation()
+        guard let question = snapshot.todayQuestion,
+              question.coupleID == couple.coupleID,
+              question.startsAt <= now(), question.endsAt > now() else {
+            if case .startFailed(.offline) = notice {
+                throw SiriFailure(.dailyChallengeStartFailedMessage)
+            }
+            throw SiriFailure(.siriDailyLoadFailed)
+        }
+        return question
+    }
+
     /// Uses the composer's durable queue. The exact daily instance must still be current.
     func submitSiriText(
         _ text: String, instanceID: UUID, couple: SiriCouple,

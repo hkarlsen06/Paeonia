@@ -65,11 +65,9 @@ struct ReadTodayQuestionIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<SiriDailyQuestion> {
         let couple = try await coupleToActFor()
         let model = await SiriDailyQuestions.load(for: couple)
-        guard try await coupleToActFor() == couple,
-              let question = model.snapshot.todayQuestion,
-              question.coupleID == couple.coupleID,
-              question.startsAt <= model.now(), question.endsAt > model.now()
-        else { throw SiriFailure(.siriDailyUnavailable) }
+        let question = try await model.todayQuestionForSiri(couple: couple) {
+            try await coupleToActFor() == couple
+        }
         return .result(value: SiriDailyQuestion(question))
     }
 }
