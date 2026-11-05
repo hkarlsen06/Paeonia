@@ -32,6 +32,50 @@ struct SiriDailyReadTests {
         #expect(await service.startCount == 1)
     }
 
+    @Test func overlappingStartsBothWaitForTheSameQuestion() async throws {
+        let row = dailyQuestionRow()
+        let probe = DailyChallengeSyncNudgeProbe()
+        let service = RecordingDailyChallengeService(
+            snapshots: [.empty(currentUserID: couple.ownerUserID), makeDailySnapshot(rows: [row])],
+            advancesSnapshotsOnLoad: true, startProbe: probe)
+        let model = DailyChallengeViewModel(service: service, now: { TestDailyChallengeIDs.startsAt })
+        await model.configure(currentUserID: couple.ownerUserID)
+        let first = Task { await model.startToday() }
+        while await service.startCount == 0 { await Task.yield() }
+        var secondEntered = false
+        let second = Task {
+            secondEntered = true
+            await model.startToday()
+            #expect(model.snapshot.todayQuestion?.id == row.instanceID)
+        }
+        while !secondEntered { await Task.yield() }
+        await probe.release()
+        await first.value
+        await second.value
+        #expect(model.snapshot.todayQuestion?.id == row.instanceID)
+        #expect(await service.startCount == 1)
+    }
+
+    @Test func signingOutDuringAStartDoesNotRestoreTheOldQuestion() async throws {
+        let row = dailyQuestionRow()
+        let probe = DailyChallengeSyncNudgeProbe()
+        let service = RecordingDailyChallengeService(
+            snapshots: [.empty(currentUserID: couple.ownerUserID), makeDailySnapshot(rows: [row])],
+            advancesSnapshotsOnLoad: true, startProbe: probe)
+        let model = DailyChallengeViewModel(service: service, now: { TestDailyChallengeIDs.startsAt })
+        await model.configure(currentUserID: couple.ownerUserID)
+        let start = Task { await model.startToday() }
+        while await service.startCount == 0 { await Task.yield() }
+
+        await model.configure(currentUserID: nil)
+        await probe.release()
+        await start.value
+
+        #expect(model.snapshot.currentUserID == nil)
+        #expect(model.snapshot.todayQuestion == nil)
+        #expect(!model.isStarting)
+    }
+
     @Test func readingAnExistingQuestionDoesNotReplaceIt() async throws {
         let row = dailyQuestionRow()
         let service = RecordingDailyChallengeService(snapshots: [makeDailySnapshot(rows: [row])])

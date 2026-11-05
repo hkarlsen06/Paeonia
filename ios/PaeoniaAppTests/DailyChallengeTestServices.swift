@@ -8,6 +8,7 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
     private let advancesSnapshotsOnLoad: Bool
     private let shuffleSnapshot: DailyChallengeSnapshot?
     private let startError: Error?
+    private let startProbe: DailyChallengeSyncNudgeProbe?
     private let loadError: Error?
     private let loadErrorsByAttempt: [Int: Error]
     private let loadProbe: DailyChallengeSyncNudgeProbe?
@@ -25,6 +26,7 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
         shuffleSnapshot: DailyChallengeSnapshot? = nil,
         loadError: Error? = nil,
         startError: Error? = nil,
+        startProbe: DailyChallengeSyncNudgeProbe? = nil,
         loadErrorsByAttempt: [Int: Error] = [:],
         loadProbe: DailyChallengeSyncNudgeProbe? = nil,
         historyQuestions: [DailyChallengeQuestion] = [],
@@ -36,6 +38,7 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
         self.shuffleSnapshot = shuffleSnapshot
         self.loadError = loadError
         self.startError = startError
+        self.startProbe = startProbe
         self.loadErrorsByAttempt = loadErrorsByAttempt
         self.loadProbe = loadProbe
         self.historyQuestions = historyQuestions
@@ -76,8 +79,9 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
     func startToday(
         currentUserID: UUID,
         operation _: SyncClientOperation
-    ) throws -> DailyChallengeLoadResult {
+    ) async throws -> DailyChallengeLoadResult {
         startCount += 1
+        await startProbe?.blockUntilReleased()
         if let startError { throw startError }
         return DailyChallengeLoadResult(
             snapshot: snapshots.first ?? .empty(currentUserID: currentUserID),

@@ -41,6 +41,8 @@ final class DailyChallengeViewModel {
     private(set) var currentUserID: UUID?
     var reloadTask: Task<Void, Never>?
     var reloadTaskUserID: UUID?
+    @ObservationIgnored private var startTodayTask: Task<Void, Never>?
+    @ObservationIgnored private var startTodayRequestID: UUID?
     var answerDrafts: [UUID: DailyAnswerDraft] = [:]
     /// Whether today's challenge has resolved for the current user — set once the
     /// first load attempt has settled (applied a result or failed with a banner),
@@ -187,6 +189,10 @@ final class DailyChallengeViewModel {
         reloadTask?.cancel()
         reloadTask = nil
         reloadTaskUserID = nil
+        startTodayTask?.cancel()
+        startTodayTask = nil
+        startTodayRequestID = nil
+        isStarting = false
         liveUpdatesTask?.cancel()
         liveUpdatesTask = nil
         dayEndTask?.cancel()
@@ -299,25 +305,44 @@ final class DailyChallengeViewModel {
     }
 
     func startToday() async {
-        guard let currentUserID, !isStarting else { return }
-
+        guard let currentUserID else { return }
+        if let startTodayTask {
+            await startTodayTask.value
+            return
+        }
         cancelInFlightReload()
         isStarting = true
+        let requestID = UUID()
+        startTodayRequestID = requestID
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.performStartToday(currentUserID: currentUserID)
+        }
+        startTodayTask = task
+        await task.value
+        if startTodayRequestID == requestID {
+            startTodayTask = nil
+            startTodayRequestID = nil
+            isStarting = false
+        }
+    }
+
+    private func performStartToday(currentUserID: UUID) async {
         do {
             let result = try await service.startToday(
                 currentUserID: currentUserID,
                 operation: operationProvider.makeOperation()
             )
+            guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
             apply(result)
-            // This replaced any load it cancelled, so today's state is now known.
             hasResolvedTodayState = true
         } catch {
+            guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
             if !error.isCancellation {
                 logFailure("Starting today's challenge failed", error)
                 notice = .startFailed(PaeoniaFailure(error))
             }
         }
-        isStarting = false
     }
 
     func dismissNotice() {

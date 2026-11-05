@@ -4,9 +4,10 @@ extension DailyChallengeViewModel {
     /// Queued answers are already durable locally, so the answering flow should
     /// not wait for sync before moving on to the next question.
     private func syncQueuedAnswerInBackground() {
+        guard let localChangeSyncHandler else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            await localChangeSyncHandler?()
+            await localChangeSyncHandler()
             await reload()
         }
     }
