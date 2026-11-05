@@ -50,7 +50,7 @@ struct ConsensioWaitingView: View {
         .onChange(of: viewModel.partnerStatus) { old, new in
             if old == .away, new != .away {
                 PaeoniaHaptics.partnerDrawingReceived()
-                GameSound.nudge.play(volume: 0.6)
+                GameSound.nudge.play()
             }
         }
         .accessibilityIdentifier(isWaitingForGuess ? "consensio.waiting.guess" : "consensio.waiting.topic")

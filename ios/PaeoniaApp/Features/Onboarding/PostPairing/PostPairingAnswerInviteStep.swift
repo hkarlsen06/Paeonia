@@ -40,7 +40,7 @@ struct PostPairingAnswerInviteStep: View {
             }
             isShown = true
             // Something from the partner is waiting.
-            GameSound.nudge.play(volume: 0.6)
+            GameSound.nudge.play()
         }
     }
 

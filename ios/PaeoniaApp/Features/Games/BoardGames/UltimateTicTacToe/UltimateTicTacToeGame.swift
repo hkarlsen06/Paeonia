@@ -90,7 +90,7 @@ struct UltimateTicTacToeScreen: View {
         guard viewModel.canPlay, viewModel.board.isLegal(move) else { return }
         pick = .move(move)
         PaeoniaHaptics.selection()
-        GameSound.tap.play(volume: 0.6)
+        GameSound.tap.play()
     }
 
     /// My pick for my partner's board. It is nothing on their turn, so a new

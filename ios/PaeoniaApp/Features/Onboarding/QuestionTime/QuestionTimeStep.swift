@@ -179,7 +179,7 @@ struct QuestionTimeStep: View {
             return
         }
         PaeoniaHaptics.selection()
-        GameSound.tick.play(volume: 0.4)
+        GameSound.tick.play()
         model.select(choice)
     }
 

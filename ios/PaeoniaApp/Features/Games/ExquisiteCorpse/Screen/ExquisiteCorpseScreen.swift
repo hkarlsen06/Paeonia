@@ -86,7 +86,7 @@ struct ExquisiteCorpseScreen: View {
         switch viewModel.phase {
         case .waiting, .watching, .waitingToSync:
             PaeoniaHaptics.partnerDrawingReceived()
-            GameSound.nudge.play(volume: 0.7)
+            GameSound.nudge.play()
         default:
             break
         }
@@ -99,7 +99,7 @@ struct ExquisiteCorpseScreen: View {
     private func handoffLanded() {
         Task {
             try? await Task.sleep(for: .seconds(PaeoniaMotion.motionSlow - Self.foldSoundLead))
-            GameSound.fold.play(volume: 0.7)
+            GameSound.fold.play()
         }
     }
 

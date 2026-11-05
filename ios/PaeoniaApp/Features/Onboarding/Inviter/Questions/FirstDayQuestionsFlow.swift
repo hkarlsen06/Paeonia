@@ -151,7 +151,7 @@ struct FirstDayQuestionsFlow: View {
                 return
             }
             PaeoniaHaptics.firstDayAnswerSaved()
-            GameSound.send.play(volume: 0.6)
+            GameSound.send.play()
             isComposerFocused = false
         }
     }

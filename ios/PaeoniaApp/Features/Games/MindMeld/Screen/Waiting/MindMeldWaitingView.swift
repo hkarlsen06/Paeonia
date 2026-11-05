@@ -45,7 +45,7 @@ struct MindMeldWaitingView: View {
         .onChange(of: viewModel.isPartnerHere) { old, new in
             if !old, new {
                 PaeoniaHaptics.partnerDrawingReceived()
-                GameSound.nudge.play(volume: 0.7)
+                GameSound.nudge.play()
             }
         }
         .accessibilityIdentifier("mindMeld.waiting")

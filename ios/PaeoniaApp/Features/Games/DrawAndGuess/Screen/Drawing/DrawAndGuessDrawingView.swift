@@ -134,7 +134,7 @@ struct DrawAndGuessDrawingView: View {
     private func partnerPresenceChanged(from old: DrawAndGuessPartnerPresence) {
         guard !old.isHere else { return }
         PaeoniaHaptics.partnerDrawingReceived()
-        GameSound.nudge.play(volume: 0.7)
+        GameSound.nudge.play()
     }
 }
 

@@ -116,7 +116,7 @@ struct WelcomeStartDateStep: View {
         }
         .onChange(of: selectedDate) { _, _ in
             PaeoniaHaptics.selection()
-            GameSound.tick.play(volume: 0.4)
+            GameSound.tick.play()
         }
     }
 

@@ -332,7 +332,7 @@ final class LudoStage {
     /// A pawn that cannot move shakes, and the phone taps twice.
     func shake(pawn index: Int) {
         PaeoniaHaptics.gameWrongGuess()
-        GameSound.wrong.play(volume: 0.8)
+        GameSound.wrong.play()
         guard !reduceMotion, pawns.indices.contains(index), !hasClip(.pawn(index)) else { return }
         let pawn = pawns[index]
         let duration = LudoSceneStyle.shakeDuration

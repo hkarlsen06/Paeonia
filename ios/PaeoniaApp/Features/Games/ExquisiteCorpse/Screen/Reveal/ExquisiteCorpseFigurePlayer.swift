@@ -49,7 +49,7 @@ final class ExquisiteCorpseFigurePlayer {
         monotonicNow: @escaping @Sendable () -> TimeInterval = { CACurrentMediaTime() },
         selection: @escaping @MainActor () -> Void = {
             PaeoniaHaptics.selection()
-            GameSound.tap.play(volume: 0.6)
+            GameSound.tap.play()
         }
     ) {
         self.monotonicNow = monotonicNow

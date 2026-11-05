@@ -28,11 +28,11 @@ final class GameAttentionCue {
         static let live = Player(
             turn: {
                 PaeoniaHaptics.gameYourTurn()
-                GameSound.nudge.play(volume: 0.6)
+                GameSound.nudge.play()
             },
             step: {
                 PaeoniaHaptics.gamePartnerStep()
-                GameSound.nudge.play(volume: 0.35)
+                GameSound.nudge.play(level: .interaction)
             }
         )
     }

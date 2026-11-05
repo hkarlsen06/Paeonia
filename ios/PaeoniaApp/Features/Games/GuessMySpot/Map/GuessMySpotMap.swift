@@ -166,7 +166,7 @@ struct GuessMySpotMap: View {
         if let onPinTap {
             Button {
                 PaeoniaHaptics.selection()
-                GameSound.tap.play(volume: 0.6)
+                GameSound.tap.play()
                 onPinTap(pin.id)
             } label: {
                 pinMark(pin)
@@ -198,7 +198,7 @@ struct GuessMySpotMap: View {
     private func dropped(at coordinate: GuessMySpotCoordinate, _ onTap: (GuessMySpotCoordinate) -> Void) {
         guard GuessMySpotRules.isValid(coordinate) else { return }
         PaeoniaHaptics.selection()
-        GameSound.tap.play(volume: 0.6)
+        GameSound.tap.play()
         onTap(coordinate)
     }
 
@@ -222,7 +222,7 @@ struct GuessMySpotMap: View {
     private var satelliteButton: some View {
         Button {
             PaeoniaHaptics.selection()
-            GameSound.tap.play(volume: 0.5)
+            GameSound.tap.play()
             withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
                 if let satellite {
                     satellite.wrappedValue.toggle()

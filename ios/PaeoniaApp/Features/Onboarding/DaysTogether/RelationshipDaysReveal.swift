@@ -139,7 +139,7 @@ struct RelationshipDaysReveal: View {
             guard await sleep(tick.time - elapsed) else { return }
             elapsed = tick.time
             PaeoniaHaptics.streakTick(intensity: tick.intensity)
-            GameSound.tick.play(volume: tick.intensity * 0.8)
+            GameSound.tick.play(intensity: tick.intensity * 0.8)
         }
 
         _ = await sleep(countUp.duration - elapsed)

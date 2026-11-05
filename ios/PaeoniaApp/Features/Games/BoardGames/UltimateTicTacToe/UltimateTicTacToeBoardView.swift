@@ -314,7 +314,7 @@ extension UltimateTicTacToeBoardView {
 
     private func choose(_ next: UltimateTicTacToePick) {
         PaeoniaHaptics.selection()
-        GameSound.tap.play(volume: 0.6)
+        GameSound.tap.play()
         withAnimation(PaeoniaMotion.stateChange) {
             pick = next
         }

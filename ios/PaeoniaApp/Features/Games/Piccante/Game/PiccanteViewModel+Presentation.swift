@@ -30,7 +30,7 @@ extension PiccanteViewModel {
             shownBites = index + 1
             if plan.playsSound {
                 GameSound.piccanteBite.play(
-                    volume: 0.3, variation: PiccantePlayback.variation(gameNumber: game.gameNumber, biteIndex: index))
+                    variation: PiccantePlayback.variation(gameNumber: game.gameNumber, biteIndex: index))
                 PaeoniaHaptics.selection()
             }
             if game.phase == .finished && index == game.bites.count - 1 {
@@ -54,7 +54,7 @@ extension PiccanteViewModel {
         burnRevealed = true
         burnShake += 1
         PaeoniaHaptics.answerRevealed()
-        GameSound.piccanteBurn.play(volume: 0.3, variation: 0)
+        GameSound.piccanteBurn.play(variation: 0)
         await wait(until: start.addingTimeInterval(0.72))
         guard !Task.isCancelled else { return }
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { revealSettled = true }
@@ -62,7 +62,7 @@ extension PiccanteViewModel {
         guard !Task.isCancelled else { return }
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.28)) { noteRevealed = true }
         if !reduceMotion, let game, Set(game.chilis.map(\.tile)).count == 1 {
-            GameSound.piccanteSameOne.play(volume: 0.18, variation: 0)
+            GameSound.piccanteSameOne.play(variation: 0)
         }
     }
 

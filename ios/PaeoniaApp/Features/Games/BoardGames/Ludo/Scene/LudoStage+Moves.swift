@@ -99,7 +99,7 @@ extension LudoStage {
             let isLast = step == hops
             return LudoClip.Event(time: Double(step) * hop) {
                 PaeoniaHaptics.streakTick(intensity: isLast ? 0.55 : 0.35)
-                GameSound.ludoStep.play(volume: isLast ? 0.9 : 0.6)
+                GameSound.ludoStep.play(intensity: isLast ? 0.9 : 0.6)
             }
         }
         let reachesHome = transition.path.last == .home(pawn.player)
@@ -170,7 +170,7 @@ extension LudoStage {
         let wins = board.outcome?.winner == player
         let events = [LudoClip.Event(time: duration) { [weak self] in
             PaeoniaHaptics.streakTick(intensity: 0.5)
-            GameSound.ludoStep.play(volume: 0.8)
+            GameSound.ludoStep.play()
             if reachesHome {
                 GameSound.ludoHome.play()
                 self?.pulseHome(of: player, holds: wins)
@@ -205,7 +205,7 @@ extension LudoStage {
             } else {
                 PaeoniaHaptics.partnerDrawingReceived()
             }
-            GameSound.ludoCapture.play(volume: movedByMe ? 1 : 0.8)
+            GameSound.ludoCapture.play(intensity: movedByMe ? 1 : 0.8)
         }
         let clip: LudoClip
         if reduceMotion {

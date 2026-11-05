@@ -10,6 +10,10 @@ Use SwiftUI, feature-first organization, and the existing MVVM/storage boundarie
 
 Paths and commands in the linked guides are relative to the repository root. Read relevant details rather than all guides for every edit.
 
+## Game audio
+
+Before adding or changing game sounds, read [the audio standard](../docs/game-audio.md). Normalize bundled effects with `python3 ios/Scripts/normalize-game-sounds.py --write`, and use the shared `GameSound` levels for playback.
+
 ## Partner names
 
 A person can give their partner a nickname, and the server keeps it private to them. Every screen, widget and VoiceOver label shows the nickname where it would show the partner's name.

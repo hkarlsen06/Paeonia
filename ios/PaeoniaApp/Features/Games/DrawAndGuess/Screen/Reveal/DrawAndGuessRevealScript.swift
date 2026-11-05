@@ -64,11 +64,11 @@ struct DrawAndGuessRevealHaptics {
     static let live = Self(
         selection: {
             PaeoniaHaptics.selection()
-            GameSound.tap.play(volume: 0.6)
+            GameSound.tap.play()
         },
         letterTick: {
             PaeoniaHaptics.streakTick(intensity: $0)
-            GameSound.tick.play(volume: $0)
+            GameSound.tick.play(intensity: $0)
         },
         answerRevealed: {
             PaeoniaHaptics.answerRevealed()
@@ -80,7 +80,7 @@ struct DrawAndGuessRevealHaptics {
         },
         scoreTick: {
             PaeoniaHaptics.streakTick(intensity: $0)
-            GameSound.tick.play(volume: $0)
+            GameSound.tick.play(intensity: $0)
         },
         speedBonus: {
             PaeoniaHaptics.streakContinued()

@@ -19,7 +19,7 @@ struct MindMeldRevealHaptics {
             if intensity >= MindMeldRevealScript.flipIntensity {
                 GameSound.flip.play()
             } else {
-                GameSound.tick.play(volume: intensity + 0.3)
+                GameSound.tick.play(intensity: intensity + 0.3)
             }
         },
         celebrated: {
@@ -28,7 +28,7 @@ struct MindMeldRevealHaptics {
         },
         continued: {
             PaeoniaHaptics.streakContinued()
-            GameSound.tap.play(volume: 0.7)
+            GameSound.tap.play()
         },
         soft: {
             PaeoniaHaptics.partnerDrawingReceived()

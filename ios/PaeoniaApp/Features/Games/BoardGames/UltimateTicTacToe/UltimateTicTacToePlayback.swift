@@ -172,7 +172,7 @@ extension UltimateTicTacToePlayback {
         guard !input.isReplay else { return }
         if !event.isMine {
             PaeoniaHaptics.partnerDrawingReceived()
-            GameSound.mark.play(volume: 0.85)
+            GameSound.mark.play()
         }
         if closedState(of: event)?.isWon == true {
             PaeoniaHaptics.streakContinued()
@@ -194,7 +194,7 @@ extension UltimateTicTacToePlayback {
             guard await pause(UltimateTicTacToeTiming.minePop, id: id) else { return }
         } else {
             PaeoniaHaptics.partnerDrawingReceived()
-            GameSound.mark.play(volume: 0.85)
+            GameSound.mark.play()
             withAnimation(UltimateTicTacToeMotion.markDraw) {
                 hold.hiddenMove = nil
             }

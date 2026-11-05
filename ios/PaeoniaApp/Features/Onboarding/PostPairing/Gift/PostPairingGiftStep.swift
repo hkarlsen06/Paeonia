@@ -186,7 +186,7 @@ struct PostPairingGiftStep: View {
         }
         guard await sleep(0.2) else { return false }
 
-        GameSound.flip.play(volume: 0.7)
+        GameSound.flip.play()
         withAnimation(.spring(duration: 0.55, bounce: 0.22)) {
             stage = .cardOut
         }

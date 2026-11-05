@@ -93,13 +93,13 @@ struct ConnectFourFallingDiscView: View {
         } else {
             PaeoniaHaptics.streakTick(intensity: 0.6)
         }
-        GameSound.connectFourDrop.play(volume: disc.isMine ? 1 : 0.85)
+        GameSound.connectFourDrop.play(intensity: disc.isMine ? 1 : 0.85)
         // A quieter tap as the disc comes down from its first hop.
         if let hop = disc.motion.bounces.first {
             await ConnectFourClock.sleep(until: disc.start.addingTimeInterval(hop.start + hop.duration))
             guard !Task.isCancelled else { return }
             PaeoniaHaptics.streakTick(intensity: 0.35)
-            GameSound.connectFourDrop.play(volume: 0.3)
+            GameSound.connectFourDrop.play(intensity: 0.3)
         }
         await ConnectFourClock.sleep(until: disc.end)
         guard !Task.isCancelled else { return }

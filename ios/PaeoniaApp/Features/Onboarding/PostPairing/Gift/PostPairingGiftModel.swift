@@ -11,11 +11,11 @@ struct PostPairingGiftEffects {
     static let live = PostPairingGiftEffects(
         strokeFinished: {
             PaeoniaHaptics.streakTick(intensity: 0.3)
-            GameSound.tick.play(volume: 0.25)
+            GameSound.tick.play()
         },
         replayFinished: {
             PaeoniaHaptics.giftReplayFinished()
-            GameSound.chime.play(volume: 0.8)
+            GameSound.chime.play()
         }
     )
 }

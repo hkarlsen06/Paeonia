@@ -26,7 +26,7 @@ extension LudoStage {
         releasedAt = nil
         heldDie = holdPoint(at: point) ?? dieNode.map { $0.restPosition + SIMD3(0, LudoSceneStyle.dieHoldLift, 0) }
         PaeoniaHaptics.selection()
-        GameSound.tick.play(volume: 0.5)
+        GameSound.tick.play()
     }
 
     func moveHeldDie(to point: CGPoint) {

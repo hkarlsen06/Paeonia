@@ -145,6 +145,6 @@ struct ExquisiteCorpseDrawingView: View {
         if !board.isStrokeInProgress {
             PaeoniaHaptics.partnerDrawingReceived()
         }
-        GameSound.nudge.play(volume: 0.7)
+        GameSound.nudge.play()
     }
 }

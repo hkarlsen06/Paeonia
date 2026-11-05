@@ -470,6 +470,7 @@ func write(_ samples: [Double], to url: URL) throws {
 guard CommandLine.arguments.count == 2 else { fail("usage: game-sounds <output folder>") }
 let folder = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+var generatedFiles: [String] = []
 for recipe in recipes {
     for variant in 1...recipe.variants {
         random = Random(recipe.name, variant)
@@ -480,7 +481,18 @@ for recipe in recipes {
         } catch {
             fail("could not write \(url.lastPathComponent): \(error)")
         }
+        generatedFiles.append(url.lastPathComponent)
         let line = String(format: "%@  %.0f ms\n", url.lastPathComponent, Double(samples.count) / rate * 1_000)
         FileHandle.standardOutput.write(Data(line.utf8))
     }
 }
+
+// Apply the same loudness standard as imported recordings. Only these recipe outputs change.
+let normalizer = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    .appendingPathComponent("normalize-game-sounds.py")
+let normalize = Process()
+normalize.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+normalize.arguments = ["python3", normalizer.path, "--write", "--directory", folder.path, "--only"] + generatedFiles
+try normalize.run()
+normalize.waitUntilExit()
+guard normalize.terminationStatus == 0 else { fail("game sound normalization failed") }

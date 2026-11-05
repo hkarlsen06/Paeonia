@@ -25,7 +25,7 @@ extension PiccanteViewModel {
                 let loaded = try await dependencies.piccanteGateway.sendPiccante(move, operation: operation)
                 await dependencies.piccanteCache.saveState(loaded, ownerUserID: userID)
                 PaeoniaHaptics.selection()
-                GameSound.piccanteSniff.play(volume: 0.2)
+                GameSound.piccanteSniff.play()
                 await reload()
             } catch { notice = .piccanteSniffFailed(PaeoniaFailure(error)) }
             return
@@ -42,7 +42,7 @@ extension PiccanteViewModel {
             if action == .hide {
                 note = ""
                 PaeoniaHaptics.selection()
-                GameSound.piccanteHide.play(volume: 0.22)
+                GameSound.piccanteHide.play()
             }
             await reload()
             LocalStoreChanges.post(.games, ownerUserID: userID)

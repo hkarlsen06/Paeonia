@@ -46,9 +46,9 @@ nonisolated enum GameSound: String, CaseIterable, Sendable {
     case piccanteHide = "PiccanteHide"
     case piccanteSameOne = "PiccanteSameOne"
 
-    /// Plays the sound. `volume` from 0 to 1 scales it, usually with the strength of the
-    /// haptic it goes with.
-    func play(volume: Double = 1, variation: Int? = nil) {
-        GameSoundPlayer.shared.play(self, volume: Float(volume), variation: variation)
+    /// Uses the shared level for this sound. Intensity is for animation and bounce envelopes.
+    func play(level: GameSoundLevel? = nil, intensity: Double = 1, variation: Int? = nil) {
+        let gain = (level ?? self.level).rawValue * min(max(intensity, 0), 1)
+        GameSoundPlayer.shared.play(self, gain: Float(gain), variation: variation)
     }
 }

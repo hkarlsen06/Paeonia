@@ -205,7 +205,7 @@ struct MindMeldWriteView: View {
             } else if viewModel.isFirstRound {
                 Button {
                     PaeoniaHaptics.selection()
-                    GameSound.tap.play(volume: 0.7)
+                    GameSound.tap.play()
                     viewModel.surpriseMe()
                 } label: {
                     Label {

@@ -356,7 +356,7 @@ extension HomeMapLayout {
     private var togetherHeart: some View {
         Button {
             heartTaps += 1
-            GameSound.send.play(volume: 0.5)
+            GameSound.send.play()
             sendHeart()
         } label: {
             GlossyHeart(width: Self.heartWidth, tapCount: heartTaps)

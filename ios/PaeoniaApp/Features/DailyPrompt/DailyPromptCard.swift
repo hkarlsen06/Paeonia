@@ -213,7 +213,7 @@ struct DailyPromptCard: View {
     private func playMoment() async {
         phase = .breaking
         sealBreaks += 1
-        GameSound.fold.play(volume: 0.8)
+        GameSound.fold.play()
         if !DailyPromptCardArt.partnerAnswersAreReadable(state) {
             try? await Task.sleep(for: .milliseconds(150))
         } else if reduceMotion {
@@ -239,7 +239,7 @@ struct DailyPromptCard: View {
         // The flap is past upright, so it can go behind the letter.
         try? await Task.sleep(for: .milliseconds(220))
         guard !Task.isCancelled else { return false }
-        GameSound.flip.play(volume: 0.6)
+        GameSound.flip.play()
         withAnimation(.spring(duration: 0.45, bounce: 0.25)) { envelopeOpening = .letterOut }
         try? await Task.sleep(for: .milliseconds(600))
         return !Task.isCancelled
@@ -251,7 +251,7 @@ struct DailyPromptCard: View {
         phase = .opening
         opensWhenSeen = false
         sealBreaks += 1
-        GameSound.fold.play(volume: 0.8)
+        GameSound.fold.play()
         guard !reduceMotion else {
             endOpening()
             return
@@ -262,7 +262,7 @@ struct DailyPromptCard: View {
         withAnimation(.spring(duration: 0.5, bounce: 0.12)) { compactOpening = .flapOpening }
         try? await Task.sleep(for: .milliseconds(220))
         guard !Task.isCancelled else { return }
-        GameSound.flip.play(volume: 0.6)
+        GameSound.flip.play()
         withAnimation(.spring(duration: 0.45, bounce: 0.25)) { compactOpening = .letterOut }
         try? await Task.sleep(for: .milliseconds(450))
         guard !Task.isCancelled else { return }

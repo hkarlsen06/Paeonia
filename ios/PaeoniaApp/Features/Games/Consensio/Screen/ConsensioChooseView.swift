@@ -31,7 +31,7 @@ struct ConsensioChooseView: View {
                     focusedField = nil
                 } else {
                     PaeoniaHaptics.validationError()
-                    GameSound.wrong.play(volume: 0.5)
+                    GameSound.wrong.play()
                 }
             } label: {
                 Text(.consensioChooseStart)
@@ -97,7 +97,7 @@ struct ConsensioChooseView: View {
         let isSelected = viewModel.selectedChoice == choice
         return Button {
             PaeoniaHaptics.selection()
-            GameSound.tap.play(volume: 0.7)
+            GameSound.tap.play()
             viewModel.select(choice)
         } label: {
             ConsensioTopicRow(choice: choice, isSelected: isSelected)
@@ -162,7 +162,7 @@ struct ConsensioChooseView: View {
         } else {
             Button {
                 PaeoniaHaptics.selection()
-                GameSound.tap.play(volume: 0.7)
+                GameSound.tap.play()
                 viewModel.openOwnTopic()
             } label: {
                 HStack(spacing: PaeoniaSpacing.space12) {

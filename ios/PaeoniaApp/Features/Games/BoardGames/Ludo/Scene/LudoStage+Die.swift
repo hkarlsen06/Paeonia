@@ -152,12 +152,12 @@ extension LudoStage {
         var events = flight.knocks.filter { $0 >= skipped }.enumerated().map { index, time in
             LudoClip.Event(time: lead + time) {
                 PaeoniaHaptics.selection()
-                GameSound.ludoDieKnock.play(volume: max(0.35, 1 - 0.22 * Double(index)))
+                GameSound.ludoDieKnock.play(intensity: max(0.35, 1 - 0.22 * Double(index)))
             }
         }
         events.append(LudoClip.Event(time: lead + flight.duration) { [weak self] in
             PaeoniaHaptics.streakTick(intensity: 0.55)
-            GameSound.ludoDieSettle.play(volume: 0.7)
+            GameSound.ludoDieSettle.play()
             if isNear { self?.onDieLanded?() }
         })
         return events

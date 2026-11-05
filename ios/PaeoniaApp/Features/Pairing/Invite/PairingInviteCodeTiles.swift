@@ -82,7 +82,7 @@ private struct PairingInviteCodeCharacterTile: View {
         // A quiet click as each tile lands, so the six make a short run.
         Task {
             try? await Task.sleep(for: .seconds(delay + 0.12))
-            GameSound.tick.play(volume: 0.3)
+            GameSound.tick.play()
         }
     }
 }

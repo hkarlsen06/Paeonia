@@ -63,10 +63,10 @@ final class ExquisiteCorpseRevealTimeline {
         static let live = Self(
             selection: {
                 PaeoniaHaptics.selection()
-                GameSound.tap.play(volume: 0.6)
+                GameSound.tap.play()
             },
             foldCreasing: {
-                GameSound.fold.play(volume: 0.5 + 0.5 * $0)
+                GameSound.fold.play(intensity: 0.5 + 0.5 * $0)
             },
             foldLanded: {
                 PaeoniaHaptics.streakTick(intensity: $0)

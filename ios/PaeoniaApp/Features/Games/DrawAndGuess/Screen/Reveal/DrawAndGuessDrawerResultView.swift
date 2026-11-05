@@ -131,7 +131,7 @@ struct DrawAndGuessDrawerResultView: View {
         .onChange(of: viewModel.partnerPresence.isHere) { old, new in
             guard new, !old else { return }
             PaeoniaHaptics.partnerDrawingReceived()
-            GameSound.nudge.play(volume: 0.7)
+            GameSound.nudge.play()
         }
         .onChange(of: timeline.titleShown) { _, shown in
             if shown, UIAccessibility.isVoiceOverRunning { isTitleFocused = true }
@@ -287,7 +287,7 @@ extension DrawAndGuessDrawerResultView {
                 guard !Task.isCancelled else { return }
                 withAnimation(PaeoniaMotion.cardReveal) { shownWrongCount = index + 1 }
                 PaeoniaHaptics.partnerDrawingReceived()
-                GameSound.tap.play(volume: 0.6)
+                GameSound.tap.play()
             }
             // The right word gets its own beat after the last wrong one.
             try? await Task.sleep(for: .seconds(gap))

@@ -251,7 +251,7 @@ struct ConsensioScale: View {
                 if !isTouching {
                     isTouching = true
                     PaeoniaHaptics.selection()
-                    GameSound.tap.play(volume: 0.5)
+                    GameSound.tap.play()
                 }
                 tickIfNeeded(position)
                 editable.move(position, true)
@@ -271,7 +271,7 @@ struct ConsensioScale: View {
         defer { lastTickBucket = bucket }
         guard let lastTickBucket, lastTickBucket != bucket else { return }
         PaeoniaHaptics.selection()
-        GameSound.tick.play(volume: 0.4)
+        GameSound.tick.play()
     }
 }
 

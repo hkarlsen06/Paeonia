@@ -107,7 +107,7 @@ private struct GameClearDrawingToolbar: ViewModifier {
                 Button(role: .destructive) {
                     board.clear()
                     PaeoniaHaptics.destructiveActionConfirmed()
-                    GameSound.page.play(volume: 0.8)
+                    GameSound.page.play()
                 } label: {
                     Text(.gamesDrawingClearAction)
                 }

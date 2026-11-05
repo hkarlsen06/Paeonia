@@ -35,7 +35,7 @@ struct StoryChainPageText: View {
     /// While only the caret blinks, the page redraws this often. The write-in redraws on every frame.
     private static let caretFrameInterval: TimeInterval = 1.0 / 20
     /// Each word's tick is barely there, so a long line patters instead of clatters.
-    private static let wordTickVolume = 0.2
+    private static let wordTickIntensity = 0.2
 
     var body: some View {
         let paragraph = StoryChainParagraph.text(for: content)
@@ -116,7 +116,7 @@ struct StoryChainPageText: View {
             let start = gap * Double(index)
             try? await Task.sleep(for: .seconds(start - elapsed))
             guard !Task.isCancelled else { return }
-            GameSound.tick.play(volume: Self.wordTickVolume)
+            GameSound.tick.play(intensity: Self.wordTickIntensity)
             elapsed = start
         }
         // A short extra wait lets the last frame draw before the line counts as done.

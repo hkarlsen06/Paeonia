@@ -38,7 +38,7 @@ struct GuessMySpotRevealCameraButtons: View {
         let isCurrent = focus == target
         return Button {
             PaeoniaHaptics.selection()
-            GameSound.tap.play(volume: 0.5)
+            GameSound.tap.play()
             onSelect(target)
         } label: {
             icon()

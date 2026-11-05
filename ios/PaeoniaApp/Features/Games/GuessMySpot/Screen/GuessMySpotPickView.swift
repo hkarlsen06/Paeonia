@@ -37,7 +37,7 @@ struct GuessMySpotPickView: View {
         .onChange(of: selection) { _, item in
             guard let item else { return }
             PaeoniaHaptics.selection()
-            GameSound.tap.play(volume: 0.7)
+            GameSound.tap.play()
             loadTask?.cancel()
             loadTask = Task { await load(item) }
         }

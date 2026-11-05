@@ -163,7 +163,7 @@ struct MindMeldScreen: View {
     /// A word hits the screen: it squashes, taps the phone, and springs back.
     private func landWord(isMine: Bool) async {
         PaeoniaHaptics.streakTick(intensity: 0.7)
-        GameSound.tap.play(volume: 0.6)
+        GameSound.tap.play()
         withAnimation(MindMeldWordFlight.squash) { setSquash(true, isMine: isMine) }
         try? await Task.sleep(for: .seconds(MindMeldWordFlight.squashDuration))
         withAnimation(MindMeldWordFlight.settle) { setSquash(false, isMine: isMine) }

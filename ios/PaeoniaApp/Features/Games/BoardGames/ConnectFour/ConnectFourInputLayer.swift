@@ -106,11 +106,11 @@ struct ConnectFourInputLayer: View {
             hoverColumn = column
             withAnimation(appearAnimation) { isHovering = true }
             PaeoniaHaptics.selection()
-            GameSound.tick.play(volume: 0.45)
+            GameSound.tick.play()
         } else if hoverColumn != column {
             withAnimation(moveAnimation) { hoverColumn = column }
             PaeoniaHaptics.selection()
-            GameSound.tick.play(volume: 0.45)
+            GameSound.tick.play()
         }
     }
 
@@ -130,7 +130,7 @@ struct ConnectFourInputLayer: View {
         guard board.landingRow(column: column) != nil else {
             shakes += 1
             PaeoniaHaptics.gameWrongGuess()
-            GameSound.wrong.play(volume: 0.8)
+            GameSound.wrong.play()
             schedule(hideAfter: .milliseconds(reduceMotion ? 300 : 500))
             return
         }

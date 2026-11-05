@@ -14,7 +14,7 @@ struct ConsensioRevealHaptics {
     static let live = Self(
         tick: { intensity in
             PaeoniaHaptics.streakTick(intensity: intensity)
-            GameSound.tick.play(volume: intensity + 0.1)
+            GameSound.tick.play(intensity: intensity + 0.1)
         },
         landed: {
             PaeoniaHaptics.answerRevealed()

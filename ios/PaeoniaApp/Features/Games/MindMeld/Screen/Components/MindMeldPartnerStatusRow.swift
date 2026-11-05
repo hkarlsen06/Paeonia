@@ -34,7 +34,7 @@ struct MindMeldPartnerStatusRow: View {
         .onChange(of: isPresent) { old, new in
             guard new, !old else { return }
             PaeoniaHaptics.partnerDrawingReceived()
-            GameSound.nudge.play(volume: 0.7)
+            GameSound.nudge.play()
         }
         .onChange(of: status) { old, new in
             statusChanged(from: old, to: new)

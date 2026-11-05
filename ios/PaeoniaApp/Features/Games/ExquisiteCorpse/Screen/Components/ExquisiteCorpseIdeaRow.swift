@@ -34,7 +34,7 @@ struct ExquisiteCorpseIdeaRow: View {
     private var askButton: some View {
         Button {
             PaeoniaHaptics.selection()
-            GameSound.tap.play(volume: 0.7)
+            GameSound.tap.play()
             onAsk()
         } label: {
             HStack(spacing: PaeoniaSpacing.space4) {
@@ -79,7 +79,7 @@ struct ExquisiteCorpseIdeaRow: View {
     ) -> some View {
         Button {
             PaeoniaHaptics.selection()
-            GameSound.tap.play(volume: 0.7)
+            GameSound.tap.play()
             action()
         } label: {
             Image(systemName: systemName)

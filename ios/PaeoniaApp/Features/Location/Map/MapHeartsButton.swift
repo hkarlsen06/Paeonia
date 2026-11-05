@@ -27,7 +27,7 @@ struct MapHeartsButton: View {
     var body: some View {
         Button {
             tapCount += 1
-            GameSound.send.play(volume: 0.5)
+            GameSound.send.play()
             flights.send()
             onSend()
         } label: {

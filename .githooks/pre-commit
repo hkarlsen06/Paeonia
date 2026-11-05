@@ -4,6 +4,31 @@ set -euo pipefail
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 cd "$ROOT_DIR"
 
+STAGED_PATHS="$(git diff --cached --name-only)"
+if printf '%s\n' "$STAGED_PATHS" | grep -E \
+  '^(ios/PaeoniaApp/Resources/GameSounds/|ios/PaeoniaApp/Features/Games/Shared/Sound/|ios/Scripts/(normalize-game-sounds\.py|game-sounds\.swift|game-sounds-inventory\.json))' >/dev/null; then
+  echo "[pre-commit] Checking game audio loudness"
+  python3 - <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+inputs = [
+    "ios/PaeoniaApp/Resources/GameSounds",
+    "ios/PaeoniaApp/Features/Games/Shared/Sound/GameSound.swift",
+    "ios/Scripts/normalize-game-sounds.py",
+    "ios/Scripts/game-sounds-inventory.json",
+]
+with tempfile.TemporaryDirectory(prefix="paeonia-staged-audio-") as snapshot:
+    tracked = subprocess.run(["git", "ls-files", "-z", "--", *inputs], check=True, capture_output=True).stdout
+    subprocess.run(["git", "checkout-index", "-z", "--stdin", f"--prefix={snapshot}/"],
+                   input=tracked, check=True)
+    checker = Path(snapshot) / "ios/Scripts/normalize-game-sounds.py"
+    sys.exit(subprocess.call([sys.executable, str(checker), "--check"]))
+PY
+fi
+
 STAGED_SWIFT_FILES="$(
   git diff --cached --name-only --diff-filter=ACMR |
     grep -E '\.swift$' || true

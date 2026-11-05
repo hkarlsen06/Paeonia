@@ -145,7 +145,7 @@ struct DotsAndBoxesBoardView: View {
             // Sliding from one line to another ticks. The first touch and the lift do not.
             if old != nil, new != nil {
                 PaeoniaHaptics.selection()
-                GameSound.tick.play(volume: 0.4)
+                GameSound.tick.play()
             }
         }
     }
@@ -246,7 +246,7 @@ struct DotsAndBoxesBoardView: View {
         } else {
             PaeoniaHaptics.partnerDrawingReceived()
         }
-        GameSound.mark.play(volume: move.isMine ? 1 : 0.85)
+        GameSound.mark.play(intensity: move.isMine ? 1 : 0.85)
         let closed = DotsAndBoxesBoxLayer.closedBoxes(by: move.move, on: board)
         announce(closed: closed.count, by: move)
         var elapsed: TimeInterval = 0
@@ -255,7 +255,7 @@ struct DotsAndBoxesBoardView: View {
             try? await Task.sleep(for: .seconds(delay - elapsed))
             guard !Task.isCancelled else { return }
             PaeoniaHaptics.streakTick(intensity: 0.7)
-            GameSound.stamp.play(volume: 0.8)
+            GameSound.stamp.play()
             elapsed = delay
         }
     }

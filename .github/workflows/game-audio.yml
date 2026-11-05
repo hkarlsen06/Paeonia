@@ -1,0 +1,27 @@
+name: Game audio
+
+on:
+  pull_request:
+    paths:
+      - "ios/PaeoniaApp/Resources/GameSounds/**"
+      - "ios/PaeoniaApp/Features/Games/Shared/Sound/**"
+      - "ios/Scripts/*game-sounds*"
+      - ".github/workflows/game-audio.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ios/PaeoniaApp/Resources/GameSounds/**"
+      - "ios/PaeoniaApp/Features/Games/Shared/Sound/**"
+      - "ios/Scripts/*game-sounds*"
+      - ".github/workflows/game-audio.yml"
+
+jobs:
+  levels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install audio measurement tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Check bundled game audio
+        run: python3 ios/Scripts/normalize-game-sounds.py --check
