@@ -79,6 +79,15 @@ struct SiriAccessTests {
         #expect(access.refusal == nil)
     }
 
+    @Test func entityQueriesRefuseAnAppThatLocksAfterAccessWasResolved() async throws {
+        let access = await siriAccess(
+            session: session, deviceOwner: session.id,
+            snapshot: .testPaired(ownerUserID: try ownerUserID))
+        #expect(access.coupleForEntityQuery(appIsLocked: false) == access.couple)
+        #expect(access.coupleForEntityQuery(appIsLocked: true) == nil)
+        #expect(SiriAccess.noAccess.coupleForEntityQuery(appIsLocked: false) == nil)
+    }
+
     private func siriAccess(
         session: AuthSession?,
         deviceOwner: String?,

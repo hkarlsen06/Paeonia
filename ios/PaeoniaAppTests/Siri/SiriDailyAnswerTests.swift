@@ -9,6 +9,20 @@ struct SiriDailyAnswerTests {
         ownerUserID: TestDailyChallengeIDs.currentUser, coupleID: TestDailyChallengeIDs.couple,
         partnerUserID: TestDailyChallengeIDs.partnerUser, partnerName: "Partner")
 
+    @Test func tabsReuseTheSiriModelAndItsUnsentDraft() {
+        let context = SiriAppContext()
+        let siriModel = context.dailyChallengeModel()
+        let questionID = UUID()
+        siriModel.setDraftText("Unfinished answer", for: questionID)
+        let tabs = MainTabModels(
+            dependencies: RootFeatureDependencies(),
+            pairingCelebrationStore: TestPairingCelebrationStore(), siriContext: context)
+
+        #expect(tabs.dailyChallenge === siriModel)
+        #expect(tabs.dailyChallenge.draftText(for: questionID) == "Unfinished answer")
+        #expect(context.dailyChallengeModel() === tabs.dailyChallenge)
+    }
+
     @Test func queuesExactQuestionAndPreservesExistingDraft() async throws {
         let localStore = try PaeoniaLocalStore(inMemory: true)
         let store = SwiftDataPendingSyncOperationRepository(container: localStore.container)

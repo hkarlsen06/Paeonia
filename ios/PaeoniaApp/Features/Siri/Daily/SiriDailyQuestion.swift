@@ -18,12 +18,17 @@ struct SiriDailyQuestion: AppEntity {
     }
 
     struct SiriDailyQuestionQuery: EntityQuery {
+        @MainActor
         func entities(for identifiers: [UUID]) async throws -> [SiriDailyQuestion] {
             // Parameter resolution never substitutes a different day's question.
-            guard let couple = await SiriAppContext.shared.access().couple else { return [] }
+            let access = await SiriAppContext.shared.access()
+            guard let couple = access.coupleForEntityQuery(appIsLocked: AppLockModel.shared.isLocked) else {
+                return []
+            }
             let model = await SiriDailyQuestions.load(for: couple)
-            guard await SiriAppContext.shared.access().couple == couple,
-                  let question = await model.snapshot.todayQuestion,
+            let refreshedAccess = await SiriAppContext.shared.access()
+            guard refreshedAccess.coupleForEntityQuery(appIsLocked: AppLockModel.shared.isLocked) == couple,
+                  let question = model.snapshot.todayQuestion,
                   identifiers.contains(question.id), question.coupleID == couple.coupleID,
                   question.startsAt <= Date(), question.endsAt > Date()
             else { return [] }
@@ -35,9 +40,7 @@ struct SiriDailyQuestion: AppEntity {
 @MainActor
 enum SiriDailyQuestions {
     static func load(for couple: SiriCouple) async -> DailyChallengeViewModel {
-        let model = SiriAppContext.shared.dailyChallenge ?? DailyChallengeViewModel()
-        // Keep one model for overlapping background invocations as well as the composer.
-        SiriAppContext.shared.dailyChallenge = model
+        let model = SiriAppContext.shared.dailyChallengeModel()
         if model.currentUserID != couple.ownerUserID {
             await model.configure(currentUserID: couple.ownerUserID)
         }

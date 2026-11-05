@@ -5,6 +5,9 @@
 # SDK frameworks but not the app's own code.
 set -euo pipefail
 
+# shellcheck source=lib/paeonia-xcode.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/paeonia-xcode.sh"
+
 if [ $# -eq 0 ]; then
   echo "usage: $0 <file.swift>..." >&2
   exit 2

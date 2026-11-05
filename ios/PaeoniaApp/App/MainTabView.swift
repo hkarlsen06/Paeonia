@@ -74,15 +74,21 @@ struct MainTabActions {
 @MainActor
 final class MainTabModels {
     private let dependencies: RootFeatureDependencies
+    private let siriContext: SiriAppContext
     private let pairingCelebrationStore: any PairingCelebrationStoring
 
-    init(dependencies: RootFeatureDependencies, pairingCelebrationStore: any PairingCelebrationStoring) {
+    init(
+        dependencies: RootFeatureDependencies,
+        pairingCelebrationStore: any PairingCelebrationStoring,
+        siriContext: SiriAppContext = .shared
+    ) {
         self.dependencies = dependencies
+        self.siriContext = siriContext
         self.pairingCelebrationStore = pairingCelebrationStore
     }
 
     lazy var dailyChallenge: DailyChallengeViewModel =
-        dependencies.dailyChallengeViewModel ?? DailyChallengeViewModel()
+        dependencies.dailyChallengeViewModel ?? siriContext.dailyChallengeModel()
     lazy var milestone: RelationshipMilestoneViewModel =
         dependencies.milestoneViewModel ?? RelationshipMilestoneViewModel()
     lazy var memories: MemoriesViewModel =
@@ -282,7 +288,6 @@ struct MainTabView: View {
         // identity instead flows through refreshParticipants below, which never
         // reloads. See the `.task(id:)` note in AGENTS.md.
         .task(id: identity.currentUserID) {
-            SiriAppContext.shared.dailyChallenge = dailyChallengeViewModel
             dailyChallengeViewModel.setLocalChangeSyncHandler(actions.syncAfterLocalChange)
             await dailyChallengeViewModel.configure(participants: dailyChallengeParticipants)
         }

@@ -29,6 +29,11 @@ nonisolated enum SiriAccess: Equatable, Sendable {
         if case let .allowed(couple) = self { couple } else { nil }
     }
 
+    /// Entity queries cannot open the app to unlock it, so they return no private content while locked.
+    func coupleForEntityQuery(appIsLocked: Bool) -> SiriCouple? {
+        appIsLocked ? nil : couple
+    }
+
     /// The plain sentence Siri says when it can't act. Nil when it can.
     var refusal: LocalizedStringResource? {
         switch self {

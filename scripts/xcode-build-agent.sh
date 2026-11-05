@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# shellcheck source=lib/paeonia-xcode.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/paeonia-xcode.sh"
+
 MODE="text"
 if [ "${1:-}" = "--json" ]; then
   MODE="json"

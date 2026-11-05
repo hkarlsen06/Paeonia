@@ -22,17 +22,17 @@ on:
 
 jobs:
   ios:
-    # The app builds against the iOS 27 SDK, which only this preview image has.
+    # The app requires the iOS 27.3 SDK for custom Siri tools.
     runs-on: xcode-27
     timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Use the Xcode 27.0 installation supplied by the hosted runner image.
-      - name: Select Xcode 27.0
+      - name: Select Xcode with SDK 27.3 or newer
         run: |
-          sudo xcode-select -s /Applications/Xcode_27.app/Contents/Developer
+          source scripts/lib/paeonia-xcode.sh
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
           xcodebuild -version
 
       - name: SwiftLint

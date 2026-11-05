@@ -13,6 +13,13 @@ final class SiriAppContext {
 
     var dailyChallenge: DailyChallengeViewModel?
 
+    func dailyChallengeModel() -> DailyChallengeViewModel {
+        if let dailyChallenge { return dailyChallenge }
+        let model = DailyChallengeViewModel()
+        dailyChallenge = model
+        return model
+    }
+
     var messageDraft: SiriMessageDraft?
 
     private var accessSource: (@MainActor () async -> SiriAccess)?

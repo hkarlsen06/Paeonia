@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# shellcheck source=lib/paeonia-xcode.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/paeonia-xcode.sh"
+
 # A run has two phases, so one agent's tests and another agent's build run at
 # the same time:
 #   1. build-for-testing for the generic simulator under the machine-wide
