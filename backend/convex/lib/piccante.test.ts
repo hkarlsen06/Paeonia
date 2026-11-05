@@ -25,7 +25,7 @@ describe("Piccante rules", () => {
     expect(s.turn_user_id).toBe("b");
     const bitten = apply(s, "b", { kind: "bite", tile: 1 });
     expect(bitten.turn_user_id).toBe("a");
-    expect(bitten.bites).toEqual([{ tile: 1, user_id: "b" }]);
+    expect(bitten.bites).toEqual([{ tile: 1, user_id: "b", play_at: "2026-11-03T12:00:00.900Z" }]);
     expect(s.bites).toEqual([]);
     expect(() => apply(bitten, "a", { kind: "bite", tile: 1 })).toThrow();
     expect(() => apply(s, "a", { kind: "bite", tile: 2 })).toThrow();

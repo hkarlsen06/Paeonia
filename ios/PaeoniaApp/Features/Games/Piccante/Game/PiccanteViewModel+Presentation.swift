@@ -6,11 +6,12 @@ extension PiccanteViewModel {
         guard let game else { return }
         let number = game.gameNumber
         let ownLastBite = game.bites.lastIndex { $0.userID == userID }.map { $0 + 1 } ?? 0
-        let fallback = game.phase == .finished ? min(ownLastBite, max(0, game.bites.count - 1)) : ownLastBite
+        let fallback = min(ownLastBite, max(0, game.bites.count - 1))
         let count = shown?.number == number ? min(shown?.bites ?? 0, game.bites.count) : fallback
-        shownBites = reduceMotion ? game.bites.count : count
+        shownBites = count
         revealSettled = game.phase == .finished && shownBites == game.bites.count
         noteRevealed = revealSettled
+        burnRevealed = revealSettled
         replayTask = Task { [weak self] in
             guard let self else { return }
             await replayBites(in: game, from: count)
@@ -20,36 +21,73 @@ extension PiccanteViewModel {
         }
     }
     private func replayBites(in game: RemotePiccanteGame, from count: Int) async {
-        if !reduceMotion {
-            for index in count..<game.bites.count {
-                try? await Task.sleep(for: .seconds(0.32))
-                guard !Task.isCancelled, self.game?.gameNumber == game.gameNumber else { return }
-                shownBites = index + 1
-                if game.bites[index].userID != userID {
-                    GameSound.piccanteBite.play(volume: 0.3)
-                    PaeoniaHaptics.selection()
-                }
-                if game.phase == .finished && index == game.bites.count - 1 { await revealBurn() }
-                guard !Task.isCancelled else { return }
-                await saveShown(number: game.gameNumber)
+        GameSoundPlayer.shared.prepare()
+        for index in count..<game.bites.count {
+            let plan = PiccantePlayback.plan(
+                bite: game.bites[index], clock: playbackClock, reduceMotion: reduceMotion, now: Date())
+            await wait(until: plan.startsAt)
+            guard !Task.isCancelled, self.game?.gameNumber == game.gameNumber else { return }
+            shownBites = index + 1
+            if plan.playsSound {
+                GameSound.piccanteBite.play(
+                    volume: 0.3, variation: PiccantePlayback.variation(gameNumber: game.gameNumber, biteIndex: index))
+                PaeoniaHaptics.selection()
             }
-        } else {
+            if game.phase == .finished && index == game.bites.count - 1 {
+                if reduceMotion {
+                    burnRevealed = true
+                    revealSettled = true
+                    noteRevealed = true
+                } else {
+                    await revealBurn(startingAt: plan.startsAt)
+                }
+            }
+            guard !Task.isCancelled else { return }
             await saveShown(number: game.gameNumber)
         }
     }
 
-    private func revealBurn() async {
+    private func revealBurn(startingAt start: Date) async {
+        // Every reveal stage follows the shared bite deadline.
+        await wait(until: start.addingTimeInterval(0.32))
+        guard !Task.isCancelled else { return }
+        burnRevealed = true
         burnShake += 1
         PaeoniaHaptics.answerRevealed()
-        GameSound.piccanteBurn.play(volume: 0.3)
-        try? await Task.sleep(for: .seconds(0.4))
+        GameSound.piccanteBurn.play(volume: 0.3, variation: 0)
+        await wait(until: start.addingTimeInterval(0.72))
         guard !Task.isCancelled else { return }
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { revealSettled = true }
-        try? await Task.sleep(for: .seconds(0.24))
+        await wait(until: start.addingTimeInterval(0.96))
         guard !Task.isCancelled else { return }
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.28)) { noteRevealed = true }
         if !reduceMotion, let game, Set(game.chilis.map(\.tile)).count == 1 {
-            GameSound.piccanteSameOne.play(volume: 0.18)
+            GameSound.piccanteSameOne.play(volume: 0.18, variation: 0)
+        }
+    }
+
+    private func wait(until deadline: Date) async {
+        let delay = PiccantePlayback.delay(until: deadline, now: Date())
+        if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
+    }
+
+    func startPlaybackClock() {
+        guard playbackClock == nil, playbackClockTask == nil else { return }
+        let gateway = dependencies.piccanteGateway
+        playbackClockTask = Task { [weak self] in
+            var shortestTrip = TimeInterval.infinity
+            for _ in 0..<3 {
+                let sent = Date()
+                guard let server = try? await gateway.samplePiccanteClock(), !Task.isCancelled else { break }
+                let received = Date()
+                let trip = received.timeIntervalSince(sent)
+                if trip < shortestTrip {
+                    shortestTrip = trip
+                    self?.playbackClock = PiccantePlaybackClock(serverTime: server, sentAt: sent, receivedAt: received)
+                }
+            }
+            guard !Task.isCancelled else { return }
+            self?.playbackClockTask = nil
         }
     }
 
@@ -81,6 +119,7 @@ extension PiccanteViewModel {
         }
     }
     func startLive() {
+        startPlaybackClock()
         if live == nil, let coupleID = participants.coupleID {
             live = dependencies.makePiccanteLive(coupleID)
             if let live {

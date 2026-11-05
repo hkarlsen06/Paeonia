@@ -20,6 +20,7 @@ nonisolated struct PiccanteMove: Codable, Equatable, Sendable {
 }
 
 nonisolated protocol PiccanteGateway: Sendable {
+    func samplePiccanteClock() async throws -> Date
     func loadPiccante() async throws -> RemotePiccanteState
     func ensurePiccante() async throws -> RemotePiccanteState
     func sendPiccante(_ move: PiccanteMove, operation: SyncClientOperation) async throws -> RemotePiccanteState
@@ -27,6 +28,9 @@ nonisolated protocol PiccanteGateway: Sendable {
 }
 
 nonisolated extension LiveGamesGateway: PiccanteGateway {
+    func samplePiccanteClock() async throws -> Date {
+        try await client.mutation("piccante:sample_piccante_clock")
+    }
     func loadPiccante() async throws -> RemotePiccanteState { try await client.query("piccante:get_piccante") }
     func ensurePiccante() async throws -> RemotePiccanteState {
         try await client.mutation("piccante:ensure_piccante_game")
@@ -42,6 +46,7 @@ nonisolated extension LiveGamesGateway: PiccanteGateway {
 
 // swiftlint:disable async_without_await
 nonisolated extension UnavailableGamesGateway: PiccanteGateway {
+    func samplePiccanteClock() async throws -> Date { throw Unavailable() }
     func loadPiccante() async throws -> RemotePiccanteState { throw Unavailable() }
     func ensurePiccante() async throws -> RemotePiccanteState { throw Unavailable() }
     func sendPiccante(_: PiccanteMove, operation _: SyncClientOperation) async throws -> RemotePiccanteState {

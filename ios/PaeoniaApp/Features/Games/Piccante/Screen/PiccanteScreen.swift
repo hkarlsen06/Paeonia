@@ -146,7 +146,7 @@ extension PiccanteScreen {
             selected: viewModel.selected, partnerSelected: viewModel.partnerSelected, pendingTile: viewModel.heldTile,
             player: { $0 == viewModel.userID ? viewModel.meInfo : viewModel.partnerInfo },
             select: { viewModel.select($0) }, canSelect: viewModel.canAct,
-            revealsBurn: game.phase == .finished && viewModel.shownBites == game.bites.count,
+            revealsBurn: viewModel.burnRevealed,
             burnShake: viewModel.burnShake, currentUserID: viewModel.userID)
     }
     @ViewBuilder private func controls(_ game: RemotePiccanteGame) -> some View {

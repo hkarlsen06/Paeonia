@@ -22,6 +22,12 @@ async function envelope(ctx: ReaderCtx, coupleId: string, userId: string) {
     game: game ? piccanteView(game.state, game, userId) : null,
     unseen_result: result && game ? piccanteView(result.state, game, userId) : null };
 }
+// A mutation gives each request a fresh clock sample instead of a cached query value.
+export const sample_piccante_clock = mutation({ args: {}, handler: async ctx => {
+  const userId = await requireUserId(ctx);
+  await getCurrentEntitledCoupleId(ctx, userId);
+  return nowIso();
+} });
 export const get_piccante = query({ args: {}, handler: async ctx => {
   const userId = await requireUserId(ctx);
   return envelope(ctx, await getCurrentEntitledCoupleId(ctx, userId), userId);

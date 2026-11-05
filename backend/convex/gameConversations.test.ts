@@ -112,7 +112,7 @@ async function seedGames(t: TestConvex, couple: TestCouple): Promise<GameChatSou
     const piccanteId = newUuid();
     const state = { game_number: 1, starter_user_id: a, partner_user_id: b, phase: "finished" as const,
       size: 3, chilis: [{ tile: 0, user_id: a, note: "Tea?" }, { tile: 8, user_id: b }], sniffs: [],
-      bites: [{ tile: 0, user_id: b }], winner_user_id: a, loser_user_id: b, started_at: now, finished_at: now };
+      bites: [{ tile: 0, user_id: b, play_at: now }], winner_user_id: a, loser_user_id: b, started_at: now, finished_at: now };
     await ctx.db.insert("piccante_games", { id: piccanteId, couple_id: couple.coupleId, version: 4, state,
       wins_by_user: { [a]: 1 }, games_finished: 1, turn_started_at: now, created_at: now, updated_at: now });
     await ctx.db.insert("piccante_results", { id: newUuid(), game_id: piccanteId, couple_id: couple.coupleId,

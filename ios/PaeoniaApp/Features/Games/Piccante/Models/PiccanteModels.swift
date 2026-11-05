@@ -5,8 +5,10 @@ nonisolated enum PiccantePhase: String, Codable, Sendable { case choosing, hidin
 nonisolated struct PiccanteBite: Codable, Equatable, Sendable {
     let tile: Int
     let userID: UUID
+    let playAt: Date
     enum CodingKeys: String, CodingKey {
         case tile
+        case playAt = "play_at"
         case userID = "user_id"
     }
 }

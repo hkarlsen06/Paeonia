@@ -25,8 +25,8 @@ nonisolated final class GameSoundPlayer: @unchecked Sendable {
 
     private init() {}
 
-    func play(_ sound: GameSound, volume: Float) {
-        queue.async { self.playNow(sound, volume: volume) }
+    func play(_ sound: GameSound, volume: Float, variation: Int? = nil) {
+        queue.async { self.playNow(sound, volume: volume, variation: variation) }
     }
 
     /// Loads every sound and starts the engine, so the first sound of a game is on time.
@@ -39,19 +39,21 @@ nonisolated final class GameSoundPlayer: @unchecked Sendable {
         }
     }
 
-    private func playNow(_ sound: GameSound, volume: Float) {
+    private func playNow(_ sound: GameSound, volume: Float, variation: Int?) {
         let buffers = buffers(for: sound)
         guard !buffers.isEmpty, start(format: buffers[0].format) else { return }
         // A random variant that is not the one just played, so repeats never sound the same.
         var index = Int.random(in: buffers.indices)
-        if buffers.count > 1, index == lastVariant[sound] {
+        if let variation {
+            index = variation % buffers.count
+        } else if buffers.count > 1, index == lastVariant[sound] {
             index = (index + 1) % buffers.count
         }
         lastVariant[sound] = index
 
         let voice = voices[nextVoice]
         nextVoice = (nextVoice + 1) % voices.count
-        voice.volume = min(max(volume, 0), 1) * Float.random(in: 0.88...1)
+        voice.volume = min(max(volume, 0), 1) * (variation == nil ? Float.random(in: 0.88...1) : 1)
         voice.scheduleBuffer(buffers[index], at: nil, options: .interrupts)
         try? voice.playAudio()
         scheduleIdlePause()

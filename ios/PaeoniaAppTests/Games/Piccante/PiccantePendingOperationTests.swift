@@ -125,6 +125,7 @@ struct PiccantePendingOperationTests {
 
 private struct RejectingPiccanteGateway: PiccanteGateway {
     let state: RemotePiccanteState
+    func samplePiccanteClock() -> Date { Date() }
     func loadPiccante() throws -> RemotePiccanteState { state }
     func ensurePiccante() throws -> RemotePiccanteState { state }
     func sendPiccante(_ move: PiccanteMove, operation: SyncClientOperation) throws -> RemotePiccanteState {
@@ -140,6 +141,7 @@ private actor RematchRacePiccanteGateway {
     var state: RemotePiccanteState
     var seenNumbers: [Int] = []
     init(state: RemotePiccanteState) { self.state = state }
+    func samplePiccanteClock() -> Date { Date() }
     func loadPiccante() -> RemotePiccanteState { state }
     func ensurePiccante() -> RemotePiccanteState { state }
     func sendPiccante(_ move: PiccanteMove, operation: SyncClientOperation) throws -> RemotePiccanteState {

@@ -33,6 +33,7 @@ describe("Piccante authorization", () => {
       const args = { ...op(), p_game_id: newUuid(), p_expected_version: 1 };
       const calls = [
         u.as.query(api.piccante.get_piccante, {}),
+        u.as.mutation(api.piccante.sample_piccante_clock, {}),
         u.as.query(api.piccante.get_piccante_result, { p_game_number: 1 }),
         u.as.mutation(api.piccante.ensure_piccante_game, {}),
         u.as.mutation(api.piccante.choose_piccante_size, { ...args, p_size: 3 }),
@@ -65,6 +66,18 @@ describe("Piccante authorization", () => {
   });
 });
 describe("Piccante integration", () => {
+  test("both partners receive one future bite deadline and retries preserve it", async () => {
+    const s = await ready();
+    const args = { ...await s.args(s.b), p_tile: 1 };
+    const before = Date.now();
+    const first = await s.b.as.mutation(api.piccante.bite_piccante_chocolate, args);
+    const a = (await view(s.a)).game!.bites;
+    const b = (await view(s.b)).game!.bites;
+    expect(a).toEqual(b);
+    expect(Date.parse(a[0].play_at)).toBeGreaterThan(before);
+    expect(await s.b.as.mutation(api.piccante.bite_piccante_chocolate, args)).toEqual(first);
+    expect((await view(s.a)).game!.bites).toEqual(a);
+  });
   test("choosing owes neither person a move, and a competing choice fails at the version check", async () => {
     const s = await setup();
     for (const u of [s.a, s.b]) {

@@ -17,6 +17,7 @@ final class PiccanteViewModel {
     var shownBites = 0
     var revealSettled = false
     var noteRevealed = false
+    var burnRevealed = false
     var burnShake = 0
     var heldTile: Int?
     var partnerHere = false
@@ -42,6 +43,8 @@ final class PiccanteViewModel {
     @ObservationIgnored var lastHeartbeatLift: Int?
     @ObservationIgnored var lastMove: PiccanteMove?
     @ObservationIgnored var reloadGate = GameReloadGate()
+    @ObservationIgnored var playbackClockTask: Task<Void, Never>?
+    @ObservationIgnored var playbackClock: PiccantePlaybackClock?
     var reduceMotion = false
 
     init(dependencies: GamesDependencies) {
@@ -114,6 +117,9 @@ final class PiccanteViewModel {
         loops.endHeartbeat()
         live?.stop()
         liveObservation?.cancel()
+        playbackClockTask?.cancel()
+        playbackClockTask = nil
+        playbackClock = nil
         replayTask?.cancel()
         replayTask = nil
         partnerSelected = nil
@@ -123,6 +129,9 @@ final class PiccanteViewModel {
     func scenePhaseChanged(_ active: Bool) {
         self.active = active
         if active {
+            playbackClockTask?.cancel()
+            playbackClockTask = nil
+            playbackClock = nil
             loops.beginHeartbeat()
             startLive()
             Task { await refresh() }
@@ -147,6 +156,7 @@ final class PiccanteViewModel {
     }
     func reload() async {
         guard let userID else { return }
+        if running { startPlaybackClock() }
         let ticket = reloadGate.begin()
         let document = await dependencies.piccanteCache.document(ownerUserID: userID)
         guard self.userID == userID, document.state.map({ $0.coupleID == participants.coupleID }) ?? true else {

@@ -14,7 +14,7 @@ export const piccanteState = v.object({
   size: v.optional(v.number()),
   chilis: v.array(v.object({ tile: v.number(), user_id: v.string(), note: v.optional(v.string()) })),
   sniffs: v.array(v.object({ tile: v.number(), user_id: v.string(), has_chili: v.boolean() })),
-  bites: v.array(v.object({ tile: v.number(), user_id: v.string() })),
+  bites: v.array(v.object({ tile: v.number(), user_id: v.string(), play_at: v.string() })),
   winner_user_id: v.optional(v.string()), loser_user_id: v.optional(v.string()),
   started_at: v.string(), finished_at: v.optional(v.string()),
 });
@@ -69,7 +69,7 @@ export function applyPiccanteAction(state: PiccanteState, userId: string, action
     if (state.sniffs.some(s => s.user_id === userId) || state.chilis.some(c => c.user_id === userId && c.tile === tile)) return fail("23514", "that move is not allowed");
     return { ...state, sniffs: [...state.sniffs, { tile, user_id: userId, has_chili: state.chilis.some(c => c.tile === tile) }] };
   }
-  const bites = [...state.bites, { tile, user_id: userId }];
+  const bites = [...state.bites, { tile, user_id: userId, play_at: addMs(now, 900) }];
   if (state.chilis.some(c => c.tile === tile)) return { ...state, bites, phase: "finished", turn_user_id: undefined, winner_user_id: other, loser_user_id: userId, finished_at: now };
   return { ...state, bites, turn_user_id: other };
 }

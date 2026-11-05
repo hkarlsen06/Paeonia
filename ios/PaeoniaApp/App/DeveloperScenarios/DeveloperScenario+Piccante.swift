@@ -62,10 +62,12 @@
                     ? []
                     : finished
                         ? [
-                            .init(tile: 0, userID: partner), .init(tile: 3, userID: me),
-                            .init(tile: partnerTile, userID: iWon ? partner : me),
+                            .init(tile: 0, userID: partner, playAt: DeveloperGamesFixture.now),
+                            .init(tile: 3, userID: me, playAt: DeveloperGamesFixture.now),
+                            .init(tile: partnerTile, userID: iWon ? partner : me, playAt: DeveloperGamesFixture.now),
                         ]
-                        : [.init(tile: 0, userID: partner), .init(tile: 3, userID: me)],
+                        : [.init(tile: 0, userID: partner, playAt: DeveloperGamesFixture.now),
+                            .init(tile: 3, userID: me, playAt: DeveloperGamesFixture.now)],
                 chilis: finished
                     ? [
                         .init(tile: myTile, userID: me, note: "You owe me a back rub."),
@@ -94,6 +96,7 @@
         var state: RemotePiccanteState
         init(state: RemotePiccanteState) { self.state = state }
         // swiftlint:disable async_without_await
+        func samplePiccanteClock() async throws -> Date { Date() }
         func loadPiccante() async throws -> RemotePiccanteState { state }
         func ensurePiccante() async throws -> RemotePiccanteState { state }
         func sendPiccante(_ move: PiccanteMove, operation _: SyncClientOperation) async throws -> RemotePiccanteState {

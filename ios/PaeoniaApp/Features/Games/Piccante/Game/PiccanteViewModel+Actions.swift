@@ -15,7 +15,6 @@ extension PiccanteViewModel {
             note: action == .hide && !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 ? note.trimmingCharacters(in: .whitespacesAndNewlines) : nil)
         if action == .bite {
-            GameSound.piccanteBite.play(volume: 0.3)
             PaeoniaHaptics.selection()
         }
         isSaving = true

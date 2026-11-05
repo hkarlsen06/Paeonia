@@ -48,7 +48,7 @@ nonisolated enum GameSound: String, CaseIterable, Sendable {
 
     /// Plays the sound. `volume` from 0 to 1 scales it, usually with the strength of the
     /// haptic it goes with.
-    func play(volume: Double = 1) {
-        GameSoundPlayer.shared.play(self, volume: Float(volume))
+    func play(volume: Double = 1, variation: Int? = nil) {
+        GameSoundPlayer.shared.play(self, volume: Float(volume), variation: variation)
     }
 }
