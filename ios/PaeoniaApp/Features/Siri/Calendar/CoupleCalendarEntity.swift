@@ -5,6 +5,8 @@ import Foundation
 /// Paeonia's one calendar: the couple's countdowns and both partners' birthdays.
 @AppEntity(schema: .calendar.calendar)
 struct CoupleCalendarEntity: IndexedEntity, OwnershipProvidingEntity {
+    @available(iOS 27.3, *)
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     static let defaultQuery = Query()
 
     static let shared = CoupleCalendarEntity()

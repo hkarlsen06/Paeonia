@@ -6,6 +6,8 @@ import Foundation
 /// creation date. Visible notes are searchable text in Spotlight.
 @AppEntity(schema: .photos.album)
 struct MemoryAlbumEntity: IndexedEntity, OwnershipProvidingEntity {
+    @available(iOS 27.3, *)
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     static let defaultQuery = MemoryAlbumQuery()
 
     /// The memory id.

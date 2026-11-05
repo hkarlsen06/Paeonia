@@ -5,6 +5,8 @@ import Foundation
 /// lists none and ignores attendees Siri passes in.
 @AppEntity(schema: .calendar.attendee)
 struct CoupleDateAttendee: TransientAppEntity {
+    @available(iOS 27.3, *)
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     var person: IntentPerson
     var status: CoupleDateAttendeeStatus?
     var isAttendanceOptional: Bool

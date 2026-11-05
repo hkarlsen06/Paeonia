@@ -1,0 +1,48 @@
+import Foundation
+
+extension DailyChallengeViewModel {
+    /// Uses the composer's durable queue. The exact daily instance must still be current.
+    func submitSiriText(
+        _ text: String, instanceID: UUID, couple: SiriCouple,
+        authorize: @MainActor () async throws -> Bool
+    ) async throws {
+        let queued = try await pendingOperationStore.inFlightOperations(
+            ownerUserID: couple.ownerUserID, kind: .submitDailyAnswer
+        )
+        let hasQueuedAnswer = queued.contains { operation in
+            guard let data = operation.requestData,
+                  let payload = try? JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
+            else { return true }
+            return payload.instanceID == instanceID
+        }
+        guard try await authorize() else { throw SiriFailure(.siriAccessSignedOut) }
+        guard currentUserID == couple.ownerUserID,
+              let question = snapshot.todayQuestion,
+              question.id == instanceID, question.coupleID == couple.coupleID,
+              question.isCurrentDay, question.status != .shuffled,
+              question.startsAt <= now(), question.endsAt > now(),
+              submittingQuestionID == nil, shufflingQuestionID == nil
+        else { throw SiriFailure(.siriDailyUnavailable) }
+        guard !question.hasOwnAnswer, !hasQueuedAnswer, sendingAnswers[instanceID] == nil else {
+            throw SiriFailure(.siriDailyAnswered)
+        }
+        guard !hasDraftContent(for: instanceID),
+              draftStore.drafts(for: couple.ownerUserID)[instanceID]?.hasContent != true else {
+            throw SiriFailure(.siriDailyDraft)
+        }
+        guard question.composableAnswerKinds.contains(.text), !question.answerKinds.contains(.eitherOr) else {
+            throw SiriFailure(.siriDailyNeedsApp)
+        }
+        let body = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !body.isEmpty, DailyAnswerDraft.measuredLength(of: body) <= question.maxAnswerTextLength else {
+            throw SiriFailure(.siriDailyInvalidText)
+        }
+        setComposeKind(.text, for: instanceID)
+        setDraftText(body, for: instanceID)
+        flushDraftPersistence()
+        await submitAnswer(for: question)
+        guard sendingAnswers[instanceID]?.text == body else {
+            throw SiriFailure(.siriDailySaveFailed)
+        }
+    }
+}

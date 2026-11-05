@@ -44,6 +44,8 @@ extension CoupleDateEvent {
 /// was set for and repeats every year, with 29 February falling on 28 February in other years.
 @AppEntity(schema: .calendar.event)
 struct CoupleDateEntity: IndexedEntity, OwnershipProvidingEntity {
+    @available(iOS 27.3, *)
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     static let defaultQuery = CoupleDateQuery()
 
     let id: CoupleDateID

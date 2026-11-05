@@ -282,6 +282,7 @@ struct MainTabView: View {
         // identity instead flows through refreshParticipants below, which never
         // reloads. See the `.task(id:)` note in AGENTS.md.
         .task(id: identity.currentUserID) {
+            SiriAppContext.shared.dailyChallenge = dailyChallengeViewModel
             dailyChallengeViewModel.setLocalChangeSyncHandler(actions.syncAfterLocalChange)
             await dailyChallengeViewModel.configure(participants: dailyChallengeParticipants)
         }

@@ -6,6 +6,8 @@ import LinkPresentation
 
 @AppEntity(schema: .messages.messagePerson)
 struct ChatPersonEntity: IndexedEntity, OwnershipProvidingEntity {
+    @available(iOS 27.3, *)
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     static let defaultQuery = ChatPersonQuery()
     let id: UUID
     let name: String
@@ -24,6 +26,8 @@ struct ChatPersonEntity: IndexedEntity, OwnershipProvidingEntity {
 
 @AppEntity(schema: .messages.conversation)
 struct ChatConversationEntity: IndexedEntity, OwnershipProvidingEntity {
+    @available(iOS 27.3, *)
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     static let defaultQuery = ChatConversationQuery()
     let id: UUID
     let subject: ThreadChatSubject
@@ -84,6 +88,8 @@ enum ChatMessageType: String {
 
 @AppEntity(schema: .messages.message)
 struct ChatMessageEntity: IndexedEntity, OwnershipProvidingEntity {
+    @available(iOS 27.3, *)
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     static let defaultQuery = ChatMessageQuery()
     let id: UUID
     var messageType: ChatMessageType
@@ -137,6 +143,8 @@ struct ChatMessageEntity: IndexedEntity, OwnershipProvidingEntity {
 
 @AppEntity(schema: .messages.customAttachment)
 struct ChatCustomAttachment {
+    @available(iOS 27.3, *)
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     let id: String
     var sourceName: AttributedString?
     var description: AttributedString?

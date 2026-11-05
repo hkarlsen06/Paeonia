@@ -37844,6 +37844,258 @@
         }
       }
     },
+    "siri.daily.answer" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer today's question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på dagens spørsmål"
+          }
+        }
+      }
+    },
+    "siri.daily.answer.description" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Submit a text answer to the exact question returned by Read today's question. Ask the person for their answer first. Never substitute another question."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send et tekstsvar på akkurat det spørsmålet som ble hentet med Les dagens spørsmål. Be personen om svaret først. Ikke bytt til et annet spørsmål."
+          }
+        }
+      }
+    },
+    "siri.daily.answered" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already answered that question, or your answer is still sending. Open Paeonia to see it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har allerede svart på spørsmålet, eller svaret er på vei. Åpne Paeonia for å se det."
+          }
+        }
+      }
+    },
+    "siri.daily.draft" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have an unfinished answer. Open Paeonia to finish it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har et uferdig svar. Åpne Paeonia for å fullføre det."
+          }
+        }
+      }
+    },
+    "siri.daily.invalidText" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answer is empty or too long. Try a shorter text answer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svaret er tomt eller for langt. Prøv et kortere tekstsvar."
+          }
+        }
+      }
+    },
+    "siri.daily.needsApp" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This question needs a photo, recording or choice. Open Paeonia to answer it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette spørsmålet trenger et bilde, opptak eller valg. Åpne Paeonia for å svare."
+          }
+        }
+      }
+    },
+    "siri.daily.prompt" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmål"
+          }
+        }
+      }
+    },
+    "siri.daily.question" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spørsmål"
+          }
+        }
+      }
+    },
+    "siri.daily.read" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read today's question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les dagens spørsmål"
+          }
+        }
+      }
+    },
+    "siri.daily.read.description" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get today's exact daily question before answering it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hent dagens spørsmål før du svarer på det."
+          }
+        }
+      }
+    },
+    "siri.daily.saved" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answer is saved and waiting to send to your partner."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svaret ditt er lagret og venter på å bli sendt til partneren din."
+          }
+        }
+      }
+    },
+    "siri.daily.saveFailed" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answer could not be saved to send. Open Paeonia to try again. Your draft is still there."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svaret kunne ikke lagres for sending. Åpne Paeonia for å prøve igjen. Utkastet ditt er fortsatt der."
+          }
+        }
+      }
+    },
+    "siri.daily.text" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar"
+          }
+        }
+      }
+    },
+    "siri.daily.unavailable" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That question is no longer available today. Ask for today's question again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det spørsmålet er ikke tilgjengelig i dag lenger. Be om dagens spørsmål på nytt."
+          }
+        }
+      }
+    },
     "siri.dates.attendee.accepted" : {
       "comment" : "Siri: a person said yes to a calendar event.",
       "extractionState" : "manual",

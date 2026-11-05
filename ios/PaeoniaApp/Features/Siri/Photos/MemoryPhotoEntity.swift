@@ -35,6 +35,8 @@ nonisolated enum MemoryPhotoID: Hashable, Sendable, EntityIdentifierConvertible 
 /// memory. Both directions check access and App Lock first.
 @AppEntity(schema: .photos.asset)
 struct MemoryPhotoEntity: IndexedEntity, OwnershipProvidingEntity {
+    @available(iOS 27.3, *)
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     static let defaultQuery = MemoryPhotoQuery()
 
     let id: MemoryPhotoID

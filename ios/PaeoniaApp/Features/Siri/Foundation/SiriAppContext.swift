@@ -11,6 +11,8 @@ import UIKit
 final class SiriAppContext {
     static let shared = SiriAppContext()
 
+    var dailyChallenge: DailyChallengeViewModel?
+
     var messageDraft: SiriMessageDraft?
 
     private var accessSource: (@MainActor () async -> SiriAccess)?
@@ -76,6 +78,9 @@ extension AppIntent {
             throw needsToContinueInForegroundError(access.refusal.map { IntentDialog($0) })
         }
         try await waitForAppLock()
+        guard await SiriAppContext.shared.access().couple == couple else {
+            throw SiriFailure(.siriAccessSignedOut)
+        }
         return couple
     }
 

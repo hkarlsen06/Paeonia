@@ -76,7 +76,8 @@ struct SetChatMessageReadStatusIntent {
     }
 }
 
-/// Xcode 27.1 does not expose the Messages reaction schema. This action remains available in Shortcuts.
+@available(iOS 27.3, *)
+@AppIntent(.tool)
 struct SendChatMessageReactionIntent: AppIntent {
     static let title = LocalizedStringResource(
         "siri.messages.react", table: "Localizable", comment: "Shortcuts action to react to a message."
@@ -98,6 +99,7 @@ struct SendChatMessageReactionIntent: AppIntent {
         else {
             throw SiriFailure(.siriMessagesNeedEmoji)
         }
+        guard try await coupleToActFor() == couple else { throw SiriFailure(.siriAccessSignedOut) }
         try await SiriChats.write {
             try await ThreadChatServiceFactory.makeDefault().setReaction(
                 ownerUserID: couple.ownerUserID,
@@ -111,6 +113,7 @@ struct SendChatMessageReactionIntent: AppIntent {
         else {
             throw SiriFailure(.siriMessagesUnavailable)
         }
+        guard try await coupleToActFor() == couple else { throw SiriFailure(.siriAccessSignedOut) }
         updated.reaction = .attributedString(AttributedString(emoji))
         return .result(value: updated)
     }
