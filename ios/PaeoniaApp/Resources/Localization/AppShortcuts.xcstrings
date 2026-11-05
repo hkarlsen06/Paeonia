@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Draft a message in ${applicationName}" : {
+      "comment" : "Siri phrase. Keep ${applicationName}, which Siri replaces with the app name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Draft a message in ${applicationName}"
+            ]
+          }
+        },
+        "nb" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Lag et meldingsutkast i ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Edit a message in ${applicationName}" : {
+      "comment" : "Siri phrase. Keep ${applicationName}, which Siri replaces with the app name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Edit a message in ${applicationName}"
+            ]
+          }
+        },
+        "nb" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Rediger en melding i ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "React to a message in ${applicationName}" : {
+      "comment" : "Siri phrase. Keep ${applicationName}, which Siri replaces with the app name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "React to a message in ${applicationName}"
+            ]
+          }
+        },
+        "nb" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Reager på en melding i ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Send a message in ${applicationName}" : {
+      "comment" : "Siri phrase. Keep ${applicationName}, which Siri replaces with the app name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Send a message in ${applicationName}"
+            ]
+          }
+        },
+        "nb" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Send en melding i ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Unsend a message in ${applicationName}" : {
+      "comment" : "Siri phrase. Keep ${applicationName}, which Siri replaces with the app name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Unsend a message in ${applicationName}"
+            ]
+          }
+        },
+        "nb" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Trekk tilbake en melding i ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Write a message in ${applicationName}" : {
+      "comment" : "Siri phrase. Keep ${applicationName}, which Siri replaces with the app name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Write a message in ${applicationName}"
+            ]
+          }
+        },
+        "nb" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Skriv en melding i ${applicationName}"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}

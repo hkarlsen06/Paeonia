@@ -38906,6 +38906,96 @@
         }
       }
     },
+    "siri.shortcuts.draft" : {
+      "comment" : "Title of a Paeonia chat action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draft a message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv en melding"
+          }
+        }
+      }
+    },
+    "siri.shortcuts.edit" : {
+      "comment" : "Title of a Paeonia chat action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit a message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger en melding"
+          }
+        }
+      }
+    },
+    "siri.shortcuts.react" : {
+      "comment" : "Title of a Paeonia chat action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "React to a message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reager på en melding"
+          }
+        }
+      }
+    },
+    "siri.shortcuts.send" : {
+      "comment" : "Title of a Paeonia chat action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send a message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send en melding"
+          }
+        }
+      }
+    },
+    "siri.shortcuts.unsend" : {
+      "comment" : "Title of a Paeonia chat action in Shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsend a message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trekk tilbake en melding"
+          }
+        }
+      }
+    },
     "stories.archive.empty.message" : {
       "comment" : "Message when the couple has no stories yet. %@ is the partner's name.",
       "extractionState" : "manual",

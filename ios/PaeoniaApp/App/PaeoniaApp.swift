@@ -1,3 +1,4 @@
+import AppIntents
 import ClerkKit
 import SwiftUI
 
@@ -41,6 +42,9 @@ struct PaeoniaApp: App {
             // app in the background, so the index follows writes without a screen.
             SiriAppContext.shared.connect(to: viewModel)
             SiriEntityIndexer.shared.start()
+            if #available(iOS 27.3, *) {
+                PaeoniaChatShortcuts.updateAppShortcutParameters()
+            }
         }
     }
 
