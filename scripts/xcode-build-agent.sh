@@ -13,6 +13,7 @@ DEFAULT_HEARTBEAT_INTERVAL=20
 MIN_HEARTBEAT_INTERVAL=15
 HEARTBEAT_INTERVAL="${XCODE_BUILD_AGENT_HEARTBEAT_INTERVAL:-$DEFAULT_HEARTBEAT_INTERVAL}"
 CONFIGURATION="${XCODE_BUILD_AGENT_CONFIGURATION:-Debug}"
+DESTINATION="${XCODE_BUILD_AGENT_DESTINATION:-generic/platform=iOS Simulator}"
 # build-for-testing also compiles the test targets.
 ACTION="${XCODE_BUILD_AGENT_ACTION:-build}"
 RESULT_BUNDLE="${TMPDIR:-/tmp}/Paeonia-build-$(date +%s)-$$.xcresult"
@@ -85,7 +86,7 @@ ${XA_PREFIX[@]+"${XA_PREFIX[@]}"} xcodebuild ${XA_ARGS[@]+"${XA_ARGS[@]}"} \
   -project ios/Paeonia.xcodeproj \
   -scheme App \
   -configuration "$CONFIGURATION" \
-  -destination 'generic/platform=iOS Simulator' \
+  -destination "$DESTINATION" \
   "$ACTION" >"$LOG_FILE" 2>&1 &
 XCODEBUILD_PID=$!
 start_heartbeat
