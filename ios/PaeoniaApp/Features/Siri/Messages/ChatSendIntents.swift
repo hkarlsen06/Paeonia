@@ -5,13 +5,12 @@ import UniformTypeIdentifiers
 
 @UnionValue
 enum ChatDestination {
-    case people([IntentPerson])
     case messagePeople([ChatPersonEntity])
     case messagePerson(ChatPersonEntity)
     nonisolated static let typeDisplayRepresentation = TypeDisplayRepresentation(
         name: "siri.messages.destination")
     nonisolated static let caseDisplayRepresentations: [Cases: DisplayRepresentation] = [
-        .people: "siri.messages.destination", .messagePeople: "siri.messages.destination",
+        .messagePeople: "siri.messages.destination",
         .messagePerson: "siri.messages.destination",
     ]
 }
@@ -124,16 +123,8 @@ extension SiriChats {
         return conversation
     }
 
-    private static func validateRecipient(_ destination: ChatDestination?, couple: SiriCouple) throws {
+    static func validateRecipient(_ destination: ChatDestination?, couple: SiriCouple) throws {
         switch destination {
-        case .people(let people):
-            guard !people.isEmpty,
-                people.allSatisfy({
-                    $0.identifier == .applicationDefined(couple.partnerUserID?.uuidString ?? "")
-                })
-            else {
-                throw SiriFailure(.siriMessagesPartnerOnly)
-            }
         case .messagePerson(let person):
             guard person.id == couple.partnerUserID else { throw SiriFailure(.siriMessagesPartnerOnly) }
         case .messagePeople(let people):
