@@ -9,15 +9,20 @@ extension View {
     }
 
     func chatDraftFromSiri(viewModel: ThreadChatViewModel, text: Binding<String>) -> some View {
-        task(id: SiriAppContext.shared.messageDraft?.body) {
-            let context = SiriAppContext.shared
-            if let draft = context.messageDraft,
-                draft.ownerUserID == viewModel.participants.currentUserID,
-                draft.subject == viewModel.subject
-            {
-                text.wrappedValue = draft.body
-                context.messageDraft = nil
-            }
+        task(id: [SiriAppContext.shared.messageDraft?.id, viewModel.editTarget?.id]) {
+            applyChatDraftFromSiri(viewModel: viewModel, text: text)
         }
     }
+}
+
+@MainActor
+private func applyChatDraftFromSiri(viewModel: ThreadChatViewModel, text: Binding<String>) {
+    let context = SiriAppContext.shared
+    guard viewModel.editTarget == nil,
+        let draft = context.messageDraft,
+        draft.ownerUserID == viewModel.participants.currentUserID,
+        draft.subject == viewModel.subject
+    else { return }
+    text.wrappedValue = draft.appending(to: text.wrappedValue)
+    context.messageDraft = nil
 }

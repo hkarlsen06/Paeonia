@@ -156,7 +156,14 @@ extension SiriChats {
 }
 
 struct SiriMessageDraft {
+    let id = UUID()
     let ownerUserID: UUID
     let subject: ThreadChatSubject
     let body: String
+
+    func appending(to existing: String) -> String {
+        guard !existing.isEmpty else { return body }
+        guard !body.isEmpty else { return existing }
+        return existing + "\n\n" + body
+    }
 }
