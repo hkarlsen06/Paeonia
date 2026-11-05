@@ -20,19 +20,12 @@ struct PiccanteTile: View {
 
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     private var isLifted: Bool { isSelected || isPartnerSelected }
+    private var marksChili: Bool { isOwnChili || isHiding || !chilis.isEmpty }
 
     var body: some View {
         GeometryReader { proxy in
             let side = proxy.size.width
-            ZStack {
-                if isLifted || isBurned || lastBiter != nil {
-                    if differentiateWithoutColor {
-                        silhouetteOutline(color: .paeoniaTextPrimary, width: 4)
-                    }
-                    silhouetteOutline(color: selectionColor, width: 2.5)
-                }
-                chocolate
-            }
+            outlinedChocolate
                 .padding(2)
                 .compositingGroup()
                 .shadow(color: .paeoniaInkGold.opacity(isOpening ? 0.7 : 0), radius: 10)
@@ -56,6 +49,22 @@ struct PiccanteTile: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityElement(children: .ignore)
+    }
+
+    private var outlinedChocolate: some View {
+        ZStack {
+            if marksChili && !isBurned {
+                silhouetteOutline(color: .paeoniaInkGold, width: 4.5)
+                silhouetteOutline(color: .paeoniaBackgroundPrimary, width: 2.5)
+            }
+            if isLifted || isBurned || lastBiter != nil {
+                if differentiateWithoutColor {
+                    silhouetteOutline(color: .paeoniaTextPrimary, width: 4)
+                }
+                silhouetteOutline(color: selectionColor, width: 2.5)
+            }
+            chocolate
+        }
     }
 
     private var artwork: ImageResource {
@@ -135,11 +144,18 @@ struct PiccanteTile: View {
     }
 
     private func chiliMarker(side: CGFloat) -> some View {
-        Image(.gameHubPiccanteChili)
+        let diameter = max(34, side * 0.6)
+        return Image(.gameHubPiccanteChili)
             .resizable()
             .accessibilityHidden(true)
             .scaledToFit()
-            .frame(width: max(22, side * 0.36), height: max(22, side * 0.33))
             .rotationEffect(.degrees(-15))
+            .padding(diameter * 0.12)
+            .frame(width: diameter, height: diameter)
+            .background(Color.paeoniaBackgroundPrimary, in: Circle())
+            .overlay {
+                Circle().strokeBorder(Color.paeoniaInkGold, lineWidth: 2)
+            }
+            .shadow(color: .black.opacity(0.45), radius: 3, y: 2)
     }
 }
