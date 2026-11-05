@@ -201,6 +201,7 @@ final class ThreadChatViewModel {
     func prepare() async {
         guard let ownerUserID = participants.currentUserID, isChatAvailable else { return }
         await readStore(ownerUserID: ownerUserID)
+        await prepareCachedGameResults(ownerUserID: ownerUserID)
     }
 
     func load() async {

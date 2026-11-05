@@ -56,6 +56,7 @@ struct ThreadChatPhotoCard: View {
     var provider: (any DailyAnswerMediaImageProviding)? = DailyAnswerMediaImageProviderFactory.shared
 
     @State private var image: UIImage?
+    @State private var loadedKey: String?
     @State private var didFail = false
 
     init(
@@ -73,6 +74,7 @@ struct ThreadChatPhotoCard: View {
         // A photo shown before is in the first frame, with no placeholder in between.
         let cached = ThreadChatPhotoLayout.cacheKey(for: photo).flatMap(PaeoniaImageMemoryCache.image(forKey:))
         _image = State(initialValue: cached)
+        _loadedKey = State(initialValue: ThreadChatPhotoLayout.cacheKey(for: photo))
     }
 
     var body: some View {
@@ -80,13 +82,13 @@ struct ThreadChatPhotoCard: View {
             .fill(.paeoniaSurfacePrimary)
             .frame(width: size.width, height: size.height)
             .overlay {
-                if let image {
+                if loadedKey == ThreadChatPhotoLayout.cacheKey(for: photo), let image {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
                         .frame(width: size.width, height: size.height)
                         .accessibilityHidden(true)
-                } else if didFail {
+                } else if loadedKey == ThreadChatPhotoLayout.cacheKey(for: photo), didFail {
                     Image(systemName: "photo")
                         .font(.title3)
                         .foregroundStyle(.paeoniaTextTertiary)
@@ -110,11 +112,11 @@ struct ThreadChatPhotoCard: View {
     }
 
     private func load() async {
-        guard image == nil, let key = ThreadChatPhotoLayout.cacheKey(for: photo) else { return }
-        if let cached = PaeoniaImageMemoryCache.image(forKey: key) {
-            image = cached
-            return
-        }
+        guard let key = ThreadChatPhotoLayout.cacheKey(for: photo) else { return }
+        loadedKey = key
+        image = PaeoniaImageMemoryCache.image(forKey: key)
+        didFail = false
+        guard image == nil else { return }
         let data: Data? = if let local = photo.data {
             local
         } else if let mediaAssetID = photo.mediaAssetID {
@@ -123,11 +125,14 @@ struct ThreadChatPhotoCard: View {
             nil
         }
         guard !Task.isCancelled else { return }
-        if let data, let decoded = await ThreadChatPhotoLayout.decodeAndCache(data, key: key) {
-            image = decoded
+        let decoded: UIImage? = if let data {
+            await ThreadChatPhotoLayout.decodeAndCache(data, key: key)
         } else {
-            didFail = true
+            nil
         }
+        guard !Task.isCancelled else { return }
+        image = decoded
+        didFail = decoded == nil
     }
 }
 
@@ -150,6 +155,7 @@ struct ThreadChatPhotoThumbnails: View {
                         topLeading: 8, bottomLeading: 8, bottomTrailing: 8, topTrailing: 8
                     ), style: .continuous)
                 )
+                .id(ThreadChatPhotoLayout.cacheKey(for: photo))
                 .overlay {
                     if overflow > 0, index == shown.count - 1 {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)

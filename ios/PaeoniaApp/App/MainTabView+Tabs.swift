@@ -320,6 +320,7 @@ extension MainTabView {
                 .navigationDestination(for: QuestionsDestination.self, destination: questionsDestination)
                 .navigationDestination(item: $gameChatDestination) { destination in
                     ThreadChatScreen(viewModel: destination.viewModel)
+                        .id(destination.id)
                 }
         }
     }

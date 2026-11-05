@@ -179,6 +179,30 @@ struct GameChatTimelineTests {
         #expect(model.gameResultCards.filter(\.isExpanded).map(\.reference.id) == [middle.id, latest.id])
     }
 
+    @Test func preparationShowsCachedExpandedResultsBeforeOpeningOffline() async throws {
+        let fixture = ChatTestFixture()
+        let service = fixture.makeService()
+        let reference = result(at: 10)
+        let detail = GameConversationResult.mindMeld(
+            RemoteMindMeldHistoryGame(
+                id: reference.id, gameNumber: 1, state: .melded, endReason: nil, endedByUserID: nil,
+                createdAt: .distantPast, endedAt: reference.finishedAt, meldNumber: 1, rounds: []))
+        await service.keepGameResult(detail, ownerUserID: ownerID, source: reference.source)
+        let generation = await fixture.cache.purgeGeneration()
+        await fixture.cache.saveGameTimeline(
+            .init(messages: [], results: [reference], hasMore: false),
+            ownerUserID: ownerID, subjectID: subject.id, older: false, unlessPurgedSince: generation)
+        let model = ThreadChatViewModel(
+            subject: .game(subject), coupleID: coupleID,
+            participants: .init(currentUserID: ownerID, partnerDisplayName: "Robin"), service: service)
+
+        await model.prepare()
+
+        let card = try #require(model.gameResultCards.first)
+        #expect(card.isExpanded)
+        #expect(card.result == detail)
+    }
+
     private func result(at time: TimeInterval) -> GameChatResultReference {
         let source = GameConversationSource.mindMeld(UUID())
         return .init(

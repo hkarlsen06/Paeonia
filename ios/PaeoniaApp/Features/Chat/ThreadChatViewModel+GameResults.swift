@@ -1,6 +1,17 @@
 import Foundation
 
 extension ThreadChatViewModel {
+    /// Fill expanded cards from this phone before presenting the conversation.
+    func prepareCachedGameResults(ownerUserID: UUID) async {
+        for reference in gameReferences where expandedGameResultIDs.contains(reference.id) {
+            let cached = await service.cachedGameResult(ownerUserID: ownerUserID, source: reference.source)
+            guard !Task.isCancelled else { return }
+            if let cached, expandedGameResultIDs.contains(reference.id) {
+                gameResults[reference.id] = cached
+            }
+        }
+    }
+
     /// Expanded old results follow their own query, even outside the newest timeline page.
     func observeExpandedGameResults() async {
         guard let ownerID = participants.currentUserID else { return }
