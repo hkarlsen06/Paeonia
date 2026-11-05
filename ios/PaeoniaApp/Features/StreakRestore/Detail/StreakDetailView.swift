@@ -99,6 +99,7 @@ struct StreakDetailView: View {
             .padding(.vertical, PaeoniaSpacing.space24)
             .paeoniaReadableWidth()
         }
+        .defaultScrollAnchor(.center, for: .alignment)
         .scrollBounceBehavior(.basedOnSize)
         .background(.paeoniaSurfacePrimary)
         .onAppear(perform: revealCelebrationDetails)
