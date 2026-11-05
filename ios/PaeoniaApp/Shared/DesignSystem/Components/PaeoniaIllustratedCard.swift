@@ -115,7 +115,7 @@ struct PaeoniaIllustratedCard<Artwork: View, Badge: View, Header: View, Extras: 
         .modifier(framing)
     }
 
-    /// The grid's small card keeps a consistent height unless accessibility text needs more room.
+    /// The grid's small card fits its picture and visible text.
     private var tile: some View {
         Button(action: open) {
             VStack(spacing: 0) {
@@ -153,7 +153,7 @@ struct PaeoniaIllustratedCard<Artwork: View, Badge: View, Header: View, Extras: 
             if dynamicTypeSize.isAccessibilitySize {
                 status.fixedSize(horizontal: false, vertical: true)
             } else {
-                status.lineLimit(3, reservesSpace: true)
+                status.lineLimit(3)
             }
         }
         .font(needsAttention ? PaeoniaTypography.caption.weight(.semibold) : PaeoniaTypography.caption)
