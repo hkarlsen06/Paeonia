@@ -1,3 +1,4 @@
+import Foundation
 import UIKit
 import UserNotifications
 #if DEBUG
@@ -142,10 +143,12 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         guard !title.isEmpty || !body.isEmpty else { return }
         let deepLink = isWidgetUpdate ? .widgetDrawing : PaeoniaDeepLink(notificationUserInfo: userInfo)
         let showsPartnerAvatar = isWidgetUpdate || userInfo["actor_user_id"] is String
+        let messageID = type == "thread_message_sent"
+            ? (userInfo["message_id"] as? String).flatMap(UUID.init(uuidString:)) : nil
         Task { @MainActor in
             PaeoniaNotificationRouter.shared.presentForegroundNotice(
                 title: title.isEmpty ? nil : title,
-                message: body, deepLink: deepLink, showsPartnerAvatar: showsPartnerAvatar
+                message: body, deepLink: deepLink, showsPartnerAvatar: showsPartnerAvatar, messageID: messageID
             )
         }
     }

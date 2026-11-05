@@ -9,6 +9,7 @@ struct PaeoniaForegroundNotice: Equatable, Identifiable {
     let message: String
     let deepLink: PaeoniaDeepLink?
     let showsPartnerAvatar: Bool
+    var messageID: UUID?
 }
 
 /// Bridges a tapped notification (handled in the UIKit app delegate) to the
@@ -49,10 +50,11 @@ final class PaeoniaNotificationRouter {
     }
 
     func presentForegroundNotice(
-        title: String?, message: String, deepLink: PaeoniaDeepLink?, showsPartnerAvatar: Bool
+        title: String?, message: String, deepLink: PaeoniaDeepLink?, showsPartnerAvatar: Bool, messageID: UUID? = nil
     ) {
         pendingForegroundNotice = PaeoniaForegroundNotice(
-            title: title, message: message, deepLink: deepLink, showsPartnerAvatar: showsPartnerAvatar
+            title: title, message: message, deepLink: deepLink,
+            showsPartnerAvatar: showsPartnerAvatar, messageID: messageID
         )
     }
 

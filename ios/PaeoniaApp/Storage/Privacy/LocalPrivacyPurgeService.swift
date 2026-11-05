@@ -156,6 +156,7 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
         }
         // Every scope hides the couple's content, so Spotlight and Siri forget all of it. A
         // failure keeps the request queued, and the retry removes both again.
+        await MainActor.run { SiriAppContext.shared.messageDraft = nil }
         try await entityIndex.removeAllEntities()
     }
 

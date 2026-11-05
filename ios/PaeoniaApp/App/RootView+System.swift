@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import UIKit
 
@@ -245,16 +246,18 @@ extension RootView {
             return
         }
 
-        bannerCenter.show(
-            .info(
-                title: notice.title,
-                message: notice.message,
-                imageData: notice.showsPartnerAvatar ? PaeoniaAppGroup.partnerAvatarData() : nil,
-                action: notice.deepLink.map { deepLink in
-                    { PaeoniaNotificationRouter.shared.route(deepLink) }
-                }
-            )
+        var banner = PaeoniaBannerContent.info(
+            title: notice.title,
+            message: notice.message,
+            imageData: notice.showsPartnerAvatar ? PaeoniaAppGroup.partnerAvatarData() : nil,
+            action: notice.deepLink.map { deepLink in
+                { PaeoniaNotificationRouter.shared.route(deepLink) }
+            }
         )
+        banner.appEntityIdentifier = notice.messageID.map {
+            EntityIdentifier(for: ChatMessageEntity.self, identifier: $0)
+        }
+        bannerCenter.show(banner)
         PaeoniaNotificationRouter.shared.consumeForegroundNotice()
     }
 

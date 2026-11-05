@@ -3,7 +3,7 @@ import CoreSpotlight
 import Foundation
 
 /// One memory, as the photos schema's album: its title is the album name and its date the
-/// creation date. Notes stay out, because the SDK cannot ask for Face ID per property.
+/// creation date. Visible notes are searchable text in Spotlight.
 @AppEntity(schema: .photos.album)
 struct MemoryAlbumEntity: IndexedEntity, OwnershipProvidingEntity {
     static let defaultQuery = MemoryAlbumQuery()
@@ -14,6 +14,14 @@ struct MemoryAlbumEntity: IndexedEntity, OwnershipProvidingEntity {
     var creationDate: Date?
     var albumType: MemoryAlbumKind
     let placeName: String?
+    let notes: String
+
+    var searchableAttributes: CSSearchableItemAttributeSet {
+        let attributes = CSSearchableItemAttributeSet(contentType: .text)
+        attributes.title = name
+        attributes.textContent = notes
+        return attributes
+    }
 
     var ownership: EntityOwnership { .shared }
 
@@ -30,6 +38,8 @@ struct MemoryAlbumEntity: IndexedEntity, OwnershipProvidingEntity {
     init(record: MemoryRecord) {
         id = record.snapshot.memoryID
         placeName = record.snapshot.place?.nameAndCity
+        notes = [record.snapshot.ownNote?.visibleBody, record.snapshot.partnerNote?.visibleBody]
+            .compactMap(\.self).joined(separator: "\n")
         name = record.snapshot.title ?? ""
         creationDate = MemoryTimeline.pickerDate(forLocalDate: record.snapshot.memoryDate)
         albumType = .memory

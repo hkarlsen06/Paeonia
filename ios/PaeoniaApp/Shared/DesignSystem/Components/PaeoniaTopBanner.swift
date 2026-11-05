@@ -1,3 +1,4 @@
+import AppIntents
 import Foundation
 import Observation
 import SwiftUI
@@ -37,6 +38,7 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
     let systemImage: String?
     /// Runs on tap instead of the host's tap handler. Setting it makes the banner tappable.
     let action: (() -> Void)?
+    var appEntityIdentifier: EntityIdentifier?
     let timing: PaeoniaBannerTiming
 
     init(
@@ -59,6 +61,7 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
         self.isTappable = isTappable || action != nil
         self.systemImage = systemImage
         self.action = action
+        self.appEntityIdentifier = nil
         self.timing = timing
     }
 
@@ -71,11 +74,13 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
             && lhs.isTappable == rhs.isTappable
             && lhs.systemImage == rhs.systemImage
             && lhs.timing == rhs.timing
+            && lhs.appEntityIdentifier == rhs.appEntityIdentifier
     }
 
     /// True when `other` would look the same to the user, even with a different id.
     func hasSameText(as other: PaeoniaBannerContent) -> Bool {
         style == other.style && title == other.title && message == other.message
+            && appEntityIdentifier == other.appEntityIdentifier
     }
 
     static func error(
@@ -235,6 +240,7 @@ struct PaeoniaTopBanner: View {
                 .stroke(accentColor.opacity(0.35), lineWidth: PaeoniaRadius.strokeDefault)
         }
         .shadow(color: .black.opacity(0.26), radius: 24, x: 0, y: 14)
+        .appEntityIdentifier(content.appEntityIdentifier)
         .accessibilityElement(children: .contain)
         .accessibilityAction(named: Text(.appBannerDismissButton)) {
             onDismiss()

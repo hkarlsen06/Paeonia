@@ -22,7 +22,10 @@ extension FileThreadChatCache {
         let key = subjectKeys(ownerUserID).first { key in
             subjectDocument(ownerUserID, key).messages.contains { $0.id == messageID }
         }
-        guard let key, let subjectID = UUID(uuidString: key) else { return [] }
+        guard let key, let subjectID = UUID(uuidString: key) else {
+            updateCore(ownerUserID) { $0.clearLastMessage(ifID: messageID) }
+            return []
+        }
         return markDeleted(ownerUserID: ownerUserID, subjectID: subjectID, messageID: messageID, at: date)
     }
 }

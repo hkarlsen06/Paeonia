@@ -20,6 +20,9 @@ final class SiriEntityIndexer: SiriEntityIndexClearing {
     nonisolated static let shared = SiriEntityIndexer()
 
     private struct Indexed: Equatable {
+        var people: [UUID: String] = [:]
+        var conversations: [UUID: String] = [:]
+        var messages: [UUID: String] = [:]
         var calendars: [String: String] = [:]
         var dates: [CoupleDateID: String] = [:]
         var memories: [UUID: String] = [:]
@@ -43,7 +46,10 @@ final class SiriEntityIndexer: SiriEntityIndexClearing {
     /// Indexes what is on the phone now and follows later writes for the life of the app.
     func start() {
         guard observation == nil else { return }
-        let changes = LocalStoreChanges.changes(in: .memories, .coupleDates, .pendingOperations, .access)
+        let changes = LocalStoreChanges.changes(
+            in: .memories, .coupleDates, .pendingOperations, .access,
+            .threadChat, .stories, .dailyChallenge, .topics
+        )
         observation = Task { [weak self] in
             await self?.refresh()
             for await _ in changes {
@@ -79,7 +85,12 @@ final class SiriEntityIndexer: SiriEntityIndexClearing {
         let records = await SiriContent.memories(for: couple)
         let memories = records.map(MemoryAlbumEntity.init)
         let photos = MemoryPhotoEntity.all(in: records)
+        let chats = await SiriChats.snapshot(for: couple)
+        let people = SiriChats.people(couple)
         let wanted = Indexed(
+            people: Dictionary(uniqueKeysWithValues: people.map { ($0.id, $0.name) }),
+            conversations: Dictionary(uniqueKeysWithValues: chats.conversations.map { ($0.id, Self.signature($0)) }),
+            messages: Dictionary(uniqueKeysWithValues: chats.messages.map { ($0.id, Self.signature($0)) }),
             calendars: [CoupleCalendarEntity.shared.id: CoupleCalendarEntity.shared.title],
             dates: Dictionary(dates.map { ($0.id, Self.signature($0)) }, uniquingKeysWith: { first, _ in first }),
             memories: Dictionary(memories.map { ($0.id, Self.signature($0)) }, uniquingKeysWith: { first, _ in first }),
@@ -89,6 +100,9 @@ final class SiriEntityIndexer: SiriEntityIndexClearing {
         let previous = force ? nil : indexed
         indexed = nil
         do {
+            try await sync(people, wanted.people, previous?.people, started)
+            try await sync(chats.conversations, wanted.conversations, previous?.conversations, started)
+            try await sync(chats.messages, wanted.messages, previous?.messages, started)
             try await sync([CoupleCalendarEntity.shared], wanted.calendars, previous?.calendars, started)
             try await sync(dates, wanted.dates, previous?.dates, started)
             try await sync(memories, wanted.memories, previous?.memories, started)
@@ -133,12 +147,23 @@ final class SiriEntityIndexer: SiriEntityIndexClearing {
         }
     }
 
+    private static func signature(_ conversation: ChatConversationEntity) -> String {
+        [conversation.displayName, String(conversation.previewText.characters), "\(conversation.isRead)",
+         conversation.dateLastActive?.description ?? ""].joined(separator: "|")
+    }
+
+    private static func signature(_ message: ChatMessageEntity) -> String {
+        [String((message.body ?? AttributedString()).characters), "\(message.date)", "\(message.isRead)",
+         message.conversation.displayName, message.author.name].joined(separator: "|")
+    }
+
     private static func signature(_ date: CoupleDateEntity) -> String {
         [date.title, "\(date.startDate)", "\(date.recurrence != nil)", "\(date.nextDate)"].joined(separator: "|")
     }
 
     private static func signature(_ memory: MemoryAlbumEntity) -> String {
-        [memory.name, "\(memory.creationDate.map(String.init(describing:)) ?? "")", memory.placeName ?? ""]
+        [memory.notes, memory.name,
+         "\(memory.creationDate.map(String.init(describing:)) ?? "")", memory.placeName ?? ""]
             .joined(separator: "|")
     }
 

@@ -223,6 +223,7 @@ struct PairingCelebrationView: View {
                     .contentTransition(.opacity)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .accessibilityIdentifier("pairingCelebration.continue")
             // The gift can finish loading after the button is up.
             .animation(PaeoniaMotion.stateChange, value: String(localized: dismissTitle))
             .opacity(isVisible ? 1 : 0)

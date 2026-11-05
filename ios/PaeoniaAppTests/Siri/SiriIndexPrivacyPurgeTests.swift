@@ -16,6 +16,17 @@ struct SiriIndexPrivacyPurgeTests {
         #expect(await spotlight.indexed.isEmpty)
     }
 
+    @Test(arguments: LocalPrivacyPurgeTests.everyPurgeScope)
+    @MainActor
+    func everyPurgeRemovesTheMessageWaitingInSiri(scope: LocalPrivacyPurgeScope) async throws {
+        let fixture = try PurgeFixture(spotlight: FakeSpotlightIndex(indexed: []))
+        defer { fixture.removeDefaults() }
+        let owner = UUID()
+        SiriAppContext.shared.messageDraft = SiriMessageDraft(ownerUserID: owner, subject: .couple, body: "Private")
+        #expect(await fixture.purger.purge(ownerUserID: owner, scope: scope) == .completed)
+        #expect(SiriAppContext.shared.messageDraft == nil)
+    }
+
     @Test func aSpotlightRemovalThatFailsStaysQueuedUntilARetryClearsIt() async throws {
         let ownerUserID = UUID()
         let spotlight = FakeSpotlightIndex(indexed: ["memory:bergen"], failuresBeforeSuccess: 1)

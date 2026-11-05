@@ -1,3 +1,4 @@
+import AppIntents
 import ExyteChat
 import SwiftUI
 
@@ -86,6 +87,7 @@ struct ThreadChatView: View {
         .onChange(of: messageViewport, initial: true) { readViewport.frame = messageViewport }
         .paeoniaReadableWidth()
         .paeoniaScreenBackground()
+        .chatConversationOnScreenForSiri(viewModel.subject)
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .favoriteToolbarItem(questionFavorite, identifier: "dailyChat.star")
@@ -205,6 +207,7 @@ struct ThreadChatView: View {
                     beginPhotoDraft: { viewModel.beginPhotoDraftEditing() },
                     onTextChanged: viewModel.draftChanged
                 )
+                .chatDraftFromSiri(viewModel: viewModel, text: params.text)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { composerHeight = $0 }
             },
             messageMenuAction: handleMenuAction
@@ -288,6 +291,9 @@ struct ThreadChatView: View {
             if let answer = row.answer, !row.isCurrentUser {
                 viewModel.setPartnerAnswerVisible(answer.answerID, isVisible: visible)
             }
+        })
+        .appEntityIdentifier(row.message.flatMap { message in
+            message.isDeleted ? nil : EntityIdentifier(for: ChatMessageEntity.self, identifier: message.id)
         })
         .id(row.id)
     }

@@ -38204,6 +38204,330 @@
         }
       }
     },
+    "siri.messages.attachments" : {
+      "comment" : "Required Messages schema parameter for attachments.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attachments"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vedlegg"
+          }
+        }
+      }
+    },
+    "siri.messages.audio" : {
+      "comment" : "Required Messages schema parameter for a voice message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talemelding"
+          }
+        }
+      }
+    },
+    "siri.messages.cannotEdit" : {
+      "comment" : "Siri message action label or explanation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can edit your own text messages for five minutes after sending. Open Paeonia to check this message."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan redigere dine egne tekstmeldinger i fem minutter etter at du sendte dem. Åpne Paeonia for å se meldingen."
+          }
+        }
+      }
+    },
+    "siri.messages.cannotUnread" : {
+      "comment" : "Siri message action label or explanation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia can mark messages as read. You cannot mark them as unread."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia kan merke meldinger som lest. Du kan ikke merke dem som ulest."
+          }
+        }
+      }
+    },
+    "siri.messages.cannotUnsend" : {
+      "comment" : "Siri message action label or explanation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can only take back your own messages."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan bare trekke tilbake dine egne meldinger."
+          }
+        }
+      }
+    },
+    "siri.messages.conversation" : {
+      "comment" : "Siri chat title when a story has no caption.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samtale"
+          }
+        }
+      }
+    },
+    "siri.messages.destination" : {
+      "comment" : "Siri message action label or explanation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send to"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send til"
+          }
+        }
+      }
+    },
+    "siri.messages.emoji" : {
+      "comment" : "Siri message reaction action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Emoji"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Emoji"
+          }
+        }
+      }
+    },
+    "siri.messages.message" : {
+      "comment" : "Siri message reaction action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melding"
+          }
+        }
+      }
+    },
+    "siri.messages.needEmoji" : {
+      "comment" : "Siri message reaction action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose one emoji to react with."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg én emoji å reagere med."
+          }
+        }
+      }
+    },
+    "siri.messages.needText" : {
+      "comment" : "Siri message action label or explanation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write a message of up to 4,000 characters, then try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv en melding på opptil 4 000 tegn, og prøv igjen."
+          }
+        }
+      }
+    },
+    "siri.messages.offline" : {
+      "comment" : "Siri write failed because this phone has no connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You are offline. Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet. Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "siri.messages.partnerOnly" : {
+      "comment" : "Siri message action label or explanation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can only message your partner in Paeonia."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan bare sende meldinger til partneren din i Paeonia."
+          }
+        }
+      }
+    },
+    "siri.messages.react" : {
+      "comment" : "Siri message reaction action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "React to a message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reager på en melding"
+          }
+        }
+      }
+    },
+    "siri.messages.textOnly" : {
+      "comment" : "Siri rejects attachment and scheduling requests rather than silently dropping them.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send text here. Open Paeonia to send photos or a voice message."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send tekst her. Åpne Paeonia for å sende bilder eller en talemelding."
+          }
+        }
+      }
+    },
+    "siri.messages.tryAgain" : {
+      "comment" : "Siri write failed for a reason other than being offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong. Try again later, or open Paeonia for help."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt. Prøv igjen senere, eller åpne Paeonia for å få hjelp."
+          }
+        }
+      }
+    },
+    "siri.messages.unavailable" : {
+      "comment" : "Siri could not find the selected message on this phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This message is no longer available. Open Paeonia to choose another."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne meldingen er ikke lenger tilgjengelig. Åpne Paeonia for å velge en annen."
+          }
+        }
+      }
+    },
+    "siri.messages.unspecified" : {
+      "comment" : "Shortcuts label for an unspecified message attribute, type, or effect.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unspecified"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke oppgitt"
+          }
+        }
+      }
+    },
     "siri.photos.incomingTitle" : {
       "comment" : "Name Siri shows for a photo from another app that is about to go into a memory.",
       "extractionState" : "manual",

@@ -49,7 +49,7 @@ final class ReactionPalette {
     }
 
     /// The first character, when it is an emoji. Digits and letters are refused.
-    private nonisolated static func normalized(_ value: String) -> String? {
+    nonisolated static func normalized(_ value: String) -> String? {
         guard let first = value.trimmingCharacters(in: .whitespacesAndNewlines).first else { return nil }
         let scalars = first.unicodeScalars
         let isEmoji = scalars.contains { $0.properties.isEmojiPresentation }

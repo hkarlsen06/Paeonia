@@ -40,6 +40,27 @@ struct ThreadChatCacheFilesTests {
         #expect(await reopened.messages(ownerUserID: owner, subjectID: question).isEmpty)
     }
 
+    @Test func aRemoteDeletionClearsAnUnopenedChatsPreview() async {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let removed = message(ThreadChatSubject.coupleChatID, "A private message")
+        let summary = ThreadChatSummary(
+            threadID: thread, coupleID: UUID(), subject: .couple,
+            createdAt: removed.createdAt, updatedAt: removed.createdAt,
+            lastMessageID: removed.id, lastMessageAt: removed.createdAt,
+            lastMessageSenderUserID: removed.senderUserID, lastMessageBody: removed.body
+        )
+        let cache = FileThreadChatCache(directoryURL: directory)
+        await cache.saveSummaries([summary], ownerUserID: owner)
+
+        await cache.markDeletedInAnyChat(ownerUserID: owner, messageID: removed.id, at: .now)
+
+        let saved = await FileThreadChatCache(directoryURL: directory).summaries(ownerUserID: owner)
+        #expect(saved.map(\.threadID) == [thread])
+        #expect(saved.first?.lastMessageID == nil)
+        #expect(saved.first?.lastMessageBody == nil)
+    }
+
     @Test func seenPartnerAnswersKeepOnlyTheNewestOnes() async {
         let directory = makeDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

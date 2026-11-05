@@ -39,11 +39,16 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
     func isUnread(by userID: UUID, readThrough: ThreadChatMessageCursor?) -> Bool {
         guard let lastMessageAt, let lastMessageID,
               let sender = lastMessageSenderUserID, sender != userID else { return false }
+        guard let newestRead = latestReadCursor(onThisPhone: readThrough) else { return true }
+        return ThreadChatMessageCursor(createdAt: lastMessageAt, messageID: lastMessageID) > newestRead
+    }
+
+    /// The furthest read position saved on this phone or received from another device.
+    func latestReadCursor(onThisPhone readThrough: ThreadChatMessageCursor?) -> ThreadChatMessageCursor? {
         let serverRead = viewerReadThroughAt.flatMap { date in
             viewerReadThroughMessageID.map { ThreadChatMessageCursor(createdAt: date, messageID: $0) }
         }
-        guard let newestRead = [readThrough, serverRead].compactMap(\.self).max() else { return true }
-        return ThreadChatMessageCursor(createdAt: lastMessageAt, messageID: lastMessageID) > newestRead
+        return [readThrough, serverRead].compactMap(\.self).max()
     }
 }
 
