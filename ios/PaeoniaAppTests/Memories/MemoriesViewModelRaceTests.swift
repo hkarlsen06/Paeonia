@@ -92,7 +92,7 @@ struct MemoriesViewModelRaceTests {
             place: openedWith.snapshot.place
         ))
 
-        #expect(saved)
+        #expect(saved.isSaved)
         let updated = try #require(env.viewModel.record(for: openedWith.snapshot.memoryID))
         #expect(updated.snapshot.title == "Partner's title")
         #expect(updated.snapshot.ownNote?.body == "Second thoughts")
@@ -185,7 +185,7 @@ struct MemoriesViewModelRaceTests {
             place: record.snapshot.place
         ))
 
-        #expect(!saved)
+        #expect(!saved.isSaved)
         #expect(env.viewModel.notice == .memoryRemoved)
         let attaches = try await env.pendingStore.inFlightOperations(ownerUserID: env.userID, kind: .attachMemoryMedia)
         #expect(attaches.isEmpty)

@@ -5,6 +5,8 @@ import Foundation
 enum MemoriesNotice: Equatable {
     case createFailed
     case editFailed
+    case loadFailed
+    case draftSaveFailed
     case photoUploadFailed
     case deleteFailed
     case noteFailed
@@ -36,6 +38,8 @@ enum MemoriesNotice: Equatable {
             .memoriesNoticeCreateFailedTitle
         case .editFailed:
             .memoriesNoticeEditFailedTitle
+        case .loadFailed, .draftSaveFailed:
+            .commonLoadFailedTitle
         case .photoUploadFailed:
             .memoriesNoticePhotoFailedTitle
         case .deleteFailed:
@@ -55,6 +59,8 @@ enum MemoriesNotice: Equatable {
 
     var message: LocalizedStringResource {
         switch self {
+        case .draftSaveFailed:
+            .memoriesDraftSaveFailed
         case .photoUploadFailed:
             .memoriesNoticePhotoFailedMessage
         case .memoryRemoved:
@@ -63,7 +69,7 @@ enum MemoriesNotice: Equatable {
             .memoriesNoticeTooLongMessage
         case .photoSaveDenied:
             .memoriesNoticePhotoSaveDeniedMessage
-        case .createFailed, .editFailed, .deleteFailed, .noteFailed, .photoSaveFailed, .photoSaved:
+        case .createFailed, .editFailed, .loadFailed, .deleteFailed, .noteFailed, .photoSaveFailed, .photoSaved:
             .memoriesNoticeRetryMessage
         }
     }

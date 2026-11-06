@@ -70,7 +70,7 @@ struct MemoriesViewModelTests {
             place: record.snapshot.place
         ))
 
-        #expect(added)
+        #expect(added.isSaved)
         let updated = try #require(env.viewModel.timeline.flatMap(\.memories).first)
         #expect(updated.snapshot.media.count == 1)
         #expect(updated.snapshot.visibleMediaAssetIDs.count == 1)
@@ -179,22 +179,22 @@ struct MemoriesViewModelTests {
         #expect(env.viewModel.draft.title == "Private")
     }
 
-    @Test func savingTheMemoryClearsTheSavedDraft() async {
+    @Test func savingTheMemoryClearsTheSavedDraft() async throws {
         let store = makeIsolatedMemoryDraftStore()
         let env = makeEnvironment(draftStore: store)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
         env.viewModel.updateDraft(MemoryDraft(title: "Trip", note: "Great"))
         env.viewModel.flushDraft()
-        #expect(store.draft(for: env.userID) != nil)
+        #expect(try store.draft(for: env.userID) != nil)
 
         let saved = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Great", photos: [])
 
         #expect(saved)
         #expect(env.viewModel.draft.isEmpty)
-        #expect(store.draft(for: env.userID) == nil)
+        #expect(try store.draft(for: env.userID) == nil)
     }
 
-    @Test func aFailedSaveKeepsTheSavedDraft() async {
+    @Test func aFailedSaveKeepsTheSavedDraft() async throws {
         let store = makeIsolatedMemoryDraftStore()
         let env = makeEnvironment(
             uploader: MemoryTestMediaUploader(shouldFail: true),
@@ -211,29 +211,29 @@ struct MemoriesViewModelTests {
         )
 
         #expect(!saved)
-        #expect(store.draft(for: env.userID)?.title == "Trip")
-        #expect(store.draft(for: env.userID)?.photos.count == 1)
+        #expect(try store.draft(for: env.userID)?.title == "Trip")
+        #expect(try store.draft(for: env.userID)?.photos.count == 1)
     }
 
-    @Test func typingWaitsForAPauseBeforeSavingButPhotosSaveAtOnce() async {
+    @Test func typingWaitsForAPauseBeforeSavingButPhotosSaveAtOnce() async throws {
         let store = makeIsolatedMemoryDraftStore()
         let env = makeEnvironment(draftStore: store)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
 
         env.viewModel.updateDraft(MemoryDraft(title: "Trip"))
-        #expect(store.draft(for: env.userID) == nil)
+        #expect(try store.draft(for: env.userID) == nil)
         #expect(env.viewModel.draft.title == "Trip")
 
         env.viewModel.flushDraft()
-        #expect(store.draft(for: env.userID)?.title == "Trip")
+        #expect(try store.draft(for: env.userID)?.title == "Trip")
 
         var withPhoto = env.viewModel.draft
         withPhoto.photos = [MemoryDraftPhoto(data: makeImageData())]
         env.viewModel.updateDraft(withPhoto)
-        #expect(store.draft(for: env.userID)?.photos.count == 1)
+        #expect(try store.draft(for: env.userID)?.photos.count == 1)
     }
 
-    @Test func discardingTheDraftClearsTheSavedCopy() async {
+    @Test func discardingTheDraftClearsTheSavedCopy() async throws {
         let store = makeIsolatedMemoryDraftStore()
         let env = makeEnvironment(draftStore: store)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
@@ -242,7 +242,7 @@ struct MemoriesViewModelTests {
 
         env.viewModel.updateDraft(MemoryDraft())
 
-        #expect(store.draft(for: env.userID) == nil)
+        #expect(try store.draft(for: env.userID) == nil)
     }
 
     // MARK: - Environment

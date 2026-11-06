@@ -201,6 +201,15 @@ struct WidgetDrawingView: View {
                     .accessibilityIdentifier("widgetDrawing.description.edit")
             }
 
+            if viewModel.draftSaveFailed {
+                Text(.widgetDrawingDraftSaveFailed)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button(.commonTryAgain) { viewModel.retryDraftSave() }
+                    .buttonStyle(PaeoniaQuietButtonStyle())
+                    .accessibilityIdentifier("widgetDrawing.draft.retry")
+            }
             bottomActions
         }
     }

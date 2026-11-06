@@ -8,7 +8,25 @@ import Observation
 @Observable
 final class StoryReplies {
     private(set) var chat: ThreadChatViewModel?
-    var draft = ""
+    var draft = "" {
+        didSet {
+            if let storyID { drafts[storyID] = draft }
+        }
+    }
+    private var drafts: [UUID: String] = [:]
+    private var privacySession = UUID()
+
+    var hasUnsentReply: Bool { !draft.isEmpty || isSending }
+
+    func clearForPrivacy() {
+        privacySession = UUID()
+        drafts = [:]
+        storyID = nil
+        draft = ""
+        chat = nil
+        justSent = false
+        isSending = false
+    }
     private(set) var isSending = false
     /// Briefly true after a reply went out, so the field can say so.
     private(set) var justSent = false
@@ -19,11 +37,12 @@ final class StoryReplies {
         guard story.id != storyID else { return }
         storyID = story.id
         chat = nil
-        draft = ""
+        draft = drafts[story.id] ?? ""
         justSent = false
         guard context.isAvailable else { return }
+        let session = privacySession
         let loaded = await context.makeViewModel(subject: .story(story.id), header: header)
-        guard storyID == story.id else { return }
+        guard storyID == story.id, privacySession == session else { return }
         chat = loaded
     }
 
@@ -36,8 +55,15 @@ final class StoryReplies {
     func send() async -> Bool {
         guard let chat, canSend else { return false }
         isSending = true
-        defer { isSending = false }
-        guard await chat.send(draft) else { return false }
+        let session = privacySession
+        defer { if privacySession == session { isSending = false } }
+        let submitted = draft
+        let submittedStoryID = storyID
+        guard await chat.send(submitted), privacySession == session else { return false }
+        if let submittedStoryID, drafts[submittedStoryID] == submitted {
+            drafts[submittedStoryID] = nil
+        }
+        guard storyID == submittedStoryID, draft == submitted else { return true }
         draft = ""
         justSent = true
         Task { [weak self] in

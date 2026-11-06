@@ -9,10 +9,21 @@ import Foundation
 actor GatedMemoryDataService {
     private let base: MemoryDataService
     private var shouldHoldNextLoad = false
+    private var failsReads = false
+    private var failingRemovalCall: Int?
+    private var removalCalls = 0
     private var heldLoad: CheckedContinuation<Void, Never>?
 
     init(base: MemoryDataService) {
         self.base = base
+    }
+
+    func setReadFailure(_ shouldFail: Bool) {
+        failsReads = shouldFail
+    }
+
+    func failRemoval(call: Int) {
+        failingRemovalCall = call
     }
 
     func holdNextLoad() {
@@ -30,7 +41,12 @@ actor GatedMemoryDataService {
         heldLoad = nil
     }
 
+    func repairQueuedCacheWrite(_ record: MemoryRecord) async throws {
+        try await base.repairQueuedCacheWrite(record)
+    }
+
     func loadCachedMemories(ownerUserID: UUID, includeHidden: Bool) async throws -> [MemoryRecord] {
+        if failsReads { throw CocoaError(.fileReadUnknown) }
         let records = try await base.loadCachedMemories(ownerUserID: ownerUserID, includeHidden: includeHidden)
         if shouldHoldNextLoad {
             shouldHoldNextLoad = false
@@ -40,7 +56,8 @@ actor GatedMemoryDataService {
     }
 
     func loadCachedMemory(ownerUserID: UUID, memoryID: UUID) async throws -> MemoryRecord? {
-        try await base.loadCachedMemory(ownerUserID: ownerUserID, memoryID: memoryID)
+        if failsReads { throw CocoaError(.fileReadUnknown) }
+        return try await base.loadCachedMemory(ownerUserID: ownerUserID, memoryID: memoryID)
     }
 
     func createMemory(
@@ -151,7 +168,9 @@ actor GatedMemoryDataService {
         memoryMediaID: UUID,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
-        try await base.removeMemoryMedia(
+        removalCalls += 1
+        if removalCalls == failingRemovalCall { throw CocoaError(.fileWriteUnknown) }
+        return try await base.removeMemoryMedia(
             ownerUserID: ownerUserID,
             memoryID: memoryID,
             memoryMediaID: memoryMediaID,

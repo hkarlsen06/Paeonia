@@ -11,6 +11,7 @@ nonisolated protocol MemoryDataServicing: Actor {
         ownerUserID: UUID,
         memoryID: UUID
     ) async throws -> MemoryRecord?
+    func repairQueuedCacheWrite(_ record: MemoryRecord) async throws
     func createMemory(
         ownerUserID: UUID,
         coupleID: UUID,
@@ -81,6 +82,10 @@ nonisolated enum MemoryDataServiceError: Error, Equatable, Sendable {
     case invalidPlace
 }
 
+nonisolated struct QueuedMemoryCacheWriteFailure: Error {
+    let record: MemoryRecord
+}
+
 actor MemoryDataService: MemoryDataServicing {
     let memoryStore: any MemoryRecordPersisting
     let pendingOperationStore: any PendingSyncOperationPersisting
@@ -106,6 +111,24 @@ actor MemoryDataService: MemoryDataServicing {
         memoryID: UUID
     ) async throws -> MemoryRecord? {
         try await memoryStore.load(ownerUserID: ownerUserID, memoryID: memoryID)
+    }
+
+    /// Retries only the cache write. The original outbox operation remains unchanged.
+    func repairQueuedCacheWrite(_ record: MemoryRecord) async throws {
+        let current = try await memoryStore.load(
+            ownerUserID: record.snapshot.ownerUserID, memoryID: record.snapshot.memoryID
+        )
+        guard let current, current.snapshot.isVisible, current.syncStatus != .pendingDelete,
+              current.localUpdatedAt <= record.localUpdatedAt else { return }
+        try await cacheQueuedRecord(record)
+    }
+
+    func cacheQueuedRecord(_ record: MemoryRecord) async throws {
+        do {
+            try await memoryStore.saveLocal(record)
+        } catch {
+            throw QueuedMemoryCacheWriteFailure(record: record)
+        }
     }
 
     /// The memory to change. A memory that is deleted (by either partner, even if the

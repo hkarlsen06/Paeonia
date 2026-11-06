@@ -55,8 +55,7 @@ struct DrawingCompositionTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let store = FileWidgetDrawingDraftStore(directoryURL: directory)
         let key = WidgetDrawingDraftKey(ownerUserID: UUID(), coupleID: UUID())
-        store.setDraft(Data([1, 2]), for: key)
-        store.setDescription("Two circles", for: key)
+        try store.saveDraft(Data([1, 2]), base: "", description: "Two circles", for: key)
         let reopened = FileWidgetDrawingDraftStore(directoryURL: directory)
         #expect(reopened.description(for: key) == "Two circles")
         #expect(reopened.description(for: WidgetDrawingDraftKey(ownerUserID: UUID(), coupleID: key.coupleID)) == nil)

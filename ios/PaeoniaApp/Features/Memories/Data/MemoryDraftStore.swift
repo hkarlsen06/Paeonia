@@ -6,23 +6,22 @@ import Foundation
 /// never shows up in another person's session on a shared device.
 @MainActor
 protocol MemoryDraftStoring: AnyObject {
-    func draft(for userID: UUID) -> MemoryDraft?
+    func draft(for userID: UUID) throws -> MemoryDraft?
     /// Saves the draft, or removes the stored one when the draft has no content.
-    func setDraft(_ draft: MemoryDraft, for userID: UUID)
+    func setDraft(_ draft: MemoryDraft, for userID: UUID) throws
     func clearDraft(for userID: UUID)
 }
 
 /// Text fields go to `UserDefaults` as one JSON blob per user, like the daily answer
 /// drafts. Picked photos are written as files in a private directory, like the staged
-/// daily answer media, so large images stay out of `UserDefaults`. A photo file that
-/// can't be read back when restoring is skipped; the text and the other photos still
-/// come back.
+/// daily answer media, so large images stay out of `UserDefaults`. Reads and writes
+/// fail as a whole, so a restored draft never silently omits an attachment.
 @MainActor
 final class LocalMemoryDraftStore: MemoryDraftStoring {
     static let shared = LocalMemoryDraftStore()
 
-    /// Bump when `StoredDraft` changes in a way that needs migration. New optional
-    /// fields decode as nil on old data and don't need it.
+    /// Identifies the current development storage shape. Change the storage key
+    /// when that shape changes; development drafts do not need migration.
     private static let schemaVersion = 1
 
     private let defaults: UserDefaults
@@ -47,15 +46,17 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
             .appendingPathComponent("MemoryDrafts", isDirectory: true)
     }
 
-    func draft(for userID: UUID) -> MemoryDraft? {
-        guard let data = defaults.data(forKey: key(for: userID)),
-              let stored = try? decoder.decode(StoredDraft.self, from: data)
-        else { return nil }
-
-        let photos = (0..<stored.photoCount).compactMap { index in
-            (try? Data(contentsOf: photoURL(userID: userID, index: index))).map {
-                MemoryDraftPhoto(data: $0, accessibilityText: stored.photoDescriptions[index])
-            }
+    func draft(for userID: UUID) throws -> MemoryDraft? {
+        guard let data = defaults.data(forKey: key(for: userID)) else { return nil }
+        let stored = try decoder.decode(StoredDraft.self, from: data)
+        guard stored.photoCount >= 0, stored.photoDescriptions.count == stored.photoCount else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        let photos = try (0..<stored.photoCount).map { index in
+            MemoryDraftPhoto(
+                data: try Data(contentsOf: photoURL(userID: userID, index: index)),
+                accessibilityText: stored.photoDescriptions[index]
+            )
         }
         // These files are what's on disk now, so typing in a restored draft doesn't rewrite them.
         writtenPhotos[userID] = photos.map(\.id)
@@ -69,39 +70,28 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
         return draft.isEmpty ? nil : draft
     }
 
-    func setDraft(_ draft: MemoryDraft, for userID: UUID) {
+    func setDraft(_ draft: MemoryDraft, for userID: UUID) throws {
         guard !draft.isEmpty else {
             clearDraft(for: userID)
             return
         }
 
-        // If the new photos can't be written (for example the disk is full), keep the
-        // text and the photos saved before, rather than lose everything.
-        var storedPhotoCount = draft.photos.count
-        var descriptions = draft.photos.map(\.accessibilityText)
         let photoIDs = draft.photos.map(\.id)
-        if writtenPhotos[userID] != photoIDs {
-            if writePhotos(draft.photos.map(\.data), userID: userID) {
-                writtenPhotos[userID] = photoIDs
-            } else {
-                let previous = storedDraft(for: userID)
-                storedPhotoCount = previous?.photoCount ?? 0
-                descriptions = previous?.photoDescriptions ?? []
-            }
-        }
-
         let stored = StoredDraft(
             schemaVersion: Self.schemaVersion,
             title: draft.title,
             date: draft.date,
             note: draft.note,
-            photoCount: storedPhotoCount,
-            photoDescriptions: descriptions,
+            photoCount: draft.photos.count,
+            photoDescriptions: draft.photos.map(\.accessibilityText),
             place: draft.place
         )
-        if let data = try? encoder.encode(stored) {
-            defaults.set(data, forKey: key(for: userID))
+        let data = try encoder.encode(stored)
+        if writtenPhotos[userID] != photoIDs {
+            try writePhotos(draft.photos.map(\.data), userID: userID)
+            writtenPhotos[userID] = photoIDs
         }
+        defaults.set(data, forKey: key(for: userID))
     }
 
     func clearDraft(for userID: UUID) {
@@ -112,12 +102,12 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
 
     /// Writes the photos to a staging directory and swaps it in only when every file
     /// was written, so a failed write leaves the previously saved photos in place.
-    private func writePhotos(_ photos: [Data], userID: UUID) -> Bool {
+    private func writePhotos(_ photos: [Data], userID: UUID) throws {
         let fileManager = FileManager.default
         let directory = userDirectory(for: userID)
         guard !photos.isEmpty else {
             try? fileManager.removeItem(at: directory)
-            return true
+            return
         }
 
         let staging = directoryURL.appendingPathComponent(
@@ -135,15 +125,11 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
             } else {
                 try fileManager.moveItem(at: staging, to: directory)
             }
-            return true
+            return
         } catch {
             try? fileManager.removeItem(at: staging)
-            return false
+            throw error
         }
-    }
-
-    private func storedDraft(for userID: UUID) -> StoredDraft? {
-        defaults.data(forKey: key(for: userID)).flatMap { try? decoder.decode(StoredDraft.self, from: $0) }
     }
 
     private func key(for userID: UUID) -> String {

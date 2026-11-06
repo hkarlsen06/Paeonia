@@ -187,7 +187,7 @@ struct MemoryWrites {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { throw SiriFailure(.siriMemoriesNameMissing) }
         let record = try record(memoryID)
-        try check(await model.saveEdits(edit(record, title: name)))
+        try check((await model.saveEdits(edit(record, title: name))).isSaved)
     }
 
     func addPhotos(_ photos: [Data], to memoryID: UUID) async throws {
@@ -197,7 +197,7 @@ struct MemoryWrites {
         let limit = MemoryEditorPhotosField.maxPhotosPerPartner
         guard own + photos.count <= limit else { throw SiriFailure(.siriPhotosTooMany(limit.formatted())) }
         guard model.canAttachPhotos else { throw SiriFailure(MemoriesNotice.photoUploadFailed.message) }
-        try check(await model.saveEdits(edit(record, newPhotos: photos)))
+        try check((await model.saveEdits(edit(record, newPhotos: photos))).isSaved)
     }
 
     func removePhotos(_ mediaAssetIDs: Set<UUID>, from memoryID: UUID) async throws {
@@ -206,7 +206,7 @@ struct MemoryWrites {
         guard !mediaAssetIDs.isEmpty, media.count == mediaAssetIDs.count else {
             throw SiriFailure(.siriPhotosNotInMemory)
         }
-        try check(await model.saveEdits(edit(record, removedMedia: media)))
+        try check((await model.saveEdits(edit(record, removedMedia: media))).isSaved)
     }
 
     func delete(_ memoryID: UUID) async throws {

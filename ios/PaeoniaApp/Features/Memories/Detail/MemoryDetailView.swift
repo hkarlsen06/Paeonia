@@ -49,6 +49,11 @@ struct MemoryDetailView: View {
         Group {
             if let record {
                 content(for: record)
+            } else if let failure = viewModel.loadFailure {
+                PaeoniaLoadFailureView(failure: failure, offlineMessage: .commonLoadFailedMessage) {
+                    Button { Task { await viewModel.load() } } label: { Text(.commonTryAgain) }
+                        .buttonStyle(PaeoniaSecondaryButtonStyle())
+                }
             } else {
                 // The memory was deleted (or never loaded); fall back to a blank surface
                 // while the dismiss below takes effect.
@@ -97,15 +102,15 @@ struct MemoryDetailView: View {
                     photoGallery(for: record)
                 }
 
-                ReactionSection(target: .memory(memoryID))
-
-                MemoryCommentsSection(record: record, viewModel: viewModel)
-
                 yourNoteSection(for: record)
 
                 if let body = visibleBody(of: record.snapshot.partnerNote) {
                     noteBlock(title: .memoriesDetailPartnerNote, body: body)
                 }
+
+                ReactionSection(target: .memory(memoryID))
+
+                MemoryCommentsSection(record: record, viewModel: viewModel)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -253,7 +258,7 @@ struct MemoryDetailView: View {
                 uploadProgress: viewModel.photoUploadProgress,
                 knownPlaces: viewModel.knownPlaces
             ) { title, date, note, photos, removedMedia, place in
-                await viewModel.saveEdits(
+                let result = await viewModel.saveEdits(
                     MemoryEdit(
                         photoDescriptions: editDraft.photos.map(\.accessibilityText),
                         existingDescriptions: editDraft.existingDescriptions,
@@ -266,6 +271,11 @@ struct MemoryDetailView: View {
                         place: place
                     )
                 )
+                if case .partial(let savedRecord) = result, let savedRecord {
+                    editDraft.rebaseUntouchedFields(from: base, to: savedRecord)
+                    editingRecord = savedRecord
+                }
+                return result
             }
         }
     }

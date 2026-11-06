@@ -195,7 +195,7 @@ struct WidgetDrawingSendFlowTests {
         #expect(draftStore.draft(for: WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: UUID())) == nil)
     }
 
-    @Test func fileDraftStoreKeepsOneDraftPerCoupleAndThePurgeRemovesAll() {
+    @Test func fileDraftStoreKeepsOneDraftPerCoupleAndThePurgeRemovesAll() throws {
         let directoryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("WidgetDrawingSendFlowTests", isDirectory: true)
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -205,8 +205,8 @@ struct WidgetDrawingSendFlowTests {
         let firstKey = WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: UUID())
         let secondKey = WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: UUID())
 
-        store.setDraft(Data([0x01]), for: firstKey)
-        store.setDraft(Data([0x02]), for: secondKey)
+        try store.saveDraft(Data([0x01]), base: "", description: "", for: firstKey)
+        try store.saveDraft(Data([0x02]), base: "", description: "", for: secondKey)
         #expect(store.draft(for: firstKey) == Data([0x01]))
         #expect(store.draft(for: secondKey) == Data([0x02]))
 

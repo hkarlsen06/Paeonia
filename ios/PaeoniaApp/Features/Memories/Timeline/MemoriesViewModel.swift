@@ -4,17 +4,9 @@ import Observation
 import OSLog
 #endif
 
-/// What the edit form asks to save. `base` is the memory as it was when the form opened.
-struct MemoryEdit {
-    var photoDescriptions: [String] = []
-    var existingDescriptions: [UUID: String] = [:]
-    let base: MemoryRecord
-    let title: String
-    let date: String
-    let note: String
-    let newPhotos: [Data]
-    let removedMedia: [MemoryMediaSnapshot]
-    let place: MemoryPlace?
+enum MemoryDraftFailure: Equatable {
+    case read
+    case write
 }
 
 @MainActor
@@ -44,10 +36,14 @@ final class MemoriesViewModel {
     /// Whether the first cached load has settled, so the empty state never flashes
     /// before we've read what's on the device.
     private(set) var hasLoadedOnce = false
+    private(set) var loadFailure: PaeoniaFailure?
+    var draftFailure: MemoryDraftFailure?
+    var draftNeedsSaving = false
     /// True while a new memory or an edit is being saved. A second save is refused
     /// until it finishes, so a double tap (or reopening the form mid-save) can't
     /// create the same memory twice.
     private(set) var isSaving = false
+    private var queuedCacheWrite: MemoryRecord?
     var notice: MemoriesNotice?
     /// Set by a comment push (`PaeoniaDeepLink.memory` with `showsComments`) to the memory whose
     /// comments should open. The memory's detail screen clears it once it shows them.
@@ -63,6 +59,7 @@ final class MemoriesViewModel {
     /// user on the device and restored when the user's session loads. A successful save
     /// or a deliberate discard clears it.
     var draft = MemoryDraft()
+    @ObservationIgnored var pendingImportedPhotos: [UUID: [MemoryDraftPhoto]] = [:]
     @ObservationIgnored var pendingDraftSave: Task<Void, Never>?
 
     init(
@@ -116,16 +113,20 @@ final class MemoriesViewModel {
     /// list (it only affects creating new memories). Keep this the load-bearing input
     /// for `.task(id:)`; route cosmetic refreshes through `updateContext`.
     func configure(currentUserID: UUID?, coupleID: UUID?) async {
+        if self.coupleID != coupleID { queuedCacheWrite = nil }
         self.coupleID = coupleID
 
         guard self.currentUserID != currentUserID else { return }
         // Text typed for the previous user is saved to that user before switching.
         flushDraft()
+        queuedCacheWrite = nil
         self.currentUserID = currentUserID
+        if currentUserID == nil { pendingImportedPhotos.removeAll() }
         timeline = []
         hasLoadedOnce = false
+        loadFailure = nil
         photoUploads.reset()
-        draft = currentUserID.flatMap { draftStore.draft(for: $0) } ?? MemoryDraft()
+        restoreDraft()
 
         guard currentUserID != nil else { return }
 
@@ -138,6 +139,7 @@ final class MemoriesViewModel {
     /// Updates context that does not change what's loaded (the active couple id used
     /// for new memories). Safe to call from `.onChange` without triggering a reload.
     func updateContext(coupleID: UUID?) {
+        if self.coupleID != coupleID { queuedCacheWrite = nil }
         self.coupleID = coupleID
     }
 
@@ -152,14 +154,21 @@ final class MemoriesViewModel {
 
         loadGeneration &+= 1
         let generation = loadGeneration
-        let records = (try? await memoryService.loadCachedMemories(
-            ownerUserID: currentUserID,
-            includeHidden: false
-        )) ?? []
-        guard generation == loadGeneration, currentUserID == self.currentUserID else { return }
-
-        timeline = MemoryTimeline.grouped(records)
-        hasLoadedOnce = true
+        do {
+            let records = try await memoryService.loadCachedMemories(
+                ownerUserID: currentUserID,
+                includeHidden: false
+            )
+            guard generation == loadGeneration, currentUserID == self.currentUserID else { return }
+            timeline = MemoryTimeline.grouped(records)
+            hasLoadedOnce = true
+            loadFailure = nil
+        } catch {
+            guard generation == loadGeneration, currentUserID == self.currentUserID else { return }
+            loadFailure = PaeoniaFailure(error)
+            if hasLoadedOnce { notice = .loadFailed }
+            logFailure("Reading saved memories failed", error)
+        }
     }
 
     /// Re-reads the timeline whenever the local memory store changes, so a partner's new
@@ -258,20 +267,13 @@ final class MemoriesViewModel {
     /// Saves the edit form for an existing memory. A title or date the person didn't
     /// touch keeps whatever is current now, so a change the partner made while the
     /// form was open isn't undone. Steps that already went through are skipped when the
-    /// person retries after a failure. Returns whether everything was saved.
-    func saveEdits(_ edit: MemoryEdit) async -> Bool {
+    /// person retries after a failure. A partial result carries the saved baseline
+    /// so the form can retain only the remaining changes.
+    func saveEdits(_ edit: MemoryEdit) async -> MemorySaveResult {
         let title = edit.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !isSaving, let currentUserID, !title.isEmpty else { return false }
+        guard !isSaving, let currentUserID, !title.isEmpty else { return .failed }
         isSaving = true
         defer { isSaving = false }
-
-        // Read the stored copy, not the timeline, which can lag a delete by a moment.
-        // Checking first also avoids uploading photos for a memory that is gone.
-        guard let latest = await storedVisibleRecord(edit.base.snapshot.memoryID) else {
-            notice = .memoryRemoved
-            await load()
-            return false
-        }
 
         var changed = false
         defer {
@@ -280,22 +282,41 @@ final class MemoriesViewModel {
                 syncInBackground()
             }
         }
-        let steps = [saveDetails, savePlace, saveNote, removePhotos, addPhotos]
-        for step in steps {
-            // Each step reads the record the previous step left behind.
-            let current = await storedVisibleRecord(latest.snapshot.memoryID) ?? latest
-            switch await step(edit, current, currentUserID) {
-            case .unchanged:
-                continue
-            case .saved:
+        do {
+            if let queued = queuedCacheWrite {
+                try await memoryService.repairQueuedCacheWrite(queued)
+                queuedCacheWrite = nil
                 changed = true
-            case .failed:
-                await load()
-                return false
             }
+            // A failed read is not evidence that the partner removed the memory.
+            let steps = [saveDetails, savePlace, saveNote, removePhotos, addPhotos]
+            for step in steps {
+                guard let current = try await storedVisibleRecord(edit.base.snapshot.memoryID) else {
+                    notice = .memoryRemoved
+                    return await failedEditResult(edit, changed: changed)
+                }
+                let result = await step(edit, current, currentUserID)
+                changed = changed || result.savedChanges
+                if result.hasFailed {
+                    return await failedEditResult(edit, changed: changed)
+                }
+            }
+            await load()
+            return .saved
+        } catch {
+            report("Reading a memory for editing failed", error, notice: .editFailed)
+            return await failedEditResult(edit, changed: changed)
         }
+    }
+
+    private func failedEditResult(_ edit: MemoryEdit, changed: Bool) async -> MemorySaveResult {
         await load()
-        return true
+        let queued = queuedCacheWrite.flatMap {
+            $0.snapshot.memoryID == edit.base.snapshot.memoryID ? $0 : nil
+        }
+        guard changed || queued != nil else { return .failed }
+        let savedRecord = try? await storedVisibleRecord(edit.base.snapshot.memoryID)
+        return .partial(savedRecord: queued ?? savedRecord)
     }
 
     /// Deletes (hides) a memory for both partners. Hidden immediately on the device and
@@ -347,102 +368,7 @@ final class MemoriesViewModel {
     }
 }
 
-// MARK: - Edit steps
-
-// Internal, not private, so `MemoriesViewModel+Place.swift` can use the shared steps.
 extension MemoriesViewModel {
-    enum StepResult {
-        case unchanged
-        case saved
-        case failed
-    }
-
-    /// Sends the title and date. A field the person didn't touch keeps its current
-    /// value. If the partner's change lands on this phone while this runs, the edit is
-    /// worked out again from the newer record instead of undoing that change.
-    func saveDetails(_ edit: MemoryEdit, _ latest: MemoryRecord, _ userID: UUID) async -> StepResult {
-        var current = latest
-        for _ in 0..<3 {
-            guard let change = detailChange(edit, current) else { return .unchanged }
-            do {
-                _ = try await memoryService.updateMemory(
-                    ownerUserID: userID,
-                    memoryID: current.snapshot.memoryID,
-                    expectedRevision: current.snapshot.revision,
-                    title: change.title,
-                    memoryDate: change.date,
-                    photoDescriptions: edit.existingDescriptions.map {
-                        MemoryPhotoDescription(mediaAssetID: $0.key, text: $0.value)
-                    },
-                    operation: operationProvider.makeOperation()
-                )
-                return .saved
-            } catch MemoryDataServiceError.staleRevision {
-                guard let fresh = await storedVisibleRecord(current.snapshot.memoryID) else {
-                    notice = .memoryRemoved
-                    return .failed
-                }
-                current = fresh
-            } catch {
-                report("Saving memory details failed", error, notice: .editFailed)
-                return .failed
-            }
-        }
-        notice = .editFailed
-        return .failed
-    }
-
-    /// The title and date to send, or nil when they already match `current`.
-    func detailChange(_ edit: MemoryEdit, _ current: MemoryRecord) -> (title: String, date: String)? {
-        let base = edit.base.snapshot
-        let title = edit.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let nextTitle = title != (base.title ?? "") ? title : (current.snapshot.title ?? title)
-        let nextDate = edit.date != base.memoryDate ? edit.date : current.snapshot.memoryDate
-        guard nextTitle != current.snapshot.title || nextDate != current.snapshot.memoryDate
-            || edit.existingDescriptions.contains(where: { id, text in
-                current.snapshot.media.first { $0.mediaAssetID == id }?.accessibilityText != text
-            }) else {
-            return nil
-        }
-        return (nextTitle, nextDate)
-    }
-
-    func saveNote(_ edit: MemoryEdit, _ latest: MemoryRecord, _ userID: UUID) async -> StepResult {
-        let note = edit.note.trimmingCharacters(in: .whitespacesAndNewlines)
-        let baseNote = edit.base.snapshot.ownNote?.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !note.isEmpty, note != baseNote, note != latest.snapshot.ownNote?.body else {
-            return .unchanged
-        }
-        let saved = await perform("Saving a memory note failed", notice: .noteFailed) {
-            _ = try await self.memoryService.upsertMemoryNote(
-                ownerUserID: userID,
-                memoryID: latest.snapshot.memoryID,
-                expectedRevision: latest.snapshot.ownNote?.revision,
-                body: note,
-                operation: self.operationProvider.makeOperation()
-            )
-        }
-        return saved ? .saved : .failed
-    }
-
-    func removePhotos(_ edit: MemoryEdit, _ latest: MemoryRecord, _ userID: UUID) async -> StepResult {
-        let stillVisible = Set(latest.snapshot.media.filter(\.isVisible).map(\.memoryMediaID))
-        let toRemove = edit.removedMedia.filter { stillVisible.contains($0.memoryMediaID) }
-        guard !toRemove.isEmpty else { return .unchanged }
-        for media in toRemove {
-            let removed = await perform("Removing a memory photo failed", notice: .editFailed) {
-                _ = try await self.memoryService.removeMemoryMedia(
-                    ownerUserID: userID,
-                    memoryID: latest.snapshot.memoryID,
-                    memoryMediaID: media.memoryMediaID,
-                    operation: self.operationProvider.makeOperation()
-                )
-            }
-            guard removed else { return .failed }
-        }
-        return .saved
-    }
-
     // MARK: - Helpers
 
     /// Runs one local write. On failure it logs, shows `notice`, and returns false.
@@ -462,6 +388,9 @@ extension MemoriesViewModel {
 
     /// Shows the right notice for a failed local write and logs it.
     func report(_ context: String, _ error: Error, notice failureNotice: MemoriesNotice) {
+        if let queued = error as? QueuedMemoryCacheWriteFailure {
+            queuedCacheWrite = queued.record
+        }
         switch error as? MemoryDataServiceError {
         case .missingMemory:
             notice = .memoryRemoved
@@ -474,9 +403,9 @@ extension MemoriesViewModel {
     }
 
     /// The stored record, if the memory still exists and isn't waiting to be deleted.
-    func storedVisibleRecord(_ memoryID: UUID) async -> MemoryRecord? {
+    func storedVisibleRecord(_ memoryID: UUID) async throws -> MemoryRecord? {
         guard let currentUserID,
-              let record = try? await memoryService.loadCachedMemory(ownerUserID: currentUserID, memoryID: memoryID),
+              let record = try await memoryService.loadCachedMemory(ownerUserID: currentUserID, memoryID: memoryID),
               record.snapshot.isVisible,
               record.syncStatus != .pendingDelete
         else { return nil }

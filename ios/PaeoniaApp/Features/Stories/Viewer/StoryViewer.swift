@@ -42,7 +42,7 @@ struct StoryViewer: View {
     @State private var isReadingDescription = false
     @State private var shareable: PaeoniaShareable?
     /// The replies to the story on screen, and whether their chat is open over the story.
-    @State var replies = StoryReplies()
+    @State var replies: StoryReplies
     @State var isShowingReplies = false
     /// A push about a reply opens the replies once, not each time the person comes back to the story.
     @State var didOpenRequestedReplies = false
@@ -66,6 +66,7 @@ struct StoryViewer: View {
         self.content = content
         self.people = people
         self.viewModel = viewModel
+        _replies = State(initialValue: viewModel.replies)
         self.onAddStory = onAddStory
         _stories = State(initialValue: content.stories)
         _index = State(initialValue: min(max(content.startIndex, 0), max(content.stories.count - 1, 0)))
@@ -79,7 +80,7 @@ struct StoryViewer: View {
     /// delete is on its way.
     private var isPaused: Bool {
         touchStart != nil || isConfirmingDelete || isDeleting || shareable != nil || isReplyFocused || isShowingReplies
-            || isReadingDescription
+            || isReadingDescription || replies.hasUnsentReply
     }
 
     /// A touch held at least this long is a hold, not a tap, so letting go doesn't move on.

@@ -10,23 +10,20 @@ struct MemoryPlaceMapPicker: View {
     let onPick: (MemoryPlace) -> Void
 
     @State private var position: MapCameraPosition = .automatic
-    @State private var center: CLLocationCoordinate2D?
-    @State private var place: MemoryPlace?
-    @State private var failure: PaeoniaFailure?
-    @State private var lookup: Task<Void, Never>?
+    @State private var lookup = MemoryPlaceMapModel()
 
     var body: some View {
         Map(position: $position, interactionModes: [.pan, .zoom])
             .mapStyle(MemoriesMapStyle.swiftUI)
             .environment(\.colorScheme, .dark)
             .onMapCameraChange(frequency: .onEnd) { context in
-                center = context.region.center
-                name(context.region.center)
+                lookup.select(context.region.center)
             }
             .overlay {
                 pin.allowsHitTesting(false)
             }
             .safeAreaInset(edge: .bottom) { footer }
+            .onDisappear { lookup.cancel() }
             .navigationTitle(Text(.memoriesPlaceChooseOnMap))
             .navigationBarTitleDisplayMode(.inline)
             .task {
@@ -55,10 +52,14 @@ struct MemoryPlaceMapPicker: View {
     private var footer: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             Group {
-                if let failure {
+                if let failure = lookup.failure {
                     Text(failure == .offline ? .memoriesPlaceOffline : .memoriesPlaceSearchFailed)
-                } else if let place {
+                } else if let place = lookup.place {
                     Text(place.nameAndCity)
+                } else if lookup.isLoading {
+                    ProgressView()
+                } else if lookup.hasNoName {
+                    Text(.memoriesPlaceNoName)
                 } else {
                     Text(.memoriesPlacePickerHint)
                 }
@@ -68,34 +69,23 @@ struct MemoryPlaceMapPicker: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
 
+            if lookup.failure != nil || lookup.hasNoName {
+                Button { lookup.retry() } label: { Text(.commonTryAgain) }
+                    .buttonStyle(PaeoniaSecondaryButtonStyle())
+            }
+
             Button {
-                if let place { onPick(place) }
+                if let place = lookup.place { onPick(place) }
             } label: {
                 Text(.memoriesPlacePickerUse)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
-            .disabled(place == nil)
+            .disabled(lookup.place == nil)
         }
         .padding(PaeoniaSpacing.space16)
         .background(.paeoniaBackgroundElevated)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.bottom, PaeoniaSpacing.space8)
-    }
-
-    private func name(_ coordinate: CLLocationCoordinate2D) {
-        lookup?.cancel()
-        place = nil
-        failure = nil
-        lookup = Task {
-            do {
-                let found = try await MemoryPlaceLookup.cityPlace(at: coordinate)
-                guard !Task.isCancelled else { return }
-                place = found
-            } catch {
-                guard !Task.isCancelled else { return }
-                failure = PaeoniaFailure(error)
-            }
-        }
     }
 }

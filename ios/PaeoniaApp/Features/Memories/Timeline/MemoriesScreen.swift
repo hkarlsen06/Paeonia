@@ -95,19 +95,29 @@ struct MemoriesScreen: View {
                 isCreating = true
             }
             .sheet(isPresented: $isCreating, onDismiss: { viewModel.flushDraft() }) {
-                // The view model keeps the draft and saves it on the device, so a swipe-down
-                // or a route change never throws away a half-written memory. A successful
-                // save or a deliberate Cancel clears it.
+                // Swipe dismissal waits for draft persistence. Failed writes keep the
+                // form open with its attachments and a retry action.
                 MemoryEditorView(
                     draft: draftBinding,
                     allowsPhotos: viewModel.canAttachPhotos,
                     uploadProgress: viewModel.photoUploadProgress,
-                    knownPlaces: viewModel.knownPlaces
+                    knownPlaces: viewModel.knownPlaces,
+                    draftFailure: viewModel.draftFailure,
+                    draftNeedsSaving: viewModel.draftNeedsSaving,
+                    onRetryDraft: {
+                        if viewModel.draftFailure == .read {
+                            viewModel.restoreDraft()
+                        } else {
+                            viewModel.saveDraftNow()
+                        }
+                    },
+                    onDiscardDraft: { viewModel.discardDraft() }
                 ) { title, date, note, photos, _, place in
-                    await viewModel.createMemory(
+                    let saved = await viewModel.createMemory(
                         title: title, date: date, note: note, photos: photos,
                         photoDescriptions: viewModel.draft.photos.map(\.accessibilityText), place: place
                     )
+                    return saved ? .saved : .failed
                 }
             }
             // New-memory alerts are seen once their memory is on the timeline.
@@ -125,10 +135,13 @@ struct MemoriesScreen: View {
 
     private var content: some View {
         ZStack {
-            if !viewModel.hasLoadedOnce {
-                // Blank surface for the split second before the local cache resolves, so the
-                // empty state never flashes before we know whether there are memories.
-                Color.clear
+            if !viewModel.hasLoadedOnce, let failure = viewModel.loadFailure {
+                PaeoniaLoadFailureView(failure: failure, offlineMessage: .commonLoadFailedMessage) {
+                    Button { Task { await viewModel.load() } } label: { Text(.commonTryAgain) }
+                        .buttonStyle(PaeoniaSecondaryButtonStyle())
+                }
+            } else if !viewModel.hasLoadedOnce {
+                ProgressView()
             } else if viewModel.timeline.isEmpty {
                 emptyState
             } else {

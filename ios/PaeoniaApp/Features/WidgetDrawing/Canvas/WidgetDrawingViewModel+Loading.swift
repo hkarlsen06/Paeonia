@@ -2,8 +2,6 @@ import PencilKit
 import UIKit
 
 extension WidgetDrawingViewModel {
-    private static let draftPersistenceDelay: Duration = .milliseconds(250)
-
     /// Loads the drawing on the widgets into the canvas once, or an unsent draft
     /// if there is one. Never replaces strokes drawn while it loads.
     func loadSavedDrawingIfNeeded() async {
@@ -15,6 +13,7 @@ extension WidgetDrawingViewModel {
             hasFinishedLoading = true
             addWaitingStrokes()
         }
+        refreshDraftSaveFailure()
         setAsideDrawing = setAsideKey
             .flatMap { draftStore.draft(for: $0) }
             .flatMap { try? PKDrawing(data: $0) }
@@ -237,137 +236,17 @@ extension WidgetDrawingViewModel {
         }
     }
 
-    /// Persists the current edit synchronously so an interactive swipe-dismiss,
-    /// background transition, or process suspension cannot drop the latest
-    /// PencilKit delegate update.
-    func persistDraftIfNeeded() {
-        draftPersistenceTask?.cancel()
-        draftPersistenceTask = nil
-        persistDraftImmediatelyIfNeeded()
-    }
-
-    /// The draft key while it is still safe to use: nil without a couple, and
-    /// nil after a privacy purge ran while this screen stayed open.
-    private var usableDraftKey: WidgetDrawingDraftKey? {
-        guard let draftKey,
-              draftStore.purgeGeneration(for: draftKey.ownerUserID) == draftPurgeGeneration
-        else {
-            return nil
-        }
-        return draftKey
-    }
-
-    func scheduleDraftPersistence() {
-        guard usableDraftKey != nil else {
-            return
-        }
-
-        draftPersistenceTask?.cancel()
-        draftPersistenceTask = Task { @MainActor [weak self] in
-            do {
-                try await Task.sleep(for: Self.draftPersistenceDelay)
-            } catch {
-                return
-            }
-            guard let self, !Task.isCancelled else {
-                return
-            }
-            self.draftPersistenceTask = nil
-            self.persistDraftInBackground()
-        }
-    }
-
-    /// True when the canvas holds work that is not sent, so a draft is kept.
-    private var shouldKeepDraft: Bool {
-        hasUnsavedEdits && (!drawing.strokes.isEmpty || lastSavedDrawingSignature != nil)
-    }
-
-    /// Writes the draft now, on the main actor.
-    private func persistDraftImmediatelyIfNeeded() {
-        guard let draftKey = usableDraftKey else {
-            return
-        }
-
-        draftOrder.performNow {
-            if shouldKeepDraft {
-                draftStore.setDraft(drawing.dataRepresentation(), for: draftKey)
-                draftStore.setDescription(accessibilityText, for: draftKey)
-                draftStore.setDraftBase((savedBaseline ?? PKDrawing()).paeoniaStrokeFingerprint, for: draftKey)
-            } else {
-                draftStore.removeDraft(for: draftKey)
-            }
-        }
-    }
-
-    /// Encodes and writes the draft off the main actor, because a large drawing
-    /// takes long to encode. Only the copy of the drawing is made here.
-    private func persistDraftInBackground() {
-        guard let draftKey = usableDraftKey else {
-            return
-        }
-        guard shouldKeepDraft else {
-            persistDraftImmediatelyIfNeeded()
-            return
-        }
-        draftStore.setDescription(accessibilityText, for: draftKey)
-        let ticket = draftOrder.nextTicket()
-        let snapshot = DraftSnapshot(drawing: drawing, baseline: savedBaseline ?? PKDrawing())
-        let draftStore = draftStore
-        let order = draftOrder
-        let generation = draftStore.purgeGeneration(for: draftKey.ownerUserID)
-        Task {
-            await Self.writeDraft(snapshot, key: draftKey, ticket: ticket, store: draftStore, order: order)
-            // A privacy purge can run while the write is going, even after this screen is gone.
-            // The write may have recreated the draft, so it goes again.
-            if draftStore.purgeGeneration(for: draftKey.ownerUserID) != generation {
-                draftStore.removeDraft(for: draftKey)
-            }
-        }
-    }
-
-    /// The canvas and the drawing on the widgets, as they were when the save began.
-    private struct DraftSnapshot: Sendable {
-        let drawing: PKDrawing
-        let baseline: PKDrawing
-    }
-
-    @concurrent
-    private static func writeDraft(
-        _ snapshot: DraftSnapshot,
-        key: WidgetDrawingDraftKey,
-        ticket: Int,
-        store: any WidgetDrawingDraftStoring,
-        order: DraftWriteOrder
-    ) async {
-        let data = snapshot.drawing.dataRepresentation()
-        let base = snapshot.baseline.paeoniaStrokeFingerprint
-        order.perform(ticket) {
-            store.setDraft(data, base: base, for: key)
-        }
-    }
-
-    func clearDraft() {
-        draftPersistenceTask?.cancel()
-        draftPersistenceTask = nil
-        guard let draftKey = usableDraftKey else {
-            return
-        }
-        draftOrder.performNow {
-            draftStore.removeDraft(for: draftKey)
-        }
-    }
-
     // MARK: - Set-aside drawing
 
-    private var setAsideKey: WidgetDrawingDraftKey? {
+    var setAsideKey: WidgetDrawingDraftKey? {
         usableDraftKey.map {
             WidgetDrawingDraftKey(ownerUserID: $0.ownerUserID, coupleID: $0.coupleID, slot: .setAside)
         }
     }
 
     /// The widgets show a different drawing than when the draft was made. A
-    /// draft with no recorded base (the best-effort write failed) counts as
-    /// changed. It goes aside, where the person can bring it back.
+    /// draft with no recorded base counts as changed. It goes aside, where the
+    /// person can bring it back.
     private func widgetsChanged(since draftKey: WidgetDrawingDraftKey) -> Bool {
         let current = savedBaseline ?? PKDrawing()
         return draftStore.draftBase(for: draftKey) != current.paeoniaStrokeFingerprint
@@ -376,7 +255,7 @@ extension WidgetDrawingViewModel {
     /// Keeps `drawing` for later. An earlier set-aside drawing is kept too, so
     /// nothing is lost when this happens twice.
     func setAside(_ drawing: PKDrawing) {
-        guard !drawing.strokes.isEmpty else {
+        guard !drawing.strokes.isEmpty || !accessibilityText.isEmpty else {
             return
         }
         let combined = setAsideDrawing.map {
@@ -384,10 +263,9 @@ extension WidgetDrawingViewModel {
         } ?? drawing
         setAsideDrawing = combined
         if let setAsideKey {
-            draftStore.setDraft(combined.dataRepresentation(), for: setAsideKey)
             let previous = draftStore.description(for: setAsideKey) ?? ""
             let description = [previous, accessibilityText].filter { !$0.isEmpty }.joined(separator: "\n")
-            draftStore.setDescription(description, for: setAsideKey)
+            saveDraft(combined.dataRepresentation(), base: "", description: description, key: setAsideKey)
         }
     }
 
@@ -401,7 +279,8 @@ extension WidgetDrawingViewModel {
         }
         let asideDescription = setAsideKey.flatMap { draftStore.description(for: $0) } ?? ""
         let current = drawing
-        let currentHasUnsentWork = hasUnsavedEdits && !current.strokes.isEmpty
+        let currentHasUnsentWork = hasUnsavedEdits
+            && (!current.strokes.isEmpty || accessibilityText != savedAccessibilityText)
         discardSetAsideDrawing()
         if currentHasUnsentWork {
             setAside(current)

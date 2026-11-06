@@ -95,7 +95,7 @@
       MemoryEditorView(
         draft: $draft,
         allowsPhotos: false,
-        onSave: { _, _, _, _, _, _ in false }
+        onSave: { _, _, _, _, _, _ in .failed }
       )
       .environment(PaeoniaBannerCenter())
     }

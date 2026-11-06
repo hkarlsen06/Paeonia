@@ -26,7 +26,11 @@ struct StoryNoteScreen: View {
     /// Removes the cover without waiting for an animation callback.
     let onClose: () -> Void
 
-    @State private var text: String
+    @State private var draft: StoryNoteDraft
+    private var text: String {
+        get { draft.text }
+        nonmutating set { draft.text = newValue }
+    }
     @State private var isOpen = false
     /// Where the avatar rests when open, in global coordinates, measured from the layout.
     @State private var restingCenter: CGPoint?
@@ -56,7 +60,7 @@ struct StoryNoteScreen: View {
         self.people = people
         self.sourceFrame = sourceFrame
         self.onClose = onClose
-        _text = State(initialValue: Self.startText(mode))
+        _draft = State(initialValue: StoryNoteDraft(text: Self.startText(mode)))
     }
 
     private static func startText(_ mode: Mode) -> String {
@@ -160,7 +164,10 @@ struct StoryNoteScreen: View {
     /// character more, so the caret and the next typed character fit before the bubble
     /// grows instead of wrapping.
     private var bubbleField: some View {
-        TextField(text: $text, prompt: Text(.storiesNoteFieldPrompt), axis: .vertical) {
+        TextField(
+            text: Binding(get: { text }, set: { text = $0 }),
+            prompt: Text(.storiesNoteFieldPrompt), axis: .vertical
+        ) {
             Text(.storiesNoteFieldPrompt)
         }
         .focused($isFocused)
@@ -279,8 +286,7 @@ struct StoryNoteScreen: View {
     }
 
     private var canShare: Bool {
-        let note = StoriesViewModel.cleanNote(text)
-        return note != nil && note != current?.text
+        draft.canShare
     }
 
     // MARK: - Actions
@@ -301,7 +307,8 @@ struct StoryNoteScreen: View {
     }
 
     private func save(_ note: String) async {
-        if await viewModel.setNote(note) {
+        let shouldClose = await draft.save(using: viewModel, submitting: note)
+        if shouldClose {
             close()
         }
     }

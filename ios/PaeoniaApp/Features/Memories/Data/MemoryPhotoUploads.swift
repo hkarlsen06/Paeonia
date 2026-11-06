@@ -63,7 +63,8 @@ final class MemoryPhotoUploads {
         _ photos: [MemoryDraftPhoto],
         coupleID: UUID,
         ownerUserID: UUID,
-        startingSortOrder: Int
+        startingSortOrder: Int,
+        attachedMediaAssetIDs: Set<UUID> = []
     ) async -> [MemoryMediaSnapshot]? {
         guard !photos.isEmpty else { return [] }
         guard let uploader else { return nil }
@@ -72,7 +73,7 @@ final class MemoryPhotoUploads {
         var snapshots: [MemoryMediaSnapshot] = []
         for (index, key) in keys(for: photos, coupleID: coupleID).enumerated() {
             progress = MemoryPhotoUploadProgress(current: index + 1, total: photos.count)
-            guard let result = await upload(key, using: uploader) else {
+            guard let result = await upload(key, using: uploader, attachedMediaAssetIDs: attachedMediaAssetIDs) else {
                 return nil
             }
             snapshots.append(
@@ -100,8 +101,11 @@ final class MemoryPhotoUploads {
         }
     }
 
-    private func upload(_ key: Key, using uploader: any MemoryMediaUploading) async -> MemoryMediaUploadResult? {
-        if let reused = uploaded[key], Date().timeIntervalSince(reused.at) < reuseWindow {
+    private func upload(
+        _ key: Key, using uploader: any MemoryMediaUploading, attachedMediaAssetIDs: Set<UUID>
+    ) async -> MemoryMediaUploadResult? {
+        if let reused = uploaded[key],
+           attachedMediaAssetIDs.contains(reused.result.mediaAssetID) || Date().timeIntervalSince(reused.at) < reuseWindow {
             return reused.result
         }
         guard let compressed = await Self.compress(key.photo) else { return nil }

@@ -52,3 +52,35 @@ struct MemoryDraft: Equatable {
             .joined(separator: "\n\n")
     }
 }
+
+extension MemoryDraft {
+    /// Fields the person left alone follow the saved copy when an edit partly succeeds.
+    /// Otherwise a retry against the new baseline would overwrite a partner's change.
+    mutating func rebaseUntouchedFields(from base: MemoryRecord, to saved: MemoryRecord) {
+        if title.trimmingCharacters(in: .whitespacesAndNewlines) == (base.snapshot.title ?? "") {
+            title = saved.snapshot.title ?? ""
+        }
+        if MemoryTimeline.localDateString(for: date) == base.snapshot.memoryDate {
+            date = MemoryTimeline.pickerDate(forLocalDate: saved.snapshot.memoryDate) ?? date
+        }
+        if note.trimmingCharacters(in: .whitespacesAndNewlines) == (base.snapshot.ownNote?.visibleBody ?? "") {
+            note = saved.snapshot.ownNote?.visibleBody ?? ""
+        }
+        if place == base.snapshot.place { place = saved.snapshot.place }
+    }
+
+    /// The durable part of an edit. New photo picks remain unsaved until attached.
+    func savedBaseline(from record: MemoryRecord) -> MemoryDraft {
+        var baseline = MemoryDraft(
+            title: record.snapshot.title ?? "",
+            date: MemoryTimeline.pickerDate(forLocalDate: record.snapshot.memoryDate) ?? record.snapshot.createdAt,
+            note: record.snapshot.ownNote?.visibleBody ?? "",
+            photos: [],
+            place: record.snapshot.place
+        )
+        baseline.existingDescriptions = existingDescriptions.reduce(into: [:]) { result, entry in
+            result[entry.key] = record.snapshot.media.first { $0.mediaAssetID == entry.key }?.accessibilityText
+        }
+        return baseline
+    }
+}

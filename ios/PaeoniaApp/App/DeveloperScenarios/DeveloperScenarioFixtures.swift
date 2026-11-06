@@ -325,6 +325,10 @@
       for record in records { try await repository.saveLocal(record) }
     }
 
+    func repairQueuedCacheWrite(_ record: MemoryRecord) async throws {
+        try await service.repairQueuedCacheWrite(record)
+    }
+
     func loadCachedMemories(ownerUserID: UUID, includeHidden: Bool) async throws -> [MemoryRecord] {
       try await seedIfNeeded()
       return try await service.loadCachedMemories(

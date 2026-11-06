@@ -133,7 +133,7 @@ struct MemoriesViewModelPlaceTests {
 
         let saved = await env.viewModel.saveEdits(edit(of: record, place: bryggen))
 
-        #expect(saved)
+        #expect(saved.isSaved)
         #expect(env.viewModel.timeline.flatMap(\.memories).first?.snapshot.place == bryggen)
         #expect(try await queued(.setMemoryPlace, in: env).count == 1)
         // The title and date didn't change, so no update was queued.
@@ -152,7 +152,7 @@ struct MemoriesViewModelPlaceTests {
             edit(of: openedWith, title: "New title", place: openedWith.snapshot.place)
         )
 
-        #expect(saved)
+        #expect(saved.isSaved)
         let current = try #require(env.viewModel.timeline.flatMap(\.memories).first)
         #expect(current.snapshot.place == bryggen)
         #expect(current.snapshot.title == "New title")

@@ -144,7 +144,7 @@ extension MemoryDataService {
             scope: "memory:\(memoryID.uuidString.lowercased())",
             payload: payload
         )
-        try await memoryStore.saveLocal(next)
+        try await cacheQueuedRecord(next)
         return next
     }
 
@@ -174,7 +174,7 @@ extension MemoryDataService {
             scope: "memory-place:\(memoryID.uuidString.lowercased())",
             payload: payload
         )
-        try await memoryStore.saveLocal(next)
+        try await cacheQueuedRecord(next)
         return next
     }
 
@@ -256,7 +256,7 @@ extension MemoryDataService {
             scope: "memory-note:\(memoryID.uuidString.lowercased())",
             payload: payload
         )
-        try await memoryStore.saveLocal(next)
+        try await cacheQueuedRecord(next)
         return next
     }
 
@@ -295,7 +295,7 @@ extension MemoryDataService {
             scope: "memory-media:\(memoryID.uuidString.lowercased())",
             payload: payload
         )
-        try await memoryStore.saveLocal(next)
+        try await cacheQueuedRecord(next)
         return next
     }
 
@@ -344,7 +344,7 @@ extension MemoryDataService {
             scope: "memory-media:\(memoryMediaID.uuidString.lowercased())",
             payload: payload
         )
-        try await memoryStore.saveLocal(next)
+        try await cacheQueuedRecord(next)
         return next
     }
 }

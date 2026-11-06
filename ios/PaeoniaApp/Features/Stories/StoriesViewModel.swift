@@ -25,6 +25,7 @@ struct StoryOpenRequest: Equatable {
 final class StoriesViewModel {
     private(set) var stories: [Story] = []
     private(set) var notes: [StoryNote] = []
+    let replies = StoryReplies()
     private(set) var isSavingNote = false
     private(set) var isPosting = false
     private(set) var error: StoriesError?
@@ -93,6 +94,9 @@ final class StoriesViewModel {
     }
 
     func configure(ownerUserID: UUID?, coupleID: UUID?) async {
+        if self.ownerUserID != ownerUserID || self.coupleID != coupleID {
+            replies.clearForPrivacy()
+        }
         if self.ownerUserID != ownerUserID {
             stories = []
             notes = []
@@ -105,6 +109,7 @@ final class StoriesViewModel {
     }
 
     func updateCoupleID(_ coupleID: UUID?) {
+        if self.coupleID != coupleID { replies.clearForPrivacy() }
         self.coupleID = coupleID
     }
 

@@ -217,6 +217,14 @@ final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     private var descriptions: [WidgetDrawingDraftKey: String] = [:]
     private var purgeGenerations: [UUID: Int] = [:]
 
+    func saveDraft(_ data: Data, base: String, description: String, for key: WidgetDrawingDraftKey) throws {
+        drafts[key] = data
+        bases[key] = base
+        descriptions[key] = description
+    }
+
+    func hasRetainedDraft(for key: WidgetDrawingDraftKey) -> Bool { false }
+
     func draft(for key: WidgetDrawingDraftKey) -> Data? {
         drafts[key]
     }

@@ -47,8 +47,12 @@ struct MemoryEditorView: View {
     var uploadProgress: MemoryPhotoUploadProgress?
     /// Places on the couple's other memories, for the place sheet.
     var knownPlaces: [MemoryPlace] = []
-    /// Saves the memory. Returns whether it succeeded so the form can dismiss on success
-    /// and stay put (with a banner already shown) on failure.
+    var draftFailure: MemoryDraftFailure?
+    var draftNeedsSaving = false
+    var onRetryDraft: (() -> Void)?
+    var onDiscardDraft: (() -> Void)?
+    /// Reports a full save, a failure, or the saved baseline after a partial save.
+    /// Unsaved input stays in the form.
     let onSave: (
         _ title: String,
         _ date: String,
@@ -56,7 +60,7 @@ struct MemoryEditorView: View {
         _ photos: [Data],
         _ removedMedia: [MemoryMediaSnapshot],
         _ place: MemoryPlace?
-    ) async -> Bool
+    ) async -> MemorySaveResult
 
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -68,6 +72,7 @@ struct MemoryEditorView: View {
     @State private var removedExistingMediaIDs: Set<UUID> = []
     /// The edit form as it opened, to tell whether anything changed.
     @State private var initialDraft: MemoryDraft?
+    @State private var hasPartiallySaved = false
     @FocusState private var focusedField: Field?
 
     private enum Field {
@@ -90,6 +95,7 @@ struct MemoryEditorView: View {
                                 Text(.commonCancel)
                             }
                             .disabled(isSaving)
+                            .accessibilityIdentifier("memories.editor.cancel")
                         }
                         ToolbarItem(placement: .confirmationAction) {
                             saveButton
@@ -98,18 +104,21 @@ struct MemoryEditorView: View {
                 }
                 .alert(Text(.memoriesEditorDiscardTitle), isPresented: $isConfirmingDiscard) {
                     Button(role: .cancel) {} label: { Text(.memoriesEditorDiscardKeepEditing) }
-                    Button(role: .destructive) { dismiss() } label: { Text(.memoriesEditorDiscardAction) }
+                    Button(role: .destructive) {
+                        if mode == .create { discardNewDraft() } else { dismiss() }
+                    } label: { Text(.memoriesEditorDiscardAction) }
+                    .accessibilityIdentifier("memories.editor.discard")
                 } message: {
-                    Text(.memoriesEditorDiscardMessage)
+                    Text(hasPartiallySaved ? .memoriesEditorDiscardRemainingMessage : .memoriesEditorDiscardMessage)
                 }
         }
         // The sheet covers the app's top banner, so show it here too. Otherwise a
         // failed save would look like nothing happened.
         .paeoniaTopBanner(bannerCenter)
         .presentationBackground(.paeoniaBackgroundPrimary)
-        // A new memory's draft is kept on the device, so swiping it away is safe. An
-        // edit isn't kept, and nothing may close the form while it saves.
-        .interactiveDismissDisabled(isSaving || hasUnsavedEdits)
+        // Only a persisted new draft can be swiped away. Edits require an explicit
+        // discard, and every form stays open while saving.
+        .interactiveDismissDisabled(isSaving || hasUnsavedEdits || draftNeedsSaving || draftFailure != nil)
         .onAppear {
             switch mode {
             case .create:
@@ -129,36 +138,14 @@ struct MemoryEditorView: View {
     private var form: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                if dynamicTypeSize.isAccessibilitySize {
-                    navigationTitle
-                        .font(PaeoniaTypography.title)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                if isMemoryRemoved {
-                    MemoryRemovedNotice(copyableText: draft.copyableText)
-                }
-                // Photos come first so the keyboard, which opens on the title, never
-                // covers them.
-                if allowsPhotos || !existingMedia.isEmpty {
-                    MemoryEditorPhotosField(
-                        photos: $draft.photos,
-                        existingDescriptions: $draft.existingDescriptions,
-                        removedExistingMediaIDs: $removedExistingMediaIDs,
-                        loadingPhotoCount: $loadingPhotoCount,
-                        existingMedia: existingMedia,
-                        currentUserID: currentUserID,
-                        allowsPhotos: allowsPhotos,
-                        isSaving: isSaving
-                    )
-                }
-                titleField
-                noteField
-                dateField
-                MemoryPlaceField(place: $draft.place, photos: draft.photos, knownPlaces: knownPlaces)
-                    .disabled(isSaving)
-                if dynamicTypeSize.isAccessibilitySize {
-                    accessibleActions
+                if draftFailure == .read {
+                    Text(.memoriesDraftLoadFailed)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                    draftRetryButton
+                    if dynamicTypeSize.isAccessibilitySize { accessibleActions }
+                } else {
+                    editorFields
                 }
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -167,6 +154,63 @@ struct MemoryEditorView: View {
             .paeoniaReadableWidth()
         }
         .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private var editorFields: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+            if hasPartiallySaved {
+                Text(.memoriesEditorPartialSaveMessage)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+            }
+            if draftFailure == .write {
+                Text(.memoriesDraftSaveFailed)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                draftRetryButton
+            }
+            if dynamicTypeSize.isAccessibilitySize {
+                navigationTitle
+                    .font(PaeoniaTypography.title)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            if isMemoryRemoved {
+                MemoryRemovedNotice(copyableText: draft.copyableText)
+            }
+            photoFields
+            titleField
+            noteField
+            dateField
+            MemoryPlaceField(place: $draft.place, photos: draft.photos, knownPlaces: knownPlaces)
+                .disabled(isSaving)
+            if dynamicTypeSize.isAccessibilitySize {
+                accessibleActions
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var photoFields: some View {
+        // Photos come first so the keyboard, which opens on the title, never
+        // covers them.
+        if allowsPhotos || !existingMedia.isEmpty {
+            MemoryEditorPhotosField(
+                photos: $draft.photos,
+                existingDescriptions: $draft.existingDescriptions,
+                removedExistingMediaIDs: $removedExistingMediaIDs,
+                loadingPhotoCount: $loadingPhotoCount,
+                existingMedia: existingMedia,
+                currentUserID: currentUserID,
+                allowsPhotos: allowsPhotos,
+                isSaving: isSaving
+            )
+        }
+    }
+
+    private var draftRetryButton: some View {
+        Button { onRetryDraft?() } label: { Text(.commonTryAgain) }
+            .buttonStyle(PaeoniaSecondaryButtonStyle())
     }
 
     // MARK: - Fields
@@ -241,6 +285,7 @@ struct MemoryEditorView: View {
             }
         }
         .disabled(!canSave || isSaving)
+        .accessibilityIdentifier("memories.editor.save")
     }
 
     /// Native navigation bars stay compact. These actions grow with the form at accessibility sizes.
@@ -253,9 +298,11 @@ struct MemoryEditorView: View {
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: isSaving))
             .disabled(!canSave || isSaving)
+            .accessibilityIdentifier("memories.editor.save")
             Button(role: .cancel) { cancel() } label: { Text(.commonCancel) }
                 .buttonStyle(PaeoniaSecondaryButtonStyle())
                 .disabled(isSaving)
+                .accessibilityIdentifier("memories.editor.cancel")
         }
     }
 
@@ -280,7 +327,7 @@ struct MemoryEditorView: View {
     }
 
     private var canSave: Bool {
-        guard !isMemoryRemoved, loadingPhotoCount == 0 else { return false }
+        guard !isMemoryRemoved, draftFailure != .read, loadingPhotoCount == 0 else { return false }
         guard (draft.photos.map(\.accessibilityText) + Array(draft.existingDescriptions.values))
             .allSatisfy({ $0.unicodeScalars.count <= 10_000 }) else { return false }
         guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -317,8 +364,11 @@ struct MemoryEditorView: View {
     private func cancel() {
         switch mode {
         case .create:
-            draft = MemoryDraft()
-            dismiss()
+            if draftFailure != nil || draftNeedsSaving {
+                isConfirmingDiscard = true
+            } else {
+                discardNewDraft()
+            }
         case .edit:
             if hasUnsavedEdits {
                 isConfirmingDiscard = true
@@ -342,9 +392,24 @@ struct MemoryEditorView: View {
             existingMedia.filter { removedExistingMediaIDs.contains($0.memoryMediaID) },
             draft.place
         )
-        if saved {
+        switch saved {
+        case .saved:
             dismiss()
+        case .failed:
+            break
+        case .partial(let record):
+            hasPartiallySaved = true
+            if let record {
+                initialDraft = draft.savedBaseline(from: record)
+                let visibleIDs = Set(record.snapshot.media.filter(\.isVisible).map(\.memoryMediaID))
+                removedExistingMediaIDs.formIntersection(visibleIDs)
+            }
         }
+    }
+
+    private func discardNewDraft() {
+        if let onDiscardDraft { onDiscardDraft() } else { draft = MemoryDraft() }
+        dismiss()
     }
 }
 

@@ -23,6 +23,19 @@ private struct HeartsHomeLifecycle: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .safeAreaInset(edge: .top) {
+                if let hearts, hearts.hasUnqueuedHearts {
+                    VStack(spacing: PaeoniaSpacing.space8) {
+                        Text(.heartsSendFailed)
+                            .font(PaeoniaTypography.caption)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button(.commonTryAgain) { Task { await hearts.flushTaps() } }
+                            .buttonStyle(PaeoniaQuietButtonStyle())
+                    }
+                    .padding(PaeoniaSpacing.space12)
+                    .background(.paeoniaBackgroundSecondary)
+                }
+            }
             .onAppear { hearts?.setHomeVisible(true) }
             .onDisappear { hearts?.setHomeVisible(false) }
             .onChange(of: isScreenReady, initial: true) { _, isReady in

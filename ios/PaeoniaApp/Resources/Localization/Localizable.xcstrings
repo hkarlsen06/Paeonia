@@ -1775,19 +1775,19 @@
       }
     },
     "appLock.toggle.subtitle" : {
-      "comment" : "Short explanation under the app lock switch",
+      "comment" : "App lock follows the selected grace period after the app goes to the background.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia asks you to unlock it each time you open it."
+            "value" : "Choose how soon it locks when you leave the app."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia ber deg låse opp hver gang du åpner den."
+            "value" : "Velg hvor raskt den låses når du forlater appen."
           }
         }
       }
@@ -5031,6 +5031,24 @@
         }
       }
     },
+    "common.load.offline.message" : {
+      "comment" : "Recovery message when a screen cannot load because the phone is offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
     "common.loadFailed.message" : {
       "comment" : "Message of a screen or banner when something could not load. Shown when the phone is online but the server failed, so it must not blame the connection.",
       "extractionState" : "manual",
@@ -7929,6 +7947,24 @@
         }
       }
     },
+    "dailyChallenge.match.differentSummary" : {
+      "comment" : "Compact settled choice comparison. Individual answers below retain both selections.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You picked differently"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere valgte forskjellig"
+          }
+        }
+      }
+    },
     "dailyChallenge.match.eachPickedThemselves" : {
       "comment" : "Playful line under a 'who is more likely' reveal when each partner picked themselves.",
       "extractionState" : "manual",
@@ -7979,6 +8015,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du valgte «%1$@». %2$@ valgte «%3$@»."
+          }
+        }
+      }
+    },
+    "dailyChallenge.match.sameSummary" : {
+      "comment" : "Compact settled choice comparison. Individual answers below retain both selections.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You picked the same"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere valgte det samme"
           }
         }
       }
@@ -9802,19 +9856,19 @@
       }
     },
     "dailyChat.error.delivery.message" : {
-      "comment" : "Message of the banner when a chat message could not be sent. The red icon next to the failed message is the retry button.",
+      "comment" : "Failed chat delivery. The separate Try again text button retries the message.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap the red icon next to your message to try again."
+            "value" : "Tap Try again next to your message."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trykk på det røde ikonet ved siden av meldingen for å prøve igjen."
+            "value" : "Trykk på Prøv igjen ved siden av meldingen."
           }
         }
       }
@@ -10481,6 +10535,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ har ikke svart ennå. Dere kan prate når begge har svart."
+          }
+        }
+      }
+    },
+    "dailyVoice.error.startFailed" : {
+      "comment" : "Microphone permission exists but the audio session or recorder could not start.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording couldn't start. Try recording again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opptaket kunne ikke starte. Prøv å spille inn igjen."
           }
         }
       }
@@ -19587,6 +19659,42 @@
         }
       }
     },
+    "guessMySpot.place.searchOffline" : {
+      "comment" : "Place search failed because the phone has no connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Connect to the internet and search again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet. Koble til internett og søk igjen."
+          }
+        }
+      }
+    },
+    "guessMySpot.place.searchUnavailable" : {
+      "comment" : "A place search service failed. This does not mean the query had no matches.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place search isn't working right now. Try again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stedssøket virker ikke akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "guessMySpot.pointsTogether" : {
       "comment" : "The couple's shared Guess my spot score. %lld is the count.",
       "extractionState" : "manual",
@@ -20321,6 +20429,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sender et hjerte til %@. Trykk igjen for å sende flere."
+          }
+        }
+      }
+    },
+    "hearts.sendFailed" : {
+      "comment" : "A local heart enqueue failed. The retained heart batch can be retried.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your hearts couldn't be saved yet. Try again to send them."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjertene kunne ikke lagres ennå. Prøv igjen for å sende dem."
           }
         }
       }
@@ -24885,6 +25011,42 @@
         }
       }
     },
+    "memories.draft.loadFailed" : {
+      "comment" : "Failed local draft read. Retrying protects the existing saved draft.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your saved draft could not be opened. Try again before starting a new memory."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det lagrede utkastet kunne ikke åpnes. Prøv igjen før du starter et nytt minne."
+          }
+        }
+      }
+    },
+    "memories.draft.saveFailed" : {
+      "comment" : "Failed local draft write. The open form retains its contents.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your draft could not be saved on this phone. Keep this form open and try again, or cancel to discard it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utkastet kunne ikke lagres på denne telefonen. Hold skjemaet åpent og prøv igjen, eller avbryt for å forkaste det."
+          }
+        }
+      }
+    },
     "memories.editor.addPhoto" : {
       "comment" : "Button to pick a photo from the library for a memory.",
       "extractionState" : "manual",
@@ -24993,6 +25155,24 @@
         }
       }
     },
+    "memories.editor.discardRemainingMessage" : {
+      "comment" : "Confirmation after a partial memory save. Discard affects only the unsaved remainder.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the changes that have not been saved will be discarded. Changes already saved will stay."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare endringene som ikke er lagret, blir forkastet. Endringer som allerede er lagret, blir værende."
+          }
+        }
+      }
+    },
     "memories.editor.editTitle" : {
       "comment" : "Navigation title for the sheet where an existing memory is edited",
       "extractionState" : "manual",
@@ -25061,6 +25241,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du kan endre notatet ditt, men ikke fjerne det."
+          }
+        }
+      }
+    },
+    "memories.editor.partialSaveMessage" : {
+      "comment" : "A memory edit saved only some of its steps. The remaining input stays in the editor.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some changes were saved. Your remaining changes are still here. Save again to finish."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noen endringer er lagret. Resten av endringene dine er fortsatt her. Lagre igjen for å fullføre."
           }
         }
       }
@@ -26033,6 +26231,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sted"
+          }
+        }
+      }
+    },
+    "memories.place.noName" : {
+      "comment" : "The selected map point has no reverse-geocoded place name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This spot has no place name. Move the pin to a nearby town or city."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette stedet har ikke noe stedsnavn. Flytt nålen til et tettsted eller en by i nærheten."
           }
         }
       }
@@ -43244,6 +43460,42 @@
         }
       }
     },
+    "topics.shelf.empty.message" : {
+      "comment" : "Message when Topics loaded successfully without available topics",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check back later for questions to explore together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kom tilbake senere for spørsmål dere kan utforske sammen."
+          }
+        }
+      }
+    },
+    "topics.shelf.empty.title" : {
+      "comment" : "Title when the Topics overview loaded successfully without available topics",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No topics yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen temaer ennå"
+          }
+        }
+      }
+    },
     "ultimateTicTacToe.board.cell" : {
       "comment" : "Unique accessible name for one of 81 cells, with its owner or empty state.",
       "extractionState" : "manual",
@@ -44701,6 +44953,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Varm rosa"
+          }
+        }
+      }
+    },
+    "widgetDrawing.draftSaveFailed" : {
+      "comment" : "Drawing and description remain in memory after a local draft write fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing couldn't be saved on this phone. Keep the app open and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen kunne ikke lagres på denne telefonen. Hold appen åpen og prøv igjen."
           }
         }
       }

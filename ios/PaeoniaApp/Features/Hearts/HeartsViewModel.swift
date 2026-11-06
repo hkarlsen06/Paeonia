@@ -18,6 +18,10 @@ final class HeartsViewModel {
     private(set) var incomingBurst: HeartsBurst?
     /// "Robin sent you 14 hearts" while a burst plays.
     private(set) var incomingLine: String?
+    private(set) var hasUnqueuedHearts = false
+    @ObservationIgnored private var waitingSends: [PendingSyncOperationRequest] = []
+    @ObservationIgnored private var flushingSession: UUID?
+    @ObservationIgnored private var sessionID = UUID()
 
     @ObservationIgnored private let cache: any HeartsCaching
     @ObservationIgnored private let pendingOperationStore: any PendingSyncOperationPersisting
@@ -59,6 +63,10 @@ final class HeartsViewModel {
             flushTask?.cancel()
             flushTask = nil
             batcher = HeartsTapBatcher()
+            waitingSends = []
+            hasUnqueuedHearts = false
+            sessionID = UUID()
+            flushingSession = nil
             stopBurst()
         }
         self.ownerUserID = ownerUserID
@@ -89,13 +97,33 @@ final class HeartsViewModel {
     /// Writes the waiting taps to the pending operations, one write per batch, and
     /// starts a send. A new tap cancels the wait for the quiet period, never the send.
     func flushTaps() async {
-        guard let ownerUserID else { return }
-        let batches = batcher.takeBatches()
-        guard !batches.isEmpty else { return }
-        for count in batches {
-            await enqueue(.sendHearts, payload: HeartsSendPayload(count: count), ownerUserID: ownerUserID)
+        guard let ownerUserID, flushingSession == nil else { return }
+        let session = sessionID
+        flushingSession = session
+        defer {
+            if flushingSession == session { flushingSession = nil }
         }
-        requestSync()
+        while self.ownerUserID == ownerUserID, sessionID == session {
+            if waitingSends.isEmpty {
+                waitingSends = batcher.takeBatches().compactMap { count in
+                    makeRequest(.sendHearts, payload: HeartsSendPayload(count: count), ownerUserID: ownerUserID)
+                }
+            }
+            guard let request = waitingSends.first else {
+                hasUnqueuedHearts = false
+                return
+            }
+            do {
+                try await pendingOperationStore.enqueue(request)
+                guard sessionID == session else { return }
+                waitingSends.removeFirst()
+                requestSync()
+            } catch {
+                guard sessionID == session else { return }
+                hasUnqueuedHearts = true
+                return
+            }
+        }
     }
 
     /// Sends the waiting taps without waiting for the quiet period.
@@ -112,7 +140,10 @@ final class HeartsViewModel {
     func setHomeVisible(_ isVisible: Bool) {
         isHomeVisible = isVisible
         if isVisible {
-            Task { await playIfNeeded() }
+            Task {
+                await flushTaps()
+                await playIfNeeded()
+            }
         } else {
             stopBurst()
             if batcher.hasPendingTaps {
@@ -125,7 +156,10 @@ final class HeartsViewModel {
     func setScreenReady(_ isReady: Bool) {
         isScreenReady = isReady
         if isReady {
-            Task { await playIfNeeded() }
+            Task {
+                await flushTaps()
+                await playIfNeeded()
+            }
         } else if batcher.hasPendingTaps {
             Task { await flushNow() }
         }
@@ -204,16 +238,21 @@ final class HeartsViewModel {
         payload: some Encodable,
         ownerUserID: UUID
     ) async {
-        guard let data = try? JSONEncoder().encode(payload) else { return }
-        // A heart that cannot be saved is not worth a banner. The tap already played.
-        try? await pendingOperationStore.enqueue(
-            PendingSyncOperationRequest(
-                ownerUserID: ownerUserID,
-                operation: operationProvider.makeOperation(),
-                operationKind: kind,
-                idempotencyScope: "hearts",
-                requestData: data
-            )
+        guard let request = makeRequest(kind, payload: payload, ownerUserID: ownerUserID) else { return }
+        try? await pendingOperationStore.enqueue(request)
+    }
+
+    private func makeRequest(
+        _ kind: SyncPendingOperationKind, payload: some Encodable, ownerUserID: UUID
+    ) -> PendingSyncOperationRequest? {
+        guard let data = try? JSONEncoder().encode(payload) else { return nil }
+        return PendingSyncOperationRequest(
+            ownerUserID: ownerUserID,
+            operation: operationProvider.makeOperation(),
+            operationKind: kind,
+            idempotencyScope: "hearts",
+            requestData: data,
+            privacyToken: LocalPrivacyWriteGuard.shared.token(ownerUserID: ownerUserID)
         )
     }
 

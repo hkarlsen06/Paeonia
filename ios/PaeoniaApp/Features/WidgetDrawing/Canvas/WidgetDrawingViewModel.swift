@@ -104,6 +104,7 @@ final class WidgetDrawingViewModel {
     @ObservationIgnored let uploader: any WidgetCanvasUploading
     /// Drafts are kept per person and relationship. Without both IDs the screen
     /// keeps no draft at all, so a draft can never reach another couple.
+    var draftSaveFailed = false
     var accessibilityText = ""
     var savedAccessibilityText = ""
 

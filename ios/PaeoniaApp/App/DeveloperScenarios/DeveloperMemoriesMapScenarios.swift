@@ -104,7 +104,7 @@
         draft: $draft,
         allowsPhotos: true,
         knownPlaces: DeveloperMemoriesMapFixture.places,
-        onSave: { _, _, _, _, _, _ in false }
+        onSave: { _, _, _, _, _, _ in .failed }
       )
     }
   }

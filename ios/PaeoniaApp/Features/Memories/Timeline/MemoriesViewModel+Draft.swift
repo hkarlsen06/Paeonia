@@ -10,6 +10,7 @@ extension MemoriesViewModel {
         guard newDraft != draft else { return }
         let changesPhotosOrEmpties = newDraft.photos != draft.photos || newDraft.isEmpty
         draft = newDraft
+        draftNeedsSaving = true
         if changesPhotosOrEmpties {
             saveDraftNow()
         } else {
@@ -24,14 +25,23 @@ extension MemoriesViewModel {
     func startNewMemory(adding photos: [Data], for userID: UUID?) {
         guard let userID else { return }
         let added = photos.map { MemoryDraftPhoto(data: $0) }
-        if currentUserID == userID {
+        if currentUserID == userID, draftFailure == .read {
+            pendingImportedPhotos[userID, default: []] += added
+        } else if currentUserID == userID {
             var next = draft
             next.photos += added
             updateDraft(next)
         } else {
-            var stored = draftStore.draft(for: userID) ?? MemoryDraft()
-            stored.photos += added
-            draftStore.setDraft(stored, for: userID)
+            do {
+                var stored = try draftStore.draft(for: userID) ?? MemoryDraft()
+                stored.photos += added
+                try draftStore.setDraft(stored, for: userID)
+            } catch {
+                // Keep the incoming images in this model and surface the failure.
+                // Configuration for this user must not replace them with an older draft.
+                pendingImportedPhotos[userID, default: []] += added
+                notice = .draftSaveFailed
+            }
         }
         isNewMemoryRequested = true
     }
@@ -39,8 +49,37 @@ extension MemoriesViewModel {
     /// Saves typed text that is still waiting for its delayed save. Call when the form
     /// closes or the app leaves the foreground.
     func flushDraft() {
-        guard pendingDraftSave != nil else { return }
+        guard draftNeedsSaving else { return }
         saveDraftNow()
+    }
+
+    func restoreDraft() {
+        draft = MemoryDraft()
+        draftNeedsSaving = false
+        draftFailure = nil
+        guard let currentUserID else { return }
+        do {
+            draft = try draftStore.draft(for: currentUserID) ?? MemoryDraft()
+            if let imported = pendingImportedPhotos.removeValue(forKey: currentUserID) {
+                draft.photos += imported
+                draftNeedsSaving = true
+                saveDraftNow()
+            }
+        } catch {
+            draftFailure = .read
+            logFailure("Restoring a memory draft failed", error)
+        }
+    }
+
+    func discardDraft() {
+        guard let currentUserID else { return }
+        pendingDraftSave?.cancel()
+        pendingDraftSave = nil
+        draftStore.clearDraft(for: currentUserID)
+        draft = MemoryDraft()
+        draftFailure = nil
+        draftNeedsSaving = false
+        pendingImportedPhotos[currentUserID] = nil
     }
 
     private func scheduleDraftSave() {
@@ -52,11 +91,21 @@ extension MemoriesViewModel {
         }
     }
 
-    private func saveDraftNow() {
+    func saveDraftNow() {
         pendingDraftSave?.cancel()
         pendingDraftSave = nil
         guard let currentUserID else { return }
-        draftStore.setDraft(draft, for: currentUserID)
+        guard draftFailure != .read else { return }
+        do {
+            try draftStore.setDraft(draft, for: currentUserID)
+            draftNeedsSaving = false
+            draftFailure = nil
+        } catch {
+            draftNeedsSaving = true
+            draftFailure = .write
+            notice = .draftSaveFailed
+            logFailure("Saving a memory draft failed", error)
+        }
     }
 }
 
@@ -68,16 +117,23 @@ extension MemoriesViewModel {
             MemoryDraftPhoto.photos(edit.newPhotos, descriptions: edit.photoDescriptions),
             coupleID: coupleID,
             ownerUserID: userID,
-            startingSortOrder: (latest.snapshot.media.map(\.sortOrder).max() ?? 0) + 1
+            startingSortOrder: (latest.snapshot.media.map(\.sortOrder).max() ?? 0) + 1,
+            attachedMediaAssetIDs: Set(latest.snapshot.visibleMediaAssetIDs)
         ) else {
             notice = .photoUploadFailed
             return .failed
+        }
+        let visibleIDs = Set(latest.snapshot.media.filter(\.isVisible).map(\.memoryMediaID))
+        let remaining = uploaded.filter { !visibleIDs.contains($0.memoryMediaID) }
+        guard !remaining.isEmpty else {
+            photoUploads.reset()
+            return .unchanged
         }
         let attached = await perform("Attaching photos to a memory failed", notice: .photoUploadFailed) {
             _ = try await self.memoryService.attachMemoryMedia(
                 ownerUserID: userID,
                 memoryID: latest.snapshot.memoryID,
-                optimisticMedia: uploaded,
+                optimisticMedia: remaining,
                 operation: self.operationProvider.makeOperation()
             )
         }

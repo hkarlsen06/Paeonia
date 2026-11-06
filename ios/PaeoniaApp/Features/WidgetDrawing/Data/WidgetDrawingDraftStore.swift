@@ -19,29 +19,16 @@ nonisolated struct WidgetDrawingDraftKey: Hashable, Sendable {
 /// Local storage for an unfinished PencilKit drawing. The bytes remain the
 /// canonical `PKDrawing.dataRepresentation()` so restoring a draft does not
 /// introduce a second stroke format.
-///
-/// `Sendable` because a background task writes drafts through it
-/// (`setDraft(_:base:for:)`). Main-actor classes are `Sendable` already.
 @MainActor
 protocol WidgetDrawingDraftStoring: AnyObject, Sendable {
+    func saveDraft(_ data: Data, base: String, description: String, for key: WidgetDrawingDraftKey) throws
+    func hasRetainedDraft(for key: WidgetDrawingDraftKey) -> Bool
     func description(for key: WidgetDrawingDraftKey) -> String?
-    func setDescription(_ text: String, for key: WidgetDrawingDraftKey)
     func draft(for key: WidgetDrawingDraftKey) -> Data?
-    func setDraft(_ data: Data, for key: WidgetDrawingDraftKey)
     func removeDraft(for key: WidgetDrawingDraftKey)
-    /// Removes every draft of one person, for all relationships. The privacy
-    /// purge calls this.
     func clearDraft(for ownerUserID: UUID)
-    /// Goes up each time `clearDraft(for:)` runs for this person. A drawing
-    /// screen that was open before a purge compares it and stops saving drafts.
     func purgeGeneration(for ownerUserID: UUID) -> Int
-    /// Names the drawing that was on the widgets when the draft was made
-    /// (`PKDrawing.paeoniaStrokeFingerprint`). Nil when the best-effort write failed.
     func draftBase(for key: WidgetDrawingDraftKey) -> String?
-    func setDraftBase(_ fingerprint: String, for key: WidgetDrawingDraftKey)
-    /// Writes a draft and the base it was made on from a background task, where
-    /// the main actor is not available.
-    nonisolated func setDraft(_ data: Data, base fingerprint: String, for key: WidgetDrawingDraftKey)
 }
 
 @MainActor
@@ -50,68 +37,49 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
 
     private let directoryURL: URL
     private var purgeGenerations: [UUID: Int] = [:]
+    private struct RetainedDraft: Codable {
+        let data: Data
+        let base: String
+        let description: String
+    }
+    private var retainedDrafts: [WidgetDrawingDraftKey: RetainedDraft] = [:]
+
+    func hasRetainedDraft(for key: WidgetDrawingDraftKey) -> Bool { retainedDrafts[key] != nil }
+
+    func saveDraft(_ data: Data, base: String, description: String, for key: WidgetDrawingDraftKey) throws {
+        // Keep all fields together until the file is safe. This copy also survives
+        // closing the canvas, and the existing privacy purge removes it.
+        let snapshot = RetainedDraft(data: data, base: base, description: description)
+        retainedDrafts[key] = snapshot
+        try FileManager.default.createDirectory(
+            at: ownerDirectoryURL(for: key.ownerUserID), withIntermediateDirectories: true
+        )
+        try JSONEncoder().encode(snapshot).write(to: fileURL(for: key), options: .atomic)
+        retainedDrafts[key] = nil
+    }
 
     init(directoryURL: URL = FileWidgetDrawingDraftStore.defaultDirectoryURL()) {
         self.directoryURL = directoryURL
     }
 
-    func description(for key: WidgetDrawingDraftKey) -> String? {
-        try? String(contentsOf: fileURL(for: key).appendingPathExtension("description"), encoding: .utf8)
+    private func snapshot(for key: WidgetDrawingDraftKey) -> RetainedDraft? {
+        if let retained = retainedDrafts[key] { return retained }
+        guard let data = try? Data(contentsOf: fileURL(for: key)) else { return nil }
+        return try? JSONDecoder().decode(RetainedDraft.self, from: data)
     }
 
-    func setDescription(_ text: String, for key: WidgetDrawingDraftKey) {
-        try? FileManager.default.createDirectory(
-            at: ownerDirectoryURL(for: key.ownerUserID), withIntermediateDirectories: true
-        )
-        try? Data(text.utf8).write(to: fileURL(for: key).appendingPathExtension("description"), options: .atomic)
-    }
-
-    func draft(for key: WidgetDrawingDraftKey) -> Data? {
-        try? Data(contentsOf: fileURL(for: key))
-    }
-
-    func setDraft(_ data: Data, for key: WidgetDrawingDraftKey) {
-        writeDraft(data, for: key)
-    }
-
-    nonisolated func setDraft(_ data: Data, base fingerprint: String, for key: WidgetDrawingDraftKey) {
-        writeDraft(data, for: key)
-        try? Data(fingerprint.utf8).write(to: baseFileURL(for: key), options: .atomic)
-    }
-
-    nonisolated private func writeDraft(_ data: Data, for key: WidgetDrawingDraftKey) {
-        do {
-            try FileManager.default.createDirectory(
-                at: ownerDirectoryURL(for: key.ownerUserID),
-                withIntermediateDirectories: true
-            )
-            try data.write(to: fileURL(for: key), options: .atomic)
-        } catch {
-            // Draft persistence is best-effort. The active PencilKit canvas
-            // remains the source of truth for the current session.
-        }
-    }
+    func description(for key: WidgetDrawingDraftKey) -> String? { snapshot(for: key)?.description }
+    func draft(for key: WidgetDrawingDraftKey) -> Data? { snapshot(for: key)?.data }
+    func draftBase(for key: WidgetDrawingDraftKey) -> String? { snapshot(for: key)?.base }
 
     func removeDraft(for key: WidgetDrawingDraftKey) {
+        retainedDrafts[key] = nil
         try? FileManager.default.removeItem(at: fileURL(for: key))
-        try? FileManager.default.removeItem(at: baseFileURL(for: key))
-        try? FileManager.default.removeItem(at: fileURL(for: key).appendingPathExtension("description"))
-    }
-
-    func draftBase(for key: WidgetDrawingDraftKey) -> String? {
-        (try? Data(contentsOf: baseFileURL(for: key))).flatMap { String(data: $0, encoding: .utf8) }
-    }
-
-    func setDraftBase(_ fingerprint: String, for key: WidgetDrawingDraftKey) {
-        try? Data(fingerprint.utf8).write(to: baseFileURL(for: key), options: .atomic)
-    }
-
-    nonisolated private func baseFileURL(for key: WidgetDrawingDraftKey) -> URL {
-        fileURL(for: key).deletingPathExtension().appendingPathExtension("base")
     }
 
     func clearDraft(for ownerUserID: UUID) {
         purgeGenerations[ownerUserID, default: 0] += 1
+        retainedDrafts = retainedDrafts.filter { $0.key.ownerUserID != ownerUserID }
         try? FileManager.default.removeItem(at: ownerDirectoryURL(for: ownerUserID))
     }
 
