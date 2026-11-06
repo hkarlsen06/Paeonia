@@ -12,6 +12,7 @@ final class FirstStepsJourneyUITests: XCTestCase {
     func testARowOpensItsTabAndClosingHidesTheCard() throws {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-paired"
+        app.launchArguments += ["-paeonia-scenario-first-memory"]
         app.launch()
 
         // With five tabs the system tab bar drops the tabs' accessibility identifiers, so
@@ -25,6 +26,9 @@ final class FirstStepsJourneyUITests: XCTestCase {
         XCTAssertTrue(memoryRow.waitForExistence(timeout: 10))
         scrollUntilHittable(memoryRow, in: app)
         memoryRow.tap()
+        let cancelEditor = app.buttons["memories.editor.cancel"]
+        XCTAssertTrue(cancelEditor.waitForExistence(timeout: 5))
+        cancelEditor.tap()
         XCTAssertTrue(memoriesTab.waitForSelection(timeout: 5))
 
         usTab.tap()
@@ -33,6 +37,18 @@ final class FirstStepsJourneyUITests: XCTestCase {
         scrollUntilHittable(close, in: app)
         close.tap()
         XCTAssertTrue(memoryRow.waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testUnfinishedCountdownOpensItsEditorDirectly() {
+        let app = XCUIApplication()
+        app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-paired"
+        app.launch()
+        let row = app.buttons["home.firstSteps.countdown"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        scrollUntilHittable(row, in: app)
+        row.tap()
+        XCTAssertTrue(app.buttons["countdown.editor.cancel"].waitForExistence(timeout: 5))
     }
 
     /// The card sits under today's question, which can push it below the fold.

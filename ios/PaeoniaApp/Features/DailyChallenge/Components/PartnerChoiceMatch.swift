@@ -115,7 +115,7 @@ struct PartnerChoiceMatchBanner: View {
             .opacity(isShown ? 1 : 0)
             .scaleEffect(isShown || reduceMotion ? 1 : 0.92)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(title))
+            .accessibilityLabel(Text(celebrationID == nil ? summaryTitle : title))
             .task {
                 withAnimation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.celebrationReveal) {
                     isShown = true
@@ -134,17 +134,30 @@ struct PartnerChoiceMatchBanner: View {
             }
     }
 
+    @ViewBuilder
     private var content: some View {
-        let picks = match.picks(
-            viewerName: participants.currentDisplayName ?? String(localized: .dailyChallengeChoiceYou),
-            partnerName: partnerName
-        )
-        return PickMatchCard(
-            yours: picks.yours,
-            theirs: picks.theirs,
-            isSamePick: match.isSamePick,
-            participants: participants
-        )
+        if celebrationID == nil {
+            Text(summaryTitle)
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, PaeoniaSpacing.space8)
+        } else {
+            let picks = match.picks(
+                viewerName: participants.currentDisplayName ?? String(localized: .dailyChallengeChoiceYou),
+                partnerName: partnerName
+            )
+            PickMatchCard(
+                yours: picks.yours,
+                theirs: picks.theirs,
+                isSamePick: match.isSamePick,
+                participants: participants
+            )
+        }
+    }
+
+    private var summaryTitle: LocalizedStringResource {
+        match.isSamePick ? .dailyChallengeMatchSameSummary : .dailyChallengeMatchDifferentSummary
     }
 
     private var title: LocalizedStringResource {

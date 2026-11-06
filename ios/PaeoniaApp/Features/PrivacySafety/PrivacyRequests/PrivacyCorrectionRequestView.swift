@@ -4,11 +4,10 @@ import SwiftUI
 /// `PrivacySafetyView` still turns the view model's notices into banners. A failed
 /// send keeps the typed text and leaves the sheet open.
 struct PrivacyCorrectionRequestView: View {
-    let viewModel: PrivacySafetyViewModel
+    @Bindable var viewModel: PrivacySafetyViewModel
 
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @State private var details = ""
 
     private var isSubmitting: Bool {
         viewModel.isSubmitting(.correction)
@@ -39,11 +38,13 @@ struct PrivacyCorrectionRequestView: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button {
+                    viewModel.correctionDraft = ""
                     dismiss()
                 } label: {
                     Text(.commonCancel)
                 }
                 .disabled(isSubmitting)
+                .accessibilityIdentifier("privacy.correction.cancel")
             }
         }
     }
@@ -70,11 +71,13 @@ struct PrivacyCorrectionRequestView: View {
                 .accessibilityHidden(true)
 
             PrivacySafetyMultilineField(
-                text: $details,
+                text: $viewModel.correctionDraft,
                 label: .privacySafetyCorrectionDetailsLabel,
                 placeholder: .privacySafetyCorrectionDetailsPlaceholder,
                 lineLimit: 4...9
             )
+            .accessibilityIdentifier("privacy.correction.details")
+            .disabled(isSubmitting)
         }
     }
 
@@ -83,8 +86,9 @@ struct PrivacyCorrectionRequestView: View {
             Task {
                 if await viewModel.submitRequest(
                     kind: .correction,
-                    requesterNote: details
+                    requesterNote: viewModel.correctionDraft
                 ) {
+                    viewModel.correctionDraft = ""
                     dismiss()
                 }
             }
@@ -92,7 +96,8 @@ struct PrivacyCorrectionRequestView: View {
             Text(submitButtonTitle)
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .disabled(!viewModel.canSubmitCorrection(details: details))
+        .disabled(!viewModel.canSubmitCorrection(details: viewModel.correctionDraft))
+        .accessibilityIdentifier("privacy.correction.submit")
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space12)
         .background(.paeoniaBackgroundPrimary)

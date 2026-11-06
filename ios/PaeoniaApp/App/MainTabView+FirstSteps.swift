@@ -34,9 +34,16 @@ extension MainTabView {
             selection.wrappedValue = .games
         case .memory:
             selection.wrappedValue = .memories
+            if firstSteps?.isDone(.memory) == false {
+                memoriesPath = []
+                memoriesViewModel.startNewMemory(adding: [], for: identity.currentUserID)
+            }
         case .countdown:
-            // What a date reminder opens: the timeline, where the person adds a countdown.
-            coupleDatesViewModel.requestTimeline()
+            if firstSteps?.isDone(.countdown) == false {
+                coupleDatesViewModel.requestNewCountdown()
+            } else {
+                coupleDatesViewModel.requestTimeline()
+            }
         case .story:
             storiesViewModel.requestComposer()
         case .topic:

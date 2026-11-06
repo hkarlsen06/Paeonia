@@ -54,6 +54,8 @@ struct StoryReplyBar: View {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.title2)
                             .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text(.storiesViewerReplySend))

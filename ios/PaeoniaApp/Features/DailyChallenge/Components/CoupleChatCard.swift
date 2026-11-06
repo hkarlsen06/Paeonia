@@ -12,6 +12,7 @@ struct CoupleChatCard: View {
     let onOpen: () -> Void
 
     @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 48
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
@@ -25,29 +26,45 @@ struct CoupleChatCard: View {
     }
 
     private var card: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            avatars
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
-                Text(.chatsCoupleChatTitle)
-                    .font(PaeoniaTypography.collectionTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                if isUnread {
-                    Text(.dailyChatCardUnreadTitle(participants.partnerName))
-                        .font(PaeoniaTypography.bodyEmphasis)
-                        .foregroundStyle(.paeoniaTextPrimary)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+                    avatars
+                    HStack(spacing: PaeoniaSpacing.space12) {
+                        textContent
+                        accessory
+                    }
                 }
-                Text(verbatim: previewLine)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .lineLimit(2)
+            } else {
+                HStack(spacing: PaeoniaSpacing.space12) {
+                    avatars
+                    textContent
+                    accessory
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            accessory
         }
         .padding(PaeoniaSpacing.cardContentPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .paeoniaCardSurface(in: shape, fill: background, needsAttention: isUnread)
         .contentShape(shape)
+    }
+
+    private var textContent: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+            Text(.chatsCoupleChatTitle)
+                .font(PaeoniaTypography.collectionTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+            if isUnread {
+                Text(.dailyChatCardUnreadTitle(participants.partnerName))
+                    .font(PaeoniaTypography.bodyEmphasis)
+                    .foregroundStyle(.paeoniaTextPrimary)
+            }
+            Text(verbatim: previewLine)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// The card blends toward both partners' petal colors, so it reads as the couple's own place

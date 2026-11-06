@@ -113,6 +113,11 @@ struct ThreadChatComposer: View {
             DailyCameraPicker(onCapture: staging.addCameraPhoto)
                 .ignoresSafeArea()
         }
+        .onChange(of: recorder.hasStartFailed) { _, failed in
+            if failed {
+                bannerCenter.show(.error(message: String(localized: .dailyVoiceErrorStartFailed)))
+            }
+        }
         .onChange(of: recorder.isTakeTooShort) { _, isTooShort in
             if isTooShort {
                 AccessibilityNotification.Announcement(String(localized: .dailyChallengeVoiceTooShort)).post()

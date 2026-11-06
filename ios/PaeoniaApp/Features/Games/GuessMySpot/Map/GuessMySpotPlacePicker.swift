@@ -10,7 +10,7 @@ struct GuessMySpotPlacePicker: View {
     @State private var longitude = ""
     @State private var results: [MKMapItem] = []
     @State private var isSearching = false
-    @State private var searchFailed = false
+    @State private var searchMessage: LocalizedStringResource?
 
     var body: some View {
         NavigationStack {
@@ -35,7 +35,7 @@ struct GuessMySpotPlacePicker: View {
             Button(.guessMySpotPlaceSearch) { Task { await search() } }
                 .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching)
             if isSearching { ProgressView() }
-            if searchFailed { Text(.guessMySpotPlaceSearchFailed) }
+            if let searchMessage { Text(searchMessage) }
             ForEach(results.indices, id: \.self) { index in
                 let item = results[index]
                 Button {
@@ -83,16 +83,18 @@ struct GuessMySpotPlacePicker: View {
     private func search() async {
         guard !isSearching else { return }
         isSearching = true
-        searchFailed = false
+        searchMessage = nil
         results = []
         defer { isSearching = false }
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
         do {
             results = try await MKLocalSearch(request: request).start().mapItems
-            searchFailed = results.isEmpty
+            searchMessage = results.isEmpty ? .guessMySpotPlaceSearchFailed : nil
         } catch {
-            searchFailed = true
+            guard !Task.isCancelled, !error.isCancellation else { return }
+            searchMessage = PaeoniaFailure(error) == .offline
+                ? .guessMySpotPlaceSearchOffline : .guessMySpotPlaceSearchUnavailable
         }
     }
 }

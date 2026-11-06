@@ -207,6 +207,7 @@ struct PaeoniaWidgetEntryView: View {
                 .foregroundStyle(.paeoniaWidgetAccentPrimary)
                 .frame(width: refreshButtonSize, height: refreshButtonSize)
                 .background(Color.paeoniaWidgetAccentPrimary.opacity(0.18), in: Circle())
+                .frame(width: 44, height: 44)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

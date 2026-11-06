@@ -152,6 +152,7 @@ struct CountdownEditorView: View {
                 Text(.homeMilestoneEditorCancelAction)
             }
             .disabled(isWorking)
+            .accessibilityIdentifier("countdown.editor.cancel")
         }
 
         ToolbarItem(placement: .confirmationAction) {

@@ -30,6 +30,7 @@ final class DailyVoiceRecorder {
     private(set) var recordedURL: URL?
     private(set) var recordedDurationMs: Int?
     private(set) var permissionDenied = false
+    private(set) var hasStartFailed = false
     /// True when the last take was under the minimum length and got thrown away. Clears
     /// on the next start.
     private(set) var isTakeTooShort = false
@@ -49,6 +50,7 @@ final class DailyVoiceRecorder {
         let previousPhase = phase
         phase = .starting
         isTakeTooShort = false
+        hasStartFailed = false
 
         let granted = await AVAudioApplication.requestRecordPermission()
         // The screen can go away while the permission prompt is up.
@@ -139,6 +141,7 @@ final class DailyVoiceRecorder {
         recordedDurationMs = nil
         elapsed = 0
         isTakeTooShort = false
+        hasStartFailed = false
         phase = .idle
     }
 
@@ -172,6 +175,7 @@ final class DailyVoiceRecorder {
     private func abortStart(removing url: URL) {
         try? FileManager.default.removeItem(at: url)
         deactivateSession()
+        hasStartFailed = true
         phase = .idle
     }
 

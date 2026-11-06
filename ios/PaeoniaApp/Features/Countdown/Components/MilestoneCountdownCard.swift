@@ -42,6 +42,7 @@ struct MilestoneCountdownCard: View {
     /// The instant the countdown is measured from. Refreshed when the calendar day
     /// changes so the card moves to "Today" without needing a reopen.
     @State private var now = Date()
+    @State private var isNewCountdownPresented = false
     /// Whether the number has counted up from a lower value yet. Starts true after the first
     /// tile of an app launch, so a tab switch does not replay it.
     @State private var hasCountedUp = CountUpGate.hasPlayed
@@ -75,8 +76,11 @@ struct MilestoneCountdownCard: View {
         // request is set before this card exists.
         .onChange(of: coupleDates?.isTimelineRequested ?? false, initial: true) { _, isRequested in
             guard isRequested else { return }
-            coupleDates?.consumeTimelineRequest()
-            isTimelinePresented = true
+            if coupleDates?.consumeTimelineRequest() == .newCountdown {
+                isNewCountdownPresented = true
+            } else {
+                isTimelinePresented = true
+            }
         }
         .sheet(isPresented: $isEditorPresented) {
             RelationshipDateEditorView(
@@ -97,13 +101,26 @@ struct MilestoneCountdownCard: View {
             )
             .analyticsScreen("relationship_timeline")
         }
-        .preference(key: HomeIsCoveredKey.self, value: isEditorPresented || isTimelinePresented)
+        .sheet(isPresented: $isNewCountdownPresented) {
+            if let coupleDates {
+                CoupleDateEditorSheet(editor: .newCountdown, coupleDates: coupleDates, names: names)
+                    .analyticsScreen("couple_date_editor")
+            }
+        }
+        .preference(
+            key: HomeIsCoveredKey.self,
+            value: isEditorPresented || isTimelinePresented || isNewCountdownPresented
+        )
     }
 
     private var calendarButton: some View {
         let milestone = milestone
         return Button {
-            if milestone == nil { presentEditor() } else { isTimelinePresented = true }
+            if milestone == nil {
+                presentEditor()
+            } else {
+                isTimelinePresented = true
+            }
         } label: {
             calendarLabel(for: milestone)
         }

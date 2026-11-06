@@ -98,6 +98,6 @@ The Release app links with `ios/Scripts/launch.order`, which lists the functions
 
 ### Toolchain
 
-Build with the selected Xcode, `/Applications/Xcode.app` (Xcode 27.1). The wrappers need no `DEVELOPER_DIR`. Xcode 26.5's `actool` crashed while compiling the Icon Composer icon at `ios/PaeoniaApp/Resources/AppIcon/paeonia_app.icon` with `attempt to insert nil object from objects[0]`. If that error comes back, the toolchain is too old. Do not replace the layered `.icon` with a flat `AppIcon.appiconset` PNG. A flat PNG once had a transparent background and showed black in dark mode. `ASSETCATALOG_COMPILER_APPICON_NAME` stays `paeonia_app`.
+The wrappers select an installed Xcode with iOS SDK 27.3 or newer through `scripts/lib/paeonia-xcode.sh`. They set `DEVELOPER_DIR` for their own process and do not change the global Xcode selection. Xcode 26.5's `actool` crashed while compiling the Icon Composer icon at `ios/PaeoniaApp/Resources/AppIcon/paeonia_app.icon` with `attempt to insert nil object from objects[0]`. If that error comes back, the toolchain is too old. Do not replace the layered `.icon` with a flat `AppIcon.appiconset` PNG. A flat PNG once had a transparent background and showed black in dark mode. `ASSETCATALOG_COMPILER_APPICON_NAME` stays `paeonia_app`.
 
 Use `swiftlint --quiet` for focused Swift lint checks. Lint does not establish compilation or runtime correctness. Preserve useful wrapper diagnostics and report the actual verification result.

@@ -354,6 +354,7 @@ extension SettingsView {
                     Image(systemName: "checkmark.shield.fill")
                 }
             }
+            .accessibilityIdentifier("settings.privacy")
 
             supportRow
         } footer: {

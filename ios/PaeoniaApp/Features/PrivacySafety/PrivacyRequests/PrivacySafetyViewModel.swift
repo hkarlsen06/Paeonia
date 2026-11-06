@@ -14,6 +14,7 @@ final class PrivacySafetyViewModel {
 
     private let service: (any PrivacySafetyServicing)?
 
+    var correctionDraft = ""
     private(set) var requests = [PrivacyRequest]()
     private(set) var isLoading = false
     /// True once the first load or live update has finished, whether or not it

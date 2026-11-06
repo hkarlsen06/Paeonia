@@ -210,9 +210,10 @@
         ),
         operationProvider: operationProvider
       )
+      let memoryRecords = ProcessInfo.processInfo.arguments.contains("-paeonia-scenario-first-memory")
+        ? [] : DeveloperScenarioFixture.memoryRecords()
       let memoriesViewModel = MemoriesViewModel(
-        memoryService: DeveloperScenarioMemoryDataService(
-          records: DeveloperScenarioFixture.memoryRecords()),
+        memoryService: DeveloperScenarioMemoryDataService(records: memoryRecords),
         operationProvider: operationProvider,
         mediaUploader: nil,
         mediaImageCache: nil

@@ -42,7 +42,7 @@ struct GuessMySpotRevealCameraButtons: View {
             onSelect(target)
         } label: {
             icon()
-                .frame(width: 36, height: 44)
+                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

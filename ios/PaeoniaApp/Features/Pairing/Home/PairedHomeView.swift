@@ -292,8 +292,8 @@ extension PairedHomeView {
                     .matchedGeometryEffect(
                         id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: usesMapHeader
                     )
-                firstStepsCard
                 unreadChatsCard
+                firstStepsCard
                 milestoneAndWidget
                     .matchedGeometryEffect(id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: usesMapHeader)
             }
@@ -343,8 +343,8 @@ extension PairedHomeView {
                     .matchedGeometryEffect(
                         id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: !usesMapHeader
                     )
-                firstStepsCard
                 unreadChatsCard
+                firstStepsCard
                 milestoneAndWidget
                     .matchedGeometryEffect(
                         id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: !usesMapHeader

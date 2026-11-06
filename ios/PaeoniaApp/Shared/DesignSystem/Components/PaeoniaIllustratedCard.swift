@@ -172,15 +172,26 @@ struct PaeoniaIllustratedCard<Artwork: View, Badge: View, Header: View, Extras: 
     private var titleAndStatus: some View {
         VStack(spacing: PaeoniaSpacing.space4) {
             header()
-            Text(title)
-                .font(PaeoniaTypography.heroTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .multilineTextAlignment(.center)
-                .contentTransition(.opacity)
-                .accessibilityLabel(loadingLabel.map { Text($0) } ?? Text(title))
-                .accessibilityAddTraits(.isHeader)
-            statusLine
-                .accessibilityHidden(isLoading)
+            Button {
+                PaeoniaHaptics.cardOpened()
+                open()
+            } label: {
+                VStack(spacing: PaeoniaSpacing.space4) {
+                    Text(title)
+                        .font(PaeoniaTypography.heroTitle)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .multilineTextAlignment(.center)
+                        .contentTransition(.opacity)
+                        .accessibilityLabel(loadingLabel.map { Text($0) } ?? Text(title))
+                        .accessibilityAddTraits(.isHeader)
+                    statusLine
+                        .accessibilityHidden(isLoading)
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(isLoading)
         }
         .frame(maxWidth: .infinity)
         .paeoniaLoadingReveal(isLoading)

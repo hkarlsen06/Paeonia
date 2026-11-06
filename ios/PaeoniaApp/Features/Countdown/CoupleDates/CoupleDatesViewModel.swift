@@ -12,7 +12,9 @@ final class CoupleDatesViewModel {
     private(set) var dates = CoupleDates()
     private(set) var error: RelationshipMilestoneError?
     /// A tapped date reminder asks Home to open the timeline. The Home tile reads this and clears it.
-    private(set) var isTimelineRequested = false
+    enum TimelineRequest { case browse, newCountdown }
+    private(set) var timelineRequest: TimelineRequest?
+    var isTimelineRequested: Bool { timelineRequest != nil }
     /// `dates` holds this person's cached dates, so no countdowns means there are none.
     private(set) var hasLoaded = false
 
@@ -120,11 +122,17 @@ final class CoupleDatesViewModel {
     }
 
     func requestTimeline() {
-        isTimelineRequested = true
+        timelineRequest = .browse
     }
 
-    func consumeTimelineRequest() {
-        isTimelineRequested = false
+    func requestNewCountdown() {
+        timelineRequest = .newCountdown
+    }
+
+    @discardableResult
+    func consumeTimelineRequest() -> TimelineRequest? {
+        defer { timelineRequest = nil }
+        return timelineRequest
     }
 
     func clearError() {
