@@ -27,9 +27,15 @@ extension HomeMapLibreView {
                   parent.explorer?.isExploring != true else { return }
             let key = framingKey(parent, map)
             guard key != lastFraming else { return }
-            // A new place or box after the first framing moves the map. A new size jumps,
-            // since the old view's camera doesn't fit it.
-            let animated = lastFraming?.size == key.size && isLoaded && !UIAccessibility.isReduceMotionEnabled
+            // HomeMapBand already interpolates the box alongside the cards. Apply each
+            // frame directly instead of restarting a camera animation on every layout tick.
+            // A location update can also change the box when the couple becomes near.
+            let locationsChanged = lastFraming.map {
+                $0.current.latitude != key.current.latitude || $0.current.longitude != key.current.longitude
+                    || $0.partner.latitude != key.partner.latitude || $0.partner.longitude != key.partner.longitude
+            } ?? false
+            let animated = lastFraming?.size == key.size && (lastFraming?.box == key.box || locationsChanged)
+                && isLoaded && !UIAccessibility.isReduceMotionEnabled
             let isFirstFraming = lastFraming == nil
             lastFraming = key
             self.map = map

@@ -7,7 +7,7 @@ enum PaeoniaMotion {
     static let motionSlow: TimeInterval = 0.36
     static let motionMorph: TimeInterval = 0.5
     static let motionCelebration: TimeInterval = 0.55
-    static let homeLayoutDuration: TimeInterval = 0.65
+    static let homeLayoutDuration: TimeInterval = 0.9
 
     /// Paeonia's house easing: a symmetric cubic bezier (`cubic-bezier(0.65, 0, 0.35,
     /// 1)`). Every standard, non-spring animation eases in and out along this curve
