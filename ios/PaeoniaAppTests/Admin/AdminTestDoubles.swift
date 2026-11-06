@@ -50,6 +50,7 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
         var auditEntriesAfterChange: [AdminAuditEntry]
         var error: (any Error)?
         var changeError: (any Error)?
+        var auditError: (any Error)?
         var searchGate: AdminGate?
         var searches = [AdminSearchCall]()
         var bans = [AdminBanCall]()
@@ -66,7 +67,8 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
         auditEntries: [AdminAuditEntry] = [],
         auditEntriesAfterChange: [AdminAuditEntry] = [],
         error: (any Error)? = nil,
-        changeError: (any Error)? = nil
+        changeError: (any Error)? = nil,
+        auditError: (any Error)? = nil
     ) {
         state = State(
             isAdmin: isAdmin,
@@ -76,7 +78,8 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
             auditEntries: auditEntries,
             auditEntriesAfterChange: auditEntriesAfterChange,
             error: error,
-            changeError: changeError
+            changeError: changeError,
+            auditError: auditError
         )
     }
 
@@ -136,6 +139,7 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
 
     func loadAuditLog(targetUserID: UUID?) async throws -> [AdminAuditEntry] {
         try locked { state in
+            if let error = state.auditError { throw error }
             if let error = state.error {
                 throw error
             }

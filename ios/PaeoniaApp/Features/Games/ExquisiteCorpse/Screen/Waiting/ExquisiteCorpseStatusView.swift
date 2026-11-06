@@ -19,6 +19,19 @@ struct ExquisiteCorpseStatusView: View {
     @ViewBuilder
     private var content: some View {
         switch viewModel.phase {
+        case .loading where viewModel.refreshFailure != nil:
+            PaeoniaLoadFailureView(
+                failure: viewModel.refreshFailure ?? .other,
+                offlineMessage: .gamesUnavailableMessage
+            ) {
+                Button {
+                    Task { await viewModel.refresh() }
+                } label: {
+                    Text(.commonTryAgain)
+                }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+                .accessibilityIdentifier("exquisiteCorpse.retryLoad")
+            }
         case .needsSetup:
             PaeoniaEmptyStateView(
                 title: .exquisiteCorpseName,
@@ -39,13 +52,10 @@ struct ExquisiteCorpseStatusView: View {
                 }
                 .buttonStyle(PaeoniaSecondaryButtonStyle())
             }
-        case .preparing:
+        default:
             ProgressView()
                 .tint(.paeoniaAccentPrimary)
                 .controlSize(.large)
-        default:
-            // The first read is a split second. The screen stays blank.
-            EmptyView()
         }
     }
 }

@@ -24,6 +24,7 @@ final class TopicsViewModel {
     private(set) var overview: [TopicSummary] = []
     /// The overview has been read once, from the phone or the server.
     private(set) var hasLoadedOverview = false
+    private(set) var overviewFailure: PaeoniaFailure?
     /// Each opened topic's questions, by topic key.
     private(set) var items: [String: [TopicQuestionItem]] = [:]
     /// Topics whose first read failed with nothing on the phone to show, and why.
@@ -76,6 +77,7 @@ final class TopicsViewModel {
         self.currentUserID = currentUserID
         overview = []
         hasLoadedOverview = false
+        overviewFailure = nil
         items = [:]
         failedTopics = [:]
         pendingSkips = [:]
@@ -103,14 +105,20 @@ final class TopicsViewModel {
     /// One read of the overview, for pull to refresh and the first launch before the
     /// live feed has delivered.
     func refreshOverview() async {
-        guard let gateway, let currentUserID else { return }
+        guard let currentUserID else { return }
+        guard let gateway else {
+            overviewFailure = .other
+            return
+        }
         do {
             let overview = try await gateway.loadOverview()
             guard self.currentUserID == currentUserID else { return }
             await cache.saveOverview(overview, ownerUserID: currentUserID)
             apply(overview)
         } catch {
-            // The live feed keeps trying. The card keeps what the phone has.
+            guard self.currentUserID == currentUserID, !Task.isCancelled, !error.isCancellation else { return }
+            overviewFailure = PaeoniaFailure(error)
+            if hasLoadedOverview { notice = .loadFailed(PaeoniaFailure(error)) }
         }
     }
 
@@ -329,6 +337,7 @@ extension TopicsViewModel {
     private func apply(_ remote: RemoteTopicsOverview) {
         overview = remote.topics.map { TopicSummary($0, locale: locale) }.sorted { $0.sortOrder < $1.sortOrder }
         hasLoadedOverview = true
+        overviewFailure = nil
         // A topic that left the shelf leaves the phone: its questions, answers and
         // saved copy.
         let closed = Set(details.keys).union(items.keys).union(followTasks.keys).subtracting(shelfTopicKeys)

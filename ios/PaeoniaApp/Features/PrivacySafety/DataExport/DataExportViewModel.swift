@@ -20,6 +20,7 @@ final class DataExportViewModel {
     /// only this phone knows: a request being sent and a download running.
     enum Phase: Equatable {
         case loading
+        case unavailable(PaeoniaFailure)
         case notRequested
         case sending
         case preparing(progress: Double)
@@ -33,6 +34,7 @@ final class DataExportViewModel {
 
     private(set) var export: DataExport?
     private(set) var hasLoaded = false
+    private(set) var loadFailure: PaeoniaFailure?
     private(set) var isSending = false
     private(set) var downloadProgress: DataExportDownloadProgress?
     private(set) var notice: Notice?
@@ -54,7 +56,8 @@ final class DataExportViewModel {
             return .sending
         }
         guard let export else {
-            return hasLoaded ? .notRequested : .loading
+            if hasLoaded { return .notRequested }
+            return loadFailure.map(Phase.unavailable) ?? .loading
         }
         switch export.status {
         case .preparing:
@@ -71,18 +74,19 @@ final class DataExportViewModel {
     func load() async {
         guard let service else {
             notice = .loadFailed(.other)
-            hasLoaded = true
+            loadFailure = .other
             return
         }
         do {
             export = try await service.loadExport()
             hasLoaded = true
+            loadFailure = nil
         } catch {
             guard !Task.isCancelled, !error.isCancellation else {
                 return
             }
             notice = .loadFailed(PaeoniaFailure(error))
-            hasLoaded = true
+            loadFailure = PaeoniaFailure(error)
         }
     }
 
@@ -95,6 +99,7 @@ final class DataExportViewModel {
         for await latest in service.exportUpdates() {
             export = latest
             hasLoaded = true
+            loadFailure = nil
         }
     }
 

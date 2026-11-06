@@ -14,8 +14,9 @@ final class AdminUsersViewModel {
     let bannedOnly: Bool
     var searchText = ""
     private(set) var users = [AdminUserSummary]()
-    /// True once the first load finished, whether or not it worked.
+    /// True once a read succeeded.
     private(set) var hasLoaded = false
+    private(set) var loadFailure: PaeoniaFailure?
     private(set) var notice: AdminNotice?
 
     private let gateway: any AdminGateway
@@ -88,12 +89,13 @@ final class AdminUsersViewModel {
             users = result
             loadedQuery = query
             hasLoaded = true
+            loadFailure = nil
         } catch {
             guard !Task.isCancelled, let failure = AdminNotice(loadError: error) else {
                 return
             }
             notice = failure
-            hasLoaded = true
+            loadFailure = PaeoniaFailure(error)
         }
     }
 }

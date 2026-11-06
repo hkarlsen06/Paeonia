@@ -102,6 +102,7 @@ extension ExquisiteCorpseViewModel {
         savedIdeaIDs = [:]
         lastSettledRevealFigureID = nil
         phase = .loading
+        refreshFailure = nil
         part = nil
         figure = nil
         live?.stop()

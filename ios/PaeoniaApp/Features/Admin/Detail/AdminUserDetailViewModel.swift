@@ -12,8 +12,11 @@ final class AdminUserDetailViewModel {
     private(set) var user: AdminUserDetail?
     /// The admin log entries about this user, newest first.
     private(set) var history = [AdminAuditEntry]()
-    /// True once the first load finished, whether or not it worked.
+    /// True once the account read succeeded.
     private(set) var hasLoaded = false
+    private(set) var loadFailure: PaeoniaFailure?
+    private(set) var historyFailure: PaeoniaFailure?
+    private(set) var hasLoadedHistory = false
     private(set) var isWorking = false
     private(set) var notice: AdminNotice?
 
@@ -40,22 +43,34 @@ final class AdminUserDetailViewModel {
     func load() async {
         do {
             let loadedUser = try await gateway.loadUser(id: userID)
-            let entries = try await gateway.loadAuditLog(targetUserID: userID)
-            guard !Task.isCancelled else {
-                return
-            }
+            guard !Task.isCancelled else { return }
             user = loadedUser
-            history = entries
             hasLoaded = true
+            loadFailure = nil
             if loadedUser == nil {
                 notice = .userNotFound
-            }
-        } catch {
-            guard !Task.isCancelled, let failure = AdminNotice(loadError: error) else {
                 return
             }
+        } catch {
+            guard !Task.isCancelled, let failure = AdminNotice(loadError: error) else { return }
             notice = failure
-            hasLoaded = true
+            loadFailure = PaeoniaFailure(error)
+            return
+        }
+        await loadHistory()
+    }
+
+    func loadHistory() async {
+        do {
+            let entries = try await gateway.loadAuditLog(targetUserID: userID)
+            guard !Task.isCancelled else { return }
+            history = entries
+            hasLoadedHistory = true
+            historyFailure = nil
+        } catch {
+            guard !Task.isCancelled, let failure = AdminNotice(loadError: error) else { return }
+            notice = failure
+            historyFailure = PaeoniaFailure(error)
         }
     }
 

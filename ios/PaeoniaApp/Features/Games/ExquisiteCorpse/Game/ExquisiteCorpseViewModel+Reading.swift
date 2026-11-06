@@ -39,12 +39,21 @@ extension ExquisiteCorpseViewModel {
     /// Reads the server's state and the shared overview once and caches them.
     func refresh() async {
         guard let userID = currentUserID else { return }
-        let overviewLoaded = (try? await dependencies.cache.fetchOverview(
-            from: dependencies.gateway,
-            ownerUserID: userID
-        )) == true
-        let stateLoaded = (try? await cache.fetchState(from: gateway, ownerUserID: userID)) == true
-        guard overviewLoaded || stateLoaded, !Task.isCancelled else { return }
+        var failure: PaeoniaFailure?
+        do {
+            _ = try await dependencies.cache.fetchOverview(from: dependencies.gateway, ownerUserID: userID)
+        } catch {
+            guard !Task.isCancelled, !error.isCancellation else { return }
+            failure = PaeoniaFailure(error)
+        }
+        do {
+            _ = try await cache.fetchState(from: gateway, ownerUserID: userID)
+        } catch {
+            guard !Task.isCancelled, !error.isCancellation else { return }
+            failure = PaeoniaFailure(error)
+        }
+        guard currentUserID == userID, !Task.isCancelled else { return }
+        refreshFailure = failure
         await reload()
     }
 

@@ -30,6 +30,7 @@ struct SearchScreen: View {
                 ForEach(viewModel.results.kinds) { kind in
                     section(of: kind)
                 }
+                searchingProgress
                 if viewModel.phase == .finished, !viewModel.results.isEmpty, let problem = viewModel.onlineProblem {
                     onlineProblemSection(problem)
                 }
@@ -63,6 +64,15 @@ struct SearchScreen: View {
         .task { await viewModel.observeMemoryChanges(loadContent: loadContent) }
         .onChange(of: stories.stories) {
             Task { await viewModel.refreshContent(loadContent: loadContent) }
+        }
+    }
+
+    @ViewBuilder
+    private var searchingProgress: some View {
+        if viewModel.phase == .searching, !viewModel.results.isEmpty {
+            ProgressView()
+                .tint(.paeoniaAccentPrimary)
+                .frame(maxWidth: .infinity)
         }
     }
 
@@ -137,6 +147,19 @@ struct SearchScreen: View {
                         if result.id == results.last?.id { await starred.loadMore() }
                     }
                 }
+                if let failure = starred.loadMoreFailure {
+                    PaeoniaLoadFailureView(failure: failure, offlineMessage: .commonLoadOfflineMessage) {
+                        Button {
+                            Task { await starred.loadMore() }
+                        } label: {
+                            Text(.commonTryAgain)
+                        }
+                        .buttonStyle(PaeoniaSecondaryButtonStyle())
+                    }
+                } else if starred.isLoadingMore {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                }
             } header: {
                 Text(.favoritesSectionTitle)
             }
@@ -150,13 +173,29 @@ struct SearchScreen: View {
         switch viewModel.phase {
         case .idle where !starredResults.isEmpty:
             EmptyView()
+        case .idle where starred.phase == .loading || starred.phase == .idle:
+            ProgressView()
+                .tint(.paeoniaAccentPrimary)
         case .idle:
-            PaeoniaEmptyStateView(
-                title: .searchIdleTitle,
-                message: .searchIdleMessage,
-                systemImage: "magnifyingglass"
-            )
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            if case let .failed(failure) = starred.phase {
+                PaeoniaLoadFailureView(failure: failure, offlineMessage: .commonLoadOfflineMessage) {
+                    Button {
+                        Task { await starred.load() }
+                    } label: {
+                        Text(.commonTryAgain)
+                    }
+                    .buttonStyle(PaeoniaSecondaryButtonStyle())
+                    .accessibilityIdentifier("search.retryStarred")
+                }
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            } else {
+                PaeoniaEmptyStateView(
+                    title: .searchIdleTitle,
+                    message: .searchIdleMessage,
+                    systemImage: "magnifyingglass"
+                )
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            }
         case .searching where viewModel.results.isEmpty:
             ProgressView()
                 .tint(.paeoniaAccentPrimary)

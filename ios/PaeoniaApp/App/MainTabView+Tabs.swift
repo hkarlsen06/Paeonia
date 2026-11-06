@@ -359,7 +359,7 @@ extension MainTabView {
         TopicsCardContent(
             topics: topicsViewModel.cardTopics,
             hook: topicsHook,
-            isShown: topicsViewModel.hasLoadedOverview && !topicsViewModel.overview.isEmpty,
+            isShown: !topicsViewModel.hasLoadedOverview || !topicsViewModel.overview.isEmpty,
             onOpen: openTopics,
             shelfTopics: topicsViewModel.overview,
             newQuestionCount: topicsViewModel.newQuestionCount(for:),

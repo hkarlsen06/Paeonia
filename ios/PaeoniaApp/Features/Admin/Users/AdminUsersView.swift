@@ -72,7 +72,17 @@ struct AdminUsersView: View {
 
     @ViewBuilder
     private var overlay: some View {
-        if !viewModel.hasLoaded {
+        if !viewModel.hasLoaded, let failure = viewModel.loadFailure {
+            PaeoniaLoadFailureView(failure: failure, offlineMessage: .commonLoadOfflineMessage) {
+                Button {
+                    Task { await viewModel.refresh() }
+                } label: {
+                    Text(.commonTryAgain)
+                }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+            }
+            .padding(PaeoniaSpacing.screenHorizontalPadding)
+        } else if !viewModel.hasLoaded {
             ProgressView()
         } else if viewModel.users.isEmpty {
             if viewModel.bannedOnly {

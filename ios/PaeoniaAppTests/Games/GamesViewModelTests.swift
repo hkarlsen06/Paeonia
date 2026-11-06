@@ -37,6 +37,23 @@ struct GamesViewModelTests {
         #expect(viewModel.cardContext(for: .drawAndGuess, isOnHub: true).hide == nil)
     }
 
+    @Test func theHubAppearsBeforeAnIndividualGamesReadFinishes() async {
+        let env = GamesTestEnvironment(state: nil)
+        env.gateway.setStateToLoad(GameFixture.state(settings: GameFixture.settings(), game: nil))
+        let gate = GamesStateReadGate()
+        env.gateway.holdStateRead(with: gate)
+        let model = viewModel(env)
+        let loading = Task { await model.load() }
+        #expect(await waitUntil { await gate.isWaiting })
+
+        #expect(model.screen == .hub)
+        model.open(ludo)
+        #expect(model.introStep != nil || model.destinationToOpen == ludo)
+
+        await gate.open()
+        await loading.value
+    }
+
     private func step(_ viewModel: GamesViewModel) -> String {
         switch viewModel.introStep {
         case .setup: "setup"

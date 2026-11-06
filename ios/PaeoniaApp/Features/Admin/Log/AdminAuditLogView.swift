@@ -22,7 +22,17 @@ struct AdminAuditLogView: View {
         .listStyle(.insetGrouped)
         .paeoniaGroupedList()
         .overlay {
-            if !viewModel.hasLoaded {
+            if !viewModel.hasLoaded, let failure = viewModel.loadFailure {
+                PaeoniaLoadFailureView(failure: failure, offlineMessage: .commonLoadOfflineMessage) {
+                    Button {
+                        Task { await viewModel.load() }
+                    } label: {
+                        Text(.commonTryAgain)
+                    }
+                    .buttonStyle(PaeoniaSecondaryButtonStyle())
+                }
+                .padding(PaeoniaSpacing.screenHorizontalPadding)
+            } else if !viewModel.hasLoaded {
                 ProgressView()
             } else if viewModel.entries.isEmpty {
                 PaeoniaEmptyStateView(

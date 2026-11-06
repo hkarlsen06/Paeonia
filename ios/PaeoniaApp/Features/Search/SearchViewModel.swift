@@ -110,6 +110,10 @@ final class SearchViewModel {
             clear()
             return
         }
+        localResults = []
+        remoteResults = []
+        results = .empty
+        onlineProblem = nil
         phase = .searching
         let snapshot = content
         searchTask = Task { [weak self] in

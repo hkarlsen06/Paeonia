@@ -362,6 +362,7 @@ extension DailyChallengeScreen {
 
     private var isCalm: Bool {
         isDayComplete && tabContent.attention.isEmpty && topicsCard?.hook == nil
+            && !(topicsCard?.shelfTopics.isEmpty ?? true)
     }
 
     /// Once today's challenge is answered, topic navigation stays above outstanding rows.

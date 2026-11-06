@@ -16,6 +16,7 @@ final class SavedFavoritesViewModel {
 
     private(set) var phase: Phase = .idle
     private(set) var isLoadingMore = false
+    private(set) var loadMoreFailure: PaeoniaFailure?
 
     /// Summaries in the order the server listed the favorites.
     private var loaded: [FavoriteSummary] = []
@@ -82,11 +83,12 @@ final class SavedFavoritesViewModel {
         if loaded.isEmpty { phase = .loading }
         let targets = Array(store.allFavorites.prefix(pageSize).map(\.target))
         do {
-            let page = try await gateway.summaries(of: targets)
+            let page = targets.isEmpty ? [] : try await gateway.summaries(of: targets)
             guard !Task.isCancelled else { return }
             loaded = page
             requested = targets.count
             phase = .loaded
+            loadMoreFailure = nil
         } catch {
             guard !error.isCancellation else { return }
             // A failed read keeps the rows that are showing.
@@ -100,8 +102,16 @@ final class SavedFavoritesViewModel {
         isLoadingMore = true
         defer { isLoadingMore = false }
         let targets = Array(store.allFavorites.dropFirst(requested).prefix(pageSize).map(\.target))
-        guard !targets.isEmpty, let page = try? await gateway.summaries(of: targets), !Task.isCancelled else { return }
-        loaded += page.filter { new in !loaded.contains { $0.target == new.target } }
-        requested += targets.count
+        guard !targets.isEmpty else { return }
+        do {
+            let page = try await gateway.summaries(of: targets)
+            guard !Task.isCancelled else { return }
+            loaded += page.filter { new in !loaded.contains { $0.target == new.target } }
+            requested += targets.count
+            loadMoreFailure = nil
+        } catch {
+            guard !Task.isCancelled, !error.isCancellation else { return }
+            loadMoreFailure = PaeoniaFailure(error)
+        }
     }
 }

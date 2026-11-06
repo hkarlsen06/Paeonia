@@ -284,21 +284,41 @@ struct PostPairingFlowModelTests {
     /// steps. The last step still leads to the answer invite.
     @Test func answersThatArriveDuringTheSequenceStillGetTheInvite() async {
         let store = TestPairingCelebrationStore()
-        let model = makeModel(
-            store: store,
-            loader: PostPairingFakeLoader(questionTimeIsOn: false, answersWaitingAfterFirstCheck: true)
-        )
+        let loader = PostPairingFakeLoader(questionTimeIsOn: false, answersWaitingAfterFirstCheck: true)
+        let model = makeModel(store: store, loader: loader)
         model.prepare(context)
         await model.start(startedOn: "2024-03-03", acceptedInvite: false)
         #expect(model.screen == .questionTime)
 
-        model.questionTimeFinished()
-        for _ in 0 ..< 100 where model.screen != .answerInvite {
+        for _ in 0 ..< 100 where await loader.answerChecks.calls < 2 {
             try? await Task.sleep(for: .milliseconds(10))
         }
+        // Let the completed check publish before the person finishes the last step.
+        await Task.yield()
+        model.questionTimeFinished()
 
         #expect(model.screen == .answerInvite)
         #expect(model.outcome == nil)
+    }
+
+    @Test func finishingDoesNotWaitForTheLatePartnerAnswerRead() async {
+        let gate = PostPairingAnswerGate()
+        let loader = PostPairingFakeLoader(questionTimeIsOn: false, lateAnswerGate: gate)
+        let model = makeModel(store: TestPairingCelebrationStore(), loader: loader)
+        model.prepare(context)
+        await model.start(startedOn: "2024-03-03", acceptedInvite: false)
+        for _ in 0 ..< 100 where !(await gate.isWaiting) {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(await gate.isWaiting)
+        #expect(model.screen == .questionTime)
+
+        model.questionTimeFinished()
+
+        #expect(model.outcome == .us)
+        await gate.open()
+        await Task.yield()
+        #expect(model.outcome == .us)
     }
 
     /// The next step goes in before the drawing screen closes, and the close that
@@ -369,6 +389,7 @@ private struct PostPairingFakeLoader: PostPairingDataLoading {
     var partnerAnswersWaiting = false
     /// The partner's answers land after the first load.
     var answersWaitingAfterFirstCheck = false
+    var lateAnswerGate: PostPairingAnswerGate?
     let answerChecks = PostPairingCallCounter()
 
     func partnerGift(partnerUserID _: UUID) async -> PostPairingGiftLoad {
@@ -387,6 +408,7 @@ private struct PostPairingFakeLoader: PostPairingDataLoading {
 
     func partnerAnswersWaiting(currentUserID _: UUID) async -> Bool {
         let call = await answerChecks.next()
+        if call > 1, let lateAnswerGate { await lateAnswerGate.wait() }
         return partnerAnswersWaiting || (answersWaitingAfterFirstCheck && call > 1)
     }
 
@@ -394,15 +416,30 @@ private struct PostPairingFakeLoader: PostPairingDataLoading {
 }
 
 private actor PostPairingCallCounter {
-    private var count = 0
+    private(set) var calls = 0
 
     func next() -> Int {
-        count += 1
-        return count
+        calls += 1
+        return calls
     }
 }
 
 private struct PostPairingNoWidgets: WidgetConfigurationProviding {
     // swiftlint:disable:next async_without_await
     func installedWidgetKinds() async throws -> [String] { [] }
+}
+
+private actor PostPairingAnswerGate {
+    private var continuation: CheckedContinuation<Void, Never>?
+    private(set) var isWaiting = false
+
+    func wait() async {
+        isWaiting = true
+        await withCheckedContinuation { continuation = $0 }
+    }
+
+    func open() {
+        continuation?.resume()
+        continuation = nil
+    }
 }

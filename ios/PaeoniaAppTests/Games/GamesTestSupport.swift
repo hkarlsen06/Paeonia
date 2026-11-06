@@ -20,6 +20,7 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
 
     private struct Record {
         var calls: [String] = []
+        var stateGate: GamesStateReadGate?
         var presence: [Bool] = []
         var presenceKinds: [GameKind] = []
         var pickedWords: [GamePickWordPayload] = []
@@ -70,6 +71,10 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
     var inviteCount: Int { read(\.inviteCount) }
     /// The game each invite named.
     var inviteKinds: [GameKind] { read(\.inviteKinds) }
+
+    func holdStateRead(with gate: GamesStateReadGate) {
+        write { $0.stateGate = gate }
+    }
 
     func fail(_ name: String) {
         write { $0.failing.insert(name) }
@@ -148,7 +153,8 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         return RemoteEnsureGameResult(gameID: GameFixture.gameID, created: true)
     }
 
-    func loadDrawAndGuess() throws -> RemoteDrawAndGuessState {
+    func loadDrawAndGuess() async throws -> RemoteDrawAndGuessState {
+        if let gate = read(\.stateGate) { await gate.wait() }
         try begin("load")
         guard let state = read(\.stateToLoad) else { throw Failure() }
         return state
@@ -451,4 +457,19 @@ func syncContext(_ store: any PendingSyncOperationPersisting) -> SyncContext {
         stateStore: InMemorySyncStateRepository(),
         pendingOperationStore: store
     )
+}
+
+actor GamesStateReadGate {
+    private var continuation: CheckedContinuation<Void, Never>?
+    private(set) var isWaiting = false
+
+    func wait() async {
+        isWaiting = true
+        await withCheckedContinuation { continuation = $0 }
+    }
+
+    func open() {
+        continuation?.resume()
+        continuation = nil
+    }
 }

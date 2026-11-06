@@ -110,6 +110,7 @@ final class GamesViewModel {
     private var participants: GameParticipants
     private var overview: RemoteGamesOverview?
     private var hasLoaded = false
+    private var overviewFailure: PaeoniaFailure?
     /// The step the next opened game shows first, or nil when there is none.
     private var neededIntro: IntroStep?
     /// The game that opens when the first-time steps end.
@@ -178,6 +179,7 @@ final class GamesViewModel {
         if userChanged {
             hasLoaded = false
             overview = nil
+            overviewFailure = nil
             partnerGameKinds = []
             lastPlayed = [:]
             playDays = RemoteGamePlayDays()
@@ -193,6 +195,9 @@ final class GamesViewModel {
         }
     }
 
+}
+
+extension GamesViewModel {
     // MARK: - Reading
 
     /// Reads the cache, and the server when the cache is empty.
@@ -236,21 +241,28 @@ final class GamesViewModel {
     /// Reads the server's overview and every game's state once and caches them.
     func refresh() async {
         guard let userID = currentUserID else { return }
-        for game in games {
-            await game.refresh()
-        }
         do {
             let gateway = dependencies.gateway
-            guard try await dependencies.cache.fetchOverview(from: gateway, ownerUserID: userID) else { return }
+            _ = try await dependencies.cache.fetchOverview(from: gateway, ownerUserID: userID)
+            guard currentUserID == userID, !Task.isCancelled else { return }
+            overviewFailure = nil
             await reload()
         } catch {
+            guard currentUserID == userID else { return }
             await reload()
             // A read that was cancelled (the tab changed under it) says nothing about the network.
             if overview == nil, hasLoaded, !Task.isCancelled, !(error is CancellationError),
                (error as? URLError)?.code != .cancelled {
+                overviewFailure = PaeoniaFailure(error)
                 screen = .unavailable(PaeoniaFailure(error))
             }
         }
+        guard currentUserID == userID, !Task.isCancelled, overview != nil else { return }
+        for game in games {
+            await game.refresh()
+            guard currentUserID == userID, !Task.isCancelled else { return }
+        }
+        await reload()
     }
 
     private func updateScreen(userID: UUID) {
@@ -260,7 +272,13 @@ final class GamesViewModel {
         }
         guard let settings else {
             neededIntro = .setup
-            screen = overview == nil ? .loading : .hub
+            if overview != nil {
+                screen = .hub
+            } else if let overviewFailure {
+                screen = .unavailable(overviewFailure)
+            } else {
+                screen = .loading
+            }
             return
         }
         // Whoever chose them has seen them. The server keeps who else has.

@@ -20,6 +20,19 @@ struct DrawAndGuessStatusView: View {
     @ViewBuilder
     private var content: some View {
         switch viewModel.phase {
+        case .loading where viewModel.refreshFailure != nil:
+            PaeoniaLoadFailureView(
+                failure: viewModel.refreshFailure ?? .other,
+                offlineMessage: .gamesUnavailableMessage
+            ) {
+                Button {
+                    Task { await viewModel.refresh() }
+                } label: {
+                    Text(.commonTryAgain)
+                }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+                .accessibilityIdentifier("drawAndGuess.retryLoad")
+            }
         case .needsSetup:
             PaeoniaEmptyStateView(
                 title: .gamesDrawAndGuessName,

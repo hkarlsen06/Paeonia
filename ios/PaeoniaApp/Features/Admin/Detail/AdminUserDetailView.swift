@@ -84,7 +84,17 @@ struct AdminUserDetailView: View {
 
     @ViewBuilder
     private var overlay: some View {
-        if !viewModel.hasLoaded {
+        if !viewModel.hasLoaded, let failure = viewModel.loadFailure {
+            PaeoniaLoadFailureView(failure: failure, offlineMessage: .commonLoadOfflineMessage) {
+                Button {
+                    Task { await viewModel.load() }
+                } label: {
+                    Text(.commonTryAgain)
+                }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+            }
+            .padding(PaeoniaSpacing.screenHorizontalPadding)
+        } else if !viewModel.hasLoaded {
             ProgressView()
         } else if viewModel.user == nil {
             PaeoniaEmptyStateView(
@@ -258,7 +268,19 @@ extension AdminUserDetailView {
 
     private var historySection: some View {
         Section {
-            if viewModel.history.isEmpty {
+            if let failure = viewModel.historyFailure {
+                PaeoniaLoadFailureView(failure: failure, offlineMessage: .commonLoadOfflineMessage) {
+                    Button {
+                        Task { await viewModel.loadHistory() }
+                    } label: {
+                        Text(.commonTryAgain)
+                    }
+                    .buttonStyle(PaeoniaSecondaryButtonStyle())
+                }
+            }
+            if !viewModel.hasLoadedHistory, viewModel.historyFailure == nil {
+                ProgressView()
+            } else if viewModel.history.isEmpty, viewModel.historyFailure == nil {
                 Text(.adminDetailHistoryEmpty)
                     .foregroundStyle(.paeoniaTextSecondary)
             } else {

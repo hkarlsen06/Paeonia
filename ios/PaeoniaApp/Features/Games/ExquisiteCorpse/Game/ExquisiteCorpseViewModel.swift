@@ -24,6 +24,7 @@ final class ExquisiteCorpseViewModel {
     //
     // Screens only read these. The view model and its extensions write them.
 
+    var refreshFailure: PaeoniaFailure?
     var phase: ExquisiteCorpsePhase = .loading
     /// The part the phase is about. It is this person's part while drawing and
     /// the partner's part while waiting or watching. In a reveal it is the part

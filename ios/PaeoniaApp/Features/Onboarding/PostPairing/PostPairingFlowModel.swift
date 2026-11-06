@@ -73,7 +73,8 @@ final class PostPairingFlowModel {
     @ObservationIgnored private var isLoaded = false
     /// Whether the partner answered while the sequence ran, started as the last
     /// planned step shows (see `advance`).
-    @ObservationIgnored private var lateAnswersCheck: Task<Bool, Never>?
+    @ObservationIgnored private var lateAnswersCheck: Task<Void, Never>?
+    @ObservationIgnored private var lateAnswersWaiting = false
 
     init(
         store: any PairingCelebrationStoring,
@@ -125,6 +126,7 @@ final class PostPairingFlowModel {
         loadTask = nil
         lateAnswersCheck?.cancel()
         lateAnswersCheck = nil
+        lateAnswersWaiting = false
         gift?.stop()
         context = nil
         screen = nil
@@ -264,27 +266,20 @@ final class PostPairingFlowModel {
             return
         }
         let loader = loader
-        lateAnswersCheck = Task {
-            await loader.partnerAnswersWaiting(currentUserID: context.currentUserID)
+        lateAnswersCheck = Task { [weak self] in
+            let waiting = await loader.partnerAnswersWaiting(currentUserID: context.currentUserID)
+            guard let self, self.isCurrent(context), self.outcome == nil else { return }
+            self.lateAnswersWaiting = waiting
         }
     }
 
     private func finish() {
-        guard let check = lateAnswersCheck, let context else {
-            outcome = .us
-            return
-        }
+        lateAnswersCheck?.cancel()
         lateAnswersCheck = nil
-        Task {
-            let waiting = await check.value
-            guard self.context == context, outcome == nil else {
-                return
-            }
-            if waiting {
-                screen = .answerInvite
-            } else {
-                outcome = .us
-            }
+        if lateAnswersWaiting, screen != .answerInvite {
+            screen = .answerInvite
+        } else {
+            outcome = .us
         }
     }
 

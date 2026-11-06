@@ -42,6 +42,21 @@ struct AdminUserDetailViewModelTests {
         #expect(user.canUnban == canUnban)
     }
 
+    @Test func failingAuditHistoryStillShowsTheLoadedAccount() async {
+        let gateway = AdminFakeGateway(detail: AdminFixtures.detail(), auditError: AdminFakeError.failed)
+        let model = makeModel(gateway: gateway)
+
+        await model.load()
+        model.dismissNotice()
+
+        #expect(model.user?.userID == AdminFixtures.userID)
+        #expect(model.user?.canBan == true)
+        #expect(model.hasLoaded)
+        #expect(!model.hasLoadedHistory)
+        #expect(model.historyFailure == .other)
+        #expect(model.loadFailure == nil)
+    }
+
     @Test func reasonMustBeOneToFiveHundredCharactersAfterTrimming() {
         #expect(!AdminUserDetailViewModel.isValidReason(""))
         #expect(!AdminUserDetailViewModel.isValidReason("  \n "))

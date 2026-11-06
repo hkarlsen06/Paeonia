@@ -62,7 +62,9 @@ struct PrivacySafetyView: View {
             await viewModel.observe()
         }
         .refreshable {
-            await viewModel.load()
+            async let requests: Void = viewModel.load()
+            async let export: Void = dataExport.load()
+            _ = await (requests, export)
         }
         .onChange(of: viewModel.notice) { _, notice in
             guard let notice else {
@@ -95,6 +97,7 @@ struct PrivacySafetyView: View {
                     ) {
                         isShowingCorrectionRequest = true
                     }
+                    .accessibilityIdentifier("privacy.correction.open")
                 }
             }
         }

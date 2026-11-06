@@ -10,35 +10,7 @@ struct DataExportSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            switch viewModel.phase {
-            case .loading:
-                header(initialTitle, message: .privacySafetyDataExportDescription)
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(Text(.privacySafetyLoading))
-            case .notRequested:
-                askContent(message: .privacySafetyDataExportDescription, button: .privacySafetyDataExportPrepare)
-            case .sending:
-                askContent(
-                    message: .privacySafetyDataExportDescription,
-                    button: .privacySafetyDataExportPrepare,
-                    isSending: true
-                )
-            case let .preparing(progress):
-                preparingContent(progress: progress)
-            case let .ready(export):
-                readyContent(export)
-            case let .downloading(_, progress):
-                downloadingContent(progress)
-            case .failed:
-                failedContent
-            case .expired:
-                askContent(
-                    title: .privacySafetyDataExportExpiredTitle,
-                    message: .privacySafetyDataExportExpiredMessage,
-                    button: .privacySafetyDataExportPrepareAgain
-                )
-            }
+            content
         }
         .padding(PaeoniaSpacing.space16)
         .task {
@@ -74,6 +46,49 @@ struct DataExportSection: View {
             }
             .presentationDetents([.medium, .large])
             .presentationBackground(.paeoniaBackgroundPrimary)
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch viewModel.phase {
+        case .loading:
+            header(initialTitle, message: .privacySafetyDataExportDescription)
+            ProgressView()
+                .controlSize(.small)
+                .accessibilityLabel(Text(.privacySafetyLoading))
+        case let .unavailable(failure):
+            PaeoniaLoadFailureView(failure: failure, offlineMessage: .privacySafetyDataExportOfflineMessage) {
+                Button {
+                    Task { await viewModel.load() }
+                } label: {
+                    Text(.commonTryAgain)
+                }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+                .accessibilityIdentifier("dataExport.retryStatus")
+            }
+        case .notRequested:
+            askContent(message: .privacySafetyDataExportDescription, button: .privacySafetyDataExportPrepare)
+        case .sending:
+            askContent(
+                message: .privacySafetyDataExportDescription,
+                button: .privacySafetyDataExportPrepare,
+                isSending: true
+            )
+        case let .preparing(progress):
+            preparingContent(progress: progress)
+        case let .ready(export):
+            readyContent(export)
+        case let .downloading(_, progress):
+            downloadingContent(progress)
+        case .failed:
+            failedContent
+        case .expired:
+            askContent(
+                title: .privacySafetyDataExportExpiredTitle,
+                message: .privacySafetyDataExportExpiredMessage,
+                button: .privacySafetyDataExportPrepareAgain
+            )
         }
     }
 

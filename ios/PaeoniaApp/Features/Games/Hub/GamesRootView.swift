@@ -71,7 +71,11 @@ struct GamesRootView: View {
     private var content: some View {
         switch viewModel.screen {
         case .loading:
-            Color.clear
+            ProgressView()
+                .tint(.paeoniaAccentPrimary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationTitle(Text(.mainTabGames))
+                .navigationBarTitleDisplayMode(.inline)
         case .unavailable(let failure):
             unavailable(failure)
         case .hub:

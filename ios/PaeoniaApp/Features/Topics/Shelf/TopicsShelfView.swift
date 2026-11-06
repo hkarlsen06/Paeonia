@@ -11,14 +11,10 @@ struct TopicsShelfView: View {
 
     var body: some View {
         ScrollView {
-            TopicShelfGrid(
-                topics: viewModel.overview,
-                newQuestionCount: viewModel.newQuestionCount(for:),
-                onOpenTopic: onOpenTopic
-            )
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.vertical, PaeoniaSpacing.space16)
-            .paeoniaReadableWidth()
+            content
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.vertical, PaeoniaSpacing.space16)
+                .paeoniaReadableWidth()
         }
         .refreshable { await viewModel.refreshOverview() }
         .paeoniaTabBackdrop()
@@ -26,6 +22,37 @@ struct TopicsShelfView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
         .analyticsScreen("topics")
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if !viewModel.hasLoadedOverview, let failure = viewModel.overviewFailure {
+            PaeoniaLoadFailureView(failure: failure, offlineMessage: .topicsNoticeOfflineMessage) {
+                Button {
+                    Task { await viewModel.refreshOverview() }
+                } label: {
+                    Text(.commonTryAgain)
+                }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+                .accessibilityIdentifier("topics.retryOverview")
+            }
+        } else if !viewModel.hasLoadedOverview {
+            ProgressView()
+                .tint(.paeoniaAccentPrimary)
+                .frame(maxWidth: .infinity)
+        } else if viewModel.overview.isEmpty {
+            PaeoniaEmptyStateView(
+                title: .topicsShelfEmptyTitle,
+                message: .topicsShelfEmptyMessage,
+                systemImage: "books.vertical"
+            )
+        } else {
+            TopicShelfGrid(
+                topics: viewModel.overview,
+                newQuestionCount: viewModel.newQuestionCount(for:),
+                onOpenTopic: onOpenTopic
+            )
+        }
     }
 
     private func showBanner(for notice: TopicsViewModel.Notice?) {
