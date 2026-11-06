@@ -1,131 +1,173 @@
+import CoreLocation
 import Foundation
+import MapLibre
 import Testing
+import UIKit
+import XCTest
 @testable import PaeoniaApp
 
 @MainActor
 struct HomeMapTileStatusTests {
-    private let suite = "HomeMapTileStatusTests.\(UUID().uuidString)"
-
-    @Test func outageSurvivesLateMapCompletionAndRechecksOnRelaunch() async throws {
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let status = HomeMapTileStatus(defaults: defaults) { _ in throw URLError(.badServerResponse) }
-
+    @Test func failedProbeFallsBackButDoesNotDisableTheNextLaunch() async {
+        let status = HomeMapTileStatus { _ in throw URLError(.badServerResponse) }
         await status.mapDidNotLoad()
-        let retryAfter = try #require(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) as? Date)
         #expect(!status.showsMapHeader)
 
-        let restored = HomeMapTileStatus(defaults: defaults) { _ in }
-        await restored.checkIfDue()
-        status.mapLoaded()
-        #expect(restored.showsMapHeader)
-        #expect(!status.showsMapHeader)
-        #expect(retryAfter > .now)
-        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) == nil)
+        let relaunched = HomeMapTileStatus { _ in }
+        #expect(relaunched.showsMapHeader)
+        await relaunched.mapDidNotLoad()
+        #expect(relaunched.tiles == .available)
     }
 
-    @Test func failedLaunchCheckKeepsFallbackWithoutProbingAgainBeforeRetry() async throws {
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let retryAfter = Date.now.addingTimeInterval(3_600)
-        defaults.set(retryAfter, forKey: HomeMapTileStatus.retryAfterKey)
+    @Test func lateMapCompletionRecoversFromFailedProbe() async {
+        let status = HomeMapTileStatus { _ in throw URLError(.badServerResponse) }
+        await status.mapDidNotLoad()
+        #expect(!status.showsMapHeader)
+
+        status.mapLoaded()
+
+        #expect(status.tiles == .available)
+        #expect(status.showsMapHeader)
+    }
+
+    @Test func returningToAppRechecksBeforeRetryDate() async {
+        var serviceWorks = false
+        let status = HomeMapTileStatus { _ in
+            if !serviceWorks { throw URLError(.badServerResponse) }
+        }
+        await status.mapDidNotLoad()
+        #expect(!status.showsMapHeader)
+        serviceWorks = true
+        await status.checkOnReturn()
+        #expect(status.tiles == .available)
+    }
+
+    @Test func automaticChecksWaitBetweenEndpointFailures() async throws {
         var checks = 0
-        let status = HomeMapTileStatus(defaults: defaults) { _ in
+        let status = HomeMapTileStatus { _ in
             checks += 1
             throw URLError(.badServerResponse)
         }
-
-        await status.checkIfDue()
-        await status.checkIfDue()
-
-        #expect(checks == 1)
-        #expect(!status.showsMapHeader)
-        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) as? Date == retryAfter)
-    }
-
-    @Test func cancelledLaunchCheckCanRetryBeforeTheSavedRetryDate() async throws {
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set(Date.now.addingTimeInterval(3_600), forKey: HomeMapTileStatus.retryAfterKey)
-        var checks = 0
-        let status = HomeMapTileStatus(defaults: defaults) { _ in
-            checks += 1
-            if checks == 1 { throw CancellationError() }
-        }
-
-        await status.checkIfDue()
-        #expect(!status.showsMapHeader)
-        await status.checkIfDue()
-
-        #expect(status.showsMapHeader)
-        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) == nil)
-    }
-
-    @Test func offlineKeepsHeaderAndDoesNotRememberAnOutage() async throws {
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let status = HomeMapTileStatus(defaults: defaults) { _ in throw URLError(.notConnectedToInternet) }
-
         await status.mapDidNotLoad()
+        await status.checkIfDue()
+        #expect(checks == 1)
+        guard case let .unavailable(retryAfter) = status.tiles else {
+            Issue.record("Failed endpoint must show the fallback")
+            return
+        }
+        #expect(retryAfter > .now)
+        #expect(retryAfter.timeIntervalSinceNow <= 60)
+    }
 
+    @Test func cancelledRecoveryCanRetryOnNextReturn() async {
+        var checks = 0
+        let status = HomeMapTileStatus { _ in
+            checks += 1
+            if checks == 1 { throw URLError(.badServerResponse) }
+            if checks == 2 { throw CancellationError() }
+        }
+        await status.mapDidNotLoad()
+        await status.checkOnReturn()
+        #expect(!status.showsMapHeader)
+        await status.checkOnReturn()
+        #expect(status.tiles == .available)
+    }
+
+    @Test func offlineKeepsHeaderAndRecoversWhenConnectionReturns() async {
+        var isOffline = true
+        let status = HomeMapTileStatus { _ in
+            if isOffline { throw URLError(.notConnectedToInternet) }
+        }
+        await status.mapDidNotLoad()
         #expect(status.tiles == .offline)
         #expect(status.showsMapHeader)
-        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) == nil)
+        isOffline = false
+        await status.checkOnReturn()
+        #expect(status.tiles == .available)
     }
 
-    @Test func recoveryRequiresAWorkingConnection() async throws {
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set(Date.distantPast, forKey: HomeMapTileStatus.retryAfterKey)
-        let offline = HomeMapTileStatus(defaults: defaults) { _ in throw URLError(.notConnectedToInternet) }
-
-        await offline.checkIfDue()
-        #expect(!offline.showsMapHeader)
-        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) != nil)
-
-        let recovered = HomeMapTileStatus(defaults: defaults) { _ in }
-        await recovered.checkIfDue()
-        #expect(recovered.showsMapHeader)
-        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) == nil)
-    }
-
-    @Test func aStalledMapFallsBackEvenWhenTheServiceAnswers() async throws {
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let status = HomeMapTileStatus(defaults: defaults) { _ in }
-
+    @Test func offlineProbeCannotClearAnEndpointFailure() async {
+        var isOffline = false
+        let status = HomeMapTileStatus { _ in
+            throw URLError(isOffline ? .notConnectedToInternet : .badServerResponse)
+        }
         await status.mapDidNotLoad()
-
+        isOffline = true
+        await status.checkOnReturn()
         #expect(!status.showsMapHeader)
     }
 
-    @Test func cancelledProbeDoesNotBecomeAnOutage() async throws {
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let status = HomeMapTileStatus(defaults: defaults) { _ in throw URLError(.cancelled) }
-
+    @Test func slowRenderKeepsMapWhenEndpointsAnswer() async {
+        let status = HomeMapTileStatus { _ in }
         await status.mapDidNotLoad()
-
-        #expect(status.tiles == .trying)
-        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) == nil)
+        #expect(status.tiles == .available)
+        #expect(status.showsMapHeader)
+        // A repeated timeout must also leave a reachable map alone.
+        await status.mapDidNotLoad()
+        #expect(status.showsMapHeader)
     }
 
-    @Test func freshMapCompletionWinsOverAnOlderProbe() async throws {
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+    @Test func cancelledProbeDoesNotBecomeAnOutage() async {
+        let status = HomeMapTileStatus { _ in throw URLError(.cancelled) }
+        await status.mapDidNotLoad()
+        #expect(status.tiles == .trying)
+        #expect(status.showsMapHeader)
+    }
+
+    @Test func freshMapCompletionWinsOverAnOlderProbe() async {
         var onCheck: (() -> Void)?
-        let status = HomeMapTileStatus(defaults: defaults) { _ in
+        let status = HomeMapTileStatus { _ in
             onCheck?()
             throw URLError(.badServerResponse)
         }
-        status.mapLoaded()
         onCheck = { status.mapLoaded() }
-
         await status.mapDidNotLoad()
         onCheck = nil
-
         #expect(status.tiles == .available)
-        #expect(defaults.object(forKey: HomeMapTileStatus.retryAfterKey) == nil)
+    }
+
+    @Test(arguments: [false, true])
+    func repeatedDelegateFailureWaitsForCancelledProbeBeforeRetrying(afterBackgrounding: Bool) async throws {
+        let started = XCTestExpectation(description: "First endpoint check started")
+        var finishFirst: CheckedContinuation<Void, Never>?
+        var checks = 0
+        let status = HomeMapTileStatus { _ in
+            checks += 1
+            if checks == 1 {
+                await withCheckedContinuation { continuation in
+                    finishFirst = continuation
+                    started.fulfill()
+                }
+                throw CancellationError()
+            }
+        }
+        let coordinator = HomeMapLibreView.Coordinator()
+        let map = MLNMapView(frame: .zero, styleURL: HomeMapLibreView.styleURL)
+        coordinator.parent = HomeMapLibreView(
+            current: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+            partner: CLLocationCoordinate2D(latitude: 1, longitude: 1),
+            isNear: false, framedBox: .zero, avatarSize: 60, tiles: status, onProjection: { _ in }
+        )
+        defer {
+            finishFirst?.resume()
+            coordinator.stopWatchingLoad()
+        }
+        coordinator.mapViewDidFailLoadingMap(map, withError: URLError(.timedOut))
+        let result = await XCTWaiter.fulfillment(of: [started], timeout: 3)
+        try #require(result == .completed)
+
+        if afterBackgrounding {
+            NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
+        }
+        coordinator.mapViewDidFailLoadingMap(map, withError: URLError(.timedOut))
+        // Let the replacement run while cancellation of the first request is still pending.
+        await Task.yield()
+        finishFirst?.resume()
+        finishFirst = nil
+        await coordinator.loadTask?.value
+
+        #expect(checks == 2)
+        #expect(status.tiles == .available)
     }
 
     @Test(arguments: [200, 503])

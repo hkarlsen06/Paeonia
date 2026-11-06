@@ -1,4 +1,5 @@
 import MapLibre
+import OSLog
 import UIKit
 
 extension HomeMapLibreView {
@@ -8,7 +9,8 @@ extension HomeMapLibreView {
         /// MapLibre drops timed camera moves until the map has loaded.
         var isLoaded = false
         private var didFail = false
-        private var loadTask: Task<Void, Never>?
+        private(set) var loadTask: Task<Void, Never>?
+        private var retryTask: Task<Void, Never>?
         weak var map: MLNMapView?
         var intro = Intro.none
         /// From 0 to 1 as the intro carries the avatars to their places. 1 without an intro.
@@ -93,6 +95,8 @@ extension HomeMapLibreView {
 
         func mapViewDidFinishLoadingMap(_ mapView: MLNMapView) {
             loadTask?.cancel()
+            retryTask?.cancel()
+            retryTask = nil
             isLoaded = true
             didFail = false
             parent?.tiles.mapLoaded()
@@ -100,28 +104,45 @@ extension HomeMapLibreView {
         }
 
         func mapViewDidFailLoadingMap(_ mapView: MLNMapView, withError error: any Error) {
+            let underlying = error as NSError
+            HomeMapTileStatus.logger.error("""
+                MapLibre load failed: domain=\(underlying.domain, privacy: .public) \
+                code=\(underlying.code) detail=\(underlying.localizedDescription, privacy: .private)
+                """)
             isLoaded = false
             didFail = true
-            guard let tiles = parent?.tiles else { return }
-            loadTask?.cancel()
-            loadTask = Task { await tiles.mapDidNotLoad() }
+            checkAfterLoadFailure(mapView)
         }
 
-        /// A map that has not drawn within `HomeMapTileStatus.loadTimeout` of active app time
-        /// counts as failed. MapLibre draws nothing while the app is inactive, as when iOS
-        /// launches it behind the lock screen, so the wait starts over once the app is active.
+        private func checkAfterLoadFailure(_ mapView: MLNMapView) {
+            guard UIApplication.shared.applicationState == .active, let tiles = parent?.tiles else { return }
+            let previous = loadTask
+            previous?.cancel()
+            loadTask = Task { [weak self, weak mapView] in
+                await previous?.value
+                guard !Task.isCancelled else { return }
+                await tiles.mapDidNotLoad()
+                guard !Task.isCancelled, let self, let mapView else { return }
+                self.reloadIfTilesReturned(mapView)
+            }
+        }
+
+        /// Checks reachability after a loading delay, without interrupting the renderer.
+        /// MapLibre pauses rendering while the app is inactive, so the timer restarts on return.
         func watchLoad() {
-            loadTask?.cancel()
-            loadTask = nil
+            let previous = loadTask
+            previous?.cancel()
             guard UIApplication.shared.applicationState == .active else { return }
             loadTask = Task { [weak self] in
+                await previous?.value
+                guard !Task.isCancelled else { return }
                 do {
                     try await Task.sleep(for: HomeMapTileStatus.loadTimeout)
                 } catch {
                     return
                 }
                 guard let self, !self.isLoaded, let tiles = self.parent?.tiles else { return }
-                self.didFail = true
+                HomeMapTileStatus.logger.notice("Map still loading after 10 active seconds; checking endpoints")
                 await tiles.mapDidNotLoad()
             }
         }
@@ -139,32 +160,51 @@ extension HomeMapLibreView {
         private var isWaitingForLoad: Bool { parent != nil && !isLoaded && !didFail }
 
         @objc private func appDidBecomeActive() {
-            guard isWaitingForLoad else { return }
-            watchLoad()
+            if didFail, let map { checkAfterLoadFailure(map) }
+            if isWaitingForLoad { watchLoad() }
         }
 
         @objc private func appWillResignActive() {
-            guard isWaitingForLoad else { return }
+            retryTask?.cancel()
+            retryTask = nil
             loadTask?.cancel()
-            loadTask = nil
         }
 
         func stopWatchingLoad() {
             loadTask?.cancel()
             loadTask = nil
+            retryTask?.cancel()
+            retryTask = nil
             parent = nil
         }
 
         /// MapLibre gives up on a style that failed to load. Once a check finds OpenFreeMap
         /// answering again, the map asks for it once more.
         func reloadIfTilesReturned(_ map: MLNMapView) {
-            guard didFail, !isLoaded, parent?.tiles.tiles == .available else { return }
-            didFail = false
-            watchLoad()
-            map.reloadStyle(nil)
+            guard didFail, !isLoaded, parent?.tiles.tiles == .available,
+                  UIApplication.shared.applicationState == .active, retryTask == nil else { return }
+            // An actual style failure needs a reload. Space retries so a reachable but
+            // invalid style cannot cause a reload loop.
+            retryTask = Task { [weak self, weak map] in
+                do {
+                    try await Task.sleep(for: .seconds(30))
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled, let self else { return }
+                self.retryTask = nil
+                guard let map, self.didFail, !self.isLoaded,
+                      self.parent?.tiles.tiles == .available,
+                      UIApplication.shared.applicationState == .active else { return }
+                HomeMapTileStatus.logger.notice("Retrying MapLibre style after a load error")
+                self.didFail = false
+                self.watchLoad()
+                map.reloadStyle(nil)
+            }
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
+            HomeMapTileStatus.logger.notice("MapLibre style loaded")
             HomeMapLibreView.recolor(style)
         }
     }

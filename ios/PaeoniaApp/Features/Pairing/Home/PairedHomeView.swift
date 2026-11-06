@@ -176,7 +176,7 @@ struct PairedHomeView: View {
                 Task {
                     await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
                 }
-                Task { await mapTiles.checkIfDue() }
+                Task { await mapTiles.checkOnReturn() }
             }
         }
         .task(id: mapTiles.tiles) {

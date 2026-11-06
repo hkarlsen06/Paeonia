@@ -1,75 +1,54 @@
 import Foundation
 import Observation
+import OSLog
 
-/// Whether OpenFreeMap can draw Home's map. OpenFreeMap promises no uptime, so while it is
-/// down Home shows the couple on the map card (`CoupleMapCard`) instead.
+/// Reachability of Home's map endpoints. Rendering delays do not establish an outage.
 nonisolated enum HomeMapTiles: Equatable, Sendable {
-    /// Nothing is known yet. Home shows the map header.
     case trying
     case available
-    /// The phone has no connection. The map header stays, since the map returns with the connection.
+    /// The map stays visible while the phone has no connection.
     case offline
-    /// OpenFreeMap failed while the phone was online. Home shows the map card until a check
-    /// from `retryAfter` on gets an answer.
+    /// An endpoint check failed. The map card stays until a check succeeds.
     case unavailable(retryAfter: Date)
 }
 
-/// Works out `HomeMapTiles` from what the map reports and from quiet checks of OpenFreeMap.
-/// It remembers an outage across launches and rechecks it when Home appears.
 @Observable
 final class HomeMapTileStatus {
-    private(set) var tiles: HomeMapTiles
+    private(set) var tiles: HomeMapTiles = .trying
     let styleURL: URL
-    @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let check: (URL) async throws -> Void
     @ObservationIgnored private var isChecking = false
     @ObservationIgnored private var loadRevision = 0
-    @ObservationIgnored private var needsLaunchCheck: Bool
 
-    /// How long the map may take to draw before Home checks whether OpenFreeMap answers.
     static let loadTimeout: Duration = .seconds(10)
-    /// An outage usually lasts a while. Waiting this long before showing the map header again
-    /// keeps Home from switching layouts back and forth.
-    private static let retryDelay: TimeInterval = 3 * 60 * 60
-    static let retryAfterKey = "home.mapTiles.retryAfter"
+    private static let retryDelay: TimeInterval = 60
+    nonisolated static let logger = Logger(subsystem: "no.paeonia.app", category: "HomeMap")
 
     init(
         styleURL: URL = HomeMapLibreView.styleURL,
-        defaults: UserDefaults = .standard,
         check: @escaping (URL) async throws -> Void = { try await HomeMapTileStatus.fetchStyle($0) }
     ) {
         self.styleURL = styleURL
-        self.defaults = defaults
         self.check = check
-        needsLaunchCheck = defaults.object(forKey: Self.retryAfterKey) is Date
-        tiles = (defaults.object(forKey: Self.retryAfterKey) as? Date)
-            .map { .unavailable(retryAfter: $0) } ?? .trying
     }
 
-    /// False while OpenFreeMap is down, so Home shows the map card instead of the map header.
     var showsMapHeader: Bool {
         if case .unavailable = tiles { false } else { true }
     }
 
     func mapLoaded() {
-        guard showsMapHeader else { return }
         loadRevision += 1
+        Self.logger.notice("Map finished loading")
         update(.available)
     }
 
-    /// The map failed to load or took too long. Finds out whether the phone is offline or
-    /// OpenFreeMap is down.
+    /// A render delay or delegate error prompts a separate reachability check.
     func mapDidNotLoad() async {
         guard showsMapHeader else { return }
-        await checkTiles(mapDidNotLoad: true)
+        await checkTiles()
     }
 
-    /// Checks right away when the person comes back to the app and the map could be back.
     func checkIfDue() async {
-        if needsLaunchCheck {
-            await checkTiles()
-            return
-        }
         switch tiles {
         case .offline:
             await checkTiles()
@@ -80,91 +59,90 @@ final class HomeMapTileStatus {
         }
     }
 
-    /// While Home is on screen, checks every half minute while offline, and every few minutes
-    /// from `retryAfter` on while OpenFreeMap is down. Returns when the map works again.
+    /// Returning to the app can recover immediately, without waiting for the retry date.
+    func checkOnReturn() async {
+        switch tiles {
+        case .offline, .unavailable:
+            await checkTiles()
+        case .trying, .available:
+            break
+        }
+    }
+
     func watch() async {
         await checkIfDue()
-        var hasChecked = false
-        while let delay = nextCheck(afterCheck: hasChecked) {
+        while let delay = nextCheck {
             do {
                 try await Task.sleep(for: delay)
             } catch {
                 return
             }
             await checkTiles()
-            hasChecked = true
         }
     }
 
-    private func nextCheck(afterCheck: Bool) -> Duration? {
-        // A previous Home visit may still be cancelling its probe. Try again once it ends.
-        if needsLaunchCheck { return .seconds(1) }
+    private var nextCheck: Duration? {
         switch tiles {
         case .trying, .available:
             return nil
         case .offline:
             return .seconds(30)
         case let .unavailable(retryAfter):
-            let untilRetry = retryAfter.timeIntervalSinceNow
-            if untilRetry > 0 { return .seconds(untilRetry) }
-            return afterCheck ? .seconds(5 * 60) : .zero
+            return .seconds(max(1, retryAfter.timeIntervalSinceNow))
         }
     }
 
-    private func checkTiles(mapDidNotLoad: Bool = false) async {
+    private func checkTiles() async {
         guard !isChecking else { return }
         isChecking = true
         defer { isChecking = false }
-        let before = tiles
         let revision = loadRevision
         let failure: PaeoniaFailure?
         do {
             try await check(styleURL)
             failure = nil
+            Self.logger.notice("Map endpoint check succeeded")
         } catch is CancellationError {
+            Self.logger.debug("Map endpoint check cancelled")
             return
         } catch let error as URLError where error.code == .cancelled {
+            Self.logger.debug("Map endpoint request cancelled")
             return
         } catch {
+            let underlying = error as NSError
+            Self.logger.error("""
+                Map endpoint check failed: domain=\(underlying.domain, privacy: .public) \
+                code=\(underlying.code) detail=\(underlying.localizedDescription, privacy: .private)
+                """)
             failure = PaeoniaFailure(error)
         }
-        // The map may have loaded meanwhile, and a cancelled check says nothing about OpenFreeMap.
-        guard tiles == before, loadRevision == revision, !Task.isCancelled else { return }
-        needsLaunchCheck = false
-        applyProbeResult(failure, mapDidNotLoad: mapDidNotLoad)
+        // A completed map takes precedence over an older probe.
+        guard loadRevision == revision, !Task.isCancelled else { return }
+        applyProbeResult(failure)
     }
 
-    private func applyProbeResult(_ failure: PaeoniaFailure?, mapDidNotLoad: Bool) {
-        switch (failure, tiles) {
-        case (nil, _) where mapDidNotLoad:
-            // Reachable endpoints do not mean the map drew. Keep a stalled map off Home.
-            update(.unavailable(retryAfter: .now.addingTimeInterval(Self.retryDelay)))
-        case (nil, _):
+    private func applyProbeResult(_ failure: PaeoniaFailure?) {
+        switch failure {
+        case nil:
             update(.available)
-        case (.offline, .unavailable):
-            // No connection says nothing about OpenFreeMap. Keep the map card until a check gets an answer.
-            break
-        case (.offline, _):
-            update(.offline)
-        case (.other, .unavailable):
-            // Still down. Keep the first `retryAfter`, so checks go on every few minutes.
-            break
-        case (.other, _):
+        case .offline:
+            if case .unavailable = tiles {
+                update(.unavailable(retryAfter: .now.addingTimeInterval(Self.retryDelay)))
+            } else {
+                update(.offline)
+            }
+        case .other:
             update(.unavailable(retryAfter: .now.addingTimeInterval(Self.retryDelay)))
         }
     }
 
     private func update(_ next: HomeMapTiles) {
         guard tiles != next else { return }
+        Self.logger.notice("""
+            Map reachability changed: \(String(describing: self.tiles), privacy: .public) \
+            to \(String(describing: next), privacy: .public)
+            """)
         tiles = next
-        switch next {
-        case .available:
-            defaults.removeObject(forKey: Self.retryAfterKey)
-        case let .unavailable(retryAfter):
-            defaults.set(retryAfter, forKey: Self.retryAfterKey)
-        case .trying, .offline:
-            break
-        }
     }
 }
 
@@ -172,10 +150,12 @@ extension HomeMapTileStatus {
     /// Checks a world tile too. The style and its source description can work while
     /// OpenFreeMap's tile server is down.
     nonisolated static func fetchStyle(_ url: URL, session: URLSession = .shared) async throws {
-        let style = try await JSONDecoder().decode(Style.self, from: fetch(url, session: session))
+        let style = try await JSONDecoder().decode(Style.self, from: fetch(url, stage: "style", session: session))
         for source in style.sources.values where source.type == "vector" {
             guard let sourceURL = source.url else { throw URLError(.badServerResponse) }
-            let tileJSON = try await JSONDecoder().decode(TileJSON.self, from: fetch(sourceURL, session: session))
+            let tileJSON = try await JSONDecoder().decode(
+                TileJSON.self, from: fetch(sourceURL, stage: "source", session: session)
+            )
             guard let template = tileJSON.tiles.first,
                   let tileURL = URL(string: template
                     .replacingOccurrences(of: "{z}", with: "0")
@@ -183,15 +163,20 @@ extension HomeMapTileStatus {
                     .replacingOccurrences(of: "{y}", with: "0")) else {
                 throw URLError(.badServerResponse)
             }
-            _ = try await fetch(tileURL, session: session)
+            _ = try await fetch(tileURL, stage: "world tile", session: session)
         }
     }
 
-    private nonisolated static func fetch(_ url: URL, session: URLSession) async throws -> Data {
+    private nonisolated static func fetch(
+        _ url: URL, stage: String, session: URLSession
+    ) async throws -> Data {
         // A cached answer would hide an outage.
         let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
+        logger.notice("Checking map endpoint: \(stage, privacy: .public)")
         let (data, response) = try await session.data(for: request)
-        guard let status = (response as? HTTPURLResponse)?.statusCode, (200..<300).contains(status) else {
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        logger.notice("Endpoint check: \(stage, privacy: .public), HTTP \(status)")
+        guard (200..<300).contains(status) else {
             throw URLError(.badServerResponse)
         }
         return data

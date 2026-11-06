@@ -23,7 +23,7 @@
       memoriesEmpty, memoriesPopulated, memoriesCards, memoryEditor, memoryDetail,
       countdownMissing, countdownUpcoming, countdownToday,
       locationNotSharing, locationCurrentMissing, locationLive, locationStale, homeMapOutage, homeMapOffline,
-      homeMapRecovery,
+      homeMapRecovery, homeMapSlowRender,
       widgetDrawing, widgetHistoryEmpty, widgetHistoryPopulated, widgetHistoryFocused,
       gamesSetup, gamesPartnerPicked, gamesHubYourTurn, gamesHubWaiting, gamesHubReveal, gamesHubPartnerHere,
       gamesHubBoardGames, gamesHubQuiet,
