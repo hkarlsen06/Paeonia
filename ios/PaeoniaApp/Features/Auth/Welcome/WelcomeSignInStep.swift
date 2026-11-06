@@ -186,33 +186,43 @@ struct WelcomeSignInStep: View {
 
     private var appleButton: some View {
         Button(action: onAppleSignIn) {
-            Label {
-                Text(.authSignInAppleButton)
-            } icon: {
+            HStack(spacing: PaeoniaSpacing.space12) {
                 Image(systemName: "apple.logo")
+                    .frame(width: PaeoniaSpacing.space24)
+                    .accessibilityHidden(true)
+                Text(.authSignInAppleButton)
+                    .frame(maxWidth: .infinity)
+                Color.clear
+                    .frame(width: PaeoniaSpacing.space24, height: 1)
                     .accessibilityHidden(true)
             }
+            .accessibilityElement(children: .combine)
         }
         // Apple's sign-in button rules allow a custom button in black or white with the
         // Apple logo. White reads best on the plum background.
-        .buttonStyle(AppleSignInButtonStyle(isLoading: signingInWith == .apple))
+        .buttonStyle(WelcomeSignInButtonStyle(provider: .apple, isLoading: signingInWith == .apple))
         .disabled(isWorking && signingInWith != .apple)
         .accessibilityIdentifier("auth.signIn.apple")
     }
 
     private var googleButton: some View {
         Button(action: onGoogleSignIn) {
-            Label {
-                Text(.authSignInGoogleButton)
-            } icon: {
+            HStack(spacing: PaeoniaSpacing.space12) {
                 Image(.googleG)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 18, height: 18)
+                    .frame(width: PaeoniaSpacing.space24)
+                    .accessibilityHidden(true)
+                Text(.authSignInGoogleButton)
+                    .frame(maxWidth: .infinity)
+                Color.clear
+                    .frame(width: PaeoniaSpacing.space24, height: 1)
                     .accessibilityHidden(true)
             }
+            .accessibilityElement(children: .combine)
         }
-        .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: signingInWith == .google))
+        .buttonStyle(WelcomeSignInButtonStyle(provider: .google, isLoading: signingInWith == .google))
         .disabled(isWorking && signingInWith != .google)
         .accessibilityIdentifier("auth.signIn.google")
     }
@@ -306,13 +316,15 @@ private struct WelcomeLegalLinks: View {
     }
 }
 
-/// White "Continue with Apple" button with a black label, matching Apple's rules for
-/// custom Sign in with Apple buttons. While loading it keeps its size, shows a spinner,
-/// and ignores taps.
-private struct AppleSignInButtonStyle: ButtonStyle {
+/// Matching provider buttons keep their labels in place during sign-in.
+private struct WelcomeSignInButtonStyle: ButtonStyle {
+    let provider: AuthProvider
     let isLoading: Bool
 
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var labelColor: Color { provider == .apple ? .black : .paeoniaTextPrimary }
 
     func makeBody(configuration: Configuration) -> some View {
         let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
@@ -320,22 +332,33 @@ private struct AppleSignInButtonStyle: ButtonStyle {
         return configuration.label
             .font(PaeoniaTypography.button)
             .multilineTextAlignment(.center)
-            .foregroundStyle(.black)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, PaeoniaSpacing.space16)
+            .padding(.vertical, PaeoniaSpacing.space12)
+            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
+            .foregroundStyle(labelColor)
             .opacity(isLoading ? 0 : 1)
             .overlay {
                 if isLoading {
                     ProgressView()
-                        .tint(.black)
+                        .tint(labelColor)
                         .accessibilityHidden(true)
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
-            .padding(.horizontal, PaeoniaSpacing.space16)
-            .background(.white.opacity(configuration.isPressed ? 0.85 : 1), in: shape)
+            .background(
+                provider == .apple ? Color.white : Color.paeoniaSurfacePrimary,
+                in: shape
+            )
+            .overlay {
+                if provider == .google {
+                    shape.strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
+                }
+            }
+            .opacity(configuration.isPressed ? 0.85 : 1)
             .opacity(isEnabled || isLoading ? 1 : 0.5)
             .contentShape(shape)
-            .scaleEffect(configuration.isPressed && !isLoading ? 0.98 : 1)
-            .animation(PaeoniaMotion.buttonPress, value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed && !isLoading && !reduceMotion ? 0.98 : 1)
+            .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: configuration.isPressed)
             .allowsHitTesting(!isLoading)
             .accessibilityValue(isLoading ? Text(.commonLoading) : Text(verbatim: ""))
     }
