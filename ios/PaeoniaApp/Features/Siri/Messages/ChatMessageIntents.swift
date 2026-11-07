@@ -68,10 +68,14 @@ struct SetChatMessageReadStatusIntent {
         let current = try await SiriChats.resolve(message, couple: couple)
         guard let threadID = current.threadID else { throw SiriFailure(.siriMessagesUnavailable) }
         let service = ThreadChatServiceFactory.makeDefault()
-        await service.markThreadRead(
-            ownerUserID: couple.ownerUserID, threadID: threadID,
-            through: ThreadChatMessageCursor(createdAt: current.createdAt, messageID: current.id))
+        let through = ThreadChatMessageCursor(createdAt: current.createdAt, messageID: current.id)
+        await service.markThreadRead(ownerUserID: couple.ownerUserID, threadID: threadID, through: through)
         await service.markThreadReadOnServer(threadID: threadID, messageID: current.id)
+        // As in the chat, the alerts of the messages now read go away.
+        let read = await service.cachedMessages(ownerUserID: couple.ownerUserID, subjectID: current.subjectID)
+            .filter { ThreadChatMessageCursor(createdAt: $0.createdAt, messageID: $0.id) <= through }
+            .map(\.id)
+        await DeliveredNotifications.clearMessages(Set(read + [current.id]))
         return .result()
     }
 }

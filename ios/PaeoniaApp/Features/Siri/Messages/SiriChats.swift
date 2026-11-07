@@ -85,11 +85,13 @@ enum SiriChats {
             let read =
                 message.senderUserID == couple.ownerUserID
                 || readThrough.map { $0 >= cursor } == true
+            // A voice message's text is its transcript, which the chat shows under it.
+            let text = message.body.trimmedNonEmpty ?? message.voice?.transcript?.trimmedNonEmpty ?? ""
             entities.append(
                 ChatMessageEntity(
                     id: message.id, author: author, isRead: read,
                     conversation: conversation, date: message.createdAt,
-                    body: AttributedString(message.body)))
+                    body: AttributedString(text)))
         }
         return entities
     }
