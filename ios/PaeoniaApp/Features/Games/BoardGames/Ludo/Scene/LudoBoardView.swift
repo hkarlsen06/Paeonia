@@ -112,6 +112,11 @@ private struct LudoBoardScene: View {
                 stage.setAspect(aspect, fitHeight: Double(fitHeight))
             }
         }
+        .task {
+            // Navigation can retain a loaded scene. The screen waits for readiness
+            // on every appearance, so report it again without rebuilding the board.
+            if isSceneReady { inputs.onShown() }
+        }
         .onChange(of: stageInput, initial: true) { sync() }
         .onChange(of: inputs.showsOutcome) {
             if !inputs.showsOutcome { bloomStart = nil }
