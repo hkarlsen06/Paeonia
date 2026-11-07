@@ -6,9 +6,11 @@ extension EnvironmentValues {
     @Entry var dailyPromptIsInline = false
 }
 
-/// PROTOTYPE. Today's question as part of Home's page: the sealed envelope on its own,
-/// then the title, the question, the button and the partner's waiting questions, centered,
-/// with no card around them.
+/// PROTOTYPE. Today's question as part of Home's page: the sealed envelope beside the
+/// title and the question, then the button and the partner's waiting questions, with no
+/// card around them. The envelope sits beside the words so the map above keeps its height,
+/// and with it room to show both partners north up. At accessibility text sizes the words
+/// need the full width, so the envelope goes back above them.
 struct DailyPromptInlineHero: View {
     let state: DailyChallengeCardState
     let art: DailyPromptCardArt
@@ -20,28 +22,17 @@ struct DailyPromptInlineHero: View {
     var onAnswer: () -> Void
     var onOpenPartnerQuestion: (UUID) -> Void
 
-    private static let envelopeWidth: CGFloat = 132
+    private static let envelopeWidth: CGFloat = 112
+    private static let stackedEnvelopeWidth: CGFloat = 132
 
     @Environment(\.homeMapExplorer) private var homeMapExplorer
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var isStacked: Bool { dynamicTypeSize.isAccessibilitySize }
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            VStack(spacing: PaeoniaSpacing.space16) {
-                Button(action: onAnswer) {
-                    DailyPromptSealedEnvelope(
-                        width: Self.envelopeWidth, seal: art.seal, sealBreak: sealBreak, opening: envelopeOpening
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(copy.isLoading)
-                .accessibilityHidden(true)
-                // Not part of the loading look, since the day may turn out done and swap to
-                // the short row. It fades in when a question to answer arrives.
-                .opacity(copy.isLoading ? 0 : 1)
-                .animation(PaeoniaMotion.loadingReveal, value: copy.isLoading)
-
-                titleAndMessage
-            }
+            envelopeAndWords
             // The envelope and the words lie on Home's map, so a drag or a pinch on them or
             // beside them moves the map. A tap on the envelope still opens the question.
             .homeMapRows("question", homeMapExplorer)
@@ -65,8 +56,31 @@ struct DailyPromptInlineHero: View {
         .frame(maxWidth: .infinity)
     }
 
+    private var envelopeAndWords: some View {
+        let layout = isStacked
+            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space16))
+        return layout {
+            Button(action: onAnswer) {
+                DailyPromptSealedEnvelope(
+                    width: isStacked ? Self.stackedEnvelopeWidth : Self.envelopeWidth,
+                    seal: art.seal, sealBreak: sealBreak, opening: envelopeOpening
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(copy.isLoading)
+            .accessibilityHidden(true)
+            // Not part of the loading look, since the day may turn out done and swap to
+            // the short row. It fades in when a question to answer arrives.
+            .opacity(copy.isLoading ? 0 : 1)
+            .animation(PaeoniaMotion.loadingReveal, value: copy.isLoading)
+
+            titleAndMessage
+        }
+    }
+
     private var titleAndMessage: some View {
-        VStack(spacing: PaeoniaSpacing.space4) {
+        VStack(alignment: isStacked ? .center : .leading, spacing: PaeoniaSpacing.space4) {
             Text(copy.title)
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
@@ -87,10 +101,10 @@ struct DailyPromptInlineHero: View {
             .font(PaeoniaTypography.body)
             .accessibilityHidden(copy.isLoading)
         }
-        .multilineTextAlignment(.center)
-        // Full width, so the lines stay centered in the geometry group while the shorter
-        // question replaces the placeholder.
-        .frame(maxWidth: .infinity)
+        .multilineTextAlignment(isStacked ? .center : .leading)
+        // The rest of the width, so the lines keep their place in the geometry group while
+        // the shorter question replaces the placeholder.
+        .frame(maxWidth: .infinity, alignment: isStacked ? .center : .leading)
         .overlay {
             if copy.isLoading {
                 Color.clear
