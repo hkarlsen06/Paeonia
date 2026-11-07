@@ -15,6 +15,8 @@
 # with a different --out each time. Scenario ids are in
 # ios/PaeoniaApp/App/DeveloperScenarios/DeveloperScenario+App.swift.
 set -euo pipefail
+# shellcheck source=lib/paeonia-xcode.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/paeonia-xcode.sh"
 
 usage() {
   echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--no-build]" >&2
