@@ -138,13 +138,13 @@ nonisolated private struct StartStoryRequest: Encodable {
     let gameID: UUID
     let storyID: UUID
     let openingID: String?
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(start: StoryChainQueuedStart, operation: SyncClientOperation) {
         gameID = start.gameID
         storyID = start.storyID
         openingID = start.openingID
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -170,7 +170,7 @@ nonisolated private struct AddStoryLineRequest: Encodable {
     let isLast: Bool
     let dareWord: String?
     let dareWordID: String?
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(line: StoryChainQueuedLine, operation: SyncClientOperation) {
         storyID = line.storyID
@@ -181,7 +181,7 @@ nonisolated private struct AddStoryLineRequest: Encodable {
         // list. Only a typed word sends its text.
         dareWord = line.dareWordID == nil ? line.dareWord : nil
         dareWordID = line.dareWordID
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -208,12 +208,12 @@ nonisolated private struct AddStoryLineRequest: Encodable {
 nonisolated private struct NameStoryRequest: Encodable {
     let storyID: UUID
     let title: String
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(name: StoryChainQueuedName, operation: SyncClientOperation) {
         storyID = name.storyID
         title = name.title
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {

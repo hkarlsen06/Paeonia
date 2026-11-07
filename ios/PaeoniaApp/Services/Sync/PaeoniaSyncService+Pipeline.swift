@@ -39,9 +39,9 @@ extension PaeoniaSyncService {
         let streamTask = Task {
             await runStream(stream, scope: scope, session: session, reason: reason, startedAt: startedAt)
         }
-        let timeoutNanoseconds = syncTimeoutNanoseconds
+        let timeout = syncTimeout
         let timer = Task {
-            guard (try? await Task.sleep(nanoseconds: timeoutNanoseconds)) != nil else {
+            guard (try? await Task.sleep(for: timeout)) != nil else {
                 return false
             }
             streamTask.cancel()

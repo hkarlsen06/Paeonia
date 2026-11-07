@@ -63,11 +63,10 @@ extension GuessMySpotViewModel {
         isStopped = true
         attentionCue.reset()
         loops.cancelFollowing()
-        for task in [startTask, refreshTask] {
+        for task in [startTask] {
             task?.cancel()
         }
         startTask = nil
-        refreshTask = nil
         loops.endHeartbeat()
         stopLive()
         // The draft stays, so a look at "Our guesses" loses nothing. A held reveal
@@ -82,8 +81,7 @@ extension GuessMySpotViewModel {
             loops.beginHeartbeat()
             startLive()
             recompute()
-            refreshTask?.cancel()
-            refreshTask = Task { [weak self] in await self?.refresh() }
+            loops.refresh { [weak self] in await self?.refresh() }
         } else {
             loops.endHeartbeat()
             stopLive()
@@ -147,19 +145,10 @@ extension GuessMySpotViewModel {
         guard invite == .available else { return }
         localInviteSentAt = dependencies.now()
         recompute()
-        do {
-            let result = try await dependencies.gateway.sendInvite(.guessMySpot)
-            localInviteSentAt = result.sentAt
-        } catch let error as PaeoniaConvexError {
-            if case .server(code: "53300", message: _) = error {
-                // The server already counted an invite in the last 15 minutes.
-                return
-            }
-            localInviteSentAt = nil
-            notice = .couldNotSendInvite(PaeoniaFailure(error))
-        } catch {
-            localInviteSentAt = nil
-            notice = .couldNotSendInvite(PaeoniaFailure(error))
+        let delivery = await GameInviteDelivery.send(.guessMySpot, through: dependencies.gateway)
+        localInviteSentAt = delivery.localSentAt(optimistic: localInviteSentAt)
+        if let failure = delivery.failure {
+            notice = .couldNotSendInvite(failure)
         }
         recompute()
     }
@@ -293,46 +282,17 @@ extension GuessMySpotViewModel {
 
     // MARK: - Marks
 
-    /// The drawn marks as template images, by owner, rendered once per update.
-    func renderedMarks(
-        _ marks: RemoteBoardGameMarks?,
-        userID: UUID,
-        partnerID: UUID?
-    ) async -> [UUID: (key: String, image: UIImage)] {
-        var images: [UUID: (key: String, image: UIImage)] = [:]
-        let owners: [(UUID?, RemoteBoardGameMark?)] = [(userID, marks?.mine), (partnerID, marks?.partner)]
-        for case let (owner?, mark?) in owners {
-            let key = "\(owner.uuidString):\(mark.updatedAt.timeIntervalSince1970)"
-            if let kept = markImages[owner], kept.key == key {
-                images[owner] = kept
-                continue
-            }
-            guard let data = BoardMarkRenderer.data(fromBase64: mark.drawing),
-                  let image = await BoardMarkRenderer.image(from: data, cacheKey: key)
-            else { continue }
-            images[owner] = (key, image)
-        }
-        return images
-    }
-
     func updateStyles() {
-        let mine = BoardPieceStyle(
-            color: .boardGameMine,
-            mark: currentUserID.flatMap { markImages[$0]?.image },
-            initial: BoardPieceStyle.initial(of: participants.currentName),
-            owner: .one
+        let styles = markImages.coupleStyles(
+            participants: participants,
+            currentUserID: currentUserID,
+            partnerUserID: state?.partnerUserID
         )
-        let theirs = BoardPieceStyle(
-            color: .boardGamePartner,
-            mark: state?.partnerUserID.flatMap { markImages[$0]?.image },
-            initial: BoardPieceStyle.initial(of: participants.partnerName),
-            owner: .two
-        )
-        if myStyle != mine {
-            myStyle = mine
+        if myStyle != styles.mine {
+            myStyle = styles.mine
         }
-        if partnerStyle != theirs {
-            partnerStyle = theirs
+        if partnerStyle != styles.partner {
+            partnerStyle = styles.partner
         }
     }
 

@@ -17,7 +17,6 @@ import SwiftUI
 /// Files: this file holds the state and the reading. The lifecycle, the partner
 /// (presence and invite), the live room, the canvas, the ideas, the strip and the
 /// reveal are in the extensions.
-@MainActor
 @Observable
 final class ExquisiteCorpseViewModel {
     // MARK: - State the screens read
@@ -138,7 +137,6 @@ final class ExquisiteCorpseViewModel {
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var draftTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?
-    @ObservationIgnored var refreshTask: Task<Void, Never>?
     @ObservationIgnored var stripTask: Task<Void, Never>?
     @ObservationIgnored var revealTasks: [UUID: Task<Void, Never>] = [:]
 

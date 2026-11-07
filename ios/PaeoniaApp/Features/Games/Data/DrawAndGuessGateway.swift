@@ -164,7 +164,7 @@ nonisolated private struct PickDrawWordRequest: Encodable {
     let choice: DrawAndGuessDifficulty
     let customWord: String?
     let wordID: String?
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(pick: GamePickWordPayload, operation: SyncClientOperation) {
         gameID = pick.gameID
@@ -172,7 +172,7 @@ nonisolated private struct PickDrawWordRequest: Encodable {
         choice = pick.choice
         customWord = pick.choice == .custom ? pick.word : nil
         wordID = pick.choice == .custom ? nil : pick.wordID
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -197,12 +197,12 @@ nonisolated private struct PickDrawWordRequest: Encodable {
 nonisolated private struct SubmitDrawingRequest: Encodable {
     let roundID: UUID
     let mediaAssetID: UUID
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(roundID: UUID, mediaAssetID: UUID, operation: SyncClientOperation) {
         self.roundID = roundID
         self.mediaAssetID = mediaAssetID
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -224,7 +224,7 @@ nonisolated private struct SubmitGuessRequest: Encodable {
     let speedBonus: Int?
     let solveMs: Int?
     let hintsUsed: Int?
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(
         roundID: UUID,
@@ -239,7 +239,7 @@ nonisolated private struct SubmitGuessRequest: Encodable {
         self.speedBonus = speedBonus
         self.solveMs = solveMs
         self.hintsUsed = hintsUsed
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -263,11 +263,11 @@ nonisolated private struct SubmitGuessRequest: Encodable {
 
 nonisolated private struct GiveUpRequest: Encodable {
     let roundID: UUID
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(roundID: UUID, operation: SyncClientOperation) {
         self.roundID = roundID
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {

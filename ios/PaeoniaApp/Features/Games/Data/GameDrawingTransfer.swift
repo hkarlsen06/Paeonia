@@ -1,9 +1,6 @@
-import CryptoKit
 import Foundation
 
 nonisolated enum GameDrawingTransferError: Error, Equatable, Sendable {
-    case reservationFailed
-    case finalizeFailed
     case downloadUnavailable
 }
 
@@ -65,34 +62,22 @@ nonisolated struct LiveGameDrawingTransfer: GameDrawingTransferring {
         finalizeOperation: SyncClientOperation
     ) async throws -> UUID {
         try await PaeoniaSignedIn.require(isSignedIn)
-
-        let reservations: [MediaUploadReservation] = try await client.mutation(
-            "media:create_pending_media_upload",
-            args: ReserveGameDrawingRequest(
-                operation: reserveOperation,
-                parent: parent,
-                coupleID: coupleID
-            )
+        return try await MediaUploader(client: client).upload(
+            data,
+            as: MediaUpload(
+                parentKind: parent.kind,
+                parentID: parent.id,
+                purpose: parent.purpose,
+                mediaType: "drawing_payload",
+                mimeType: Self.payloadMimeType,
+                fileExtension: Self.payloadFileExtension,
+                coupleID: coupleID,
+                pathContext: .game(parent.gameID),
+                accessibilityText: parent.accessibilityText
+            ),
+            reserveOperation: reserveOperation,
+            finalizeOperation: finalizeOperation
         )
-        guard let reservation = reservations.first else {
-            throw GameDrawingTransferError.reservationFailed
-        }
-        let storageID = try await client.upload(data, contentType: Self.payloadMimeType, to: reservation.uploadURL)
-        let finalized: [FinalizedMediaUploadResponse] = try await client.mutation(
-            "media:finalize_media_upload",
-            args: FinalizeGameDrawingRequest(
-                reservation: reservation,
-                storageID: storageID,
-                reservedByOperationID: reserveOperation.id,
-                operation: finalizeOperation,
-                parent: parent,
-                data: data
-            )
-        )
-        guard let first = finalized.first, first.uploadStatus == "finalized" else {
-            throw GameDrawingTransferError.finalizeFailed
-        }
-        return first.mediaAssetID
     }
 
     func downloadDrawing(mediaAssetID: UUID) async throws -> Data {
@@ -107,128 +92,5 @@ nonisolated struct LiveGameDrawingTransfer: GameDrawingTransferring {
             throw GameDrawingTransferError.downloadUnavailable
         }
         return data
-    }
-}
-
-nonisolated private struct ReserveGameDrawingRequest: Encodable {
-    let operation: GameClientOperationFields
-    let reservedParentKind: String
-    let reservedParentID: UUID
-    let uploadPurpose: String
-    let mediaType = "drawing_payload"
-    let fileExtension = LiveGameDrawingTransfer.payloadFileExtension
-    let coupleID: UUID
-    let pathContext: PathContext
-    let accessibilityText: String?
-
-    struct PathContext: Encodable {
-        let gameID: UUID
-
-        enum CodingKeys: String, CodingKey {
-            case gameID = "game_id"
-        }
-    }
-
-    init(operation: SyncClientOperation, parent: GameUploadParent, coupleID: UUID) {
-        self.operation = GameClientOperationFields(operation)
-        reservedParentKind = parent.kind
-        reservedParentID = parent.id
-        uploadPurpose = parent.purpose
-        self.coupleID = coupleID
-        pathContext = PathContext(gameID: parent.gameID)
-        accessibilityText = parent.accessibilityText
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case reservedParentKind = "p_reserved_parent_kind"
-        case reservedParentID = "p_reserved_parent_id"
-        case uploadPurpose = "p_upload_purpose"
-        case mediaType = "p_media_type"
-        case fileExtension = "p_file_extension"
-        case coupleID = "p_couple_id"
-        case pathContext = "p_path_context"
-        case accessibilityText = "p_accessibility_text"
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(reservedParentKind, forKey: .reservedParentKind)
-        try container.encode(reservedParentID, forKey: .reservedParentID)
-        try container.encode(uploadPurpose, forKey: .uploadPurpose)
-        try container.encode(mediaType, forKey: .mediaType)
-        try container.encode(fileExtension, forKey: .fileExtension)
-        try container.encode(coupleID, forKey: .coupleID)
-        try container.encode(pathContext, forKey: .pathContext)
-        try container.encodeIfPresent(accessibilityText, forKey: .accessibilityText)
-        try operation.encode(to: encoder)
-    }
-}
-
-nonisolated private struct FinalizeGameDrawingRequest: Encodable {
-    let operation: GameClientOperationFields
-    let mediaAssetID: UUID
-    let reservedByOperationID: UUID
-    let bucket: String
-    let storagePath: String
-    let storageID: String
-    let reservedParentKind: String
-    let reservedParentID: UUID
-    let uploadPurpose: String
-    let mediaType = "drawing_payload"
-    let mimeType = LiveGameDrawingTransfer.payloadMimeType
-    let byteSize: Int64
-    let sha256Hex: String
-
-    init(
-        reservation: MediaUploadReservation,
-        storageID: String,
-        reservedByOperationID: UUID,
-        operation: SyncClientOperation,
-        parent: GameUploadParent,
-        data: Data
-    ) {
-        self.operation = GameClientOperationFields(operation)
-        mediaAssetID = reservation.mediaAssetID
-        self.reservedByOperationID = reservedByOperationID
-        bucket = reservation.bucket
-        storagePath = reservation.storagePath
-        self.storageID = storageID
-        reservedParentKind = parent.kind
-        reservedParentID = parent.id
-        uploadPurpose = parent.purpose
-        byteSize = Int64(data.count)
-        sha256Hex = SHA256.hash(data: data).paeoniaHexString
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "p_media_asset_id"
-        case reservedByOperationID = "p_reserved_by_client_operation_id"
-        case bucket = "p_bucket"
-        case storagePath = "p_storage_path"
-        case storageID = "p_storage_id"
-        case reservedParentKind = "p_reserved_parent_kind"
-        case reservedParentID = "p_reserved_parent_id"
-        case uploadPurpose = "p_upload_purpose"
-        case mediaType = "p_media_type"
-        case mimeType = "p_mime_type"
-        case byteSize = "p_byte_size"
-        case sha256Hex = "p_sha256_hex"
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(mediaAssetID, forKey: .mediaAssetID)
-        try container.encode(reservedByOperationID, forKey: .reservedByOperationID)
-        try container.encode(bucket, forKey: .bucket)
-        try container.encode(storagePath, forKey: .storagePath)
-        try container.encode(storageID, forKey: .storageID)
-        try container.encode(reservedParentKind, forKey: .reservedParentKind)
-        try container.encode(reservedParentID, forKey: .reservedParentID)
-        try container.encode(uploadPurpose, forKey: .uploadPurpose)
-        try container.encode(mediaType, forKey: .mediaType)
-        try container.encode(mimeType, forKey: .mimeType)
-        try container.encode(byteSize, forKey: .byteSize)
-        try container.encode(sha256Hex, forKey: .sha256Hex)
-        try operation.encode(to: encoder)
     }
 }

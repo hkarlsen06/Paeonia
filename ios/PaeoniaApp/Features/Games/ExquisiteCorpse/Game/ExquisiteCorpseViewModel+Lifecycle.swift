@@ -73,8 +73,7 @@ extension ExquisiteCorpseViewModel {
             startLive()
             // A download that waited for the screen starts now.
             recompute()
-            refreshTask?.cancel()
-            refreshTask = Task { [weak self] in await self?.refresh() }
+            loops.refresh { [weak self] in await self?.refresh() }
         } else {
             loops.endHeartbeat()
             stopLive()
@@ -84,12 +83,11 @@ extension ExquisiteCorpseViewModel {
 
     func cancelTasks() {
         loops.cancelFollowing()
-        for task in [draftTask, startTask, refreshTask] {
+        for task in [draftTask, startTask] {
             task?.cancel()
         }
         draftTask = nil
         startTask = nil
-        refreshTask = nil
         cancelStripLoad()
         cancelRevealLoads()
     }

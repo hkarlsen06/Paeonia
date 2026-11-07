@@ -107,7 +107,7 @@ actor MemoryTestMediaUploader {
             try await Task.sleep(for: delay)
         }
         if shouldFail || failingCalls.contains(call) {
-            throw MemoryMediaUploadError.finalizeFailed
+            throw MediaUploadError.finalizeFailed
         }
         return MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: UUID())
     }

@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// What kind of daily-answer media is being uploaded. Drives the backend
@@ -65,23 +64,17 @@ nonisolated protocol DailyAnswerMediaUploading: Sendable {
     ) async throws -> UUID
 }
 
-nonisolated enum DailyAnswerMediaUploadError: Error, Equatable, Sendable {
-    case reservationFailed
-    case finalizeFailed
-}
-
-/// Uploads daily-answer media through the same reserve → storage → finalize path the
-/// profile photo uses, but scoped to the `daily_answer_media` parent so the asset
+/// Uploads daily-answer media scoped to the `daily_answer_media` parent, so the asset
 /// links to a specific answer.
 ///
 /// Question chats reuse it for voice messages with the `thread_message_media` parent.
 /// Then `answerID` is the id the message will get.
-actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
-    private let client: PaeoniaConvexClient
+nonisolated struct LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
+    private let uploader: MediaUploader
     private let reservedParentKind: String
 
     init(client: PaeoniaConvexClient, reservedParentKind: String = "daily_answer_media") {
-        self.client = client
+        uploader = MediaUploader(client: client)
         self.reservedParentKind = reservedParentKind
     }
 
@@ -96,168 +89,23 @@ actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
         reserveOperation: SyncClientOperation,
         finalizeOperation: SyncClientOperation
     ) async throws -> UUID {
-        let reservation: [MediaUploadReservation] = try await client.mutation(
-            "media:create_pending_media_upload",
-            args: ReserveDailyAnswerMediaRequest(
-                operation: reserveOperation,
-                reservedParentKind: reservedParentKind,
-                answerID: answerID,
-                coupleID: coupleID,
-                purpose: media.purpose,
-                fileExtension: media.fileExtension,
-                accessibilityText: media.accessibilityText
-            )
-        )
-        guard let reservation = reservation.first else {
-            throw DailyAnswerMediaUploadError.reservationFailed
-        }
-
-        let storageID = try await client.upload(
+        try await uploader.upload(
             media.data,
-            contentType: media.mimeType,
-            to: reservation.uploadURL
+            as: MediaUpload(
+                parentKind: reservedParentKind,
+                parentID: answerID,
+                purpose: media.purpose.rawValue,
+                mediaType: media.purpose.mediaType,
+                mimeType: media.mimeType,
+                fileExtension: media.fileExtension,
+                coupleID: coupleID,
+                accessibilityText: media.accessibilityText,
+                width: media.width,
+                height: media.height,
+                durationMs: media.durationMs
+            ),
+            reserveOperation: reserveOperation,
+            finalizeOperation: finalizeOperation
         )
-
-        let finalized: [FinalizedMediaUploadResponse] = try await client.mutation(
-            "media:finalize_media_upload",
-            args: FinalizeDailyAnswerMediaRequest(
-                reservation: reservation,
-                storageID: storageID,
-                reservedByClientOperationID: reserveOperation.id,
-                operation: finalizeOperation,
-                reservedParentKind: reservedParentKind,
-                answerID: answerID,
-                media: media
-            )
-        )
-        guard let finalized = finalized.first, finalized.uploadStatus == "finalized" else {
-            throw DailyAnswerMediaUploadError.finalizeFailed
-        }
-
-        return finalized.mediaAssetID
-    }
-}
-
-nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-    let reservedParentKind: String
-    let reservedParentID: UUID
-    let coupleID: UUID
-    let uploadPurpose: String
-    let mediaType: String
-    let fileExtension: String
-    let accessibilityText: String?
-
-    init(
-        operation: SyncClientOperation,
-        reservedParentKind: String = "daily_answer_media",
-        answerID: UUID,
-        coupleID: UUID,
-        purpose: DailyAnswerMediaPurpose,
-        fileExtension: String,
-        accessibilityText: String? = nil
-    ) {
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-        self.reservedParentKind = reservedParentKind
-        reservedParentID = answerID
-        self.coupleID = coupleID
-        uploadPurpose = purpose.rawValue
-        mediaType = purpose.mediaType
-        self.fileExtension = fileExtension
-        self.accessibilityText = accessibilityText
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-        case reservedParentKind = "p_reserved_parent_kind"
-        case reservedParentID = "p_reserved_parent_id"
-        case coupleID = "p_couple_id"
-        case uploadPurpose = "p_upload_purpose"
-        case mediaType = "p_media_type"
-        case fileExtension = "p_file_extension"
-        case accessibilityText = "p_accessibility_text"
-    }
-}
-
-nonisolated struct FinalizeDailyAnswerMediaRequest: Encodable {
-    let mediaAssetID: UUID
-    let reservedByClientOperationID: UUID
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-    let bucket: String
-    let storagePath: String
-    let storageID: String
-    let reservedParentKind: String
-    let reservedParentID: UUID
-    let uploadPurpose: String
-    let mediaType: String
-    let mimeType: String
-    let byteSize: Int64
-    let sha256Hex: String
-    let width: Int?
-    let height: Int?
-    let durationMs: Int?
-
-    init(
-        reservation: MediaUploadReservation,
-        storageID: String,
-        reservedByClientOperationID: UUID,
-        operation: SyncClientOperation,
-        reservedParentKind: String = "daily_answer_media",
-        answerID: UUID,
-        media: DailyAnswerUploadMedia
-    ) {
-        mediaAssetID = reservation.mediaAssetID
-        self.storageID = storageID
-        self.reservedByClientOperationID = reservedByClientOperationID
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-        bucket = reservation.bucket
-        storagePath = reservation.storagePath
-        self.reservedParentKind = reservedParentKind
-        reservedParentID = answerID
-        uploadPurpose = media.purpose.rawValue
-        mediaType = media.purpose.mediaType
-        mimeType = media.mimeType
-        byteSize = Int64(media.data.count)
-        sha256Hex = SHA256.hash(data: media.data).paeoniaHexString
-        width = media.width
-        height = media.height
-        durationMs = media.durationMs
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "p_media_asset_id"
-        case reservedByClientOperationID = "p_reserved_by_client_operation_id"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-        case bucket = "p_bucket"
-        case storagePath = "p_storage_path"
-        case storageID = "p_storage_id"
-        case reservedParentKind = "p_reserved_parent_kind"
-        case reservedParentID = "p_reserved_parent_id"
-        case uploadPurpose = "p_upload_purpose"
-        case mediaType = "p_media_type"
-        case mimeType = "p_mime_type"
-        case byteSize = "p_byte_size"
-        case sha256Hex = "p_sha256_hex"
-        case width = "p_width"
-        case height = "p_height"
-        case durationMs = "p_duration_ms"
     }
 }

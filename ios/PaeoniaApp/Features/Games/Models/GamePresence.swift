@@ -41,3 +41,35 @@ nonisolated enum GameInviteState: Equatable, Sendable {
         return .available
     }
 }
+
+/// How sending an invite ended. The server takes one invite every 15 minutes and
+/// answers a second one with `53300`, which means the earlier invite still stands.
+nonisolated enum GameInviteDelivery: Equatable, Sendable {
+    case sent(at: Date)
+    case alreadySent
+    case failed(PaeoniaFailure)
+
+    static func send(_ kind: GameKind, through gateway: any GamesGateway) async -> GameInviteDelivery {
+        do {
+            return .sent(at: try await gateway.sendInvite(kind).sentAt)
+        } catch PaeoniaConvexError.server(code: "53300", message: _) {
+            return .alreadySent
+        } catch {
+            return .failed(PaeoniaFailure(error))
+        }
+    }
+
+    /// When this phone last sent an invite, given `optimistic`, the time the button
+    /// was tapped.
+    func localSentAt(optimistic: Date?) -> Date? {
+        switch self {
+        case let .sent(at): at
+        case .alreadySent: optimistic
+        case .failed: nil
+        }
+    }
+
+    var failure: PaeoniaFailure? {
+        if case let .failed(failure) = self { failure } else { nil }
+    }
+}

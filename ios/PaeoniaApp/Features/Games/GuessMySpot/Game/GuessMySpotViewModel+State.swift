@@ -13,7 +13,7 @@ extension GuessMySpotViewModel {
         let overview = await dependencies.cache.document(ownerUserID: userID).overview
         let work = await GuessMySpotPendingWork.load(from: dependencies.pendingOperationStore, ownerUserID: userID)
         let marks = await dependencies.boardGamesCache.document(ownerUserID: userID).marks
-        let images = await renderedMarks(marks, userID: userID, partnerID: document.state?.partnerUserID)
+        let images = await markImages.rendering(marks, userID: userID, partnerID: document.state?.partnerUserID)
         guard currentUserID == userID, participants.coupleID == requestedCoupleID,
               requestedCoupleID == nil || document.state == nil || document.state?.coupleID == requestedCoupleID,
               reloadGate.apply(ticket) else { return }

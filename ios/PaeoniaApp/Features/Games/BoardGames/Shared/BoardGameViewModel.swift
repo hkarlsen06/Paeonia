@@ -115,7 +115,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     @ObservationIgnored var stagedOutcomeGame: Int?
     /// When the board finishes animating `lastMove`. The outcome waits for it.
     @ObservationIgnored var lastMoveSettles: ContinuousClock.Instant?
-    @ObservationIgnored var markImages: [UUID: (key: String, image: UIImage)] = [:]
+    @ObservationIgnored var markImages = BoardMarkImages()
     @ObservationIgnored var photoAssetID: UUID?
     @ObservationIgnored var localInviteSentAt: Date?
     /// The color this person tapped, and the game it is for. It goes with their
@@ -210,7 +210,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         let document = await dependencies.boardGamesCache.document(ownerUserID: userID)
         let overview = await dependencies.cache.document(ownerUserID: userID).overview
         let queue = await queueState(ownerUserID: userID)
-        let marks = await renderedMarks(document.marks, userID: userID, partnerID: document.state?.partnerUserID)
+        let marks = await markImages.rendering(document.marks, userID: userID, partnerID: document.state?.partnerUserID)
         // A read that began before this phone's latest move or rematch could put
         // the board from before it back, so it is dropped as well.
         guard actionRevision == localActionRevision, currentUserID == userID,
@@ -328,7 +328,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         replayQueue = []
         isReplaying = false
         stagedOutcomeGame = nil
-        markImages = [:]
+        markImages = BoardMarkImages()
         photo = nil
         photoAssetID = nil
         localInviteSentAt = nil

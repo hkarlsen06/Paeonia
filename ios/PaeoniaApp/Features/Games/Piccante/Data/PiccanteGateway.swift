@@ -58,10 +58,10 @@ nonisolated extension UnavailableGamesGateway: PiccanteGateway {
 
 nonisolated private struct PiccanteRequest: Encodable {
     let move: PiccanteMove
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
     init(move: PiccanteMove, operation: SyncClientOperation) {
         self.move = move
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
     enum CodingKeys: String, CodingKey {
         case gameID = "p_game_id"

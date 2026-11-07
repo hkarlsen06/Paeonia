@@ -58,8 +58,7 @@ extension MindMeldViewModel {
             loops.beginHeartbeat()
             startLive()
             recompute()
-            refreshTask?.cancel()
-            refreshTask = Task { [weak self] in await self?.refresh() }
+            loops.refresh { [weak self] in await self?.refresh() }
         } else {
             loops.endHeartbeat()
             sendTyping(false)
@@ -69,11 +68,10 @@ extension MindMeldViewModel {
 
     func cancelTasks() {
         loops.cancelFollowing()
-        for task in [startTask, refreshTask, typingIdleTask, partnerTypingTask] {
+        for task in [startTask, typingIdleTask, partnerTypingTask] {
             task?.cancel()
         }
         startTask = nil
-        refreshTask = nil
         typingIdleTask = nil
         partnerTypingTask = nil
         partnerTypingRound = nil

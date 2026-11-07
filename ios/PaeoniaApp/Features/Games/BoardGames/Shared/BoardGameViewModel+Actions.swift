@@ -126,19 +126,10 @@ extension BoardGameViewModel {
         guard invite == .available else { return }
         localInviteSentAt = dependencies.now()
         updatePresence()
-        do {
-            let result = try await dependencies.gateway.sendInvite(kind)
-            localInviteSentAt = result.sentAt
-        } catch let error as PaeoniaConvexError {
-            if case .server(code: "53300", message: _) = error {
-                // The server already counted an invite in the last 15 minutes.
-                return
-            }
-            localInviteSentAt = nil
-            notice = .couldNotSendInvite(PaeoniaFailure(error))
-        } catch {
-            localInviteSentAt = nil
-            notice = .couldNotSendInvite(PaeoniaFailure(error))
+        let delivery = await GameInviteDelivery.send(kind, through: dependencies.gateway)
+        localInviteSentAt = delivery.localSentAt(optimistic: localInviteSentAt)
+        if let failure = delivery.failure {
+            notice = .couldNotSendInvite(failure)
         }
         updatePresence()
     }
@@ -154,30 +145,6 @@ extension BoardGameViewModel {
         )
     }
 
-    /// The drawn marks as template images, by owner. A mark rendered before
-    /// for the same update is reused. Each render is cached by owner and update
-    /// time.
-    func renderedMarks(
-        _ marks: RemoteBoardGameMarks?,
-        userID: UUID,
-        partnerID: UUID?
-    ) async -> [UUID: (key: String, image: UIImage)] {
-        var images: [UUID: (key: String, image: UIImage)] = [:]
-        let owners: [(UUID?, RemoteBoardGameMark?)] = [(userID, marks?.mine), (partnerID, marks?.partner)]
-        for case let (owner?, mark?) in owners {
-            let key = "\(owner.uuidString):\(mark.updatedAt.timeIntervalSince1970)"
-            if let kept = markImages[owner], kept.key == key {
-                images[owner] = kept
-                continue
-            }
-            guard let data = BoardMarkRenderer.data(fromBase64: mark.drawing),
-                  let image = await BoardMarkRenderer.image(from: data, cacheKey: key)
-            else { continue }
-            images[owner] = (key, image)
-        }
-        return images
-    }
-
     // MARK: - Derived screen state
 
     /// The players' names, photos, colors and marks.
@@ -190,13 +157,13 @@ extension BoardGameViewModel {
         }
         let mine = BoardPieceStyle(
             color: colors.mine.color,
-            mark: currentUserID.flatMap { markImages[$0]?.image },
+            mark: markImages.image(for: currentUserID),
             initial: myInitial,
             owner: me
         )
         let theirs = BoardPieceStyle(
             color: colors.partner.color,
-            mark: partnerUserID.flatMap { markImages[$0]?.image },
+            mark: markImages.image(for: partnerUserID),
             initial: theirInitial,
             owner: me.other
         )

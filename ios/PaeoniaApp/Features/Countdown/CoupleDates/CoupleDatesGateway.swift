@@ -15,14 +15,14 @@ nonisolated struct LiveCoupleDatesGateway: CoupleDatesGateway {
     func saveCountdown(_ countdown: CustomCountdown, operation: SyncClientOperation) async throws -> CustomCountdown? {
         try await client.mutation(
             "countdowns:save_countdown",
-            args: SaveCountdownRequest(countdown: countdown, operation: GameClientOperationFields(operation))
+            args: SaveCountdownRequest(countdown: countdown, operation: ClientOperationFields(operation))
         )
     }
 
     func deleteCountdown(id: UUID, operation: SyncClientOperation) async throws {
         try await client.mutation(
             "countdowns:delete_countdown",
-            args: DeleteCountdownRequest(id: id, operation: GameClientOperationFields(operation))
+            args: DeleteCountdownRequest(id: id, operation: ClientOperationFields(operation))
         )
     }
 
@@ -32,14 +32,14 @@ nonisolated struct LiveCoupleDatesGateway: CoupleDatesGateway {
     ) async throws -> RemoteBirthdayResult {
         try await client.mutation(
             "countdowns:set_birthday",
-            args: SetBirthdayRequest(payload: payload, operation: GameClientOperationFields(operation))
+            args: SetBirthdayRequest(payload: payload, operation: ClientOperationFields(operation))
         )
     }
 }
 
 nonisolated private struct SaveCountdownRequest: Encodable {
     let countdown: CustomCountdown
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     enum CodingKeys: String, CodingKey {
         case id = "p_countdown_id"
@@ -60,7 +60,7 @@ nonisolated private struct SaveCountdownRequest: Encodable {
 
 nonisolated private struct DeleteCountdownRequest: Encodable {
     let id: UUID
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     enum CodingKeys: String, CodingKey {
         case id = "p_countdown_id"
@@ -75,7 +75,7 @@ nonisolated private struct DeleteCountdownRequest: Encodable {
 
 nonisolated private struct SetBirthdayRequest: Encodable {
     let payload: SetBirthdayPayload
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     enum CodingKeys: String, CodingKey {
         case userID = "p_user_id"

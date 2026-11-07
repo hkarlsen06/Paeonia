@@ -329,7 +329,7 @@ private nonisolated final class StubGateway: WidgetCanvasGateway, @unchecked Sen
     }
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput, operation: WidgetCanvasClientOperation
-    ) throws -> FinalizedMediaUploadResponse {
+    ) throws {
         throw WidgetCanvasGatewayError.emptyResponse
     }
     func submitRevision(
@@ -406,7 +406,7 @@ private actor GatedListGateway: WidgetCanvasGateway {
     }
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput, operation: WidgetCanvasClientOperation
-    ) async throws -> FinalizedMediaUploadResponse {
+    ) async throws {
         throw WidgetCanvasGatewayError.emptyResponse
     }
     func submitRevision(

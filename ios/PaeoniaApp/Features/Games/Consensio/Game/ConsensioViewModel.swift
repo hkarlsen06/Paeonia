@@ -23,7 +23,6 @@ nonisolated enum ConsensioPartnerStatus: Equatable, Sendable {
 ///
 /// Files: this file holds the state, reading, and starting the game. The moves
 /// are in `+Moves`, and the partner, the live room and the marks in `+Partner`.
-@MainActor
 @Observable
 final class ConsensioViewModel {
     // MARK: - State the screens read
@@ -102,7 +101,7 @@ final class ConsensioViewModel {
     @ObservationIgnored var attentionCue = GameAttentionCue()
     @ObservationIgnored var refusedMoves: [ConsensioRefusedMove] = []
     /// The rendered marks and the keys they were rendered for.
-    @ObservationIgnored var markImages: [UUID: (key: String, image: UIImage)] = [:]
+    @ObservationIgnored var markImages = BoardMarkImages()
     @ObservationIgnored var hasFetchedMarks = false
     /// The round the marker belongs to, so a new round starts with no marker.
     @ObservationIgnored var markerRoundID: UUID?
@@ -115,7 +114,6 @@ final class ConsensioViewModel {
 
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?
-    @ObservationIgnored var refreshTask: Task<Void, Never>?
     @ObservationIgnored var moveTask: Task<Void, Never>?
 
     init(
@@ -232,7 +230,7 @@ final class ConsensioViewModel {
         unsavedSeen = []
         deferredReveals = []
         refusedMoves = []
-        markImages = [:]
+        markImages = BoardMarkImages()
         hasFetchedMarks = false
         hasLoaded = false
         startFailure = nil

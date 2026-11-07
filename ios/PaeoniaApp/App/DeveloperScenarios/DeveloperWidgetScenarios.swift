@@ -90,7 +90,7 @@
     }
     func finalizeDrawingUpload(
       _: WidgetDrawingFinalizeInput, operation _: WidgetCanvasClientOperation
-    ) throws -> FinalizedMediaUploadResponse {
+    ) throws {
       throw WidgetCanvasGatewayError.emptyResponse
     }
     func submitRevision(

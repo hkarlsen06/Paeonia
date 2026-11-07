@@ -6,7 +6,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     let pendingOperationStore: any PendingSyncOperationPersisting
     private let localPrivacyPurger: any LocalPrivacyPurging
     let minimumForegroundSyncInterval: TimeInterval
-    let syncTimeoutNanoseconds: UInt64
+    let syncTimeout: Duration
     let failedRunRetryDelay: TimeInterval
     private let liveSync: (any LiveSyncCoordinating)?
 
@@ -42,7 +42,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         localPrivacyPurger: (any LocalPrivacyPurging)? = nil,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = [],
         minimumForegroundSyncInterval: TimeInterval = 60,
-        syncTimeoutNanoseconds: UInt64 = 30_000_000_000,
+        syncTimeout: Duration = .seconds(30),
         failedRunRetryDelay: TimeInterval = 60,
         liveSync: (any LiveSyncCoordinating)? = nil
     ) {
@@ -84,7 +84,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         self.pendingOperationStore = resolvedPendingOperationStore
         self.localPrivacyPurger = resolvedLocalPrivacyPurger
         self.minimumForegroundSyncInterval = minimumForegroundSyncInterval
-        self.syncTimeoutNanoseconds = syncTimeoutNanoseconds
+        self.syncTimeout = syncTimeout
         self.failedRunRetryDelay = failedRunRetryDelay
         self.liveSync = liveSync
     }

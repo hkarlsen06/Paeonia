@@ -119,7 +119,7 @@ nonisolated extension LiveGamesGateway: GuessMySpotGateway {
             args: GuessMySpotGuessRequest(
                 roundID: roundID,
                 guess: guess,
-                operation: GameClientOperationFields(operation)
+                operation: ClientOperationFields(operation)
             )
         )
     }
@@ -139,7 +139,7 @@ nonisolated extension LiveGamesGateway: GuessMySpotGateway {
         -> RemoteGuessMySpotDeleteResult {
         try await client.mutation(
             "guessMySpot:delete_guess_my_spot_round",
-            args: GuessMySpotRoundRequest(roundID: roundID, operation: GameClientOperationFields(operation))
+            args: GuessMySpotRoundRequest(roundID: roundID, operation: ClientOperationFields(operation))
         )
     }
 }
@@ -229,13 +229,13 @@ nonisolated private struct GuessMySpotSendRequest: Encodable {
         try container.encodeIfPresent(details.placeCity, forKey: .placeCity)
         try container.encodeIfPresent(details.placeCountryCode, forKey: .placeCountryCode)
         try container.encodeIfPresent(details.takenOn, forKey: .takenOn)
-        try GameClientOperationFields(operation).encode(to: encoder)
+        try ClientOperationFields(operation).encode(to: encoder)
     }
 }
 
 nonisolated private struct GuessMySpotRoundRequest: Encodable {
     let roundID: UUID
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     enum CodingKeys: String, CodingKey {
         case roundID = "p_round_id"
@@ -251,7 +251,7 @@ nonisolated private struct GuessMySpotRoundRequest: Encodable {
 nonisolated private struct GuessMySpotGuessRequest: Encodable {
     let roundID: UUID
     let guess: GuessMySpotCoordinate
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     enum CodingKeys: String, CodingKey {
         case roundID = "p_round_id"

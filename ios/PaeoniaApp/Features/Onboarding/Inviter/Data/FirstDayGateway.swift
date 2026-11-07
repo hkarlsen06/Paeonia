@@ -62,14 +62,10 @@ actor LiveFirstDayGateway: FirstDayGateway {
     }
 
     func reserveDrawingUpload(revisionID: UUID, operation: SyncClientOperation) async throws -> MediaUploadReservation {
-        let rows: [MediaUploadReservation] = try await client.mutation(
-            "media:create_pending_media_upload",
-            args: CreateFirstDayDrawingUploadRequest(revisionID: revisionID, operation: operation)
+        try await MediaUploader(client: client).reserve(
+            .widgetDrawing(revisionID: revisionID, pathContext: .firstDayDraft),
+            operation: operation
         )
-        guard let reservation = rows.first else {
-            throw WidgetCanvasGatewayError.emptyResponse
-        }
-        return reservation
     }
 
     func uploadDrawingPayload(reservation: MediaUploadReservation, data: Data) async throws -> String {
@@ -77,7 +73,7 @@ actor LiveFirstDayGateway: FirstDayGateway {
     }
 
     func finalizeDrawingUpload(_ input: WidgetDrawingFinalizeInput, operation: SyncClientOperation) async throws {
-        _ = try await widget.finalizeDrawingUpload(input, operation: operation)
+        try await widget.finalizeDrawingUpload(input, operation: operation)
     }
 
     func saveDrawing(
@@ -107,24 +103,6 @@ nonisolated enum FirstDayGatewayFactory {
 
 // MARK: - Requests
 
-/// The client operation fields every first day write carries.
-nonisolated private enum OperationKeys: String, CodingKey {
-    case clientOperationID = "p_client_operation_id"
-    case clientID = "p_client_id"
-    case clientSequence = "p_client_sequence"
-    case localCreatedAt = "p_local_created_at"
-}
-
-nonisolated private extension SyncClientOperation {
-    func encodeFields(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: OperationKeys.self)
-        try container.encode(id, forKey: .clientOperationID)
-        try container.encode(clientID, forKey: .clientID)
-        try container.encode(clientSequence, forKey: .clientSequence)
-        try container.encode(localCreatedAt, forKey: .localCreatedAt)
-    }
-}
-
 nonisolated struct SetFirstDayStartedOnRequest: Encodable {
     let startedOn: String?
     let operation: SyncClientOperation
@@ -137,7 +115,7 @@ nonisolated struct SetFirstDayStartedOnRequest: Encodable {
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(startedOn, forKey: .startedOn)
-        try operation.encodeFields(to: encoder)
+        try ClientOperationFields(operation).encode(to: encoder)
     }
 }
 
@@ -155,42 +133,7 @@ nonisolated struct SaveFirstDayAnswerRequest: Encodable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(questionVersionID, forKey: .questionVersionID)
         try container.encode(text, forKey: .text)
-        try operation.encodeFields(to: encoder)
-    }
-}
-
-/// A widget drawing upload without a couple. The couple's canvas does not exist yet,
-/// so the server keeps it with the draft (`p_path_context.first_day_draft`).
-nonisolated struct CreateFirstDayDrawingUploadRequest: Encodable {
-    let revisionID: UUID
-    let operation: SyncClientOperation
-
-    nonisolated private struct PathContext: Encodable {
-        let firstDayDraft = true
-
-        enum CodingKeys: String, CodingKey {
-            case firstDayDraft = "first_day_draft"
-        }
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case reservedParentKind = "p_reserved_parent_kind"
-        case reservedParentID = "p_reserved_parent_id"
-        case uploadPurpose = "p_upload_purpose"
-        case mediaType = "p_media_type"
-        case fileExtension = "p_file_extension"
-        case pathContext = "p_path_context"
-    }
-
-    func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode("widget_drawing_revision", forKey: .reservedParentKind)
-        try container.encode(revisionID, forKey: .reservedParentID)
-        try container.encode("widget_drawing_payload", forKey: .uploadPurpose)
-        try container.encode("drawing_payload", forKey: .mediaType)
-        try container.encode(LiveWidgetCanvasGateway.payloadFileExtension, forKey: .fileExtension)
-        try container.encode(PathContext(), forKey: .pathContext)
-        try operation.encodeFields(to: encoder)
+        try ClientOperationFields(operation).encode(to: encoder)
     }
 }
 
@@ -239,6 +182,6 @@ nonisolated struct SaveFirstDayDrawingRequest: Encodable {
         try container.encode(operation.localCreatedAt, forKey: .clientDecodeValidatedAt)
         try container.encode(LiveWidgetCanvasGateway.rendererVersion, forKey: .clientRendererVersion)
         try container.encode(LiveWidgetCanvasGateway.validationVersion, forKey: .clientValidationVersion)
-        try operation.encodeFields(to: encoder)
+        try ClientOperationFields(operation).encode(to: encoder)
     }
 }

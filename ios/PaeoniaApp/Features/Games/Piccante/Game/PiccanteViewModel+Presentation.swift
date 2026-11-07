@@ -172,8 +172,11 @@ extension PiccanteViewModel {
     }
     func sendInvite() async {
         guard invite == .available else { return }
-        do { localInviteSentAt = try await dependencies.gateway.sendInvite(.piccante).sentAt } catch {
-            notice = .couldNotSendInvite(PaeoniaFailure(error))
+        localInviteSentAt = dependencies.now()
+        let delivery = await GameInviteDelivery.send(.piccante, through: dependencies.gateway)
+        localInviteSentAt = delivery.localSentAt(optimistic: localInviteSentAt)
+        if let failure = delivery.failure {
+            notice = .couldNotSendInvite(failure)
         }
         await reload()
     }

@@ -57,7 +57,7 @@ nonisolated struct LiveStoriesGateway: StoriesGateway {
                 id: id,
                 mediaAssetID: upload.mediaAssetID,
                 caption: caption,
-                operation: GameClientOperationFields(operations.post)
+                operation: ClientOperationFields(operations.post)
             )
         )
     }
@@ -65,7 +65,7 @@ nonisolated struct LiveStoriesGateway: StoriesGateway {
     func delete(id: UUID, operation: SyncClientOperation) async throws {
         try await client.mutation(
             "stories:delete_story",
-            args: DeleteStoryRequest(id: id, operation: GameClientOperationFields(operation))
+            args: DeleteStoryRequest(id: id, operation: ClientOperationFields(operation))
         )
     }
 
@@ -76,14 +76,14 @@ nonisolated struct LiveStoriesGateway: StoriesGateway {
     func setNote(_ text: String?, operation: SyncClientOperation) async throws -> StoryNote? {
         try await client.mutation(
             "stories:set_note",
-            args: SetNoteRequest(text: text, operation: GameClientOperationFields(operation))
+            args: SetNoteRequest(text: text, operation: ClientOperationFields(operation))
         )
     }
 }
 
 nonisolated private struct SetNoteRequest: Encodable {
     let text: String?
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     enum CodingKeys: String, CodingKey {
         case text = "p_text"
@@ -101,7 +101,7 @@ nonisolated private struct PostStoryRequest: Encodable {
     let id: UUID
     let mediaAssetID: UUID
     let caption: String?
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     enum CodingKeys: String, CodingKey {
         case id = "p_story_id"
@@ -120,7 +120,7 @@ nonisolated private struct PostStoryRequest: Encodable {
 
 nonisolated private struct DeleteStoryRequest: Encodable {
     let id: UUID
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     enum CodingKeys: String, CodingKey {
         case id = "p_story_id"

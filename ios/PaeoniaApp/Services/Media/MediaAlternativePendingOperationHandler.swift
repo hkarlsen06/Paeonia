@@ -21,14 +21,14 @@ nonisolated struct LiveMediaAlternativeGateway: MediaAlternativeGateway {
         -> MediaAlternativeAcceptedText {
         let result: MediaAlternativeAcceptedText = try await client.mutation(
             "media:update_accessibility_text",
-            args: Request(edit: edit, operation: GameClientOperationFields(operation))
+            args: Request(edit: edit, operation: ClientOperationFields(operation))
         )
         return result
     }
 
     private struct Request: Encodable {
         let edit: MediaAlternativeEdit
-        let operation: GameClientOperationFields
+        let operation: ClientOperationFields
         enum CodingKeys: String, CodingKey { case target = "p_target", text = "p_text" }
 
         func encode(to encoder: Encoder) throws {

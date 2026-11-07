@@ -272,7 +272,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
         guard let reservation = progress.reservation, let storageID = progress.storageID else {
             throw WidgetCanvasGatewayError.emptyResponse
         }
-        _ = try await gateway.finalizeDrawingUpload(
+        try await gateway.finalizeDrawingUpload(
             WidgetDrawingFinalizeInput(
                 reservation: reservation.mediaUploadReservation,
                 storageID: storageID,

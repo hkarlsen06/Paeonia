@@ -39,7 +39,6 @@ extension GameParticipants {
 ///
 /// Files: this file holds the state, reading, and starting a game. The
 /// lifecycle, the partner and live room, and the moves are in the extensions.
-@MainActor
 @Observable
 final class MindMeldViewModel {
     // MARK: - State the screens read
@@ -135,7 +134,6 @@ final class MindMeldViewModel {
     @ObservationIgnored var typingIdleTask: Task<Void, Never>?
     @ObservationIgnored var partnerTypingTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?
-    @ObservationIgnored var refreshTask: Task<Void, Never>?
     /// The newest queued move. Moves are saved one after the other in the order they were made.
     @ObservationIgnored var moveTask: Task<Void, Never>?
 

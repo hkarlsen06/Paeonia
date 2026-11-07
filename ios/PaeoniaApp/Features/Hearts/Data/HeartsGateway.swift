@@ -27,11 +27,11 @@ nonisolated struct LiveHeartsGateway: HeartsGateway {
 
 nonisolated private struct SendHeartsRequest: Encodable {
     let count: Int
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(count: Int, operation: SyncClientOperation) {
         self.count = count
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {

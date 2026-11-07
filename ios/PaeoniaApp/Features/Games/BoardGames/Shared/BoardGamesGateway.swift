@@ -105,7 +105,7 @@ nonisolated private struct MakeMoveRequest: Encodable {
     let stake: String?
     /// Ludo only, and only on a player's first move of a game.
     let ludoColor: LudoColor?
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(payload: BoardGameMovePayload, operation: SyncClientOperation) {
         gameID = payload.gameID
@@ -113,7 +113,7 @@ nonisolated private struct MakeMoveRequest: Encodable {
         move = payload.move
         stake = payload.stake
         ludoColor = payload.ludoColor
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -138,12 +138,12 @@ nonisolated private struct MakeMoveRequest: Encodable {
 nonisolated private struct StartRematchRequest: Encodable {
     let gameID: UUID
     let expectedVersion: Int
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(payload: BoardGameRematchPayload, operation: SyncClientOperation) {
         gameID = payload.gameID
         expectedVersion = payload.expectedVersion
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {

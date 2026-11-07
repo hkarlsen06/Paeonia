@@ -14,7 +14,7 @@ extension ConsensioViewModel {
         let refused = await cache.takeRefusedMoves(ownerUserID: userID)
         refusedMoves.append(contentsOf: refused)
         let marks = await dependencies.boardGamesCache.document(ownerUserID: userID).marks
-        let images = await renderedMarks(marks, userID: userID, partnerID: document.state?.partnerUserID)
+        let images = await markImages.rendering(marks, userID: userID, partnerID: document.state?.partnerUserID)
         guard currentUserID == userID, reloadGate.apply(ticket) else { return }
 
         state = document.state

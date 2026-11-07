@@ -14,7 +14,6 @@ import Observation
 /// Files: this file holds the state, the reading and `recompute()`. The
 /// extensions hold the lifecycle, the partner and the live room, the moves, and
 /// the page.
-@MainActor
 @Observable
 final class StoryChainViewModel {
     // MARK: - State the screens read
@@ -163,7 +162,6 @@ final class StoryChainViewModel {
 
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?
-    @ObservationIgnored var refreshTask: Task<Void, Never>?
 
     init(
         dependencies: GamesDependencies,

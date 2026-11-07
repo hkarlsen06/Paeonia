@@ -11,7 +11,7 @@ nonisolated struct EditThreadMessageRequest: Encodable {
 
 nonisolated struct DeleteThreadMessageRequest: Encodable {
     let messageID: UUID
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     enum CodingKeys: String, CodingKey {
         case messageID = "p_message_id"

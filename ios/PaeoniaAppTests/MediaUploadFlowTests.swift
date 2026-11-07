@@ -48,10 +48,11 @@ struct MediaUploadFlowTests {
             durationMs: 900
         )
 
+        let coupleID = UUID()
         let assetID = try await service.uploadMedia(
             media,
             answerID: UUID(),
-            coupleID: UUID(),
+            coupleID: coupleID,
             reserveOperation: Self.operation(sequence: 1),
             finalizeOperation: Self.operation(sequence: 2)
         )
@@ -63,6 +64,14 @@ struct MediaUploadFlowTests {
             "mutation media:finalize_media_upload"
         ])
         #expect(stub.uploadContentType == "audio/mp4")
+        #expect(stub.reserveArgs["p_upload_purpose"] as? String == "voice_note")
+        #expect(stub.reserveArgs["p_media_type"] as? String == "voice")
+        #expect(stub.reserveArgs["p_file_extension"] as? String == "m4a")
+        #expect(stub.reserveArgs["p_couple_id"] as? String == coupleID.uuidString)
+        #expect(stub.finalizeArgs["p_upload_purpose"] as? String == "voice_note")
+        #expect(stub.finalizeArgs["p_media_type"] as? String == "voice")
+        #expect(stub.finalizeArgs["p_mime_type"] as? String == "audio/mp4")
+        #expect(stub.finalizeArgs["p_duration_ms"] as? Int == 900)
         #expect(stub.finalizeArgs["p_storage_id"] as? String == Self.storageID)
     }
 
@@ -231,6 +240,7 @@ private final class MediaUploadStub: @unchecked Sendable {
     private var labels: [String] = []
     private var uploaded: Data?
     private var uploadType: String?
+    private var reserve: [String: Any] = [:]
     private var finalize: [String: Any] = [:]
     private var uploadsFail = false
 
@@ -255,6 +265,7 @@ private final class MediaUploadStub: @unchecked Sendable {
     var requestLabels: [String] { lock.withLock { labels } }
     var uploadedBody: Data? { lock.withLock { uploaded } }
     var uploadContentType: String? { lock.withLock { uploadType } }
+    var reserveArgs: [String: Any] { lock.withLock { reserve } }
     var finalizeArgs: [String: Any] { lock.withLock { finalize } }
 
     private func respond(to request: StubRequest) -> Data? {
@@ -277,6 +288,7 @@ private final class MediaUploadStub: @unchecked Sendable {
         let value: String
         switch path {
         case "media:create_pending_media_upload":
+            lock.withLock { reserve = args }
             value = """
             [{"media_asset_id":"\(mediaAssetID.uuidString)","bucket":"couple-media",
             "storage_path":"couple/asset.bin","upload_url":"https://\(host)/upload/abc"}]

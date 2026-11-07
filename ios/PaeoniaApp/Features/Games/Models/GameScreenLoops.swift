@@ -1,14 +1,13 @@
 import Foundation
 
-/// The background loops every game screen runs while it is open: the heartbeat
-/// that says this screen is open, the follow of local changes, and the clock
-/// tick. Each game's view model owns one.
+/// The background work every game screen runs while it is open: the heartbeat
+/// that says this screen is open, the follow of local changes, the clock tick,
+/// and the server read after the app comes back. Each game's view model owns one.
 ///
 /// Presence writes go out one after another. A heartbeat already on its way
 /// finishes before the leaving write starts, so "away" is the last word the
 /// server hears. The leaving write runs in a background task, so it still goes
 /// out when the app moves to the background.
-@MainActor
 final class GameScreenLoops {
     private let kind: GameKind
     private let gateway: any GamesGateway
@@ -17,6 +16,7 @@ final class GameScreenLoops {
     private var heartbeatTask: Task<Void, Never>?
     private var observationTask: Task<Void, Never>?
     private var tickTask: Task<Void, Never>?
+    private var refreshTask: Task<Void, Never>?
     /// The newest presence write. The next one waits for it.
     private var lastPresenceWrite: Task<Void, Never>?
 
@@ -37,6 +37,7 @@ final class GameScreenLoops {
         heartbeatTask?.cancel()
         observationTask?.cancel()
         tickTask?.cancel()
+        refreshTask?.cancel()
     }
 
     // MARK: - Presence
@@ -116,11 +117,20 @@ final class GameScreenLoops {
         }
     }
 
-    /// Stops following the data and the clock. The heartbeat has its own end.
+    /// Reads the server in the background, replacing a read still on its way.
+    func refresh(_ read: @escaping @MainActor () async -> Void) {
+        refreshTask?.cancel()
+        refreshTask = Task { await read() }
+    }
+
+    /// Stops following the data and the clock, and any background read. The
+    /// heartbeat has its own end.
     func cancelFollowing() {
         observationTask?.cancel()
         observationTask = nil
         tickTask?.cancel()
         tickTask = nil
+        refreshTask?.cancel()
+        refreshTask = nil
     }
 }

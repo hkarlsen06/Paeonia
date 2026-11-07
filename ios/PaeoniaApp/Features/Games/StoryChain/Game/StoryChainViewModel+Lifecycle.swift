@@ -57,8 +57,7 @@ extension StoryChainViewModel {
             loops.beginHeartbeat()
             startLive()
             recompute()
-            refreshTask?.cancel()
-            refreshTask = Task { [weak self] in await self?.refresh() }
+            loops.refresh { [weak self] in await self?.refresh() }
         } else {
             loops.endHeartbeat()
             stopLive()
@@ -68,11 +67,10 @@ extension StoryChainViewModel {
 
     func cancelTasks() {
         loops.cancelFollowing()
-        for task in [startTask, refreshTask] {
+        for task in [startTask] {
             task?.cancel()
         }
         startTask = nil
-        refreshTask = nil
     }
 
     func resetForNewIdentity() {

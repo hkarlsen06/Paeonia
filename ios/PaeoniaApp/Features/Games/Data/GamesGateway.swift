@@ -80,25 +80,3 @@ nonisolated private struct PresenceRequest: Encodable {
         case isPresent = "p_present"
     }
 }
-
-/// The four fields every client operation write sends.
-nonisolated struct GameClientOperationFields: Encodable {
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(_ operation: SyncClientOperation) {
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-    }
-}

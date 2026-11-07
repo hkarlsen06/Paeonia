@@ -383,13 +383,12 @@ nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked 
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput,
         operation: WidgetCanvasClientOperation
-    ) async -> FinalizedMediaUploadResponse {
+    ) async {
         callOrder.append("finalize")
         finalizeInputs.append(input)
         if holdFirstFinalize, finalizeInputs.count == 1 {
             await withCheckedContinuation { heldFinalize = $0; isFinalizeHeld = true }
         }
-        return FinalizedMediaUploadResponse(mediaAssetID: input.reservation.mediaAssetID, uploadStatus: "finalized")
     }
 
     func submitRevision(

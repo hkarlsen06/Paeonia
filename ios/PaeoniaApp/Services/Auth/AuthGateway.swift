@@ -193,43 +193,33 @@ actor LiveAuthGateway: AuthGateway {
         guard let reservedParentID = UUID(uuidString: userID) else {
             throw AuthServiceError.invalidProfilePhoto
         }
-        let reserveOperation = await makeClientOperation()
-        let reservations: [MediaUploadReservation] = try await client.mutation(
-            "media:create_pending_media_upload",
-            args: CreatePendingProfilePhotoUploadRequest(
-                operation: reserveOperation,
-                reservedParentID: reservedParentID,
-                fileExtension: compressedImage.fileExtension
-            )
+        let upload = MediaUpload(
+            parentKind: "profile_photo",
+            parentID: reservedParentID,
+            purpose: "profile_photo",
+            mediaType: "image",
+            mimeType: compressedImage.mediaType,
+            fileExtension: compressedImage.fileExtension,
+            width: compressedImage.width,
+            height: compressedImage.height
         )
-        guard let reservation = reservations.first else {
-            throw AuthServiceError.invalidProfilePhoto
-        }
-
+        let uploader = MediaUploader(client: client)
+        let reserveOperation = await makeClientOperation()
+        let reservation = try await uploader.reserve(upload, operation: reserveOperation)
         let storageID = try await client.upload(
             compressedImage.data,
             contentType: compressedImage.mediaType,
             to: reservation.uploadURL
         )
-
         let finalizeOperation = await makeClientOperation()
-        let finalized: [FinalizedMediaUploadResponse] = try await client.mutation(
-            "media:finalize_media_upload",
-            args: FinalizeProfilePhotoUploadRequest(
-                reservation: reservation,
-                storageID: storageID,
-                reservedByClientOperationID: reserveOperation.id,
-                operation: finalizeOperation,
-                reservedParentID: reservedParentID,
-                image: compressedImage
-            )
+        return try await uploader.finalize(
+            upload,
+            reservation: reservation,
+            storageID: storageID,
+            content: MediaUploadContent(compressedImage.data),
+            reservedBy: reserveOperation.id,
+            operation: finalizeOperation
         )
-        guard let finalized = finalized.first,
-              finalized.uploadStatus == "finalized" else {
-            throw AuthServiceError.invalidProfilePhoto
-        }
-
-        return finalized.mediaAssetID
     }
 
     func markMediaForDeletion(_ mediaAssetID: UUID) async throws {
@@ -328,7 +318,7 @@ actor LiveAuthGateway: AuthGateway {
         return response.authDeleteStatus == "completed" ? .completed : .queued
     }
 
-    private func makeClientOperation() async -> AuthClientOperation {
+    private func makeClientOperation() async -> SyncClientOperation {
         await MainActor.run {
             SyncClientOperationFactory.shared.makeOperation()
         }
@@ -478,5 +468,13 @@ extension String {
     nonisolated var trimmedNonEmpty: String? {
         let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
+nonisolated struct MarkMediaForDeletionRequest: Encodable {
+    let mediaAssetID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case mediaAssetID = "p_media_asset_id"
     }
 }

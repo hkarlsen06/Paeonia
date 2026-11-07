@@ -98,7 +98,7 @@ nonisolated private struct SubmitPartRequest: Encodable {
     let stripAssetID: UUID?
     /// Nil when the part has no idea, so the key is left out.
     let ideaID: String?
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(
         payload: ExquisiteCorpseSubmitPartPayload,
@@ -113,7 +113,7 @@ nonisolated private struct SubmitPartRequest: Encodable {
         self.drawingAssetID = drawingAssetID
         self.stripAssetID = stripAssetID
         ideaID = payload.idea?.id
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {

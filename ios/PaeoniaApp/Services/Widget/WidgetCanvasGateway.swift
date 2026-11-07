@@ -86,7 +86,6 @@ nonisolated struct WidgetCanvasState: Decodable, Sendable {
 
 enum WidgetCanvasGatewayError: Error, Equatable {
     case emptyResponse
-    case notFinalized
     /// The canvas advanced (the partner saved) before our submit landed.
     case parentRevisionConflict
 }
@@ -108,7 +107,7 @@ nonisolated protocol WidgetCanvasGateway: Sendable {
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput,
         operation: WidgetCanvasClientOperation
-    ) async throws -> FinalizedMediaUploadResponse
+    ) async throws
 
     func submitRevision(
         _ submission: WidgetDrawingRevisionSubmission,
@@ -164,19 +163,10 @@ actor LiveWidgetCanvasGateway: WidgetCanvasGateway {
         revisionID: UUID,
         operation: WidgetCanvasClientOperation
     ) async throws -> MediaUploadReservation {
-        let rows: [MediaUploadReservation] = try await client.mutation(
-            "media:create_pending_media_upload",
-            args: CreatePendingWidgetDrawingUploadRequest(
-                operation: operation,
-                coupleID: coupleID,
-                canvasID: canvasID,
-                revisionID: revisionID
-            )
+        try await MediaUploader(client: client).reserve(
+            .widgetDrawing(revisionID: revisionID, coupleID: coupleID, pathContext: .widgetCanvas(canvasID)),
+            operation: operation
         )
-        guard let reservation = rows.first else {
-            throw WidgetCanvasGatewayError.emptyResponse
-        }
-        return reservation
     }
 
     func uploadPayload(reservation: MediaUploadReservation, data: Data) async throws -> String {
@@ -186,18 +176,15 @@ actor LiveWidgetCanvasGateway: WidgetCanvasGateway {
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput,
         operation: WidgetCanvasClientOperation
-    ) async throws -> FinalizedMediaUploadResponse {
-        let rows: [FinalizedMediaUploadResponse] = try await client.mutation(
-            "media:finalize_media_upload",
-            args: FinalizeWidgetDrawingUploadRequest(input: input, operation: operation)
+    ) async throws {
+        _ = try await MediaUploader(client: client).finalize(
+            .widgetDrawing(revisionID: input.revisionID),
+            reservation: input.reservation,
+            storageID: input.storageID,
+            content: MediaUploadContent(byteSize: input.byteSize, sha256Hex: input.sha256Hex),
+            reservedBy: input.reservedByOperationID,
+            operation: operation
         )
-        guard let finalized = rows.first else {
-            throw WidgetCanvasGatewayError.emptyResponse
-        }
-        guard finalized.uploadStatus == "finalized" else {
-            throw WidgetCanvasGatewayError.notFinalized
-        }
-        return finalized
     }
 
     func submitRevision(
@@ -243,110 +230,6 @@ nonisolated private struct GetOrCreateWidgetCanvasRequest: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case coupleID = "p_couple_id"
-    }
-}
-
-nonisolated private struct WidgetDrawingPathContext: Encodable {
-    let canvasID: UUID
-
-    enum CodingKeys: String, CodingKey {
-        case canvasID = "canvas_id"
-    }
-}
-
-nonisolated private struct CreatePendingWidgetDrawingUploadRequest: Encodable {
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-    let reservedParentKind = "widget_drawing_revision"
-    let reservedParentID: UUID
-    let uploadPurpose = "widget_drawing_payload"
-    let mediaType = "drawing_payload"
-    let fileExtension = LiveWidgetCanvasGateway.payloadFileExtension
-    let coupleID: UUID
-    let pathContext: WidgetDrawingPathContext
-
-    init(
-        operation: WidgetCanvasClientOperation,
-        coupleID: UUID,
-        canvasID: UUID,
-        revisionID: UUID
-    ) {
-        self.clientOperationID = operation.id
-        self.clientID = operation.clientID
-        self.clientSequence = operation.clientSequence
-        self.localCreatedAt = operation.localCreatedAt
-        self.reservedParentID = revisionID
-        self.coupleID = coupleID
-        self.pathContext = WidgetDrawingPathContext(canvasID: canvasID)
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-        case reservedParentKind = "p_reserved_parent_kind"
-        case reservedParentID = "p_reserved_parent_id"
-        case uploadPurpose = "p_upload_purpose"
-        case mediaType = "p_media_type"
-        case fileExtension = "p_file_extension"
-        case coupleID = "p_couple_id"
-        case pathContext = "p_path_context"
-    }
-}
-
-nonisolated private struct FinalizeWidgetDrawingUploadRequest: Encodable {
-    let mediaAssetID: UUID
-    let reservedByClientOperationID: UUID
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-    let bucket: String
-    let storagePath: String
-    let storageID: String
-    let reservedParentKind = "widget_drawing_revision"
-    let reservedParentID: UUID
-    let uploadPurpose = "widget_drawing_payload"
-    let mediaType = "drawing_payload"
-    let mimeType = LiveWidgetCanvasGateway.payloadMimeType
-    let byteSize: Int64
-    let sha256Hex: String
-
-    init(input: WidgetDrawingFinalizeInput, operation: WidgetCanvasClientOperation) {
-        self.mediaAssetID = input.reservation.mediaAssetID
-        self.reservedByClientOperationID = input.reservedByOperationID
-        self.clientOperationID = operation.id
-        self.clientID = operation.clientID
-        self.clientSequence = operation.clientSequence
-        self.localCreatedAt = operation.localCreatedAt
-        self.bucket = input.reservation.bucket
-        self.storagePath = input.reservation.storagePath
-        self.storageID = input.storageID
-        self.reservedParentID = input.revisionID
-        self.byteSize = input.byteSize
-        self.sha256Hex = input.sha256Hex
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "p_media_asset_id"
-        case reservedByClientOperationID = "p_reserved_by_client_operation_id"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-        case bucket = "p_bucket"
-        case storagePath = "p_storage_path"
-        case storageID = "p_storage_id"
-        case reservedParentKind = "p_reserved_parent_kind"
-        case reservedParentID = "p_reserved_parent_id"
-        case uploadPurpose = "p_upload_purpose"
-        case mediaType = "p_media_type"
-        case mimeType = "p_mime_type"
-        case byteSize = "p_byte_size"
-        case sha256Hex = "p_sha256_hex"
     }
 }
 

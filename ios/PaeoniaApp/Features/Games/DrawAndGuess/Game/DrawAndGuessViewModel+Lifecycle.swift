@@ -56,8 +56,7 @@ extension DrawAndGuessViewModel {
             startLive()
             // A replay or a first look that waited for the screen starts now.
             recompute()
-            refreshTask?.cancel()
-            refreshTask = Task { [weak self] in await self?.refresh() }
+            loops.refresh { [weak self] in await self?.refresh() }
         } else {
             loops.endHeartbeat()
             stopLive()
@@ -67,14 +66,13 @@ extension DrawAndGuessViewModel {
 
     func cancelTasks() {
         loops.cancelFollowing()
-        for task in [wrongGuessTask, draftTask, startTask, refreshTask] {
+        for task in [wrongGuessTask, draftTask, startTask] {
             task?.cancel()
         }
         cancelDrawingLoad()
         wrongGuessTask = nil
         draftTask = nil
         startTask = nil
-        refreshTask = nil
         // The wrong word's animation stopped halfway. The slots open again, so
         // the same round can be guessed when the screen comes back.
         if isShowingWrongGuess {

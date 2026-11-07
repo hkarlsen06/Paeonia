@@ -79,7 +79,7 @@ extension BoardGameViewModel {
         if newValue {
             loops.beginHeartbeat()
             recompute()
-            Task { [weak self] in await self?.refresh() }
+            loops.refresh { [weak self] in await self?.refresh() }
         } else {
             // Nothing counts as shown while the app is in the background.
             pauseDisplay()

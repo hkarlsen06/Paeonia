@@ -209,7 +209,7 @@ actor LiveThreadChatGateway: ThreadChatGateway {
         try await PaeoniaSignedIn.require(isSignedIn)
         try await client.mutation(
             "threads:delete_thread_message",
-            args: DeleteThreadMessageRequest(messageID: messageID, operation: GameClientOperationFields(operation))
+            args: DeleteThreadMessageRequest(messageID: messageID, operation: ClientOperationFields(operation))
         )
     }
 

@@ -43,7 +43,6 @@ struct GuessMySpotDraft: Equatable {
 /// Files: this file holds the state. Reading and starting are in `+State`, the
 /// moves in `+Moves`, the photos in `+Photo`, and the partner, the live room and
 /// the marks in `+Partner`.
-@MainActor
 @Observable
 final class GuessMySpotViewModel {
     // MARK: - State the screens read
@@ -138,7 +137,7 @@ final class GuessMySpotViewModel {
     /// Refusals the person was already told about on this visit.
     @ObservationIgnored var announcedRefusals: Set<UUID> = []
     /// The rendered marks and the keys they were rendered for.
-    @ObservationIgnored var markImages: [UUID: (key: String, image: UIImage)] = [:]
+    @ObservationIgnored var markImages = BoardMarkImages()
     @ObservationIgnored var hasFetchedMarks = false
     /// What the guess map showed when the guess locked in, and where on the screen
     /// it sat, so the reveal starts on the same view in the same place.
@@ -162,7 +161,6 @@ final class GuessMySpotViewModel {
 
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?
-    @ObservationIgnored var refreshTask: Task<Void, Never>?
     @ObservationIgnored var moveTask: Task<Void, Never>?
 
     init(
@@ -287,7 +285,7 @@ final class GuessMySpotViewModel {
         deferredReveals = []
         refusedMoves = []
         announcedRefusals = []
-        markImages = [:]
+        markImages = BoardMarkImages()
         hasFetchedMarks = false
         hasLoaded = false
         startFailure = nil

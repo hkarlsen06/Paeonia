@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-@MainActor @Observable
+@Observable
 final class PiccanteViewModel {
     var state: RemotePiccanteState?
     var game: RemotePiccanteGame?
@@ -134,7 +134,7 @@ final class PiccanteViewModel {
             playbackClock = nil
             loops.beginHeartbeat()
             startLive()
-            Task { await refresh() }
+            loops.refresh { [weak self] in await self?.refresh() }
         } else {
             loops.endHeartbeat()
             live?.stop()

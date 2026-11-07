@@ -485,7 +485,7 @@ private nonisolated final class SyncGatewaySpy: WidgetCanvasGateway, @unchecked 
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput,
         operation: WidgetCanvasClientOperation
-    ) throws -> FinalizedMediaUploadResponse { throw WidgetCanvasGatewayError.emptyResponse }
+    ) throws { throw WidgetCanvasGatewayError.emptyResponse }
     func submitRevision(
         _ submission: WidgetDrawingRevisionSubmission,
         operation: WidgetCanvasClientOperation

@@ -132,12 +132,12 @@ nonisolated private struct MindMeldGameRequest: Encodable {
 nonisolated private struct MindMeldLockRequest: Encodable {
     let roundID: UUID
     let word: String
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(roundID: UUID, word: String, operation: SyncClientOperation) {
         self.roundID = roundID
         self.word = word
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {

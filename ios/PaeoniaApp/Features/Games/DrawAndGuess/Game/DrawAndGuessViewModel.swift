@@ -15,7 +15,6 @@ import SwiftUI
 ///
 /// Files: this file holds the state and the lifecycle. The turn actions, the
 /// guess handling, the reveal, and the partner/live parts are in the extensions.
-@MainActor
 @Observable
 final class DrawAndGuessViewModel {
     // MARK: - State the screens read
@@ -150,7 +149,6 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var draftTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?
     @ObservationIgnored var drawingLoadTask: Task<Void, Never>?
-    @ObservationIgnored var refreshTask: Task<Void, Never>?
 
     // Per round bookkeeping.
     @ObservationIgnored var tilesRoundID: UUID?

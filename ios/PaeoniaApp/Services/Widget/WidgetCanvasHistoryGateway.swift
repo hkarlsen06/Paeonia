@@ -58,7 +58,7 @@ nonisolated struct NoOpWidgetCanvasGateway: WidgetCanvasGateway {
     }
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput, operation: WidgetCanvasClientOperation
-    ) throws -> FinalizedMediaUploadResponse {
+    ) throws {
         throw WidgetCanvasGatewayError.emptyResponse
     }
     func submitRevision(

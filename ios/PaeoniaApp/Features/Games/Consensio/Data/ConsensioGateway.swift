@@ -151,14 +151,14 @@ nonisolated private struct ConsensioPlaceRequest: Encodable {
     let topic: ConsensioTopicChoice
     /// Sent as a number, as Convex's `v.number()` expects.
     let spot: Int
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(roundID: UUID, roundNumber: Int, topic: ConsensioTopicChoice, spot: Int, operation: SyncClientOperation) {
         self.roundID = roundID
         self.roundNumber = roundNumber
         self.topic = topic
         self.spot = spot
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -193,12 +193,12 @@ nonisolated private struct ConsensioPlaceRequest: Encodable {
 nonisolated private struct ConsensioGuessRequest: Encodable {
     let roundID: UUID
     let guess: Int
-    let operation: GameClientOperationFields
+    let operation: ClientOperationFields
 
     init(roundID: UUID, guess: Int, operation: SyncClientOperation) {
         self.roundID = roundID
         self.guess = guess
-        self.operation = GameClientOperationFields(operation)
+        self.operation = ClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {

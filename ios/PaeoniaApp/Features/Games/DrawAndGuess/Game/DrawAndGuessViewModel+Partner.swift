@@ -56,19 +56,10 @@ extension DrawAndGuessViewModel {
         let sentAt = dependencies.now()
         localInviteSentAt = sentAt
         recompute()
-        do {
-            let result = try await gateway.sendInvite(.drawAndGuess)
-            localInviteSentAt = result.sentAt
-        } catch let error as PaeoniaConvexError {
-            if case .server(code: "53300", message: _) = error {
-                // The server already counted an invite in the last 15 minutes.
-                return
-            }
-            localInviteSentAt = nil
-            notice = .couldNotSendInvite(PaeoniaFailure(error))
-        } catch {
-            localInviteSentAt = nil
-            notice = .couldNotSendInvite(PaeoniaFailure(error))
+        let delivery = await GameInviteDelivery.send(.drawAndGuess, through: dependencies.gateway)
+        localInviteSentAt = delivery.localSentAt(optimistic: localInviteSentAt)
+        if let failure = delivery.failure {
+            notice = .couldNotSendInvite(failure)
         }
         recompute()
     }

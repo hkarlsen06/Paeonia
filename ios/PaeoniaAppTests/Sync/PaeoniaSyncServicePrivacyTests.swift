@@ -157,7 +157,7 @@ struct PaeoniaSyncServicePrivacyTests {
             streams: [stream],
             stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: InMemoryPendingSyncOperationRepository(),
-            syncTimeoutNanoseconds: 100_000_000,
+            syncTimeout: .milliseconds(100),
             failedRunRetryDelay: 0
         )
         await coordinator.configure(session: .test())
@@ -192,7 +192,7 @@ struct PaeoniaSyncServicePrivacyTests {
             streams: [slowDrain],
             stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: InMemoryPendingSyncOperationRepository(),
-            syncTimeoutNanoseconds: 50_000_000
+            syncTimeout: .milliseconds(50)
         )
         await coordinator.configure(session: .test())
 
