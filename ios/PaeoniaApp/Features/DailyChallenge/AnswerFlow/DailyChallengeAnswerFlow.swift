@@ -86,7 +86,7 @@ struct DailyChallengeAnswerFlow: View {
 }
 
 private struct DailyChallengeAnswerFlowPreviewHost: View {
-    @State var viewModel = DailyChallengeViewModel(service: PreviewDailyChallengeService())
+    @State private var viewModel = DailyChallengeViewModel(service: PreviewDailyChallengeService())
 
     var body: some View {
         DailyChallengeAnswerFlow(viewModel: viewModel)

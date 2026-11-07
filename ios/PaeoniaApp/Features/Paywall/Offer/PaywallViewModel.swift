@@ -5,7 +5,6 @@ import OSLog
 #endif
 import StoreKit
 
-@MainActor
 @Observable
 final class PaywallViewModel: PresentationReadinessProviding {
     #if DEBUG
@@ -56,14 +55,6 @@ final class PaywallViewModel: PresentationReadinessProviding {
 
     var currentProduct: Product? {
         product(for: billingPeriod)
-    }
-
-    var currentFreeTrial: PaeoniaFreeTrial? {
-        freeTrial(for: billingPeriod)
-    }
-
-    var selectedProductID: PaeoniaSubscriptionProductID {
-        Self.productID(for: billingPeriod)
     }
 
     func product(for period: PaeoniaBillingPeriod) -> Product? {

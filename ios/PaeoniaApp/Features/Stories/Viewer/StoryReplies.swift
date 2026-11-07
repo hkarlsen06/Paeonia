@@ -4,7 +4,6 @@ import Observation
 /// The replies to the story on screen. It holds the story's chat, the shared chat that
 /// memory comments and question chats also use, so a reply written under the story goes
 /// through the same send queue, works offline, and shows up in the chat sheet.
-@MainActor
 @Observable
 final class StoryReplies {
     private(set) var chat: ThreadChatViewModel?

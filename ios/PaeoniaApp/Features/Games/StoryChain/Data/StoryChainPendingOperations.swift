@@ -56,7 +56,6 @@ nonisolated extension StoryChainPendingWork {
 /// Saves the moves of Story Chain in the pending operations. The screen shows
 /// each move's effect at once and nudges the sync to send it. Each method
 /// throws when the phone could not save the move, so the screen can say so.
-@MainActor
 struct StoryChainMoveQueue {
     private let dependencies: GamesDependencies
 

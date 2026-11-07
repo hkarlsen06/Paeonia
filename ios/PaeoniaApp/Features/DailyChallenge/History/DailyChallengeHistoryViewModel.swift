@@ -8,7 +8,6 @@ import OSLog
 /// Questions tab. It groups the questions into days and keeps the last good content
 /// visible across a failed refresh, so a blip never blanks the section. Chat previews
 /// and unread marks come from `DailyChallengeViewModel`, which the rows read directly.
-@MainActor
 @Observable
 final class DailyChallengeHistoryViewModel {
     enum ViewState: Equatable {

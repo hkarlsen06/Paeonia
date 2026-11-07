@@ -37,7 +37,6 @@ struct SiriDailyQuestion: AppEntity {
     }
 }
 
-@MainActor
 enum SiriDailyQuestions {
     static func load(for couple: SiriCouple) async -> DailyChallengeViewModel {
         let model = SiriAppContext.shared.dailyChallengeModel()

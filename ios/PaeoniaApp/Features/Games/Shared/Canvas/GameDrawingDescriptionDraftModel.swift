@@ -2,7 +2,6 @@ import Observation
 import SwiftUI
 
 /// Authored text stays separate from the drawing and never contains an automatic word or idea hint.
-@MainActor
 @Observable
 final class GameDrawingDescriptionDraftModel {
     private(set) var text = ""

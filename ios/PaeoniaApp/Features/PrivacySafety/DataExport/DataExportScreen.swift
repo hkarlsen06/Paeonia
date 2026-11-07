@@ -9,7 +9,7 @@ struct DataExportScreen: View {
     @State private var viewModel: DataExportViewModel
 
     @MainActor
-    init(service: (any DataExportServicing)? = DataExportServiceFactory.makeDefault()) {
+    init(service: DataExportService? = DataExportServiceFactory.makeDefault()) {
         _viewModel = State(initialValue: DataExportViewModel(service: service))
     }
 

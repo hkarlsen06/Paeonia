@@ -1,7 +1,6 @@
 import AppIntents
 import Foundation
 
-@MainActor
 enum SiriChats {
     struct Snapshot {
         var conversations: [ChatConversationEntity] = []

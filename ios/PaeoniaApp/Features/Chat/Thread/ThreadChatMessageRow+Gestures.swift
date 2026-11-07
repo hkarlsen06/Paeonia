@@ -152,13 +152,11 @@ extension ThreadChatMessageRow {
         )
         withAnimation(.easeOut(duration: Self.resetAnimationDuration)) {
             replySwipeOffset = 0
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.resetAnimationDuration) {
+        } completion: {
             isReplySwipeActive = false
-        }
-        guard outcome == .trigger, let onReply else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.resetAnimationDuration + 0.04) {
-            onReply()
+            if outcome == .trigger {
+                onReply?()
+            }
         }
     }
 

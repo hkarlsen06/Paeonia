@@ -25,7 +25,6 @@ enum PostPairingOutcome: Equatable {
 /// the steps from what loaded (`PostPairingPlan`) and from this phone's progress for
 /// the pair, so a step the person already moved past never comes back. A load that
 /// fails or takes too long only skips its own step.
-@MainActor
 @Observable
 final class PostPairingFlowModel {
     enum Screen: Equatable {

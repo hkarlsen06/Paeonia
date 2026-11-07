@@ -33,7 +33,6 @@ nonisolated struct LiveLoginBackoff: Sendable {
 /// Never call `logout()` on it. The provider's `logout()` signs out of Clerk.
 /// Sign out through Clerk and the client follows.
 /// Writes and one-shot reads keep using `PaeoniaConvexClient`.
-@MainActor
 @Observable
 final class LiveConvexConnection {
     static let shared = LiveConvexConnection()

@@ -100,7 +100,7 @@ struct DailyChallengeScreen: View {
         .paeoniaTabBackdrop()
         .clearsDeliveredQuestionTimeReminders()
         .navigationTitle(Text(.mainTabQuestions))
-        .toolbar(hidesTabBar ? .hidden : .visible, for: .tabBar)
+        .toolbarVisibility(hidesTabBar ? .hidden : .visible, for: .tabBar)
         .onChange(of: isChatOpen) { _, isOpen in
             if !isOpen { isOpeningChat = false }
         }

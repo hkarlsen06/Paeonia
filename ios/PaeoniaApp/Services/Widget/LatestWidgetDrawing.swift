@@ -12,7 +12,6 @@ struct WidgetDrawingReactionTarget: Equatable {
 /// The couple's newest drawing on the server and who drew it, as the live canvas feed last saw
 /// it. The files the widget reads carry no author id, and a drawing the user saved on this phone
 /// carries an id that only this phone knows, so a reaction needs the server's answer.
-@MainActor
 @Observable
 final class LatestWidgetDrawing {
     static let shared = LatestWidgetDrawing()

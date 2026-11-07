@@ -154,14 +154,6 @@ extension DrawAndGuessViewModel {
         return min(1, clock.replayTime(at: wall) / clock.duration)
     }
 
-    /// The drawing the guesser sees at `wall` (a steady clock such as
-    /// `CACurrentMediaTime()`), scaled to a canvas of `side` points.
-    func replayDrawing(atWall wall: TimeInterval, side: CGFloat) -> PKDrawing {
-        guard let timeline = replayTimeline, let clock = replayClock else { return PKDrawing() }
-        let drawing = timeline.drawing(at: clock.replayTime(at: wall))
-        return GameCanvas.fitted(drawing, toSide: side)
-    }
-
     func isReplayFinished(atWall wall: TimeInterval) -> Bool {
         replayClock?.isFinished(at: wall) ?? false
     }

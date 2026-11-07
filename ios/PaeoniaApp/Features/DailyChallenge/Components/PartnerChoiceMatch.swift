@@ -177,7 +177,6 @@ struct PartnerChoiceMatchBanner: View {
 /// When each round's match began to bloom. The chat can rebuild a row mid-reveal, so
 /// the new row picks up the same burst instead of starting another, and the haptic
 /// plays once.
-@MainActor
 private enum MatchCelebrationStarts {
     static var dates: [UUID: Date] = [:]
 }

@@ -4,7 +4,6 @@ import simd
 
 /// The die: a rounded blush cube with plum pips. The stage moves it between the
 /// two base yards, bobs it while it waits for a tap, and tumbles it to a face.
-@MainActor
 final class LudoDieNode {
     /// Moves and turns with the die. Takes the taps.
     let root = Entity()

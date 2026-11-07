@@ -4,7 +4,6 @@ import QuartzCore
 /// drifts against the display, so some frames got two steps and some none, which
 /// showed as small hitches, and each move woke on its own. Every move waiting here
 /// wakes in the same frame and reads the same time.
-@MainActor
 final class GuessMySpotFrameClock: NSObject {
     private static let shared = GuessMySpotFrameClock()
 

@@ -18,7 +18,6 @@ nonisolated struct AppBadgeCounts: Decodable, Equatable, Sendable {
 
 /// The server's badge counts for the tab bar. The tabs and the app icon read the
 /// same counts, so the icon never shows a number that no tab explains.
-@MainActor
 @Observable
 final class AppBadges {
     static let shared = AppBadges()

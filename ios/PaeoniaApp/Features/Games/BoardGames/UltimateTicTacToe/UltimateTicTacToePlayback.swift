@@ -17,7 +17,6 @@ enum UltimateTicTacToeMotion {
 ///
 /// Each beat checks a run id after it sleeps, so a move that arrives while the
 /// last one is still playing finishes the old one at once and starts its own.
-@MainActor
 @Observable
 final class UltimateTicTacToePlayback {
     /// Everything the playback reads from the screen.

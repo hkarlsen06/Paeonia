@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 
-@MainActor
 @Observable
 final class RelationshipMilestoneViewModel: PresentationReadinessProviding {
     private(set) var startedOn: String?

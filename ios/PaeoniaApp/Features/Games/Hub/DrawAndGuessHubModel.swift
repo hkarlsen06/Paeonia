@@ -4,7 +4,6 @@ import SwiftUI
 /// Draw & Guess on the Games tab: its hub card and badge, read from the Games
 /// cache, and the screens it opens. `game` is built once, so a notification
 /// that opens the game finds it ready.
-@MainActor
 @Observable
 final class DrawAndGuessHubModel: GameHubModel {
     let kind = GameKind.drawAndGuess

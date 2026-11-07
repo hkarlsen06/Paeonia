@@ -4,7 +4,6 @@ import Observation
 /// The emoji every reaction row offers, like Tidex's: the ones this person picked most
 /// recently first, filled up with the usual ones. All places that take a reaction share the
 /// list. It stays on this phone and sign-out clears it.
-@MainActor
 @Observable
 final class ReactionPalette {
     static let shared = ReactionPalette()

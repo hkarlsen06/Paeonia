@@ -1,6 +1,5 @@
 import Foundation
 
-@MainActor
 struct ThreadChatVoiceDraftEditing {
     let draft: ThreadChatVoiceDraft?
     let save: (ThreadChatVoiceDraft) -> Bool

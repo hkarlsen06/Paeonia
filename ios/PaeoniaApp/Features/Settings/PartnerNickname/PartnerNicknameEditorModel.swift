@@ -5,7 +5,6 @@ import Observation
 /// The More tab owns one instance, so a save keeps running and still reports back if the person
 /// leaves the screen. The saved nickname stays upstream in the access snapshot, which the server
 /// pushes live. This model only holds what the person has typed.
-@MainActor
 @Observable
 final class PartnerNicknameEditorModel {
     enum Event: Equatable {

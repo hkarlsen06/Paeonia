@@ -4,7 +4,6 @@ import UIKit
 /// Prepares one picture for `PaeoniaShareSheet` and saves it to Photos. The
 /// picture is made once, so the preview, the share sheet and the saved copy are
 /// the same image.
-@MainActor
 @Observable
 final class PaeoniaShareModel {
     enum Phase {

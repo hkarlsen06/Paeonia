@@ -4,7 +4,6 @@ import Observation
 /// Checks a partner's code and joins it. The root owns one, so a code typed on the
 /// paywall or the invite screen is checked once, and the join screen opens with the
 /// inviter already known.
-@MainActor
 @Observable
 final class PairingJoinViewModel {
     /// Who the checked code belongs to.

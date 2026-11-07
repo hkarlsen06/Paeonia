@@ -11,7 +11,6 @@ import StoreKit
 /// the care here is about never charging twice: a restore that was paid for but
 /// not confirmed yet is recovered before anything new is bought, and the buy
 /// button turns into a re-check once a payment is waiting for confirmation.
-@MainActor
 @Observable
 final class StreakRestoreViewModel {
     /// The streak as it was when the offer opened. `latestStreak` re-reads it

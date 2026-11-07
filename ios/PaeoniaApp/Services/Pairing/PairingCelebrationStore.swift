@@ -3,7 +3,6 @@ import Foundation
 /// What this phone remembers about each pair's first moments: whether the
 /// celebration played, how far the first day sequence after it got, and the
 /// "Things to try together" card Home shows after that.
-@MainActor
 protocol PairingCelebrationStoring: AnyObject {
     func hasSeenCelebration(forPairID pairID: UUID) -> Bool
     func markCelebrationSeen(forPairID pairID: UUID)
@@ -14,7 +13,6 @@ protocol PairingCelebrationStoring: AnyObject {
     func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forPairID pairID: UUID)
 }
 
-@MainActor
 final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
     static let shared = UserDefaultsPairingCelebrationStore()
 

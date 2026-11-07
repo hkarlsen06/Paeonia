@@ -5,7 +5,6 @@ import Observation
 /// show at once and work offline. Questions, answers, chats and Story Chain stories are searched
 /// on the server, after the person pauses typing. A failed server search keeps the phone's
 /// results and says what is missing, so the screen never looks empty because of the connection.
-@MainActor
 @Observable
 final class SearchViewModel {
     enum Phase: Equatable {

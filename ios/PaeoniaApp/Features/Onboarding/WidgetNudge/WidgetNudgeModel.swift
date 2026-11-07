@@ -18,7 +18,6 @@ nonisolated struct WidgetCenterConfigurations: WidgetConfigurationProviding {
 /// Watches for the Paeonia drawing widget while the onboarding step asks the person
 /// to add it. The step checks when it appears and each time the app comes back to
 /// the front, since adding a widget means leaving the app.
-@MainActor
 @Observable
 final class WidgetNudgeModel {
     /// True once the drawing widget was found. It stays true.

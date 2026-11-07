@@ -3,7 +3,6 @@ import SwiftUI
 import UIKit
 
 /// The pieces of the scene the stage keeps hold of.
-@MainActor
 struct LudoSceneParts {
     let root: Entity
     let pawns: [LudoPawnNode]
@@ -17,7 +16,6 @@ struct LudoSceneParts {
 }
 
 /// The board pieces that change color when a player picks another one.
-@MainActor
 struct LudoPaintTargets {
     var boardTop: ModelEntity?
     /// By player (`player.rawValue - 1`): the glow over that player's half of the middle.
@@ -26,7 +24,6 @@ struct LudoPaintTargets {
 
 /// Builds the board, the pawns, the die and the lights. The board is one slab with
 /// its layout painted and carved on the top, so the scene has about 40 entities.
-@MainActor
 enum LudoSceneBuilder {
     static func build(
         viewer: BoardPlayer,

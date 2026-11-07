@@ -21,20 +21,20 @@ extension MainTabView {
     var tabNavigation: some View {
         TabView(selection: Binding<MainTab>(get: { selection.wrappedValue }, set: { selectTab($0) })) {
             ForEach(tabs) { tab in
-                content(for: tab)
-                    .toolbar(gameTabBarVisibility, for: .tabBar)
-                    .onGeometryChange(for: CGFloat.self) {
-                        $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
-                    } action: { bottom in
-                        guard tab == .questions else { return }
-                        gameChatReturn.chatBottom = bottom
-                    }
-                    .tag(tab)
-                    .badge(badgeCount(for: tab))
-                    .tabItem {
-                        Label(tab.title, systemImage: tab.systemImage)
-                            .accessibilityIdentifier("mainTab.\(tab.rawValue)")
-                    }
+                Tab(value: tab) {
+                    content(for: tab)
+                        .toolbarVisibility(gameTabBarVisibility, for: .tabBar)
+                        .onGeometryChange(for: CGFloat.self) {
+                            $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
+                        } action: { bottom in
+                            guard tab == .questions else { return }
+                            gameChatReturn.chatBottom = bottom
+                        }
+                } label: {
+                    Label(tab.title, systemImage: tab.systemImage)
+                }
+                .badge(badgeCount(for: tab))
+                .accessibilityIdentifier("mainTab.\(tab.rawValue)")
             }
         }
         .onGeometryChange(for: CGFloat.self) {

@@ -1,7 +1,7 @@
 import Observation
 import SwiftUI
 
-@MainActor @Observable
+@Observable
 final class PiccanteHubModel: GameHubModel {
     let kind = GameKind.piccante
     let game: PiccanteViewModel

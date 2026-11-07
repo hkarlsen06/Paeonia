@@ -17,7 +17,6 @@ struct WidgetDrawingSaveFailure: Equatable, Identifiable {
     var reason: Reason = .couldNotSave
 }
 
-@MainActor
 @Observable
 final class WidgetDrawingViewModel {
     /// Where the latest send stands, as the person sees it.

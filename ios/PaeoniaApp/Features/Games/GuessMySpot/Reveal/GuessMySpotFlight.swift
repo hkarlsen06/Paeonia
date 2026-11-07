@@ -101,7 +101,6 @@ nonisolated enum GuessMySpotFlight {
 /// Draws map views off screen before the camera gets to them (`MKMapSnapshotter`).
 /// That puts their images in the phone's storage, from where the map reads them
 /// faster than over the network. MapKit has no way to load them into the map itself.
-@MainActor
 final class GuessMySpotMapPreloader {
     typealias Stage = GuessMySpotRevealTimeline.Camera
 

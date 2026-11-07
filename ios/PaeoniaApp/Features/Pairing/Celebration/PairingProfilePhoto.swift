@@ -8,19 +8,12 @@ import UIKit
 /// data in `body`. A photo that is already shown stays on screen while a new one
 /// loads, and loading the same asset again does nothing. The photo only clears
 /// when the person no longer has one.
-@MainActor
 @Observable
 final class PairingProfilePhoto {
     private(set) var image: UIImage?
     /// True from the moment a photo is requested until it is shown or the
     /// first try fails. A failed photo is tried again while the view is shown.
     private(set) var isLoading = false
-
-    /// Changes when a different image replaces the shown one. Views use it to
-    /// animate photo changes, because `UIImage` is not cheap to compare.
-    var imageID: ObjectIdentifier? {
-        image.map { ObjectIdentifier($0) }
-    }
 
     /// The asset `image` was decoded from.
     @ObservationIgnored private var shownAssetID: UUID?

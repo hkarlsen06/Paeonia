@@ -4,7 +4,6 @@ import SwiftUI
 /// Mind Meld on the Games tab: its hub card and badge, read from the Mind Meld
 /// cache, and the screens it opens. `game` is built once, so a notification that
 /// opens the game finds it ready.
-@MainActor
 @Observable
 final class MindMeldHubModel: GameHubModel {
     let kind = GameKind.mindMeld

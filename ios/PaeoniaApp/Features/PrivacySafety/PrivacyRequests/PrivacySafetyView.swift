@@ -21,7 +21,7 @@ struct PrivacySafetyView: View {
         partnerUserID: UUID?,
         partnerName: String,
         service: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
-        dataExportService: (any DataExportServicing)? = DataExportServiceFactory.makeDefault(),
+        dataExportService: DataExportService? = DataExportServiceFactory.makeDefault(),
         operationProvider: (any SyncClientOperationProviding)? = nil,
         onReportedAndLeft: @escaping () -> Void = {}
     ) {

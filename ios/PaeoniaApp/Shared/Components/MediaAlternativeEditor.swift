@@ -6,7 +6,6 @@ extension EnvironmentValues {
     @Entry var mediaAlternativeEditingService: MediaAlternativeEditingService?
 }
 
-@MainActor
 @Observable
 final class MediaAlternativeEditorModel {
     var isPresented = false

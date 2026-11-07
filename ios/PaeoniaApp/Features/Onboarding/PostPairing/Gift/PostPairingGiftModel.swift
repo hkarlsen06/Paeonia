@@ -23,7 +23,6 @@ struct PostPairingGiftEffects {
 /// The partner's drawing as a wrapped gift: it waits to be opened, then plays back
 /// stroke by stroke at the pace it was drawn, with a soft tick as each stroke lands.
 /// Holding speeds it up, as in Draw & Guess.
-@MainActor
 @Observable
 final class PostPairingGiftModel {
     enum Phase: Equatable {

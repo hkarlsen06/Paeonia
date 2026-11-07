@@ -17,7 +17,6 @@ import Observation
 /// Whatever the phone can no longer do, the person is never shut out. If it has
 /// lost its passcode there is nothing to unlock with, so the lock turns itself
 /// off and says so.
-@MainActor
 @Observable
 final class AppLockModel {
     static let shared = AppLockModel()

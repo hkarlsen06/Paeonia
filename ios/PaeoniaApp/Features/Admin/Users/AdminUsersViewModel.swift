@@ -4,7 +4,6 @@ import Observation
 /// The users list, or the banned users list. Typing is debounced by the screen's
 /// `.task(id: searchText)`, which calls `search()` for each change and cancels the
 /// call before it.
-@MainActor
 @Observable
 final class AdminUsersViewModel {
     /// Searches start at this many characters. Empty text lists the newest users.

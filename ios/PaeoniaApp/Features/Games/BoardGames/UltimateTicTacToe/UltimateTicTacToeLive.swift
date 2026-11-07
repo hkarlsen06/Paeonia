@@ -29,7 +29,6 @@ nonisolated struct UltimateTicTacToeLiveMessage: GameLiveMessage, Equatable {
 /// Joins one Ultimate Tic-Tac-Toe screen to its relay room while the screen is
 /// open. My picks go out as I make them, and again when my partner arrives.
 /// My partner's picks go to `onPartnerPick`.
-@MainActor
 final class UltimateTicTacToeLiveLink {
     private let room: WidgetLiveDrawing
     private let channel: GameLiveChannel<UltimateTicTacToeLiveMessage>

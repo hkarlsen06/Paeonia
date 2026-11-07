@@ -5,7 +5,6 @@ import Foundation
 /// Production uses the empty value, so every feature creates its normal live
 /// dependency. Debug local flows and focused integration tests inject deterministic
 /// view models here while still rendering the production root and feature views.
-@MainActor
 struct RootFeatureDependencies {
     var paywallViewModel: PaywallViewModel?
     var paywallPresentationOverride: PaywallPresentationOverride?

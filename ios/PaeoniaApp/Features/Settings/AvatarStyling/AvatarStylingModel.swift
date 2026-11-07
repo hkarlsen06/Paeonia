@@ -20,7 +20,6 @@ nonisolated struct LiveAvatarDecorationGateway: AvatarDecorationSaving {
 }
 
 /// The tabs share the saved choice. The editor keeps its draft until a save succeeds or is cancelled.
-@MainActor
 @Observable
 final class AvatarStylingModel {
     private(set) var decorations = CoupleAvatarDecorations()

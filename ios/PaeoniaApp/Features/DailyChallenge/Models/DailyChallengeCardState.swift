@@ -50,10 +50,6 @@ nonisolated struct DailyChallengeCardState: Equatable, Sendable {
         self.moreLockedPartnerQuestionCount = moreLockedPartnerQuestionCount
     }
 
-    var isActionEnabled: Bool {
-        kind != .loading
-    }
-
     /// What happens next once the user has answered today's question, in the order the
     /// cases are checked: questions from earlier days wait for the user's answer, the
     /// partner has not answered yet, or both have answered.

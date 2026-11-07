@@ -6,7 +6,6 @@ import Observation
 /// `TopicsLiveFeed` and the open topic through its own subscription. Answering a
 /// topic question goes through `DailyChallengeViewModel`, which this hands the
 /// topic's questions to, so drafts, sending, the reveal and the chat are shared.
-@MainActor
 @Observable
 final class TopicsViewModel {
     enum Notice: Equatable {

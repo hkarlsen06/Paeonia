@@ -18,7 +18,6 @@ import Synchronization
 /// The key comes from the `PaeoniaPostHogProjectKey` Info.plist entry, which
 /// `PAEONIA_POSTHOG_PROJECT_KEY` fills in from the xcconfig files. An empty key
 /// leaves PostHog off, and every call here does nothing.
-@MainActor
 enum PaeoniaAnalytics {
     /// Server functions that are not counted. Some are called so often, or so
     /// mechanically, that counting them says nothing about what people use.

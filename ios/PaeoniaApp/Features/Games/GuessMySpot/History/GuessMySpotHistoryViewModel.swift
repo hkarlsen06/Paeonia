@@ -5,7 +5,6 @@ import UIKit
 /// "Our guesses": every guessed round as a pin at its real spot, and each partner's
 /// record as a guesser. It shows what the Guess my spot cache holds first, so the
 /// screen opens offline, then reads the server.
-@MainActor
 @Observable
 final class GuessMySpotHistoryViewModel {
     private(set) var rounds: [RemoteGuessMySpotRound] = []

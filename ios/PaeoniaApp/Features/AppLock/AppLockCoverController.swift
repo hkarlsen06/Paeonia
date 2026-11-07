@@ -6,7 +6,6 @@ import UIKit
 /// view could not hide. It also turns the scene's lifecycle notifications into
 /// calls on `AppLockModel`. The notifications arrive synchronously, so the
 /// cover is up before the system takes the app switcher's snapshot.
-@MainActor
 final class AppLockCoverController {
     private let model: AppLockModel
     private var window: UIWindow?

@@ -1,6 +1,5 @@
 import StoreKit
 
-@MainActor
 protocol PaeoniaStoreKitServicing: AnyObject {
     var products: [Product] { get }
 

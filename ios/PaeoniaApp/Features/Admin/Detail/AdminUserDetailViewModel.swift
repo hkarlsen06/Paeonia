@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 
-@MainActor
 @Observable
 final class AdminUserDetailViewModel {
     /// The server accepts a ban reason of 1 to 500 characters, counted as Unicode

@@ -55,9 +55,6 @@ nonisolated enum DailyChallengeAnswerKind: Codable, Equatable, Hashable, Identif
         }
     }
 
-    var supportsInlineTextSubmission: Bool {
-        self == .text
-    }
 }
 
 extension DailyChallengeAnswerKind {
@@ -453,10 +450,6 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
 
     var usesCombinedCompose: Bool {
         combinedSecondaryKind != nil
-    }
-
-    var canSubmitAnswer: Bool {
-        isAvailableToAnswer && defaultComposableKind != nil
     }
 
     /// The kind of a still-private own answer the user is allowed to change. Editing

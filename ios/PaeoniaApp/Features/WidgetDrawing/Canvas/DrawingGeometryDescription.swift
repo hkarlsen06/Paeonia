@@ -3,7 +3,6 @@ import PencilKit
 
 /// Only describes stroke geometry. It never guesses an object, a game answer,
 /// or content outside the supplied drawing, such as the folded creature parts.
-@MainActor
 enum DrawingGeometryDescription {
     static func text(_ drawing: PKDrawing, side: CGFloat) -> String {
         ([String(localized: .drawingGeometryExplanation)] + marks(drawing, side: side)).joined(separator: "\n")

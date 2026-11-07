@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 
-@MainActor
 @Observable
 final class ThreadChatViewModel {
     enum Notice: Equatable {
@@ -191,10 +190,6 @@ final class ThreadChatViewModel {
 
     /// The server's list of days has arrived.
     var hasLoadedRounds: Bool { loadedRounds != nil }
-
-    /// The question's newest day. It is the one just answered when the page opens
-    /// straight from the answer flow.
-    var newestRoundID: UUID? { rounds.last?.id }
 
     /// Reads this phone's copy of the chat. Called before the screen opens, so its
     /// first frame already shows every message and nothing moves in after it appears.

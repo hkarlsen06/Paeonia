@@ -36,7 +36,6 @@ nonisolated enum GamesDestination: Hashable, Sendable {
 /// It reads the Games cache, which the live feeds keep current, so the hub shows
 /// the last state at launch and offline. The settings and who has which game
 /// open come from the shared overview. Each built game is in `games`.
-@MainActor
 @Observable
 final class GamesViewModel {
     enum Screen: Equatable {

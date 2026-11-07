@@ -3,7 +3,6 @@ import UIKit
 
 /// The selected page's existing scroll view. Native controls and gestures use
 /// the same zoom and pan state; changing pages cannot operate the previous photo.
-@MainActor
 @Observable
 final class PaeoniaImageZoomController {
     private(set) var scale: CGFloat = 1

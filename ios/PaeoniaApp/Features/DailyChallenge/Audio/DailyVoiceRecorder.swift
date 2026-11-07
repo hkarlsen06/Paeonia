@@ -6,7 +6,6 @@ import Observation
 /// tracks elapsed time for the UI, and supports re-recording before sending. Takes under
 /// one second are thrown away. Playback and uploading are handled elsewhere, this only
 /// captures.
-@MainActor
 @Observable
 final class DailyVoiceRecorder {
     enum Phase: Equatable {

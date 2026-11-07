@@ -1,11 +1,9 @@
 import Foundation
 
-@MainActor
 protocol PairingClientOperationProviding: AnyObject {
     func makeOperation() -> PairingClientOperation
 }
 
-@MainActor
 final class PairingClientOperationFactory: PairingClientOperationProviding {
     static let shared = PairingClientOperationFactory()
 

@@ -113,7 +113,6 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
     }
 }
 
-@MainActor
 @Observable
 final class PaeoniaBannerCenter {
     private(set) var content: PaeoniaBannerContent?

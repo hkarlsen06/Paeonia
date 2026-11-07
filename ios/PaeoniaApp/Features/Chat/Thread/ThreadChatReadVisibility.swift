@@ -4,7 +4,6 @@ import SwiftUI
 /// built and redraws one only when its content changes, so a row that took these values
 /// from the page would keep the ones it was built with. The page and every row share one
 /// of these instead, and each row redraws when the page changes it.
-@MainActor
 @Observable
 final class ThreadChatReadViewport {
     /// The message list's frame in global coordinates, above the composer.

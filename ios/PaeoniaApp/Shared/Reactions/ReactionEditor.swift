@@ -7,7 +7,6 @@ import Observation
 /// A change shows at once. If the server turns it down, the earlier reaction comes back and
 /// the caller gets the failure, to say so. The saved reactions stay with the caller, because
 /// the chat reads them with its messages and the other places read them from the feed.
-@MainActor
 @Observable
 final class ReactionEditor {
     /// A reaction the user just chose and the server has not confirmed. A nil emoji means the

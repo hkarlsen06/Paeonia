@@ -4,7 +4,6 @@ import SwiftUI
 /// Exquisite corpse on the Games tab: its hub card and badge, read from the
 /// Exquisite corpse cache, and the screens it opens. `game` is built once, so a
 /// notification that opens the game finds it ready.
-@MainActor
 @Observable
 final class ExquisiteCorpseHubModel: GameHubModel {
     let kind = GameKind.exquisiteCorpse

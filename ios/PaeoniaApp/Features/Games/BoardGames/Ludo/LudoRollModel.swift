@@ -15,7 +15,6 @@ struct LudoRollContext: Equatable {
 }
 
 /// Where the saved roll lives. The screen binds it to the board games cache.
-@MainActor
 struct LudoRollStore {
     var load: () async -> LudoSavedRoll?
     var save: (LudoSavedRoll) async -> Void
@@ -45,7 +44,6 @@ struct LudoRollStore {
 /// Rolls also travel live (see `LudoLiveLink`). `announce` sends mine as the
 /// tumble starts. A partner's roll that arrives through `receivePartnerRoll`
 /// tumbles their die on this phone at the same time, before their move exists here.
-@MainActor
 @Observable
 final class LudoRollModel {
     private(set) var die: LudoDieState = .idle(side: .one)

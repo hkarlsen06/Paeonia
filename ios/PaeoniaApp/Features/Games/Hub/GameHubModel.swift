@@ -4,7 +4,6 @@ import SwiftUI
 /// hub model conforms, and `GamesViewModel.games` lists it. A kind that is not
 /// listed shows nowhere: no hub card, no Home card, and a deep link to it opens
 /// the hub.
-@MainActor
 protocol GameHubModel: AnyObject {
     var kind: GameKind { get }
     /// The game waits for this person to move. The hub card shows it.

@@ -7,7 +7,6 @@ import Observation
 ///
 /// The Memories tab reads its list only when it opens, so this reads the memories on the
 /// phone itself, and only while the card still waits for a memory.
-@MainActor
 @Observable
 final class HomeFirstStepsModel {
     /// Nil while there is no pair, or its first day sequence has not finished on this phone.

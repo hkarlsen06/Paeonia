@@ -38,7 +38,6 @@ enum WelcomeSignInMode: Equatable {
 /// until the drawing screen has loaded, which adds it to the draft one stroke at a time,
 /// so undo takes it off like strokes drawn there. Choosing to join or to sign in to an
 /// existing account drops it with the first drawing.
-@MainActor
 @Observable
 final class WelcomeFlowModel {
     private(set) var step: WelcomeStep

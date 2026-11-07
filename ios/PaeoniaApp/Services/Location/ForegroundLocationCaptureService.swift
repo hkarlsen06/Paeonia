@@ -12,7 +12,6 @@ nonisolated enum ForegroundLocationAuthorizationState: Equatable, Sendable {
     case denied
 }
 
-@MainActor
 protocol ForegroundLocationCapturing: AnyObject {
     var authorizationState: ForegroundLocationAuthorizationState { get }
     func captureCurrentLocation() async throws -> LocationPoint
@@ -24,7 +23,6 @@ extension ForegroundLocationCapturing {
     var authorizationState: ForegroundLocationAuthorizationState { .notDetermined }
 }
 
-@MainActor
 final class ForegroundLocationCaptureService: NSObject, ForegroundLocationCapturing {
     private let manager = CLLocationManager()
     /// Everyone waiting for the request in flight. A second caller (a foreground

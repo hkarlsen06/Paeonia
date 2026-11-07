@@ -7,7 +7,6 @@ import UIKit
 /// Plays a short voice answer with a simple progress scrubber. No autoplay and no
 /// lock-screen metadata, so playback only starts on an explicit tap. Only one clip plays
 /// at a time: starting one pauses the other.
-@MainActor
 @Observable
 final class DailyVoicePlayer {
     private(set) var isPlaying = false

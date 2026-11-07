@@ -5,7 +5,6 @@ import SwiftUI
 /// The photos picked for the next chat message, ported from Tidex's composer. Up to
 /// four per message. Each is compressed when it's picked, off the main actor, with
 /// the same compressor as memory photos, so sending never waits on it.
-@MainActor
 @Observable
 final class ThreadChatPhotoStaging {
     static let maximumPhotos = 4

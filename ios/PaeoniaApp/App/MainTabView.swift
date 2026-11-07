@@ -71,7 +71,6 @@ struct MainTabActions {
 /// the models are built on first use. A SwiftUI view initializer runs on every
 /// parent update, so building them there would make and throw away four view
 /// models each time.
-@MainActor
 final class MainTabModels {
     private let dependencies: RootFeatureDependencies
     private let siriContext: SiriAppContext

@@ -6,7 +6,6 @@ import UIKit
 /// partner draw from the Us tab. Strokes stream to the partner through the
 /// relay while they are drawn, and the finished strokes follow so both canvases
 /// end up the same. Sending to the widgets stays a separate step, as before.
-@MainActor
 @Observable
 final class WidgetLiveDrawing {
     /// Live points go out at most this often.

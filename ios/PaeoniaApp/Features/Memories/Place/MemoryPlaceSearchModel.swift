@@ -5,7 +5,6 @@ import Observation
 /// State for the place sheet: search suggestions as the person types, and before that,
 /// places near where their photos were taken. A failed search is classified with
 /// `PaeoniaFailure`, so only a phone with no connection is told it is offline.
-@MainActor
 @Observable
 final class MemoryPlaceSearchModel: NSObject {
     var query = "" {

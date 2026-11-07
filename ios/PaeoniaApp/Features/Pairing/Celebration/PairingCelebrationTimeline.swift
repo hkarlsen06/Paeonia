@@ -10,7 +10,6 @@ import SwiftUI
 /// `skip` and `stop` end the intro early. Every run has an id, and each step
 /// checks it after sleeping, so no step, haptic, or completion call can happen
 /// after the timeline has settled.
-@MainActor
 @Observable
 final class PairingCelebrationTimeline {
     /// Whether the celebration is still deciding, waiting for the partner's name,

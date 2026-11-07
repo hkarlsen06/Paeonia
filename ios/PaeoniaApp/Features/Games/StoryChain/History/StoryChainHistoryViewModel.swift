@@ -50,7 +50,6 @@ nonisolated struct StoryChainHistoryListing: Equatable, Sendable {
 /// "Our stories": every finished story with the "All" and "Starred" filters. It
 /// shows what the Story Chain cache holds first, so the screen opens offline,
 /// then reads the server.
-@MainActor
 @Observable
 final class StoryChainHistoryViewModel {
     enum Filter: Hashable, CaseIterable {

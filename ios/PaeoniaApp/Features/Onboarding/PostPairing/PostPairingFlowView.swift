@@ -34,7 +34,7 @@ struct PostPairingFlowView: View {
             // A step that changes under the drawing screen swaps at once, so going
             // back lands on it instead of watching the gift fade out.
             .animation(model.drawingViewModel == nil ? PaeoniaMotion.meaningfulMoment : nil, value: model.screen)
-            .toolbar(.hidden, for: .navigationBar)
+            .toolbarVisibility(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: drawingPresented) {
                 if let drawingViewModel = model.drawingViewModel {
                     WidgetDrawingView(viewModel: drawingViewModel)

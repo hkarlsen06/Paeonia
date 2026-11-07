@@ -2,7 +2,6 @@ import Observation
 
 /// Whether to show the Admin row. The server checks admin access again on every
 /// admin call, so this only hides the row. It fails closed: any error hides it.
-@MainActor
 @Observable
 final class AdminAccessModel {
     private(set) var isAdmin = false

@@ -4,7 +4,6 @@ import QuartzCore
 
 /// One drawing from "Our drawings": it plays back once at the pace it was drawn,
 /// with the word, who drew it, and how the round went.
-@MainActor
 @Observable
 final class DrawAndGuessHistoryDetailViewModel {
     enum DrawingState: Equatable {

@@ -6,7 +6,6 @@ import UIKit
 /// One pawn in the scene: a turned body and a flat disc on top that carries the
 /// owner's mark. The stage moves it, either with a clip or by easing toward its
 /// resting place.
-@MainActor
 final class LudoPawnNode {
     let index: Int
     let player: BoardPlayer

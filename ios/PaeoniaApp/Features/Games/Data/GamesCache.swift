@@ -135,10 +135,6 @@ nonisolated extension GamesLocalDocument {
         }
     }
 
-    func hintedSlotIndexes(roundID: UUID) -> [Int] {
-        hints.first { $0.roundID == roundID }?.slotIndexes ?? []
-    }
-
     /// Takes a state from the server unless it is older than the one kept.
     /// Returns whether it took it.
     mutating func accept(_ newState: RemoteDrawAndGuessState) -> Bool {

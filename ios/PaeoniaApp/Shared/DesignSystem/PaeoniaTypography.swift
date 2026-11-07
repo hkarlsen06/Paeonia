@@ -11,8 +11,6 @@ nonisolated enum PaeoniaTypography {
     static let caption = Font.caption
     static let button = Font.headline
     static let countdownNumber = Font.system(.largeTitle, design: .rounded).weight(.bold)
-    static let widgetPrimary = Font.headline
-    static let widgetSecondary = Font.caption
     /// A named collection, such as a question topic, in the brand's serif.
     static let collectionTitle = Font.system(.title3, design: .serif).weight(.semibold)
     /// The large heading of a collection's own screen.

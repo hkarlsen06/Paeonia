@@ -4,12 +4,10 @@ import Foundation
 /// explicit sign-out (it expires, or is ended on another device). The data
 /// stays so that person loses nothing, but if someone else signs in next,
 /// the root clears it first, the same way a sign-out would.
-@MainActor
 protocol RootDeviceOwnerStoring: AnyObject {
     var ownerUserID: String? { get set }
 }
 
-@MainActor
 final class UserDefaultsRootDeviceOwnerStore: RootDeviceOwnerStoring {
     private let defaults: UserDefaults
     private let key = "paeonia.root.deviceOwnerUserID"
@@ -24,7 +22,6 @@ final class UserDefaultsRootDeviceOwnerStore: RootDeviceOwnerStoring {
     }
 }
 
-@MainActor
 final class InMemoryRootDeviceOwnerStore: RootDeviceOwnerStoring {
     var ownerUserID: String?
 

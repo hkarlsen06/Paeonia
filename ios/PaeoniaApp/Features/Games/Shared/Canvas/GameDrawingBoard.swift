@@ -6,7 +6,6 @@ import SwiftUI
 /// model owns one. `PencilKitCanvasView` binds to it, and it reports each change
 /// the person makes so the view model can stream it to the partner and keep a
 /// draft on the phone.
-@MainActor
 @Observable
 final class GameDrawingBoard: WidgetDrawingToolControlling {
     var drawing = PKDrawing()

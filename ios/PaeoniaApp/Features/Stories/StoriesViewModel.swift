@@ -20,7 +20,6 @@ struct StoryOpenRequest: Equatable {
     let showsReplies: Bool
 }
 
-@MainActor
 @Observable
 final class StoriesViewModel {
     private(set) var stories: [Story] = []

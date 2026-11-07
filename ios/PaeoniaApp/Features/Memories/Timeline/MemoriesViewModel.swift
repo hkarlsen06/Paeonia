@@ -9,7 +9,6 @@ enum MemoryDraftFailure: Equatable {
     case write
 }
 
-@MainActor
 @Observable
 final class MemoriesViewModel {
     let memoryService: any MemoryDataServicing

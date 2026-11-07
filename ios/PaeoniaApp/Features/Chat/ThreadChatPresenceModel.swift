@@ -8,7 +8,6 @@ import Observation
 /// leaving. The partner's dots show while the server says they type. The server ends
 /// that 4 seconds after their last heartbeat, such as when their app was killed. The
 /// dots hide 2 seconds after typing ends, and right away when their message arrives.
-@MainActor
 @Observable
 final class ThreadChatPresenceModel {
     private enum Timing {

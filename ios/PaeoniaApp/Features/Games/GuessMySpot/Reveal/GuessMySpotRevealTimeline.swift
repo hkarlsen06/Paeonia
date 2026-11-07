@@ -46,7 +46,6 @@ struct GuessMySpotRevealHaptics {
 ///
 /// Every run has an id and each step checks it after sleeping, so no step or
 /// haptic can happen after the timeline settled or stopped.
-@MainActor
 @Observable
 final class GuessMySpotRevealTimeline {
     typealias Plan = GuessMySpotRevealPlan

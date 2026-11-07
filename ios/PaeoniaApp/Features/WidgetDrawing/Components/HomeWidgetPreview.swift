@@ -85,7 +85,6 @@ nonisolated struct HomeWidgetPreviewLoader {
     }
 }
 
-@MainActor
 @Observable
 final class HomeWidgetPreviewModel {
     private(set) var content = HomeWidgetPreviewLoader.Content(

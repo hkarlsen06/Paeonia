@@ -11,7 +11,6 @@ enum PartnerShare: Equatable {
 /// Decides when the permission primers show. The location primer is offered
 /// when Home settles. The notification primer waits until the person has sent
 /// their partner something, so the ask comes when it makes sense to them.
-@MainActor
 @Observable
 final class RootPairingPermissionPrimerCoordinator {
     enum Primer: String, Identifiable {

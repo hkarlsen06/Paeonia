@@ -4,7 +4,6 @@ import Observation
 /// "Our melds": the couple's numbers and every finished game, newest first. It
 /// shows what the Mind Meld cache holds first, so the screen opens offline, then
 /// reads the server.
-@MainActor
 @Observable
 final class MindMeldHistoryViewModel {
     /// Finished games, newest first.

@@ -5,42 +5,21 @@ import SwiftUI
 // circular hole through its canvas while the surface's content cascades in. These are
 // the cues the content reads to animate itself in.
 
-private struct LaunchContentRevealedKey: EnvironmentKey {
-    static let defaultValue = true
-}
-
-private struct LaunchSidesUncoveredKey: EnvironmentKey {
-    static let defaultValue = true
-}
-
-private struct LaunchIntroCompleteKey: EnvironmentKey {
-    static let defaultValue = true
-}
-
 extension EnvironmentValues {
     /// Flips true when the cold-launch intro begins its exit, cueing the first app
     /// surface to animate its content in (see `View.launchEntrance(order:)`). Defaults
     /// to true so content outside the cold launch (tab switches, previews) shows at once.
-    var launchContentRevealed: Bool {
-        get { self[LaunchContentRevealedKey.self] }
-        set { self[LaunchContentRevealedKey.self] = newValue }
-    }
+    @Entry var launchContentRevealed = true
 
     /// Flips true when the intro's opening hole reaches the screen's left and right
     /// edges. The Home map's flame sweep starts here, so it plays as the screen opens
     /// rather than behind the overlay. Defaults to true outside the cold launch.
-    var launchSidesUncovered: Bool {
-        get { self[LaunchSidesUncoveredKey.self] }
-        set { self[LaunchSidesUncoveredKey.self] = newValue }
-    }
+    @Entry var launchSidesUncovered = true
 
     /// True once the cold-launch intro has fully finished. Launch-adjacent moments
     /// that shouldn't compete with the intro (e.g. streak celebrations) can wait on
     /// this. Defaults to true so anything outside the cold launch behaves normally.
-    var launchIntroComplete: Bool {
-        get { self[LaunchIntroCompleteKey.self] }
-        set { self[LaunchIntroCompleteKey.self] = newValue }
-    }
+    @Entry var launchIntroComplete = true
 }
 
 extension View {

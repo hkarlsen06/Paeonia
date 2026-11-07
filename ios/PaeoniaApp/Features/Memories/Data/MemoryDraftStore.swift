@@ -4,7 +4,6 @@ import Foundation
 /// being torn down (for example when the app switches to the paywall or an account
 /// notice) and an app relaunch. One draft per user, so one person's unsaved memory
 /// never shows up in another person's session on a shared device.
-@MainActor
 protocol MemoryDraftStoring: AnyObject {
     func draft(for userID: UUID) throws -> MemoryDraft?
     /// Saves the draft, or removes the stored one when the draft has no content.
@@ -16,7 +15,6 @@ protocol MemoryDraftStoring: AnyObject {
 /// drafts. Picked photos are written as files in a private directory, like the staged
 /// daily answer media, so large images stay out of `UserDefaults`. Reads and writes
 /// fail as a whole, so a restored draft never silently omits an attachment.
-@MainActor
 final class LocalMemoryDraftStore: MemoryDraftStoring {
     static let shared = LocalMemoryDraftStore()
 

@@ -1,12 +1,6 @@
 import Foundation
 
-protocol PairingJoinInviteStoring: AnyObject {
-    func loadInviteCode() -> String?
-    func saveInviteCode(_ code: String)
-    func clearInviteCode()
-}
-
-final class UserDefaultsPairingJoinInviteStore: PairingJoinInviteStoring {
+final class UserDefaultsPairingJoinInviteStore {
     static let shared = UserDefaultsPairingJoinInviteStore()
 
     /// A saved code can be no older than the invite it came from, so an older one cannot

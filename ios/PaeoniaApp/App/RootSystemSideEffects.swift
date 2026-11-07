@@ -1,6 +1,5 @@
 import Foundation
 
-@MainActor
 protocol RootSystemSideEffecting {
     func resetPushRegistrationState()
     func reconcileDeliveredNotifications() async
@@ -10,7 +9,6 @@ protocol RootSystemSideEffecting {
     func clearAppBadge()
 }
 
-@MainActor
 struct LiveRootSystemSideEffects: RootSystemSideEffecting {
     func resetPushRegistrationState() {
         PushRegistrationFingerprintStore.resetAll()
@@ -25,7 +23,6 @@ struct LiveRootSystemSideEffects: RootSystemSideEffecting {
     }
 }
 
-@MainActor
 struct NoOpRootSystemSideEffects: RootSystemSideEffecting {
     func resetPushRegistrationState() {}
     func reconcileDeliveredNotifications() {}

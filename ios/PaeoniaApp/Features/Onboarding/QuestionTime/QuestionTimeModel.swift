@@ -34,7 +34,6 @@ enum QuestionTimeChoice: CaseIterable, Hashable {
 /// Saving comes first. If it fails, nothing else happens: the choice stays on screen
 /// and `saveFailure` tells the step to show the banner. If the person turns
 /// notifications down, the reminder stays saved and the step still finishes.
-@MainActor
 @Observable
 final class QuestionTimeModel {
     private(set) var choice: QuestionTimeChoice = .evening

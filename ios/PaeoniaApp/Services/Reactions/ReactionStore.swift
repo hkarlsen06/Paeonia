@@ -8,7 +8,6 @@ import Observation
 /// `saved` is the cached server list, so every screen shows it offline and a reaction from the
 /// partner arrives through the live feed (`ReactionsLiveFeed`). The user's own change shows at
 /// once through the editor and waits for the server.
-@MainActor
 @Observable
 final class ReactionStore {
     private(set) var participants = ReactionParticipants(currentUserID: nil, partnerName: "")

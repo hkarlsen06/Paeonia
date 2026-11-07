@@ -8,7 +8,6 @@ extension Notification.Name {
     )
 }
 
-@MainActor
 @Observable
 final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
     static let shared = PaeoniaStoreKitService()

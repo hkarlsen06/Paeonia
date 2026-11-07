@@ -1,6 +1,5 @@
 import Observation
 
-@MainActor
 @Observable
 final class AdminAuditLogViewModel {
     private(set) var entries = [AdminAuditEntry]()

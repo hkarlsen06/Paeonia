@@ -3,7 +3,6 @@ import Observation
 
 /// "Past games" of one board game: every finished game, newest first, read from
 /// the server a page at a time.
-@MainActor
 @Observable
 final class BoardGameHistoryViewModel {
     let kind: GameKind

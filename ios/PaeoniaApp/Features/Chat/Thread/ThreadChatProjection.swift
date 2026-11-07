@@ -311,7 +311,6 @@ struct ThreadChatProjection {
 }
 
 /// Keeps the last projection and rebuilds it only when its input changed.
-@MainActor
 final class ThreadChatProjectionStore {
     private var cachedInput: ThreadChatProjection.Input?
     private var cachedProjection = ThreadChatProjection.empty

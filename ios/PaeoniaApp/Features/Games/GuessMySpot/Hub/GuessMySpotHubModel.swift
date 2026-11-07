@@ -4,7 +4,6 @@ import SwiftUI
 /// Guess my spot on the Games tab: its hub card and badge, read from the game's
 /// cache, and the screens it opens. `game` is built once, so a notification that
 /// opens the game finds it ready.
-@MainActor
 @Observable
 final class GuessMySpotHubModel: GameHubModel {
     let kind = GameKind.guessMySpot

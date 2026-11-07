@@ -7,7 +7,6 @@ import Observation
 /// returns to the foreground, when the couple's day ends, and when the shown content changes on
 /// this phone is enough. There is no live subscription: the content is at least a week old, and the
 /// pick depends on the time the app asks at.
-@MainActor
 @Observable
 final class LookBackViewModel {
     private(set) var item: LookBackItem?

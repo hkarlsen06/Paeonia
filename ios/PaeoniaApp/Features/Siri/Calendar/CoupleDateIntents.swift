@@ -123,7 +123,6 @@ struct OpenCoupleDateIntent {
 
 /// The couple's dates as the timeline shows them, written through `CoupleDatesViewModel`, the
 /// editors' local-first path: each write is queued and sent the way an editor's save is.
-@MainActor
 struct CoupleDateWrites {
     private let couple: SiriCouple
     private let model = CoupleDatesViewModel()

@@ -38,10 +38,6 @@ enum ThreadChatMenuAction: MessageMenuAction, Sendable {
         }
     }
 
-    func isDestructive() -> Bool {
-        self == .report || self == .delete
-    }
-
     /// The answer a row id stands for, `answer-<id>`.
     private static func answerID(ofRow rowID: String) -> UUID? {
         UUID(uuidString: String(rowID.dropFirst(ThreadChatProjection.answerRowPrefix.count)))

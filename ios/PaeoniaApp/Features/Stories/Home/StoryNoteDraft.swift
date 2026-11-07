@@ -1,6 +1,5 @@
 import Observation
 
-@MainActor
 @Observable
 final class StoryNoteDraft {
     var text: String

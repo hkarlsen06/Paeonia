@@ -3,7 +3,6 @@ import Foundation
 /// Decides when the one-time pairing celebration, and the first day sequence
 /// that follows it, cover the paired screen. `RootViewModel` owns one and feeds
 /// it every committed access resolution.
-@MainActor
 struct RootPairingCelebrationState {
     private let store: any PairingCelebrationStoring
 

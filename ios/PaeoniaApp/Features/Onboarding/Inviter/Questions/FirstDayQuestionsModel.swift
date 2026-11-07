@@ -9,7 +9,6 @@ import Observation
 /// answer screen picks it up. The answer is saved as the person moves on. A failed save
 /// keeps them on the page with their text, and `saveFailure` tells the view to show the
 /// banner. The answer can be changed by opening the flow again, until the partner joins.
-@MainActor
 @Observable
 final class FirstDayQuestionsModel: Identifiable {
     enum Step: Equatable {
@@ -32,7 +31,7 @@ final class FirstDayQuestionsModel: Identifiable {
     @ObservationIgnored private let ownerUserID: UUID
     @ObservationIgnored private let gateway: any FirstDayGateway
     @ObservationIgnored private let operationProvider: any SyncClientOperationProviding
-    @ObservationIgnored private let draftStore: any FirstDayAnswerDraftStoring
+    @ObservationIgnored private let draftStore: UserDefaultsFirstDayAnswerDraftStore
     @ObservationIgnored private let preferences: (any NotificationPreferencesProviding)?
 
     init(
@@ -40,7 +39,7 @@ final class FirstDayQuestionsModel: Identifiable {
         ownerUserID: UUID,
         gateway: any FirstDayGateway,
         operationProvider: (any SyncClientOperationProviding)? = nil,
-        draftStore: (any FirstDayAnswerDraftStoring)? = nil,
+        draftStore: UserDefaultsFirstDayAnswerDraftStore? = nil,
         preferences: (any NotificationPreferencesProviding)? = NotificationPreferencesServiceFactory.makeDefault()
     ) {
         self.question = question

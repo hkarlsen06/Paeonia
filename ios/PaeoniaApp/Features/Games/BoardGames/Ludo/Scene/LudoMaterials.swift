@@ -92,7 +92,6 @@ enum LudoMaterials {
 /// The scanned surface pictures of the glaze (CC0, from ambientCG: Clay005's grain
 /// under Porcelain002's gloss), made gray so the players' colors tint them. They load
 /// once, before the scene's materials are made.
-@MainActor
 struct LudoSurfaces {
     let glazeDetail: TextureResource
     let glazeRoughness: TextureResource
@@ -159,7 +158,6 @@ struct LudoSurfaces {
 
 /// The picture on the flat top of a pawn: the owner's mark in blush on a darker
 /// disc of the pawn's color.
-@MainActor
 enum LudoMarkPicture {
     static func image(style: BoardPieceStyle, pawnColor: UIColor) -> CGImage? {
         let side = CGFloat(LudoSceneStyle.markTextureSide)
@@ -185,7 +183,6 @@ enum LudoMarkPicture {
 /// Poly Haven's fireplace), touched with pink on the left and lavender on the right over
 /// a dark plum floor. It is an OpenEXR picture in the asset catalog, so its lamps keep
 /// their brightness.
-@MainActor
 enum LudoBackdrop {
     /// Loaded once and kept, so the board opens faster the next time.
     private static var loaded: EnvironmentResource?

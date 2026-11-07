@@ -19,7 +19,6 @@ nonisolated struct LudoLiveMessage: GameLiveMessage, Equatable {
 /// Joins one Ludo screen's die to the relay room while the screen is open. My
 /// rolls go out as they start, and again when my partner opens the game in the
 /// middle of my turn. My partner's rolls go to the roll model.
-@MainActor
 final class LudoLiveLink {
     private let room: WidgetLiveDrawing
     private let channel: GameLiveChannel<LudoLiveMessage>

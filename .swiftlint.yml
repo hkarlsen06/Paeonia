@@ -1,7 +1,10 @@
 # SwiftLint configuration for Paeonia.
 #
-# This mirrors Tidex's high-signal lint posture while omitting Tidex's baseline
-# file because Paeonia starts without existing Swift debt.
+# This mirrors Tidex's high-signal lint posture without Tidex's baseline file.
+# Existing exceptions are marked inline with `swiftlint:disable` comments.
+#
+# There are no analyzer rules. `swiftlint analyze` finds no files in an Xcode 27
+# build log, because the compiler reads its arguments from response files.
 
 included:
   - ios
@@ -45,10 +48,6 @@ opt_in_rules:
   - redundant_nil_coalescing
   - toggle_bool
   - unavailable_function
-
-analyzer_rules:
-  - unused_declaration
-  - unused_import
 
 disabled_rules:
   # swift-format is the repository's formatting authority.

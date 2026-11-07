@@ -273,7 +273,7 @@ extension PaeoniaSyncService {
         retryTask = Task { [weak self] in
             let delay = max(0, retryAt.timeIntervalSinceNow)
             if delay > 0 {
-                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                try? await Task.sleep(for: .seconds(delay))
             }
 
             guard !Task.isCancelled else {

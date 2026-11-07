@@ -5,7 +5,6 @@ import PencilKit
 /// One creature from "Our creatures": the folded paper opens once at the pace the
 /// reveal uses, without the bloom, with the credits.
 /// "Play again" starts it over.
-@MainActor
 @Observable
 final class ExquisiteCorpseHistoryDetailViewModel {
     enum DrawingState: Equatable {

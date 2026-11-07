@@ -52,7 +52,6 @@ nonisolated enum SignInMethodLinkError: Error, Equatable, Sendable {
 }
 
 /// Links and unlinks Apple and Google on the signed-in account.
-@MainActor
 protocol SignInMethodLinking: AnyObject {
     /// The linked methods as this phone knows them. Needs no network call.
     func linkedMethods() -> [LinkedSignInMethod]

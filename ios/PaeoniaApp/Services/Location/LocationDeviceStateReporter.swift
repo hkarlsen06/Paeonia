@@ -3,7 +3,6 @@ import Foundation
 /// Sends this phone's `LocationDeviceState` to the server, one report at a
 /// time. A state the server already confirmed in this launch is not sent
 /// again, and a failed report is sent at the next `report()`.
-@MainActor
 final class LocationDeviceStateReporter {
     /// The state to send now, or `nil` when nothing should be sent.
     var currentState: @MainActor () -> LocationDeviceState? = { nil }

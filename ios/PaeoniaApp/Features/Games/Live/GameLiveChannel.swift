@@ -37,7 +37,6 @@ nonisolated enum GameLiveTicket {
 /// game never shares the four-socket cap with Home and the canvas. Only Draw & Guess
 /// attaches a canvas to it. The drawer joins with the `drawing` role and the
 /// guesser with `watching`. The other games join with `present`.
-@MainActor
 enum GameLiveRoom {
     static func make(
         _ kind: GameKind,

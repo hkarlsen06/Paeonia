@@ -63,12 +63,6 @@ extension DrawAndGuessViewModel {
         await queueFinishedDrawing(for: round, drawing: board.canonicalDrawing)
     }
 
-    func queueDrawing(for round: DrawAndGuessRoundView, drawing: PKDrawing) async {
-        guard board.beginFinishing() else { return }
-        defer { board.endFinishing() }
-        await queueFinishedDrawing(for: round, drawing: drawing)
-    }
-
     @discardableResult
     private func queueFinishedDrawing(for round: DrawAndGuessRoundView, drawing: PKDrawing) async -> Bool {
         guard let userID = currentUserID, let coupleID = participants.coupleID,

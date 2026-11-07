@@ -18,7 +18,6 @@ nonisolated struct GameAttention: Equatable, Sendable {
 /// Plays a haptic and a sound when a game's `GameAttention` changes while the game is open.
 /// A view model feeds it after every read of the game, so the cue does not depend on
 /// which view is on screen or whether an animation finished.
-@MainActor
 final class GameAttentionCue {
     /// The haptics and sounds the cue plays. Injected so tests can record them.
     struct Player {

@@ -172,7 +172,6 @@ extension MemoryPhotoEntity {
 
 /// Memory changes through `MemoriesViewModel`, the same local-first path as the edit form
 /// and Delete: each change is queued and sent the way the form's save is.
-@MainActor
 struct MemoryWrites {
     private let model = MemoriesViewModel()
     private let ownerUserID: UUID

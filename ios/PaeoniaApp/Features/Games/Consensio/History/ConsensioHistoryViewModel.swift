@@ -5,7 +5,6 @@ import UIKit
 /// "What we know": every guessed round, newest first, and each partner's record
 /// as a guesser. It shows what the Consensio cache holds first, so the screen
 /// opens offline, then reads the server.
-@MainActor
 @Observable
 final class ConsensioHistoryViewModel {
     private(set) var rounds: [RemoteConsensioRound] = []

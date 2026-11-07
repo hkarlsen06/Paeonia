@@ -60,7 +60,6 @@ nonisolated enum GameMetrics {
 /// The square's side as the drawer's drawing screen settled it. The drawer's result
 /// screen takes the same side, so the square does not change size when the
 /// drawing is sent.
-@MainActor
 final class GameSideMemory {
     var side: CGFloat?
 }

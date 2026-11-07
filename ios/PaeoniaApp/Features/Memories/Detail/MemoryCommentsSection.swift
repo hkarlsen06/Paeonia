@@ -24,7 +24,7 @@ struct MemoryCommentsSection: View {
         .navigationDestination(isPresented: $isShowingChat) {
             if let chat {
                 ThreadChatScreen(viewModel: chat)
-                    .toolbar(.hidden, for: .tabBar)
+                    .toolbarVisibility(.hidden, for: .tabBar)
                     .analyticsScreen("memory_comments")
             }
         }

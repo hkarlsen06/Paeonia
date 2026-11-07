@@ -3,7 +3,6 @@ import Foundation
 /// The couple's dates and memories as Siri, Shortcuts and Spotlight see them, read from this
 /// phone's caches with its queued writes laid over them, the way the app shows them. Nothing
 /// here reads the network, and without access every list is empty.
-@MainActor
 enum SiriContent {
     static func dates() async -> [CoupleDateEntity] {
         guard let couple = await SiriAppContext.shared.access().couple else { return [] }

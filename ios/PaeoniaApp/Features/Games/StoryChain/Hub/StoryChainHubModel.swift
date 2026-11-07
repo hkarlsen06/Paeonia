@@ -66,7 +66,6 @@ nonisolated struct StoryChainHubSummary: Equatable, Sendable {
 /// Story Chain on the Games tab: its hub card and badge, read from the caches,
 /// and the screens it opens. `game` is built once, so a notification that opens
 /// the game finds it ready.
-@MainActor
 @Observable
 final class StoryChainHubModel: GameHubModel {
     let kind = GameKind.storyChain

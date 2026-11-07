@@ -35,7 +35,4 @@ actor RemoteAccessRouteService: AccessRouteServicing {
 }
 
 extension AccessRouteServicing {
-    func resolveRoute(hasPendingInvite: Bool = false) async throws -> AccessRoute {
-        try await resolveAccess(hasPendingInvite: hasPendingInvite).route
-    }
 }

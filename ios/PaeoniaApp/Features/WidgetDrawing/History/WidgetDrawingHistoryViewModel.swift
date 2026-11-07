@@ -20,7 +20,6 @@ nonisolated struct WidgetDrawingHistoryItem: Identifiable, Sendable, Equatable {
 /// Loads the couple's past drawings newest-first, one page at a time, for the
 /// history timeline. Paging, cursoring, and dedupe live here so the view stays
 /// declarative and the logic stays testable.
-@MainActor
 @Observable
 final class WidgetDrawingHistoryViewModel {
     enum Phase: Equatable {

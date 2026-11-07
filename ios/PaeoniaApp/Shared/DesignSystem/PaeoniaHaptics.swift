@@ -1,6 +1,5 @@
 import UIKit
 
-@MainActor
 enum PaeoniaHaptics {
     static func pairedSuccessfully() {
         notify(.success)

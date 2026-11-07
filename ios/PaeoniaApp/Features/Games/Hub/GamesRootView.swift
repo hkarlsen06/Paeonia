@@ -14,7 +14,7 @@ struct GamesRootView: View {
             content
                 .analyticsScreen("games")
                 .paeoniaTabBackdrop()
-                .toolbar(tabBarVisibility, for: .tabBar)
+                .toolbarVisibility(tabBarVisibility, for: .tabBar)
                 .navigationDestination(for: GamesDestination.self) { destination in
                     viewModel.screen(for: destination)
                         .analyticsScreen(destination.analyticsName)

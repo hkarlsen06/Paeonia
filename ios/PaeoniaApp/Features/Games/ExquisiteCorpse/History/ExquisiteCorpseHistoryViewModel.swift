@@ -4,7 +4,6 @@ import Observation
 /// "Our creatures": every finished creature, with the "All" and "Starred"
 /// filters. It shows what the Exquisite corpse cache holds first, so the screen
 /// opens offline, then reads the server.
-@MainActor
 @Observable
 final class ExquisiteCorpseHistoryViewModel {
     enum Filter: Hashable, CaseIterable {

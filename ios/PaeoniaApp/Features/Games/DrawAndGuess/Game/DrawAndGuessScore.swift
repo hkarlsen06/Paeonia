@@ -7,12 +7,6 @@ nonisolated enum DrawAndGuessScore: Equatable, Sendable {
     case together(total: Int)
     case against(mine: Int, partner: Int)
 
-    enum Leader: Equatable, Sendable {
-        case me
-        case partner
-        case tied
-    }
-
     init(game: RemoteDrawAndGuessGame, playStyle: GamePlayStyle) {
         switch playStyle {
         case .together:
@@ -22,14 +16,4 @@ nonisolated enum DrawAndGuessScore: Equatable, Sendable {
         }
     }
 
-    /// Nil when the couple plays together, because nobody leads.
-    var leader: Leader? {
-        guard case let .against(mine, partner) = self else {
-            return nil
-        }
-        if mine == partner {
-            return .tied
-        }
-        return mine > partner ? .me : .partner
-    }
 }

@@ -10,7 +10,6 @@ import UIKit
 /// (potted_plant_04, carved_wooden_plate, croissant), kept as geometry only
 /// (`LudoPlant.usdz`, `LudoPlate.usdz`, `LudoCroissant.usdz`). Their materials are made
 /// here from small pictures in the asset catalog. The mugs are made in code.
-@MainActor
 enum LudoRoom {
     /// The first room built, kept so the next board copies it instead of loading it again.
     private static var prototype: Entity?

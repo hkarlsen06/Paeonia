@@ -2,7 +2,6 @@ import CoreLocation
 import Observation
 
 /// Foreground readings for the Home arrow. These positions never enter the sharing outbox.
-@MainActor
 @Observable
 final class PartnerCompass: NSObject {
     private(set) var heading: Double?

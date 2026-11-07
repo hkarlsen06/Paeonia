@@ -4,7 +4,6 @@ import SwiftUI
 /// What the tool, color, and size controls need from a canvas. The widget
 /// canvas and the Draw & Guess canvas both provide it, so they share the
 /// controls.
-@MainActor
 protocol WidgetDrawingToolControlling: AnyObject {
     var colorChoices: [WidgetDrawingColorChoice] { get }
     var selectedTool: WidgetDrawingTool { get }

@@ -14,7 +14,6 @@ nonisolated struct MemoryPhotoUploadProgress: Equatable, Sendable {
 /// Sends the photos of a memory save. Photos go one at a time, compressed off the main
 /// actor. A photo that went up before a later one failed is reused when the person
 /// tries again within a few minutes, instead of being sent twice.
-@MainActor
 @Observable
 final class MemoryPhotoUploads {
     private(set) var progress: MemoryPhotoUploadProgress?

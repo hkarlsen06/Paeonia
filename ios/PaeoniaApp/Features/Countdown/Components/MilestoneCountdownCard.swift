@@ -248,7 +248,6 @@ struct MilestoneCountdownCard: View {
 
 /// Remembers that the tile has counted up once since the app launched, so switching tabs
 /// and coming back does not replay it.
-@MainActor
 private enum CountUpGate {
     static var hasPlayed = false
 }

@@ -4,7 +4,6 @@ import Observation
 /// Drives "Download my data": asking for a copy, watching it get built, and
 /// downloading it. The server builds the copy, so the person can leave the
 /// screen while it works.
-@MainActor
 @Observable
 final class DataExportViewModel {
     enum Notice: Equatable {
@@ -30,7 +29,7 @@ final class DataExportViewModel {
         case expired
     }
 
-    private let service: (any DataExportServicing)?
+    private let service: DataExportService?
 
     private(set) var export: DataExport?
     private(set) var hasLoaded = false
@@ -44,7 +43,7 @@ final class DataExportViewModel {
     /// most of a copy's size, so the person can leave them out.
     var includesFiles = true
 
-    init(service: (any DataExportServicing)? = DataExportServiceFactory.makeDefault()) {
+    init(service: DataExportService? = DataExportServiceFactory.makeDefault()) {
         self.service = service
     }
 

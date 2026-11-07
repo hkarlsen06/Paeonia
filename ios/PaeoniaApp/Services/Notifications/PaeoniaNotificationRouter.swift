@@ -17,7 +17,6 @@ struct PaeoniaForegroundNotice: Equatable, Identifiable {
 /// directly, so it routes through this shared, observable relay. It also relays
 /// a foreground notice so a partner's update shows as an in-app banner instead
 /// of the system notification while the app is open.
-@MainActor
 @Observable
 final class PaeoniaNotificationRouter {
     static let shared = PaeoniaNotificationRouter()

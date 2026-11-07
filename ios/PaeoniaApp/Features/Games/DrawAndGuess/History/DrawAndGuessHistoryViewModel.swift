@@ -4,7 +4,6 @@ import Observation
 /// "Our drawings": the records of both partners and every finished drawing,
 /// with the "All" and "Starred" filters. It shows what the Games cache holds
 /// first, so the screen opens offline, then reads the server.
-@MainActor
 @Observable
 final class DrawAndGuessHistoryViewModel {
     enum Filter: Hashable, CaseIterable {

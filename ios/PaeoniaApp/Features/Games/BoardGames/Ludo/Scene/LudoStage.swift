@@ -9,7 +9,6 @@ import UIKit
 /// seen and it follows from that board, the stage animates it. Any other change
 /// of the board shows at once. All motion comes from clips (see `LudoClip`) that
 /// are pure functions of time, so a pawn always lands on its square.
-@MainActor
 final class LudoStage {
     /// What the board view knows. The stage compares it with the last one.
     struct Input: Equatable {

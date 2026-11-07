@@ -4,7 +4,7 @@ import UIKit.UIGestureRecognizerSubclass
 
 /// PROTOTYPE. Lets the person drag and pinch Home's map to look around, and brings it back
 /// to the couple. While they explore, the map stops following the couple's framing.
-@MainActor @Observable
+@Observable
 final class HomeMapExplorer {
     private(set) var isExploring = false
     /// The map's zoom and direction when the person started moving it.

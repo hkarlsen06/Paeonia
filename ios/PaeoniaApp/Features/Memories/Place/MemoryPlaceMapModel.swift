@@ -2,7 +2,6 @@ import CoreLocation
 import Foundation
 import Observation
 
-@MainActor
 @Observable
 final class MemoryPlaceMapModel {
     private(set) var center: CLLocationCoordinate2D?

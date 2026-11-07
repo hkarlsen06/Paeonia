@@ -1,6 +1,5 @@
 import Foundation
 
-@MainActor
 struct ThreadChatPhotoDraftEditing {
     let draft: ThreadChatPhotoDraft?
     let save: (ThreadChatPhotoDraft) -> Bool

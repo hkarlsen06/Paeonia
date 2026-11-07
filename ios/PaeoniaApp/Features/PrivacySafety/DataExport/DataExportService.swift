@@ -2,40 +2,7 @@ import Foundation
 
 /// "Download my data": asks the server for a copy, follows its progress, and
 /// downloads the zip files of a ready copy.
-nonisolated protocol DataExportServicing: Sendable {
-    /// Emits the newest copy now and again whenever it changes on the server.
-    /// Nil means the person never asked for one. The stream ends when the
-    /// consuming task is cancelled.
-    func exportUpdates() -> AsyncStream<DataExport?>
-
-    func loadExport() async throws -> DataExport?
-
-    /// Starts a copy, or returns the one that is already being built. Throws
-    /// `DataExportServiceError.limitReached` after three copies in a day.
-    func requestExport(includeFiles: Bool) async throws -> DataExport
-
-    /// Downloads every zip file of a ready copy to a folder on this phone and
-    /// returns their locations, in order.
-    func downloadFiles(
-        of export: DataExport,
-        onProgress: @escaping @Sendable (DataExportDownloadProgress) -> Void
-    ) async throws -> [URL]
-
-    /// Deletes the copy from the server before it expires.
-    func deleteExport(_ export: DataExport) async throws
-
-    /// Removes the downloaded files from this phone.
-    func removeDownloadedFiles(of export: DataExport)
-}
-
-nonisolated extension DataExportServicing {
-    /// Services without a live source emit nothing.
-    func exportUpdates() -> AsyncStream<DataExport?> {
-        AsyncStream { $0.finish() }
-    }
-}
-
-nonisolated struct DataExportService: DataExportServicing {
+nonisolated struct DataExportService {
     private let client: PaeoniaConvexClient
     private let downloader: any DataExportFileDownloading
     private let language: String
@@ -50,6 +17,9 @@ nonisolated struct DataExportService: DataExportServicing {
         self.language = language
     }
 
+    /// Emits the newest copy now and again whenever it changes on the server.
+    /// Nil means the person never asked for one. The stream ends when the
+    /// consuming task is cancelled.
     func exportUpdates() -> AsyncStream<DataExport?> {
         ScreenLiveUpdates.values(
             "dataExportStatus:get_data_export",
@@ -64,6 +34,8 @@ nonisolated struct DataExportService: DataExportServicing {
         return row?.export
     }
 
+    /// Starts a copy, or returns the one that is already being built. Throws
+    /// `DataExportServiceError.limitReached` after three copies in a day.
     func requestExport(includeFiles: Bool) async throws -> DataExport {
         do {
             let row: RemoteDataExport = try await client.mutation(
@@ -79,6 +51,8 @@ nonisolated struct DataExportService: DataExportServicing {
         }
     }
 
+    /// Downloads every zip file of a ready copy to a folder on this phone and
+    /// returns their locations, in order.
     func downloadFiles(
         of export: DataExport,
         onProgress: @escaping @Sendable (DataExportDownloadProgress) -> Void
@@ -123,6 +97,7 @@ nonisolated struct DataExportService: DataExportServicing {
         return files
     }
 
+    /// Deletes the copy from the server before it expires.
     func deleteExport(_ export: DataExport) async throws {
         try await client.mutation(
             "dataExport:delete_data_export",
@@ -130,6 +105,7 @@ nonisolated struct DataExportService: DataExportServicing {
         )
     }
 
+    /// Removes the downloaded files from this phone.
     func removeDownloadedFiles(of export: DataExport) {
         try? FileManager.default.removeItem(at: Self.downloadDirectory(for: export))
     }
@@ -158,7 +134,7 @@ nonisolated private struct ExportArguments: Encodable {
 }
 
 nonisolated enum DataExportServiceFactory {
-    static func makeDefault() -> (any DataExportServicing)? {
+    static func makeDefault() -> DataExportService? {
         guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return nil
         }

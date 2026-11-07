@@ -4,14 +4,12 @@ import Foundation
 /// lost when the answering screen is closed and reopened — or the app is relaunched.
 /// Drafts are keyed per user so one person's in-progress answer never appears in
 /// another's session on a shared device.
-@MainActor
 protocol DailyChallengeDraftStoring: AnyObject {
     func drafts(for userID: UUID) -> [UUID: DailyAnswerDraft]
     func setDraft(_ draft: DailyAnswerDraft, for instanceID: UUID, userID: UUID)
     func clearDraft(for instanceID: UUID, userID: UUID)
 }
 
-@MainActor
 final class UserDefaultsDailyChallengeDraftStore: DailyChallengeDraftStoring {
     static let shared = UserDefaultsDailyChallengeDraftStore()
 

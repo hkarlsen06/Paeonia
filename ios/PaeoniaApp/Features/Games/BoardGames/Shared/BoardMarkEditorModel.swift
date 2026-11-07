@@ -6,7 +6,6 @@ import UIKit
 /// the save. The canvas draws at whatever size fits the screen. The model keeps
 /// the drawing at that size and scales it to `BoardMarkRenderer.canvasSide`
 /// when it saves or renders, so every phone stores the same square.
-@MainActor
 @Observable
 final class BoardMarkEditorModel {
     enum Failure: Equatable {

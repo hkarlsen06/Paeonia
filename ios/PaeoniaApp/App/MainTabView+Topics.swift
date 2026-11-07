@@ -30,7 +30,7 @@ extension MainTabView {
             )
             // Hidden before the chat is pushed, like the Questions tab does, so the
             // bar never shows over the chat's composer.
-            .toolbar(dailyChatQuestion == nil ? .visible : .hidden, for: .tabBar)
+            .toolbarVisibility(dailyChatQuestion == nil ? .visible : .hidden, for: .tabBar)
         }
     }
 

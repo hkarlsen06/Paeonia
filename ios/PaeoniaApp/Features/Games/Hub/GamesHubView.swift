@@ -235,7 +235,6 @@ struct GamesHubView: View {
 
 /// Where each card sits in the visible part of the list. It is a plain class so
 /// scrolling does not redraw the hub.
-@MainActor
 private final class CardFrames {
     var frames: [GameKind: CGRect] = [:]
 

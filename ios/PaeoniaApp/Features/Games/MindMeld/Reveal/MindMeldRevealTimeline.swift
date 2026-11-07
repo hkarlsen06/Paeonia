@@ -44,7 +44,6 @@ struct MindMeldRevealHaptics {
 /// Every run has an id and each step checks it after sleeping, so no step or
 /// haptic can happen after the timeline settled or stopped. The schedule, the
 /// haptics, the clock and the sleep are injected, so tests run it fast.
-@MainActor
 @Observable
 final class MindMeldRevealTimeline {
     typealias Plan = MindMeldRevealPlan

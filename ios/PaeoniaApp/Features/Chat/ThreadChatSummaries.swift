@@ -7,7 +7,6 @@ import Observation
 /// its question chats (`conversations(memories:stories:)`). It re-reads this phone's copy of
 /// the chat summaries each time the chat cache changes. `ThreadChatLiveFeed` keeps that
 /// copy current.
-@MainActor
 @Observable
 final class ThreadChatSummaries {
     private(set) var summaries: [ThreadChatSubject: ThreadChatSummary] = [:]

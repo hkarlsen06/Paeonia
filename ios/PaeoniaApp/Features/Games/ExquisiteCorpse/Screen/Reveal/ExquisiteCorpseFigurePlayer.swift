@@ -15,7 +15,6 @@ import QuartzCore
 /// on every screen frame, and the first time it answers yes the player calls
 /// `onPartFinished`, so the reveal can open the next fold. The reveal timeline
 /// and the "Our creatures" detail screen both use it.
-@MainActor
 @Observable
 final class ExquisiteCorpseFigurePlayer {
     typealias Part = ExquisiteCorpsePartKind

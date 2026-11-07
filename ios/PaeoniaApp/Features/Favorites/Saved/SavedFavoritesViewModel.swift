@@ -4,7 +4,6 @@ import Observation
 /// The starred list in Search. It reads the ids from `FavoritesStore`, newest first, and asks
 /// the server what to show for them a page at a time. Taking a star back drops the row at
 /// once, because the rows are filtered through the store.
-@MainActor
 @Observable
 final class SavedFavoritesViewModel {
     enum Phase: Equatable {

@@ -3,7 +3,6 @@ import SwiftUI
 /// The hearts in the air on one card. The card draws them with `KissLayer`.
 /// A heart the person sends flies from their avatar to the partner's. A heart the
 /// partner sent flies back. A cap keeps rapid tapping and big bursts bounded.
-@MainActor
 @Observable
 final class HeartFlights {
     private(set) var kisses: [TapKiss] = []

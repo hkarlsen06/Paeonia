@@ -5,7 +5,6 @@ import Observation
 /// linked, and linking or unlinking one. It never leaves the account without a
 /// method. The linker refuses to unlink the last one, and the screen hides that
 /// action while only one is linked.
-@MainActor
 @Observable
 final class SignInMethodsViewModel {
     enum Notice: Equatable {
@@ -54,10 +53,6 @@ final class SignInMethodsViewModel {
         SignInMethod.allCases.filter { method in
             !linkedMethods.contains { $0.method == method }
         }
-    }
-
-    func isLinked(_ method: SignInMethod) -> Bool {
-        linkedMethods.contains { $0.method == method }
     }
 
     /// Shows what the phone knows right away, then what the server says. Offline

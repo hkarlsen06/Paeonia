@@ -10,7 +10,6 @@ import SwiftUI
 /// Every step has a run id and checks it after sleeping, so no step or haptic
 /// happens after the timeline settled or stopped. The schedule, the haptics and
 /// the sleep are injected, so tests run it fast.
-@MainActor
 @Observable
 final class ExquisiteCorpseRevealTimeline {
     typealias Part = ExquisiteCorpsePartKind

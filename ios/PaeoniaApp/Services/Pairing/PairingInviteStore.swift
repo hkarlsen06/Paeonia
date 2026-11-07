@@ -1,13 +1,11 @@
 import Foundation
 
-@MainActor
 protocol PairingInviteStoring: AnyObject {
     func loadInvite(for userID: String) -> PairingInvite?
     func saveInvite(_ invite: PairingInvite, for userID: String)
     func clearInvite(for userID: String)
 }
 
-@MainActor
 final class UserDefaultsPairingInviteStore: PairingInviteStoring {
     static let shared = UserDefaultsPairingInviteStore()
 

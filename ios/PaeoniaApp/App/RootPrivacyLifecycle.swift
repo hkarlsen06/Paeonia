@@ -1,6 +1,5 @@
 import Foundation
 
-@MainActor
 final class RootPrivacyLifecycle {
     private let syncService: any PaeoniaSyncing
     private var recoveryTask: Task<Void, Never>?

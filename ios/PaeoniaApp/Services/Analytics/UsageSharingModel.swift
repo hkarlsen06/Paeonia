@@ -9,7 +9,6 @@ import Observation
 /// this phone at once. An answer the server has not saved yet stays on the
 /// phone and wins over what the server says, so a no given offline is never
 /// undone by an older yes.
-@MainActor
 @Observable
 final class UsageSharingModel {
     /// Names the question and privacy policy version a person answered.

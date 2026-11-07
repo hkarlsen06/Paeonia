@@ -3,7 +3,6 @@ import Foundation
 /// One animation of one thing in the scene. The stage plays clips each frame:
 /// it hands a clip the seconds since it began, clamped to its length, so a clip
 /// that has not begun shows its first pose and a clip that is over shows its last.
-@MainActor
 final class LudoClip {
     enum Owner: Hashable {
         case pawn(Int)

@@ -6,7 +6,6 @@ import UIKit
 /// What Siri's intents, entity queries and the Spotlight indexer need from the running app.
 /// `PaeoniaApp` connects it to the root view model at launch. Until then, and in unit tests
 /// and developer scenarios, nobody is signed in as far as Siri is concerned.
-@MainActor
 @Observable
 final class SiriAppContext {
     static let shared = SiriAppContext()

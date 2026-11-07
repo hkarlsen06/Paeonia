@@ -8,7 +8,6 @@ import Foundation
 /// hands Clerk the identity token. Google opens Clerk's web sheet, like signing in.
 /// Both need the person to be signed in already, so the new method joins this
 /// account instead of starting a second one.
-@MainActor
 final class ClerkSignInMethodLinker: SignInMethodLinking {
     private let appleSignIn: any AppleSignInProviding
 

@@ -96,7 +96,6 @@ enum ThreadChatReplySwipeResolver {
 /// How far the chat bubbles are slid over to show their times. The page and every row
 /// share one. Only the rows read `offset`, so each drag frame redraws them and leaves
 /// the page, and the chat rows built from it, alone.
-@MainActor
 @Observable
 final class ThreadChatTimestampReveal {
     var offset: CGFloat = 0

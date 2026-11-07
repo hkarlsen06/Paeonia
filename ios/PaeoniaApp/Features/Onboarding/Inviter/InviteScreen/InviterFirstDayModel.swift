@@ -9,7 +9,6 @@ import Observation
 /// whether it is answered. It also sends the first drawing for the partner, made
 /// before sign-in (`WelcomeDrawingStep`) and saved on this phone, whenever the screen
 /// loads or comes back to the front, until it reaches the draft.
-@MainActor
 @Observable
 final class InviterFirstDayModel {
     /// The question was just answered, for the row's completion beat. A fresh id each

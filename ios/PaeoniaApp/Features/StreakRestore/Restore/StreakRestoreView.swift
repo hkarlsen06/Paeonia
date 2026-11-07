@@ -245,11 +245,7 @@ nonisolated enum StreakRestoreCountdownText {
         guard let deadline else { return nil }
 
         let secondsRemaining = max(0, Int(ceil(deadline.timeIntervalSince(now))))
-        let hours = secondsRemaining / 3_600
-        let minutes = (secondsRemaining % 3_600) / 60
-        let seconds = secondsRemaining % 60
-
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        return Duration.seconds(secondsRemaining).formatted(.time(pattern: .hourMinuteSecond(padHourToLength: 2)))
     }
 }
 

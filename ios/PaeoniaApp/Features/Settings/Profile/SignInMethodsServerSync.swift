@@ -3,7 +3,6 @@ import Foundation
 /// Keeps the server's note of the linked sign-in methods in step with Clerk. The server needs it to
 /// know that Apple is linked when the person deletes their account. A link or unlink that the
 /// server did not hear about is remembered on the phone and sent again the next time the app opens.
-@MainActor
 enum SignInMethodsServerSync {
     private static let pendingAccountKey = "signInMethodsSyncPendingAccountID"
     /// Waits between the tries right after a change. The first try goes out at once.

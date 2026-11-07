@@ -30,7 +30,6 @@ struct WelcomeCarriedDoodle: Codable, Equatable {
 /// before an account exists, whether anyone signed in here before, the made-up ID the
 /// unsent welcome drawing is kept under, and a welcome doodle that has not reached the
 /// drawing screen yet.
-@MainActor
 protocol WelcomeFlowStoring: AnyObject {
     var startDate: PairingStartDate? { get set }
     var hasSignedInBefore: Bool { get set }
@@ -42,7 +41,6 @@ protocol WelcomeFlowStoring: AnyObject {
     var carriedDoodle: WelcomeCarriedDoodle? { get set }
 }
 
-@MainActor
 final class UserDefaultsWelcomeFlowStore: WelcomeFlowStoring {
     private let defaults: UserDefaults
     private let startDateKey = "paeonia.welcome.startDate"
@@ -79,7 +77,6 @@ final class UserDefaultsWelcomeFlowStore: WelcomeFlowStoring {
     }
 }
 
-@MainActor
 final class InMemoryWelcomeFlowStore: WelcomeFlowStoring {
     var startDate: PairingStartDate?
     var hasSignedInBefore = false

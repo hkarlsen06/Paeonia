@@ -5,7 +5,6 @@ import UIKit
 ///
 /// The More tab owns one instance, so a save keeps running and keeps showing its
 /// progress if the user leaves the profile screen and comes back.
-@MainActor
 @Observable
 final class ProfileEditorViewModel {
     enum Event: Equatable {
@@ -55,12 +54,6 @@ final class ProfileEditorViewModel {
             stagedPhotoData: stagedPhotoData,
             removesExistingPhoto: removesExistingPhoto
         )
-    }
-
-    /// Edits stay until the user saves or cancels, so leaving the screen with
-    /// them would throw away work without asking.
-    var hasUnsavedWork: Bool {
-        draft.hasChanges || isSaving || isLoadingPhoto
     }
 
     var canSave: Bool {

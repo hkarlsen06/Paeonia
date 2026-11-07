@@ -4,27 +4,7 @@ import Foundation
 /// version. After pairing, the daily answer screen takes it for the question that
 /// version became (`DailyChallengeViewModel.adoptFirstDayDrafts`). It belongs to no
 /// couple, so an ended relationship's purge keeps it and only sign-out clears it.
-@MainActor
-protocol FirstDayAnswerDraftStoring: AnyObject {
-    func texts(for userID: UUID) -> [UUID: String]
-    func setText(_ text: String, for questionVersionID: UUID, userID: UUID)
-    func clearText(for questionVersionID: UUID, userID: UUID)
-    func clearAll(for userID: UUID)
-}
-
-extension FirstDayAnswerDraftStoring {
-    /// Returns the text and removes it, so it is used once.
-    func takeText(for questionVersionID: UUID, userID: UUID) -> String? {
-        guard let text = texts(for: userID)[questionVersionID] else {
-            return nil
-        }
-        clearText(for: questionVersionID, userID: userID)
-        return text
-    }
-}
-
-@MainActor
-final class UserDefaultsFirstDayAnswerDraftStore: FirstDayAnswerDraftStoring {
+final class UserDefaultsFirstDayAnswerDraftStore {
     static let shared = UserDefaultsFirstDayAnswerDraftStore()
 
     private let defaults: UserDefaults
@@ -73,5 +53,14 @@ final class UserDefaultsFirstDayAnswerDraftStore: FirstDayAnswerDraftStoring {
             Dictionary(uniqueKeysWithValues: texts.map { ($0.key.uuidString, $0.value) }),
             forKey: key(for: userID)
         )
+    }
+
+    /// Returns the text and removes it, so it is used once.
+    func takeText(for questionVersionID: UUID, userID: UUID) -> String? {
+        guard let text = texts(for: userID)[questionVersionID] else {
+            return nil
+        }
+        clearText(for: questionVersionID, userID: userID)
+        return text
     }
 }

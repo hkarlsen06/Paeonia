@@ -9,7 +9,6 @@ import Foundation
 ///   topics until it publishes another set. A feed runs while any source wants it.
 /// - Touched: a moment (the app came to the front, a game push arrived) starts
 ///   the feeds of a topic for the coordinator's linger time, then lets them go.
-@MainActor
 final class LiveFeedDemand {
     static let shared = LiveFeedDemand()
 

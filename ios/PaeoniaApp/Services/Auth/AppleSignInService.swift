@@ -10,12 +10,10 @@ enum AppleSignInError: Error, Equatable {
     case missingPresentationAnchor
 }
 
-@MainActor
 protocol AppleSignInProviding: AnyObject {
     func signIn() async throws -> AppleSignInCredential
 }
 
-@MainActor
 final class AppleSignInService: NSObject, AppleSignInProviding {
     private var pendingContinuation: CheckedContinuation<AppleSignInCredential, Error>?
     private var pendingNonce: String?
