@@ -353,9 +353,11 @@ nonisolated enum LudoSceneStyle {
     static let tossAttempts = 120
     /// A try that is still moving after this many seconds does not count. The die then
     /// eases flat over `tossSetDownTime`. Together they are the longest a throw lasts.
-    /// Most throws settle in about 1.4 seconds.
     static let tossSettleLimit: Double = 1.8
     static let tossSetDownTime: Double = 0.1
+    /// Remaining motion below this distance in cells and angle in radians settles at once.
+    static let tossRestDistance: Float = 0.08
+    static let tossRestAngle: Float = 0.12
     /// Stronger than real gravity at this scale, so a throw is over in under two seconds.
     static let tossGravity: Float = 50
     /// How quickly the die slows down, per second, on the floor and in the air. The

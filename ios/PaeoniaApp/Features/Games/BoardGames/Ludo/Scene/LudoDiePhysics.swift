@@ -260,16 +260,32 @@ nonisolated enum LudoDiePhysics {
         orientation.act(LudoDieFaces.face(face(of: orientation)).normal)
     }
 
-    /// Eases the die from its last pose to resting exactly flat on the floor.
-    private static func setDown(_ flight: inout LudoDieFlight, floor: Float) {
+    /// Trims the final tiny movements, then eases the die flat at the same landing spot.
+    static func setDown(_ flight: inout LudoDieFlight, floor: Float) {
         guard let position = flight.positions.last, let orientation = flight.orientations.last else { return }
         let level = simd_normalize(simd_quatf(from: upFace(of: orientation), to: SIMD3(0, 1, 0)) * orientation)
         let rest = SIMD3(position.x, floor + halfSize, position.z)
+        // Look backward through the whole remaining flight. A quiet moment before
+        // another bounce or face change must still play in full.
+        let minimumAlignment = cos(LudoSceneStyle.tossRestAngle / 2)
+        var firstSettled = flight.positions.count - 1
+        for index in flight.positions.indices.reversed() {
+            guard simd_distance(flight.positions[index], rest) <= LudoSceneStyle.tossRestDistance,
+                  abs(simd_dot(flight.orientations[index], level)) >= minimumAlignment
+            else { break }
+            firstSettled = index
+        }
+        flight.positions.removeSubrange((firstSettled + 1)..<flight.positions.count)
+        flight.orientations.removeSubrange((firstSettled + 1)..<flight.orientations.count)
+        let lastKnockTime = flight.duration
+        flight.knocks.removeAll { $0 > lastKnockTime }
+        let startPosition = flight.positions[firstSettled]
+        let startOrientation = flight.orientations[firstSettled]
         let frames = max(Int(LudoSceneStyle.tossSetDownTime / LudoDieFlight.frameTime), 1)
         for frame in 1...frames {
             let amount = Float(LudoMotion.smooth(Double(frame) / Double(frames)))
-            flight.positions.append(simd_mix(position, rest, SIMD3(repeating: amount)))
-            flight.orientations.append(simd_slerp(orientation, level, amount))
+            flight.positions.append(simd_mix(startPosition, rest, SIMD3(repeating: amount)))
+            flight.orientations.append(simd_slerp(startOrientation, level, amount))
         }
     }
 
