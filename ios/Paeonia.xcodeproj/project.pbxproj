@@ -253,6 +253,7 @@
 				000000000000000130000000 /* Frameworks */,
 				000000000000000140000000 /* Resources */,
 				2A2D03542FDD045F00A7BE1A /* Embed Foundation Extensions */,
+				2A2D09042FE5000000A7BE1A /* Collect MapLibre dSYMs */,
 				2A2D08042FE4000000A7BE1A /* Upload dSYMs to PostHog */,
 			);
 			buildRules = (
@@ -452,6 +453,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		2A2D09042FE5000000A7BE1A /* Collect MapLibre dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			name = "Collect MapLibre dSYMs";
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/python3 \"${SRCROOT}/Scripts/collect-maplibre-symbols.py\"";
+			showEnvVarsInLog = 0;
+		};
 		2A2D08042FE4000000A7BE1A /* Upload dSYMs to PostHog */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
