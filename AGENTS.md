@@ -4,7 +4,7 @@ This file provides guidance to coding agents when working in the Paeonia reposit
 
 ## Project stage
 
-Paeonia is in active development and has not launched. There are no users and no production environment. The hosted Convex backend at `api.paeonia.no` holds only the developer's two test accounts, and the only installed builds are the developer's own.
+Paeonia is in active development and has not launched. There are no users and no production environment. The hosted Convex backend at `api.paeonia.no` holds the developer's test data, and the only installed builds are the developer's own.
 
 - Breaking changes are fine. Rename or remove backend functions, arguments, return fields, tables, and local storage formats when that makes the code better. Update every caller in the same change.
 - Do not write backward compatibility code. That means no support for older app builds, no deprecated aliases, no dual-read or dual-write paths, no data backfills or migrations, and no fallbacks for old data shapes. If test data no longer fits, wipe or edit it.
