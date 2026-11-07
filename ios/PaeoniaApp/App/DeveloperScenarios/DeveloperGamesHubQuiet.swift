@@ -3,15 +3,14 @@
   import PencilKit
 
   /// The hub with nothing waiting (`games-hub-quiet`). Every game the couple played waits for
-  /// Robin, so "Today's pick" shows a game they have not opened lately, and the tiles show
+  /// Robin, so "Today's pick" shows the daily catalog pick, and the tiles show
   /// what the couple made: the boards, Alex's drawing, a finished creature, the last Mind
   /// Meld words and the story so far. The couple played 31 days, the last 4 in a row.
   @MainActor
   enum DeveloperGamesHubQuiet {
     private static let hour: TimeInterval = 3_600
 
-    /// When each game was last open. Consensio and Guess my spot were never opened, so
-    /// "Today's pick" takes one of them.
+    /// When each game was last open, for the order of the small tiles.
     private static let lastPlayed: [GameKind: TimeInterval] = [
       .drawAndGuess: 1, .mindMeld: 3, .storyChain: 5, .connectFour: 26, .exquisiteCorpse: 30,
       .ludo: 50, .dotsAndBoxes: 75,

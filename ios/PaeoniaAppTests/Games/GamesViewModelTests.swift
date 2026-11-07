@@ -13,6 +13,31 @@ struct GamesViewModelTests {
         return viewModel
     }
 
+    @Test func todaysPickSurvivesPlayHistoryUpdatesAndReopeningTheHub() async throws {
+        let state = GameFixture.state(settings: GameFixture.settings(), game: nil)
+        let env = GamesTestEnvironment(state: state)
+        var overview = RemoteGamesOverview(drawAndGuess: state)
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        overview.playDays.today = LockScreenCalendarDate(containing: GameFixture.now, in: utc)
+        await env.cache.saveOverview(overview, ownerUserID: GameFixture.me)
+        let model = viewModel(env)
+        await model.reload()
+        let pick = try #require(model.hubTodaysPick?.kind)
+
+        // Either partner opening today's pick updates the shared play history.
+        overview.presence = [RemoteGamePresence(
+            kind: pick, myPresent: false, partnerPresent: false,
+            lastInviteAt: nil, lastPlayedAt: GameFixture.now
+        )]
+        await env.cache.saveOverview(overview, ownerUserID: GameFixture.me)
+        await model.reload()
+        #expect(model.hubTodaysPick?.kind == pick)
+        let reopened = viewModel(env)
+        await reopened.reload()
+        #expect(reopened.hubTodaysPick?.kind == pick)
+    }
+
     private let ludo = GamesDestination.game(.ludo)
 
     @Test func anUnseenDrawingResultStaysInRightNowAndCanBeSnoozed() async {

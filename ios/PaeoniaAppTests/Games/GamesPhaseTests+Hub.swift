@@ -103,35 +103,27 @@ extension GamesPhaseTests {
         #expect(opened([.mindMeld, .ludo], [.ludo]) == nil)
     }
 
-    @Test func todaysPickTakesTurnsThroughTheGamesNobodyOpenedThisWeek() {
-        let now = GameFixture.now
-        let catalog = GameKind.allCases
+    @Test func todaysPickRotatesOncePerCoupleDayInCatalogOrder() {
         var utc = Calendar(identifier: .gregorian)
         utc.timeZone = .gmt
-        // The play times move along with the day, so only the turn changes.
-        func pick(_ lastPlayed: [GameKind: Date], day: Int, kinds: [GameKind] = GameKind.allCases) -> GameKind? {
-            let shift = TimeInterval(day) * 86_400
-            return GamesViewModel.todaysPick(
+        let catalog = GameKind.allCases
+        func pick(_ day: Int, kinds: [GameKind] = GameKind.allCases) -> GameKind? {
+            GamesViewModel.todaysPick(
                 kinds,
-                lastPlayed: lastPlayed.mapValues { $0.addingTimeInterval(shift) },
-                today: LockScreenCalendarDate(containing: now.addingTimeInterval(shift), in: utc)
+                today: LockScreenCalendarDate(
+                    containing: GameFixture.now.addingTimeInterval(Double(day) * 86_400), in: utc
+                )
             )
         }
-
-        let daysAgo = { (days: Double) in now.addingTimeInterval(-days * 86_400) }
-        // Ludo and Draw & Guess were opened this week. Four in a Row was opened 8 days ago
-        // and Mind Meld never, so both count as rested, in catalog order.
-        let played: [GameKind: Date] = [
-            .ludo: daysAgo(1), .drawAndGuess: daysAgo(6.9), .connectFour: daysAgo(8),
-        ]
-        let rested = catalog.filter { $0 != .ludo && $0 != .drawAndGuess }
-        // Each rested game gets a day before any comes back.
-        #expect(Set((0..<rested.count).map { pick(played, day: $0) }) == Set(rested))
-        #expect(pick(played, day: rested.count) == pick(played, day: 0))
-
-        // Every game was opened this week: the one played longest ago.
-        let busy: [GameKind: Date] = [.ludo: daysAgo(1), .mindMeld: daysAgo(3), .consensio: daysAgo(2)]
-        #expect(pick(busy, day: 5, kinds: [.ludo, .mindMeld, .consensio]) == .mindMeld)
-        #expect(pick([:], day: 3, kinds: []) == nil)
+        let cycle = (0..<catalog.count).compactMap { pick($0) }
+        #expect(Set(cycle) == Set(catalog))
+        for day in 0..<catalog.count {
+            let index = catalog.firstIndex(of: cycle[day]) ?? 0
+            #expect(pick(day + 1) == catalog[(index + 1) % catalog.count])
+            #expect(pick(day, kinds: catalog.reversed()) == pick(day))
+        }
+        #expect(pick(catalog.count) == pick(0))
+        #expect(pick(0, kinds: []) == nil)
+        #expect(pick(0, kinds: [.mindMeld]) == .mindMeld)
     }
 }

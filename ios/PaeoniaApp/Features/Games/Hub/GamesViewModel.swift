@@ -414,10 +414,9 @@ extension GamesViewModel {
 
     /// The one full card while nothing waits under "Right now".
     var hubTodaysPick: (any GameHubModel)? {
-        guard hubFeaturedGames.isEmpty else { return nil }
+        guard overview != nil, hubFeaturedGames.isEmpty else { return nil }
         return Self.todaysPick(
             games.map(\.kind),
-            lastPlayed: lastPlayed,
             today: playDays.today
         ).flatMap { game($0) }
     }

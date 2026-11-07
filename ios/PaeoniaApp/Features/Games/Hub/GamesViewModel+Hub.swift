@@ -36,26 +36,16 @@ extension GamesViewModel {
         return partnerGames.filter(catalog.contains) + waiting
     }
 
-    /// The game for "Today's pick", the same on both phones on a couple day, because it
-    /// reads only the server's `today` and play times. It takes turns, by day, through the
-    /// games neither partner opened since the start (UTC) of the day a week before
-    /// `today`, in catalog order. When every game was opened in that time, it is the one
-    /// played longest ago.
+    /// A fixed catalog rotation by couple day, shared by both phones. Opening a
+    /// game must not change the pick before the next day.
     nonisolated static func todaysPick(
         _ kinds: [GameKind],
-        lastPlayed: [GameKind: Date],
         today: LockScreenCalendarDate
     ) -> GameKind? {
         let catalog = GameKind.allCases.filter(kinds.contains)
-        var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = .gmt
-        let cutoff = today.startOfDay(in: utc).map { $0.addingTimeInterval(-7 * 86_400) } ?? .distantPast
-        let rested = catalog.filter { lastPlayed[$0].map { $0 < cutoff } ?? true }
-        guard rested.isEmpty else {
-            let day = today.dayNumber
-            return rested[((day % rested.count) + rested.count) % rested.count]
-        }
-        return catalog.min { lastPlayed[$0, default: .distantPast] < lastPlayed[$1, default: .distantPast] }
+        guard !catalog.isEmpty else { return nil }
+        let day = today.dayNumber
+        return catalog[((day % catalog.count) + catalog.count) % catalog.count]
     }
 
     /// The games played most recently first, then the games neither partner ever

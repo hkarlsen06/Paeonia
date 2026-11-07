@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The built games, under the days the couple played together. "Right now" shows full
 /// cards for the games the partner is in, then the games waiting for this person. Without
-/// one, "Today's pick" shows one game the couple has not played lately. Every other game is
+/// one, "Today's pick" shows one game from the daily catalog rotation. Every other game is
 /// a small tile in a grid below, played most recently first, showing the couple's latest
 /// content for the game. A wide iPad shows two columns of full cards.
 ///
