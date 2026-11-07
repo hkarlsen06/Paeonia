@@ -26,8 +26,10 @@ enum SiriChats {
 
     static func snapshot(for couple: SiriCouple) async -> Snapshot {
         let service = ThreadChatServiceFactory.makeDefault()
+        // A private topic's chat (Flirt) shows nothing outside its topic, the rule banners and
+        // the Topics card follow, so Siri and Spotlight never see it.
         let summaries = await service.cachedThreadSummaries(ownerUserID: couple.ownerUserID)
-            .filter { $0.coupleID == couple.coupleID }
+            .filter { $0.coupleID == couple.coupleID && $0.isPrivateTopic != true }
         let marks = await service.chatReadMarks(ownerUserID: couple.ownerUserID)
         let memories = await SiriContent.memories(for: couple)
         let stories = await FileStoriesCache.shared.snapshot(ownerUserID: couple.ownerUserID).stories
