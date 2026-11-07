@@ -4,7 +4,6 @@ import Observation
 import OSLog
 #endif
 
-@MainActor
 @Observable
 final class DailyChallengeViewModel {
     enum Notice: Equatable {
@@ -24,7 +23,7 @@ final class DailyChallengeViewModel {
     let service: any DailyChallengeServicing
     let operationProvider: any SyncClientOperationProviding
     let draftStore: any DailyChallengeDraftStoring
-    let firstDayDraftStore: any FirstDayAnswerDraftStoring
+    let firstDayDraftStore: UserDefaultsFirstDayAnswerDraftStore
     let mediaDraftStore: any DailyAnswerMediaDraftStoring
     let pendingOperationStore: any PendingSyncOperationPersisting
     let snapshotCache: any DailyChallengeSnapshotCaching
@@ -106,7 +105,7 @@ final class DailyChallengeViewModel {
         service: (any DailyChallengeServicing)? = nil,
         operationProvider: (any SyncClientOperationProviding)? = nil,
         draftStore: (any DailyChallengeDraftStoring)? = nil,
-        firstDayDraftStore: (any FirstDayAnswerDraftStoring)? = nil,
+        firstDayDraftStore: UserDefaultsFirstDayAnswerDraftStore? = nil,
         mediaDraftStore: (any DailyAnswerMediaDraftStoring)? = nil,
         pendingOperationStore: (any PendingSyncOperationPersisting)? = nil,
         snapshotCache: (any DailyChallengeSnapshotCaching)? = nil,
@@ -131,10 +130,7 @@ final class DailyChallengeViewModel {
     }
 
     private static func makeDefaultPendingOperationStore() -> any PendingSyncOperationPersisting {
-        if let localStore = PaeoniaLocalStore.shared {
-            return SwiftDataPendingSyncOperationRepository(container: localStore.container)
-        }
-        return InMemoryPendingSyncOperationRepository()
+        SwiftDataPendingSyncOperationRepository(container: PaeoniaLocalStore.shared.container)
     }
 
     /// Prints the real error behind a user-facing notice to the Xcode console in

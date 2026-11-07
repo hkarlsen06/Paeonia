@@ -10,7 +10,6 @@ import Observation
 /// keep current. The unsent changes are the queued `setFavorite` writes, so a star shows
 /// at once, survives a relaunch, and is sent when the phone is online. The last write of
 /// an item wins.
-@MainActor
 @Observable
 final class FavoritesStore {
     /// The store the app uses. Tests and previews build their own.
@@ -59,12 +58,7 @@ final class FavoritesStore {
     private static let privacyHintKey = "favorites.privacyHintShown"
 
     static func live() -> FavoritesStore {
-        let pendingStore: any PendingSyncOperationPersisting
-        if let localStore = PaeoniaLocalStore.shared {
-            pendingStore = SwiftDataPendingSyncOperationRepository(container: localStore.container)
-        } else {
-            pendingStore = InMemoryPendingSyncOperationRepository()
-        }
+        let pendingStore = SwiftDataPendingSyncOperationRepository(container: PaeoniaLocalStore.shared.container)
         return FavoritesStore(
             cache: FileFavoritesCache.shared,
             pendingOperationStore: pendingStore,

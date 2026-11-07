@@ -83,10 +83,7 @@ actor LiveSyncCoordinator: LiveSyncCoordinating {
     /// The coordinator the app uses: the feeds registered in `LiveFeedRegistry`
     /// on the shared ConvexMobile connection. It follows `LiveFeedDemand.shared`.
     @MainActor
-    static func makeDefault() -> LiveSyncCoordinator? {
-        guard PaeoniaLocalStore.shared != nil else {
-            return nil
-        }
+    static func makeDefault() -> LiveSyncCoordinator {
         let coordinator = LiveSyncCoordinator(
             feeds: LiveFeedRegistry.makeFeeds(stores: PaeoniaSyncServiceDefaults.makeStores()),
             live: LiveQueryService(transport: ConvexLiveTransport(connection: .shared))

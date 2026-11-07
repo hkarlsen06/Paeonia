@@ -2,12 +2,7 @@ import Foundation
 
 nonisolated enum ThreadChatServiceFactory {
     static func makeDefault() -> any ThreadChatServicing {
-        let pendingStore: any PendingSyncOperationPersisting
-        if let localStore = PaeoniaLocalStore.shared {
-            pendingStore = SwiftDataPendingSyncOperationRepository(container: localStore.container)
-        } else {
-            pendingStore = InMemoryPendingSyncOperationRepository()
-        }
+        let pendingStore = SwiftDataPendingSyncOperationRepository(container: PaeoniaLocalStore.shared.container)
 
         let gateway: any ThreadChatGateway
         if let client = try? PaeoniaConvexClientProvider.shared.client() {

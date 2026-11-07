@@ -150,7 +150,7 @@ struct PaeoniaApp: App {
             viewModel: rootViewModel,
             locationViewModel: locationViewModel
         )
-        .environment(\.mediaAlternativeEditingService, try? MediaAlternativeEditingService.live())
+        .environment(\.mediaAlternativeEditingService, MediaAlternativeEditingService.live())
     }
 }
 

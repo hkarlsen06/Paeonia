@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 
-@MainActor
 @Observable
 final class LocationMapViewModel: PresentationReadinessProviding {
     enum Notice: Equatable {
@@ -350,10 +349,7 @@ extension LocationMapViewModel {
             return nil
         }
 
-        guard let localStore = PaeoniaLocalStore.shared else {
-            return nil
-        }
-
+        let localStore = PaeoniaLocalStore.shared
         return DefaultStores(
             visibilityStore: SwiftDataLocationVisibilityRepository(container: localStore.container),
             ownLocationStore: SwiftDataOwnLocationSnapshotRepository(container: localStore.container),

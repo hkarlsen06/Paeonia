@@ -3,7 +3,6 @@ import Foundation
 /// Everything the Games screens use outside the view models. Production builds
 /// it from the shared Convex client and the on-disk stores. Tests and the
 /// developer scenarios build it from in-memory parts.
-@MainActor
 struct GamesDependencies {
     var gateway: any DrawAndGuessGateway
     var cache: any GamesCaching
@@ -68,12 +67,7 @@ struct GamesDependencies {
 
     static func live() -> GamesDependencies {
         let client = try? PaeoniaConvexClientProvider.shared.client()
-        let pendingStore: any PendingSyncOperationPersisting
-        if let localStore = PaeoniaLocalStore.shared {
-            pendingStore = SwiftDataPendingSyncOperationRepository(container: localStore.container)
-        } else {
-            pendingStore = InMemoryPendingSyncOperationRepository()
-        }
+        let pendingStore = SwiftDataPendingSyncOperationRepository(container: PaeoniaLocalStore.shared.container)
         return GamesDependencies(
             gateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
             cache: FileGamesCache.shared,

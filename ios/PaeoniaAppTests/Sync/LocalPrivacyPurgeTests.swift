@@ -137,6 +137,27 @@ struct LocalPrivacyPurgeTests {
         #expect(await filePurger.calls.count == 1)
     }
 
+    @Test func privateFilesThatFailToDeleteKeepThePurgeQueuedUntilARetryDeletesThem() async throws {
+        let ownerUserID = UUID()
+        let filePurger = FlakyPrivateFilePurger(failuresBeforeSuccess: 1)
+        let retryStore = InMemoryLocalPrivacyPurgeRetryStore()
+        let purger = LocalPrivacyPurgeService(
+            recordStore: ScriptedLocalPrivacyRecordStore(failuresBeforeSuccess: 0),
+            privateContentPurger: filePurger,
+            entityIndex: FakeSpotlightIndex(),
+            retryStore: retryStore,
+            automaticallyRetry: false
+        )
+
+        #expect(await purger.purge(ownerUserID: ownerUserID, scope: .departingUser) == .recordsPendingRetry)
+        #expect(await retryStore.request(for: ownerUserID) != nil)
+        #expect(await filePurger.removedFiles == false)
+
+        #expect(await purger.retryPendingPurges() == .completed)
+        #expect(await retryStore.request(for: ownerUserID) == nil)
+        #expect(await filePurger.removedFiles)
+    }
+
     @Test func pendingBroaderPurgeCannotBeReplacedByLaterNarrowerScope() async throws {
         let ownerUserID = UUID()
         let recordStore = ScriptedLocalPrivacyRecordStore(failuresBeforeSuccess: 2)
@@ -450,5 +471,26 @@ private actor RecordingPrivateContentPurger: LocalPrivateContentPurging {
 
     func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) {
         calls.append(PrivacyFilePurgeCall(ownerUserID: ownerUserID, scope: scope))
+    }
+
+    func removePrivateFiles() {}
+}
+
+private actor FlakyPrivateFilePurger: LocalPrivateContentPurging {
+    private var failuresRemaining: Int
+    private(set) var removedFiles = false
+
+    init(failuresBeforeSuccess: Int) {
+        failuresRemaining = failuresBeforeSuccess
+    }
+
+    func purge(ownerUserID _: UUID, scope _: LocalPrivacyPurgeScope) {}
+
+    func removePrivateFiles() throws {
+        if failuresRemaining > 0 {
+            failuresRemaining -= 1
+            throw CocoaError(.fileWriteNoPermission)
+        }
+        removedFiles = true
     }
 }

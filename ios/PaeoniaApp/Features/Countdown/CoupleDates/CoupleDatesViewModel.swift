@@ -6,7 +6,6 @@ import Observation
 /// `dates` is the cached server state with this phone's queued writes laid over it, so
 /// an edit shows at once, survives a relaunch while offline, and either partner's change
 /// arrives through the live feed. Every write goes through the pending operations.
-@MainActor
 @Observable
 final class CoupleDatesViewModel {
     private(set) var dates = CoupleDates()
@@ -170,9 +169,6 @@ final class CoupleDatesViewModel {
     }
 
     private static func defaultPendingOperationStore() -> any PendingSyncOperationPersisting {
-        if let localStore = PaeoniaLocalStore.shared {
-            return SwiftDataPendingSyncOperationRepository(container: localStore.container)
-        }
-        return InMemoryPendingSyncOperationRepository()
+        SwiftDataPendingSyncOperationRepository(container: PaeoniaLocalStore.shared.container)
     }
 }

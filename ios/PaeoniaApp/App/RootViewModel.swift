@@ -8,7 +8,6 @@ import OSLog
 /// deletion live in `RootViewModel+Account.swift`; access resolution and
 /// privacy purges in `RootViewModel+AccessResolution.swift`; sync startup and
 /// live access observation in `RootViewModel+Sync.swift`.
-@MainActor
 @Observable
 final class RootViewModel {
     #if DEBUG
@@ -161,12 +160,8 @@ final class RootViewModel {
         self.savedAccessGracePeriod = savedAccessGracePeriod
     }
 
-    private static func makeDefaultAccessSnapshotStore() -> (any AccessSyncSnapshotPersisting)? {
-        guard let localStore = PaeoniaLocalStore.shared else {
-            return nil
-        }
-
-        return SwiftDataAccessSyncSnapshotRepository(container: localStore.container)
+    private static func makeDefaultAccessSnapshotStore() -> any AccessSyncSnapshotPersisting {
+        SwiftDataAccessSyncSnapshotRepository(container: PaeoniaLocalStore.shared.container)
     }
 
     func start(deferringSyncUntilLaunchCompletes: Bool = false) async {

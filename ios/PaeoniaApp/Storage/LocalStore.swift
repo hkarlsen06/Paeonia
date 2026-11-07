@@ -1,21 +1,25 @@
 import Foundation
 import SwiftData
 
-protocol LocalStore: Sendable {
-    nonisolated var container: ModelContainer { get }
-}
-
-final class PaeoniaLocalStore: LocalStore, @unchecked Sendable {
+nonisolated final class PaeoniaLocalStore: Sendable {
     /// One production container shared by every repository and feature service.
     /// Opening the same SwiftData store repeatedly is expensive enough to stall a
     /// cold-launch animation, and separate containers also make local writes harder
     /// to observe consistently across features. Tests can still create isolated
     /// in-memory instances through `init(inMemory:)`.
-    nonisolated static let shared = try? PaeoniaLocalStore()
+    /// The app cannot keep anything without it, so a store that will not open stops
+    /// the app instead of losing what the person saves.
+    static let shared: PaeoniaLocalStore = {
+        do {
+            return try PaeoniaLocalStore()
+        } catch {
+            fatalError("Could not open the local store: \(error)")
+        }
+    }()
 
-    nonisolated let container: ModelContainer
+    let container: ModelContainer
 
-    nonisolated init(inMemory: Bool = false) throws {
+    init(inMemory: Bool = false) throws {
         let schema = Schema([
             LocalSyncState.self,
             LocalPendingSyncOperation.self,
@@ -39,7 +43,7 @@ final class PaeoniaLocalStore: LocalStore, @unchecked Sendable {
         )
     }
 
-    nonisolated static func createStoreDirectory(for storeURL: URL) throws {
+    static func createStoreDirectory(for storeURL: URL) throws {
         try FileManager.default.createDirectory(
             at: storeURL.deletingLastPathComponent(),
             withIntermediateDirectories: true

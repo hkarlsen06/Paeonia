@@ -7,7 +7,6 @@ nonisolated struct SetFirstDayStartedOnPayload: Codable, Equatable, Sendable {
 /// Saves the date the couple got together, picked during profile setup before there is
 /// a couple. The date goes into the pending operations first, so it is never lost: the
 /// sync sends it once profile setup is done, and retries until the server has it.
-@MainActor
 final class FirstDayStartedOnQueue {
     private let pendingOperationStore: any PendingSyncOperationPersisting
     private let operationProvider: any SyncClientOperationProviding
@@ -33,10 +32,7 @@ final class FirstDayStartedOnQueue {
     }
 
     private static func defaultPendingOperationStore() -> any PendingSyncOperationPersisting {
-        if let localStore = PaeoniaLocalStore.shared {
-            return SwiftDataPendingSyncOperationRepository(container: localStore.container)
-        }
-        return InMemoryPendingSyncOperationRepository()
+        SwiftDataPendingSyncOperationRepository(container: PaeoniaLocalStore.shared.container)
     }
 }
 

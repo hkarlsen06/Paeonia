@@ -27,6 +27,9 @@ extension LocalPrivacyPurging {
 
 nonisolated protocol LocalPrivateContentPurging: Sendable {
     func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) async
+    /// Deletes the private media files on disk. A failure leaves the purge request
+    /// queued, so the next retry deletes them again.
+    func removePrivateFiles() async throws
 }
 
 actor LocalPrivacyPurgeService: LocalPrivacyPurging {
@@ -79,7 +82,7 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
 
         guard requestWasPersisted else {
             do {
-                try await purgeRecords(for: request)
+                try await purgeRetryably(for: request)
                 return .completed
             } catch {
                 volatileRetryRequests[ownerUserID] = request
@@ -103,7 +106,7 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
         var hasFailure = false
         for request in Array(volatileRetryRequests.values) {
             do {
-                try await purgeRecords(for: request)
+                try await purgeRetryably(for: request)
                 volatileRetryRequests[request.ownerUserID] = nil
             } catch {
                 hasFailure = true
@@ -120,7 +123,7 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
 
         for request in pendingRequests {
             do {
-                try await purgeRecords(for: request)
+                try await purgeRetryably(for: request)
                 try await retryStore.remove(request)
             } catch {
                 hasFailure = true
@@ -142,7 +145,13 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
         return .completed
     }
 
-    private func purgeRecords(for request: LocalPrivacyPurgeRequest) async throws {
+    private func purgeRetryably(for request: LocalPrivacyPurgeRequest) async throws {
+        var fileFailure: (any Error)?
+        do {
+            try await privateContentPurger.removePrivateFiles()
+        } catch {
+            fileFailure = error
+        }
         switch request.scope {
         case .departingUser:
             try await recordStore.purgeDepartingUser(ownerUserID: request.ownerUserID)
@@ -161,6 +170,7 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
             SiriAppContext.shared.dailyChallenge = nil
         }
         try await entityIndex.removeAllEntities()
+        if let fileFailure { throw fileFailure }
     }
 
     private func scheduleRetryIfNeeded() {
@@ -388,30 +398,27 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         BoardMarkRenderer.removeAll()
         MemoryImageDecoding.removeAll()
         gameDrawingStore.purge(for: scope)
-        try? await profilePhotoDiskCache.removeAllProfilePhotoData()
-        removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())
-        removeDirectoryIfPresent(MemoryMediaImageService.defaultDirectoryURL())
-        removePartnerAvatarIfPresent()
     }
 
-    private func removeDirectoryIfPresent(_ url: URL) {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            return
+    func removePrivateFiles() async throws {
+        var urls = [DailyAnswerMediaImageService.defaultDirectoryURL(), MemoryMediaImageService.defaultDirectoryURL()]
+        if let containerURL = PaeoniaAppGroup.containerURL {
+            urls.append(containerURL.appendingPathComponent(PaeoniaAppGroup.communicationPartnerAvatarPath))
         }
-        try? FileManager.default.removeItem(at: url)
-    }
-
-    private func removePartnerAvatarIfPresent() {
-        guard let containerURL = PaeoniaAppGroup.containerURL else {
-            return
+        var failure: (any Error)?
+        do {
+            try await profilePhotoDiskCache.removeAllProfilePhotoData()
+        } catch {
+            failure = error
         }
-        let avatarURL = containerURL.appendingPathComponent(
-            PaeoniaAppGroup.communicationPartnerAvatarPath
-        )
-        guard FileManager.default.fileExists(atPath: avatarURL.path) else {
-            return
+        for url in urls where FileManager.default.fileExists(atPath: url.path) {
+            do {
+                try FileManager.default.removeItem(at: url)
+            } catch {
+                failure = failure ?? error
+            }
         }
-        try? FileManager.default.removeItem(at: avatarURL)
+        if let failure { throw failure }
     }
 
     nonisolated static func removeTemporaryVoiceFiles(in temporaryDirectory: URL) {

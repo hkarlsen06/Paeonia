@@ -13,9 +13,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
     }
 
     static func makeStores() -> Stores {
-        guard let localStore = PaeoniaLocalStore.shared else {
-            preconditionFailure("Unable to create persistent sync store")
-        }
+        let localStore = PaeoniaLocalStore.shared
 
         return Stores(
             stateStore: SwiftDataSyncStateRepository(container: localStore.container),

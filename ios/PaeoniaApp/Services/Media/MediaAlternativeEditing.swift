@@ -37,7 +37,6 @@ nonisolated struct PendingMediaAlternative: Equatable, Sendable {
 }
 
 nonisolated enum MediaAlternativeEditingError: Error {
-    case unavailable
     case tooLong
     case privacyChanged
 }
@@ -48,9 +47,11 @@ nonisolated struct MediaAlternativeEditingService: Sendable {
     let cache: MediaAlternativeCacheUpdater
 
     @MainActor
-    static func live() throws -> Self {
-        guard let store = PaeoniaLocalStore.shared else { throw MediaAlternativeEditingError.unavailable }
-        return Self(pending: SwiftDataPendingSyncOperationRepository(container: store.container), cache: .live)
+    static func live() -> Self {
+        Self(
+            pending: SwiftDataPendingSyncOperationRepository(container: PaeoniaLocalStore.shared.container),
+            cache: .live
+        )
     }
 
     func pendingEdit(ownerUserID: UUID, coupleID: UUID, target: MediaAlternativeTarget) async throws

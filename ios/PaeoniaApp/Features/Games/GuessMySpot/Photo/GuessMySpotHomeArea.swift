@@ -22,8 +22,8 @@ nonisolated struct LiveGuessMySpotHomeArea: GuessMySpotHomeAreaProviding {
     static let countryMeters = 1_500_000.0
 
     func homeArea(ownerUserID: UUID, coupleID: UUID?) async -> GuessMySpotArea? {
-        if let coupleID, let store = PaeoniaLocalStore.shared,
-           let own = try? await SwiftDataOwnLocationSnapshotRepository(container: store.container)
+        if let coupleID,
+           let own = try? await SwiftDataOwnLocationSnapshotRepository(container: PaeoniaLocalStore.shared.container)
                .load(ownerUserID: ownerUserID, coupleID: coupleID) {
             let center = GuessMySpotCoordinate(latitude: own.location.latitude, longitude: own.location.longitude)
             return GuessMySpotArea(center: center, meters: Self.ownAreaMeters)

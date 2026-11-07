@@ -67,7 +67,6 @@ nonisolated struct LocationUpdatePlan: Equatable, Sendable {
 ///
 /// No `location` background mode is used. The significant-change service does
 /// not need one, and it is far lighter on battery than continuous updates.
-@MainActor
 @Observable
 final class LocationUpdateController: NSObject {
     static let shared = LocationUpdateController()
@@ -342,11 +341,11 @@ final class LocationUpdateController: NSObject {
               appliedPlan?.watchesWhileClosed == true,
               let identity = storedIdentity,
               let accountID,
-              accountID == defaults.string(forKey: Key.accountID),
-              let uploader = makeUploader()
+              accountID == defaults.string(forKey: Key.accountID)
         else {
             return
         }
+        let uploader = makeUploader()
 
         let outcome = await uploader.upload(location, ownerUserID: identity.userID, coupleID: identity.coupleID)
         if outcome == .sharingOff {
@@ -358,13 +357,11 @@ final class LocationUpdateController: NSObject {
 
     /// `nil` while the local store cannot open. Without it there is no way to
     /// check the sharing choice, so nothing is sent.
-    private func makeUploader() -> BackgroundLocationUploader? {
+    private func makeUploader() -> BackgroundLocationUploader {
         if let uploader {
             return uploader
         }
-        guard let localStore = PaeoniaLocalStore.shared else {
-            return nil
-        }
+        let localStore = PaeoniaLocalStore.shared
         let made = BackgroundLocationUploader(
             gateway: (try? PaeoniaConvexClientProvider.shared.client()).map { LiveLocationGateway(client: $0) },
             visibilityStore: SwiftDataLocationVisibilityRepository(container: localStore.container),
@@ -459,7 +456,6 @@ extension LocationUpdateController: CLLocationManagerDelegate {
 
 /// Extra background time for one short piece of work, ended exactly once
 /// either when the work finishes or when iOS says time is up.
-@MainActor
 final class BackgroundTaskToken {
     private var identifier = UIBackgroundTaskIdentifier.invalid
 

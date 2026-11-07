@@ -11,7 +11,6 @@ import SwiftUI
 /// Receiving: the live feed keeps the partner's totals in `HeartsCaching`. While
 /// Home is on screen, unseen hearts play as one burst, the cache records them as
 /// shown, and a second write tells the server.
-@MainActor
 @Observable
 final class HeartsViewModel {
     /// The burst that is playing now. The map and the heart row fly hearts for it.
@@ -257,10 +256,7 @@ final class HeartsViewModel {
     }
 
     private static func defaultPendingOperationStore() -> any PendingSyncOperationPersisting {
-        if let localStore = PaeoniaLocalStore.shared {
-            return SwiftDataPendingSyncOperationRepository(container: localStore.container)
-        }
-        return InMemoryPendingSyncOperationRepository()
+        SwiftDataPendingSyncOperationRepository(container: PaeoniaLocalStore.shared.container)
     }
 
     static func playFeedback(_ line: String) {
