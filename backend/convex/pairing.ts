@@ -6,7 +6,7 @@ import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
 import { hmacSha256Hex } from "./lib/crypto";
-import { getByUuid, orNull, type ReaderCtx, withUpdatedAt } from "./lib/db";
+import { getByUuid, type ReaderCtx, withUpdatedAt } from "./lib/db";
 import { fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalDateArg, optionalTimestampArg, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import { materializeFirstDayDrafts } from "./lib/firstDay";
@@ -270,8 +270,8 @@ export const preview_pairing_invite = mutation({
       return [
         {
           invite_id: reviewCode.id,
-          inviter_user_id: orNull(reviewCode.seeded_partner_user_id),
-          inviter_display_name: partner?.moderation_status === "visible" ? orNull(partner.display_name) : null,
+          inviter_user_id: reviewCode.seeded_partner_user_id ?? null,
+          inviter_display_name: partner?.moderation_status === "visible" ? partner.display_name ?? null : null,
           inviter_photo_url: await profilePhotoUrl(ctx, partner),
           expires_at: reviewCode.expires_at ?? addDaysToInstant(now, 1),
           has_safety_warning: false,
@@ -310,7 +310,7 @@ export const preview_pairing_invite = mutation({
       {
         invite_id: invite.id,
         inviter_user_id: invite.created_by_user_id,
-        inviter_display_name: inviter?.moderation_status === "visible" ? orNull(inviter.display_name) : null,
+        inviter_display_name: inviter?.moderation_status === "visible" ? inviter.display_name ?? null : null,
         inviter_photo_url: await profilePhotoUrl(ctx, inviter),
         expires_at: invite.expires_at,
         has_safety_warning: flagged,

@@ -3,7 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { canAccessCoupleContent } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import type { ReaderCtx } from "./lib/db";
-import { getByUuid, orNull } from "./lib/db";
+import { getByUuid } from "./lib/db";
 import { visibleAnswersOf } from "./lib/dailyQuestions";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
@@ -157,8 +157,8 @@ export const get_chat_presence = query({
 
     return {
       partner_typing: typing,
-      partner_last_read_message_id: orNull(read?.last_read_message_id),
-      partner_read_at: orNull(read?.read_at),
+      partner_last_read_message_id: read?.last_read_message_id ?? null,
+      partner_read_at: read?.read_at ?? null,
     };
   },
 });

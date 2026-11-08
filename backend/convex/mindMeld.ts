@@ -8,7 +8,7 @@ import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArg
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
-import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
+import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dataEpoch, enqueueGamePush, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
@@ -149,15 +149,15 @@ function roundJson(round: Round, words: Word[], userId: string) {
     id: round.id,
     round_number: round.round_number,
     state: round.state,
-    outcome: orNull(round.outcome),
-    counted_by_user_id: orNull(round.counted_by_user_id),
-    my_word: orNull(mine?.word),
-    my_locked_at: orNull(mine?.locked_at),
+    outcome: round.outcome ?? null,
+    counted_by_user_id: round.counted_by_user_id ?? null,
+    my_word: mine?.word ?? null,
+    my_locked_at: mine?.locked_at ?? null,
     partner_locked: theirs !== undefined,
-    partner_locked_at: orNull(theirs?.locked_at),
-    partner_word: round.state === "revealed" ? orNull(theirs?.word) : null,
-    revealed_at: orNull(round.revealed_at),
-    my_reveal_seen_at: orNull(mine?.reveal_seen_at),
+    partner_locked_at: theirs?.locked_at ?? null,
+    partner_word: round.state === "revealed" ? theirs?.word ?? null : null,
+    revealed_at: round.revealed_at ?? null,
+    my_reveal_seen_at: mine?.reveal_seen_at ?? null,
   };
 }
 
@@ -169,11 +169,11 @@ async function gameJson(ctx: ReaderCtx, overview: Overview, game: Game, userId: 
     id: game.id,
     game_number: game.game_number,
     state: game.state,
-    end_reason: orNull(game.end_reason),
-    ended_by_user_id: orNull(game.ended_by_user_id),
-    ended_at: orNull(game.ended_at),
+    end_reason: game.end_reason ?? null,
+    ended_by_user_id: game.ended_by_user_id ?? null,
+    ended_at: game.ended_at ?? null,
     max_rounds: MAX_ROUNDS,
-    my_end_seen_at: orNull(game.end_seen_by_user[userId]),
+    my_end_seen_at: game.end_seen_by_user[userId] ?? null,
     meld_number: meld?.meld_number ?? null,
     is_record: meld?.is_record ?? false,
     created_by_user_id: game.created_by_user_id,
@@ -244,10 +244,10 @@ export const get_mind_meld_history = query({
         id: game.id,
         game_number: game.game_number,
         state: game.state,
-        end_reason: orNull(game.end_reason),
-        ended_by_user_id: orNull(game.ended_by_user_id),
+        end_reason: game.end_reason ?? null,
+        ended_by_user_id: game.ended_by_user_id ?? null,
         created_at: game.created_at,
-        ended_at: orNull(game.ended_at),
+        ended_at: game.ended_at ?? null,
         meld_number: overview.melds.get(game.id)?.meld_number ?? null,
         rounds: rounds.map((round) => {
           const shown = roundJson(round, words, userId);

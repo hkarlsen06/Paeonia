@@ -71,13 +71,6 @@ export function validTimeZoneOrUtc(timeZone: string | null | undefined): string 
   return isValidTimeZone(timeZone) ? timeZone : "UTC";
 }
 
-/** Throws 22023 for an unknown zone. */
-export function assertValidTimeZone(timeZone: string): void {
-  if (!isValidTimeZone(timeZone)) {
-    fail("22023", `time zone "${timeZone}" not recognized`);
-  }
-}
-
 /**
  * The local wall clock of an instant in a zone, expressed as milliseconds as if
  * that wall clock were UTC. Equal wall clocks give equal numbers, which is the

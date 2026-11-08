@@ -1,7 +1,7 @@
 import type { Doc } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
-import { orNull, type ReaderCtx } from "./lib/db";
+import type { ReaderCtx } from "./lib/db";
 
 // The live status of "Download my data". It has its own small module, because the app subscribes to
 // it while Privacy and safety is open and Convex loads every import of a module on each run.
@@ -14,14 +14,14 @@ export function exportRow(row: Doc<"data_exports">) {
     progress: row.progress,
     include_files: row.include_files,
     created_at: row.created_at,
-    ready_at: orNull(row.ready_at),
-    expires_at: orNull(row.expires_at),
+    ready_at: row.ready_at ?? null,
+    expires_at: row.expires_at ?? null,
     part_count: row.part_count,
     byte_size: row.byte_size,
     row_count: row.row_count,
     file_count: row.file_count,
     skipped_file_count: row.skipped_file_count,
-    error_code: orNull(row.error_code),
+    error_code: row.error_code ?? null,
   };
 }
 

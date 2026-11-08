@@ -5,7 +5,6 @@ import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { deleteAnalyticsPerson, deleteInactiveAnalyticsPersons } from "./lib/accountDeletionProviders";
 import { requireUserId } from "./lib/auth";
 import { backgroundWorkpool } from "./lib/backgroundWorkpool";
-import { orNull } from "./lib/db";
 import { fail } from "./lib/errors";
 import { findProfile, updateProfile } from "./lib/profiles";
 import { nowIso } from "./lib/time";
@@ -19,7 +18,7 @@ export const get_usage_sharing = query({
   args: {},
   handler: async (ctx) => {
     const profile = await findProfile(ctx, await requireUserId(ctx));
-    return { shares_usage: orNull(profile?.shares_usage) };
+    return { shares_usage: profile?.shares_usage ?? null };
   },
 });
 

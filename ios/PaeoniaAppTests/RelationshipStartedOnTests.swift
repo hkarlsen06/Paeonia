@@ -307,7 +307,7 @@ private actor SuspendedStartedOnDataService: RelationshipStartedOnDataServicing 
 // swiftlint:enable async_without_await
 
 @MainActor
-private final class RelationshipStartedOnOperationProvider: PairingClientOperationProviding {
+private final class RelationshipStartedOnOperationProvider: SyncClientOperationProviding {
     private let operation: PairingClientOperation
 
     init(operation: PairingClientOperation) {

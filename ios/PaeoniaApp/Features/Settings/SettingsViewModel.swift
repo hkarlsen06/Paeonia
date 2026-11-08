@@ -40,7 +40,7 @@ final class SettingsViewModel {
     private let preferences: (any NotificationPreferencesProviding)?
     private let authorization: any PushAuthorizationProviding
     private let pairingService: (any PairingServicing)?
-    private let operationProvider: any PairingClientOperationProviding
+    private let operationProvider: any SyncClientOperationProviding
     private let storeKitService: any PaeoniaStoreKitServicing
     private let loadAccessSnapshot: (@Sendable () async throws -> RemoteAccessSnapshot)?
 
@@ -74,7 +74,7 @@ final class SettingsViewModel {
         preferences: (any NotificationPreferencesProviding)? = NotificationPreferencesServiceFactory.makeDefault(),
         authorization: any PushAuthorizationProviding = PushAuthorizationService(),
         pairingService: (any PairingServicing)? = nil,
-        operationProvider: (any PairingClientOperationProviding)? = nil,
+        operationProvider: (any SyncClientOperationProviding)? = nil,
         userID: String? = nil,
         storeKitService: (any PaeoniaStoreKitServicing)? = nil,
         loadAccessSnapshot: (@Sendable () async throws -> RemoteAccessSnapshot)? = nil
@@ -82,7 +82,7 @@ final class SettingsViewModel {
         self.preferences = preferences
         self.authorization = authorization
         self.pairingService = pairingService ?? (try? RemotePairingService.live())
-        self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
+        self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.storeKitService = storeKitService ?? PaeoniaStoreKitService.shared
         self.loadAccessSnapshot = loadAccessSnapshot
             ?? (try? LiveAccessGateway(client: PaeoniaConvexClientProvider.shared.client())).map { gateway in

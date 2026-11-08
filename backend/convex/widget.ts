@@ -12,7 +12,7 @@ import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArg
 import { runClientOperation } from "./lib/clientOperations";
 import { sha256Hex } from "./lib/crypto";
 import type { ReaderCtx } from "./lib/db";
-import { getByUuid, orNull, withTouch } from "./lib/db";
+import { getByUuid, withTouch } from "./lib/db";
 import { checkViolation, fail } from "./lib/errors";
 import { newUuid, optionalTimestampArg, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import { signLiveTicket } from "./lib/liveTicket";
@@ -111,7 +111,7 @@ export const get_or_create_widget_canvas = mutation({
       {
         canvas_id: canvas.id,
         couple_id: canvas.couple_id,
-        active_revision_id: orNull(canvas.active_revision_id),
+        active_revision_id: canvas.active_revision_id ?? null,
         created_at: canvas.created_at,
         updated_at: canvas.updated_at,
       },
@@ -136,7 +136,7 @@ export const create_widget_live_ticket = mutation({
 
 /** The payload columns shared by the canvas and revision reads. Null unless the payload is visible. */
 function payloadColumns(revision: Revision, asset: Asset | null, visible: boolean) {
-  const shown = <T>(value: T | undefined | null): T | null => (visible ? orNull(value) : null);
+  const shown = <T>(value: T | undefined | null): T | null => (visible ? value ?? null : null);
   return {
     payload_media_asset_id: shown(revision.payload_media_asset_id),
     payload_bucket: shown(asset?.bucket),
@@ -181,9 +181,9 @@ export const get_widget_canvas = query({
       {
         canvas_id: canvas.id,
         couple_id: canvas.couple_id,
-        active_revision_id: orNull(canvas.active_revision_id),
-        active_revision_moderation_status: orNull(revision?.moderation_status),
-        active_revision_deleted_at: orNull(revision?.deleted_at),
+        active_revision_id: canvas.active_revision_id ?? null,
+        active_revision_moderation_status: revision?.moderation_status ?? null,
+        active_revision_deleted_at: revision?.deleted_at ?? null,
         active_revision_author_user_id: visible ? revision!.author_user_id : null,
         // What the caller calls the author (their nickname for the partner, or the author's own
         // name). The Home Screen widget labels the drawing with it.
@@ -259,9 +259,9 @@ export const get_widget_drawing_revisions = query({
         canvas_id: revision.canvas_id,
         revision_id: revision.id,
         author_user_id: revision.author_user_id,
-        parent_revision_id: orNull(revision.parent_revision_id),
+        parent_revision_id: revision.parent_revision_id ?? null,
         moderation_status: revision.moderation_status,
-        deleted_at: orNull(revision.deleted_at),
+        deleted_at: revision.deleted_at ?? null,
         ...payloadColumns(revision, asset, visible),
         created_at: revision.created_at,
         updated_at: revision.updated_at,

@@ -18,7 +18,7 @@ import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArg
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx } from "./lib/db";
-import { getByUuid, omitNulls, orNull, withUpdatedAt } from "./lib/db";
+import { getByUuid, omitNulls, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dataEpoch, requireGameSettings, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
@@ -151,9 +151,9 @@ export const get_board_game_history = query({
       game_number: row.game_number,
       first_user_id: row.first_user_id,
       moves: row.moves,
-      winner_user_id: orNull(row.winner_user_id),
+      winner_user_id: row.winner_user_id ?? null,
       win_line: row.win_line,
-      stake: orNull(row.stake),
+      stake: row.stake ?? null,
       started_at: row.started_at,
       finished_at: row.finished_at,
     }));

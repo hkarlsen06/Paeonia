@@ -1,6 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import { findCurrentCouple } from "./access";
-import { getByUuid, orNull, withTouch, type ReaderCtx, type WriterCtx } from "./db";
+import { getByUuid, withTouch, type ReaderCtx, type WriterCtx } from "./db";
 import { fail } from "./errors";
 import { queueOldMediaAssetIfOrphaned } from "./mediaOrphans";
 import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./notifications";
@@ -22,18 +22,18 @@ const PHOTO_COLUMNS = [
 export function profileRow(profile: Doc<"profiles">) {
   return {
     user_id: profile.user_id,
-    display_name: orNull(profile.display_name),
-    profile_photo_asset_id: orNull(profile.profile_photo_asset_id),
-    time_zone_id: orNull(profile.time_zone_id),
-    time_zone_updated_at: orNull(profile.time_zone_updated_at),
-    onboarding_completed_at: orNull(profile.onboarding_completed_at),
+    display_name: profile.display_name ?? null,
+    profile_photo_asset_id: profile.profile_photo_asset_id ?? null,
+    time_zone_id: profile.time_zone_id ?? null,
+    time_zone_updated_at: profile.time_zone_updated_at ?? null,
+    onboarding_completed_at: profile.onboarding_completed_at ?? null,
     revision: profile.revision,
     moderation_status: profile.moderation_status,
     created_at: profile.created_at,
     updated_at: profile.updated_at,
-    deleted_at: orNull(profile.deleted_at),
-    provider_profile_photo_asset_id: orNull(profile.provider_profile_photo_asset_id),
-    provider_profile_photo_source: orNull(profile.provider_profile_photo_source),
+    deleted_at: profile.deleted_at ?? null,
+    provider_profile_photo_asset_id: profile.provider_profile_photo_asset_id ?? null,
+    provider_profile_photo_source: profile.provider_profile_photo_source ?? null,
   };
 }
 
@@ -41,13 +41,13 @@ export function profileRow(profile: Doc<"profiles">) {
 export function profileSummaryRow(profile: Doc<"profiles">) {
   return {
     user_id: profile.user_id,
-    display_name: orNull(profile.display_name),
-    time_zone_id: orNull(profile.time_zone_id),
-    time_zone_updated_at: orNull(profile.time_zone_updated_at),
-    onboarding_completed_at: orNull(profile.onboarding_completed_at),
-    profile_photo_asset_id: orNull(profile.profile_photo_asset_id),
-    provider_profile_photo_asset_id: orNull(profile.provider_profile_photo_asset_id),
-    provider_profile_photo_source: orNull(profile.provider_profile_photo_source),
+    display_name: profile.display_name ?? null,
+    time_zone_id: profile.time_zone_id ?? null,
+    time_zone_updated_at: profile.time_zone_updated_at ?? null,
+    onboarding_completed_at: profile.onboarding_completed_at ?? null,
+    profile_photo_asset_id: profile.profile_photo_asset_id ?? null,
+    provider_profile_photo_asset_id: profile.provider_profile_photo_asset_id ?? null,
+    provider_profile_photo_source: profile.provider_profile_photo_source ?? null,
   };
 }
 

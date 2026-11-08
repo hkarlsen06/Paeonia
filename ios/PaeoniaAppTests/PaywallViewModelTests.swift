@@ -163,7 +163,7 @@ private actor PaywallTestPairing: PairingServicing {
 }
 
 @MainActor
-private final class PaywallTestOperationProvider: PairingClientOperationProviding {
+private final class PaywallTestOperationProvider: SyncClientOperationProviding {
     func makeOperation() -> PairingClientOperation {
         SyncClientOperation(clientID: UUID(), clientSequence: 1)
     }

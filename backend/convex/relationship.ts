@@ -4,7 +4,7 @@ import { mutation, query } from "./_generated/server";
 import { findCurrentCouple, getCurrentEntitledCoupleId } from "./lib/access";
 import { isSupersededClientOperation, runClientOperation } from "./lib/clientOperations";
 import { assertStartedOnNotInFuture } from "./lib/coupleDays";
-import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
+import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dateArg, optionalTimestampArg, optionalUuidArg } from "./lib/ids";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
@@ -40,14 +40,14 @@ export const get_relationship_sync_events = query({
         id: event.id,
         user_id: event.user_id,
         couple_id: event.couple_id,
-        initiated_by_user_id: orNull(event.initiated_by_user_id),
+        initiated_by_user_id: event.initiated_by_user_id ?? null,
         event_kind: event.event_kind,
-        reason: orNull(event.reason),
+        reason: event.reason ?? null,
         occurred_at: event.occurred_at,
         relationship_status: event.relationship_status,
         member_status: event.member_status,
-        ended_at: orNull(event.ended_at),
-        delete_after: orNull(event.delete_after),
+        ended_at: event.ended_at ?? null,
+        delete_after: event.delete_after ?? null,
         local_purge_scope: event.local_purge_scope,
         created_at: event.created_at,
         updated_at: event.updated_at,
@@ -123,7 +123,7 @@ export const set_couple_started_on = mutation({
     const outcome = await runClientOperation(ctx, userId, input, async () => {
       if (await isSupersededClientOperation(ctx, userId, input)) {
         const couple = await getByUuid(ctx, "couples", coupleId);
-        return { couple_id: coupleId, started_on: orNull(couple?.started_on), superseded: true };
+        return { couple_id: coupleId, started_on: couple?.started_on ?? null, superseded: true };
       }
 
       const couple = await getByUuid(ctx, "couples", coupleId);

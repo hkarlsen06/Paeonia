@@ -5,7 +5,7 @@ import { canAccessCoupleContent, getCurrentEntitledCoupleId } from "./lib/access
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
 import { runClientOperation } from "./lib/clientOperations";
-import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
+import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { optionalTimestampArg, timestampArg, uuidArg } from "./lib/ids";
 import { isSharingNow, MAX_LOCATION_PAUSE_MS } from "./lib/locationPause";
@@ -49,7 +49,7 @@ function locationRow(row: Doc<"latest_partner_locations">) {
     user_id: row.user_id,
     latitude: row.latitude,
     longitude: row.longitude,
-    accuracy_m: orNull(row.accuracy_m),
+    accuracy_m: row.accuracy_m ?? null,
     captured_at: row.captured_at,
     received_at: row.received_at,
     updated_at: row.updated_at,
@@ -378,9 +378,9 @@ export const update_location_sharing_preference = mutation({
           couple_id: row.couple_id,
           user_id: row.user_id,
           is_enabled: row.is_enabled,
-          enabled_at: orNull(row.enabled_at),
-          disabled_at: orNull(row.disabled_at),
-          paused_until: orNull(row.paused_until),
+          enabled_at: row.enabled_at ?? null,
+          disabled_at: row.disabled_at ?? null,
+          paused_until: row.paused_until ?? null,
           updated_at: row.updated_at,
         };
       },
@@ -526,7 +526,7 @@ export const get_partner_location_visibility = query({
         viewer_paused_until: viewerPausedUntil ?? null,
         partner_location_latitude: location?.latitude ?? null,
         partner_location_longitude: location?.longitude ?? null,
-        partner_location_accuracy_m: orNull(location?.accuracy_m),
+        partner_location_accuracy_m: location?.accuracy_m ?? null,
         partner_location_captured_at: location?.captured_at ?? null,
         // Query results are cached, so clients should recompute staleness from partner_location_captured_at.
         partner_location_is_stale: location ? location.captured_at < addMs(now, -24 * 3_600_000) : false,

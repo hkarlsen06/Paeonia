@@ -247,7 +247,7 @@ private actor JoinTestPairingService: PairingServicing {
 // swiftlint:enable async_without_await
 
 @MainActor
-private final class JoinTestOperationProvider: PairingClientOperationProviding {
+private final class JoinTestOperationProvider: SyncClientOperationProviding {
     func makeOperation() -> PairingClientOperation {
         PairingClientOperation(clientID: UUID(), clientSequence: 1)
     }

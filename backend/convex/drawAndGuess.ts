@@ -7,7 +7,7 @@ import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArg
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx } from "./lib/db";
-import { getByUuid, orNull } from "./lib/db";
+import { getByUuid } from "./lib/db";
 import {
   beginTurn,
   drawWordChoices,
@@ -169,7 +169,7 @@ export const get_draw_and_guess = query({
           : null,
       my_present: online.includes(userId),
       partner_present: partnerId !== null && online.includes(partnerId),
-      last_invite_at: orNull(invite?.sent_at),
+      last_invite_at: invite?.sent_at ?? null,
     };
   },
 });
@@ -373,7 +373,7 @@ export const mark_round_seen = mutation({
     await assertNoPendingAccountDeletion(ctx, userId);
     const { move } = await requireRound(ctx, userId, uuidArg(args.p_round_id));
     if (move.guesser_user_id !== userId) fail("42501", "only the guesser can see this drawing");
-    if (move.state !== "drawing" && move.state !== "guessing") return { guesser_first_seen_at: orNull(move.guesser_first_seen_at) };
+    if (move.state !== "drawing" && move.state !== "guessing") return { guesser_first_seen_at: move.guesser_first_seen_at ?? null };
     if (move.guesser_first_seen_at !== undefined) return { guesser_first_seen_at: move.guesser_first_seen_at };
     const now = nowIso();
     await patchMove(ctx, move, { guesser_first_seen_at: now });
@@ -676,7 +676,7 @@ async function historyRoundJson(ctx: ReaderCtx, move: GameMove) {
     attempt_count: guesses.length,
     guesses: guesses.map(guess => guess.text),
     started_at: move.started_at,
-    ended_at: orNull(move.ended_at),
+    ended_at: move.ended_at ?? null,
   };
 }
 

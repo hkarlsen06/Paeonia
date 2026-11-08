@@ -26,7 +26,7 @@ import {
 } from "./lib/consensio";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx } from "./lib/db";
-import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
+import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail, uniqueViolation } from "./lib/errors";
 import { dataEpoch, enqueueGamePush, requireGameSettings, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
@@ -64,18 +64,18 @@ function roundJson(round: Omit<ConsensioRound, "_id" | "_creationTime">, userId:
     round_number: round.round_number,
     placer_user_id: round.placer_user_id,
     guesser_user_id: round.guesser_user_id,
-    topic_id: orNull(round.topic_id),
-    language: orNull(round.language),
+    topic_id: round.topic_id ?? null,
+    language: round.language ?? null,
     subject: round.subject,
     left_end: round.left_end,
     right_end: round.right_end,
     spot: guessed || isPlacer ? round.spot : null,
     placed_at: round.placed_at,
-    guess: orNull(round.guess),
-    distance: orNull(round.distance),
-    points: orNull(round.points),
-    guessed_at: orNull(round.guessed_at),
-    my_reveal_seen_at: orNull(isPlacer ? round.placer_reveal_seen_at : round.guesser_reveal_seen_at),
+    guess: round.guess ?? null,
+    distance: round.distance ?? null,
+    points: round.points ?? null,
+    guessed_at: round.guessed_at ?? null,
+    my_reveal_seen_at: (isPlacer ? round.placer_reveal_seen_at : round.guesser_reveal_seen_at) ?? null,
   };
 }
 

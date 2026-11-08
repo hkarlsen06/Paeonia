@@ -24,14 +24,14 @@ final class PairingJoinViewModel {
     private var unconfirmedAccept: UnconfirmedJoin?
 
     private let pairingService: (any PairingServicing)?
-    private let operationProvider: any PairingClientOperationProviding
+    private let operationProvider: any SyncClientOperationProviding
 
     init(
         pairingService: (any PairingServicing)? = nil,
-        operationProvider: (any PairingClientOperationProviding)? = nil
+        operationProvider: (any SyncClientOperationProviding)? = nil
     ) {
         self.pairingService = pairingService ?? (try? RemotePairingService.live())
-        self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
+        self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
     }
 
     var isBusy: Bool {

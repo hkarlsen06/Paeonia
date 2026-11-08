@@ -14,17 +14,6 @@ import { nowIso } from "./time";
 export { resolveUserEntitlement, userHasDirectEntitlement } from "./entitlements";
 export type { ResolvedEntitlement } from "./entitlements";
 
-/**
- * Access helpers port the SQL `security definer` functions that RLS policies
- * and RPCs used. The SQL read `auth.uid()`; here the caller passes the user id
- * it got from `requireUserId`.
- */
-
-/** Port of `internal.is_admin`. It always returned false. Operator work runs through internal functions. */
-export function isAdmin(): boolean {
-  return false;
-}
-
 /** Active members of a couple whose couple row is active. Empty when the couple is not active. */
 export async function listActiveMembers(
   ctx: ReaderCtx,

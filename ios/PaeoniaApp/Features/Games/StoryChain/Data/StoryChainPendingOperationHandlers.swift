@@ -1,16 +1,8 @@
 import Foundation
 
 /// The Story Chain handlers for the outbox drain. The Games registry adds them
-/// with one line (`GamesPendingOperationRegistry`).
+/// through `GamesPendingOperationRegistry`.
 nonisolated enum StoryChainPendingOperations {
-    static func handlers(client: PaeoniaConvexClient) -> [any PendingSyncOperationHandling] {
-        handlers(
-            gateway: LiveGamesGateway(client: client),
-            cache: FileStoryChainCache.shared,
-            gamesCache: FileGamesCache.shared
-        )
-    }
-
     /// `gamesCache` keeps the count of refusals the phone has no rule for, which
     /// every game shares.
     static func handlers(

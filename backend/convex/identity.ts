@@ -7,7 +7,7 @@ import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { readAccessSnapshot } from "./lib/accessSnapshot";
 import { fetchLinkedSignInProviders } from "./lib/accountDeletionProviders";
 import { authProviderFromIdentity, ensureCurrentUser, requireUserId, requireUserIdIncludingDeleted } from "./lib/auth";
-import { orNull, type ReaderCtx, withTouch } from "./lib/db";
+import { type ReaderCtx, withTouch } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
 import { sha256Hex } from "./lib/crypto";
@@ -369,12 +369,12 @@ function privacyRequestRow(row: Doc<"privacy_requests">) {
     request_kind: row.request_kind,
     status: row.status,
     requested_at: row.requested_at,
-    verified_at: orNull(row.verified_at),
-    completed_at: orNull(row.completed_at),
-    cancelled_at: orNull(row.cancelled_at),
-    contact_email: orNull(row.contact_email),
-    requester_note: orNull(row.requester_note),
-    visible_status_message: orNull(row.visible_status_message),
+    verified_at: row.verified_at ?? null,
+    completed_at: row.completed_at ?? null,
+    cancelled_at: row.cancelled_at ?? null,
+    contact_email: row.contact_email ?? null,
+    requester_note: row.requester_note ?? null,
+    visible_status_message: row.visible_status_message ?? null,
     revision: row.revision,
     created_at: row.created_at,
     updated_at: row.updated_at,

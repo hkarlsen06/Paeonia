@@ -1,6 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx } from "./db";
-import { getByUuid, orNull } from "./db";
+import { getByUuid } from "./db";
 import { reactionsOf } from "./reactions";
 
 /** The shared safe wire projection for a message page or a merged game timeline. */
@@ -56,16 +56,16 @@ export async function projectThreadMessages(ctx: ReaderCtx, thread: Doc<"convers
         media.push({
           media_asset_id: link.media_asset_id,
           media_type: asset.media_type,
-          accessibility_text: orNull(asset.accessibility_text),
-          width: orNull(asset.width),
-          height: orNull(asset.height),
-          duration_ms: orNull(asset.duration_ms),
+          accessibility_text: asset.accessibility_text ?? null,
+          width: asset.width ?? null,
+          height: asset.height ?? null,
+          duration_ms: asset.duration_ms ?? null,
         });
       }
       mediaStates.push({
         media_asset_id: link.media_asset_id,
         sort_order: link.sort_order,
-        asset_deleted_at: orNull(asset.deleted_at),
+        asset_deleted_at: asset.deleted_at ?? null,
         asset_moderation_status: asset.moderation_status,
         asset_storage_delete_status: asset.storage_delete_status,
         updated_at: asset.updated_at,
@@ -77,13 +77,13 @@ export async function projectThreadMessages(ctx: ReaderCtx, thread: Doc<"convers
       thread_id: thread.id,
       message_id: message.id,
       sender_user_id: message.sender_user_id,
-      body: messageVisible ? orNull(message.body) : null,
-      reply_to_message_id: orNull(message.reply_to_message_id),
-      reply_to_answer_id: orNull(message.reply_to_answer_id),
-      reply_to_game_result_source: orNull(message.reply_to_game_result_source),
+      body: messageVisible ? message.body ?? null : null,
+      reply_to_message_id: message.reply_to_message_id ?? null,
+      reply_to_answer_id: message.reply_to_answer_id ?? null,
+      reply_to_game_result_source: message.reply_to_game_result_source ?? null,
       created_at: message.created_at,
-      edited_at: orNull(message.edited_at),
-      deleted_at: orNull(message.deleted_at),
+      edited_at: message.edited_at ?? null,
+      deleted_at: message.deleted_at ?? null,
       moderation_status: message.moderation_status,
       media_asset_ids: mediaAssetIds,
       media,

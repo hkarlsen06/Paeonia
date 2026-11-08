@@ -5,13 +5,6 @@ export function fail(code: string, message: string): never {
   throw new ConvexError({ code, message });
 }
 
-/** Fails with 23514 and the given message when `condition` is false. */
-export function assertCheck(condition: unknown, message: string): asserts condition {
-  if (!condition) {
-    fail("23514", message);
-  }
-}
-
 /** Mirrors the Postgres message for a violated CHECK constraint. */
 export function checkViolation(table: string, constraint: string): never {
   return fail(

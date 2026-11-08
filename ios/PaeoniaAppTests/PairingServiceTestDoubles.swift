@@ -135,7 +135,7 @@ final class GeneratedInviteCodeSequence: @unchecked Sendable {
 }
 
 @MainActor
-final class StaticPairingOperationProvider: PairingClientOperationProviding {
+final class StaticPairingOperationProvider: SyncClientOperationProviding {
     private let operation: PairingClientOperation
     private(set) var makeOperationCallCount = 0
 

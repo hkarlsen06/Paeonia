@@ -2,7 +2,7 @@ import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { backgroundWorkpool } from "./backgroundWorkpool";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { getByUuid, orNull } from "./db";
+import { getByUuid } from "./db";
 import { canAccessCoupleContent } from "./access";
 import { fail } from "./errors";
 import { newUuid } from "./ids";
@@ -258,7 +258,7 @@ export async function resolveContentReportTarget(
           message_id: message.id,
           thread_id: message.thread_id,
           sender_user_id: message.sender_user_id,
-          body: orNull(message.body),
+          body: message.body ?? null,
           moderation_status: message.moderation_status,
           media_asset_ids: await reportableMediaIds(ctx, links),
         },

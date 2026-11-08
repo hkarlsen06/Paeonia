@@ -13,7 +13,7 @@ import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import { dailyQuestionThreadLink, isSharedRound, loadQuestionRounds } from "./lib/dailyQuestionRounds";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
-import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
+import { getByUuid, withUpdatedAt } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { coupleChatDeepLink, memoryDeepLink, storyDeepLink } from "./lib/deepLinks";
 import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
@@ -831,25 +831,25 @@ export const get_conversation_threads = query({
         thread_id: thread.id,
         couple_id: thread.couple_id,
         kind: thread.kind,
-        daily_question_id: orNull(daily?.question_id),
-        memory_id: orNull(memory?.memory_id),
-        story_id: orNull(story?.story_id),
-        game_kind: orNull(game?.game_kind),
+        daily_question_id: daily?.question_id ?? null,
+        memory_id: memory?.memory_id ?? null,
+        story_id: story?.story_id ?? null,
+        game_kind: game?.game_kind ?? null,
         created_by_user_id: thread.created_by_user_id,
         created_at: thread.created_at,
         updated_at: thread.updated_at,
-        deleted_at: orNull(thread.deleted_at),
+        deleted_at: thread.deleted_at ?? null,
         moderation_status: thread.moderation_status,
-        last_message_id: orNull(last?.id),
-        last_message_at: orNull(last?.created_at),
-        last_message_sender_user_id: orNull(last?.sender_user_id),
-        last_message_deleted_at: orNull(last?.deleted_at),
-        last_message_moderation_status: orNull(last?.moderation_status),
-        last_message_body: visible ? orNull(last.body) : null,
-        last_message_media_type: orNull(lastMediaAsset?.media_type),
-        viewer_read_through_at: orNull(viewerRead?.last_read_message_created_at),
-        viewer_read_through_message_id: orNull(viewerRead?.last_read_message_id),
-        topic_key: orNull(topic?.key),
+        last_message_id: last?.id ?? null,
+        last_message_at: last?.created_at ?? null,
+        last_message_sender_user_id: last?.sender_user_id ?? null,
+        last_message_deleted_at: last?.deleted_at ?? null,
+        last_message_moderation_status: last?.moderation_status ?? null,
+        last_message_body: visible ? last.body ?? null : null,
+        last_message_media_type: lastMediaAsset?.media_type ?? null,
+        viewer_read_through_at: viewerRead?.last_read_message_created_at ?? null,
+        viewer_read_through_message_id: viewerRead?.last_read_message_id ?? null,
+        topic_key: topic?.key ?? null,
         private_topic: topic?.private ?? false,
       });
     }

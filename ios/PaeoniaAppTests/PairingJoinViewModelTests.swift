@@ -303,7 +303,7 @@ private actor LostAnswerPairing: PairingServicing {
 
 /// Hands out a new operation every time, so a reused one is easy to spot.
 @MainActor
-private final class CountingOperationProvider: PairingClientOperationProviding {
+private final class CountingOperationProvider: SyncClientOperationProviding {
     private var sequence: Int64 = 0
 
     func makeOperation() -> PairingClientOperation {

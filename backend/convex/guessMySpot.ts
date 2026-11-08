@@ -7,7 +7,7 @@ import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArg
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx } from "./lib/db";
-import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
+import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail, uniqueViolation } from "./lib/errors";
 import { dataEpoch, enqueueGamePush, requirePartnerId } from "./lib/games";
 import {
@@ -75,22 +75,22 @@ async function roundJson(ctx: ReaderCtx, round: Omit<GuessMySpotRound, "_id" | "
     sender_user_id: round.sender_user_id,
     guesser_user_id: round.guesser_user_id,
     photo_media_asset_id: round.photo_media_asset_id,
-    photo_width: orNull(round.photo_width),
-    photo_height: orNull(round.photo_height),
-    photo_accessibility_text: orNull(description),
+    photo_width: round.photo_width ?? null,
+    photo_height: round.photo_height ?? null,
+    photo_accessibility_text: description ?? null,
     spot_latitude: shows ? round.spot_latitude : null,
     spot_longitude: shows ? round.spot_longitude : null,
-    place_name: shows ? orNull(round.place_name) : null,
-    place_city: shows ? orNull(round.place_city) : null,
-    place_country_code: shows ? orNull(round.place_country_code) : null,
-    taken_on: shows ? orNull(round.taken_on) : null,
+    place_name: shows ? round.place_name ?? null : null,
+    place_city: shows ? round.place_city ?? null : null,
+    place_country_code: shows ? round.place_country_code ?? null : null,
+    taken_on: shows ? round.taken_on ?? null : null,
     sent_at: round.sent_at,
-    guess_latitude: orNull(round.guess_latitude),
-    guess_longitude: orNull(round.guess_longitude),
-    distance_m: orNull(round.distance_m),
-    points: orNull(round.points),
-    guessed_at: orNull(round.guessed_at),
-    my_reveal_seen_at: orNull(isSender ? round.sender_reveal_seen_at : round.guesser_reveal_seen_at),
+    guess_latitude: round.guess_latitude ?? null,
+    guess_longitude: round.guess_longitude ?? null,
+    distance_m: round.distance_m ?? null,
+    points: round.points ?? null,
+    guessed_at: round.guessed_at ?? null,
+    my_reveal_seen_at: (isSender ? round.sender_reveal_seen_at : round.guesser_reveal_seen_at) ?? null,
     /** The same rule `delete_guess_my_spot_round` enforces. */
     can_delete:
       isSender &&

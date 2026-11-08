@@ -1,5 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
-import { getByUuid, orNull, type ReaderCtx } from "./db";
+import { getByUuid, type ReaderCtx } from "./db";
 import { accountNameOf } from "./partnerNames";
 
 /** Port of `internal.get_current_relationship_state`. Returns the one row it returned, or null. */
@@ -54,11 +54,11 @@ export async function getCurrentRelationshipState(ctx: ReaderCtx, userId: string
     own_avatar_decoration: ownProfile?.avatar_decoration ?? null,
     partner_avatar_decoration: visible && best.current ? (profile?.avatar_decoration ?? null) : null,
     partner_profile_photo_asset_id: visible
-      ? orNull(profile?.profile_photo_asset_id ?? profile?.provider_profile_photo_asset_id)
+      ? profile?.profile_photo_asset_id ?? profile?.provider_profile_photo_asset_id ?? null
       : null,
-    started_on: orNull(best.couple.started_on),
-    ended_at: orNull(best.couple.ended_at),
-    delete_after: orNull(best.couple.delete_after),
-    ended_notice_seen_at: orNull(best.member.ended_notice_seen_at),
+    started_on: best.couple.started_on ?? null,
+    ended_at: best.couple.ended_at ?? null,
+    delete_after: best.couple.delete_after ?? null,
+    ended_notice_seen_at: best.member.ended_notice_seen_at ?? null,
   };
 }

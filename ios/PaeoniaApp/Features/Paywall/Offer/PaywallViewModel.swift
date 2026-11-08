@@ -34,19 +34,19 @@ final class PaywallViewModel: PresentationReadinessProviding {
 
     private let storeKitService: any PaeoniaStoreKitServicing
     private let pairingService: (any PairingServicing)?
-    private let operationProvider: any PairingClientOperationProviding
+    private let operationProvider: any SyncClientOperationProviding
 
     init(
         userID: String?,
         storeKitService: (any PaeoniaStoreKitServicing)? = nil,
         pairingService: (any PairingServicing)? = nil,
-        operationProvider: (any PairingClientOperationProviding)? = nil,
+        operationProvider: (any SyncClientOperationProviding)? = nil,
         firstPresentationDeadline: Duration = .seconds(5)
     ) {
         self.firstPresentationDeadline = firstPresentationDeadline
         self.storeKitService = storeKitService ?? PaeoniaStoreKitService.shared
         self.pairingService = pairingService ?? (try? RemotePairingService.live())
-        self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
+        self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
 
         if let userID {
             self.storeKitService.configure(userID: userID)

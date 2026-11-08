@@ -51,11 +51,6 @@ export function omitNulls<T extends Record<string, unknown>>(value: T): T {
   return result as T;
 }
 
-/** `value ?? null`, for API output where missing columns are reported as null. */
-export function orNull<T>(value: T | null | undefined): T | null {
-  return value ?? null;
-}
-
 /**
  * Adds the `set_updated_at` trigger effect to a patch.
  * To clear a nullable column in a patch, set it to `undefined`.
@@ -70,12 +65,4 @@ export function withTouch<T extends Record<string, unknown>>(
   patch: T,
 ): T & { updated_at: string; revision: number } {
   return { ...patch, updated_at: nowIso(), revision: row.revision + 1 };
-}
-
-/** Adds the `bump_revision` trigger effect: `revision + 1` without touching `updated_at`. */
-export function withRevisionBump<T extends Record<string, unknown>>(
-  row: { revision: number },
-  patch: T,
-): T & { revision: number } {
-  return { ...patch, revision: row.revision + 1 };
 }

@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import { canAccessCoupleContent, listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { getByUuid, orNull } from "./db";
+import { getByUuid } from "./db";
 import { fail, uniqueViolation } from "./errors";
 import { EXQUISITE_CORPSE_IDEAS, type Idea, type IdeaLanguage, type IdeaPart } from "./exquisiteCorpseIdeas";
 import type { GameBackend } from "./gameRegistry";
@@ -155,7 +155,7 @@ export function partJson(
     part_index: part.part_index,
     drawer_user_id: part.drawer_user_id,
     created_at: part.created_at,
-    strip_media_asset_id: orNull(part.strip_media_asset_id),
+    strip_media_asset_id: part.strip_media_asset_id ?? null,
     drawing_media_asset_id: visible ? part.drawing_media_asset_id : null,
     idea: visible && part.idea_id !== undefined && part.idea_text !== undefined ? { id: part.idea_id, text: part.idea_text } : null,
   };
@@ -184,7 +184,7 @@ export function corpseGameJson(game: CorpseGame) {
     id: game.id,
     turn_user_id: game.turn_user_id,
     turn_started_at: game.turn_started_at,
-    figure_id: orNull(game.figure_id),
+    figure_id: game.figure_id ?? null,
     figure_number: game.figure_number,
     part_index: game.part_index,
     figures_finished: game.figures_finished,
@@ -206,8 +206,8 @@ export async function figureJson(ctx: ReaderCtx, figure: CorpseFigure, userId: s
     number: figure.number,
     starter_user_id: figure.starter_user_id,
     created_at: figure.created_at,
-    finished_at: orNull(figure.finished_at),
-    my_reveal_seen_at: orNull(revealSeenAt(figure, userId)),
+    finished_at: figure.finished_at ?? null,
+    my_reveal_seen_at: revealSeenAt(figure, userId) ?? null,
     parts: await Promise.all(parts.map(async (part) => ({
       ...partJson(part, userId, finished),
       // A full description reveals more than the clipped strip. Even the drawer's

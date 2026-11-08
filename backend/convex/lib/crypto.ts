@@ -22,21 +22,6 @@ export async function hmacSha256Hex(secret: string, message: string): Promise<st
   return toHex(await crypto.subtle.sign("HMAC", key, encoder.encode(message)));
 }
 
-/** Random lowercase hex string of `bytes` random bytes. */
-export function randomHex(bytes = 32): string {
-  return toHex(crypto.getRandomValues(new Uint8Array(bytes)).buffer as ArrayBuffer);
-}
-
-/** Random URL-safe token (base64url without padding) of `bytes` random bytes. */
-export function randomToken(bytes = 32): string {
-  const raw = crypto.getRandomValues(new Uint8Array(bytes));
-  let binary = "";
-  for (const byte of raw) {
-    binary += String.fromCharCode(byte);
-  }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
 /** Compares two strings without returning early on the first difference. */
 export function timingSafeEqual(a: string, b: string): boolean {
   const left = encoder.encode(a);

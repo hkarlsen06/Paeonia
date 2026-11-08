@@ -12,7 +12,11 @@ nonisolated enum GamesPendingOperationRegistry {
         return drawAndGuessHandlers(client: client, gateway: gateway, cache: cache)
             + storyChainHandlers(gateway: gateway, cache: cache)
             + mindMeldHandlers(gateway: gateway)
-            + PiccanteAction.allCases.map { PiccantePendingOperationHandler(operationKind: $0.pendingKind, gateway: gateway, cache: PiccanteCache.shared) }
+            + PiccanteAction.allCases.map {
+                PiccantePendingOperationHandler(
+                    operationKind: $0.pendingKind, gateway: gateway, cache: PiccanteCache.shared
+                )
+            }
             + consensioHandlers(gateway: gateway)
             + guessMySpotHandlers(gateway: gateway)
             + exquisiteCorpseHandlers(client: client)
@@ -55,18 +59,9 @@ nonisolated enum GamesPendingOperationRegistry {
         gateway: LiveGamesGateway,
         cache: FileGamesCache
     ) -> [any PendingSyncOperationHandling] {
-        [
-            StoryChainStartPendingOperationHandler(
-                gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
-            ),
-            StoryChainLinePendingOperationHandler(
-                gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
-            ),
-            StoryChainNamePendingOperationHandler(
-                gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
-            ),
-            StoryChainSeenPendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared),
-        ]
+        StoryChainPendingOperations.handlers(
+            gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
+        )
     }
 
     private static func consensioHandlers(gateway: LiveGamesGateway) -> [any PendingSyncOperationHandling] {

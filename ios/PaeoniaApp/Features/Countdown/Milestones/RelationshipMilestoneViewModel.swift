@@ -9,7 +9,7 @@ final class RelationshipMilestoneViewModel: PresentationReadinessProviding {
     private(set) var error: RelationshipMilestoneError?
 
     private let dataService: any RelationshipStartedOnDataServicing
-    private let operationProvider: any PairingClientOperationProviding
+    private let operationProvider: any SyncClientOperationProviding
     private var ownerUserID: UUID?
     private var latestServerStartedOn: String?
     private var hasPendingLocalChange = false
@@ -20,10 +20,10 @@ final class RelationshipMilestoneViewModel: PresentationReadinessProviding {
 
     init(
         dataService: (any RelationshipStartedOnDataServicing)? = nil,
-        operationProvider: (any PairingClientOperationProviding)? = nil
+        operationProvider: (any SyncClientOperationProviding)? = nil
     ) {
         self.dataService = dataService ?? RelationshipStartedOnDataServiceFactory.makeDefault()
-        self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
+        self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
     }
 
     func configure(ownerUserID: UUID?, serverStartedOn: String?) async {

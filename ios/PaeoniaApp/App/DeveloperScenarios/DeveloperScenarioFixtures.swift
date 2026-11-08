@@ -219,10 +219,7 @@
   }
 
   @MainActor
-  final class DeveloperScenarioOperationProvider:
-    SyncClientOperationProviding,
-    PairingClientOperationProviding
-  {
+  final class DeveloperScenarioOperationProvider: SyncClientOperationProviding {
     private let clientID = UUID(uuidString: "44444444-4444-4444-4444-444444444444") ?? UUID()
     private var sequence: Int64 = 0
 

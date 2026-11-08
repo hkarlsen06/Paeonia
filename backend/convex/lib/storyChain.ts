@@ -5,7 +5,7 @@ import nbWords from "../../games/story-chain/words/nb.json";
 import type { Doc } from "../_generated/dataModel";
 import { canAccessCoupleContent, listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { getByUuid, orNull } from "./db";
+import { getByUuid } from "./db";
 import { fail } from "./errors";
 import type { GameBackend } from "./gameRegistry";
 import { enqueueGamePush, TURN_REMINDER_AFTER_MS } from "./games";
@@ -180,21 +180,21 @@ export function storyJson(story: Story, userId: string) {
     id: story.id,
     story_number: story.story_number,
     starter_user_id: story.starter_user_id,
-    opening_id: orNull(story.opening_id),
-    opening_text: orNull(story.opening_text),
+    opening_id: story.opening_id ?? null,
+    opening_text: story.opening_text ?? null,
     state: story.state,
     lines: story.lines.map((line) => ({
       id: line.id,
       number: line.number,
       author_user_id: line.author_user_id,
       text: line.text,
-      dare_word: orNull(line.dare_word),
+      dare_word: line.dare_word ?? null,
       created_at: line.created_at,
     })),
-    last_line_user_id: orNull(story.last_line_user_id),
-    title: orNull(story.title),
-    titled_by_user_id: orNull(story.titled_by_user_id),
-    finished_at: orNull(story.finished_at),
+    last_line_user_id: story.last_line_user_id ?? null,
+    title: story.title ?? null,
+    titled_by_user_id: story.titled_by_user_id ?? null,
+    finished_at: story.finished_at ?? null,
     seen_by_me: story.seen_by.includes(userId),
     created_at: story.created_at,
     updated_at: story.updated_at,

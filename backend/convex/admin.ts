@@ -4,7 +4,7 @@ import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } fr
 import { findCurrentCouple, resolveUserEntitlement } from "./lib/access";
 import { getCurrentUserId } from "./lib/auth";
 import { banUser, unbanUser } from "./lib/bans";
-import { getByUuid, orNull } from "./lib/db";
+import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
 import { nowIso } from "./lib/time";
@@ -46,7 +46,7 @@ async function displayName(ctx: QueryCtx, userId: string | undefined): Promise<s
     .query("profiles")
     .withIndex("by_user_id", (q) => q.eq("user_id", userId))
     .unique();
-  return orNull(profile?.display_name);
+  return profile?.display_name ?? null;
 }
 
 /** One row of the user list. */
@@ -57,7 +57,7 @@ async function userRow(ctx: QueryCtx, user: Doc<"users">) {
     auth_provider: user.auth_provider,
     created_at: user.created_at,
     is_admin: isAdminUser(user),
-    banned_at: orNull(user.banned_at),
+    banned_at: user.banned_at ?? null,
   };
 }
 
@@ -172,13 +172,13 @@ export const get_user = query({
     return {
       ...(await userRow(ctx, user)),
       is_self: user.id === adminUserId,
-      ban_reason: orNull(user.ban_reason),
+      ban_reason: user.ban_reason ?? null,
       banned_by_display_name: await displayName(ctx, user.banned_by_user_id),
-      onboarding_completed_at: orNull(profile?.onboarding_completed_at),
-      time_zone_id: orNull(profile?.time_zone_id),
+      onboarding_completed_at: profile?.onboarding_completed_at ?? null,
+      time_zone_id: profile?.time_zone_id ?? null,
       is_entitled: entitlement.is_entitled,
       couple_id: couple?.id ?? null,
-      paired_since: orNull(couple?.started_on ?? couple?.created_at),
+      paired_since: couple?.started_on ?? couple?.created_at ?? null,
       partner_user_id: partnerUserId,
       partner_display_name: await displayName(ctx, partnerUserId ?? undefined),
       reports_against_count: reportsAgainst.length,
@@ -236,12 +236,12 @@ export const get_audit_log = query({
       entries.map(async (entry) => ({
         id: entry.id,
         action: entry.action,
-        admin_user_id: orNull(entry.admin_user_id),
+        admin_user_id: entry.admin_user_id ?? null,
         admin_display_name: await displayName(ctx, entry.admin_user_id),
-        operator_identifier: orNull(entry.operator_identifier),
+        operator_identifier: entry.operator_identifier ?? null,
         target_user_id: entry.target_user_id,
         target_display_name: await displayName(ctx, entry.target_user_id),
-        reason: orNull(entry.reason),
+        reason: entry.reason ?? null,
         created_at: entry.created_at,
       })),
     );

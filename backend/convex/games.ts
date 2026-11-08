@@ -5,7 +5,7 @@ import { getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
 import { resolveCoupleDayAnchor } from "./lib/coupleDays";
-import { orNull, type WriterCtx } from "./lib/db";
+import type { WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { gamePlayDayStats } from "./lib/gamePlayDays";
 import {
@@ -138,8 +138,8 @@ export const get_games_overview = query({
         kind,
         my_present: myPresent,
         partner_present: partnerPresent,
-        last_invite_at: orNull(invite?.sent_at),
-        last_played_at: orNull(play?.last_played_at),
+        last_invite_at: invite?.sent_at ?? null,
+        last_played_at: play?.last_played_at ?? null,
       });
     }
 

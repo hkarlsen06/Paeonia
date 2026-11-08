@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import { canAccessCoupleContent, listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { getByUuid, orNull } from "./db";
+import { getByUuid } from "./db";
 import { pickWordChoices, WORD_DIFFICULTIES, type GameLanguage, type WordChoice, type WordDifficulty } from "./gameWords";
 import type { GameBackend } from "./gameRegistry";
 import { enqueueGamePush, requireGameSettings, TURN_REMINDER_AFTER_MS } from "./games";
@@ -207,7 +207,7 @@ export function gameJson(game: Game, userId: string, partnerId: string | null) {
     state: game.state,
     turn_user_id: game.turn_user_id,
     turn_number: game.turn_number,
-    current_round_id: orNull(game.current_round_id),
+    current_round_id: game.current_round_id ?? null,
     shared_points: game.shared_points,
     my_points: game.points_by_user[userId] ?? 0,
     partner_points: partnerId ? (game.points_by_user[partnerId] ?? 0) : 0,
@@ -221,7 +221,7 @@ export function gameJson(game: Game, userId: string, partnerId: string | null) {
 /** The fields of a finished round that history, records, and the result screens share. */
 export function roundOutcomeJson(move: GameMove) {
   return {
-    solve_ms: orNull(move.solve_ms),
+    solve_ms: move.solve_ms ?? null,
     speed_bonus: move.speed_bonus,
     first_try_bonus: move.first_try_bonus ?? 0,
     hints_used: move.hints_used ?? 0,
@@ -243,16 +243,16 @@ export async function roundJson(ctx: ReaderCtx, move: GameMove, withAttempts = t
     difficulty: move.difficulty,
     word: move.word,
     points: move.points,
-    drawing_media_asset_id: orNull(move.drawing_media_asset_id),
+    drawing_media_asset_id: move.drawing_media_asset_id ?? null,
     drawing_accessibility_text: await gameDrawingDescription(ctx, move.drawing_media_asset_id),
-    drawing_submitted_at: orNull(move.drawing_submitted_at),
+    drawing_submitted_at: move.drawing_submitted_at ?? null,
     started_at: move.started_at,
-    guesser_first_seen_at: orNull(move.guesser_first_seen_at),
-    ended_at: orNull(move.ended_at),
+    guesser_first_seen_at: move.guesser_first_seen_at ?? null,
+    ended_at: move.ended_at ?? null,
     ...roundOutcomeJson(move),
     /** When each partner dismissed the result. The app reads the field for its own role. */
-    drawer_result_seen_at: orNull(move.drawer_result_seen_at),
-    guesser_result_seen_at: orNull(move.guesser_result_seen_at),
+    drawer_result_seen_at: move.drawer_result_seen_at ?? null,
+    guesser_result_seen_at: move.guesser_result_seen_at ?? null,
     /** Every attempt of the round. `attempts` holds the newest 200, oldest first. */
     attempt_count: count,
     attempts: (withAttempts ? guesses : []).map((guess) => ({

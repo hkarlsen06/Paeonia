@@ -564,8 +564,3 @@ function milestoneTitle(payload: Record<string, unknown>, nb: boolean): string {
   }
 }
 
-/** Port of `internal.widget_updated_notification_body`. */
-export function widgetUpdatedNotificationBody(locale: string | null | undefined): string {
-  return notificationAlertBody("widget_updated", {}, locale) as string;
-}
-

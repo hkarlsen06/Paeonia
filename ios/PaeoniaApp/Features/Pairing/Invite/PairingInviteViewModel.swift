@@ -18,7 +18,7 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
 
     private let userID: String?
     private let pairingService: (any PairingServicing)?
-    private let operationProvider: any PairingClientOperationProviding
+    private let operationProvider: any SyncClientOperationProviding
     private let inviteStore: any PairingInviteStoring
     private let now: @MainActor () -> Date
     private var cachedInvite: PairingInvite?
@@ -27,13 +27,13 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     init(
         userID: String?,
         pairingService: (any PairingServicing)? = nil,
-        operationProvider: (any PairingClientOperationProviding)? = nil,
+        operationProvider: (any SyncClientOperationProviding)? = nil,
         inviteStore: (any PairingInviteStoring)? = nil,
         now: @escaping @MainActor () -> Date = Date.init
     ) {
         self.userID = userID
         self.pairingService = pairingService ?? (try? RemotePairingService.live())
-        self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
+        self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.inviteStore = inviteStore ?? UserDefaultsPairingInviteStore.shared
         self.now = now
 

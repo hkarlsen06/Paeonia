@@ -5,7 +5,7 @@ import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./coupleDays";
 import { insertDailyAnswer } from "./dailyAnswers";
 import { QuestionContentReader, insertDailyQuestionInstance, pickQuestionVersion } from "./dailyQuestions";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { getByUuid, orNull, withUpdatedAt } from "./db";
+import { getByUuid, withUpdatedAt } from "./db";
 import { fail } from "./errors";
 import { newUuid } from "./ids";
 import { queueOrphanedMediaAssetForDelete } from "./mediaOrphans";
@@ -106,7 +106,7 @@ export async function pickFirstDayQuestionVersion(ctx: ReaderCtx): Promise<strin
 export async function firstDayDraftJson(ctx: ReaderCtx, draft: Draft) {
   const content = draft.question_version_id ? await new QuestionContentReader(ctx).get(draft.question_version_id) : null;
   return {
-    started_on: orNull(draft.started_on),
+    started_on: draft.started_on ?? null,
     question: content
       ? {
           question_version_id: content.version.id,
@@ -124,7 +124,7 @@ export async function firstDayDraftJson(ctx: ReaderCtx, draft: Draft) {
           media_asset_id: draft.drawing.media_asset_id,
           revision_id: draft.drawing.revision_id,
           saved_at: draft.drawing.saved_at,
-          bounds: orNull(draft.drawing.bounds),
+          bounds: draft.drawing.bounds ?? null,
         }
       : null,
     updated_at: draft.updated_at,

@@ -7,7 +7,7 @@ import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArg
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
-import { getByUuid, orNull, withTouch, withUpdatedAt } from "./lib/db";
+import { getByUuid, withTouch, withUpdatedAt } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { dateArg, newUuid, optionalTimestampArg, optionalUuidArg, uuidArg } from "./lib/ids";
 import { queueMemoryMediaAssetsIfOrphaned, queueThreadMediaAssetsIfOrphaned } from "./lib/mediaOrphans";
@@ -740,13 +740,13 @@ async function buildMemoryRow(ctx: ReaderCtx, userId: string, memory: Doc<"memor
       media_asset_id: link.media_asset_id,
       owner_user_id: link.owner_user_id,
       sort_order: link.sort_order,
-      deleted_at: orNull(link.deleted_at),
+      deleted_at: link.deleted_at ?? null,
       moderation_status: link.moderation_status,
-      asset_deleted_at: orNull(asset.deleted_at),
+      asset_deleted_at: asset.deleted_at ?? null,
       asset_moderation_status: asset.moderation_status,
       asset_storage_delete_status: asset.storage_delete_status,
       accessibility_text: visibleMemory && link.deleted_at === undefined && link.moderation_status === "visible" &&
-        asset.deleted_at === undefined && asset.moderation_status === "visible" ? orNull(asset.accessibility_text) : null,
+        asset.deleted_at === undefined && asset.moderation_status === "visible" ? asset.accessibility_text ?? null : null,
       updated_at: updatedAt,
     });
   }
@@ -765,26 +765,26 @@ async function buildMemoryRow(ctx: ReaderCtx, userId: string, memory: Doc<"memor
     last_edited_by_user_id: memory.last_edited_by_user_id,
     revision: memory.revision,
     moderation_status: memory.moderation_status,
-    deleted_at: orNull(memory.deleted_at),
+    deleted_at: memory.deleted_at ?? null,
     created_at: memory.created_at,
     updated_at: memory.updated_at,
     sync_updated_at: memory.updated_at,
-    own_note_id: orNull(ownNote?.id),
+    own_note_id: ownNote?.id ?? null,
     own_note_body: noteBody(ownNote),
-    own_note_revision: orNull(ownNote?.revision),
-    own_note_updated_at: orNull(ownNote?.updated_at),
-    own_note_deleted_at: orNull(ownNote?.deleted_at),
-    own_note_moderation_status: orNull(ownNote?.moderation_status),
-    partner_note_id: orNull(partnerNote?.id),
-    partner_note_user_id: orNull(partnerNote?.user_id),
+    own_note_revision: ownNote?.revision ?? null,
+    own_note_updated_at: ownNote?.updated_at ?? null,
+    own_note_deleted_at: ownNote?.deleted_at ?? null,
+    own_note_moderation_status: ownNote?.moderation_status ?? null,
+    partner_note_id: partnerNote?.id ?? null,
+    partner_note_user_id: partnerNote?.user_id ?? null,
     partner_note_body: noteBody(partnerNote),
-    partner_note_revision: orNull(partnerNote?.revision),
-    partner_note_updated_at: orNull(partnerNote?.updated_at),
-    partner_note_deleted_at: orNull(partnerNote?.deleted_at),
-    partner_note_moderation_status: orNull(partnerNote?.moderation_status),
+    partner_note_revision: partnerNote?.revision ?? null,
+    partner_note_updated_at: partnerNote?.updated_at ?? null,
+    partner_note_deleted_at: partnerNote?.deleted_at ?? null,
+    partner_note_moderation_status: partnerNote?.moderation_status ?? null,
     memory_media_ids: memoryMediaIds,
     media_asset_ids: mediaAssetIds,
     memory_media_states: states,
-    thread_id: orNull(thread?.thread_id),
+    thread_id: thread?.thread_id ?? null,
   };
 }

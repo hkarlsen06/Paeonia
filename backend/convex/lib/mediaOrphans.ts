@@ -182,15 +182,6 @@ export async function queueOldMediaAssetIfOrphaned(
   }
 }
 
-/** Port of `queue_daily_answer_media_assets_if_orphaned`. Call after soft deleting an answer. */
-export async function queueDailyAnswerMediaAssetsIfOrphaned(ctx: WriterCtx, answerId: string): Promise<void> {
-  const links = await ctx.db
-    .query("daily_answer_media")
-    .withIndex("by_answer_id_sort_order", (q) => q.eq("answer_id", answerId))
-    .collect();
-  for (const link of links) await queueOrphanedMediaAssetForDelete(ctx, link.media_asset_id);
-}
-
 /** Port of `queue_memory_media_assets_if_orphaned`. Call after soft deleting a memory. */
 export async function queueMemoryMediaAssetsIfOrphaned(ctx: WriterCtx, memoryId: string): Promise<void> {
   const links = await ctx.db
@@ -216,13 +207,4 @@ export async function queueThreadMediaAssetsIfOrphaned(ctx: WriterCtx, threadId:
     .withIndex("by_thread_id_created_at_id", (q) => q.eq("thread_id", threadId))
     .collect();
   for (const message of messages) await queueThreadMessageMediaAssetsIfOrphaned(ctx, message.id);
-}
-
-/** Port of `queue_widget_payloads_if_orphaned`. Call after soft deleting a canvas. */
-export async function queueWidgetPayloadsIfOrphaned(ctx: WriterCtx, canvasId: string): Promise<void> {
-  const revisions = await ctx.db
-    .query("widget_drawing_revisions")
-    .withIndex("by_canvas_id_created_at_id", (q) => q.eq("canvas_id", canvasId))
-    .collect();
-  for (const revision of revisions) await queueOrphanedMediaAssetForDelete(ctx, revision.payload_media_asset_id);
 }

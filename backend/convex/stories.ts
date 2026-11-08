@@ -7,7 +7,7 @@ import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { isSupersededClientOperation, runClientOperation } from "./lib/clientOperations";
-import { getByUuid, orNull, type ReaderCtx } from "./lib/db";
+import { getByUuid, type ReaderCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
 import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
@@ -48,11 +48,11 @@ async function storyRow(ctx: ReaderCtx, row: Doc<"stories">) {
     id: row.id,
     author_user_id: row.author_user_id,
     media_asset_id: row.media_asset_id,
-    caption: orNull(row.caption),
+    caption: row.caption ?? null,
     accessibility_text: asset && asset.deleted_at === undefined && asset.moderation_status === "visible" &&
-      asset.storage_delete_status === "none" ? orNull(asset.accessibility_text) : null,
+      asset.storage_delete_status === "none" ? asset.accessibility_text ?? null : null,
     created_at: row.created_at,
-    seen_at: orNull(row.seen_at),
+    seen_at: row.seen_at ?? null,
   };
 }
 

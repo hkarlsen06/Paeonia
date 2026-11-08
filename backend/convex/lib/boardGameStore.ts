@@ -1,6 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { getByUuid, orNull, withUpdatedAt } from "./db";
+import { getByUuid, withUpdatedAt } from "./db";
 import { canReadMediaAsset } from "./mediaAssets";
 import { roundWithPhoto } from "./gameMediaReferences";
 import { BOARD_RULES } from "./boardGameRules";
@@ -138,11 +138,11 @@ export async function boardGameView(ctx: ReaderCtx, game: BoardGame, userId: str
     version: game.version,
     first_user_id: game.first_user_id,
     moves: game.moves,
-    turn_user_id: orNull(game.turn_user_id),
-    winner_user_id: orNull(game.winner_user_id),
+    turn_user_id: game.turn_user_id ?? null,
+    winner_user_id: game.winner_user_id ?? null,
     win_line: game.win_line,
-    stake: orNull(game.stake),
-    stake_by_user_id: orNull(game.stake_by_user_id),
+    stake: game.stake ?? null,
+    stake_by_user_id: game.stake_by_user_id ?? null,
     my_color: game.colors_by_user?.[userId] ?? null,
     partner_color: partnerId ? (game.colors_by_user?.[partnerId] ?? null) : null,
     photo_media_asset_id: await readablePhotoId(ctx, userId, game.couple_id, game.photo_media_asset_id),
@@ -155,15 +155,15 @@ export async function boardGameView(ctx: ReaderCtx, game: BoardGame, userId: str
           game_number: previous.game_number,
           first_user_id: previous.first_user_id,
           moves: previous.moves,
-          winner_user_id: orNull(previous.winner_user_id),
+          winner_user_id: previous.winner_user_id ?? null,
           win_line: previous.win_line,
-          stake: orNull(previous.stake),
+          stake: previous.stake ?? null,
           photo_media_asset_id: await readablePhotoId(ctx, userId, game.couple_id, previous.photo_media_asset_id),
           finished_at: previous.finished_at,
         }
       : null,
     started_at: game.started_at,
-    finished_at: orNull(game.finished_at),
+    finished_at: game.finished_at ?? null,
     turn_started_at: game.turn_started_at,
     updated_at: game.updated_at,
   };
