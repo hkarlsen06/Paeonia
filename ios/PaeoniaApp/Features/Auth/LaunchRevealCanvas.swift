@@ -5,9 +5,9 @@ import UIKit
 /// The launch intro's plum canvas and petal mark, animated with Core Animation so
 /// the render server plays the reveal. `LaunchExperienceView` decides when it starts.
 ///
-/// Core Animation starts an animation when the update that added it is drawn. The
-/// first surface builds in that same update, so the reveal waits behind the still
-/// mark and then plays every frame. The callbacks follow the animation's own clock.
+/// The reveal starts no sooner than 400 ms after the canvas goes on screen, once iOS has
+/// faded its launch screen out, and Core Animation then plays every frame of it. The
+/// callbacks follow the animation's own clock.
 struct LaunchRevealCanvas: UIViewRepresentable {
     enum Reveal: Equatable {
         /// The petals part while a hole opens from the center and grows past the corners.
@@ -60,14 +60,21 @@ final class LaunchRevealCanvasView: UIView {
         endControlPoint: UnitPoint(x: 0.3, y: 1)
     )
 
+    /// iOS crossfades its launch screen into the app's first frames over about 320 ms.
+    /// The launch screen shows this same mark, so while it fades, a reveal under it shows
+    /// the mark standing still over the parting petals and the opening hole.
+    private static let launchScreenFade: CFTimeInterval = 0.4
+
     var onSidesUncovered: () -> Void = {}
     var onFinished: () -> Void = {}
 
     private let leftPetal = UIImageView(image: UIImage(resource: .paeoniaMarkPetalLeft))
     private let rightPetal = UIImageView(image: UIImage(resource: .paeoniaMarkPetalRight))
-    private var wantsOpen = false
-    private var hasOpened = false
-    private var hasFaded = false
+    private var requested: LaunchRevealCanvas.Reveal?
+    private var hasStarted = false
+    /// When the canvas first went on screen, roughly when the launch screen started to fade.
+    private var shownAt: CFTimeInterval?
+    private var isWaitingForLaunchScreen = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -91,17 +98,61 @@ final class LaunchRevealCanvasView: UIView {
             petal.center = center
         }
         layer.mask?.frame = bounds
-        startOpeningIfLaidOut()
+        startIfReady()
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil, shownAt == nil {
+            shownAt = CACurrentMediaTime()
+        }
+        startIfReady()
     }
 
     func open() {
-        wantsOpen = true
-        startOpeningIfLaidOut()
+        request(.opening)
     }
 
     func fade() {
-        guard !hasFaded else { return }
-        hasFaded = true
+        request(.fading)
+    }
+
+    /// Reduce Motion can turn on while the reveal waits or plays, and then the fade wins.
+    private func request(_ reveal: LaunchRevealCanvas.Reveal) {
+        guard requested != .fading else { return }
+        if reveal == .fading, hasStarted, requested == .opening {
+            requested = .fading
+            startFade()
+            return
+        }
+        requested = reveal
+        startIfReady()
+    }
+
+    /// Starts the requested reveal once the canvas has its size and the launch screen
+    /// has faded out. Home builds its first frame meanwhile, behind the still mark.
+    private func startIfReady() {
+        guard let requested, !hasStarted, !bounds.isEmpty, let shownAt else { return }
+        let wait = shownAt + Self.launchScreenFade - CACurrentMediaTime()
+        guard wait <= 0 else {
+            guard !isWaitingForLaunchScreen else { return }
+            isWaitingForLaunchScreen = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + wait) { [weak self] in
+                self?.isWaitingForLaunchScreen = false
+                self?.startIfReady()
+            }
+            return
+        }
+        hasStarted = true
+        switch requested {
+        case .opening:
+            startOpening()
+        case .fading:
+            startFade()
+        }
+    }
+
+    private func startFade() {
         let fade = CABasicAnimation(keyPath: "opacity")
         fade.fromValue = layer.presentation()?.opacity ?? 1
         fade.toValue = 0
@@ -113,10 +164,7 @@ final class LaunchRevealCanvasView: UIView {
     }
 
     /// The hole is centered on the canvas, so it waits for the canvas's size.
-    private func startOpeningIfLaidOut() {
-        guard wantsOpen, !hasOpened, !hasFaded, !bounds.isEmpty else { return }
-        hasOpened = true
-
+    private func startOpening() {
         part(leftPetal.layer, by: -Self.revealSpread)
         part(rightPetal.layer, by: Self.revealSpread)
 
