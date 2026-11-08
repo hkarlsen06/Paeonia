@@ -287,7 +287,8 @@ extension RootView {
             deepLink: deepLinkForTabs,
             actions: mainTabActions,
             dependencies: featureDependencies,
-            pairingCelebrationStore: viewModel.pairingCelebrationStore
+            pairingCelebrationStore: viewModel.pairingCelebrationStore,
+            todaysQuestionOpenings: allowsSystemIntegrations ? TodaysQuestionOpeningStore() : nil
         )
     }
 

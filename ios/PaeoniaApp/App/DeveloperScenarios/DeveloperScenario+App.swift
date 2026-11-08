@@ -15,8 +15,8 @@
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
       paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallPairedEnded, paywallPairedPaymentFailed,
       paywallLoading,
-      pairedHome, questions, chatsAttention, chatsAttentionAnswered, questionsPartial, questionsRevealed,
-      questionsEmpty, questionsLoading,
+      pairedHome, pairedHomeTodayOpens, questions, chatsAttention, chatsAttentionAnswered, questionsPartial,
+      questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
       streakHealthy, streakAtRisk, streakFrozen, streakSaveHome, streakSaveDay, streakSaved, streakBroken,
       streakRestoreExpired, streakRestored,
@@ -181,6 +181,10 @@
 
     static let pairedHome = pairedApp(
       "paired-home", "Paired home", "Entitled, paired couple with sample questions", .questions
+    )
+    static let pairedHomeTodayOpens = pairedApp(
+      "paired-home-today-opens", "Paired home · today's question opens",
+      "A plain open with today's question unanswered opens it over Home, on every run", .questions
     )
     static let questions = pairedApp(
       "questions", "Questions · unanswered", "Questions tab with answerable sample content", .questions

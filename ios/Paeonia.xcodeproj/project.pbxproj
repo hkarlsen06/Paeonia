@@ -453,14 +453,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		2A2D09042FE5000000A7BE1A /* Collect MapLibre dSYMs */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			name = "Collect MapLibre dSYMs";
-			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 \"${SRCROOT}/Scripts/collect-maplibre-symbols.py\"";
-			showEnvVarsInLog = 0;
-		};
 		2A2D08042FE4000000A7BE1A /* Upload dSYMs to PostHog */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -477,6 +469,16 @@
 				"# It needs posthog-cli, signed in once with `posthog-cli login` on the Mac that archives.",
 				"\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/posthog-ios/build-tools/upload-symbols.sh\"",
 				"",
+			);
+			showEnvVarsInLog = 0;
+		};
+		2A2D09042FE5000000A7BE1A /* Collect MapLibre dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			name = "Collect MapLibre dSYMs";
+			shellPath = /bin/sh;
+			shellScript = (
+				"/usr/bin/python3 \"${SRCROOT}/Scripts/collect-maplibre-symbols.py\"",
 			);
 			showEnvVarsInLog = 0;
 		};

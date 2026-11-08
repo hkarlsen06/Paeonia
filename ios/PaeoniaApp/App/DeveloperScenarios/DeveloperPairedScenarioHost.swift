@@ -58,6 +58,14 @@
       locationViewModel = Self.makeLocationViewModel(operationProvider: operationProvider)
     }
 
+    /// A store of its own, emptied once per launch, so today's question opens by itself on every run.
+    private static let todaysQuestionOpenings: TodaysQuestionOpeningStore = {
+      let suiteName = "no.paeonia.scenario.todaysQuestionOpenings"
+      let defaults = UserDefaults(suiteName: suiteName) ?? .standard
+      defaults.removePersistentDomain(forName: suiteName)
+      return TodaysQuestionOpeningStore(defaults: defaults)
+    }()
+
     /// Scenarios that show the answer flow on its own, for today's question.
     private static func opensAnswerFlow(_ scenario: DeveloperScenario) -> Bool {
       scenario == .questionAnswerFlow || scenario == .questionPartnerAnswersMeanwhile
@@ -194,7 +202,8 @@
             gamesViewModel: gamesViewModel
           ),
           // Past the first day with a saved card, for the `home-first-steps` scenarios.
-          pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(firstSteps: scenario.firstStepsProgress)
+          pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(firstSteps: scenario.firstStepsProgress),
+          todaysQuestionOpenings: scenario == .pairedHomeTodayOpens ? Self.todaysQuestionOpenings : nil
         )
       }
     }

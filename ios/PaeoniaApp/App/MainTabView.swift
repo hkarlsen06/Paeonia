@@ -140,6 +140,9 @@ struct MainTabView: View {
     let deepLink: Binding<PaeoniaDeepLink?>
     let actions: MainTabActions
     let dependencies: RootFeatureDependencies
+    /// Remembers when today's question last opened. Without it, today's question never
+    /// opens by itself (`MainTabView+TodaysQuestion.swift`).
+    let todaysQuestionOpenings: TodaysQuestionOpeningStore?
 
     @State var models: MainTabModels
     @State var isAnswerFlowPresented = false
@@ -189,6 +192,7 @@ struct MainTabView: View {
     /// The time the Us tab badge counts unseen stories at. It moves forward when the
     /// stories change and when an unseen story leaves Home.
     @State var storyBadgeDate = Date()
+    @State var todaysQuestionVisit = TodaysQuestionVisit.starting
     /// The signed-in user's photo, cropped to a circle for the You tab icon.
     @Namespace var zoomNamespace
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
@@ -208,7 +212,8 @@ struct MainTabView: View {
         deepLink: Binding<PaeoniaDeepLink?> = .constant(nil),
         actions: MainTabActions = MainTabActions(),
         dependencies: RootFeatureDependencies? = nil,
-        pairingCelebrationStore: (any PairingCelebrationStoring)? = nil
+        pairingCelebrationStore: (any PairingCelebrationStoring)? = nil,
+        todaysQuestionOpenings: TodaysQuestionOpeningStore? = nil
     ) {
         let dependencies = dependencies ?? RootFeatureDependencies()
         self.tabs = tabs
@@ -220,6 +225,7 @@ struct MainTabView: View {
         self.deepLink = deepLink
         self.actions = actions
         self.dependencies = dependencies
+        self.todaysQuestionOpenings = todaysQuestionOpenings
         _models = State(
             initialValue: MainTabModels(
                 dependencies: dependencies,
@@ -244,7 +250,7 @@ struct MainTabView: View {
     var firstStepsModel: HomeFirstStepsModel { models.firstSteps }
 
     var body: some View {
-        presentingSearch(on: presentingDailyFlows(on: followingFirstSteps(on: tabContent)))
+        openingTodaysQuestion(on: presentingSearch(on: presentingDailyFlows(on: followingFirstSteps(on: tabContent))))
             // Outside the covers and sheets, so the Home drawing, the story viewer and every game
             // screen can show and take reactions.
             .environment(reactionStore)

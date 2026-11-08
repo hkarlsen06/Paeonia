@@ -242,6 +242,7 @@ extension MainTabView {
     /// started kicks off that one-time setup; the flow shows a brief loading state until
     /// the question arrives.
     func openAnswerFlow(source: DailyFlowSource) {
+        recordTodaysQuestionOpening()
         if dailyChallengeViewModel.homeCardState.kind == .noChallenge {
             Task { await dailyChallengeViewModel.startToday() }
         }
