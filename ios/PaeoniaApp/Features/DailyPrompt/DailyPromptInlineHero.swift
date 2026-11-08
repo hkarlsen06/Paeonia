@@ -71,7 +71,10 @@ struct DailyPromptInlineHero: View {
             .disabled(copy.isLoading)
             .accessibilityHidden(true)
             // Not part of the loading look, since the day may turn out done and swap to
-            // the short row. It fades in when a question to answer arrives.
+            // the short row. It fades in when a question to answer arrives, as one picture.
+            // Faded layer by layer, its stacked pieces and their shadows show through
+            // each other as a second envelope a few points lower.
+            .compositingGroup()
             .opacity(copy.isLoading ? 0 : 1)
             .animation(PaeoniaMotion.loadingReveal, value: copy.isLoading)
 
