@@ -3,6 +3,11 @@ DerivedData
 xcuserdata
 ASConnectScreenshots
 
+# Local artifacts from earlier Fastlane runs
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output
+
 # Environment files
 .env
 .env.local
