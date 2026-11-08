@@ -8,8 +8,12 @@ extension RootViewModel {
     /// launch needs, before the scene and `RootView` exist. `start` then awaits
     /// it. Also reads the state saved on this phone, so Home can open the moment
     /// `start` runs. Call once, as early as the app can.
+    ///
+    /// Does nothing while the saved sign-in cannot be read. The restore would find
+    /// no session, clear the saved profile and later send the person to sign-in.
+    /// A screen shows only on an unlocked phone, so `start` restores it then.
     func beginLaunch() {
-        guard launchRestore == nil else {
+        guard launchRestore == nil, storedSessionIsReadable() else {
             return
         }
 

@@ -102,6 +102,10 @@ actor FakeAuthGateway: AuthGateway {
         endsSessionDuringProfileLoad = true
     }
 
+    func setRemoteSession(_ session: RemoteAuthSession?) {
+        remoteSession = session
+    }
+
     func uploadProfilePhoto(
         userID: String,
         compressedImage: ImageCompressor.CompressedImage

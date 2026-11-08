@@ -39,6 +39,9 @@ final class RootViewModel {
     /// then, which the server needs to revoke Sign in with Apple. Without a
     /// closure only a session that signed in with Apple counts.
     let appleIsLinked: (@MainActor () async -> Bool)?
+    /// Whether the saved sign-in can be read right now. It cannot when iOS
+    /// launches the app in the background before the first unlock after a restart.
+    let storedSessionIsReadable: @MainActor () -> Bool
     @ObservationIgnored private var authProviderWatch: Task<Void, Never>?
     /// How long a cold launch waits for the server before it shows the access
     /// state saved on this phone. The server result still replaces it later.
@@ -126,10 +129,12 @@ final class RootViewModel {
         welcomeFlow: WelcomeFlowModel? = nil,
         authProviderSessionIsActive: (@MainActor () -> Bool?)? = nil,
         appleIsLinked: (@MainActor () async -> Bool)? = nil,
+        storedSessionIsReadable: @escaping @MainActor () -> Bool = { true },
         savedAccessGracePeriod: Duration = .seconds(1)
     ) {
         self.authProviderSessionIsActive = authProviderSessionIsActive
         self.appleIsLinked = appleIsLinked
+        self.storedSessionIsReadable = storedSessionIsReadable
         let resolvedLiveSync = liveSync ?? (syncService == nil ? LiveSyncCoordinator.makeDefault() : nil)
         let resolvedSyncService = syncService ?? PaeoniaSyncService(liveSync: resolvedLiveSync)
         self.syncService = resolvedSyncService

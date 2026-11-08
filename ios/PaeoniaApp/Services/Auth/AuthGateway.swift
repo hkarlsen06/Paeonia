@@ -96,6 +96,7 @@ actor LiveAuthGateway: AuthGateway {
         #if DEBUG
         await DebugSignInTicket.signInIfGiven()
         #endif
+        await Self.loadClerkSessionLockedAtLaunch()
         return await Self.activeClerkSession()
     }
 

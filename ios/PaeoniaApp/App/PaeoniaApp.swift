@@ -28,7 +28,8 @@ struct PaeoniaApp: App {
         let appleIsLinked: (@MainActor () async -> Bool)? = usesClerk ? ClerkSignInMethodLinker.appleIsLinked : nil
         let viewModel = RootViewModel(
             authProviderSessionIsActive: sessionIsActive,
-            appleIsLinked: appleIsLinked
+            appleIsLinked: appleIsLinked,
+            storedSessionIsReadable: { ClerkKeychainState.current() != .locked }
         )
         if usesClerk, Self.opensProductionRoot {
             // The launch call and its Clerk token take a while. Starting them now

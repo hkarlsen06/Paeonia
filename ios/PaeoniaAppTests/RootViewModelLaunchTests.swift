@@ -114,4 +114,44 @@ struct RootViewModelLaunchTests {
         await start.value
         #expect(launch.viewModel.state == .paired)
     }
+
+    /// iOS can launch the app in the background before the first unlock after a
+    /// restart. Clerk cannot read its keychain then and reports no session.
+    @Test func launchBeforeTheFirstUnlockKeepsThePersonSignedIn() async throws {
+        let remoteSession = RemoteAuthSession.test(provider: .apple)
+        let gateway = FakeAuthGateway(
+            remoteSession: nil,
+            profile: .test(userID: userID.uuidString, onboardingCompletedAt: Date()),
+            launchAccess: .pairedForFlowTest(ownerUserID: userID)
+        )
+        let sessionCache = FakeAuthSessionCache(session: completeSession, accountID: remoteSession.accountID)
+        let keychain = KeychainLock()
+        let viewModel = RootViewModel(
+            syncService: TestPaeoniaSyncService(),
+            authService: ClerkAuthService(gateway: gateway, sessionCache: sessionCache),
+            accessRouteService: ScriptedAccessRouteService([.pairedForFlowTest(ownerUserID: userID)]),
+            accessSnapshotStore: InMemoryAccessSyncSnapshotRepository(),
+            inviteStore: TestPairingInviteStore(),
+            pairingCelebrationStore: TestPairingCelebrationStore(),
+            systemSideEffects: NoOpRootSystemSideEffects(),
+            deviceOwnerStore: InMemoryRootDeviceOwnerStore(ownerUserID: userID.uuidString),
+            storedSessionIsReadable: { !keychain.isLocked }
+        )
+
+        viewModel.beginLaunch()
+        _ = await viewModel.launchRestore?.value
+        #expect(await sessionCache.currentSession == completeSession)
+
+        // The person unlocks the phone and opens the app.
+        keychain.isLocked = false
+        await gateway.setRemoteSession(remoteSession)
+        await viewModel.start()
+
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.notice == nil)
+    }
+}
+
+private final class KeychainLock {
+    var isLocked = true
 }
