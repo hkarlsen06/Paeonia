@@ -3,11 +3,11 @@ import { api, internal } from "./_generated/api";
 import { sha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op, photo, setMediaEnv, storeBlob, uploadAsset, type UploadSpec } from "./media.testing";
-import { createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { createCouple, createSignedInUser, newTest, transactionClock, transactionNow, type TestConvex, type TestUser } from "./test.setup";
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -87,7 +87,7 @@ describe("create_pending_media_upload", () => {
     expect(row.bucket).toBe("couple-media");
     expect(row.storage_path).toBe(`${couple.coupleId}/image/${row.media_asset_id}.jpg`);
     expect(row.upload_url).toMatch(/^https:\/\//);
-    expect(Date.parse(row.upload_expires_at) - Date.now()).toBe(3_600_000);
+    expect(Date.parse(row.upload_expires_at) - await transactionNow(t)).toBe(3_600_000);
     const stored = await asset(t, row.media_asset_id);
     expect(stored).toMatchObject({
       owner_user_id: couple.first.userId,
@@ -285,8 +285,9 @@ describe("finalize_media_upload", () => {
     const couple = await createCouple(t);
     const up = await reserveAndStore(t, couple.first, couple.coupleId);
     const rows = await couple.first.as.mutation(api.media.finalize_media_upload, up.finalize({ p_sha256_hex: up.sha.toUpperCase() }));
+    const timestamp = await transactionClock(t);
     expect(rows).toEqual([
-      { media_asset_id: up.row.media_asset_id, upload_status: "finalized", upload_finalized_at: "2026-10-10T12:00:00.000Z" },
+      { media_asset_id: up.row.media_asset_id, upload_status: "finalized", upload_finalized_at: timestamp("2026-10-10T12:00:00.000Z") },
     ]);
     expect(await asset(t, up.row.media_asset_id)).toMatchObject({
       upload_status: "finalized",
@@ -738,7 +739,8 @@ describe("mark_media_for_deletion", () => {
     expect(await mark(couple.second, up.assetId)).toBe(false);
     expect(await mark(couple.first, newUuid())).toBe(false);
     expect(await mark(couple.first, up.assetId)).toBe(true);
-    expect(await asset(t, up.assetId)).toMatchObject({ storage_delete_status: "pending", deleted_at: "2026-10-10T12:00:00.000Z" });
+    const timestamp = await transactionClock(t);
+    expect(await asset(t, up.assetId)).toMatchObject({ storage_delete_status: "pending", deleted_at: timestamp("2026-10-10T12:00:00.000Z") });
     expect(await mark(couple.first, up.assetId)).toBe(true);
   });
 
@@ -788,7 +790,8 @@ describe("storage cleanup", () => {
     expect(await blobExists(t, up.storageId)).toBe(false);
     const stored = await asset(t, up.assetId);
     expect(stored).toMatchObject({ storage_delete_status: "deleted", storage_delete_attempts: 1 });
-    expect(stored?.storage_deleted_at).toBe("2026-10-10T12:00:00.000Z");
+    const timestamp = await transactionClock(t);
+    expect(stored?.storage_deleted_at).toBe(timestamp("2026-10-10T12:00:00.000Z"));
     expect(stored?.storage_id).toBeUndefined();
     expect(await t.mutation(internal.media.cleanup_media_storage, {})).toMatchObject({ claimed: 0 });
   });

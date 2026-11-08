@@ -12,7 +12,7 @@ const NOW = "2026-11-04T12:00:00.000Z";
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
 });
 afterEach(() => {

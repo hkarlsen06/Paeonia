@@ -11,7 +11,7 @@ import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCo
 
 // "Today" is 2026-10-14 in UTC, so content from 2026-10-07 or earlier is old enough.
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-14T12:00:00.000Z"));
 });
 afterEach(() => {

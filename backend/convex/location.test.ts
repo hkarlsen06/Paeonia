@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
-import { addDevice, createCouple, newTest, type TestConvex, type TestCouple } from "./test.setup";
+import { addDevice, createCouple, newTest, transactionClock, type TestConvex, type TestCouple } from "./test.setup";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-06-28T12:30:00.000Z"));
 });
 afterEach(() => {
@@ -106,6 +106,7 @@ describe("update_latest_partner_location", () => {
       ...update({ p_latitude: 59.1234567, p_longitude: 10.7654321, p_accuracy_m: 3.456, p_captured_at: "2026-06-28T12:29:00+00:00" }),
       ...operation(2),
     });
+    const timestamp = await transactionClock(t);
     expect(rows[0]).toMatchObject({
       couple_id: couple.coupleId,
       user_id: couple.first.userId,
@@ -113,7 +114,7 @@ describe("update_latest_partner_location", () => {
       longitude: 10.765432,
       accuracy_m: 3.46,
       captured_at: "2026-06-28T12:29:00.000Z",
-      received_at: "2026-06-28T12:30:00.000Z",
+      received_at: timestamp("2026-06-28T12:30:00.000Z"),
     });
 
     const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
@@ -246,7 +247,8 @@ describe("update_location_sharing_preference", () => {
 
     const [enabled] = await enableSharing(couple.first, couple.coupleId, 2);
     expect(enabled).toMatchObject({ is_enabled: true, disabled_at: null });
-    expect(enabled.enabled_at).toBe("2026-06-28T12:30:00.000Z");
+    const timestamp = await transactionClock(t);
+    expect(enabled.enabled_at).toBe(timestamp("2026-06-28T12:30:00.000Z"));
 
     const [disabled] = await couple.first.as.mutation(api.location.update_location_sharing_preference, {
       p_couple_id: couple.coupleId,
@@ -255,7 +257,7 @@ describe("update_location_sharing_preference", () => {
       p_source: "settings_toggle",
       ...operation(3),
     });
-    expect(disabled).toMatchObject({ is_enabled: false, disabled_at: "2026-06-28T12:30:00.000Z" });
+    expect(disabled).toMatchObject({ is_enabled: false, disabled_at: timestamp("2026-06-28T12:30:00.000Z") });
     expect(await t.run((ctx) => ctx.db.query("latest_partner_locations").collect())).toHaveLength(0);
     const stored = await t.run((ctx) =>
       ctx.db
@@ -457,11 +459,12 @@ describe("get_partner_location_visibility", () => {
       await ctx.db.patch(row!._id, { status: "ended", ended_at: "2026-06-28T12:00:00.000Z" });
     });
     const [row] = await couple.first.as.query(api.location.get_partner_location_visibility, { p_couple_id: couple.coupleId });
+    const timestamp = await transactionClock(t);
     expect(row).toMatchObject({
       visibility_state: "relationship_ended",
       viewer_sharing_enabled: false,
       partner_sharing_enabled: false,
-      updated_at: "2026-06-28T12:30:00.000Z",
+      updated_at: timestamp("2026-06-28T12:30:00.000Z"),
     });
   });
 
@@ -514,7 +517,8 @@ describe("pausing location sharing", () => {
     expect(paused).toMatchObject({ is_enabled: true, paused_until: PAUSE_END });
     expect(await t.run((ctx) => ctx.db.query("latest_partner_locations").collect())).toHaveLength(1);
     // Pausing is not turning sharing on again.
-    expect(paused.enabled_at).toBe("2026-06-28T12:30:00.000Z");
+    const timestamp = await transactionClock(t);
+    expect(paused.enabled_at).toBe(timestamp("2026-06-28T12:30:00.000Z"));
 
     await expect(sendLocation(couple.first, couple.coupleId, 3, "2026-06-28T12:29:00.000Z")).rejects.toThrow(
       /42501.*location sharing is paused/,

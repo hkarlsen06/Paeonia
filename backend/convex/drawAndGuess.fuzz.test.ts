@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 // Model-based fuzz test for Draw & Guess. Each seed creates a couple and plays a long random
 // sequence of actions by both partners against the real functions, keeps a small reference
 // model of the rules in docs/games/draw-and-guess.md, and checks invariants after every step.
@@ -9,12 +10,11 @@
 // The seed drives the action choices and `Math.random` on the server (the word picks), so a
 // failure replays from its seed. Only uuids stay random, and no rule depends on them.
 import type { FunctionReturnType } from "convex/server";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { WORD_CATALOGS, WORD_DIFFICULTIES, type GameLanguage, type WordDifficulty } from "./lib/gameWords";
 import { newUuid } from "./lib/ids";
 import { op, setMediaEnv, uploadAsset } from "./media.testing";
-import { addDevice, createCouple, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { addDevice, createCouple, newTest, transactionNow, type TestConvex, type TestUser } from "./test.setup";
 
 const RUNS = Number(process.env.GAMES_FUZZ_RUNS ?? 180);
 const FIRST_SEED = Number(process.env.GAMES_FUZZ_FIRST_SEED ?? 1);
@@ -153,6 +153,11 @@ async function attempt<T>(promise: Promise<T>): Promise<Outcome<T>> {
 }
 
 class Fuzz {
+  // A frozen clock needs one committed read before a later transaction can observe its tick.
+  private async settleClock() {
+    await transactionNow(this.t);
+    await transactionNow(this.t);
+  }
   readonly log: string[] = [];
   private readonly rng: () => number;
   private t!: TestConvex;
@@ -206,8 +211,9 @@ class Fuzz {
 
   /** Moves the clock forward and runs what came due, such as the presence component closing a screen. */
   private async advanceTo(ms: number) {
-    vi.advanceTimersByTime(ms - Date.now());
+    await vi.advanceTimersByTimeAsync(ms - Date.now());
     await this.t.finishInProgressScheduledFunctions();
+    await this.settleClock();
   }
 
   private note(line: string) {
@@ -266,7 +272,7 @@ class Fuzz {
       points: { [this.a.userId]: 0, [this.b.userId]: 0 },
       choices: null,
       used: { en: empty(), nb: empty() },
-      turnStartedAt: Date.now(),
+      turnStartedAt: await transactionNow(this.t),
       reminded: false,
       presence: {},
       lastInvite: {},
@@ -310,6 +316,7 @@ class Fuzz {
   // --- Actions ---------------------------------------------------------------
 
   async step() {
+    await this.settleClock();
     const m = this.m;
     const open = this.latest() && !finished(this.latest()!);
     const anyFinished = m.rounds.some(finished);
@@ -519,7 +526,7 @@ class Fuzz {
     const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.submit_drawing, args as never));
     const result = this.check(`${this.name(user)} submit_drawing round=${roundId.slice(0, 8)} asset=${assetId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok" || !round || !asset) return outcome;
-    const now = Date.now();
+    const now = await transactionNow(this.t);
     round.drawing = assetId;
     round.submittedAt = now;
     asset.used = true;
@@ -546,7 +553,7 @@ class Fuzz {
     const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: roundId }));
     const result = this.check(`${this.name(user)} mark_round_seen round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok" || !round) return;
-    if (!finished(round) && round.seenAt === undefined) round.seenAt = Date.now();
+    if (!finished(round) && round.seenAt === undefined) round.seenAt = await transactionNow(this.t);
     this.same("mark_round_seen result", result, { guesser_first_seen_at: round.seenAt === undefined ? null : iso(round.seenAt) });
   }
 
@@ -593,13 +600,13 @@ class Fuzz {
     return { bonus: bonusFor(solveMs), solveMs };
   }
 
-  private beginTurn(drawer: Uid) {
+  private beginTurn(drawer: Uid, now: number) {
     const m = this.m;
     m.state = "choosing_word";
     m.turnUser = drawer;
     m.turnNumber += 1;
     m.choices = null;
-    m.turnStartedAt = Date.now();
+    m.turnStartedAt = now;
     m.reminded = false;
   }
 
@@ -630,7 +637,7 @@ class Fuzz {
     const claimText = `bonus=${args.p_speed_bonus} ms=${args.p_solve_ms} hints=${args.p_hints_used}`;
     const result = this.check(`${this.name(user)} guess ${JSON.stringify(args.p_guess)} ${claimText} round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok" || !round) return outcome;
-    const now = Date.now();
+    const now = await transactionNow(this.t);
     const firstAttempt = round.attempts.length === 0;
     round.attempts.push({ text, correct });
     const value = result as Record<string, unknown>;
@@ -659,7 +666,7 @@ class Fuzz {
     m.shared += round.points;
     m.points[round.drawer] += round.points;
     m.points[round.guesser] += round.points + bonus + firstTry;
-    this.beginTurn(round.guesser);
+    this.beginTurn(round.guesser, now);
     if (!this.present(round.drawer)) m.pushes.game_result += 1;
     this.same(
       "correct guess result",
@@ -693,8 +700,8 @@ class Fuzz {
     if (expected !== "ok" || !round) return outcome;
     this.same("give up result", result, { round_id: roundId, round_state: "missed" });
     round.state = "missed";
-    round.endedAt = Date.now();
-    this.beginTurn(round.guesser);
+    round.endedAt = await transactionNow(this.t);
+    this.beginTurn(round.guesser, round.endedAt);
     return outcome;
   }
 
@@ -832,7 +839,7 @@ class Fuzz {
     const result = this.check(`${this.name(user)} result seen round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok") return;
     const drawer = round!.drawer === user;
-    const seenAt = (drawer ? round!.drawerSeenAt : round!.guesserSeenAt) ?? Date.now();
+    const seenAt = (drawer ? round!.drawerSeenAt : round!.guesserSeenAt) ?? await transactionNow(this.t);
     if (drawer) round!.drawerSeenAt = seenAt;
     else round!.guesserSeenAt = seenAt;
     this.same("result seen result", result, { round_id: roundId, result_seen_at: iso(seenAt) });
@@ -841,7 +848,7 @@ class Fuzz {
   private async invite() {
     const user = this.pick([this.a.userId, this.b.userId]);
     const last = this.m.lastInvite[user];
-    const now = Date.now();
+    const now = await transactionNow(this.t);
     const expected: Expect = last !== undefined && last > now - INVITE_GAP_MS ? { code: "53300" } : "ok";
     const outcome = await attempt(this.users[user].as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" }));
     const result = this.check(`${this.name(user)} invite`, outcome, expected);
@@ -856,7 +863,7 @@ class Fuzz {
     const present = this.chance(0.7);
     const outcome = await attempt(this.users[user].as.mutation(api.games.set_game_presence, { p_kind: "draw_and_guess", p_present: present }));
     this.check(`${this.name(user)} presence ${present}`, outcome, "ok");
-    this.m.presence[user] = present ? Date.now() : undefined;
+    this.m.presence[user] = present ? await transactionNow(this.t) : undefined;
   }
 
   private async timeJump() {
@@ -868,7 +875,7 @@ class Fuzz {
 
   private async crons() {
     const m = this.m;
-    const now = Date.now();
+    const now = await transactionNow(this.t);
     const due = !m.reminded && m.turnStartedAt <= now - REMINDER_AFTER_MS;
     const outcome = await attempt(this.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {}));
     const sent = this.check("cron send_due_game_turn_reminders", outcome, "ok");
@@ -1138,6 +1145,10 @@ class Fuzz {
   }
 
   /** Plays two whole rounds from wherever the game is, to prove it can always move on. */
+  async drain() {
+    await this.t.finishAllScheduledFunctions(vi.runAllTimers);
+  }
+
   async finish() {
     for (let roundsLeft = 2; roundsLeft > 0; ) {
       const m = this.m;
@@ -1189,6 +1200,7 @@ async function runSeed(seed: number): Promise<string | null> {
       ...fuzz.log.slice(-80),
     ].join("\n");
   } finally {
+    await fuzz.drain();
     vi.restoreAllMocks();
   }
 }

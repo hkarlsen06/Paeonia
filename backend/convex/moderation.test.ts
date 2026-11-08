@@ -3,7 +3,7 @@ import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { tombstoneReportTargets } from "./lib/reports";
 import { makeAsset, makeMemory, operation } from "./reports.fixtures";
-import { createCouple, newTest, type TestConvex, type TestCouple } from "./test.setup";
+import { createCouple, newTest, transactionIso, type TestConvex, type TestCouple } from "./test.setup";
 
 const START = new Date("2026-10-10T12:00:00.000Z");
 
@@ -45,10 +45,8 @@ async function memorySetup() {
   const asset = await makeAsset(t, couple);
   const memory = await makeMemory(t, couple, [asset.id]);
   const reportId = await report(t, couple, "memory", memory.id);
-  // Submitting a report queues the snapshot copy. Let it finish so tests start from a known state,
-  // then put back the clock the pool moved.
+  // Finish the snapshot copy before applying moderation, keeping the worker clock monotonic.
   await t.finishAllScheduledFunctions(vi.runAllTimers);
-  vi.setSystemTime(START);
   const memoryRow = () =>
     t.run((ctx) => ctx.db.query("memories").withIndex("by_uuid", (q) => q.eq("id", memory.id)).unique());
   const assetRow = () =>
@@ -72,6 +70,7 @@ async function resetCopy(t: TestConvex) {
 describe("apply_report_moderation_action", () => {
   test("hide and restore change the memory and close the report", async () => {
     const { t, reportId, memory, memoryRow } = await memorySetup();
+    const resolvedAt = await transactionIso(t);
     const actionId = await act(t, reportId, "hide", { p_reason: "privacy", p_notes: "checked" });
 
     const hidden = (await memoryRow())!;
@@ -98,9 +97,9 @@ describe("apply_report_moderation_action", () => {
       snapshot: (await ctx.db.query("report_snapshots").collect())[0],
       assets: await ctx.db.query("report_snapshot_assets").collect(),
     }));
-    expect(state.report).toMatchObject({ status: "action_taken", resolved_at: "2026-10-10T12:00:00.000Z" });
-    expect(state.snapshot.delete_after).toBe("2027-04-08T12:00:00.000Z");
-    expect(state.assets[0].delete_after).toBe("2027-04-08T12:00:00.000Z");
+    expect(state.report).toMatchObject({ status: "action_taken", resolved_at: resolvedAt });
+    expect(Date.parse(state.snapshot.delete_after!) - Date.parse(resolvedAt)).toBe(180 * 86_400_000);
+    expect(state.assets[0].delete_after).toBe(state.snapshot.delete_after);
 
     vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
     await act(t, reportId, "restore");
@@ -111,9 +110,9 @@ describe("apply_report_moderation_action", () => {
       report: (await ctx.db.query("content_reports").collect())[0],
       snapshot: (await ctx.db.query("report_snapshots").collect())[0],
     }));
-    expect(restored.report).toMatchObject({ status: "closed", resolved_at: "2026-10-10T12:00:00.000Z" });
+    expect(restored.report).toMatchObject({ status: "closed", resolved_at: resolvedAt });
     // The retention clock starts once.
-    expect(restored.snapshot.delete_after).toBe("2027-04-08T12:00:00.000Z");
+    expect(restored.snapshot.delete_after).toBe(state.snapshot.delete_after);
   });
 
   test("remove queues the media for storage deletion and blocks a restore", async () => {
@@ -121,7 +120,7 @@ describe("apply_report_moderation_action", () => {
     await act(t, reportId, "remove");
     expect(await memoryRow()).toMatchObject({ moderation_status: "removed" });
     expect(await assetRow()).toMatchObject({
-      deleted_at: "2026-10-10T12:00:00.000Z",
+      deleted_at: await transactionIso(t),
       storage_delete_status: "pending",
     });
     const [action] = await t.run((ctx) => ctx.db.query("moderation_actions").collect());

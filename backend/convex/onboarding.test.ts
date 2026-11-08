@@ -3,7 +3,7 @@ import { api, internal } from "./_generated/api";
 import { newTest } from "./test.setup";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-24T23:30:00Z"));
 });
 afterEach(() => {

@@ -4,7 +4,7 @@ import { newUuid } from "./lib/ids";
 import { endCouple, op, setMediaEnv, uploadAsset } from "./media.testing";
 import { createCouple, createSignedInUser, newTest } from "./test.setup";
 
-beforeEach(() => { setMediaEnv(); vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z")); });
+beforeEach(() => { setMediaEnv(); vi.useFakeTimers(); vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z")); });
 afterEach(() => vi.useRealTimers());
 
 async function fixture() {

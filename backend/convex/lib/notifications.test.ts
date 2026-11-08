@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { addDevice, createCouple, newTest, type TestConvex } from "../test.setup";
+import { addDevice, createCouple, newTest, transactionClock, type TestConvex } from "../test.setup";
 import { newUuid } from "./ids";
 import {
   enqueueMemoryCreatedNotification,
@@ -19,7 +19,7 @@ import { GAME_PUSH_COPY, notificationAlertTitle } from "./notificationCopy";
 import { GAME_KINDS } from "./validators";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -196,13 +196,14 @@ describe("enqueueNotificationForUser", () => {
       ["First Partner la til et minne", "Se det blant minnene deres."],
       ["First Partner added a memory", "See it in your memories."],
     ]);
+    const timestamp = await transactionClock(t);
     expect(rows[0]).toMatchObject({
       kind: "memory_created",
       redaction_level: "private",
       apns_push_type: "alert",
       apns_collapse_id: "memory:abc",
       payload_version: 1,
-      scheduled_for: "2026-10-10T12:00:00.000Z",
+      scheduled_for: timestamp("2026-10-10T12:00:00.000Z"),
     });
     expect(rows[0].dedupe_key).toBe(`memory_created:abc:${rows[0].target_device_id}`);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -408,13 +409,14 @@ describe("trigger helpers", () => {
     await t.run((ctx) => enqueueDailyPartnerPush(ctx, secondAnswer, firstInstance));
     const rows = (await outbox(t)).filter((row) => row.recipient_user_id === couple.first.userId);
     expect(rows).toHaveLength(1);
+    const timestamp = await transactionClock(t);
     expect(rows[0]).toMatchObject({
       recipient_user_id: couple.first.userId,
       kind: "partner_answered",
       title: "Second Partner answered too",
       apns_collapse_id: `daily:${couple.coupleId}`,
       // The push waits in the recipient's daily lane, so more answers right after join it.
-      scheduled_for: "2026-10-10T12:01:15.000Z",
+      scheduled_for: timestamp("2026-10-10T12:01:15.000Z"),
     });
     expect(rows[0].payload).toMatchObject({
       instance_ids: [instanceId],

@@ -4,11 +4,11 @@ import { seedCatalog, textQuestions } from "./daily.setup";
 import { answeredRound, answerIdOf, seedQuestion } from "./dailyChat.setup";
 import { newUuid } from "./lib/ids";
 import { failure, op, setMediaEnv, uploadAsset } from "./media.testing";
-import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -192,12 +192,13 @@ describe("list_favorites", () => {
     await answeredRound(t, couple, one);
     await answeredRound(t, couple, two);
 
+    const timestamp = await transactionClock(t);
     await favorite(couple.first, "daily_question", one.id);
     tick();
     await favorite(couple.first, "daily_question", two.id);
     expect(await list(couple.first)).toEqual([
       { kind: "daily_question", target_id: two.id, created_at: "2026-10-10T12:01:00.000Z" },
-      { kind: "daily_question", target_id: one.id, created_at: "2026-10-10T12:00:00.000Z" },
+      { kind: "daily_question", target_id: one.id, created_at: timestamp("2026-10-10T12:00:00.000Z") },
     ]);
     expect(await list(await createSignedInUser(t))).toEqual([]);
   });

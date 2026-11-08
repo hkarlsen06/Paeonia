@@ -2,8 +2,7 @@
 // vitest does not run it.
 import { internal } from "./_generated/api";
 import type { PreparedNotification } from "./lib/apns";
-import { nowIso } from "./lib/time";
-import type { TestConvex } from "./test.setup";
+import { transactionIso, type TestConvex } from "./test.setup";
 
 /**
  * Stands in for the APNs sends. Tests have no APNs keys, so `push:send_push` leaves every row
@@ -11,8 +10,9 @@ import type { TestConvex } from "./test.setup";
  * ones that pass as sent, and returns them. A later call skips them.
  */
 export async function deliverDuePushes(t: TestConvex): Promise<PreparedNotification[]> {
-  const now = nowIso();
-  const rows = (await t.run((ctx) => ctx.db.query("notification_outbox").collect()))
+  const records = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
+  const now = await transactionIso(t);
+  const rows = records
     .filter((row) => row.sent_at === undefined && row.failed_at === undefined && row.scheduled_for <= now)
     .sort((a, b) => a.scheduled_for.localeCompare(b.scheduled_for) || a._creationTime - b._creationTime);
   const delivered: PreparedNotification[] = [];

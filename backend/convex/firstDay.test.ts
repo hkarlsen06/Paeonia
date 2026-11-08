@@ -4,14 +4,14 @@ import { seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
 import { mediaAssetHasLiveReference } from "./lib/mediaOrphans";
 import { failure, op, setMediaEnv, uploadAsset, type Uploaded } from "./media.testing";
-import { addDevice, createCouple, createSignedInUser, grantLifetime, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, grantLifetime, newTest, transactionClock, type TestConvex, type TestUser } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
 beforeEach(() => {
   setMediaEnv();
   process.env.INVITE_CODE_PEPPER = "test-pepper-value-for-pairing-invite-hashes";
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
 });
 afterEach(() => {
@@ -73,7 +73,8 @@ describe("start_first_day_draft", () => {
     const draft = await user.as.mutation(api.firstDay.start_first_day_draft, {});
     expect(draft.question?.question_key).toBe("written");
     expect(draft.question).toMatchObject({ answer_text: null, answered_at: null, prompt_nb: expect.stringContaining("prompt nb") });
-    expect(draft).toMatchObject({ started_on: null, drawing: null, updated_at: NOW });
+    const timestamp = await transactionClock(t);
+    expect(draft).toMatchObject({ started_on: null, drawing: null, updated_at: timestamp(NOW) });
 
     expect(await user.as.mutation(api.firstDay.start_first_day_draft, {})).toEqual(draft);
     expect(await draftOf(user)).toEqual(draft);
@@ -135,7 +136,8 @@ describe("save_first_day_answer", () => {
     expect(await failure(save("x".repeat(2001)))).toEqual({ code: "23514", message: "answer text is too long" });
 
     await save("  Hello  ");
-    expect((await draftOf(user))!.question).toMatchObject({ answer_text: "Hello", answered_at: NOW });
+    const timestamp = await transactionClock(t);
+    expect((await draftOf(user))!.question).toMatchObject({ answer_text: "Hello", answered_at: timestamp(NOW) });
     await save("Edited");
     expect((await draftOf(user))!.question?.answer_text).toBe("Edited");
   });
@@ -165,15 +167,16 @@ describe("first day drawing", () => {
     const t = newTest();
     const user = await inviter(t);
     const first = await uploadDraftDrawing(t, user);
+    const timestamp = await transactionClock(t);
     expect(await user.as.mutation(api.firstDay.save_first_day_drawing, drawingArgs(first))).toEqual({
       revision_id: first.parentId,
       media_asset_id: first.assetId,
-      saved_at: NOW,
+      saved_at: timestamp(NOW),
     });
     expect((await draftOf(user))!.drawing).toEqual({
       media_asset_id: first.assetId,
       revision_id: first.parentId,
-      saved_at: NOW,
+      saved_at: timestamp(NOW),
       bounds: { x: 0, y: 0, width: 10, height: 10 },
     });
     expect(await t.run((ctx) => mediaAssetHasLiveReference(ctx, first.assetId))).toBe(true);

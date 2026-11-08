@@ -4,12 +4,12 @@ import { sha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { setMediaEnv, uploadAsset } from "./media.testing";
 import { hashPairingInviteCode } from "./pairing";
-import { createCouple, createSignedInUser, grantLifetime, newTest, relationshipStateOf, type TestConvex, type TestUser } from "./test.setup";
+import { createCouple, createSignedInUser, grantLifetime, newTest, relationshipStateOf, transactionClock, type TestConvex, type TestUser } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
   process.env.INVITE_CODE_PEPPER = "test-pepper-value-for-pairing-invite-hashes";
 });
@@ -87,10 +87,11 @@ describe("create_pairing_invite", () => {
     const user = await inviter(t);
     const args = { p_invite_code: "ABC123", ...operation() };
     const id = await user.as.mutation(api.pairing.create_pairing_invite, args);
+    const timestamp = await transactionClock(t);
     vi.setSystemTime(new Date("2026-10-10T12:00:05.000Z"));
     expect(await user.as.mutation(api.pairing.create_pairing_invite, args)).toBe(id);
     const invite = await t.run((ctx) => ctx.db.query("pairing_invites").first());
-    expect(invite?.expires_at).toBe(inDays(30));
+    expect(invite?.expires_at).toBe(timestamp(inDays(30)));
   });
 
   test("rejects out of range expiry, bad codes, missing entitlement, and users who are already paired", async () => {
@@ -278,13 +279,14 @@ describe("preview_pairing_invite", () => {
       });
     });
     const rows = await reviewer.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "REVIEW-CODE" });
+    const timestamp = await transactionClock(t);
     expect(rows).toEqual([
       {
         invite_id: codeId,
         inviter_user_id: partner.userId,
         inviter_display_name: "Demo Partner",
         inviter_photo_url: null,
-        expires_at: inDays(1),
+        expires_at: timestamp(inDays(1)),
         has_safety_warning: false,
       },
     ]);
@@ -457,7 +459,8 @@ describe("revoke, validate, and rotate", () => {
     expect(await owner.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: newUuid() })).toBe(false);
     expect(await owner.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: id.toUpperCase() })).toBe(true);
     expect(await owner.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: id })).toBe(false);
-    expect(await t.run((ctx) => ctx.db.query("pairing_invites").first())).toMatchObject({ status: "revoked", revoked_at: NOW });
+    const timestamp = await transactionClock(t);
+    expect(await t.run((ctx) => ctx.db.query("pairing_invites").first())).toMatchObject({ status: "revoked", revoked_at: timestamp(NOW) });
   });
 
   test("validate_my_pairing_invite reports the status and expires stale invites", async () => {
@@ -502,7 +505,8 @@ describe("revoke, validate, and rotate", () => {
 
     const invites = await t.run((ctx) => ctx.db.query("pairing_invites").collect());
     const byId = Object.fromEntries(invites.map((invite) => [invite.id, invite]));
-    expect(byId[oldId]).toMatchObject({ status: "revoked", revoked_at: NOW });
+    const timestamp = await transactionClock(t);
+    expect(byId[oldId]).toMatchObject({ status: "revoked", revoked_at: timestamp(NOW) });
     expect(byId[newId]).toMatchObject({ status: "pending", expires_at: inDays(5) });
 
     await expectFail(

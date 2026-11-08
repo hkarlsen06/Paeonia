@@ -1,8 +1,8 @@
-import type { WorkId } from "@convex-dev/workpool";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { WorkId } from "@convex-dev/workpool";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
-import { addDevice, createCouple, newTest, type TestConvex, type TestCouple } from "./test.setup";
+import { addDevice, createCouple, newTest, transactionClock, type TestConvex, type TestCouple } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
@@ -177,7 +177,8 @@ describe("request_account_deletion", () => {
     // Nicknames are private notes about the other person, so neither member keeps one.
     expect(state.members.map((member) => member.partner_nickname)).toEqual([undefined, undefined]);
     expect(state.events.some((event) => event.user_id === second.userId && event.reason === "account_deletion")).toBe(true);
-    expect(state.profile).toMatchObject({ moderation_status: "hidden", deleted_at: NOW });
+    const timestamp = await transactionClock(t);
+    expect(state.profile).toMatchObject({ moderation_status: "hidden", deleted_at: timestamp(NOW) });
     expect(state.profile!.display_name).toBeUndefined();
     expect(state.profile!.profile_photo_asset_id).toBeUndefined();
     expect(state.profile!.time_zone_id).toBeUndefined();
@@ -185,7 +186,7 @@ describe("request_account_deletion", () => {
     expect(state.deleted).toBe(0);
     expect(state.firstPreferences).toBe(0);
     expect(state.photo).toMatchObject({ storage_delete_status: "pending" });
-    expect(state.photo!.deleted_at).toBe(NOW);
+    expect(state.photo!.deleted_at).toBe(timestamp(NOW));
     expect(state.events2.map((event) => event.event_kind).sort()).toEqual(["account_data_removed", "deletion_requested"]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
@@ -211,7 +212,8 @@ describe("request_account_deletion", () => {
       invite: await ctx.db.query("pairing_invites").first(),
       grants: await ctx.db.query("entitlement_grants").collect(),
     }));
-    expect(invite).toMatchObject({ status: "revoked", revoked_at: NOW });
+    const timestamp = await transactionClock(t);
+    expect(invite).toMatchObject({ status: "revoked", revoked_at: timestamp(NOW) });
     expect(grants[0]).toMatchObject({ status: "revoked", revoked_reason: "account_deleted" });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });

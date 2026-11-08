@@ -4,13 +4,13 @@ import { deleteCoupleGameRows } from "./lib/gameRegistry";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionNow, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 const START = Date.parse("2026-10-18T12:00:00.000Z");
 
 let scheduled: TestConvex | null = null;
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
 afterEach(async () => {
@@ -328,7 +328,8 @@ describe("pushes", () => {
     const roundId = await place(s.a, 72);
     await deliverDuePushes(s.t);
     await guess(s.b, roundId, 70);
-    tick(5 * 60);
+    const guessedAt = await transactionNow(s.t);
+    vi.setSystemTime(new Date(guessedAt + 5 * 60_000));
     expect(types(await deliverDuePushes(s.t))).toEqual(["game_result"]);
     tick(60);
     await place(s.b, 20);
@@ -378,15 +379,17 @@ describe("turn reminder", () => {
   test("one reminder per turn, for a guess and for a placement", async () => {
     const s = await startGame();
     const roundId = await place(s.a, 40);
+    const turnStartedAt = await transactionNow(s.t);
     tick(71 * 3600);
     expect(await run(s)).toBe(0);
-    tick(3600);
+    vi.setSystemTime(new Date(turnStartedAt + 72 * 3600_000));
     expect(await run(s)).toBe(1);
     expect(await run(s)).toBe(0);
     expect((await reminders(s))[0]).toMatchObject({ recipient_user_id: s.b.userId, payload: { actor_user_id: s.a.userId, game_id: s.gameId } });
 
     await guess(s.b, roundId, 40);
-    tick(72 * 3600);
+    const nextTurnStartedAt = await transactionNow(s.t);
+    vi.setSystemTime(new Date(nextTurnStartedAt + 72 * 3600_000));
     expect(await run(s)).toBe(1);
     expect((await reminders(s)).map((row) => row.recipient_user_id)).toEqual([s.b.userId, s.b.userId]);
   });

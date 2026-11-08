@@ -9,7 +9,7 @@ import {
 } from "./coupleDays";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
 });
 afterEach(() => {
   vi.useRealTimers();

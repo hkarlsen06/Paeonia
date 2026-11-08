@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createCouple, newTest, type TestConvex } from "../test.setup";
+import { createCouple, newTest, transactionClock, type TestConvex } from "../test.setup";
 import { newUuid } from "./ids";
 import {
   mediaAssetHasLiveReference,
@@ -10,7 +10,7 @@ import {
 } from "./mediaOrphans";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -98,9 +98,10 @@ describe("media orphan queueing", () => {
     });
     await t.run((ctx) => queueMemoryMediaAssetsIfOrphaned(ctx, memoryId));
     const row = await asset(t, assetId);
-    expect(row).toMatchObject({ storage_delete_status: "pending", deleted_at: "2026-10-10T12:00:00.000Z" });
+    const timestamp = await transactionClock(t);
+    expect(row).toMatchObject({ storage_delete_status: "pending", deleted_at: timestamp("2026-10-10T12:00:00.000Z") });
     expect(row?.last_storage_delete_error).toBeUndefined();
-    expect(row?.updated_at).toBe("2026-10-10T12:00:00.000Z");
+    expect(row?.updated_at).toBe(timestamp("2026-10-10T12:00:00.000Z"));
   });
 
   test("shared assets stay live while another live row references them", async () => {

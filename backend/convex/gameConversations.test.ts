@@ -10,7 +10,7 @@ import { addDevice, createCouple, newTest, type TestConvex, type TestCouple } fr
 const now = "2026-10-27T12:00:00.000Z";
 let scheduled: TestConvex | undefined;
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(now));
 });
 afterEach(async () => {

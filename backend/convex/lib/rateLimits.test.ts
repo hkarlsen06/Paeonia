@@ -7,7 +7,7 @@ import { consumeRateLimit, rateLimiter, type RateLimitName } from "./rateLimits"
 const NOW = "2026-10-10T12:00:00.000Z";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
   process.env.INVITE_CODE_PEPPER = "test-pepper-value-for-pairing-invite-hashes";
 });

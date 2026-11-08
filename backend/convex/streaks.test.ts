@@ -9,7 +9,7 @@ const CLIENT_ID = newUuid();
 let sequence = 0;
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T10:00:00.000Z"));
 });
 afterEach(() => {

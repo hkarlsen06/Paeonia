@@ -3,7 +3,7 @@ import { internal } from "./_generated/api";
 import type { ApnsSendRequest, ApnsSendResult } from "./lib/apns";
 import { newUuid } from "./lib/ids";
 import { insertNotificationOutbox, insertWidgetPushOutbox } from "./lib/notifications";
-import { addDevice, createSignedInUser, newTest, type TestConvex } from "./test.setup";
+import { addDevice, createSignedInUser, newTest, transactionClock, type TestConvex } from "./test.setup";
 
 // Stands in for APNs. `push:send_push` imports `sendWithEnvironmentFallback` from lib/apns.
 const send = vi.hoisted(() => vi.fn<(request: ApnsSendRequest) => Promise<ApnsSendResult>>());
@@ -124,8 +124,9 @@ describe("prepare_notification", () => {
 
     for (const key of ["memory", "disabled-device"]) {
       expect(await prepare(t, key)).toBeNull();
+      const timestamp = await transactionClock(t);
       expect(await rowByDedupe(t, key)).toMatchObject({
-        failed_at: NOW,
+        failed_at: timestamp(NOW),
         last_error: "notification target is no longer eligible",
       });
     }
@@ -155,7 +156,8 @@ describe("prepare_notification", () => {
     await reminder("upcoming", "2026-10-10T12:30:00.000Z");
 
     expect(await prepare(t, "passed")).toBeNull();
-    expect(await rowByDedupe(t, "passed")).toMatchObject({ failed_at: NOW, last_error: "notification is out of date" });
+    const timestamp = await transactionClock(t);
+    expect(await rowByDedupe(t, "passed")).toMatchObject({ failed_at: timestamp(NOW), last_error: "notification is out of date" });
     expect(await prepare(t, "upcoming")).not.toBeNull();
   });
 
@@ -169,7 +171,8 @@ describe("prepare_notification", () => {
     await queue(t, user, device, { kind: "widget_updated", pushType: "alert", dedupe: "alert" });
     expect((await prepare(t, "silent"))?.apns_push_type).toBe("background");
     expect(await prepare(t, "alert")).toBeNull();
-    expect((await rowByDedupe(t, "alert")).failed_at).toBe(NOW);
+    const timestamp = await transactionClock(t);
+    expect((await rowByDedupe(t, "alert")).failed_at).toBe(timestamp(NOW));
   });
 });
 
@@ -188,7 +191,8 @@ describe("mark_push_result", () => {
       outbox_id: outboxId.toUpperCase(),
       provider_message_id: "  apns-id-1 ",
     });
-    expect(await row(t)).toMatchObject({ sent_at: NOW, provider_message_id: "apns-id-1" });
+    const timestamp = await transactionClock(t);
+    expect(await row(t)).toMatchObject({ sent_at: timestamp(NOW), provider_message_id: "apns-id-1" });
     await t.mutation(internal.pushQueue.mark_push_result, { kind: "app", outbox_id: outboxId, error: "late" });
     expect((await row(t)).failed_at).toBeUndefined();
     expect((await row(t)).last_error).toBeUndefined();
@@ -198,14 +202,16 @@ describe("mark_push_result", () => {
     const { t, outboxId } = await queued();
     await t.mutation(internal.pushQueue.mark_push_result, { kind: "app", outbox_id: outboxId, error: "x".repeat(3000) });
     const result = await row(t);
-    expect(result.failed_at).toBe(NOW);
+    const timestamp = await transactionClock(t);
+    expect(result.failed_at).toBe(timestamp(NOW));
     expect(result.last_error).toHaveLength(2000);
   });
 
   test("a blank error still says the delivery failed", async () => {
     const { t, outboxId } = await queued();
     await t.mutation(internal.pushQueue.mark_push_result, { kind: "app", outbox_id: outboxId, error: "  " });
-    expect(await row(t)).toMatchObject({ failed_at: NOW, last_error: "delivery failed" });
+    const timestamp = await transactionClock(t);
+    expect(await row(t)).toMatchObject({ failed_at: timestamp(NOW), last_error: "delivery failed" });
   });
 });
 
@@ -261,7 +267,8 @@ describe("prepare_widget_push", () => {
 
     await t.mutation(internal.pushQueue.disable_device, { kind: "widget", device_id: device.id });
     expect(await t.mutation(internal.pushQueue.prepare_widget_push, { outbox_id: outboxId })).toBeNull();
-    expect((await widgetRows(t))[0]).toMatchObject({ failed_at: NOW, last_error: "notification target is no longer eligible" });
+    const timestamp = await transactionClock(t);
+    expect((await widgetRows(t))[0]).toMatchObject({ failed_at: timestamp(NOW), last_error: "notification target is no longer eligible" });
   });
 });
 
@@ -272,10 +279,11 @@ describe("devices", () => {
     const row = () => t.run((ctx) => ctx.db.query("user_devices").first());
     expect(await row()).toMatchObject({ apns_environment: "production", revision: 2 });
     await t.mutation(internal.pushQueue.disable_device, { kind: "app", device_id: device.id });
-    expect(await row()).toMatchObject({ disabled_at: NOW, revision: 3 });
+    const timestamp = await transactionClock(t);
+    expect(await row()).toMatchObject({ disabled_at: timestamp(NOW), revision: 3 });
     vi.setSystemTime(new Date("2026-10-10T13:00:00.000Z"));
     await t.mutation(internal.pushQueue.disable_device, { kind: "app", device_id: device.id });
-    expect(await row()).toMatchObject({ disabled_at: NOW, revision: 3 });
+    expect(await row()).toMatchObject({ disabled_at: timestamp(NOW), revision: 3 });
   });
 });
 

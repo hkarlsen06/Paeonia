@@ -4,11 +4,11 @@ import { currentQuestionFor, seedCatalog, textQuestions } from "./daily.setup";
 import { hmacSha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op, setMediaEnv, uploadAsset } from "./media.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, transactionIso, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -96,13 +96,14 @@ describe("get_or_create_widget_canvas", () => {
     const t = newTest();
     const couple = await createCouple(t);
     const first = await couple.first.as.mutation(api.widget.get_or_create_widget_canvas, {});
+    const timestamp = await transactionClock(t);
     expect(first).toEqual([
       {
         canvas_id: expect.any(String),
         couple_id: couple.coupleId,
         active_revision_id: null,
-        created_at: "2026-10-10T12:00:00.000Z",
-        updated_at: "2026-10-10T12:00:00.000Z",
+        created_at: timestamp("2026-10-10T12:00:00.000Z"),
+        updated_at: timestamp("2026-10-10T12:00:00.000Z"),
       },
     ]);
     expect(await couple.second.as.mutation(api.widget.get_or_create_widget_canvas, { p_couple_id: couple.coupleId.toUpperCase() })).toEqual(first);
@@ -160,13 +161,14 @@ describe("submit_widget_drawing_revision", () => {
     const canvas = await canvasOf(couple.first);
     tick();
     const { row, revisionId, assetId } = await submitDrawing(t, couple.first, couple, canvas.canvas_id, null);
+    const timestamp = await transactionClock(t);
     expect(row).toEqual({
       canvas_id: canvas.canvas_id,
       revision_id: revisionId,
       active_revision_id: revisionId,
       payload_media_asset_id: assetId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: timestamp(new Date().toISOString()),
+      updated_at: timestamp(new Date().toISOString()),
     });
     const revision = await t.run((ctx) => ctx.db.query("widget_drawing_revisions").first());
     expect(revision).toMatchObject({
@@ -382,6 +384,7 @@ describe("reads", () => {
     expect(await couple.first.as.query(api.widget.get_widget_canvas, {})).toEqual([]);
     const canvas = await canvasOf(couple.first);
     const [row] = await couple.first.as.query(api.widget.get_widget_canvas, { p_couple_id: couple.coupleId });
+    const timestamp = await transactionClock(t);
     expect(row).toMatchObject({
       canvas_id: canvas.canvas_id,
       couple_id: couple.coupleId,
@@ -395,9 +398,9 @@ describe("reads", () => {
       payload_bytes: null,
       bounds: null,
       revision_created_at: null,
-      canvas_created_at: "2026-10-10T12:00:00.000Z",
-      canvas_updated_at: "2026-10-10T12:00:00.000Z",
-      sync_updated_at: "2026-10-10T12:00:00.000Z",
+      canvas_created_at: timestamp("2026-10-10T12:00:00.000Z"),
+      canvas_updated_at: timestamp("2026-10-10T12:00:00.000Z"),
+      sync_updated_at: timestamp("2026-10-10T12:00:00.000Z"),
     });
   });
 
@@ -409,6 +412,7 @@ describe("reads", () => {
     const { revisionId, assetId } = await submitDrawing(t, couple.first, couple, canvas.canvas_id, null);
     const asset = await t.run((ctx) => ctx.db.query("media_assets").first());
     const [row] = await couple.second.as.query(api.widget.get_widget_canvas, {});
+    const timestamp = await transactionClock(t);
     expect(row).toEqual({
       canvas_id: canvas.canvas_id,
       couple_id: couple.coupleId,
@@ -435,7 +439,7 @@ describe("reads", () => {
       client_validation_version: "v1",
       revision_created_at: expect.any(String),
       revision_description_version: Date.parse(row.revision_created_at!),
-      canvas_created_at: "2026-10-10T12:00:00.000Z",
+      canvas_created_at: timestamp("2026-10-10T12:00:00.000Z"),
       canvas_updated_at: expect.any(String),
       sync_updated_at: expect.any(String),
     });
@@ -570,11 +574,12 @@ describe("create_widget_live_ticket", () => {
     const t = newTest();
     const couple = await createCouple(t);
     const result = await couple.second.as.mutation(api.widget.create_widget_live_ticket, { p_couple_id: couple.coupleId.toUpperCase() });
-    expect(result).toEqual({ url: "wss://relay.example.test/canvas", ticket: expect.any(String), expires_at: "2026-10-10T12:01:00.000Z" });
+    const timestamp = await transactionClock(t);
+    expect(result).toEqual({ url: "wss://relay.example.test/canvas", ticket: expect.any(String), expires_at: timestamp("2026-10-10T12:01:00.000Z") });
     const [payload, signature] = result!.ticket.split(".");
     expect(signature).toBe(await hmacSha256Hex("test-relay-secret", payload));
     const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    expect(claims).toEqual({ c: couple.coupleId, u: couple.second.userId, e: Date.parse("2026-10-10T12:01:00.000Z") });
+    expect(claims).toEqual({ c: couple.coupleId, u: couple.second.userId, e: Date.parse(timestamp("2026-10-10T12:01:00.000Z")) });
   });
 
   test("refuses strangers, former partners, and unentitled couples", async () => {
@@ -732,6 +737,7 @@ describe("get_lock_screen_state", () => {
     const state = (await stateOf(couple.second))!;
     expect(state.started_on).toBe("2025-01-02");
     // Yesterday stays so a phone that is a day behind can still drop it by its own clock.
+    const timestamp = await transactionClock(t);
     expect(state.dates.countdowns).toEqual(
       [
         [yesterday, "Yesterday", "2026-10-09"],
@@ -743,7 +749,7 @@ describe("get_lock_screen_state", () => {
         title,
         target_date,
         repeats_yearly: false,
-        created_at: "2026-10-10T12:00:00.000Z",
+        created_at: timestamp("2026-10-10T12:00:00.000Z"),
       })),
     );
   });
@@ -761,8 +767,9 @@ describe("get_lock_screen_state", () => {
     });
 
     // The date was yesterday for this snapshot. The phone moves it to next year, so the server must not drop it.
+    const timestamp = await transactionClock(t);
     expect((await stateOf(couple.second))!.dates.countdowns).toEqual([
-      { id: met, title: "We met", target_date: "2023-10-09", repeats_yearly: true, created_at: "2026-10-10T12:00:00.000Z" },
+      { id: met, title: "We met", target_date: "2023-10-09", repeats_yearly: true, created_at: timestamp("2026-10-10T12:00:00.000Z") },
     ]);
     // Still listed long after its date, with the date it was made for.
     const later = await couple.second.as.query(api.widget.get_lock_screen_state, { p_now: "2026-10-20T12:00:00.000Z" });
@@ -794,7 +801,7 @@ describe("get_lock_screen_state", () => {
     await couple.first.as.mutation(api.countdowns.set_birthday, { p_user_id: couple.second.userId, p_birthday: "2001-07-01", ...op() });
 
     const dates = (await stateOf(couple.second))!.dates;
-    const now = "2026-10-10T12:00:00.000Z";
+    const now = await transactionIso(t);
     // Past one-off countdowns and deleted ones are left out. The list is not capped.
     expect(dates.countdowns).toEqual([
       { id: yearly, title: "We met", target_date: "2023-06-12", repeats_yearly: true, created_at: now },
@@ -963,7 +970,8 @@ describe("Lock Screen pushes to the partner", () => {
     await first.as.mutation(api.relationship.leave_relationship, op());
     const pushes = await lockScreenPushes(t);
     expect(pushes.map((row) => row.recipient_user_id)).toEqual([second.userId]);
-    expect(pushes[0].scheduled_for).toBe("2026-10-10T12:00:00.000Z");
+    const timestamp = await transactionClock(t);
+    expect(pushes[0].scheduled_for).toBe(timestamp("2026-10-10T12:00:00.000Z"));
     expect(await second.as.query(api.widget.get_lock_screen_state, { p_now: new Date().toISOString() })).toBeNull();
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
@@ -974,12 +982,13 @@ describe("Lock Screen pushes to the partner", () => {
     await save(first, id);
     const [push, ...rest] = await lockScreenPushes(t);
     expect(rest).toEqual([]);
+    const timestamp = await transactionClock(t);
     expect(push).toMatchObject({
       recipient_user_id: second.userId,
       payload: { type: "lock_screen_updated", couple_id: coupleId },
       dedupe_key: `lockscreen:${second.userId}`,
       apns_collapse_id: `lockscreen:${coupleId}`,
-      scheduled_for: "2026-10-10T12:00:20.000Z",
+      scheduled_for: timestamp("2026-10-10T12:00:20.000Z"),
     });
 
     // An edit and a delete inside the delay join the same push.
@@ -1040,7 +1049,8 @@ describe("Lock Screen pushes to the partner", () => {
     expect((await lockScreenPushes(t)).every((row) => row.recipient_user_id === second.userId)).toBe(true);
     // Later turns in a live game wait two minutes in their own lane and join that push.
     const gamePush = (await lockScreenPushes(t)).find((row) => row.dedupe_key === `lockscreen:${second.userId}:games`);
-    expect(gamePush?.scheduled_for).toBe("2026-10-10T12:02:00.000Z");
+    const timestamp = await transactionClock(t);
+    expect(gamePush?.scheduled_for).toBe(timestamp("2026-10-10T12:02:00.000Z"));
     await record(first, "game_turn_completed", "g2");
     await record(first, "game_turn_completed", "g3");
     expect(await lockScreenPushes(t)).toHaveLength(2);
@@ -1073,7 +1083,8 @@ describe("Lock Screen pushes to the partner", () => {
       });
     }
     // Turning sharing on is a quick refresh for the partner, one each.
-    expect((await lockScreenPushes(t)).map((row) => row.scheduled_for)).toEqual(["2026-10-10T12:00:20.000Z", "2026-10-10T12:00:20.000Z"]);
+    const timestamp = await transactionClock(t);
+    expect((await lockScreenPushes(t)).map((row) => row.scheduled_for)).toEqual([timestamp("2026-10-10T12:00:20.000Z"), timestamp("2026-10-10T12:00:20.000Z")]);
     for (const row of await lockScreenPushes(t)) await t.run((ctx) => ctx.db.patch(row._id, { sent_at: "2026-10-10T12:00:21.000Z" }));
 
     const update = (user: TestUser, capturedAt: string) =>
@@ -1092,7 +1103,7 @@ describe("Lock Screen pushes to the partner", () => {
     await update(first, "2026-10-10T11:50:00.000Z");
     const slow = (await lockScreenPushes(t)).filter((row) => row.dedupe_key?.endsWith(":location"));
     expect(slow).toHaveLength(1);
-    expect(slow[0]).toMatchObject({ recipient_user_id: second.userId, scheduled_for: "2026-10-10T12:30:00.000Z" });
+    expect(slow[0]).toMatchObject({ recipient_user_id: second.userId, scheduled_for: timestamp("2026-10-10T12:30:00.000Z") });
 
     // A countdown still gets its own quick push while the slow one waits.
     await save(first, newUuid());

@@ -3,14 +3,14 @@ import { api, internal } from "./_generated/api";
 import { currentQuestionFor, dailyQuestionsFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
 import { deliverDuePushes } from "./push.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, setTimeZone, type TestConvex, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, setTimeZone, transactionClock, type TestConvex, type TestUser } from "./test.setup";
 
 const OSLO: [string, string] = ["Europe/Oslo", "Europe/Oslo"];
 const CLIENT_ID = newUuid();
 let sequence = 0;
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T10:00:00.000Z"));
 });
 afterEach(() => {
@@ -108,7 +108,7 @@ describe("start_daily_challenge_snapshot", () => {
   });
 
   test("returns the snapshot shape the app decodes", async () => {
-    const { a } = await readyCouple();
+    const { t, a } = await readyCouple();
     const [snapshot] = await a.as.query(api.daily.get_today_daily_challenge_snapshot, {});
     expect(snapshot.questions).toHaveLength(1);
     expect(snapshot.answer_details).toEqual([]);
@@ -129,7 +129,8 @@ describe("start_daily_challenge_snapshot", () => {
       current_user_contributed_today: false,
       partner_contributed_today: false,
     });
-    expect(snapshot.generated_at).toBe("2026-10-10T10:00:00.000Z");
+    const timestamp = await transactionClock(t);
+    expect(snapshot.generated_at).toBe(timestamp("2026-10-10T10:00:00.000Z"));
   });
 
   test("needs a signed-in user in an entitled couple", async () => {
@@ -365,7 +366,8 @@ describe("partner pushes", () => {
       (await ctx.db.query("notification_outbox").collect()).filter((row) => row.recipient_user_id === user.userId),
     );
   const pushesDue = async (t: TestConvex, at = "2026-10-10T10:01:15.000Z") => {
-    vi.setSystemTime(new Date(at));
+    const timestamp = await transactionClock(t);
+    vi.setSystemTime(new Date(timestamp(at)));
     return await deliverDuePushes(t);
   };
 
@@ -405,10 +407,11 @@ describe("partner pushes", () => {
     await addDevice(t, b.userId);
     await a.as.mutation(api.identity.set_notification_preference, { p_column: "partner_answered_enabled", p_enabled: false });
     await submit(a, question.id, { text: "hello" });
+    const firstAnswerClock = await transactionClock(t);
     vi.setSystemTime(new Date("2026-10-10T10:00:30.000Z"));
     await submit(b, question.id, { text: "hi" });
     // b answered second and has the setting on, so b still hears that a's answer is ready.
-    const delivered = await pushesDue(t);
+    const delivered = await pushesDue(t, firstAnswerClock("2026-10-10T10:01:15.000Z"));
     expect(delivered.map((push) => [push.target_device_id, push.payload.type])).toEqual([
       [(await outboxFor(t, b))[0].target_device_id, "partner_answered"],
     ]);
@@ -539,13 +542,14 @@ describe("shuffle", () => {
       shuffles: await ctx.db.query("daily_question_shuffles").collect(),
     }));
     expect(state.old).toMatchObject({ status: "shuffled", replaced_by_instance_id: replaced.instance_id });
-    expect(state.old?.replaced_at).toBe("2026-10-10T10:00:00.000Z");
+    const timestamp = await transactionClock(t);
+    expect(state.old?.replaced_at).toBe(timestamp("2026-10-10T10:00:00.000Z"));
     expect(state.shuffles).toEqual([
       expect.objectContaining({
         user_id: b.userId,
         skipped_instance_id: before.id,
         replacement_instance_id: replaced.instance_id,
-        exclude_until: "2026-10-24T10:00:00.000Z",
+        exclude_until: timestamp("2026-10-24T10:00:00.000Z"),
       }),
     ]);
 

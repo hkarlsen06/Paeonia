@@ -8,7 +8,7 @@ import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCo
 
 type Target = FunctionArgs<typeof api.media.update_accessibility_text>["p_target"];
 const NOW = "2026-10-10T12:00:00.000Z";
-beforeEach(() => { setMediaEnv(); vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date(NOW)); });
+beforeEach(() => { setMediaEnv(); vi.useFakeTimers(); vi.setSystemTime(new Date(NOW)); });
 afterEach(() => vi.useRealTimers());
 
 async function setup(kind: Target["kind"]) {
@@ -115,6 +115,7 @@ describe("correcting authored media alternatives", () => {
     const t = newTest();
     const couple = await createCouple(t);
     const { target, question, assetId, read } = await daily(t, couple);
+    const answeredAt = (await read()).find(row => row.answer_id === (target.kind === "daily" ? target.answer_id : ""))!.answered_at;
     const correction = { ...op(), p_target: target, p_text: "Corrected private transcript. A bird sings." };
     await couple.first.as.mutation(api.media.update_accessibility_text, correction);
     const hidden = [
@@ -132,7 +133,7 @@ describe("correcting authored media alternatives", () => {
     vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
     await couple.first.as.mutation(api.media.update_accessibility_text, { ...op(), p_target: target, p_text: "Corrected after reveal" });
     expect((await read()).find(row => row.answer_id === (target.kind === "daily" ? target.answer_id : "")))
-      .toMatchObject({ media_accessibility_text: "Corrected after reveal", answered_at: NOW, media_asset_ids: [assetId], text_body: null });
+      .toMatchObject({ media_accessibility_text: "Corrected after reveal", answered_at: answeredAt, media_asset_ids: [assetId], text_body: null });
   });
 
   test("rejects overlong corrections and deleted media without changing the stored text", async () => {

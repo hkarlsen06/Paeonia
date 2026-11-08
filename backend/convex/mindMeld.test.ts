@@ -4,13 +4,13 @@ import { deleteCoupleGameRows } from "./lib/gameRegistry";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 const START = Date.parse("2026-10-10T12:00:00.000Z");
 
 let scheduled: TestConvex | null = null;
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
 afterEach(async () => {
@@ -190,7 +190,8 @@ describe("lock_mind_meld_word", () => {
     const s = await startGame();
     const round = await openRound(s.a);
     const locked = await lock(s.a, round.id, "  Volcano ");
-    expect(locked).toEqual({ round_id: round.id, round_state: "open", outcome: null, game_state: "playing", locked_at: new Date(START).toISOString() });
+    const timestamp = await transactionClock(s.t);
+    expect(locked).toEqual({ round_id: round.id, round_state: "open", outcome: null, game_state: "playing", locked_at: timestamp(new Date(START).toISOString()) });
 
     const mine = (await current(s.a)).rounds[0];
     expect(mine).toMatchObject({ my_word: "Volcano", my_locked_at: locked.locked_at, partner_locked: false, partner_word: null });
@@ -727,7 +728,8 @@ describe("restart_mind_meld", () => {
     // The caller started it over, so they have seen the end.
     expect(data.previous).toBeNull();
     const old = (await s.t.run((ctx) => ctx.db.query("mind_meld_games").collect())).find((game) => game.id === s.gameId)!;
-    expect(old).toMatchObject({ state: "ended", end_reason: "restart", ended_by_user_id: s.a.userId, ended_at: new Date().toISOString() });
+    const timestamp = await transactionClock(s.t);
+    expect(old).toMatchObject({ state: "ended", end_reason: "restart", ended_by_user_id: s.a.userId, ended_at: timestamp(new Date().toISOString()) });
     expect(Object.keys(old.end_seen_by_user)).toEqual([s.a.userId]);
   });
 
@@ -816,7 +818,8 @@ describe("seen marks", () => {
     const mark = (user: TestUser) => user.as.mutation(api.mindMeld.mark_mind_meld_reveal_seen, { p_round_id: round.id });
 
     const first = await mark(s.a);
-    expect(first).toEqual({ round_id: round.id, reveal_seen_at: new Date().toISOString() });
+    const timestamp = await transactionClock(s.t);
+    expect(first).toEqual({ round_id: round.id, reveal_seen_at: timestamp(new Date().toISOString()) });
     tick(60);
     expect(await mark(s.a)).toEqual(first);
     expect((await current(s.a)).rounds[0].my_reveal_seen_at).toBe(first.reveal_seen_at);
@@ -843,7 +846,8 @@ describe("seen marks", () => {
     await playRound(s, "fish", "fish");
 
     const first = await mark(s.a);
-    expect(first).toEqual({ game_id: s.gameId, end_seen_at: new Date().toISOString() });
+    const timestamp = await transactionClock(s.t);
+    expect(first).toEqual({ game_id: s.gameId, end_seen_at: timestamp(new Date().toISOString()) });
     tick(60);
     expect(await mark(s.a)).toEqual(first);
     expect((await current(s.a)).my_end_seen_at).toBe(first.end_seen_at);
@@ -902,10 +906,11 @@ describe("version", () => {
 
   test("updated_at follows the change", async () => {
     const s = await startGame();
+    const createdAt = (await current(s.a)).created_at;
     tick(120);
     await lock(s.a, (await openRound(s.a)).id, "ocean");
     expect((await current(s.a)).updated_at).toBe(new Date().toISOString());
-    expect((await current(s.a)).created_at).toBe(new Date(START).toISOString());
+    expect((await current(s.a)).created_at).toBe(createdAt);
   });
 });
 

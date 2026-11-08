@@ -3,13 +3,13 @@ import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
 import { failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
 });
 afterEach(() => {
@@ -54,13 +54,14 @@ describe("post_story and get_stories", () => {
     const couple = await createCouple(t);
     const older = await post(t, couple, { caption: "Thinking of you" });
     const olderRow = await older.run();
+    const timestamp = await transactionClock(t);
     expect(olderRow).toEqual({
       id: older.storyId,
       author_user_id: couple.first.userId,
       media_asset_id: older.up.assetId,
       caption: "Thinking of you",
       accessibility_text: null,
-      created_at: NOW,
+      created_at: timestamp(NOW),
       seen_at: null,
     });
 
@@ -110,10 +111,11 @@ describe("post_story and get_stories", () => {
     const operation = op();
     const story = await post(t, couple, { caption: "Hello", operation });
     const first = await story.run();
+    const timestamp = await transactionClock(t);
     await markSeen(couple.second, story.storyId);
     tick();
     const again = await story.run(story.up.assetId, "Hello", operation);
-    expect(again).toEqual({ ...first, seen_at: NOW });
+    expect(again).toEqual({ ...first, seen_at: timestamp(NOW) });
     expect(await storyRows(t)).toHaveLength(1);
   });
 
@@ -261,8 +263,9 @@ describe("delete_story", () => {
     expect((await getStories(couple.second)).stories).toEqual([]);
     const asset = await assetRow(t, story.up.assetId);
     expect(asset?.storage_delete_status).toBe("pending");
-    expect(asset?.deleted_at).toBe(NOW);
-    expect((await storyRows(t))[0].deleted_at).toBe(NOW);
+    const timestamp = await transactionClock(t);
+    expect(asset?.deleted_at).toBe(timestamp(NOW));
+    expect((await storyRows(t))[0].deleted_at).toBe(timestamp(NOW));
   });
 
   test("a missing or already deleted story is fine", async () => {
@@ -298,11 +301,12 @@ describe("mark_story_seen", () => {
     expect((await getStories(couple.first)).stories[0].seen_at).toBeNull();
 
     expect(await markSeen(couple.second, story.storyId)).toBeNull();
-    expect((await getStories(couple.first)).stories[0].seen_at).toBe(NOW);
+    const timestamp = await transactionClock(t);
+    expect((await getStories(couple.first)).stories[0].seen_at).toBe(timestamp(NOW));
 
     tick(3600);
     await markSeen(couple.second, story.storyId.toUpperCase());
-    expect((await getStories(couple.first)).stories[0].seen_at).toBe(NOW);
+    expect((await getStories(couple.first)).stories[0].seen_at).toBe(timestamp(NOW));
   });
 
   test("a missing or deleted story is a no-op, and another couple's story is refused", async () => {
@@ -335,9 +339,10 @@ describe("story_posted push", () => {
     expect(new Set(rows.map((row) => row.recipient_user_id))).toEqual(new Set([couple.second.userId]));
     expect(rows.map((row) => row.title).sort()).toEqual(["First Partner delte en story", "First Partner shared a story"]);
     expect(rows.map((row) => row.body).sort()).toEqual(["Den ligger i Oss-fanen i 24 timer.", "It's in the Us tab for 24 hours."]);
+    const timestamp = await transactionClock(t);
     expect(rows[0].payload).toEqual({
       type: "story_posted",
-      expires_at: "2026-10-11T12:00:00.000Z",
+      expires_at: timestamp("2026-10-11T12:00:00.000Z"),
       couple_id: couple.coupleId,
       story_id: story.storyId,
       actor_user_id: couple.first.userId,
@@ -393,7 +398,8 @@ describe("set_note", () => {
   test("both partners see each note, and a new note replaces the old one", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    expect(await setNote(couple.first, "  miss you  ")).toEqual({ user_id: couple.first.userId, text: "miss you", created_at: NOW });
+    const timestamp = await transactionClock(t);
+    expect(await setNote(couple.first, "  miss you  ")).toEqual({ user_id: couple.first.userId, text: "miss you", created_at: timestamp(NOW) });
     tick();
     const later = new Date(Date.now()).toISOString();
     await setNote(couple.first, "coffee later?");
@@ -457,12 +463,12 @@ describe("delete_expired_notes", () => {
   test("deletes notes older than 24 hours and keeps newer notes and every story", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    await setNote(couple.first, "old");
+    const old = await setNote(couple.first, "old");
     const story = await post(t, couple);
     await story.run();
     tick(23 * 3600);
     await setNote(couple.second, "new");
-    tick(3600);
+    vi.setSystemTime(new Date(Date.parse(old!.created_at) + 24 * 3600_000));
 
     expect(await t.mutation(internal.stories.delete_expired_notes, {})).toEqual({ deleted: 1 });
     const notes = (await getStories(couple.first)).notes;

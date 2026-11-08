@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { sha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
-import { addDevice, createCouple, createSignedInUser, newTest, relationshipStateOf, type TestConvex } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, relationshipStateOf, transactionClock, type TestConvex } from "./test.setup";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -130,11 +130,12 @@ describe("profile", () => {
       p_time_zone_id: "Europe/Oslo",
       p_profile_photo_asset_id: photo,
     });
+    const timestamp = await transactionClock(t);
     expect(profile).toMatchObject({
       profile_photo_asset_id: photo,
       time_zone_id: "Europe/Oslo",
-      time_zone_updated_at: "2026-10-10T12:00:00.000Z",
-      onboarding_completed_at: "2026-10-10T12:00:00.000Z",
+      time_zone_updated_at: timestamp("2026-10-10T12:00:00.000Z"),
+      onboarding_completed_at: timestamp("2026-10-10T12:00:00.000Z"),
       revision: 2,
     });
     await expectFail(
@@ -166,10 +167,11 @@ describe("profile", () => {
       p_source: "google",
     });
     const profile = await user.as.mutation(api.identity.complete_profile_onboarding, { p_time_zone_id: "Europe/Oslo" });
+    const timestamp = await transactionClock(t);
     expect(profile).toMatchObject({
       profile_photo_asset_id: null,
       provider_profile_photo_asset_id: provider,
-      onboarding_completed_at: "2026-10-10T12:00:00.000Z",
+      onboarding_completed_at: timestamp("2026-10-10T12:00:00.000Z"),
     });
   });
 
@@ -346,7 +348,8 @@ describe("devices", () => {
     expect(secondId).not.toBe(firstId);
     const devices = await t.run((ctx) => ctx.db.query("user_devices").collect());
     const byId = Object.fromEntries(devices.map((device) => [device.id, device]));
-    expect(byId[firstId].disabled_at).toBe("2026-10-10T12:00:00.000Z");
+    const timestamp = await transactionClock(t);
+    expect(byId[firstId].disabled_at).toBe(timestamp("2026-10-10T12:00:00.000Z"));
     expect(byId[secondId].disabled_at).toBeUndefined();
   });
 
@@ -359,7 +362,8 @@ describe("devices", () => {
     expect(await owner.as.mutation(api.identity.disable_user_device, { p_device_id: newUuid() })).toBe(false);
     expect(await owner.as.mutation(api.identity.disable_user_device, { p_device_id: device.id.toUpperCase() })).toBe(true);
     const row = await t.run((ctx) => ctx.db.query("user_devices").first());
-    expect(row?.disabled_at).toBe("2026-10-10T12:00:00.000Z");
+    const timestamp = await transactionClock(t);
+    expect(row?.disabled_at).toBe(timestamp("2026-10-10T12:00:00.000Z"));
   });
 });
 

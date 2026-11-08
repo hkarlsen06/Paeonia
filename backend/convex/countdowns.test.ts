@@ -7,7 +7,7 @@ import { createCouple, createSignedInUser, newTest, type TestCouple } from "./te
 const NOW = "2026-10-10T12:00:00.000Z";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
 });
 afterEach(() => {

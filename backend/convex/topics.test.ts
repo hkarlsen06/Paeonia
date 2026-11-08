@@ -10,7 +10,7 @@ import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, 
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -352,7 +352,7 @@ describe("topic push spacing", () => {
     // The send is retried and goes out two minutes late.
     advance(2 * 60 * 1000);
     expect(await deliverDuePushes(t)).toHaveLength(1);
-    const sentAt = Date.now();
+    const sentAt = Date.parse((await t.run((ctx) => ctx.db.query("notification_outbox").collect())).find(row => row.sent_at)?.sent_at ?? "");
 
     advance(HOUR);
     await answer(a, topic.questionIds[1]);

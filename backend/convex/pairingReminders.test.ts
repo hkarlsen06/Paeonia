@@ -9,7 +9,7 @@ const NOW = "2026-10-10T12:00:00.000Z";
 const at = (days: number, hours = 0) => new Date(Date.parse(NOW) + days * 86_400_000 + hours * 3_600_000).toISOString();
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
   process.env.INVITE_CODE_PEPPER = "test-pepper-value-for-pairing-invite-hashes";
 });
@@ -88,9 +88,9 @@ describe("send_pairing_invite_reminders", () => {
     expect(await deliveredReminders(t)).toEqual([]);
 
     // Queued first, then the partner joins before the send.
+    vi.setSystemTime(new Date(NOW));
     const second = newTest();
     const secondInviter = await waitingInviter(second);
-    vi.setSystemTime(new Date(NOW));
     await createInvite(secondInviter, "K7M2PQ");
     expect(await runCron(second, at(2, 1))).toBe(1);
     const secondPartner = await createSignedInUser(second, { name: "Partner" });

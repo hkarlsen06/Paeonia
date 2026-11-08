@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
-import { createCouple, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { createCouple, newTest, transactionClock, type TestConvex, type TestUser } from "./test.setup";
 
 const NOW = new Date("2026-10-10T12:00:00.000Z");
 const DAY = 86_400_000;
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(NOW);
 });
 afterEach(() => {
@@ -83,8 +83,9 @@ describe("entitlement grants", () => {
     expect(await revoke("QA finished")).toEqual({ changed: true });
 
     expect(await coupleHasAccess(second)).toBe(false);
+    const timestamp = await transactionClock(t);
     expect(await grantRows(t)).toMatchObject([
-      { status: "revoked", revoked_at: NOW.toISOString(), revoked_reason: "QA finished" },
+      { status: "revoked", revoked_at: timestamp(NOW.toISOString()), revoked_reason: "QA finished" },
     ]);
     // A second revoke keeps the first record.
     expect(await revoke("again")).toEqual({ changed: false });

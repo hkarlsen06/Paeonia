@@ -6,7 +6,7 @@ import { endCouple, failure, op } from "./media.testing";
 import { createCouple, createSignedInUser, newTest, type TestCouple, type TestUser } from "./test.setup";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {

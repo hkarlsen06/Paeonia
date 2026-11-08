@@ -3,12 +3,12 @@ import { api, internal } from "./_generated/api";
 import { getOrCreateTodayCoupleDay } from "./lib/coupleDays";
 import { newUuid } from "./lib/ids";
 import { seedProducts } from "./storekit.testHelpers";
-import { createCouple, createSignedInUser, newTest, type TestConvex } from "./test.setup";
+import { createCouple, createSignedInUser, newTest, transactionClock, type TestConvex } from "./test.setup";
 
 const NOW = new Date("2026-10-10T12:00:00.000Z");
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(NOW);
 });
 afterEach(() => {
@@ -56,13 +56,14 @@ describe("redeem_review_access", () => {
     expect(state.members.filter((member) => member.status === "active")).toHaveLength(2);
     expect(state.members.find((member) => member.user_id === partner.userId)?.role).toBe("creator");
     expect(state.couple).toMatchObject({ id: coupleId, status: "active", started_on: "2026-04-13", created_by_user_id: partner.userId });
+    const timestamp = await transactionClock(t);
     expect(state.streak).toMatchObject({
       couple_id: coupleId,
       current_count: 0,
       restorable_count: 12,
       longest_count: 12,
       restorable_through_date: "2026-10-08",
-      restore_deadline: "2026-11-09T12:00:00.000Z",
+      restore_deadline: timestamp("2026-11-09T12:00:00.000Z"),
     });
     expect(state.locations).toHaveLength(1);
     expect(state.locations[0]).toMatchObject({ user_id: partner.userId, latitude: 59.9139, longitude: 10.7523, accuracy_m: 25 });
@@ -110,7 +111,8 @@ describe("redeem_review_access", () => {
     await expect(redeem(t, newUuid(), reviewer.userId)).rejects.toThrow(/22023/);
     expect(await t.mutation(internal.review.revoke_review_access_codes, {})).toBe(0);
     const revoked = await t.run((ctx) => ctx.db.query("review_access_codes").first());
-    expect(revoked).toMatchObject({ status: "revoked", revoked_at: NOW.toISOString() });
+    const timestamp = await transactionClock(t);
+    expect(revoked).toMatchObject({ status: "revoked", revoked_at: timestamp(NOW.toISOString()) });
   });
 
   test("refuses reviewers and partners that already have a couple", async () => {

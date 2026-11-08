@@ -1,5 +1,5 @@
-import type { FunctionArgs } from "convex/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { FunctionArgs } from "convex/server";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { dealIdeas } from "./lib/exquisiteCorpse";
@@ -11,6 +11,9 @@ import {
   createCouple,
   createSignedInUser,
   newTest,
+  transactionClock,
+  transactionIso,
+  transactionNow,
   type TestConvex,
   type TestCouple,
   type TestUser,
@@ -23,7 +26,7 @@ const START = Date.parse("2026-10-10T12:00:00.000Z");
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
 afterEach(() => {
@@ -191,17 +194,18 @@ describe("ensure_exquisite_corpse_game", () => {
       recent_figures: [],
       ideas: [],
     });
+    const timestamp = await transactionClock(s.t);
     expect(data.game).toEqual({
       id: s.gameId,
       turn_user_id: s.a.userId,
-      turn_started_at: new Date(START).toISOString(),
+      turn_started_at: timestamp(new Date(START).toISOString()),
       figure_id: null,
       figure_number: 1,
       part_index: 0,
       figures_finished: 0,
       version: 1,
-      created_at: new Date(START).toISOString(),
-      updated_at: new Date(START).toISOString(),
+      created_at: timestamp(new Date(START).toISOString()),
+      updated_at: timestamp(new Date(START).toISOString()),
     });
     expect(await s.t.run((ctx) => ctx.db.query("exquisite_corpse_games").collect())).toHaveLength(1);
   });
@@ -652,7 +656,7 @@ describe("reveal seen", () => {
     expect(await mine(s.a)).toBeNull();
 
     const first = await seen(s.b, figureId);
-    expect(first).toEqual({ figure_id: figureId, reveal_seen_at: new Date(Date.now()).toISOString() });
+    expect(first).toEqual({ figure_id: figureId, reveal_seen_at: await transactionIso(s.t) });
     tick(60);
     expect(await seen(s.b, figureId)).toEqual(first);
     expect(await mine(s.b)).toBe(first.reveal_seen_at);
@@ -928,9 +932,10 @@ describe("turn reminder", () => {
 
   test("goes out once after 72 hours to the partner whose turn it is, and again only for a new turn", async () => {
     const s = await startGame();
+    const turnStartedAt = await transactionNow(s.t);
     tick(71 * HOUR);
     expect(await run(s)).toBe(0);
-    tick(HOUR);
+    vi.setSystemTime(new Date(turnStartedAt + 72 * 3600_000));
     expect(await run(s)).toBe(1);
     expect(await run(s)).toBe(0);
     tick(10 * HOUR);
@@ -940,7 +945,7 @@ describe("turn reminder", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       recipient_user_id: s.a.userId,
-      dedupe_key: expect.stringContaining(`exquisite_corpse:reminder:${s.gameId}:${new Date(START).toISOString()}`),
+      dedupe_key: expect.stringContaining(`exquisite_corpse:reminder:${s.gameId}:${new Date(turnStartedAt).toISOString()}`),
       payload: { type: "game_turn_reminder", game_kind: "exquisite_corpse", game_id: s.gameId, actor_user_id: s.b.userId, deeplink: "paeonia://games/exquisite-corpse" },
     });
     const game = await s.t.run((ctx) => ctx.db.query("exquisite_corpse_games").first());

@@ -27,7 +27,7 @@ function jsonResponse(status: number, body: unknown): Response {
 }
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(NOW);
   vi.stubEnv("APPLE_IAP_KEY_ID", "KEY123");
   vi.stubEnv("APPLE_IAP_ISSUER_ID", "issuer-1");

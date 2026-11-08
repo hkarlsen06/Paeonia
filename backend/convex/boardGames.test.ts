@@ -6,13 +6,13 @@ import { newUuid } from "./lib/ids";
 import { notificationAlertBody, notificationAlertTitle } from "./lib/notificationCopy";
 import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, transactionNow, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 const START = Date.parse("2026-10-10T12:00:00.000Z");
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
 afterEach(() => {
@@ -195,6 +195,7 @@ describe("ensure_board_game", () => {
   test("creates the game once with the caller as player one", async () => {
     const s = await startCouple();
     const game = await ensure(s.a, "connect_four");
+    const timestamp = await transactionClock(s.t);
     expect(game).toEqual({
       id: game.id,
       kind: "connect_four",
@@ -216,10 +217,10 @@ describe("ensure_board_game", () => {
       draws: 0,
       games_finished: 0,
       previous: null,
-      started_at: nowIso(),
+      started_at: timestamp(nowIso()),
       finished_at: null,
-      turn_started_at: nowIso(),
-      updated_at: nowIso(),
+      turn_started_at: timestamp(nowIso()),
+      updated_at: timestamp(nowIso()),
     });
     expect(await gameRows(s.t)).toHaveLength(1);
   });
@@ -275,6 +276,7 @@ describe("full games", () => {
     const game = await ensure(s.a, "connect_four");
     tick();
     const done = await playMoves(s, game, CONNECT_FOUR_WIN);
+    const timestamp = await transactionClock(s.t);
     expect(done).toMatchObject({
       status: "finished",
       game_number: 1,
@@ -287,7 +289,7 @@ describe("full games", () => {
       draws: 0,
       games_finished: 1,
       previous: null,
-      finished_at: nowIso(),
+      finished_at: timestamp(nowIso()),
       version: 1 + CONNECT_FOUR_WIN.length,
     });
     const theirs = await gameOf(s.b, "connect_four");
@@ -781,7 +783,7 @@ describe("history", () => {
     expect(await history(s.a, "ultimate_tic_tac_toe")).toEqual({ games: [], next_before_game_number: null });
     const withStake = await move(s.a, game, ULTIMATE_WIN[0], { p_stake: "Dinner" });
     tick();
-    await playMoves(s, withStake, ULTIMATE_WIN.slice(1));
+    const done = await playMoves(s, withStake, ULTIMATE_WIN.slice(1));
     const expected = {
       game_number: 1,
       first_user_id: s.a.userId,
@@ -790,7 +792,7 @@ describe("history", () => {
       win_line: [1, 4, 7],
       stake: "Dinner",
       started_at: started,
-      finished_at: nowIso(),
+      finished_at: done.finished_at,
     };
     expect(await history(s.a, "ultimate_tic_tac_toe")).toEqual({ games: [expected], next_before_game_number: null });
     expect(await history(s.b, "ultimate_tic_tac_toe")).toEqual({ games: [expected], next_before_game_number: null });
@@ -1091,9 +1093,10 @@ describe("marks", () => {
 
   test("a mark saves, updates and clears", async () => {
     const s = await startCouple();
-    expect(await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: MARK })).toEqual({ updated_at: nowIso() });
-    expect(await marks(s.a)).toEqual({ user_id: s.a.userId, mine: { drawing: MARK, updated_at: nowIso() }, partner: null });
-    const created = nowIso();
+    const timestamp = await transactionClock(s.t);
+    expect(await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: MARK })).toEqual({ updated_at: timestamp(nowIso()) });
+    expect(await marks(s.a)).toEqual({ user_id: s.a.userId, mine: { drawing: MARK, updated_at: timestamp(nowIso()) }, partner: null });
+    const created = timestamp(nowIso());
 
     tick();
     expect(await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: "AAAA" })).toEqual({ updated_at: nowIso() });
@@ -1110,11 +1113,11 @@ describe("marks", () => {
 
   test("the partner sees my mark as theirs, and each keeps their own", async () => {
     const s = await startCouple();
-    await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: MARK });
+    const first = await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: MARK });
     tick();
-    await s.b.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: "AAAA" });
-    const mineA = { drawing: MARK, updated_at: new Date(START).toISOString() };
-    const mineB = { drawing: "AAAA", updated_at: nowIso() };
+    const second = await s.b.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: "AAAA" });
+    const mineA = { drawing: MARK, updated_at: first!.updated_at };
+    const mineB = { drawing: "AAAA", updated_at: second!.updated_at };
     expect(await marks(s.a)).toEqual({ user_id: s.a.userId, mine: mineA, partner: mineB });
     expect(await marks(s.b)).toEqual({ user_id: s.b.userId, mine: mineB, partner: mineA });
     await s.b.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: null });
@@ -1145,7 +1148,8 @@ describe("marks", () => {
     const s = await startCouple();
     // 65536 base64 characters decode to exactly 49152 bytes.
     const biggest = "A".repeat(65536);
-    expect(await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: biggest })).toEqual({ updated_at: nowIso() });
+    const timestamp = await transactionClock(s.t);
+    expect(await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: biggest })).toEqual({ updated_at: timestamp(nowIso()) });
     // One more byte needs 65540 characters.
     const tooBig = "A".repeat(65540);
     expect(await failure(s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: tooBig }))).toEqual({
@@ -1154,7 +1158,7 @@ describe("marks", () => {
     });
     expect((await marks(s.a)).mine?.drawing).toBe(biggest);
     // Padding shortens the decoded size: this is 65536 characters and 49150 bytes.
-    expect((await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: `${"A".repeat(65532)}AA==` }))?.updated_at).toBe(nowIso());
+    expect((await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: `${"A".repeat(65532)}AA==` }))?.updated_at).toBe(timestamp(nowIso()));
   });
 
   test("a mark does not need a started game", async () => {
@@ -1471,9 +1475,10 @@ describe("turn reminder", () => {
     const s = await startPushCouple();
     const game = await ensure(s.a, "connect_four");
 
+    const turnStartedAt = await transactionNow(s.t);
     hours(71);
     expect(await runReminders(s)).toBe(0);
-    hours(1);
+    vi.setSystemTime(new Date(turnStartedAt + 72 * 3600_000));
     expect(await runReminders(s)).toBe(1);
     expect(await runReminders(s)).toBe(0);
     hours(10);

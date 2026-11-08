@@ -1,7 +1,7 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 // Tests for what every game shares: settings, the overview, invites, presence, the relay ticket,
 // and the registry that the shared code uses to reach a game. Draw & Guess has its own tests in
 // drawAndGuess.test.ts.
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, components, internal } from "./_generated/api";
 import { hmacSha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
@@ -12,12 +12,12 @@ import { gameRoom } from "./lib/presence";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { GAME_KINDS } from "./lib/validators";
 import { endCouple, failure } from "./media.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, transactionIso, transactionNow, type TestConvex } from "./test.setup";
 
 const START = Date.parse("2026-10-10T12:00:00.000Z");
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
 afterEach(() => {
@@ -203,7 +203,7 @@ describe("get_games_overview", () => {
 
   test("lists a kind while either partner has it open, once either partner opened it, or with an invite from the caller", async () => {
     const s = await startCouple();
-    const opened = new Date(START).toISOString();
+    const opened = await transactionIso(s.t);
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true });
     await s.b.as.mutation(api.games.set_game_presence, { p_kind: "connect_four", p_present: true });
     const invited = await s.a.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
@@ -234,18 +234,19 @@ describe("get_games_overview", () => {
     const playedAt = async () => (await s.b.as.query(api.games.get_games_overview, {})).presence[0]?.last_played_at;
     const heartbeat = () => s.a.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: true });
     await heartbeat();
-    expect(await playedAt()).toBe(new Date(START).toISOString());
+    const timestamp = await transactionClock(s.t);
+    expect(await playedAt()).toBe(timestamp(new Date(START).toISOString()));
 
     tick(4 * 60 + 59);
     await heartbeat();
-    expect(await playedAt()).toBe(new Date(START).toISOString());
-    tick(1);
+    expect(await playedAt()).toBe(timestamp(new Date(START).toISOString()));
+    vi.setSystemTime(new Date(Date.parse(timestamp(START)) + 5 * 60_000));
     await heartbeat();
-    expect(await playedAt()).toBe(new Date(START + 5 * 60_000).toISOString());
+    expect(await playedAt()).toBe(new Date(Date.parse(timestamp(START)) + 5 * 60_000).toISOString());
 
     tick(30);
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: false });
-    expect(await playedAt()).toBe(new Date(START + 5 * 60_000 + 30_000).toISOString());
+    expect(await playedAt()).toBe(new Date(Date.parse(timestamp(START)) + 5 * 60_000 + 30_000).toISOString());
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -315,7 +316,8 @@ describe("presence and invites for every kind", () => {
     delete GAME_PUSH_COPY[kind];
     try {
       const sent = await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind });
-      expect(sent.sent_at).toBe(new Date(START).toISOString());
+      const timestamp = await transactionClock(s.t);
+      expect(sent.sent_at).toBe(timestamp(new Date(START).toISOString()));
       const [row] = await outbox(s.t);
       expect(row).toMatchObject({
         recipient_user_id: s.b.userId,
@@ -330,7 +332,7 @@ describe("presence and invites for every kind", () => {
       // The limit is per sender and per kind.
       await s.b.as.mutation(api.games.send_game_invite, { p_kind: kind });
       await s.a.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
-      tick(1);
+      vi.setSystemTime(new Date(Date.parse(sent.sent_at) + 15 * 60_000));
       expect((await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind })).sent_at > sent.sent_at).toBe(true);
       expect((await s.t.run((ctx) => ctx.db.query("game_invites").collect())).map((invite) => invite.kind).sort()).toEqual([
         kind,
@@ -383,7 +385,7 @@ describe("live ticket", () => {
       expect(decode(ticket!.ticket)).toMatchObject({ c: s.couple.coupleId, u: s.a.userId, ch: "draw_and_guess" });
       const [payload, signature] = ticket!.ticket.split(".");
       expect(signature).toBe(await hmacSha256Hex("relay-secret", payload));
-      expect(Date.parse(ticket!.expires_at)).toBe(Date.now() + 60_000);
+      expect(Date.parse(ticket!.expires_at)).toBe(await transactionNow(s.t) + 60_000);
 
       // The widget canvas ticket keeps working without a channel.
       const widget = await s.a.as.mutation(api.widget.create_widget_live_ticket, {});
@@ -498,7 +500,7 @@ describe("registry", () => {
     GAME_BACKENDS.story_chain = { ...nullBackend, sendDueTurnReminders };
     try {
       expect(await s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {})).toBe(4);
-      expect(sendDueTurnReminders).toHaveBeenCalledWith(expect.anything(), new Date().toISOString());
+      expect(sendDueTurnReminders).toHaveBeenCalledWith(expect.anything(), await transactionIso(s.t));
     } finally {
       GAME_BACKENDS.mind_meld = saved.mind_meld;
       GAME_BACKENDS.story_chain = saved.story_chain;

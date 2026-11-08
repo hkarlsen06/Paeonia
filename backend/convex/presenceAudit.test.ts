@@ -11,7 +11,7 @@ import { chatTypingRoom, removePresenceRooms } from "./lib/presence";
 import { seedQuestion, answeredRound } from "./dailyChat.setup";
 afterEach(() => vi.useRealTimers());
 const start = () => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00Z"));
 };
 test.each(["game_turn_ready", "game_result"])(

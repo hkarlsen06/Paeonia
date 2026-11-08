@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
-import { createCouple, createSignedInUser, newTest, relationshipStateOf, type TestConvex, type TestCouple } from "./test.setup";
+import { createCouple, createSignedInUser, newTest, relationshipStateOf, transactionClock, type TestConvex, type TestCouple } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
 });
 afterEach(() => {
@@ -161,7 +161,8 @@ describe("leaving and blocking", () => {
     expect(await couple.second.as.mutation(api.relationship.mark_relationship_ended_notice_seen, { p_couple_id: couple.coupleId })).toBe(true);
     expect(await couple.second.as.mutation(api.relationship.mark_relationship_ended_notice_seen, { p_couple_id: couple.coupleId })).toBe(false);
     const state = await relationshipStateOf(couple.second);
-    expect(state).toMatchObject({ member_status: "ended_notice_seen", ended_notice_seen_at: NOW });
+    const timestamp = await transactionClock(t);
+    expect(state).toMatchObject({ member_status: "ended_notice_seen", ended_notice_seen_at: timestamp(NOW) });
   });
 });
 
@@ -194,7 +195,8 @@ describe("relationship_state in get_access_snapshot", () => {
 
     await couple.first.as.mutation(api.relationship.leave_relationship, operation());
     const ended = await relationshipStateOf(couple.second);
-    expect(ended).toMatchObject({ relationship_status: "ended", member_status: "ended_notice_pending", ended_at: NOW });
+    const timestamp = await transactionClock(t);
+    expect(ended).toMatchObject({ relationship_status: "ended", member_status: "ended_notice_pending", ended_at: timestamp(NOW) });
     const leaver = await relationshipStateOf(couple.first);
     expect(leaver).toMatchObject({ relationship_status: "ended", member_status: "left" });
 
@@ -406,11 +408,12 @@ describe("relationship content cleanup", () => {
       asset: await ctx.db.query("media_assets").first(),
     }));
     expect(state.couple?.status).toBe("deleted");
+    const timestamp = await transactionClock(t);
     for (const row of [state.memory, state.note, state.message, state.answer]) {
-      expect(row).toMatchObject({ deleted_at: NOW, moderation_status: "hidden" });
+      expect(row).toMatchObject({ deleted_at: timestamp(NOW), moderation_status: "hidden" });
     }
     expect(state.memory?.revision).toBe(2);
-    expect(state.asset).toMatchObject({ storage_delete_status: "pending", deleted_at: NOW });
+    expect(state.asset).toMatchObject({ storage_delete_status: "pending", deleted_at: timestamp(NOW) });
     const purged = (await events(t, couple.coupleId)).filter((event) => event.event_kind === "content_purged");
     expect(purged).toHaveLength(2);
     expect(purged[0]).toMatchObject({ reason: "relationship_cleanup", relationship_status: "deleted" });
@@ -504,7 +507,8 @@ describe("relationship content purge", () => {
       expect(rows).toHaveLength(0);
     }
     expect(remaining.target?.memory_id).toBeUndefined();
-    expect(remaining.target?.live_target_deleted_at).toBe(NOW);
+    const timestamp = await transactionClock(t);
+    expect(remaining.target?.live_target_deleted_at).toBe(timestamp(NOW));
     expect(remaining.couple?.status).toBe("deleted");
     const hardPurge = (await events(t, couple.coupleId)).filter((event) => event.reason === "relationship_hard_purge");
     expect(hardPurge).toHaveLength(2);

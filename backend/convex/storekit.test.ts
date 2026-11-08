@@ -6,13 +6,13 @@ import { newUuid } from "./lib/ids";
 import { isFreeTrialPayload } from "./lib/storekit";
 import { deliverDuePushes } from "./push.testing";
 import { seedProducts, storekitArgs } from "./storekit.testHelpers";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestUser } from "./test.setup";
 
 const NOW = new Date("2026-10-10T12:00:00.000Z");
 const hoursFromNow = (hours: number) => new Date(NOW.getTime() + hours * 3_600_000).toISOString();
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(NOW);
 });
 afterEach(() => {
@@ -661,7 +661,8 @@ describe("queue_subscription_trial_reminders", () => {
     const [row] = await reminders(t);
     expect(row.body).toBe("1 day left. Review your subscription in the App Store.");
     expect(row.payload).toMatchObject({ days_left: 1 });
-    expect(row.scheduled_for).toBe(NOW.toISOString());
+    const timestamp = await transactionClock(t);
+    expect(row.scheduled_for).toBe(timestamp(NOW.toISOString()));
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

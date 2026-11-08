@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createCouple, newTest } from "../test.setup";
+import { createCouple, newTest, transactionClock } from "../test.setup";
 import { newUuid } from "./ids";
 import { endRelationshipForPair } from "./relationshipEnd";
 import { createRelationshipSyncEvent } from "./syncEvents";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -38,10 +38,11 @@ describe("endRelationshipForPair", () => {
       events: await ctx.db.query("relationship_sync_events").collect(),
       locations: await ctx.db.query("latest_partner_locations").collect(),
     }));
+    const timestamp = await transactionClock(t);
     expect(state.couple).toMatchObject({
       status: "ended",
-      ended_at: "2026-10-10T12:00:00.000Z",
-      delete_after: "2026-11-09T12:00:00.000Z",
+      ended_at: timestamp("2026-10-10T12:00:00.000Z"),
+      delete_after: timestamp("2026-11-09T12:00:00.000Z"),
     });
     const byUser = Object.fromEntries(state.members.map((member) => [member.user_id, member.status]));
     expect(byUser).toEqual({ [couple.first.userId]: "left", [couple.second.userId]: "ended_notice_pending" });

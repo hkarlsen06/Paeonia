@@ -6,10 +6,10 @@ import { gameChatSubjectId } from "./lib/gameChatSubjects";
 import { chatTypingRoom, removePresenceRooms } from "./lib/presence";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { failure, op } from "./media.testing";
-import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple } from "./test.setup";
+import { createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple } from "./test.setup";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -173,13 +173,14 @@ describe("read receipts", () => {
     const readThrough = async (user: TestCouple["first"]) =>
       (await user.as.query(api.threads.get_conversation_threads, {}))[0].viewer_read_through_at;
 
+    const timestamp = await transactionClock(t);
     expect(await readThrough(couple.second)).toBeNull();
     tick(5);
     await couple.second.as.mutation(api.chatPresence.mark_thread_read, {
       p_thread_id: message.thread_id,
       p_message_id: message.message_id,
     });
-    expect(await readThrough(couple.second)).toBe("2026-10-11T12:00:00.000Z");
+    expect(await readThrough(couple.second)).toBe(timestamp("2026-10-11T12:00:00.000Z"));
     expect(await readThrough(couple.first)).toBeNull();
   });
 

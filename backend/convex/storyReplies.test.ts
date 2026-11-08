@@ -4,7 +4,7 @@ import { newUuid } from "./lib/ids";
 import { chatTypingRoom } from "./lib/presence";
 import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
 import { failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 // Replies to a story and comments on a memory are the chat that question chats use, with the story
 // or the memory as the subject. The thread rules shared by every kind are in threads.test.ts.
@@ -13,7 +13,7 @@ const NOW = "2026-10-10T12:00:00.000Z";
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
 });
 afterEach(() => {
@@ -138,9 +138,10 @@ describe("story replies", () => {
 
     await couple.first.as.mutation(api.stories.delete_story, { p_story_id: storyId, ...op() });
     const [thread] = await t.run((ctx) => ctx.db.query("conversation_threads").collect());
-    expect(thread.deleted_at).toBe(NOW);
+    const timestamp = await transactionClock(t);
+    expect(thread.deleted_at).toBe(timestamp(NOW));
     const [listed] = await couple.second.as.query(api.threads.get_conversation_threads, {});
-    expect(listed.deleted_at).toBe(NOW);
+    expect(listed.deleted_at).toBe(timestamp(NOW));
     expect(await messagesOf(couple.second, first.thread_id)).toSatisfy((rows: { body: string | null }[]) =>
       rows.every((row) => row.body === null),
     );

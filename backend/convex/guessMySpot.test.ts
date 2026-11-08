@@ -1,5 +1,5 @@
-import type { FunctionArgs } from "convex/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { FunctionArgs } from "convex/server";
 import { api, internal } from "./_generated/api";
 import { deleteCoupleGameRows } from "./lib/gameRegistry";
 import { haversineMeters, pointsFor } from "./lib/guessMySpot";
@@ -8,13 +8,13 @@ import { canReadMediaAsset } from "./lib/mediaAssets";
 import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
 import { endCouple, failure, op, photo, uploadAsset } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionNow, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 const START = Date.parse("2026-10-18T12:00:00.000Z");
 
 let scheduled: TestConvex | null = null;
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
 afterEach(async () => {
@@ -461,7 +461,8 @@ describe("pushes", () => {
     const roundId = await send(s, s.a);
     await deliverDuePushes(s.t);
     await guess(s.b, roundId, OSLO);
-    tick(60);
+    const guessedAt = await transactionNow(s.t);
+    vi.setSystemTime(new Date(guessedAt + 60_000));
     expect(types(await deliverDuePushes(s.t))).toEqual(["game_result"]);
     tick(60);
     await send(s, s.b);
@@ -515,15 +516,17 @@ describe("turn reminder", () => {
   test("one reminder per turn, for a guess and for a send", async () => {
     const s = await startGame();
     const roundId = await send(s, s.a);
+    const turnStartedAt = await transactionNow(s.t);
     tick(71 * 3600);
     expect(await run(s)).toBe(0);
-    tick(3600);
+    vi.setSystemTime(new Date(turnStartedAt + 72 * 3600_000));
     expect(await run(s)).toBe(1);
     expect(await run(s)).toBe(0);
     expect((await reminders(s))[0]).toMatchObject({ recipient_user_id: s.b.userId, payload: { actor_user_id: s.a.userId, game_id: s.gameId } });
 
     await guess(s.b, roundId);
-    tick(72 * 3600);
+    const nextTurnStartedAt = await transactionNow(s.t);
+    vi.setSystemTime(new Date(nextTurnStartedAt + 72 * 3600_000));
     expect(await run(s)).toBe(1);
     expect((await reminders(s)).map((row) => row.recipient_user_id)).toEqual([s.b.userId, s.b.userId]);
   });

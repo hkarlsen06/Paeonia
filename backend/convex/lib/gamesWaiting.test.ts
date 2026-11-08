@@ -13,7 +13,7 @@ const START = Date.parse("2026-10-10T12:00:00.000Z");
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
 afterEach(() => {

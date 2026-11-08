@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { newUuid } from "./lib/ids";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {
@@ -415,7 +415,8 @@ describe("upsert_memory_note", () => {
     const couple = await createCouple(t);
     const memoryId = await createMemory(couple.first);
     const [created] = await upsert(couple.second, memoryId, null, " Me too ");
-    expect(created).toMatchObject({ revision: 1, updated_at: new Date().toISOString() });
+    const timestamp = await transactionClock(t);
+    expect(created).toMatchObject({ revision: 1, updated_at: timestamp(new Date().toISOString()) });
     tick();
     const [edited] = await upsert(couple.second, memoryId, 1, "Me three");
     expect(edited).toEqual({ note_id: created.note_id, revision: 2, updated_at: new Date().toISOString() });

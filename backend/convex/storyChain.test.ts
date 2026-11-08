@@ -1,20 +1,20 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 // Tests for the Story Chain functions in storyChain.ts and the hooks in lib/storyChain.ts. The pure
 // rules (line limits, dare check, choice picking, content lists) are in lib/storyChain.test.ts.
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { STORY_OPENINGS, STORY_WORDS } from "./lib/storyChain";
 import { deleteCoupleGameRows } from "./lib/gameRegistry";
 import { endCouple, failure, op } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, transactionNow, type TestConvex, type TestUser } from "./test.setup";
 
 const START = Date.parse("2026-10-10T12:00:00.000Z");
 
 const opened: TestConvex[] = [];
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
 afterEach(async () => {
@@ -1043,6 +1043,7 @@ describe("get_story_chain_story", () => {
     const { story_id } = await begin(s.a, s.gameId, STORY_OPENINGS.en[0].id);
     const line = await write(s.a, story_id, "The first line.", { dare: "hund" });
     const story = await s.b.as.query(api.storyChain.get_story_chain_story, { p_story_id: story_id.toUpperCase() });
+    const timestamp = await transactionClock(s.t);
     expect(story).toEqual({
       id: story_id,
       story_number: 1,
@@ -1051,7 +1052,7 @@ describe("get_story_chain_story", () => {
       opening_text: STORY_OPENINGS.en[0].text,
       state: "writing",
       lines: [
-        { id: line.line_id, number: 1, author_user_id: s.a.userId, text: "The first line.", dare_word: "hund", created_at: new Date().toISOString() },
+        { id: line.line_id, number: 1, author_user_id: s.a.userId, text: "The first line.", dare_word: "hund", created_at: timestamp(new Date().toISOString()) },
       ],
       last_line_user_id: null,
       title: null,
@@ -1368,9 +1369,10 @@ describe("turn reminder", () => {
 
   test("goes out once after 72 hours to the partner on turn, and again only for a new turn", async () => {
     const s = await startGame();
+    const turnStartedAt = await transactionNow(s.t);
     tick(71 * HOUR);
     expect(await run(s)).toBe(0);
-    tick(HOUR);
+    vi.setSystemTime(new Date(turnStartedAt + 72 * 3600_000));
     expect(await run(s)).toBe(1);
     expect(await run(s)).toBe(0);
     tick(10 * HOUR);

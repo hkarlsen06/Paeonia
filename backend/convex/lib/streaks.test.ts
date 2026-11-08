@@ -22,7 +22,7 @@ import { getOrCreateCoupleDayAt } from "./coupleDays";
 import { eveningReminderAt } from "./streakDeadlines";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {

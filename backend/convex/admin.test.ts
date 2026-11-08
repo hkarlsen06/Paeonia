@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
-import { addDevice, createCouple, createSignedInUser, newTest, relationshipStateOf, type TestConvex } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, relationshipStateOf, transactionClock, type TestConvex } from "./test.setup";
 
 const NOW = "2026-10-14T12:00:00.000Z";
 const ADMIN_SUBJECT = "user_admin";
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
   vi.stubEnv("PAEONIA_ADMIN_CLERK_USER_IDS", ` ${ADMIN_SUBJECT} , user_other_admin`);
 });
@@ -54,7 +54,8 @@ describe("admin access", () => {
 
     await admin.as.mutation(api.admin.ban_user, { p_user_id: user.userId, p_reason: "spam" });
     const banned = await admin.as.query(api.admin.search_users, { p_banned_only: true });
-    expect(banned).toEqual([expect.objectContaining({ user_id: user.userId, banned_at: NOW })]);
+    const timestamp = await transactionClock(t);
+    expect(banned).toEqual([expect.objectContaining({ user_id: user.userId, banned_at: timestamp(NOW) })]);
   });
 });
 
@@ -85,10 +86,11 @@ describe("banning", () => {
     expect(partnerSnapshot.account_status).toBe("active");
 
     const disabledAt = await t.run(async (ctx) => (await ctx.db.get(device._id))?.disabled_at);
-    expect(disabledAt).toBe(NOW);
+    const timestamp = await transactionClock(t);
+    expect(disabledAt).toBe(timestamp(NOW));
 
     const detail = await admin.as.query(api.admin.get_user, { p_user_id: couple.first.userId });
-    expect(detail).toMatchObject({ banned_at: NOW, ban_reason: "harassment", banned_by_display_name: "Admin" });
+    expect(detail).toMatchObject({ banned_at: timestamp(NOW), ban_reason: "harassment", banned_by_display_name: "Admin" });
     const log = await admin.as.query(api.admin.get_audit_log, { p_target_user_id: couple.first.userId });
     expect(log).toEqual([
       expect.objectContaining({ action: "user_banned", admin_user_id: admin.userId, reason: "harassment" }),

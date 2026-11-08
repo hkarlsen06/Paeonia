@@ -24,7 +24,7 @@ beforeAll(() => {
 });
 afterAll(removeChains);
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(notificationClock);
   // The webhook downloads Apple's root certificates. Serve the test root.
   vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array(apple.rootDer))));

@@ -103,7 +103,8 @@ test("game invites stop being valid after acceptance or 15 minutes, and games co
   await s.couple.second.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: true });
   expect(await s.obsolete([ludo.id, meld.id])).toEqual([ludo.id]);
   expect(await s.prepare(ludo.id)).toBeNull();
-  vi.setSystemTime(new Date("2026-10-10T12:15:00.000Z"));
+  const invite = (await s.t.run(ctx => ctx.db.query("game_invites").collect())).find(row => row.kind === "mind_meld")!;
+  vi.setSystemTime(new Date(Date.parse(invite.sent_at) + 15 * 60_000));
   expect(await s.obsolete([meld.id], new Date().toISOString())).toEqual([meld.id]);
   expect(await s.prepare(meld.id)).toBeNull();
 });

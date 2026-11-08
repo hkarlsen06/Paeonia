@@ -163,3 +163,19 @@ export async function grantLifetime(t: TestConvex, userId: string): Promise<void
     p_granted_by: "test.setup.ts",
   });
 }
+
+/** Convex pins Date inside a transaction and may advance it beyond a frozen wall clock. */
+export async function transactionNow(t: TestConvex): Promise<number> {
+  return await t.run(async () => Date.now());
+}
+
+export async function transactionIso(t: TestConvex, offsetMs = 0): Promise<string> {
+  return new Date((await transactionNow(t)) + offsetMs).toISOString();
+}
+
+/** Maps a scenario's wall-clock dates to the clock pinned by its current database transaction. */
+export async function transactionClock(t: TestConvex) {
+  const offset = (await transactionNow(t)) - Date.now();
+  return (wallTime: string | number | Date = Date.now()) =>
+    new Date(new Date(wallTime).getTime() + offset).toISOString();
+}

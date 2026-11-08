@@ -11,6 +11,8 @@ import {
   createSignedInUser,
   grantLifetime,
   newTest,
+  transactionClock,
+  transactionNow,
   type TestConvex,
   type TestCouple,
   type TestUser,
@@ -20,7 +22,7 @@ const START = Date.parse("2026-10-10T12:00:00.000Z");
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
 afterEach(() => {
@@ -95,8 +97,8 @@ async function playRound(
   const picked = await pick(drawer, s.gameId, choice);
   await sendDrawing(s, drawer, picked.round_id);
   if (afterSeconds !== null) {
-    await guesser.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id });
-    tick(afterSeconds);
+    const seen = await guesser.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id });
+    vi.setSystemTime(new Date(Date.parse(seen.guesser_first_seen_at!) + afterSeconds * 1000));
   }
   return { picked, result: await guess(guesser, picked.round_id, picked.word) };
 }
@@ -512,8 +514,8 @@ describe("guessing", () => {
   test("the guesser can guess while the drawer is still drawing, and the drawing is sent afterwards", async () => {
     const s = await startGame();
     const picked = await pick(s.a, s.gameId, "medium");
-    await s.b.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id });
-    tick(8);
+    const seen = await s.b.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id });
+    vi.setSystemTime(new Date(Date.parse(seen.guesser_first_seen_at!) + 8000));
     const solved = await guess(s.b, picked.round_id, picked.word);
     expect(solved).toMatchObject({ correct: true, round_state: "solved", speed_bonus: 2, solve_ms: 8000 });
 
@@ -643,10 +645,10 @@ describe("scoring", () => {
   test("a live watcher's speed bonus window starts when they first see the drawing, not when it is sent", async () => {
     const s = await startGame({ playStyle: "against" });
     const picked = await pick(s.a, s.gameId, "easy");
-    await s.b.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id });
-    tick(60);
+    const seen = await s.b.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id });
+    vi.setSystemTime(new Date(Date.parse(seen.guesser_first_seen_at!) + 60_000));
     await sendDrawing(s, s.a, picked.round_id);
-    tick(10);
+    vi.setSystemTime(new Date(Date.parse(seen.guesser_first_seen_at!) + 70_000));
     const solved = await guess(s.b, picked.round_id, picked.word);
     expect(solved).toMatchObject({ correct: true, speed_bonus: 0, solve_ms: 70_000 });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -703,8 +705,8 @@ describe("scoring", () => {
     test("without a claim the server decides, and null counts as absent", async () => {
       const s = await startGame({ playStyle: "against" });
       const picked = await pick(s.a, s.gameId, "easy");
-      await s.b.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id });
-      tick(8);
+      const seen = await s.b.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id });
+      vi.setSystemTime(new Date(Date.parse(seen.guesser_first_seen_at!) + 8000));
       const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: null, p_solve_ms: null });
       expect(solved).toMatchObject({ speed_bonus: 2, solve_ms: 8000 });
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -932,7 +934,8 @@ describe("invites", () => {
   test("push the partner, then allow the next invite after 15 minutes", async () => {
     const s = await startGame();
     const sent = await s.a.as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" });
-    expect(sent.sent_at).toBe(new Date(START).toISOString());
+    const timestamp = await transactionClock(s.t);
+    expect(sent.sent_at).toBe(timestamp(new Date(START).toISOString()));
     const rows = await outbox(s.t);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
@@ -947,7 +950,7 @@ describe("invites", () => {
     expect((await failure(s.a.as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" }))).code).toBe("53300");
     // The limit is per sender.
     await s.b.as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" });
-    tick(1);
+    vi.setSystemTime(new Date(Date.parse(sent.sent_at) + 15 * 60_000));
     const again = await s.a.as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" });
     expect(again.sent_at > sent.sent_at).toBe(true);
     expect((await outbox(s.t)).filter((row) => row.recipient_user_id === s.b.userId)).toHaveLength(2);
@@ -978,9 +981,10 @@ describe("turn reminder", () => {
     const run = () => s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {});
     const reminders = async () => (await outbox(s.t)).filter((row) => row.kind === "game_turn_reminder");
 
+    const turnStartedAt = await transactionNow(s.t);
     tick(71 * 3600);
     expect(await run()).toBe(0);
-    tick(3600);
+    vi.setSystemTime(new Date(turnStartedAt + 72 * 3600_000));
     expect(await run()).toBe(1);
     expect(await run()).toBe(0);
     tick(10 * 3600);
