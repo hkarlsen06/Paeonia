@@ -40,6 +40,8 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     private var reloadsInFlight = 0
     private var storeChangedDuringReload = false
     private var locatingCount = 0
+    /// The last lookup of this phone's location found nothing.
+    private var lastLookupFailed = false
     /// The last stored state, kept so a permission or "finding you" change can
     /// redraw the map card without another store read.
     private var loadedVisibility: LocationVisibilitySnapshot?
@@ -200,6 +202,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         loadedVisibility = nil
         loadedOwnLocation = nil
         hasLoadedSnapshots = false
+        lastLookupFailed = false
         mapState = .loading
         isPresentationReady = false
         sharingEnabled = false
@@ -253,7 +256,8 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             visibility: loadedVisibility,
             ownLocation: loadedOwnLocation,
             authorization: authorizationState,
-            isLocating: locatingCount > 0
+            isLocating: locatingCount > 0,
+            lastLookupFailed: lastLookupFailed
         )
     }
 
@@ -295,12 +299,16 @@ extension LocationMapViewModel {
     func captureCurrentLocation() async throws -> LocationPoint {
         locatingCount += 1
         publishMapState()
+        var found = false
         defer {
             locatingCount -= 1
+            lastLookupFailed = !found
             refreshAuthorizationState()
             publishMapState()
         }
-        return try await locationCapture.captureCurrentLocation()
+        let location = try await locationCapture.captureCurrentLocation()
+        found = true
+        return location
     }
 
     func notice(for error: any Error) -> Notice {

@@ -9,6 +9,7 @@ extension LocationMapViewModel {
         ownLocation: OwnLocationSnapshot?,
         authorization: ForegroundLocationAuthorizationState = .authorized,
         isLocating: Bool = false,
+        lastLookupFailed: Bool = false,
         now: Date = Date()
     ) -> CoupleMapState {
         // Nothing can be shared while iOS location access is off, so that is
@@ -30,7 +31,11 @@ extension LocationMapViewModel {
             return .sharingPaused(until: pausedUntil)
         }
         guard let current = ownLocation?.location else {
-            return ownLocationMissingState(authorization: authorization, isLocating: isLocating)
+            return ownLocationMissingState(
+                authorization: authorization,
+                isLocating: isLocating,
+                lastLookupFailed: lastLookupFailed
+            )
         }
 
         return partnerState(visibility: visibility, current: current, now: now)
@@ -75,14 +80,21 @@ extension LocationMapViewModel {
 
     /// Sharing is on but this phone has no location yet. When iOS has not
     /// asked this phone yet, as after a fresh install, the card asks to share,
-    /// which leads to that question.
+    /// which leads to that question. The card says it can't find you only
+    /// after a lookup came back empty. Before that the location is on its way:
+    /// after the paywall, the server's sharing choice arrives a moment before
+    /// the first lookup starts, and the notice would flash for those frames.
     private static func ownLocationMissingState(
         authorization: ForegroundLocationAuthorizationState,
-        isLocating: Bool
+        isLocating: Bool,
+        lastLookupFailed: Bool
     ) -> CoupleMapState {
         if isLocating {
             return .locatingCurrent
         }
-        return authorization == .notDetermined ? .currentUnknown : .currentLocationMissing
+        if authorization == .notDetermined {
+            return .currentUnknown
+        }
+        return lastLookupFailed ? .currentLocationMissing : .loading
     }
 }
