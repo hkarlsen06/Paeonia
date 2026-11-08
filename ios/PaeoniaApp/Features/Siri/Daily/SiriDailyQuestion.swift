@@ -55,7 +55,9 @@ struct ReadTodayQuestionIntent: AppIntent {
         "siri.daily.read", table: "Localizable", comment: "Siri daily question action."
     )
     static let description = IntentDescription(LocalizedStringResource(
-        "siri.daily.read.description", table: "Localizable", comment: "Siri daily question action guidance."
+        "dailyQuestion.read.description",
+        defaultValue: "Get today's question for your couple, even if nobody has opened it in the app yet.",
+        table: "Localizable", comment: "Siri daily question action guidance."
     ))
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     static let supportedModes: IntentModes = [.background, .foreground(.dynamic)]
@@ -78,7 +80,9 @@ struct AnswerTodayQuestionIntent: AppIntent {
         "siri.daily.answer", table: "Localizable", comment: "Siri daily question action."
     )
     static let description = IntentDescription(LocalizedStringResource(
-        "siri.daily.answer.description", table: "Localizable", comment: "Siri daily question action guidance."
+        "dailyQuestion.answer.description",
+        defaultValue: "Submit a text answer to the exact question returned by Read today's question. Ask the person for their answer first. Never substitute another question.",
+        table: "Localizable", comment: "Siri daily question action guidance."
     ))
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
     static let supportedModes: IntentModes = [.background, .foreground(.dynamic)]

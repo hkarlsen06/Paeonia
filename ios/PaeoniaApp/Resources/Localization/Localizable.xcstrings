@@ -10549,6 +10549,42 @@
         }
       }
     },
+    "dailyQuestion.answer.description" : {
+      "comment" : "Siri daily question tool metadata or spoken result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Submit a text answer to the exact question returned by Read today's question. Ask the person for their answer first. Never substitute another question."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send et tekstsvar på akkurat det spørsmålet som ble hentet med Les dagens spørsmål. Be personen om svaret først. Ikke bytt til et annet spørsmål."
+          }
+        }
+      }
+    },
+    "dailyQuestion.read.description" : {
+      "comment" : "Description of the Siri action that reads the shared daily question, starting the day if needed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get today's question for your couple, even if nobody has opened it in the app yet."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hent dagens spørsmål for dere, også før noen har åpnet det i appen."
+          }
+        }
+      }
+    },
     "dailyVoice.error.startFailed" : {
       "comment" : "Microphone permission exists but the audio session or recorder could not start.",
       "extractionState" : "manual",
@@ -38088,24 +38124,6 @@
         }
       }
     },
-    "siri.daily.answer.description" : {
-      "comment" : "Siri daily question tool metadata or spoken result.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Submit a text answer to the exact question returned by Read today's question. Ask the person for their answer first. Never substitute another question."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send et tekstsvar på akkurat det spørsmålet som ble hentet med Les dagens spørsmål. Be personen om svaret først. Ikke bytt til et annet spørsmål."
-          }
-        }
-      }
-    },
     "siri.daily.answered" : {
       "comment" : "Siri daily question tool metadata or spoken result.",
       "extractionState" : "manual",
@@ -38246,24 +38264,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les dagens spørsmål"
-          }
-        }
-      }
-    },
-    "siri.daily.read.description" : {
-      "comment" : "Description of the Siri action that reads the shared daily question, starting the day if needed.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get today's question for your couple, even if nobody has opened it in the app yet."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hent dagens spørsmål for dere, også før noen har åpnet det i appen."
           }
         }
       }
