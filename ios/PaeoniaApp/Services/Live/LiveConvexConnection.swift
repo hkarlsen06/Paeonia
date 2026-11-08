@@ -46,7 +46,10 @@ final class LiveConvexConnection {
     /// when that call fails, so the client can stay logged in as the previous
     /// person after an account switch.
     @ObservationIgnored private var authenticatedAccountID: String?
-    @ObservationIgnored private var observers: [Task<Void, Never>] = []
+    /// Sinks, not `.values`. The socket reports connecting and connected a few
+    /// milliseconds apart, and `.values` asks for one state at a time, so the
+    /// subject dropped the later state and every live query ended at once.
+    @ObservationIgnored private var observers: [AnyCancellable] = []
     @ObservationIgnored private var isLoggingIn = false
     // Shared by every waiting feed, so seven subscriptions make one login attempt per delay.
     @ObservationIgnored private var loginBackoff = LiveLoginBackoff()
@@ -141,13 +144,14 @@ final class LiveConvexConnection {
         self.client = client
         connectionState = .connecting
         observers = [
-            Task { [weak self] in
-                for await state in client.watchWebSocketState().values {
+            client.watchWebSocketState()
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] state in
                     self?.connectionState = state == .connected ? .connected : .connecting
-                }
-            },
-            Task { [weak self] in
-                for await state in client.authState.values {
+                },
+            client.authState
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] state in
                     if case .authenticated = state {
                         self?.authenticatedAccountID = PaeoniaClerk.currentAccountID()
                         self?.isAuthenticated = true
@@ -155,8 +159,7 @@ final class LiveConvexConnection {
                         self?.authenticatedAccountID = nil
                         self?.isAuthenticated = false
                     }
-                }
-            },
+                },
         ]
         return client
     }
