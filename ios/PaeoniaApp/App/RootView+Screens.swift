@@ -36,10 +36,20 @@ extension RootView {
         .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.state)
         // Saving or forgetting a partner's code swaps screens without a state change.
         .animation(PaeoniaMotion.meaningfulMoment, value: framedScreen)
-        .modifier(AppLockRootModifier(isActive: allowsSystemIntegrations, bannerCenter: bannerCenter))
+        .modifier(AppLockRootModifier(
+            isActive: allowsSystemIntegrations,
+            bannerCenter: bannerCenter,
+            liftsAtOnce: isLaunchExperienceActive
+        ))
         .sheet(isPresented: $viewModel.isShowingDataExport) {
             DataExportScreen()
         }
+    }
+
+    /// The Face ID lock's cover is up. It shows the same mark in the same place as the
+    /// launch canvas, so the reveal waits for it to lift instead of playing under it.
+    var isAppLockCovering: Bool {
+        allowsSystemIntegrations && AppLockModel.shared.isCovering
     }
 
     private var framedScreen: RootFramedScreen? {

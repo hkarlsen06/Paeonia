@@ -11,6 +11,8 @@ final class AppLockCoverController {
     private var window: UIWindow?
     private var observers: [any NSObjectProtocol] = []
     private var isInstalled = false
+    /// Hides the cover without its fade, while the launch canvas under it looks the same.
+    var liftsAtOnce = false
 
     private static let fadeDuration: TimeInterval = 0.25
 
@@ -91,7 +93,7 @@ final class AppLockCoverController {
         }
 
         guard !window.isHidden else { return }
-        guard !UIAccessibility.isReduceMotionEnabled else {
+        guard !UIAccessibility.isReduceMotionEnabled, !liftsAtOnce else {
             window.isHidden = true
             return
         }

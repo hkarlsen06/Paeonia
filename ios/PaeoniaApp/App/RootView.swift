@@ -286,7 +286,7 @@ struct RootView: View {
                 // (`onRevealContent`) and when it has fully exited (`onFinished`), so the
                 // overlay stays mounted past the moment `state` leaves `.launching`.
                 LaunchExperienceView(
-                    contentReady: viewModel.state != .launching,
+                    contentReady: viewModel.state != .launching && !isAppLockCovering,
                     onRevealContent: { launchContentRevealed = true },
                     onSidesUncovered: { launchSidesUncovered = true },
                     onFinished: {
