@@ -17,9 +17,10 @@ nonisolated protocol WidgetDrawingRasterizing: Sendable {
 /// shows, and a transparent background so the strokes composite over the
 /// widget's plum container (and tint correctly in accessibility tinted mode).
 ///
-/// Works in terms of `Data` in and `Data` out (both `Sendable`) and runs on the
-/// main actor, so the canvas service actor can call it without passing
-/// non-`Sendable` PencilKit/UIKit values across an isolation boundary.
+/// Works in terms of `Data` in and `Data` out (both `Sendable`), so callers never
+/// pass PencilKit or UIKit values across an isolation boundary. It renders off the
+/// main thread, as Apple's PencilKit sample renders its thumbnails. On the main
+/// thread the look-back thumbnails held up frames of the Home map's launch intro.
 nonisolated struct WidgetDrawingRasterizer: WidgetDrawingRasterizing {
     /// Decodes `drawingData` and renders a PNG whose long edge is roughly
     /// `pixelWidth` pixels wide.
@@ -29,15 +30,12 @@ nonisolated struct WidgetDrawingRasterizer: WidgetDrawingRasterizing {
     ///   - canvasSide: The point side length of the square canvas the strokes
     ///     were drawn in. Strokes are stored in this coordinate space.
     ///   - pixelWidth: The target rendered width in pixels.
-    @MainActor
-    // Async protocol shape lets the save coordinator test and guard actor
-    // reentrancy around rendering; UIKit itself completes synchronously here.
+    @concurrent
     func renderPNG(
         fromDrawingData drawingData: Data,
         canvasSide: CGFloat,
         pixelWidth: CGFloat
     ) async -> Data? {
-        await Task.yield()
         guard canvasSide > 0,
               pixelWidth > 0,
               let drawing = try? PKDrawing(data: drawingData)
