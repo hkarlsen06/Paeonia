@@ -58,41 +58,12 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
         GeometryReader { geo in
             let couple = couple
             let screen = HomeMapScreen(geo: geo, additionalHeaderHeight: max(topBarHeight - Self.headerHeight, 0))
-            ScrollView {
-                VStack(spacing: 0) {
-                    page(couple, screen)
-                    footer.fixedSize(horizontal: false, vertical: true)
-                }
-                // A pinch can span the map and the cards below it.
-                .homeMapGestures(explorer)
-            }
-            .scrollIndicators(.hidden)
-            // Offline, the avatars move from where they wait for the map to their places.
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: mapTiles.tiles)
-            .refreshable {
-                await onRefresh()
-            }
-            .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.contentOffset.y + geometry.contentInsets.top
-            } action: { _, offset in
-                scrollOffset = offset
-            }
-            // When everything fits, there is nothing to scroll to, so the page stays still.
-            .scrollBounceBehavior(.basedOnSize)
-            // Keep the scroll view's bounds and insets stable as the map arrives.
-            // Without a map, the page reserves the header's space itself.
-            .ignoresSafeArea(edges: .top)
-            // Like a navigation bar: no glass at rest over the map, glass as soon as Home scrolls.
-            .scrollEdgeEffectHidden(scrollOffset <= 1, for: .top)
-            .safeAreaBar(edge: .top) {
-                topBar(couple)
-            }
-            .onChange(of: hearts?.incomingBurst) { _, burst in
-                // Hearts fly between the avatars wherever they can be sent. Otherwise only the
-                // line in the bar tells the person.
-                if let burst, couple != nil || canSendHearts {
-                    flights.receive(count: burst.flyingCount)
-                }
+            // The first sizing pass has zero width, a sliver at the leading edge. Build the
+            // page only once it has its real size. A scroll view that already exists would
+            // otherwise grow out of that sliver, sliding in from the side, whenever an
+            // animation runs at that moment.
+            if screen.width > 0 {
+                scrollPage(couple, screen)
             }
         }
         // A note's keyboard belongs to its cover. Keep Home's map and cards in place behind it.
@@ -108,37 +79,73 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
         }
     }
 
-    /// The top and the cards, in the one scroll view.
-    @ViewBuilder
-    private func page(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
-        // The first sizing pass can have zero width. Mount the cards with their real size.
-        if screen.width > 0 {
+    /// The page in its scroll view, with the bar above it.
+    private func scrollPage(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
+        ScrollView {
             VStack(spacing: 0) {
-                top(couple, screen)
-                if !reservesMapSpace {
-                    noMapNotice
-                }
-                sheet
-                    // A pinch or rotation on today's envelope moves the map behind it.
-                    .environment(\.homeMapExplorer, couple == nil ? nil : explorer)
-                    // The cards keep their own height, so only the map takes up the rest of the
-                    // screen. A square tile sizes itself from the room it is offered, and would
-                    // otherwise split that room with the map and overflow under the tab bar.
-                    .fixedSize(horizontal: false, vertical: true)
-                    // Keep loading and loaded descendants in the same moving coordinate space.
-                    .geometryGroup()
-                    // The cards start just under the map's last full row, and the map fades on behind them.
-                    .padding(.top, reservesMapSpace ? -HomeMapMetrics.cardsOverlap : PaeoniaSpacing.space24)
+                page(couple, screen)
+                footer.fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, reservesMapSpace ? 0 : screen.topInset + topBarHeight + PaeoniaSpacing.space8)
-            // ScrollView also asks for an ideal width. Keep that probe at the viewport width,
-            // so the square tiles never start narrow and animate out of their first positions.
-            .frame(width: screen.width)
-            // With the map, the page fills the screen down to the top of the tab bar, and
-            // the map takes whatever the cards leave. One layout pass sizes both, so they
-            // move together when a card changes height.
-            .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)
+            // A pinch can span the map and the cards below it.
+            .homeMapGestures(explorer)
         }
+        .scrollIndicators(.hidden)
+        // Offline, the avatars move from where they wait for the map to their places.
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: mapTiles.tiles)
+        .refreshable {
+            await onRefresh()
+        }
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top
+        } action: { _, offset in
+            scrollOffset = offset
+        }
+        // When everything fits, there is nothing to scroll to, so the page stays still.
+        .scrollBounceBehavior(.basedOnSize)
+        // Keep the scroll view's bounds and insets stable as the map arrives.
+        // Without a map, the page reserves the header's space itself.
+        .ignoresSafeArea(edges: .top)
+        // Like a navigation bar: no glass at rest over the map, glass as soon as Home scrolls.
+        .scrollEdgeEffectHidden(scrollOffset <= 1, for: .top)
+        .safeAreaBar(edge: .top) {
+            topBar(couple)
+        }
+        .onChange(of: hearts?.incomingBurst) { _, burst in
+            // Hearts fly between the avatars wherever they can be sent. Otherwise only the
+            // line in the bar tells the person.
+            if let burst, couple != nil || canSendHearts {
+                flights.receive(count: burst.flyingCount)
+            }
+        }
+    }
+
+    /// The top and the cards, in the one scroll view.
+    private func page(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
+        VStack(spacing: 0) {
+            top(couple, screen)
+            if !reservesMapSpace {
+                noMapNotice
+            }
+            sheet
+                // A pinch or rotation on today's envelope moves the map behind it.
+                .environment(\.homeMapExplorer, couple == nil ? nil : explorer)
+                // The cards keep their own height, so only the map takes up the rest of the
+                // screen. A square tile sizes itself from the room it is offered, and would
+                // otherwise split that room with the map and overflow under the tab bar.
+                .fixedSize(horizontal: false, vertical: true)
+                // Keep loading and loaded descendants in the same moving coordinate space.
+                .geometryGroup()
+                // The cards start just under the map's last full row, and the map fades on behind them.
+                .padding(.top, reservesMapSpace ? -HomeMapMetrics.cardsOverlap : PaeoniaSpacing.space24)
+        }
+        .padding(.top, reservesMapSpace ? 0 : screen.topInset + topBarHeight + PaeoniaSpacing.space8)
+        // ScrollView also asks for an ideal width. Keep that probe at the viewport width,
+        // so the square tiles never start narrow and animate out of their first positions.
+        .frame(width: screen.width)
+        // With the map, the page fills the screen down to the top of the tab bar, and
+        // the map takes whatever the cards leave. One layout pass sizes both, so they
+        // move together when a card changes height.
+        .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)
     }
 
     // MARK: Top
