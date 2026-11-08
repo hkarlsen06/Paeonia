@@ -34,6 +34,9 @@ struct DailyPromptCard: View {
     var onAnswer: () -> Void = {}
     /// Opens the answer flow of an earlier question shown as a locked row.
     var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
+    /// Runs when a seal moment ends, inside the moment's closing animation. The Questions
+    /// tab removes the card here, so it folds away instead of shrinking to the short row.
+    var onMomentEnd: () -> Void = {}
 
     private enum MomentPhase {
         case idle
@@ -286,5 +289,6 @@ struct DailyPromptCard: View {
         hold.release()
         phase = .idle
         sealBreak = 0
+        onMomentEnd()
     }
 }

@@ -2,8 +2,10 @@ import SwiftUI
 
 extension DailyChallengeScreen {
     var tabContent: QuestionsTabContent {
+        // The hero card stands for today's question until its seal moment ends.
+        let heldID = isHoldingHero ? viewModel.snapshot.todayQuestion?.id : nil
         let current = viewModel.snapshot.questions.filter {
-            $0.hasOwnAnswer || viewModel.isSending($0.id) || $0.isAwaitingCurrentUserAnswer
+            ($0.hasOwnAnswer || viewModel.isSending($0.id) || $0.isAwaitingCurrentUserAnswer) && $0.id != heldID
         }
         return QuestionsTabContent(
             current: current,

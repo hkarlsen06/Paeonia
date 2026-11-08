@@ -48,6 +48,9 @@ struct DailyChallengeScreen: View {
     @State var conversationChat: ConversationChatDestination?
     /// The story opened from its chat's header card, over the chat.
     @State private var storyViewer: StoryViewerContent?
+    /// Keeps the hero card up after today's answer until its seal moment has played, so
+    /// the answer flow it opened zooms back into it. Armed when the card opens the flow.
+    @State private var heroHold = DailyPromptCardHold()
 
     private var isChatOpen: Bool {
         chatQuestion.wrappedValue != nil || conversationChat != nil
@@ -103,6 +106,10 @@ struct DailyChallengeScreen: View {
         .toolbarVisibility(hidesTabBar ? .hidden : .visible, for: .tabBar)
         .onChange(of: isChatOpen) { _, isOpen in
             if !isOpen { isOpeningChat = false }
+        }
+        // A new day drops a hold from a flow that closed without an answer.
+        .onChange(of: viewModel.homeCardState) { _, state in
+            if state.kind == .noChallenge { heroHold.release() }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -166,10 +173,15 @@ struct DailyChallengeScreen: View {
         StreakPillState(viewModel.streak)
     }
 
-    /// Whether the user has answered today's question. The big card then gives way to
-    /// the conversation card for that question.
+    /// Whether the screen shows today's question as answered. The big card then gives way
+    /// to the conversation card for that question. Right after the answer, the screen
+    /// keeps the big card until its seal moment has played.
     private var isDayComplete: Bool {
-        viewModel.homeCardState.kind == .complete
+        viewModel.homeCardState.kind == .complete && !isHoldingHero
+    }
+
+    var isHoldingHero: Bool {
+        heroHold.isHolding(for: viewModel.homeCardState)
     }
 
     @ViewBuilder
@@ -182,10 +194,23 @@ struct DailyChallengeScreen: View {
                 ),
                 partnerName: viewModel.participants.partnerName,
                 partnerPhotoAssetID: viewModel.participants.partnerProfilePhotoAssetID,
-                onAnswer: onOpenAnswerFlow
+                onAnswer: {
+                    heroHold.observe(viewModel.homeCardState)
+                    onOpenAnswerFlow()
+                },
+                onMomentEnd: finishHeroMoment
             )
             .zoomSource(DailyFlowZoom.questions, in: zoomNamespace)
+            .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.94, anchor: .top)))
         }
+    }
+
+    /// The seal moment is over. The card folds away and today's question row, now in the
+    /// list, lights up for a moment so the person sees where the conversation went.
+    private func finishHeroMoment() {
+        heroHold.release()
+        guard isDayComplete, let todayID = viewModel.snapshot.todayQuestion?.id else { return }
+        focusedQuestionIDs.wrappedValue = [todayID]
     }
 
     /// Pull to refresh reloads today's questions and the earlier days together.
