@@ -315,6 +315,23 @@ struct LocalPrivacyPurgeTests {
         #expect(widgets.reloader.reloadCount > reloadsBeforePurge)
     }
 
+    @Test func signOutPurgeForgetsTheSavedConvexToken() async throws {
+        let payload = Data(#"{"exp":\#(Int(Date().timeIntervalSince1970) + 900)}"#.utf8)
+            .base64EncodedString()
+            .replacingOccurrences(of: "=", with: "")
+        ConvexTokenStore.save("header.\(payload).signature", sessionID: "sess_leaving")
+        try #require(ConvexTokenStore.token(sessionID: "sess_leaving", minimumLifetime: 60) != nil)
+        let fixture = try LivePurgeFixture(
+            widgetCanvas: WidgetCanvasTestEnvironment().makeService(),
+            memoryMediaURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("LocalPrivacyPurgeTests-\(UUID().uuidString)", isDirectory: true)
+        )
+
+        #expect(await fixture.purger.purge(ownerUserID: UUID(), scope: .departingUser) == .completed)
+
+        #expect(ConvexTokenStore.token(sessionID: "sess_leaving", minimumLifetime: 60) == nil)
+    }
+
     @Test(arguments: everyPurgeScope)
     func guessMySpotOwnedDraftSurvivesOnlyATemporaryAccessHide(scope: LocalPrivacyPurgeScope) async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

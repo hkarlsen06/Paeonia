@@ -17,6 +17,10 @@ nonisolated enum PaeoniaClerk {
 
     @MainActor private static var isConfigured = false
 
+    /// An HTTP call needs its token to outlive the request, not the next refresh.
+    /// Clerk's own default for this buffer is 10 seconds.
+    private static let httpTokenMinimumLifetime: TimeInterval = 10
+
     /// The configured key, or `nil` when the build has no Clerk key yet.
     static func publishableKey(in bundle: Bundle = .main) -> String? {
         guard
@@ -53,8 +57,9 @@ nonisolated enum PaeoniaClerk {
         // template token is the one the live socket uses, so the two share one
         // fetch, and a request shortly after the last one needs no new token.
         PaeoniaConvexClientProvider.shared.setTokenProvider {
-            let options = Session.GetTokenOptions(template: convexTokenTemplate)
-            guard let token = try await Clerk.shared.auth.getToken(options) else {
+            guard let session = await activeSession(),
+                  let token = try await convexToken(for: session, minimumLifetime: httpTokenMinimumLifetime)
+            else {
                 throw PaeoniaConvexError.notAuthenticated
             }
             return token
@@ -64,6 +69,40 @@ nonisolated enum PaeoniaClerk {
         }
         isConfigured = true
         return true
+    }
+
+    /// A token from the `convex` template for `session` with more than
+    /// `minimumLifetime` seconds left. The saved one when it is still good,
+    /// otherwise a new one from Clerk, which is then saved.
+    @MainActor
+    static func convexToken(
+        for session: Session,
+        minimumLifetime: TimeInterval,
+        skipSaved: Bool = false
+    ) async throws -> String? {
+        if !skipSaved,
+           let saved = ConvexTokenStore.token(sessionID: session.id, minimumLifetime: minimumLifetime) {
+            return saved
+        }
+        let options = Session.GetTokenOptions(
+            template: convexTokenTemplate,
+            expirationBuffer: minimumLifetime,
+            skipCache: skipSaved
+        )
+        let token = try await session.getToken(options)
+        // Clerk's session may have changed while the token was on its way.
+        if let token, Clerk.shared.session?.id == session.id {
+            ConvexTokenStore.save(token, sessionID: session.id)
+        }
+        return token
+    }
+
+    @MainActor
+    private static func activeSession() -> Session? {
+        guard isConfigured, let session = Clerk.shared.session, session.status == .active else {
+            return nil
+        }
+        return session
     }
 
     /// The Clerk user id when an active session is stored on this device. It

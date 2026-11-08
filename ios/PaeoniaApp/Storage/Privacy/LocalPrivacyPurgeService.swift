@@ -331,6 +331,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
                 )
                 UserDefaultsPairingJoinInviteStore.shared.clearInviteCode()
                 PushRegistrationFingerprintStore.resetAll()
+                // A sign-in token for the account that is leaving.
+                ConvexTokenStore.clear()
                 ReactionPalette.shared.clearAll()
                 // The next person on this phone starts without the lock.
                 AppLockModel.shared.reset()

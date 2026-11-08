@@ -56,6 +56,7 @@ final class PaeoniaConvexAuthProvider: ConvexMobile.AuthProvider {
         refreshTask?.cancel()
         refreshTask = nil
         onIdToken = nil
+        ConvexTokenStore.clear()
         try await Clerk.shared.auth.signOut()
     }
 
@@ -94,14 +95,13 @@ final class PaeoniaConvexAuthProvider: ConvexMobile.AuthProvider {
         return session
     }
 
-    /// The cached template token while it has more than a minute left, otherwise a new one.
+    /// The saved template token while it has more than a minute left, otherwise a new one.
     private static func fetchToken(for session: Session, skipCache: Bool) async throws -> String {
-        let options = Session.GetTokenOptions(
-            template: PaeoniaClerk.convexTokenTemplate,
-            expirationBuffer: ConvexTokenSchedule.refreshLead,
-            skipCache: skipCache
-        )
-        guard let token = try await session.getToken(options) else {
+        guard let token = try await PaeoniaClerk.convexToken(
+            for: session,
+            minimumLifetime: ConvexTokenSchedule.refreshLead,
+            skipSaved: skipCache
+        ) else {
             throw PaeoniaConvexAuthError.noToken
         }
         return token
