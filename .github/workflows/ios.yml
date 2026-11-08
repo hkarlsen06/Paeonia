@@ -30,7 +30,21 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Select Xcode with SDK 27.3 or newer
+        env:
+          FASTLANE_SESSION: ${{ secrets.XCODE_DOWNLOAD_SESSION }}
         run: |
+          # Prefer the runner's installation once GitHub ships SDK 27.3.
+          if ! (source scripts/lib/paeonia-xcode.sh) 2>/dev/null; then
+            if [ -z "$FASTLANE_SESSION" ]; then
+              echo "::error::SDK 27.3 is not installed. Refresh the XCODE_DOWNLOAD_SESSION repository secret with an authenticated Apple Developer download session."
+              exit 1
+            fi
+            command -v xcodes >/dev/null || brew install xcodesorg/made/xcodes
+            # Pin the beta that supplies the APIs used by our Siri tools.
+            # stdin is closed so an expired session fails instead of prompting.
+            xcodes install '27.3 Beta' --update --use-fastlane-auth \
+              --fastlane-user FASTLANE_SESSION --experimental-unxip --empty-trash </dev/null
+          fi
           source scripts/lib/paeonia-xcode.sh
           echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
           xcodebuild -version
