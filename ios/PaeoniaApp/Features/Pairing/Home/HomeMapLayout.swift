@@ -30,6 +30,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.launchSidesUncovered) private var launchSidesUncovered
+    @Environment(\.scenePhase) private var scenePhase
     @State private var scrollOffset: CGFloat = 0
     @State private var topBarHeight = Self.headerHeight
     @State private var compass = PartnerCompass()
@@ -183,7 +184,9 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
                 avatarSize: avatarSize,
                 compass: compass,
                 introStart: reduceMotion ? nil : waitingPoints(metrics),
-                canStartIntro: launchSidesUncovered,
+                // Home also mounts under the App Store's purchase sheet after a purchase.
+                // The intro waits until nothing covers the app, so the person sees it.
+                canStartIntro: launchSidesUncovered && scenePhase == .active,
                 explorer: explorer,
                 tiles: mapTiles,
                 onProjection: { projection in
