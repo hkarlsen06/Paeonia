@@ -6,9 +6,6 @@ import SwiftUI
 struct AppLockRootModifier: ViewModifier {
     let isActive: Bool
     let bannerCenter: PaeoniaBannerCenter
-    /// The launch canvas is under the cover. It shows the same mark in the same place,
-    /// so the cover goes without a fade, which would leave its still mark over the reveal.
-    let liftsAtOnce: Bool
 
     private let model = AppLockModel.shared
     @State private var cover = AppLockCoverController(model: .shared)
@@ -20,9 +17,6 @@ struct AppLockRootModifier: ViewModifier {
                 if isActive {
                     cover.install()
                 }
-            }
-            .onChange(of: liftsAtOnce, initial: true) { _, liftsAtOnce in
-                cover.liftsAtOnce = liftsAtOnce
             }
             .onChange(of: model.notice) { _, notice in
                 guard let notice else { return }

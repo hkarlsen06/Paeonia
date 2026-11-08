@@ -78,7 +78,7 @@ struct CoupleMapSnapshot: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.launchSidesUncovered) private var launchSidesUncovered
+    @Environment(\.launchContentRevealed) private var launchContentRevealed
 
     /// The current map + avatars after the latest completed reveal.
     @State private var snapshot: SnapshotResult?
@@ -152,10 +152,10 @@ struct CoupleMapSnapshot: View {
                 .task(id: snapshotRequest(size: size)) {
                     await loadSnapshot(size: size)
                 }
-                // The render finishing, the intro opening and the tile scrolling into
+                // The render finishing, the overlay fading and the tile scrolling into
                 // view can come in any order, so whichever lands last starts the sweep.
                 .onChange(of: pendingSweep) { startPendingSweepIfReady() }
-                .onChange(of: launchSidesUncovered) { startPendingSweepIfReady() }
+                .onChange(of: launchContentRevealed) { startPendingSweepIfReady() }
                 .onScrollVisibilityChange(threshold: 0.8) { isVisible in
                     isOnScreen = isVisible
                     startPendingSweepIfReady()
@@ -485,18 +485,18 @@ extension CoupleMapSnapshot {
             isRevealing = true
         }
 
-        // Don't read `launchSidesUncovered` here. This runs at the end of the render
+        // Don't read `launchContentRevealed` here. This runs at the end of the render
         // task, whose copy of the view holds the environment from when the task began,
         // so a flip during the render would be missed and the cover never burned away.
         // `onChange(of: pendingSweep)` reads the current value instead.
         pendingSweep = token
     }
 
-    /// Starts the pending sweep once the cold-launch intro's opening hole reaches the
-    /// screen's sides and the tile is scrolled into view, so it plays where the user can
-    /// see it rather than behind the overlay or below the fold.
+    /// Starts the pending sweep once the cold-launch overlay starts to fade and the tile
+    /// is scrolled into view, so it plays where the user can see it rather than behind
+    /// the overlay or below the fold.
     private func startPendingSweepIfReady() {
-        guard launchSidesUncovered, isOnScreen, let token = pendingSweep else { return }
+        guard launchContentRevealed, isOnScreen, let token = pendingSweep else { return }
         pendingSweep = nil
         startSweep(token: token)
     }

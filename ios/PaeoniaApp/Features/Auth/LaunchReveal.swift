@@ -1,20 +1,16 @@
 import SwiftUI
 
-// Coordination between the cold-launch intro (`LaunchExperienceView`, mounted in
-// `RootView`) and the first app surface it uncovers. The intro exits by opening a
-// circular hole through its canvas while the surface's content cascades in. These are
-// the cues the content reads to animate itself in.
+// Coordination between the cold-launch overlay (`LaunchExperienceView`, mounted in
+// `RootView`) and the first app surface it uncovers. The overlay fades out over the
+// surface. These are the cues the content reads to animate itself in.
 
 extension EnvironmentValues {
-    /// Flips true when the cold-launch intro begins its exit, cueing the first app
-    /// surface to animate its content in (see `View.launchEntrance(order:)`). Defaults
-    /// to true so content outside the cold launch (tab switches, previews) shows at once.
+    /// Flips true when the cold-launch overlay starts to fade, cueing the first app
+    /// surface to animate its content in (see `View.launchEntrance(order:)`). The Home
+    /// map's intro and flame sweep start here too, so they play where the person can
+    /// see them. Defaults to true so content outside the cold launch (tab switches,
+    /// previews) shows at once.
     @Entry var launchContentRevealed = true
-
-    /// Flips true when the intro's opening hole reaches the screen's left and right
-    /// edges. The Home map's flame sweep starts here, so it plays as the screen opens
-    /// rather than behind the overlay. Defaults to true outside the cold launch.
-    @Entry var launchSidesUncovered = true
 
     /// True once the cold-launch intro has fully finished. Launch-adjacent moments
     /// that shouldn't compete with the intro (e.g. streak celebrations) can wait on

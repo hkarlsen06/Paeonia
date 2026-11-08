@@ -15,7 +15,6 @@ struct RootView: View {
     @State var bannerCenter = PaeoniaBannerCenter()
     @State var isLaunchExperienceActive = true
     @State var launchContentRevealed = false
-    @State var launchSidesUncovered = false
     @State var permissionPrimerCoordinator: RootPairingPermissionPrimerCoordinator
     /// Checks and joins a partner's code. One instance serves the paywall, the
     /// invite screen and the join screen, so a code typed on either of the first
@@ -273,11 +272,9 @@ struct RootView: View {
     private var rootContent: some View {
         ZStack {
             routedRootContent
-                // The intro cues the surface to cascade its content in as it exits, and
-                // the Home map's flame sweep waits until the opening hole reaches the
-                // screen's sides so it doesn't play hidden behind the overlay.
+                // The overlay cues the surface to bring its content in as it starts to
+                // fade, so the Home map's intro plays where the person can see it.
                 .environment(\.launchContentRevealed, launchContentRevealed)
-                .environment(\.launchSidesUncovered, launchSidesUncovered)
                 .environment(\.launchIntroComplete, !isLaunchExperienceActive)
                 .zIndex(0)
 
@@ -286,9 +283,8 @@ struct RootView: View {
                 // (`onRevealContent`) and when it has fully exited (`onFinished`), so the
                 // overlay stays mounted past the moment `state` leaves `.launching`.
                 LaunchExperienceView(
-                    contentReady: viewModel.state != .launching && !isAppLockCovering,
+                    contentReady: viewModel.state != .launching,
                     onRevealContent: { launchContentRevealed = true },
-                    onSidesUncovered: { launchSidesUncovered = true },
                     onFinished: {
                         isLaunchExperienceActive = false
                     }

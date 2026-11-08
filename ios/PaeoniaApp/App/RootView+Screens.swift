@@ -19,37 +19,33 @@ extension RootView {
     /// frame. The screens between sign-in and the paired app share one frame, so
     /// from profile setup through the paywall to pairing the background stays and
     /// only the content changes. A fade only, so Reduce Motion needs no branch.
+    /// Under the launch overlay the first screen appears whole instead, so it is all
+    /// there when the overlay fades.
     var routedRootContent: some View {
         ZStack {
             if let framedScreen {
                 PaeoniaScreenFrame {
                     framedContent(framedScreen)
                         .id(framedScreen)
-                        .transition(.opacity)
+                        .transition(routeTransition)
                 }
-                .transition(.opacity)
+                .transition(routeTransition)
             } else {
                 unframedContent
-                    .transition(.opacity)
+                    .transition(routeTransition)
             }
         }
         .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.state)
         // Saving or forgetting a partner's code swaps screens without a state change.
         .animation(PaeoniaMotion.meaningfulMoment, value: framedScreen)
-        .modifier(AppLockRootModifier(
-            isActive: allowsSystemIntegrations,
-            bannerCenter: bannerCenter,
-            liftsAtOnce: isLaunchExperienceActive
-        ))
+        .modifier(AppLockRootModifier(isActive: allowsSystemIntegrations, bannerCenter: bannerCenter))
         .sheet(isPresented: $viewModel.isShowingDataExport) {
             DataExportScreen()
         }
     }
 
-    /// The Face ID lock's cover is up. It shows the same mark in the same place as the
-    /// launch canvas, so the reveal waits for it to lift instead of playing under it.
-    var isAppLockCovering: Bool {
-        allowsSystemIntegrations && AppLockModel.shared.isCovering
+    private var routeTransition: AnyTransition {
+        isLaunchExperienceActive ? .identity : .opacity
     }
 
     private var framedScreen: RootFramedScreen? {
@@ -123,12 +119,15 @@ extension RootView {
         switch viewModel.state {
         case .unauthenticated:
             welcomeScreen
+                .transition(routeTransition)
         case .paired:
             pairedScaffold
+                .transition(routeTransition)
         default:
-            // Only seen under the cold-launch intro.
+            // Only seen under the cold-launch overlay.
             Color.paeoniaBackgroundPrimary
                 .ignoresSafeArea()
+                .transition(routeTransition)
         }
     }
 
