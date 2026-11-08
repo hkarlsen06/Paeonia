@@ -1,4 +1,3 @@
-import Foundation
 import SwiftUI
 
 /// The cold-launch intro. It continues the system launch screen (the petal mark
@@ -8,6 +7,13 @@ import SwiftUI
 /// together, so the petals disappear as part of the screen opening up. The hole keeps
 /// growing past the screen corners and unmasks the first app surface, already drawn
 /// underneath.
+///
+/// The reveal runs as Core Animation on `LaunchRevealCanvas`, so the render server
+/// plays it. The first surface builds in the same update that starts it, and on an
+/// iPhone that update took 80 to 100 ms. A SwiftUI animation lost its first 6 to 8
+/// frames to it. This one starts when that update is drawn and keeps its frame rate
+/// while the main thread stays busy after it. The sides and finish callbacks come
+/// from the animation itself, so they stay in step with what is on screen.
 struct LaunchExperienceView: View {
     /// True once the routed first surface behind the overlay is ready to be shown
     /// (auth/access has resolved). Starts the reveal.
@@ -21,56 +27,19 @@ struct LaunchExperienceView: View {
     let onFinished: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isRevealing = false
+    @State private var reveal: LaunchRevealCanvas.Reveal?
     @State private var hasFinished = false
-    /// Per-side horizontal travel of each petal half. `0` composes the full mark,
-    /// exactly matching the system launch screen.
-    @State private var petalSpread: CGFloat = 0
-    /// `0` leaves the canvas whole, `1` has carried the circular hole past the
-    /// screen's furthest corner.
-    @State private var holeProgress: CGFloat = 0
-    /// Reduce Motion exits by fading the whole overlay instead. `1` at rest.
-    @State private var overlayOpacity: Double = 1
-
-    // The composed mark matches the system launch screen's visible art exactly: the
-    // `PaeoniaLaunchPetalMark` asset is a 150 pt square whose mark fills a centered
-    // 124×62 region. The half assets share the full mark's viewBox, so overlaying
-    // them at zero spread reproduces `PaeoniaMark` pixel for pixel.
-    private let markWidth: CGFloat = 124
-    private let markHeight: CGFloat = 62
-    /// How far each half travels outward during the reveal.
-    private let revealSpread: CGFloat = 100
-
-    private static let revealDuration: TimeInterval = 0.35
-    private static let reducedMotionExitDuration: TimeInterval = 0.22
-    /// The petals start fast and settle, so they visibly part before the hole
-    /// reaches them.
-    private static let petalAnimation = Animation.timingCurve(0.3, 0.8, 0.3, 1, duration: revealDuration)
-    /// The hole starts slowly and speeds up, catching the petals about 70 ms in and
-    /// cutting them away over the next 45 ms. It clears the corners around 290 ms.
-    private static let holeCurve = UnitCurve.bezier(
-        startControlPoint: UnitPoint(x: 0.4, y: 0),
-        endControlPoint: UnitPoint(x: 0.3, y: 1)
-    )
-    private static let holeAnimation = Animation.timingCurve(holeCurve, duration: revealDuration)
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack {
-                Color.paeoniaBackgroundPrimary
-                logo
-            }
-            .frame(width: proxy.size.width, height: proxy.size.height)
-            .mask { holeCutout(in: proxy.size) }
-            .onChange(of: contentReady, initial: true) { _, isReady in
-                if isReady {
-                    beginReveal(in: proxy.size)
-                }
+        LaunchRevealCanvas(reveal: reveal, onSidesUncovered: onSidesUncovered, onFinished: finishReveal)
+        .onChange(of: contentReady, initial: true) { _, isReady in
+            if isReady {
+                beginReveal()
             }
         }
-        .opacity(overlayOpacity)
         .onChange(of: reduceMotion) { _, reduced in
-            if reduced && isRevealing {
+            if reduced, reveal == .opening {
+                reveal = .fading
                 onSidesUncovered()
                 finishReveal()
             }
@@ -78,89 +47,22 @@ struct LaunchExperienceView: View {
         .ignoresSafeArea()
         // The mask does not change hit testing, so without this the overlay would
         // swallow taps on the screen it is uncovering until it is removed.
-        .allowsHitTesting(!isRevealing)
+        .allowsHitTesting(reveal == nil)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.appStateLaunching))
     }
 
-    /// A full canvas with a circular hole cut from its center. At `holeProgress` `1`
-    /// the hole's edge has passed the furthest corner with a little slack, so no lit
-    /// sliver survives to be cut off by the overlay's unmount.
-    private func holeCutout(in size: CGSize) -> some View {
-        let diameter = holeProgress * Self.fullHoleDiameter(in: size)
-        return Rectangle()
-            .fill(.black)
-            .overlay {
-                Circle()
-                    .frame(width: diameter, height: diameter)
-                    .blendMode(.destinationOut)
-            }
-            .compositingGroup()
-    }
-
-    private var logo: some View {
-        ZStack {
-            Image(.paeoniaMarkPetalLeft)
-                .resizable()
-                .scaledToFit()
-                .frame(width: markWidth, height: markHeight)
-                .offset(x: -petalSpread)
-
-            Image(.paeoniaMarkPetalRight)
-                .resizable()
-                .scaledToFit()
-                .frame(width: markWidth, height: markHeight)
-                .offset(x: petalSpread)
-        }
-        .accessibilityHidden(true)
-    }
-
-    private static func fullHoleDiameter(in size: CGSize) -> CGFloat {
-        hypot(size.width, size.height) + 2
-    }
-
-    /// How long the hole takes to reach the left and right screen edges: about
-    /// 120 ms on a phone and 150 ms on an iPad, whose wider screen it fills later.
-    private static func sidesUncoveredDelay(in size: CGSize) -> TimeInterval {
-        let progressAtSides = size.width / fullHoleDiameter(in: size)
-        return holeCurve.inverse.value(at: progressAtSides) * revealDuration
-    }
-
     /// Runs once. Readiness can flip again while the reveal plays.
-    private func beginReveal(in size: CGSize) {
-        guard !isRevealing else {
+    private func beginReveal() {
+        guard reveal == nil else {
             return
         }
-        isRevealing = true
         onRevealContent()
-
         if reduceMotion {
-            withAnimation(.easeOut(duration: Self.reducedMotionExitDuration)) {
-                overlayOpacity = 0
-            }
             onSidesUncovered()
-            finishAfter(Self.reducedMotionExitDuration)
-            return
-        }
-
-        withAnimation(Self.petalAnimation) {
-            petalSpread = revealSpread
-        }
-        withAnimation(Self.holeAnimation) {
-            holeProgress = 1
-        }
-        finishAfter(Self.revealDuration)
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(Self.sidesUncoveredDelay(in: size)))
-            onSidesUncovered()
-        }
-    }
-
-    private func finishAfter(_ duration: TimeInterval) {
-        // Overlay removal is independent of animation callbacks, including interrupted animations.
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(duration))
-            finishReveal()
+            reveal = .fading
+        } else {
+            reveal = .opening
         }
     }
 
