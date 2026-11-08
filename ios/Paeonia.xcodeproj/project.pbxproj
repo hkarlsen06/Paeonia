@@ -1023,7 +1023,7 @@
 			repositoryURL = "https://github.com/clerk/clerk-ios";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.6.1;
+				minimumVersion = 1.7.1;
 			};
 		};
 		2A2D07032FE3000000A7BE1A /* XCRemoteSwiftPackageReference "convex-swift" */ = {
@@ -1031,7 +1031,7 @@
 			repositoryURL = "https://github.com/get-convex/convex-swift";
 			requirement = {
 				kind = upToNextMinorVersion;
-				minimumVersion = 0.8.1;
+				minimumVersion = 0.8.2;
 			};
 		};
 		2A2D08022FE4000000A7BE1A /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
@@ -1039,7 +1039,7 @@
 			repositoryURL = "https://github.com/PostHog/posthog-ios";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 3.92.0;
+				minimumVersion = 3.93.6;
 			};
 		};
 		2A2D09022FE5000000A7BE1A /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */ = {
@@ -1047,7 +1047,7 @@
 			repositoryURL = "https://github.com/maplibre/maplibre-gl-native-distribution";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 6.0.0;
+				minimumVersion = 7.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

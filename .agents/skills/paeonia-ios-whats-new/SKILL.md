@@ -1,6 +1,6 @@
 ---
 name: paeonia-ios-whats-new
-description: Write evidence-based Paeonia iOS App Store release notes in English and Norwegian Bokmal, update metadata, and regenerate local Fastlane files.
+description: Write evidence-based Paeonia iOS App Store release notes in English and Norwegian Bokmal, update metadata, and regenerate local ASC metadata.
 ---
 
 # Paeonia iOS What's New
@@ -59,10 +59,10 @@ Unless the user explicitly asks for draft-only output, update only:
   - `metadata.en.release_notes`
   - `metadata.nb.release_notes`
 
-Then regenerate Fastlane metadata:
+Then regenerate ASC metadata:
 
 ```bash
-pnpm --dir ios generate-metadata
+bun run --cwd ios generate-metadata
 ```
 
 Inspect the generated diff and verify it matches the requested release notes; preserve unrelated source fields and investigate unexpected generated changes before accepting them. Do not upload metadata unless the user explicitly asks.
@@ -73,4 +73,4 @@ After updating the source file:
 
 - Show the English and Norwegian release notes that were written.
 - Mention the reference used.
-- Mention `pnpm --dir ios upload-metadata` as the upload command.
+- Mention `bun run app-store metadata` as the dry-run command and `bun run app-store metadata --apply` as the upload command.

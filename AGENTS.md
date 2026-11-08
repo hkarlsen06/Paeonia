@@ -211,6 +211,7 @@ Read only guidance relevant to the change. Commands and source paths in these do
 
 - Native iOS work: [ios/AGENTS.md](ios/AGENTS.md).
 - Backend, Clerk auth, or iOS auth/RPC integration: [backend/AGENTS.md](backend/AGENTS.md). Keep the explicit authorization checks. Change function contracts freely, and update the iOS callers in the same change.
+- App Store metadata or screenshot uploads: [ASC workflow](ios/app-store/README.md).
 - Marketing routes or deployment, App Store listing text, screenshots, or other marketing copy: [marketing/AGENTS.md](marketing/AGENTS.md).
 
 ## Product-Specific Quality Bar

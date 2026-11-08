@@ -4,6 +4,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { seedVersionMetadata } from "./appstore-metadata-files.mjs";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const OPENAI_RESPONSES_API_URL = "https://api.openai.com/v1/responses";
@@ -12,7 +14,15 @@ const OPENAI_REASONING_EFFORT = "low";
 
 const XCODE_PROJECT_PATH = path.join(__dirname, "../Paeonia.xcodeproj/project.pbxproj");
 const METADATA_SOURCE_PATH = path.join(__dirname, "appstore-metadata-source.json");
-const METADATA_OUTPUT_PATH = path.join(__dirname, "../fastlane/metadata");
+const METADATA_OUTPUT_PATH = path.join(__dirname, "../app-store/metadata");
+
+const versionConfig = await fs.readFile(path.join(__dirname, "../Version.xcconfig"), "utf8");
+const VERSION = versionConfig.match(/^MARKETING_VERSION\s*=\s*(\S+)/m)?.[1];
+if (!/^\d+(?:\.\d+){1,2}$/.test(VERSION ?? "")) throw new Error("MARKETING_VERSION must be a numeric App Store version");
+const APP_INFO_FIELDS = { name: "name", subtitle: "subtitle" };
+const VERSION_FIELDS = {
+  description: "description", keywords: "keywords", promotional_text: "promotionalText", release_notes: "whatsNew",
+};
 
 const args = process.argv.slice(2);
 const validateOnly = args.includes("--validate-only");
@@ -188,27 +198,38 @@ function keywordOverlap(first, second) {
 }
 
 async function readExistingFields(folderName, fields) {
-  const localeDir = path.join(METADATA_OUTPUT_PATH, folderName);
   const existing = {};
-
-  for (const field of fields) {
-    try {
-      existing[field] = (await fs.readFile(path.join(localeDir, `${field}.txt`), "utf-8")).trim();
-    } catch {
-      // Missing fields are generated below.
+  for (const [scope, mapping] of [["app-info", APP_INFO_FIELDS], [`version/${VERSION}`, VERSION_FIELDS]]) {
+    const data = await readMetadataJSON(path.join(METADATA_OUTPUT_PATH, scope, `${folderName}.json`));
+    for (const field of fields) {
+      if (field in mapping && mapping[field] in data) existing[field] = data[mapping[field]];
     }
   }
-
   return existing;
 }
 
-async function writeMetadataFiles(folderName, metadata) {
-  const localeDir = path.join(METADATA_OUTPUT_PATH, folderName);
-  await fs.mkdir(localeDir, { recursive: true });
+async function readMetadataJSON(file) {
+  try {
+    return JSON.parse(await fs.readFile(file, "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT") return {};
+    throw error;
+  }
+}
 
-  for (const field of FIELDS) {
-    if (!(field in metadata)) continue;
-    await fs.writeFile(path.join(localeDir, `${field}.txt`), `${metadata[field]}\n`, "utf-8");
+/**
+ * Write metadata files for a locale
+ * Only writes fields present in the metadata object (skips missing keys)
+ */
+async function writeMetadataFiles(folderName, metadata) {
+  for (const [scope, mapping] of [["app-info", APP_INFO_FIELDS], [`version/${VERSION}`, VERSION_FIELDS]]) {
+    const file = path.join(METADATA_OUTPUT_PATH, scope, `${folderName}.json`);
+    const data = await readMetadataJSON(file);
+    for (const [field, key] of Object.entries(mapping)) {
+      if (field in metadata) data[key] = metadata[field] || "";
+    }
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, JSON.stringify(data, null, 2) + "\n", "utf8");
   }
 }
 
@@ -423,6 +444,8 @@ async function main() {
     console.log("Source metadata validation passed.");
     return;
   }
+
+  await seedVersionMetadata(METADATA_OUTPUT_PATH, VERSION);
 
   console.log("Writing source locale metadata...");
   for (const locale of SOURCE_LOCALES) {

@@ -519,10 +519,10 @@ Run these on real devices where possible.
 
 ## App Store Connect
 
-The text metadata lives in `ios/Scripts/appstore-metadata-source.json`, and `ios/Scripts/generate-appstore-metadata.mjs` writes it to `ios/fastlane/metadata/`.
+The text metadata lives in `ios/Scripts/appstore-metadata-source.json`, and `ios/Scripts/generate-appstore-metadata.mjs` writes native ASC JSON to `ios/app-store/metadata/`. The upload workflow is in `ios/app-store/README.md`.
 
 - [x] App name: `Paeonia`.
-- [ ] Subtitle, promotional text, description and keywords describe the current app. Rewritten on 2026-10-24 from competitor and App Store search research, with a new en-GB locale for a second Norwegian keyword field. In App Store Connect: upload them with `fastlane metadata`.
+- [ ] Subtitle, promotional text, description and keywords describe the current app. Rewritten on 2026-10-24 from competitor and App Store search research, with a new en-GB locale for a second Norwegian keyword field. In App Store Connect: plan them with `bun run app-store metadata`, then upload with `--apply`.
 - [ ] Category selected.
 - [ ] Age rating questionnaire completed honestly. The terms say 16+.
 - [ ] Copyright filled.

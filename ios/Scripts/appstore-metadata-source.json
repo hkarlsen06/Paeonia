@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$comment": "Source of truth for App Store metadata. The generator creates Fastlane .txt files from this.",
+  "$comment": "Source of truth for App Store metadata. The generator creates native ASC JSON files from this.",
   "metadata": {
     "en": {
       "name": "Paeonia: For Couples",
