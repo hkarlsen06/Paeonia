@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Access resolution: choosing the signed-in route from the server, the live
 /// access feed, or the snapshot saved on this phone, and running the privacy
@@ -7,6 +8,8 @@ import Foundation
 nonisolated struct SavedLaunchState: Sendable {
     let session: AuthSession
     let resolution: AccessRouteResolution
+    /// Both avatars' photos, decoded, by media asset id.
+    let profilePhotos: [UUID: UIImage]
 }
 
 extension RootViewModel {
@@ -66,6 +69,10 @@ extension RootViewModel {
             return
         }
 
+        // Before Home is built, so its avatars start with the photos instead of initials.
+        for (mediaAssetID, photo) in saved.profilePhotos {
+            PaeoniaImageMemoryCache.store(photo, for: mediaAssetID)
+        }
         route = .resolvingAccess(saved.session, previous: saved.resolution, holding: .launching)
     }
 
@@ -86,7 +93,29 @@ extension RootViewModel {
             return nil
         }
 
-        return SavedLaunchState(session: session, resolution: resolution)
+        let photos = await decodedSavedPhotos(
+            [session.profilePhotoAssetID, resolution.partnerProfilePhotoAssetID].compactMap(\.self)
+        )
+        return SavedLaunchState(session: session, resolution: resolution, profilePhotos: photos)
+    }
+
+    /// Reads the photos from this phone and decodes them for display. A photo that
+    /// was never downloaded is left out, and its avatar loads it as usual.
+    private func decodedSavedPhotos(_ mediaAssetIDs: [UUID]) async -> [UUID: UIImage] {
+        guard let savedProfilePhotos else {
+            return [:]
+        }
+
+        var photos: [UUID: UIImage] = [:]
+        for mediaAssetID in mediaAssetIDs {
+            guard let data = await savedProfilePhotos.profilePhotoData(for: mediaAssetID),
+                  let image = UIImage(data: data)
+            else {
+                continue
+            }
+            photos[mediaAssetID] = await image.byPreparingForDisplay() ?? image
+        }
+        return photos
     }
 
     /// After `savedAccessGracePeriod`, shows a saved paired snapshot as the

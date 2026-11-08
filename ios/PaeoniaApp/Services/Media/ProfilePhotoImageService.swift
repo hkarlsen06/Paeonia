@@ -108,6 +108,16 @@ nonisolated final class FileProfilePhotoImageCache: ProfilePhotoImageCaching {
     }
 }
 
+/// The launch reads saved photos through this, so it never waits on the network.
+extension FileProfilePhotoImageCache: ProfilePhotoImageProviding {
+    func profilePhotoData(for mediaAssetID: UUID?) async -> Data? {
+        guard let mediaAssetID else {
+            return nil
+        }
+        return await profilePhotoData(for: mediaAssetID)
+    }
+}
+
 actor ProfilePhotoImageService:
     ProfilePhotoImageProviding,
     ProfilePhotoImageCacheClearing,

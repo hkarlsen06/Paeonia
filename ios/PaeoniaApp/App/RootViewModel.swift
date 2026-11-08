@@ -28,6 +28,9 @@ final class RootViewModel {
     let inviteStore: any PairingInviteStoring
     let systemSideEffects: any RootSystemSideEffecting
     let deviceOwnerStore: any RootDeviceOwnerStoring
+    /// The profile photos saved on this phone, read without the network. The launch
+    /// decodes both avatars' photos from it so Home's first frame shows them.
+    let savedProfilePhotos: (any ProfilePhotoImageProviding)?
     /// The signed-out flow from welcome to sign-in.
     let welcomeFlow: WelcomeFlowModel
     /// Whether the auth provider still has an active session right now, read
@@ -126,6 +129,7 @@ final class RootViewModel {
         systemSideEffects: (any RootSystemSideEffecting)? = nil,
         liveSync: (any LiveSyncCoordinating)? = nil,
         deviceOwnerStore: (any RootDeviceOwnerStoring)? = nil,
+        savedProfilePhotos: (any ProfilePhotoImageProviding)? = nil,
         welcomeFlow: WelcomeFlowModel? = nil,
         authProviderSessionIsActive: (@MainActor () -> Bool?)? = nil,
         appleIsLinked: (@MainActor () async -> Bool)? = nil,
@@ -142,7 +146,8 @@ final class RootViewModel {
         self.privacyLifecycle = RootPrivacyLifecycle(syncService: resolvedSyncService)
         self.authService = authService ?? AuthServiceFactory.makeDefault()
         self.accessRouteService = accessRouteService ?? (try? RemoteAccessRouteService.live())
-        self.accessSnapshotStore = accessSnapshotStore ?? Self.makeDefaultAccessSnapshotStore()
+        self.accessSnapshotStore = accessSnapshotStore
+            ?? SwiftDataAccessSyncSnapshotRepository(container: PaeoniaLocalStore.shared.container)
         self.inviteStore = inviteStore ?? UserDefaultsPairingInviteStore.shared
         let resolvedCelebrationStore = pairingCelebrationStore ?? UserDefaultsPairingCelebrationStore.shared
         self.pairingCelebrationStore = resolvedCelebrationStore
@@ -153,6 +158,8 @@ final class RootViewModel {
         let resolvedOwnerStore = deviceOwnerStore
             ?? (syncService == nil ? UserDefaultsRootDeviceOwnerStore() : InMemoryRootDeviceOwnerStore())
         self.deviceOwnerStore = resolvedOwnerStore
+        // Tests and scenarios never read the real phone's photos.
+        self.savedProfilePhotos = savedProfilePhotos ?? (syncService == nil ? FileProfilePhotoImageCache.live() : nil)
         // The same split for the signed-out flow: tests and scenarios keep its notes
         // in memory and count nothing.
         self.welcomeFlow = welcomeFlow ?? (syncService == nil
@@ -163,10 +170,6 @@ final class RootViewModel {
                 startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: InMemoryPendingSyncOperationRepository())
             ))
         self.savedAccessGracePeriod = savedAccessGracePeriod
-    }
-
-    private static func makeDefaultAccessSnapshotStore() -> any AccessSyncSnapshotPersisting {
-        SwiftDataAccessSyncSnapshotRepository(container: PaeoniaLocalStore.shared.container)
     }
 
     func start(deferringSyncUntilLaunchCompletes: Bool = false) async {
