@@ -4,7 +4,7 @@ import UIKit
 @testable import PaeoniaApp
 
 struct DailyChallengeReadOverviewTests {
-    @Test func readOverviewSeparatesExpiredDailyAnswersFromCurrentActivity() {
+    @Test func olderUnansweredQuestionsStayAboveConversations() {
         let t1 = TestDailyChallengeIDs.answerDate
         let t2 = t1.addingTimeInterval(3_600)
         let t3 = t2.addingTimeInterval(3_600)
@@ -45,22 +45,20 @@ struct DailyChallengeReadOverviewTests {
 
         let quiet = QuestionsTabContent(
             current: snapshot.questions, topics: [], history: [], conversations: [],
-            today: "2026-06-27", timeZone: .gmt,
-            attentionDate: { $0.attentionDate(seen: [], unreadMessageAt: nil) }
+            messageDate: { _ in nil }
         )
-        #expect(quiet.attention.isEmpty)
-        #expect(quiet.recent.map(\.id) == [today, finished, awaiting])
+        #expect(quiet.waitingForYou.map(\.id) == [awaiting])
+        #expect(quiet.recent.map(\.id) == [today, finished])
 
         let withMessage = QuestionsTabContent(
             current: snapshot.questions, topics: [], history: [], conversations: [],
-            today: "2026-06-27", timeZone: .gmt,
-            attentionDate: { $0.attentionDate(seen: [], unreadMessageAt: $0.id == finished ? t3 : nil) }
+            messageDate: { $0.id == finished ? t3.addingTimeInterval(60) : nil }
         )
-        #expect(withMessage.attention.map(\.id) == [finished])
-        #expect(withMessage.recent.map(\.id) == [today, awaiting])
+        #expect(withMessage.waitingForYou.map(\.id) == [awaiting])
+        #expect(withMessage.recent.map(\.id) == [finished, today])
     }
 
-    @Test func todaysMemoryAndStoryChatsJoinTodaysListAndOlderUnreadChatsRankWithTheNew() {
+    @Test func allConversationKindsUseActivityOrderBelowUnansweredQuestions() throws {
         let t0 = TestDailyChallengeIDs.answerDate
         let t1 = t0.addingTimeInterval(600)
         let t2 = t1.addingTimeInterval(600)
@@ -99,31 +97,32 @@ struct DailyChallengeReadOverviewTests {
         let content = QuestionsTabContent(
             current: snapshot.questions, topics: [], history: [],
             conversations: [readStory, earlierStory, unreadStory, readMemory, unreadMemory, earlierMemory],
-            today: MemoryTimeline.localDateString(for: t0, timeZone: .gmt), timeZone: .gmt,
-            attentionDate: { $0.attentionDate(seen: [], unreadMessageAt: nil) }
+            messageDate: { _ in nil }
         )
-        #expect(content.attention.map(\.id) == [unreadMemory.id, newAnswer, unreadStory.id,
-                                                earlierStory.id, earlierMemory.id])
-        #expect(content.recent.map(\.id) == [recent, readStory.id, readMemory.id, awaiting])
+        #expect(content.waitingForYou.map(\.id) == [awaiting])
+        let rows = content.recent.map(\.id)
+        #expect(rows.prefix(1) == [recent])
+        #expect(Set(rows) == [recent, readStory.id, unreadMemory.id, newAnswer, unreadStory.id,
+                              readMemory.id, earlierStory.id, earlierMemory.id])
+        let answerIndex = try #require(rows.firstIndex(of: newAnswer))
+        let memoryIndex = try #require(rows.firstIndex(of: readMemory.id))
+        #expect(answerIndex < memoryIndex)
     }
 
-    @Test func readingAnOlderConversationReturnsItToHistoryWithoutDuplicates() {
+    @Test func readingAnOlderConversationKeepsItsActivityPosition() {
         let now = TestDailyChallengeIDs.answerDate
-        let today = MemoryTimeline.localDateString(for: now)
         let unread = storyConversation(postedAt: now.addingTimeInterval(-86_400), isUnread: true)
         let read = SubjectConversation(subject: unread.subject, summary: unread.summary, isUnread: false)
 
         func content(_ conversation: SubjectConversation) -> QuestionsTabContent {
             QuestionsTabContent(
                 current: [], topics: [], history: [], conversations: [conversation],
-                today: today, timeZone: .current, attentionDate: { _ in nil }
+                messageDate: { _ in nil }
             )
         }
-        #expect(content(unread).attention.map(\.id) == [unread.id])
-        #expect(content(read).attention.isEmpty)
-        #expect(content(read).recent.isEmpty)
-        let afterReading = DailyChallengeHistory.adding([read], before: today, to: [])
-        #expect(afterReading.flatMap(\.rows).map(\.id) == [read.id])
+        #expect(content(unread).recent.map(\.id) == [unread.id])
+        #expect(content(read).waitingForYou.isEmpty)
+        #expect(content(read).recent.map(\.id) == [read.id])
     }
 
     @Test func aPartnerAnswerIsNewUntilYouHaveSeenIt() throws {

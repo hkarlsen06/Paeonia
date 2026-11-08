@@ -28,8 +28,7 @@ struct QuestionsTabContentTests {
     ) -> QuestionsTabContent {
         QuestionsTabContent(
             current: current, topics: [], history: history, conversations: conversations,
-            today: "2026-06-27", timeZone: .gmt,
-            attentionDate: { $0.attentionDate(seen: [], unreadMessageAt: unreadMessageAt) }
+            messageDate: { _ in unreadMessageAt }
         )
     }
 
@@ -43,31 +42,41 @@ struct QuestionsTabContentTests {
         )
         let oldWithNewMessage = SubjectConversation(subject: old.subject, summary: summary, isUnread: true)
 
-        #expect(content(conversations: [recent, oldWithNewMessage]).attention.map(\.id)
+        #expect(content(conversations: [recent, oldWithNewMessage]).recent.map(\.id)
             == [old.id, recent.id])
     }
 
-    @Test func awaitingAnswersAndAnswersToOpenUseTheSameActivityOrder() {
+    @Test func unansweredQuestionsStayAboveNewerAnsweredQuestions() {
         let awaiting = question(seededAt: now - 600, partnerAnsweredAt: now - 300, ownAnswered: false, current: true)
         let toOpen = question(seededAt: now - 600, partnerAnsweredAt: now, current: true)
-        #expect(content(current: [awaiting, toOpen]).attention.map(\.id) == [toOpen.id, awaiting.id])
+        #expect(content(current: [awaiting, toOpen]).waitingForYou.map(\.id) == [awaiting.id])
+        #expect(content(current: [awaiting, toOpen]).recent.map(\.id) == [toOpen.id])
     }
 
-    @Test func aRecurringQuestionHasOneAttentionCardFromItsNewestRound() {
+    @Test func aRecurringQuestionHasOneConversationCardFromItsNewestRound() {
         let questionID = UUID()
         let oldLateAnswer = question(questionID: questionID, seededAt: now - 3 * 86_400, partnerAnsweredAt: now)
         let newestRound = question(questionID: questionID, seededAt: now - 86_400, partnerAnsweredAt: now - 600)
         let result = content(history: [oldLateAnswer, newestRound], unreadMessageAt: now + 60)
 
-        #expect(result.attention.map(\.id) == [newestRound.id])
-        #expect(result.shownQuestionIDs == [newestRound.id])
+        #expect(result.recent.map(\.id) == [newestRound.id])
+        #expect(result.waitingForYou.isEmpty)
     }
 
-    @Test func anExpiredUnseenDailyAnswerIsQuietUntilItsChatHasANewMessage() {
+    @Test func olderAnsweredQuestionsStayInTheConversationList() {
         let old = question(seededAt: now - 86_400, partnerAnsweredAt: now - 600)
         #expect(old.hasNewPartnerAnswer(seen: []))
-        #expect(content(history: [old]).attention.isEmpty)
-        #expect(content(history: [old], unreadMessageAt: now).attention.map(\.id) == [old.id])
+        #expect(content(history: [old]).waitingForYou.isEmpty)
+        #expect(content(history: [old], unreadMessageAt: now).recent.map(\.id) == [old.id])
+    }
+
+    @Test func aLateAnswerToAnOlderRoundDeterminesTheConversationCard() {
+        let questionID = UUID()
+        let late = question(questionID: questionID, seededAt: now - 3 * 86_400, partnerAnsweredAt: now)
+        let newerRound = question(questionID: questionID, seededAt: now - 86_400, partnerAnsweredAt: now - 600)
+        let other = question(seededAt: now - 300, partnerAnsweredAt: now - 60)
+        let result = content(history: [late, newerRound, other])
+        #expect(result.recent.map(\.id) == [late.id, other.id])
     }
 
     @Test func currentReadStateWinsOverAStaleCopyInHistory() {
@@ -76,7 +85,51 @@ struct QuestionsTabContentTests {
         seen.partnerAnswerSeenAt = now + 60
         let result = content(current: [seen], history: [old])
 
-        #expect(result.attention.isEmpty)
+        #expect(result.waitingForYou.isEmpty)
         #expect(result.recent.map(\.id) == [old.id])
+    }
+
+    @Test func aReadMessageKeepsAnOldQuestionAboveNewerAnswers() {
+        let old = question(seededAt: now - 10 * 86_400, partnerAnsweredAt: now - 9 * 86_400)
+        let newer = question(seededAt: now - 600, partnerAnsweredAt: now - 300)
+        let result = QuestionsTabContent(
+            current: [], topics: [], history: [newer, old], conversations: [],
+            messageDate: { $0.id == old.id ? now : nil }
+        )
+        #expect(result.recent.map(\.id) == [old.id, newer.id])
+        #expect(result.waitingForYou.isEmpty)
+    }
+
+    @Test func anOlderUnansweredRoundRemainsDiscoverableBesideANewerCompletedRound() {
+        let questionID = UUID()
+        let waiting = question(questionID: questionID, seededAt: now - 86_400,
+                               partnerAnsweredAt: now - 3_600, ownAnswered: false)
+        let answered = question(questionID: questionID, seededAt: now - 600, partnerAnsweredAt: now)
+        let result = content(current: [waiting, answered])
+        #expect(result.waitingForYou.map(\.id) == [waiting.id])
+        #expect(result.recent.isEmpty)
+    }
+
+    @Test func answerPreviewsNeverExposeAnUnrevealedPartnerAnswer() {
+        let revealed = previewHistoryQuestion(
+            localDate: "2026-06-27", prompt: "Question", ownText: "My answer", partnerText: "Private answer"
+        )
+        var question = DailyChallengeQuestion(
+            id: revealed.id, coupleDayID: revealed.coupleDayID, coupleID: revealed.coupleID,
+            localDate: revealed.localDate, effectiveLocalDate: revealed.effectiveLocalDate,
+            startsAt: revealed.startsAt, endsAt: revealed.endsAt, status: revealed.status,
+            questionID: revealed.questionID, questionVersionID: revealed.questionVersionID,
+            questionKey: revealed.questionKey, prompt: revealed.prompt, shortPrompt: revealed.shortPrompt,
+            answerKinds: revealed.answerKinds, ownAnswer: revealed.ownAnswer, partnerAnswer: revealed.partnerAnswer,
+            canViewPartnerAnswer: false, ownAnswerDetail: revealed.ownAnswerDetail,
+            partnerAnswerDetail: revealed.partnerAnswerDetail, isCurrentDay: false
+        )
+        let participants = DailyChallengeParticipants(partnerDisplayName: "Robin")
+        let ownPreview = question.answerPreview(participants: participants)
+        #expect(ownPreview?.contains("My answer") == true)
+        #expect(ownPreview?.contains("Private answer") == false)
+        question.ownAnswer = nil
+        question.ownAnswerDetail = nil
+        #expect(question.answerPreview(participants: participants) == nil)
     }
 }

@@ -4969,6 +4969,60 @@
         }
       }
     },
+    "chats.mediaAnswerPreview" : {
+      "comment" : "Preview for a photo or voice answer when the conversation has no text reply.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo or voice message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilde eller talemelding"
+          }
+        }
+      }
+    },
+    "chats.recentConversations" : {
+      "comment" : "Chats section ordered by latest conversation activity.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conversations"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samtaler"
+          }
+        }
+      }
+    },
+    "chats.waitingForYou" : {
+      "comment" : "Chats section for questions the partner answered that still need your answer, including older days.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på deg"
+          }
+        }
+      }
+    },
     "common.actionFailed.message" : {
       "comment" : "Message of a banner when an action, such as starting a game or sending an invite, failed. Shown when the phone is online but the server failed, so it must not blame the connection.",
       "extractionState" : "manual",

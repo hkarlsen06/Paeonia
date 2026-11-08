@@ -46,6 +46,22 @@ extension DailyChallengeViewModel {
         threadSummariesByQuestionID[questionID]?.lastMessagePreview
     }
 
+    func threadSummary(for questionID: UUID) -> ThreadChatSummary? {
+        threadSummariesByQuestionID[questionID]
+    }
+
+    func conversationPreview(for question: DailyChallengeQuestion) -> String? {
+        if question.isChatAvailable, let summary = threadSummary(for: question.questionID),
+           let preview = summary.lastMessagePreview,
+           (summary.lastMessageAt ?? .distantPast) >= question.latestAnswerDate
+            || question.answerPreview(participants: participants) == nil {
+            let name = summary.lastMessageSenderUserID == participants.currentUserID
+                ? String(localized: .chatsCoupleChatYou) : participants.partnerName
+            return String(localized: .chatsCoupleChatPreview(name, preview))
+        }
+        return question.answerPreview(participants: participants)
+    }
+
     func hasUnreadChat(for questionID: UUID) -> Bool {
         guard let summary = threadSummariesByQuestionID[questionID], let currentUserID else { return false }
         return summary.isUnread(by: currentUserID, readThrough: chatReadMarks[summary.threadID])

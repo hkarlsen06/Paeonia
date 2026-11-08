@@ -78,8 +78,14 @@ struct SubjectConversationCard: View {
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)
             }
+            Text(max(conversation.startedAt, conversation.summary.lastMessageAt ?? .distantPast),
+                 format: .dateTime.day().month(.abbreviated).hour().minute())
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
             if let preview = conversation.summary.lastMessagePreview {
-                Text(verbatim: preview)
+                let name = conversation.summary.lastMessageSenderUserID == people.currentUserID
+                    ? String(localized: .chatsCoupleChatYou) : people.partnerName
+                Text(.chatsCoupleChatPreview(name, preview))
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .lineLimit(2)

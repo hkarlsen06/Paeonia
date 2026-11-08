@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Today's unanswered challenge stays first. Outstanding conversations follow it,
-/// then game presence and handled content. Earlier answer rounds remain in history.
+/// Unanswered partner questions stay above the activity-ordered conversations.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
     /// Namespace for the daily question zoom transition. The hero card and each
@@ -63,17 +62,7 @@ struct DailyChallengeScreen: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                    coupleChatCard
-                    heroCard
-                    if isDayComplete { topicsEntry }
-                    rowsList(attentionRows)
-                    if !isDayComplete { topicsEntry }
-                    activeGameChats
-                    rowsList(tabContent.recent)
-                    topicsShelf
-                    earlierDays
-                }
+                screenContent
                 // The hero shrinking to one row moves everything under it with a glide.
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isDayComplete)
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isCalm)
@@ -165,6 +154,19 @@ struct DailyChallengeScreen: View {
         }
         .onChange(of: viewModel.notice) { _, notice in
             showBanner(for: notice)
+        }
+    }
+
+    private var screenContent: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+            coupleChatCard
+            waitingSection
+            heroCard
+            topicsEntry
+            topicsShelf
+            activeGameChats
+            conversationSection
+            historyStatus
         }
     }
 
@@ -287,7 +289,7 @@ struct DailyChallengeScreen: View {
             return
         }
 
-        let shownIDs = tabContent.shownQuestionIDs
+        let shownIDs = Set((tabContent.waitingForYou + tabContent.recent).map(\.id))
         let questionIDs = focusedIDs.filter(shownIDs.contains)
         guard let firstID = questionIDs.first else {
             focusedQuestionIDs.wrappedValue = []
@@ -325,7 +327,10 @@ extension DailyChallengeScreen {
                 zoomNamespace: zoomNamespace,
                 isHighlighted: highlightedQuestionIDs.contains(question.id),
                 onAnswer: { onAnswerPartnerQuestion(question) },
-                lastMessagePreview: viewModel.threadPreview(for: question.questionID),
+                lastMessagePreview: viewModel.conversationPreview(for: question),
+                activityDate: question.conversationActivityDate(
+                    messageDate: viewModel.threadSummary(for: question.questionID)?.lastMessageAt
+                ),
                 hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
                 hasNewPartnerAnswer: (question.isCurrentDay || question.topicKey != nil)
                     && viewModel.hasNewPartnerAnswer(question),
@@ -340,22 +345,22 @@ extension DailyChallengeScreen {
         }
     }
 
-    /// Earlier days, minus the questions today's list already shows.
     @ViewBuilder
-    private var earlierDays: some View {
+    private var historyStatus: some View {
         if let historyViewModel {
-            DailyChallengeEarlierDaysView(
-                history: historyViewModel,
-                viewModel: viewModel,
-                conversations: ordinaryConversations.filter { !$0.isUnread },
-                today: viewModel.snapshot.todayLocalDate,
-                timeZone: viewModel.snapshot.timeZone,
-                storyPeople: storyPeople,
-                shownQuestionIDs: tabContent.shownQuestionIDs,
-                onOpenChat: { openChat($0) },
-                onOpenConversation: openConversation,
-                onRetry: { Task { await historyViewModel.load() } }
-            )
+            switch historyViewModel.state {
+            case .loading:
+                ProgressView().tint(.paeoniaAccentPrimary).frame(maxWidth: .infinity)
+            case .failed(let failure):
+                PaeoniaLoadFailureView(failure: failure, offlineMessage: .dailyChallengeHistoryLoadFailedMessage) {
+                    Button { Task { await historyViewModel.load() } } label: {
+                        Text(.dailyChallengeHistoryRetryButton)
+                    }
+                    .buttonStyle(PaeoniaPrimaryButtonStyle())
+                }
+            case .empty, .content:
+                EmptyView()
+            }
         }
     }
 
@@ -386,12 +391,11 @@ extension DailyChallengeScreen {
     }
 
     private var isCalm: Bool {
-        isDayComplete && tabContent.attention.isEmpty && topicsCard?.hook == nil
+        isDayComplete && tabContent.waitingForYou.isEmpty && topicsCard?.hook == nil
             && !(topicsCard?.shelfTopics.isEmpty ?? true)
     }
 
-    /// Once today's challenge is answered, topic navigation stays above outstanding rows.
-    /// Private topic details remain inside their topic.
+    /// Topics remain reachable above the full conversation history, below unanswered questions.
     @ViewBuilder
     var topicsEntry: some View {
         if let topicsCard, topicsCard.isShown, !isCalm {
@@ -406,7 +410,7 @@ extension DailyChallengeScreen {
         }
     }
 
-    /// Every topic under today's list while the tab is calm.
+    /// Every topic below the daily prompt while the tab is calm.
     @ViewBuilder
     var topicsShelf: some View {
         if let topicsCard, topicsCard.isShown, isCalm {

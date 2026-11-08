@@ -28,6 +28,7 @@ struct DailyChallengeReadCard: View {
     var isHighlighted = false
     var onAnswer: () -> Void = {}
     var lastMessagePreview: String?
+    var activityDate: Date?
     var hasUnreadChat = false
     /// The user can read the partner's answer and hasn't seen it yet.
     var hasNewPartnerAnswer = false
@@ -45,7 +46,7 @@ struct DailyChallengeReadCard: View {
     /// reply. When sending, the row shows the "saved, sending" preview instead, so this
     /// stays false.
     private var isAnswerable: Bool {
-        sending == nil && question.isAwaitingCurrentUserAnswer && !isUnread
+        sending == nil && question.isAwaitingCurrentUserAnswer
     }
 
     private var opensPage: Bool {
@@ -111,16 +112,7 @@ struct DailyChallengeReadCard: View {
             if completionState != nil {
                 completionLabel
             }
-            if let topicTitle {
-                Text(verbatim: topicTitle)
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextSecondary)
-            }
-            Text(question.prompt)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            questionHeading
 
             if let sending, completionState == nil {
                 DailySendingAnswerView(
@@ -132,12 +124,38 @@ struct DailyChallengeReadCard: View {
                     mediaAccessibilityText: sending.mediaAccessibilityText
                 )
             } else {
+                if let preview = lastMessagePreview?.trimmedNonEmpty, !isAnswerable {
+                    Text(verbatim: preview)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                }
                 statusRow
             }
         }
         .padding(PaeoniaSpacing.cardContentPadding)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+    }
+
+    private var questionHeading: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            if let topicTitle {
+                Text(verbatim: topicTitle)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
+            if let activityDate {
+                Text(activityDate, format: .dateTime.day().month(.abbreviated).hour().minute())
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
+            Text(question.prompt)
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private var completionLabel: some View {
@@ -163,20 +181,11 @@ struct DailyChallengeReadCard: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
-                statusText
-                    .font(isNew ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.caption)
-                    .foregroundStyle(isNew ? Color.paeoniaTextPrimary : Color.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if isUnread, let preview = lastMessagePreview?.trimmedNonEmpty {
-                    Text(verbatim: preview)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            statusText
+                .font(isNew ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.caption)
+                .foregroundStyle(isNew ? Color.paeoniaTextPrimary : Color.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             if !dynamicTypeSize.isAccessibilitySize {
                 accessory
@@ -186,10 +195,10 @@ struct DailyChallengeReadCard: View {
 
     /// What the row says about the question, in the order the cases can happen.
     private var statusText: Text {
-        if isUnread { return Text(.dailyChatCardUnreadTitle(participants.partnerName)) }
         if isAnswerable {
             return Text(.dailyChallengePartnerHiddenMessage(participants.partnerName))
         }
+        if isUnread { return Text(.dailyChatCardUnreadTitle(participants.partnerName)) }
         if sending != nil {
             return Text(question.hasPartnerAnswer
                 ? .dailyChallengePartnerHidden(participants.partnerName)
@@ -200,9 +209,7 @@ struct DailyChallengeReadCard: View {
         guard question.hasRevealedPartnerAnswer else {
             return Text(.dailyChallengePartnerHidden(participants.partnerName))
         }
-        if isUnread { return Text(.dailyChatCardUnreadTitle(participants.partnerName)) }
         if isNew { return Text(.dailyChallengeRowNewPartnerAnswer(participants.partnerName)) }
-        if let preview = lastMessagePreview?.trimmedNonEmpty { return Text(verbatim: preview) }
         return Text(.dailyChallengeRowBothAnswered)
     }
 

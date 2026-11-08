@@ -1,49 +1,45 @@
 import Foundation
 
-/// The attention list has one card per conversation. Answer rounds remain separate in history.
+/// One card per question conversation, with unanswered partner questions kept above the timeline.
 nonisolated struct QuestionsTabContent {
-    let attention: [QuestionsTabRow]
+    let waitingForYou: [QuestionsTabRow]
     let recent: [QuestionsTabRow]
-
-    var shownQuestionIDs: Set<UUID> {
-        Set((attention + recent).compactMap { row in
-            guard case .question(let question) = row else { return nil }
-            return question.id
-        })
-    }
 
     init(
         current: [DailyChallengeQuestion],
         topics: [DailyChallengeQuestion],
         history: [DailyChallengeQuestion],
         conversations: [SubjectConversation],
-        today: String,
-        timeZone: TimeZone,
-        attentionDate: (DailyChallengeQuestion) -> Date?
+        messageDate: (DailyChallengeQuestion) -> Date?
     ) {
         // Current snapshots win over a history read of the same answer round.
         let byID = Dictionary((history + topics + current).map { ($0.id, $0) }, uniquingKeysWith: { _, live in live })
-        let grouped = Dictionary(grouping: byID.values.filter { attentionDate($0) != nil }, by: \.questionID)
-        let questions = grouped.values.compactMap { rounds in
-            rounds.max { ($0.startsAt, $0.id.uuidString) < ($1.startsAt, $1.id.uuidString) }
-        }
-        let promotedQuestionIDs = Set(questions.map(\.questionID))
-        let rows = questions.map(QuestionsTabRow.question)
-            + conversations.filter(\.isUnread).map(QuestionsTabRow.conversation)
-        attention = rows.sorted { lhs, rhs in
-            func date(_ row: QuestionsTabRow) -> Date {
-                switch row {
-                case .question(let question): attentionDate(question) ?? question.latestAnswerDate
-                case .conversation(let conversation): conversation.summary.lastMessageAt ?? conversation.startedAt
-                }
+        let grouped = Dictionary(grouping: byID.values, by: \.questionID)
+        let waiting = grouped.values.compactMap { rounds in
+            rounds.filter(\.isAwaitingCurrentUserAnswer).max {
+                ($0.startsAt, $0.id.uuidString) < ($1.startsAt, $1.id.uuidString)
             }
-            if date(lhs) != date(rhs) { return date(lhs) > date(rhs) }
-            return lhs.id.uuidString < rhs.id.uuidString
         }
-        recent = (
-            current.filter { !promotedQuestionIDs.contains($0.questionID) }.map(QuestionsTabRow.question)
-                + conversations.filter { !$0.isUnread && $0.isToday(today, timeZone: timeZone) }
-                    .map(QuestionsTabRow.conversation)
-        ).sorted(by: QuestionsTabRow.timelineOrder)
+        let waitingIDs = Set(waiting.map(\.questionID))
+        waitingForYou = waiting.map(QuestionsTabRow.question).sorted(by: QuestionsTabRow.timelineOrder)
+        let questions = grouped.compactMap { questionID, rounds -> DailyChallengeQuestion? in
+            guard !waitingIDs.contains(questionID) else { return nil }
+            return rounds.max {
+                ($0.conversationActivityDate(messageDate: messageDate($0)), $0.startsAt, $0.id.uuidString)
+                    < ($1.conversationActivityDate(messageDate: messageDate($1)), $1.startsAt, $1.id.uuidString)
+            }
+        }
+        let rows = questions.map(QuestionsTabRow.question) + conversations.map(QuestionsTabRow.conversation)
+        func date(_ row: QuestionsTabRow) -> Date {
+            switch row {
+            case .question(let question): question.conversationActivityDate(messageDate: messageDate(question))
+            case .conversation(let conversation):
+                max(conversation.summary.lastMessageAt ?? .distantPast, conversation.startedAt)
+            }
+        }
+        recent = rows.sorted {
+            if date($0) != date($1) { return date($0) > date($1) }
+            return $0.id.uuidString < $1.id.uuidString
+        }
     }
 }
