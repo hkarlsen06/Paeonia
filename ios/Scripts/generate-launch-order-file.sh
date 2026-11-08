@@ -61,8 +61,8 @@ xcrun clang -target arm64-apple-ios27.0-simulator -isysroot "$sdk" -O1 \
 ./scripts/generate-ios-build-number.sh >/dev/null
 
 # ORDER_FILE is cleared so the old order does not shape the build that measures
-# the new one. DEBUG_INFORMATION_FORMAT=dwarf makes the "Upload dSYMs to PostHog"
-# build phase skip, so this build never sends symbols to PostHog.
+# the new one. DEBUG_INFORMATION_FORMAT=dwarf skips dsymutil, which this build
+# does not need. Only archives send symbols to PostHog.
 # -sanitize=undefined is the sanitizer the Swift driver requires
 # before it accepts -sanitize-coverage.
 xcodebuild \
