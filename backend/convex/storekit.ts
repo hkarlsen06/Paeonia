@@ -18,7 +18,7 @@ import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { timestampArg } from "./lib/ids";
 import { enqueueNotificationForUser } from "./lib/notifications";
-import { ENDING_NOTICE_DAYS, queueAccessEndingPushes } from "./lib/subscriptionNotices";
+import { ENDING_NOTICE_DAYS, queueAccessEndingPushes, subscriptionNotificationsEnabled } from "./lib/subscriptionNotices";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
 import {
   patchStorekitTransaction,
@@ -283,6 +283,7 @@ export const queue_subscription_trial_reminders = internalMutation({
     let picked = 0;
     for (const tx of candidates) {
       if (picked >= batchSize) break;
+      if (!subscriptionNotificationsEnabled(tx.environment)) continue;
       if (tx.transaction_id !== tx.original_transaction_id || !tx.expires_at) continue;
       // With renewal off the trial ends without a charge, and the payer hears of the end from the
       // ending push (`queue_subscription_ending_reminders`) instead.

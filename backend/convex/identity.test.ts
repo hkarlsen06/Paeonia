@@ -353,6 +353,25 @@ describe("devices", () => {
     expect(byId[secondId].disabled_at).toBeUndefined();
   });
 
+  test("registration disables duplicate tokens while preserving the other APNs environment", async () => {
+    const t = newTest();
+    const user = await createSignedInUser(t, {});
+    const args = { p_platform: "ios", p_push_token: token("shared"), p_apns_environment: "sandbox" };
+    await user.as.mutation(api.identity.register_user_device, args);
+    await t.run(async (ctx) => {
+      const original = (await ctx.db.query("user_devices").first())!;
+      const { _id, _creationTime, ...fields } = original;
+      await ctx.db.insert("user_devices", { ...fields, id: newUuid() });
+    });
+    const productionId = await user.as.mutation(api.identity.register_user_device, { ...args, p_apns_environment: "production" });
+    const keptId = await user.as.mutation(api.identity.register_user_device, args);
+    expect(await user.as.mutation(api.identity.register_user_device, args)).toBe(keptId);
+    const devices = await t.run((ctx) => ctx.db.query("user_devices").collect());
+    expect(devices.filter((device) => device.disabled_at === undefined).map((device) => device.id).sort())
+      .toEqual([keptId, productionId].sort());
+    expect(devices.find((device) => device.id !== keptId && device.id !== productionId)?.disabled_at).toBeDefined();
+  });
+
   test("disable_user_device only touches the caller's own devices", async () => {
     const t = newTest();
     const owner = await createSignedInUser(t, {});

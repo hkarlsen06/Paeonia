@@ -176,17 +176,18 @@ export const register_user_device = mutation({
       )
       .collect();
 
-    // A token belongs to one account. Disable it for anyone else.
+    const own = active
+      .filter((device) => device.user_id === userId)
+      .sort((a, b) => (a.updated_at === b.updated_at ? (a.id < b.id ? -1 : 1) : a.updated_at < b.updated_at ? 1 : -1))[0];
+
+    // Keep one active registration for this token, including within the same account.
     for (const other of active) {
-      if (other.user_id === userId) continue;
+      if (other.id === own?.id) continue;
       await assertNoPendingAccountDeletion(ctx, other.user_id);
       await ctx.db.patch(other._id, withTouch(other, { disabled_at: now }));
       await refreshStreakAfterDeviceTimeZoneChange(ctx, other.user_id, { ...other, disabled_at: now }, other);
     }
 
-    const own = active
-      .filter((device) => device.user_id === userId)
-      .sort((a, b) => (a.updated_at === b.updated_at ? (a.id < b.id ? -1 : 1) : a.updated_at < b.updated_at ? 1 : -1))[0];
     if (!own) {
       const id = newUuid();
       await ctx.db.insert("user_devices", {

@@ -3,6 +3,18 @@ import { findCurrentCouple, listActiveMembers } from "./access";
 import { accessEndsAt, resolveUserEntitlement } from "./entitlements";
 import { enqueueNotificationForUser } from "./notifications";
 import { addMs } from "./time";
+import { getByUuid } from "./db";
+import type { Doc } from "../_generated/dataModel";
+
+/** Test purchases stay quiet unless an operator explicitly enables subscription push testing. */
+export function subscriptionNotificationsEnabled(environment: Doc<"storekit_transactions">["environment"]): boolean {
+  return environment === "production" || process.env.PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS === "true";
+}
+
+export async function subscriptionPushAllowed(ctx: ReaderCtx, subscriptionId: unknown): Promise<boolean> {
+  const tx = typeof subscriptionId === "string" ? await getByUuid(ctx, "storekit_transactions", subscriptionId) : null;
+  return tx !== null && subscriptionNotificationsEnabled(tx.environment);
+}
 
 // The pushes that warn before access ends. Access itself ends where it always did, when the
 // last entitlement's `expires_at` passes. The expiry cron then stores the lapsed status
@@ -47,6 +59,7 @@ export async function paymentProblemPushWanted(ctx: ReaderCtx, userId: string): 
  * (`subscriptionId` is the transaction that failed to renew). The partner gets nothing.
  */
 export async function queuePaymentFailedPush(ctx: WriterCtx, userId: string, subscriptionId: string): Promise<number> {
+  if (!(await subscriptionPushAllowed(ctx, subscriptionId))) return 0;
   if (!(await paymentProblemPushWanted(ctx, userId))) return 0;
   return await enqueueNotificationForUser(ctx, {
     recipient_user_id: userId,
@@ -71,6 +84,7 @@ export async function queuePaymentFailedPush(ctx: WriterCtx, userId: string, sub
 export async function queueAccessEndingPushes(ctx: WriterCtx, payerUserId: string, now: string): Promise<number> {
   const { coupleId, userIds, entitlements, endsAt } = await sharedAccess(ctx, payerUserId);
   if (endsAt === null || endsAt <= now) return 0;
+  if (!(await endingSubscriptionPushAllowed(ctx, userIds, endsAt))) return 0;
   const noticeAt = addMs(endsAt, -ENDING_NOTICE_DAYS * DAY_MS);
   // Someone else's access lasts longer. The cron finds their subscription when its time comes.
   if (noticeAt > addMs(now, 3_600_000)) return 0;
@@ -123,5 +137,17 @@ export async function accessEndingPushStillWanted(
   recipientUserId: string,
   payload: Record<string, unknown>,
 ): Promise<boolean> {
-  return (await sharedAccess(ctx, recipientUserId)).endsAt === payload.ends_at;
+  const { userIds, endsAt } = await sharedAccess(ctx, recipientUserId);
+  return endsAt !== null && endsAt === payload.ends_at && await endingSubscriptionPushAllowed(ctx, userIds, endsAt);
+}
+
+async function endingSubscriptionPushAllowed(ctx: ReaderCtx, userIds: string[], endsAt: string): Promise<boolean> {
+  for (const userId of userIds) {
+    const transactions = await ctx.db.query("storekit_transactions")
+      .withIndex("by_user_id_status_expires_at", (q) =>
+        q.eq("user_id", userId).eq("status", "active").eq("expires_at", endsAt),
+      ).collect();
+    if (transactions.some((tx) => tx.auto_renew_off === true && subscriptionNotificationsEnabled(tx.environment))) return true;
+  }
+  return false;
 }

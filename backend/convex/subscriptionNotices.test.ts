@@ -30,6 +30,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array(apple.rootDer))));
   vi.stubEnv("APPLE_BUNDLE_ID", "no.paeonia.app");
   vi.stubEnv("APPLE_APP_APPLE_ID", "");
+  vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "true");
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -167,7 +168,42 @@ describe("a failed renewal payment", () => {
   });
 });
 
+describe("sandbox payment warnings", () => {
+  test("stay quiet by default and recheck the test opt-in before sending", async () => {
+    const { t, token } = await payingCouple();
+    vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "");
+    const failed: Notice = {
+      type: "DID_FAIL_TO_RENEW", expiresDate: Date.now() - 1000,
+      renewal: { autoRenewStatus: 1, isInBillingRetryPeriod: true },
+    };
+    await notify(t, token, failed);
+    expect(await outbox(t, "subscription_payment_failed")).toEqual([]);
+    vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "true");
+    await notify(t, token, failed);
+    expect(await outbox(t, "subscription_payment_failed")).toHaveLength(1);
+    vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "");
+    expect(await deliverDuePushes(t)).toEqual([]);
+  });
+});
+
 describe("a subscription the payer stopped", () => {
+  test.each(["sandbox", "xcode", "production"] as const)("%s ending warnings follow the purchase environment and explicit test opt-in", async (environment) => {
+    vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "");
+    const { t, token } = await payingCouple();
+    await notify(t, token, { type: "DID_CHANGE_RENEWAL_STATUS", expiresDate: Date.now() + day, renewal: { autoRenewStatus: 0 } });
+    await t.run(async (ctx) => {
+      const tx = (await ctx.db.query("storekit_transactions").first())!;
+      await ctx.db.patch(tx._id, { environment });
+    });
+    const runCron = () => t.mutation(internal.storekit.queue_subscription_ending_reminders, {});
+    expect(await runCron()).toBe(environment === "production" ? 2 : 0);
+    vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "true");
+    await runCron();
+    expect(await outbox(t, "subscription_ending")).toHaveLength(2);
+    vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "");
+    expect(await deliverDuePushes(t)).toHaveLength(environment === "production" ? 2 : 0);
+  });
+
   test("warns both partners five days before access ends, once, and turning renewal back on clears it", async () => {
     const { t, payer, partner, token, payerDevice, partnerDevice } = await payingCouple();
     const endsAt = Date.now() + 10 * day;

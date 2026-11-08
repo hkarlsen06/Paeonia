@@ -7,7 +7,7 @@ import { gamePushStillWanted } from "./gameRegistry";
 import type { GamePushKind } from "./games";
 import { pairingInviteStillWaiting } from "./pairingInviteReminder";
 import { hasStartedToday } from "./questionTimeStatus";
-import { accessEndingPushStillWanted, paymentProblemPushWanted } from "./subscriptionNotices";
+import { accessEndingPushStillWanted, paymentProblemPushWanted, subscriptionPushAllowed } from "./subscriptionNotices";
 import { addMs } from "./time";
 import { hasTopicWaiting, topicPushTooSoon } from "./topics";
 
@@ -97,6 +97,10 @@ export async function notificationStillWanted(
     return { wanted: false, reason: "out_of_date" };
   }
   // A payment that went through, or renewal turned back on, before the alert went out needs no alert.
+  if ((row.kind === "subscription_payment_failed" || row.kind === "subscription_trial_reminder") &&
+      !(await subscriptionPushAllowed(ctx, payload.subscription_id))) {
+    return { wanted: false, reason: "out_of_date" };
+  }
   if (row.kind === "subscription_payment_failed" && !(await paymentProblemPushWanted(ctx, recipientUserId))) {
     return { wanted: false, reason: "out_of_date" };
   }

@@ -114,7 +114,7 @@ describe("prepare_notification", () => {
     await queue(t, user, device, { kind: "memory_created", dedupe: "memory" });
     await queue(t, user, device, { kind: "thread_message_sent", dedupe: "message" });
     await queue(t, user, second, { kind: "memory_created", dedupe: "disabled-device" });
-    await queue(t, user, device, { kind: "subscription_trial_reminder", pushType: "background", dedupe: "always" });
+    await queue(t, user, device, { kind: "partner_joined", pushType: "background", dedupe: "always" });
     await t.run(async (ctx) => {
       const preference = await ctx.db.query("notification_preferences").first();
       await ctx.db.patch(preference!._id, { memories_enabled: false });

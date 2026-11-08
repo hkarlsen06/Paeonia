@@ -538,6 +538,7 @@ describe("expire_stale_entitlements", () => {
 });
 
 describe("queue_subscription_trial_reminders", () => {
+  beforeEach(() => vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "true"));
   type Seed = { id: string; userId: string; user: TestUser };
 
   async function trial(
@@ -597,6 +598,24 @@ describe("queue_subscription_trial_reminders", () => {
       (row) => row.kind === "subscription_trial_reminder",
     );
   }
+
+  test.each(["sandbox", "xcode", "production"] as const)("%s trial warnings follow the environment and test opt-in at send time too", async (environment) => {
+    const t = newTest();
+    await seedProducts(t);
+    const subscription = await trial(t, "test-trial", { expiresInHours: 24 });
+    await t.run(async (ctx) => {
+      const tx = (await ctx.db.query("storekit_transactions").collect()).find((row) => row.id === subscription.id)!;
+      await ctx.db.patch(tx._id, { environment });
+    });
+    vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "");
+    const runCron = () => t.mutation(internal.storekit.queue_subscription_trial_reminders, {});
+    expect(await runCron()).toBe(environment === "production" ? 1 : 0);
+    vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "true");
+    await runCron();
+    expect(await reminders(t)).toHaveLength(1);
+    vi.stubEnv("PAEONIA_TEST_SUBSCRIPTION_NOTIFICATIONS", "");
+    expect(await deliverDuePushes(t)).toHaveLength(environment === "production" ? 1 : 0);
+  });
 
   test("queues verified free trials per device, in bounded batches, once", async () => {
     const t = newTest();
