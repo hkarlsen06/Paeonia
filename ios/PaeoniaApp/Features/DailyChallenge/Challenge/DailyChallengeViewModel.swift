@@ -224,6 +224,9 @@ final class DailyChallengeViewModel {
         // can never update the newly signed-in user's screen.
         if self.currentUserID == newUserID, let cached {
             apply(cached.loadResult(currentUserID: newUserID, locale: .current), fromCache: true)
+            // The cache is the server's last answer, so a day nobody has started yet
+            // shows its start card now instead of loading until the server answers.
+            hasResolvedTodayState = true
         }
         let cachedThreads = await chatService.cachedThreadSummaries(ownerUserID: newUserID)
         let readMarks = await chatService.chatReadMarks(ownerUserID: newUserID)
