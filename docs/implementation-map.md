@@ -370,7 +370,7 @@ Most backend changes should start by reading `backend/AGENTS.md` and the module 
 - `marketing/src/lib/components/`: shared page components, including `PageHead.svelte` for titles and social previews.
 - `marketing/src/lib/i18n/dictionaries/`: localized marketing and legal dictionaries.
 - `marketing/src/lib/paths.ts`: localized route helper.
-- `marketing/functions/`: Cloudflare Pages Functions that send `/`, `/privacy`, `/terms` and `/support` to the visitor's language.
+- `functions/`: Cloudflare Pages Functions that send `/`, `/privacy`, `/terms` and `/support` to the visitor's language.
 - `marketing/static/_headers` and `marketing/static/_redirects`: Cloudflare Pages behavior.
 - `marketing/static/.well-known/apple-app-site-association`: Universal Links file.
 

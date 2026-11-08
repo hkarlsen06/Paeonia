@@ -42,7 +42,7 @@ The marketing app is a static SvelteKit 3 site built with `@sveltejs/adapter-sta
 - split dictionaries by domain and locale under `marketing/src/lib/i18n/dictionaries/`
 - keep route/path helpers in `marketing/src/lib/`
 - keep static deployment files in `marketing/static/`
-- keep Cloudflare Pages Functions in `marketing/functions/`
+- keep Cloudflare Pages Functions in `functions/`
 
 Avoid reintroducing a single large dictionary file as the site grows. Add new marketing copy to the marketing dictionaries, legal copy to the legal dictionaries, and app-required static files to `public/`.
 
@@ -279,4 +279,4 @@ Expected deployed result:
 - `/join/test-code` resolves to a page, not a 404.
 - privacy, terms, and support routes resolve.
 - `curl -I -H 'Accept-Language: nb' https://paeonia.no/privacy` redirects to `/no/privacy/`.
-- no app-required endpoint depends on a server runtime. The language redirects are Pages Functions in `marketing/functions/`. The root build command compiles that physical directory into `marketing/out/_worker.js` and preserves the routing rules from `marketing/static/_routes.json`. This avoids Wrangler resolving generated bundle paths relative to the root `functions` symlink. Both the Git build and the deploy script use this bundled Worker. Deploy from the repository root so Wrangler reads `wrangler.toml` and the correct output directory.
+- no app-required endpoint depends on a server runtime. The language redirects are Pages Functions in the physical root `functions/` directory. Keep it as a real directory because Wrangler resolves generated bundle paths incorrectly through a symlink. Deploy from the repository root so Wrangler reads `wrangler.toml`, finds the Functions, and uses `marketing/out/` with the routing rules from `marketing/static/_routes.json`.
