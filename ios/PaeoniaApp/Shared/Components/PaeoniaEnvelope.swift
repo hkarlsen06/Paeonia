@@ -116,10 +116,11 @@ struct PaeoniaEnvelope<Letter: View>: View {
                 .zIndex(2)
             PaeoniaEnvelopeLayer(part: .pocket, width: width)
                 .zIndex(3)
-            // It goes at once when the flap starts to move.
+            // It goes at once when the flap starts to move. Only that change skips the
+            // animation, so the layer still moves with the others when the envelope does.
             PaeoniaEnvelopeLayer(part: .uncut, width: width)
                 .opacity(isOpen ? 0 : 1)
-                .transaction { $0.animation = nil }
+                .transaction(value: isOpen) { $0.animation = nil }
                 .zIndex(5)
         }
         .frame(width: width, height: width / PaeoniaEnvelopeLayer.aspect)
