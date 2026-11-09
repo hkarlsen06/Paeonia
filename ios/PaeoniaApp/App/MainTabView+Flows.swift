@@ -132,11 +132,7 @@ extension MainTabView {
             userID: identity.currentUserID,
             isScreenBusy: scenePhase != .active
                 || !launchIntroComplete
-                || isAnswerFlowPresented
-                || partnerAnswerQuestion != nil
-                || showStreakRestore
-                || showStreakDetail
-                || streakMilestone != nil
+                || isModalOpen
         )
     }
 

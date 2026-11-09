@@ -54,6 +54,14 @@ Examples of pure/testable logic:
 - memory ordering
 - sync conflict handling
 
+### One enum per lifecycle
+
+When two or more stored properties together say what stage something is in, such as `isSending` with `sendFailed`, or a phase with flags that only matter in some phases, store one enum and derive the booleans from it. Each separate flag can be set or cleared on its own, so a code path that forgets one leaves a combination no screen expects. Reuse the shared types before you add one:
+
+- `GameSendState` (`Features/Games/Models/`) is how a game's queued moves are doing. A game screen reads `sendState.isHeldOnPhone` or `sendState.isFailing`, never its own flags.
+- `SyncRunLock` (`Services/Sync/PaeoniaSyncService.swift`) holds the sync service's one run slot. Only `finishPrivacyPurgeQuiescence` ends a privacy purge's hold.
+- `MainTabView.isModalOpen` lists every sheet and cover on the tab view. A sheet or cover added there goes into that list, so moments that open by themselves wait for it.
+
 ### Stable Presentation Readiness
 
 For any screen that can be the first app surface after launch, do not dismiss the launch/loading screen until the screen has a stable first presentation.

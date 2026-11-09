@@ -446,6 +446,22 @@ struct MainTabView: View {
     }
 }
 
+extension MainTabView {
+    /// A sheet or full-screen cover from this screen is up. A new sheet would not
+    /// show over it, so a moment that opens by itself waits while this is true. Add
+    /// every new sheet or cover here.
+    var isModalOpen: Bool {
+        isAnswerFlowPresented
+            || partnerAnswerQuestion != nil
+            || showStreakRestore
+            || showStreakDetail
+            || streakMilestone != nil
+            || isSearchPresented
+            || gameChatSheet != nil
+            || isLookBackDrawingHistoryPresented
+    }
+}
+
 #if DEBUG
 #Preview {
     MainTabView(

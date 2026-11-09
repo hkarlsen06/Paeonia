@@ -17,6 +17,14 @@ final class DailyVoiceRecorder {
         case recorded
     }
 
+    /// Why the last try gave no recording.
+    enum Setback: Equatable {
+        case permissionDenied
+        case startFailed
+        /// The take was under the minimum length and got thrown away.
+        case takeTooShort
+    }
+
     /// The backend rejects empty audio, so a shorter take would never finish sending.
     nonisolated static let minimumDurationMs = 1_000
 
@@ -28,11 +36,9 @@ final class DailyVoiceRecorder {
     private(set) var elapsed: TimeInterval = 0
     private(set) var recordedURL: URL?
     private(set) var recordedDurationMs: Int?
-    private(set) var permissionDenied = false
-    private(set) var hasStartFailed = false
-    /// True when the last take was under the minimum length and got thrown away. Clears
-    /// on the next start.
-    private(set) var isTakeTooShort = false
+    /// A denied microphone stays until a start is granted, so the notice does not
+    /// flicker while the permission check runs. The others clear on the next start.
+    private(set) var setback: Setback?
 
     let maxDuration: TimeInterval = 60
 
@@ -48,18 +54,19 @@ final class DailyVoiceRecorder {
         guard phase == .idle || phase == .recorded else { return }
         let previousPhase = phase
         phase = .starting
-        isTakeTooShort = false
-        hasStartFailed = false
+        if setback != .permissionDenied {
+            setback = nil
+        }
 
         let granted = await AVAudioApplication.requestRecordPermission()
         // The screen can go away while the permission prompt is up.
         guard phase == .starting else { return }
         guard granted else {
-            permissionDenied = true
+            setback = .permissionDenied
             phase = previousPhase
             return
         }
-        permissionDenied = false
+        setback = nil
         discardRecordedFile()
         recordedDurationMs = nil
         elapsed = 0
@@ -139,8 +146,9 @@ final class DailyVoiceRecorder {
         discardRecordedFile()
         recordedDurationMs = nil
         elapsed = 0
-        isTakeTooShort = false
-        hasStartFailed = false
+        if setback != .permissionDenied {
+            setback = nil
+        }
         phase = .idle
     }
 
@@ -159,7 +167,7 @@ final class DailyVoiceRecorder {
             discardRecordedFile()
             recordedDurationMs = nil
             elapsed = 0
-            isTakeTooShort = true
+            setback = .takeTooShort
             phase = .idle
             return
         }
@@ -174,7 +182,7 @@ final class DailyVoiceRecorder {
     private func abortStart(removing url: URL) {
         try? FileManager.default.removeItem(at: url)
         deactivateSession()
-        hasStartFailed = true
+        setback = .startFailed
         phase = .idle
     }
 

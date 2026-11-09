@@ -105,16 +105,9 @@ extension MainTabView {
             visit: todaysQuestionVisit,
             isAppReady: scenePhase == .active && launchIntroComplete && !AppLockModel.shared.isCovering,
             isHomeInFront: selection.wrappedValue == .us
-                && !isAnswerFlowPresented
-                && partnerAnswerQuestion == nil
-                && !showStreakRestore
-                && !showStreakDetail
-                && streakMilestone == nil
-                && !isSearchPresented
+                && !isModalOpen
                 && !widgetDrawingPresented.wrappedValue
-                && dailyChatQuestion == nil
-                && gameChatSheet == nil
-                && !isLookBackDrawingHistoryPresented,
+                && dailyChatQuestion == nil,
             openable: openableTodaysQuestion
         )
     }

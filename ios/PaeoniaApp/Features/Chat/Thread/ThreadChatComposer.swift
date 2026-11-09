@@ -64,7 +64,7 @@ struct ThreadChatComposer: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, PaeoniaSpacing.space8)
             }
-            if recorder.permissionDenied {
+            if recorder.setback == .permissionDenied {
                 Button {
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                 } label: {
@@ -113,14 +113,14 @@ struct ThreadChatComposer: View {
             DailyCameraPicker(onCapture: staging.addCameraPhoto)
                 .ignoresSafeArea()
         }
-        .onChange(of: recorder.hasStartFailed) { _, failed in
-            if failed {
+        .onChange(of: recorder.setback) { _, setback in
+            switch setback {
+            case .startFailed:
                 bannerCenter.show(.error(message: String(localized: .dailyVoiceErrorStartFailed)))
-            }
-        }
-        .onChange(of: recorder.isTakeTooShort) { _, isTooShort in
-            if isTooShort {
+            case .takeTooShort:
                 AccessibilityNotification.Announcement(String(localized: .dailyChallengeVoiceTooShort)).post()
+            case .permissionDenied, nil:
+                break
             }
         }
         .onAppear {
@@ -155,9 +155,11 @@ struct ThreadChatComposer: View {
     }
 
     private var notice: LocalizedStringResource? {
-        if recorder.permissionDenied { return .dailyChatComposerPermissionDenied }
-        if recorder.isTakeTooShort { return .dailyChallengeVoiceTooShort }
-        return nil
+        switch recorder.setback {
+        case .permissionDenied: .dailyChatComposerPermissionDenied
+        case .takeTooShort: .dailyChallengeVoiceTooShort
+        case .startFailed, nil: nil
+        }
     }
 
     /// A drag down on the composer dismisses the keyboard the same way a drag on the

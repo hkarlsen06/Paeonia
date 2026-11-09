@@ -35,11 +35,11 @@ struct DailyVoiceRecorderView: View {
                 caption
             }
 
-            if recorder.isTakeTooShort {
+            if recorder.setback == .takeTooShort {
                 message(.dailyChallengeVoiceTooShort)
             }
 
-            if recorder.permissionDenied {
+            if recorder.setback == .permissionDenied {
                 message(.dailyChallengeVoicePermissionDenied)
 
                 Button(action: openSettings) {
@@ -58,15 +58,15 @@ struct DailyVoiceRecorderView: View {
                 deliverTake()
             }
         }
-        .onChange(of: recorder.hasStartFailed) { _, failed in
-            if failed {
+        .onChange(of: recorder.setback) { _, setback in
+            switch setback {
+            case .startFailed:
                 bannerCenter.show(.error(message: String(localized: .dailyVoiceErrorStartFailed)))
-            }
-        }
-        .onChange(of: recorder.isTakeTooShort) { _, isTooShort in
-            // The take vanished, so tell VoiceOver users why.
-            if isTooShort {
+            case .takeTooShort:
+                // The take vanished, so tell VoiceOver users why.
                 AccessibilityNotification.Announcement(String(localized: .dailyChallengeVoiceTooShort)).post()
+            case .permissionDenied, nil:
+                break
             }
         }
         .onDisappear {
