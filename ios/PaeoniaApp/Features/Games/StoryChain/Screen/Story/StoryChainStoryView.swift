@@ -61,6 +61,7 @@ struct StoryChainStoryView: View {
         )
         .safeAreaInset(edge: .bottom, spacing: 0) {
             composerBar
+                .paeoniaBannerBottomEdge()
         }
         .paeoniaBottomBar(spacing: 0) {
             StoryChainActionBar(viewModel: viewModel, reveal: reveal)

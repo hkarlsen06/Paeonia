@@ -111,7 +111,7 @@
       .animation(PaeoniaMotion.pairedScreenTransition, value: isCelebrating)
       .animation(PaeoniaMotion.pairedScreenTransition, value: outcome)
       .environment(bannerCenter)
-      .paeoniaTopBanner(bannerCenter)
+      .paeoniaBanner(bannerCenter)
       .preferredColorScheme(.dark)
       .onAppear {
         model.prepare(Self.context)

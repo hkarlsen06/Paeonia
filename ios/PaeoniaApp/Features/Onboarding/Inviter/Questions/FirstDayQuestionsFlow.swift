@@ -101,6 +101,7 @@ struct FirstDayQuestionsFlow: View {
         // reach while typing.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             continueButton
+                .paeoniaBannerBottomEdge()
         }
         .closesOnSwipeRight(perform: close)
     }
@@ -248,7 +249,7 @@ private struct FirstDayQuestionsFinish: View {
         onClose: { _ in }
     )
     .environment(bannerCenter)
-    .paeoniaTopBanner(bannerCenter)
+    .paeoniaBanner(bannerCenter)
     .preferredColorScheme(.dark)
 }
 #endif

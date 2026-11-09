@@ -35,7 +35,7 @@ nonisolated enum AdminFailure: Equatable, Sendable {
     }
 }
 
-/// A message for the shared top banner.
+/// A message for the shared banner.
 nonisolated enum AdminNotice: Equatable, Sendable {
     case loadFailed
     case notAdmin

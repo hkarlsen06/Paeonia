@@ -69,7 +69,7 @@ struct WidgetDrawingHistoryView: View {
         }
         .preferredColorScheme(.dark)
         // A sheet draws its own banners, such as the one that says a star could not be saved.
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .task {
             await viewModel.loadInitialIfNeeded(focusingOn: initialRevisionID)
             for await change in LocalStoreChanges.changes(in: .pendingOperations) {

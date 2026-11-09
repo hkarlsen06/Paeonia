@@ -86,13 +86,13 @@ final class GameConversationJourneyUITests: XCTestCase {
         assertUnread(conversation, false)
     }
 
-    /// A message banner stays until it is swiped away, and it covers the top bar.
+    /// A message banner stays until it is swiped down or opened.
     @MainActor
     private func dismissBanner(_ banner: XCUIElement) {
         XCTAssertTrue(banner.waitForExistence(timeout: 5))
         // A quick swipe can land as a tap, which opens the chat.
         let start = banner.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -150)))
+        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 150)))
         XCTAssertTrue(banner.waitForNonExistence(timeout: 5))
     }
 

@@ -23,6 +23,7 @@ extension MainTabView {
             ForEach(tabs) { tab in
                 Tab(value: tab) {
                     content(for: tab)
+                        .paeoniaBannerBottomEdge(at: .bottom, isActive: tab == selection.wrappedValue)
                         .toolbarVisibility(gameTabBarVisibility, for: .tabBar)
                         .onGeometryChange(for: CGFloat.self) {
                             $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
@@ -37,6 +38,10 @@ extension MainTabView {
                 .accessibilityIdentifier("mainTab.\(tab.rawValue)")
             }
         }
+        .paeoniaBanner(
+            bannerCenter,
+            onTap: actions.openWidgetDrawing
+        )
         .onGeometryChange(for: CGFloat.self) {
             $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
         } action: { bottom in

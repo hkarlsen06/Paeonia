@@ -249,7 +249,9 @@ extension RootView {
         var banner = PaeoniaBannerContent.info(
             title: notice.title,
             message: notice.message,
+            gameKind: notice.deepLink?.bannerGameKind,
             imageData: notice.showsPartnerAvatar ? PaeoniaAppGroup.partnerAvatarData() : nil,
+            systemImage: notice.deepLink?.bannerSystemImage,
             action: notice.deepLink.map { deepLink in
                 { PaeoniaNotificationRouter.shared.route(deepLink) }
             }

@@ -27,7 +27,7 @@ struct GamesIntroSheet: View {
         }
     }
 
-    /// The sheet covers the app's top banner, so it mounts its own copy for a
+    /// The sheet covers the app's banner, so it mounts its own copy for a
     /// failed save.
     private func settingsStep(@ViewBuilder content: () -> some View) -> some View {
         NavigationStack {
@@ -44,7 +44,7 @@ struct GamesIntroSheet: View {
                     }
                 }
         }
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .presentationBackground(.paeoniaBackgroundPrimary)
         .interactiveDismissDisabled(viewModel.isSavingSettings)
     }

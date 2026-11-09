@@ -40,7 +40,7 @@
       )
       .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
       .environment(\.mediaAlternativeEditingService, environment.mediaAlternativeEditingService)
-      .overlay(alignment: .bottomTrailing) {
+      .overlay(alignment: .topTrailing) {
         if let gameFlow = environment.gameConversationFlow,
            UserDefaults.standard.bool(forKey: "paeonia-game-chat-test-events") {
           VStack(spacing: PaeoniaSpacing.space8) {
@@ -54,7 +54,7 @@
             }
           }
           .padding(.trailing, PaeoniaSpacing.space8)
-          .padding(.bottom, 80)
+          .padding(.top, 80)
         }
       }
       .task(id: environment.rootViewModel.state) {

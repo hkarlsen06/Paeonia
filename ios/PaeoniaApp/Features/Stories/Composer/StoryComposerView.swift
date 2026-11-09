@@ -48,8 +48,8 @@ struct StoryComposerView: View {
                     }
                 }
         }
-        // The sheet covers the app's top banner, so show it here too.
-        .paeoniaTopBanner(bannerCenter)
+        // The sheet covers the app's banner, so show it here too.
+        .paeoniaBanner(bannerCenter)
         .presentationBackground(.paeoniaBackgroundPrimary)
         // A picked photo or a running post can't be swiped away by accident. Cancel still closes.
         .interactiveDismissDisabled(viewModel.isPosting || photo != nil)

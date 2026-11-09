@@ -124,15 +124,18 @@ extension MainTabView {
         for summary in arrivals {
             guard let preview = summary.lastMessagePreview else { continue }
             var title = reactionPartnerName
+            var gameKind: GameKind?
             if case .game(let game) = summary.subject {
+                gameKind = game.kind
                 title = String(
                     localized: .gamesChatMessageTitle(reactionPartnerName, String(localized: game.kind.name))
                 )
             }
             bannerCenter.show(
                 .info(
-                    title: title, message: preview,
-                    imageData: PaeoniaAppGroup.partnerAvatarData(), action: openChatAction(for: summary.subject)
+                    title: title, message: preview, gameKind: gameKind,
+                    imageData: PaeoniaAppGroup.partnerAvatarData(),
+                    systemImage: "bubble.left.and.bubble.right.fill", action: openChatAction(for: summary.subject)
                 )
             )
         }

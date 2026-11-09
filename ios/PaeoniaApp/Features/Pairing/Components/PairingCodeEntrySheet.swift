@@ -4,7 +4,7 @@ import SwiftUI
 /// invite screen both use it. It only collects the code. The caller decides what to do
 /// with it in `onSubmit`, which gets a normalized 6-character code and returns `true`
 /// when the sheet should close. On `false` the sheet stays open with the keyboard up,
-/// so the user can fix the code. The caller reports why through the top banner.
+/// so the user can fix the code. The caller reports why through the banner.
 struct PairingCodeEntrySheet: View {
     let title: LocalizedStringResource
     let message: LocalizedStringResource
@@ -55,7 +55,7 @@ struct PairingCodeEntrySheet: View {
         .paeoniaScreenBackground()
         // The sheet covers the root's banner, so it mounts its own copy of the same
         // banner to show errors above itself.
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .preferredColorScheme(.dark)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)

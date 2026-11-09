@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// A request to show an in-app top banner for a notification that arrived while
+/// A request to show an in-app banner for a notification that arrived while
 /// the app was open, in place of the suppressed system banner.
 struct PaeoniaForegroundNotice: Equatable, Identifiable {
     let id = UUID()

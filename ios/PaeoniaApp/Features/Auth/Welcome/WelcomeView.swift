@@ -109,6 +109,7 @@ struct WelcomeView: View {
                     .accessibilityHidden(true)
                 }
                 .launchEntrance(order: 2)
+                .paeoniaBannerBottomEdge()
         }
     }
 

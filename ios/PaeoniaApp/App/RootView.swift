@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import UIKit
 
-/// The app root. It mounts the cold-launch intro and the shared top banner,
+/// The app root. It mounts the cold-launch intro and the shared banner,
 /// routes between the signed-out, setup, pairing, paywall, and paired screens,
 /// and runs app-wide work such as deep links, widget sync, and permission
 /// primers. Screens live in `RootView+Screens.swift`, user actions in
@@ -202,7 +202,7 @@ struct RootView: View {
                 }
                 runForegroundActivation()
             }
-            .paeoniaTopBanner(bannerCenter) {
+            .paeoniaBanner(bannerCenter, isRoot: true) {
                 // Tapping a partner-update notice opens the drawing screen, the
                 // same destination the notification tap routes to.
                 viewModel.openWidgetDrawing()

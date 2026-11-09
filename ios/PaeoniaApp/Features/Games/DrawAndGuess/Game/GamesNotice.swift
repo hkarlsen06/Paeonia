@@ -1,6 +1,6 @@
 import Foundation
 
-/// A problem to tell the person about, shown through the shared top banner.
+/// A problem to tell the person about, shown through the shared banner.
 /// The copy says what happened and what to do next. Errors are logged in debug
 /// builds only.
 nonisolated enum GamesNotice: Equatable, Sendable {

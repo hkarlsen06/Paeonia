@@ -61,6 +61,7 @@ struct RelationshipEndedNoticeView: View {
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: isWorking))
             .padding(.top, PaeoniaSpacing.space12)
+            .paeoniaBannerBottomEdge()
         }
     }
 

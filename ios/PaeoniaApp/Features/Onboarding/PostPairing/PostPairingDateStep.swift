@@ -223,7 +223,7 @@ private struct PostPairingDateStepPreview: View {
             onFinish: {}
         )
         .environment(bannerCenter)
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .preferredColorScheme(.dark)
     }
 }

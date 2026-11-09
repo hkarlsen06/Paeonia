@@ -35,7 +35,7 @@ struct FavoriteDrawingPreview: View {
             .favoriteToolbarItem(favorite.target, identifier: "favorite.preview.star")
         }
         .preferredColorScheme(.dark)
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .task(id: attempt) { await loadDrawing() }
     }
 

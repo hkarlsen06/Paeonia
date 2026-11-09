@@ -7,12 +7,14 @@ extension PartnerNicknameEditorModel.Event {
         case let .saved(nickname?):
             .info(
                 title: String(localized: .settingsPartnerNicknameSavedTitle),
-                message: String(localized: .settingsPartnerNicknameSavedMessage(nickname))
+                message: String(localized: .settingsPartnerNicknameSavedMessage(nickname)),
+                systemImage: "quote.bubble.fill"
             )
         case .saved(nil):
             .info(
                 title: String(localized: .settingsPartnerNicknameRemovedTitle),
-                message: String(localized: .settingsPartnerNicknameRemovedMessage)
+                message: String(localized: .settingsPartnerNicknameRemovedMessage),
+                systemImage: "quote.bubble.fill"
             )
         case let .saveFailed(failure):
             .error(

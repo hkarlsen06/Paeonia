@@ -84,6 +84,10 @@ struct ThreadChatView: View {
             }
         }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewportFrame = $0 }
+        .preference(
+            key: PaeoniaBannerBottomEdgeKey.self,
+            value: viewModel.isChatAvailable && composerHeight > 0 ? viewportFrame.maxY - composerHeight : nil
+        )
         .onChange(of: messageViewport, initial: true) { readViewport.frame = messageViewport }
         .paeoniaReadableWidth()
         .paeoniaScreenBackground()

@@ -33,6 +33,6 @@ struct WidgetDrawingDescriptionSheet: View {
             }
         }
         .preferredColorScheme(.dark)
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
     }
 }

@@ -22,7 +22,7 @@ struct MemoryPlaceMapPicker: View {
             .overlay {
                 pin.allowsHitTesting(false)
             }
-            .safeAreaInset(edge: .bottom) { footer }
+            .safeAreaInset(edge: .bottom) { footer.paeoniaBannerBottomEdge() }
             .onDisappear { lookup.cancel() }
             .navigationTitle(Text(.memoriesPlaceChooseOnMap))
             .navigationBarTitleDisplayMode(.inline)

@@ -59,8 +59,10 @@ Every row in a list or settings screen uses primary text and tints its icon with
 
 Routine local saves and queued uploads show no status message. Visible content is saved, and the queue sends it when the connection returns. Keep failed-send warnings and retry controls when the person can take action. A drawing that the person has not chosen to send can still say "Not sent yet".
 
-- Present transient user-facing errors through the app-level top dropdown banner.
-- Mount the shared banner once at the root and send feature errors into that shared surface.
+- Present transient user-facing errors through the shared bottom glass banner.
+- Send feature errors to the shared banner center. The paired tabs host it above the native tab bar, using the selected tab's content bounds. Bottom action bars and chat composers publish their top edge so the banner stays above their controls. Other root screens, sheets and covers mount `.paeoniaBanner` themselves, and only the frontmost host draws it.
+- Game notices show the game's existing illustrated hub object. Other notices use a contextual symbol, such as a drawing tool, chat bubbles, a calendar or a download arrow. Partner avatars remain available for personal updates.
+- Use untinted system glass and primary text so the banner matches the native tab bar. Keep its height compact, let long messages and Dynamic Type grow, and preserve VoiceOver announcements, Reduce Motion and Reduce Transparency. Swipe down dismisses it. Errors and actionable notices stay until dismissed. Passive notices disappear after four seconds unless VoiceOver is running.
 - Do not add new inline red error panels or system alerts for ordinary recoverable errors.
 - Keep full-screen error states only when the whole screen cannot continue and needs a retry action.
 
@@ -68,5 +70,5 @@ Routine local saves and queued uploads show no status message. Visible content i
 
 - Confirmations and destructive choices use the centered system alert dialog, app-wide. Use SwiftUI `.alert(_:isPresented:actions:message:)`.
 - Do not use `.confirmationDialog` (the bottom action sheet) for these. It anchors to the bottom or renders as a popover and is not the intended presentation.
-- This is separate from error presentation: errors still go to the top banner (see above); the centered alert is only for confirmations the user must explicitly approve (for example: clear canvas, delete account, leave relationship).
+- This is separate from error presentation: errors still go to the bottom banner (see above); the centered alert is only for confirmations the user must explicitly approve (for example: clear canvas, delete account, leave relationship).
 - Title states the action, the message states the consequence and reversibility, the destructive button uses a verb with the `.destructive` role, and the cancel button uses the `.cancel` role.

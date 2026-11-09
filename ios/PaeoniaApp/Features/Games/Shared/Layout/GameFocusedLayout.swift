@@ -39,6 +39,7 @@ struct GameFocusedLayout<Content: View, Bottom: View>: View {
         .padding(.vertical, PaeoniaSpacing.space8)
         .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
         .background(.paeoniaBackgroundSecondary)
+        .paeoniaBannerBottomEdge()
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
     }
 }

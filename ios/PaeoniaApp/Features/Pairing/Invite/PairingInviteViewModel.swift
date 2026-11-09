@@ -6,7 +6,7 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     private(set) var invite: PairingInvite?
     private(set) var isLoading = false
     private(set) var isRevoking = false
-    /// The newest problem. The view shows it in the top banner and then clears it, except
+    /// The newest problem. The view shows it in the banner and then clears it, except
     /// for `.createFailed`, which stays so the retry card can show.
     private(set) var error: PairingInviteFlowError? {
         didSet { errorFailure = .other }

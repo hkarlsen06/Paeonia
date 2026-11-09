@@ -149,6 +149,7 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !dynamicTypeSize.isAccessibilitySize {
                 pinnedBottom
+                    .paeoniaBannerBottomEdge()
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                         pinnedHeight = height
                         take(bottomHeight: height)

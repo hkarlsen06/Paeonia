@@ -34,7 +34,7 @@ struct StreakRestoreView: View {
         // transaction lands. A fade only, so Reduce Motion needs no branch.
         .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.restoredCount == nil)
         .task { await viewModel.load() }
-        // The shared top banner sits under this sheet, so errors show inline (see
+        // The shared banner sits under this sheet, so errors show inline (see
         // `errorCaption`). VoiceOver does not see new text on its own, so say it.
         .onChange(of: viewModel.error) { _, error in
             guard let error else { return }

@@ -94,6 +94,7 @@ private struct PaeoniaBottomBarModifier<Bar: View>: ViewModifier {
             .safeAreaInset(edge: .bottom, spacing: spacing) {
                 if !isKeyboardDocked {
                     bar
+                        .paeoniaBannerBottomEdge()
                 }
             }
             .onDockedKeyboardChange { isKeyboardDocked = $0 }

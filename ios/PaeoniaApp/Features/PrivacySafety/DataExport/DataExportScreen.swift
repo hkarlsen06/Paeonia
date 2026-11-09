@@ -40,7 +40,7 @@ struct DataExportScreen: View {
                 }
             }
         }
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .presentationDetents([.large])
         .presentationBackground(.paeoniaBackgroundPrimary)
     }

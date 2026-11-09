@@ -22,6 +22,7 @@ struct AccountClosedView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             actions
                 .padding(.top, PaeoniaSpacing.space12)
+                .paeoniaBannerBottomEdge()
         }
         .manageSubscriptionsSheet(isPresented: $isManagingSubscription)
         .alert(Text(.authDeleteAccountConfirmTitle), isPresented: $isConfirmingDelete) {

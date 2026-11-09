@@ -5,7 +5,7 @@ import SwiftUI
 /// memory opens its full detail; the toolbar's plus opens the new-memory form. The list
 /// is local-first, so cached memories show immediately and the partner's changes
 /// arrive live. The tab bar loads the view model, since the Questions tab lists the
-/// memory chats too. Recoverable errors route into the shared top banner.
+/// memory chats too. Recoverable errors route into the shared banner.
 struct MemoriesScreen: View {
     let currentUserID: UUID?
     /// The couple's stories, shown as a row that opens the Stories archive. Nil hides it.

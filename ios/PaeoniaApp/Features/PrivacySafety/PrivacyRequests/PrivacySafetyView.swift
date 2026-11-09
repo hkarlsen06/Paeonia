@@ -168,13 +168,15 @@ struct PrivacySafetyView: View {
             bannerCenter.show(
                 .info(
                     title: String(localized: .privacySafetyRequestSubmittedTitle),
-                    message: String(localized: .privacySafetyRequestSubmittedMessage)
+                    message: String(localized: .privacySafetyRequestSubmittedMessage),
+                    systemImage: "checkmark.shield.fill"
                 )
             )
         case .requestAlreadyActive:
             bannerCenter.show(
                 .info(
-                    message: String(localized: .privacySafetyRequestActiveMessage)
+                    message: String(localized: .privacySafetyRequestActiveMessage),
+                    systemImage: "clock.fill"
                 )
             )
         case let .requestFailed(failure):

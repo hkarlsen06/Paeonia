@@ -4,7 +4,7 @@ enum PairingInviteFlowError: Equatable {
     /// The user's own code could not be made or checked. This is the only case that
     /// replaces the screen with the full-screen retry card.
     case createFailed
-    /// A new code could not be made. This goes to the top banner while the current
+    /// A new code could not be made. This goes to the banner while the current
     /// code stays on screen.
     case replaceFailed
 

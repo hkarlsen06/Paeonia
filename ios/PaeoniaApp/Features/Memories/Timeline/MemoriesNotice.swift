@@ -1,6 +1,6 @@
 import Foundation
 
-/// An outcome of a memory action, shown through the shared top banner. Copy says what
+/// An outcome of a memory action, shown through the shared banner. Copy says what
 /// happened in plain words; the underlying error is logged in debug builds only.
 enum MemoriesNotice: Equatable {
     case createFailed
@@ -21,7 +21,7 @@ enum MemoriesNotice: Equatable {
     var banner: PaeoniaBannerContent {
         switch self {
         case .photoSaved:
-            .info(message: String(localized: .memoriesNoticePhotoSavedMessage))
+            .info(message: String(localized: .memoriesNoticePhotoSavedMessage), systemImage: "square.and.arrow.down")
         default:
             .error(title: String(localized: title), message: String(localized: message), timing: timing)
         }

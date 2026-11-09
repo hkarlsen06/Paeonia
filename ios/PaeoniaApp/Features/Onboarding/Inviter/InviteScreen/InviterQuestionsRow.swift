@@ -59,7 +59,7 @@ struct InviterQuestionsRow: View {
                 self.questionsModel = nil
             }
             .environment(bannerCenter)
-            .paeoniaTopBanner(bannerCenter)
+            .paeoniaBanner(bannerCenter)
         }
     }
 

@@ -151,7 +151,7 @@ struct MediaAlternativeEditor: View {
         }
         .preferredColorScheme(.dark)
         .interactiveDismissDisabled(model.isEditable)
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .onChange(of: model.failureCount) { _, _ in
             bannerCenter.show(.error(message: String(localized: .mediaAccessibilitySaveFailed)))
         }

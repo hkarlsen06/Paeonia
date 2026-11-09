@@ -112,9 +112,9 @@ struct MemoryEditorView: View {
                     Text(hasPartiallySaved ? .memoriesEditorDiscardRemainingMessage : .memoriesEditorDiscardMessage)
                 }
         }
-        // The sheet covers the app's top banner, so show it here too. Otherwise a
+        // The sheet covers the app's banner, so show it here too. Otherwise a
         // failed save would look like nothing happened.
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .presentationBackground(.paeoniaBackgroundPrimary)
         // Only a persisted new draft can be swiped away. Edits require an explicit
         // discard, and every form stays open while saving.

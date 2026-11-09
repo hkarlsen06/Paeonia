@@ -5,7 +5,7 @@ import SwiftUI
 /// button repeats the time ("Remind me at 20:00"), saves the reminder and then asks
 /// iOS for notification permission. "Not now" finishes without saving.
 ///
-/// A failed save shows the top banner and keeps the person here with their choice.
+/// A failed save shows the banner and keeps the person here with their choice.
 /// `onFinish` gets the saved minutes after midnight, or nil for "Not now".
 struct QuestionTimeStep: View {
     let context: QuestionTimeStepContext
@@ -292,7 +292,7 @@ private struct QuestionTimeStepPreview: View {
             onFinish: { _ in }
         )
         .environment(bannerCenter)
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .preferredColorScheme(.dark)
     }
 }

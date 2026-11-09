@@ -32,7 +32,7 @@ struct ThreadChatScreen: View {
                     }
             }
             // A sheet over the story covers the app's banner, so it shows its own.
-            .paeoniaTopBanner(bannerCenter)
+            .paeoniaBanner(bannerCenter)
         } else {
             chat
         }

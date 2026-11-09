@@ -42,7 +42,7 @@ struct AvatarDecorationPicker: View {
             .paeoniaReadableWidth()
         }
         .paeoniaScreenBackground()
-        .paeoniaTopBanner(banners)
+        .paeoniaBanner(banners)
         .navigationTitle(Text(.avatarDecorationTitle))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

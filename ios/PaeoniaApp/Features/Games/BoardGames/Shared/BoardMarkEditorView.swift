@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The "Your mark" sheet. The person draws a small mark once, and the boards
-/// print it on every piece they play. The sheet mounts its own top banner,
+/// print it on every piece they play. The sheet mounts its own banner,
 /// because it covers the app's.
 struct BoardMarkEditorView: View {
     /// The color of my pieces.
@@ -41,9 +41,9 @@ struct BoardMarkEditorView: View {
             drawing: model.drawing, side: model.canvasSide,
             isLocked: model.canvasSide <= 0 || model.isSaving, fixedInkColor: .white
         ) { model.applyEdit($0) }
-        // The sheet covers the app's top banner, so it mounts its own copy.
+        // The sheet covers the app's banner, so it mounts its own copy.
         // Otherwise a failed save would look like nothing happened.
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .presentationBackground(.paeoniaBackgroundSecondary)
         .preferredColorScheme(.dark)
         .interactiveDismissDisabled(model.isSaving)
@@ -205,7 +205,7 @@ struct BoardMarkEditorView: View {
 
     // MARK: Failures
 
-    /// A failed save goes to the top banner, which the model then forgets. The
+    /// A failed save goes to the banner, which the model then forgets. The
     /// too-big line shows inline, so VoiceOver gets it read out here.
     private func failureChanged(_ failure: BoardMarkEditorModel.Failure?) {
         switch failure {

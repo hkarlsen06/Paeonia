@@ -17,7 +17,7 @@ struct PrivacyCorrectionRequestView: View {
         NavigationStack {
             correctionContent
         }
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .presentationDetents([.large])
         .presentationBackground(.paeoniaBackgroundPrimary)
         .interactiveDismissDisabled(isSubmitting)

@@ -16,6 +16,10 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-11-09.
+
+- Game notices use the shared untinted bottom glass banner and the game's illustrated hub object. Game action bars, composers and bet controls report their top edge so notices stay above them, including while the keyboard is open.
+
 Decided on 2026-11-05.
 
 - Swiping through messages in the game chat scrolls the conversation before resizing the sheet. The drag handle still resizes it.

@@ -112,7 +112,7 @@
           Color.paeoniaBackgroundPrimary
         }
       }
-      .paeoniaTopBanner(bannerCenter)
+      .paeoniaBanner(bannerCenter)
       .task {
         await DeveloperBoardGamesScenarioFactory.seed(scenario, dependencies: dependencies)
         isReady = true

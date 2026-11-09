@@ -16,7 +16,7 @@ enum ReactionFailureBanner {
 /// The row of emoji for reacting to `target`: the ones this person used last first, filled up
 /// with the usual ones. Choosing an emoji puts it on `target`, choosing it again takes it back,
 /// and the change shows at once. A refusal puts the earlier reaction back and says so in the
-/// top banner. Nothing shows where no `ReactionStore` is in the environment.
+/// banner. Nothing shows where no `ReactionStore` is in the environment.
 struct ReactionPickerRow: View {
     let target: ReactionTarget
     /// Shown on its own glass capsule. A popover brings its own background, so it turns this off.

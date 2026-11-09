@@ -12,7 +12,7 @@ final class BoardMarkEditorModel {
         /// The drawing holds more data than the server keeps. The sheet says so inline.
         case tooBig
         /// The save did not go through. The drawing stays, and the sheet shows the
-        /// top banner and then calls `clearFailure()`.
+        /// banner and then calls `clearFailure()`.
         case couldNotSave(PaeoniaFailure)
     }
 

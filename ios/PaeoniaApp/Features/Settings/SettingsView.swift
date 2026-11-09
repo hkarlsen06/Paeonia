@@ -395,7 +395,8 @@ extension SettingsView {
             bannerCenter.show(
                 .info(
                     title: String(localized: .settingsProfileSavedTitle),
-                    message: String(localized: .settingsProfileSavedMessage(partnerName))
+                    message: String(localized: .settingsProfileSavedMessage(partnerName)),
+                    systemImage: "person.crop.circle.fill"
                 )
             )
         case .saveFailed:
@@ -430,14 +431,14 @@ extension SettingsView {
             bannerCenter.show(
                 .info(
                     title: String(localized: .settingsPurchasesRestoredTitle),
-                    message: String(localized: .settingsPurchasesRestoredMessage)
+                    message: String(localized: .settingsPurchasesRestoredMessage), systemImage: "arrow.clockwise"
                 )
             )
         case .noPurchasesToRestore:
             bannerCenter.show(
                 .info(
                     title: String(localized: .settingsPurchasesNoneTitle),
-                    message: String(localized: .settingsPurchasesNoneMessage)
+                    message: String(localized: .settingsPurchasesNoneMessage), systemImage: "arrow.clockwise"
                 )
             )
         case let .restorePurchasesFailed(failure):

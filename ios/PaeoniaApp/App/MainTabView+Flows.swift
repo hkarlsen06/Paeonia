@@ -18,7 +18,7 @@ extension MainTabView {
     /// The answer flow is a full-screen cover that zooms out of the card that opened
     /// it (covering the floating tab bar). Reduce Motion drops the zoom for the
     /// cover's plain cross-fade. Each cover mounts the
-    /// shared top banner, because the root's banner would sit behind it.
+    /// shared banner, because the root's banner would sit behind it.
     func presentingDailyFlows(on content: some View) -> some View {
         presentingStreakMilestones(on: content)
             // The Home card waits for the flow to close before its seal breaks.
@@ -27,7 +27,7 @@ extension MainTabView {
                 dailyAnswerFlow(questionID: nil, onClose: closeAnswerFlow)
                     .zoomTransition(dailyFlowSource.zoomSourceID, in: zoomNamespace, enabled: !reduceMotion)
                     .environment(bannerCenter)
-                    .paeoniaTopBanner(bannerCenter)
+                    .paeoniaBanner(bannerCenter)
             }
             // A question opened from its own row zooms out of that row.
             .fullScreenCover(
@@ -44,7 +44,7 @@ extension MainTabView {
                 .analyticsScreen("streak_restore")
                 .presentationDetents([.large])
                 .presentationBackground(.paeoniaSurfacePrimary)
-                .paeoniaTopBanner(bannerCenter)
+                .paeoniaBanner(bannerCenter)
             }
             // …or the read-only detail sheet when the streak is healthy.
             .sheet(isPresented: $showStreakDetail) {
@@ -81,7 +81,7 @@ extension MainTabView {
         }
         .zoomTransition(partnerAnswerZoomSourceID(for: question), in: zoomNamespace, enabled: !reduceMotion)
         .environment(bannerCenter)
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
     }
 
     /// The daily answer flow for one question, or today's question when `questionID` is nil.
@@ -431,6 +431,7 @@ extension MainTabView {
             .info(
                 title: String(localized: .gamesPartnerOpenedTitle(gamesViewModel.partnerName, gameName)),
                 message: String(localized: .gamesPartnerOpenedMessage),
+                gameKind: kind,
                 imageData: PaeoniaAppGroup.partnerAvatarData(),
                 systemImage: "gamecontroller.fill",
                 action: { openGameFromHome(.game(kind)) },

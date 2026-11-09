@@ -124,6 +124,7 @@ struct PairingInviteContent: View {
                 onNewCode: { isConfirmingNewCode = true },
                 onEnterCode: { isEnteringCode = true }
             )
+            .paeoniaBannerBottomEdge()
         }
         .animation(PaeoniaMotion.stateChange, value: invite.id)
     }

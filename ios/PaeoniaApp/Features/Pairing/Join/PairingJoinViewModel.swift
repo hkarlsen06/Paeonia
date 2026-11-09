@@ -12,7 +12,7 @@ final class PairingJoinViewModel {
     private(set) var checkedCode: String?
     private(set) var isChecking = false
     private(set) var isAccepting = false
-    /// The newest problem. The caller decides whether it goes to the top banner.
+    /// The newest problem. The caller decides whether it goes to the banner.
     private(set) var lastError: PairingJoinError?
 
     /// The user the preview was checked for. A different user checks again.

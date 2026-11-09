@@ -162,6 +162,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
             .background(boardBleeds || content.stake != .writable ? Color.clear : .paeoniaBackgroundSecondary)
             .animation(PaeoniaMotion.stateChange, value: content.stake)
             .animation(PaeoniaMotion.stateChange, value: content.colorChoice != nil)
+            .paeoniaBannerBottomEdge()
             // The bet moves up with the board when the result panel comes. While the bet
             // is written it rises with the keyboard instead, and a change of the bet
             // animates itself.

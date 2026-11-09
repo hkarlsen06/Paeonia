@@ -100,7 +100,7 @@ struct StoryNoteScreen: View {
         .ignoresSafeArea()
         .overlay { controls }
         .keyboardDismissable()
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .preferredColorScheme(.dark)
     }
 
@@ -235,6 +235,7 @@ struct StoryNoteScreen: View {
             }
             .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
             .padding(.bottom, PaeoniaSpacing.space8)
+            .paeoniaBannerBottomEdge()
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .opacity(isOpen ? 1 : 0)

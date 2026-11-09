@@ -36,7 +36,7 @@ struct GameBoardControls<Controls: View>: View {
                     }
             }
             .preferredColorScheme(.dark)
-            .paeoniaTopBanner(bannerCenter)
+            .paeoniaBanner(bannerCenter)
         }
     }
 }

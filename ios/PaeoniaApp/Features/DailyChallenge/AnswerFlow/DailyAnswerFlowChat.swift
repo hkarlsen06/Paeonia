@@ -119,6 +119,7 @@ private struct TopicNextQuestionActions: ViewModifier {
                     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                     .padding(.bottom, PaeoniaSpacing.space8)
                     .paeoniaReadableWidth()
+                    .paeoniaBannerBottomEdge()
                     .accessibilityIdentifier("topics.flow.nextQuestion")
                 }
             }

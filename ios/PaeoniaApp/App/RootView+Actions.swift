@@ -169,6 +169,7 @@ extension RootView {
             .info(
                 title: String(localized: .pairingJoinedDuringTaskTitle(partnerNameForCopy)),
                 message: String(localized: .pairingJoinedDuringTaskMessage),
+                systemImage: "heart.fill",
                 timing: .fixed(.seconds(6))
             )
         )

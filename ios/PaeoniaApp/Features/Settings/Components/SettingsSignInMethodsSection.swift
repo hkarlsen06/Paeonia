@@ -183,12 +183,14 @@ private extension SignInMethodsViewModel.Notice {
         case let .linked(method):
             .info(
                 title: String(localized: .settingsSignInMethodsLinkedTitle(method.brandName)),
-                message: String(localized: .settingsSignInMethodsLinkedMessage)
+                message: String(localized: .settingsSignInMethodsLinkedMessage),
+                systemImage: "link"
             )
         case let .unlinked(method):
             .info(
                 title: String(localized: .settingsSignInMethodsUnlinkedTitle(method.brandName)),
-                message: String(localized: .settingsSignInMethodsUnlinkedMessage)
+                message: String(localized: .settingsSignInMethodsUnlinkedMessage),
+                systemImage: "link"
             )
         case let .linkFailed(problem, method):
             .error(

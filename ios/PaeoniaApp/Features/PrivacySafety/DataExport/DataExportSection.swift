@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The "Download my data" card: ask for a copy, watch it get built, and download
 /// it. It owns its banners, so a screen or a sheet can host it. A host with its
-/// own presentation context mounts `paeoniaTopBanner` itself.
+/// own presentation context mounts `paeoniaBanner` itself.
 struct DataExportSection: View {
     @Bindable var viewModel: DataExportViewModel
     var showsTitle = true
@@ -252,14 +252,16 @@ struct DataExportSection: View {
             bannerCenter.show(
                 .info(
                     title: String(localized: .privacySafetyDataExportLimitTitle),
-                    message: String(localized: .privacySafetyDataExportLimitMessage)
+                    message: String(localized: .privacySafetyDataExportLimitMessage),
+                    systemImage: "clock.fill"
                 )
             )
         case .notAvailable:
             bannerCenter.show(
                 .info(
                     title: String(localized: .privacySafetyDataExportExpiredTitle),
-                    message: String(localized: .privacySafetyDataExportExpiredMessage)
+                    message: String(localized: .privacySafetyDataExportExpiredMessage),
+                    systemImage: "hourglass"
                 )
             )
         case let .loadFailed(failure):

@@ -16,7 +16,7 @@ extension MainTabView {
             .analyticsScreen("search")
             .presentationDetents([.large])
             .environment(bannerCenter)
-            .paeoniaTopBanner(bannerCenter)
+            .paeoniaBanner(bannerCenter)
         }
     }
 

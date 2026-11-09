@@ -38,7 +38,7 @@ struct GuessMySpotPhotoDescriptionEditor: View {
                 }
             }
             .preferredColorScheme(.dark)
-            .paeoniaTopBanner(bannerCenter)
+            .paeoniaBanner(bannerCenter)
         }
     }
 

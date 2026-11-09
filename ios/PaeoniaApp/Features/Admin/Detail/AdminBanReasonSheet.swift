@@ -46,7 +46,7 @@ struct AdminBanReasonSheet: View {
             }
         }
         // The sheet covers the app's banner, so it mounts the shared one itself.
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .presentationDetents([.large])
         .presentationBackground(.paeoniaBackgroundPrimary)
         .interactiveDismissDisabled(isWorking)

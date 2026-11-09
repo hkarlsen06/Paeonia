@@ -89,7 +89,7 @@ extension BoardGameViewModel {
 }
 
 /// A problem to tell the person about on the board screen, through the shared
-/// top banner. The copy says what happened and what to do next.
+/// banner. The copy says what happened and what to do next.
 nonisolated enum BoardGamesNotice: Equatable, Sendable {
     /// The server refused a move for good. The board shows the game as it is.
     case moveRejected

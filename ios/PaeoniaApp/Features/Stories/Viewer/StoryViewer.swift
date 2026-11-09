@@ -145,8 +145,8 @@ struct StoryViewer: View {
             Text(.storiesViewerDeleteMessage)
         }
         .paeoniaShareSheet(item: $shareable)
-        // The cover hides the app's top banner, so show it here too.
-        .paeoniaTopBanner(bannerCenter)
+        // The cover hides the app's banner, so show it here too.
+        .paeoniaBanner(bannerCenter)
     }
 
     // MARK: - Layout
@@ -205,6 +205,7 @@ struct StoryViewer: View {
             }
             .padding(PaeoniaSpacing.space8)
             .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
+            .paeoniaBannerBottomEdge()
         }
         .padding(.horizontal, PaeoniaSpacing.space16)
         .padding(.top, PaeoniaSpacing.space8)

@@ -139,7 +139,7 @@ struct PaeoniaImageViewerOverlay: View {
             selectedPageIsZoomed = false
         }
         .statusBarHidden()
-        .paeoniaTopBanner(bannerCenter)
+        .paeoniaBanner(bannerCenter)
         .alert(Text(.imageViewerSavePermissionTitle), isPresented: $isShowingSavePermissionAlert) {
             Button {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -341,7 +341,9 @@ extension PaeoniaImageViewerOverlay {
         switch result {
         case .saved:
             savedItemIDs.insert(itemID)
-            bannerCenter.show(.info(message: String(localized: .imageViewerSaved)))
+            bannerCenter.show(
+                .info(message: String(localized: .imageViewerSaved), systemImage: "square.and.arrow.down")
+            )
         case .permissionDenied:
             showPhotoPermissionFailure()
         case .failed:

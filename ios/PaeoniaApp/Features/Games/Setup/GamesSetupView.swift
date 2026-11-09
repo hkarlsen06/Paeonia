@@ -32,6 +32,7 @@ struct GamesSetupView: View {
             .padding(.vertical, PaeoniaSpacing.space12)
             .paeoniaReadableWidth()
             .background(.paeoniaBackgroundPrimary)
+            .paeoniaBannerBottomEdge()
         }
         .navigationTitle(Text(.mainTabGames))
         .navigationBarTitleDisplayMode(.inline)
@@ -146,6 +147,7 @@ struct GamesPartnerPickedView: View {
             .padding(.vertical, PaeoniaSpacing.space12)
             .paeoniaReadableWidth()
             .background(.paeoniaBackgroundPrimary)
+            .paeoniaBannerBottomEdge()
         }
         .navigationTitle(Text(.mainTabGames))
         .navigationBarTitleDisplayMode(.inline)
