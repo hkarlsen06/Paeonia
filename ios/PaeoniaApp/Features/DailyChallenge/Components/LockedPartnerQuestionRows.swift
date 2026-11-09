@@ -75,8 +75,10 @@ struct LockedPartnerQuestionRows: View {
             }
         }
         .padding(PaeoniaSpacing.space12)
-        .background(.paeoniaBackgroundPrimary, in: Self.rowShape)
-        .overlay { Self.rowShape.strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault) }
+        .background(Self.rowFill, in: Self.rowShape)
+        .overlay {
+            Self.rowShape.strokeBorder(Color.paeoniaInkLavender.opacity(0.4), lineWidth: PaeoniaRadius.strokeDefault)
+        }
         .contentShape(Rectangle())
     }
 
@@ -126,15 +128,17 @@ struct LockedPartnerQuestionRows: View {
                 .font(.system(size: Self.lockSize * 0.55, weight: .bold))
                 .foregroundStyle(.paeoniaTextInverse)
                 .frame(width: Self.lockSize, height: Self.lockSize)
-                .background(.paeoniaAccentPrimary, in: Circle())
+                .background(Color.paeoniaInkLavender, in: Circle())
                 // A ring in the row's color keeps the badge apart from the photo.
-                .overlay(Circle().strokeBorder(.paeoniaBackgroundPrimary, lineWidth: 1.5))
+                .overlay(Circle().strokeBorder(Self.rowFill, lineWidth: 1.5))
                 .offset(x: 3, y: 3)
         }
         .accessibilityHidden(true)
     }
 
     private static let rowShape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+    /// Lavender, like the wax seal when a letter from the partner waits.
+    private static let rowFill = Color.paeoniaBackgroundPrimary.mix(with: .paeoniaInkLavender, by: 0.16)
     private static let avatarSize: CGFloat = 32
     private static let lockSize: CGFloat = 16
 }
