@@ -13,6 +13,7 @@ struct DailyChallengeAnswerFlow: View {
     var onReportedAndLeft: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @State var committedAnswerHold: DailyAnswerStepVisualHold?
     @State var heldQuestion: DailyChallengeQuestion?
     @State var chat: ThreadChatViewModel?

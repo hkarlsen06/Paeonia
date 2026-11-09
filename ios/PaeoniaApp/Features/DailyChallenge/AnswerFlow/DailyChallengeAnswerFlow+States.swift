@@ -27,21 +27,42 @@ extension DailyChallengeAnswerFlow {
                 onSkip: { Task { await skipCurrent() } }
             )
 
-            if let question = heldQuestion ?? currentQuestion {
-                DailyChallengeAnswerStep(
-                    question: question,
-                    viewModel: viewModel,
-                    isFocused: $isComposerFocused,
-                    visualHold: committedAnswerHold,
-                    isSubmitting: isSubmittingCurrent || committedAnswerHold != nil,
-                    isSubmitDisabled: isPrimaryDisabled,
-                    onSubmit: { Task { await submitCurrent() } }
-                )
-                .id(question.id)
-                .allowsHitTesting(committedAnswerHold == nil)
+            // The two questions overlap while one leaves and the next arrives.
+            ZStack {
+                if let question = shownQuestion {
+                    DailyChallengeAnswerStep(
+                        question: question,
+                        viewModel: viewModel,
+                        isFocused: $isComposerFocused,
+                        visualHold: committedAnswerHold,
+                        isSubmitting: isSubmittingCurrent || committedAnswerHold != nil,
+                        isSubmitDisabled: isPrimaryDisabled,
+                        onSubmit: { Task { await submitCurrent() } }
+                    )
+                    .id(question.id)
+                    .allowsHitTesting(committedAnswerHold == nil)
+                    .transition(questionSwap)
+                }
             }
         }
         .padding(.top, PaeoniaSpacing.space8)
+        // A skipped question drifts up and away as the new one rises into its place.
+        .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: shownQuestion?.id)
+    }
+
+    private var shownQuestion: DailyChallengeQuestion? {
+        heldQuestion ?? currentQuestion
+    }
+
+    /// The old question clears quickly, so the two prompts barely overlap.
+    private var questionSwap: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        return .asymmetric(
+            insertion: .opacity.combined(with: .offset(y: PaeoniaSpacing.space12))
+                .animation(PaeoniaMotion.meaningfulMoment.delay(PaeoniaMotion.motionFast / 2)),
+            removal: .opacity.combined(with: .offset(y: -PaeoniaSpacing.space12))
+                .animation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionFast))
+        )
     }
 
     private var unavailableState: some View {

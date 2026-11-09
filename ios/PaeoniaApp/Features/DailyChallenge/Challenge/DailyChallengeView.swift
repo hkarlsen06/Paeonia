@@ -63,9 +63,8 @@ struct DailyChallengeScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 screenContent
-                // The hero shrinking to one row moves everything under it with a glide.
-                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isDayComplete)
-                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isCalm)
+                // Sections and rows fade in and out, and the rest glides to its new place.
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: sectionLayout)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.top, PaeoniaSpacing.space16)
                 // The same gap above the tab bar as between the sections.
@@ -388,6 +387,19 @@ extension DailyChallengeScreen {
     private func openStoryAction(_ story: Story?) -> (() -> Void)? {
         guard let story, stories != nil else { return nil }
         return { storyViewer = StoryViewerContent(stories: [story], startIndex: 0, mode: .archive) }
+    }
+
+    /// Everything that adds, removes or moves a section or a row, such as the hero
+    /// shrinking to one row. The screen animates on it as a whole.
+    var sectionLayout: ChatsSectionLayout {
+        ChatsSectionLayout(
+            isDayComplete: isDayComplete,
+            isCalm: isCalm,
+            waiting: waitingRows.map(\.id),
+            recent: tabContent.recent.map(\.id),
+            quietGames: quietGameKinds,
+            history: historyViewModel.map { ChatsSectionLayout.HistoryStatus($0.state) }
+        )
     }
 
     private var isCalm: Bool {

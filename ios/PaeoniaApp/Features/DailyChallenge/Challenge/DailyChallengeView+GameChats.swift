@@ -8,7 +8,7 @@ extension DailyChallengeScreen {
         }
     }
 
-    private var quietGameKinds: [GameKind] {
+    var quietGameKinds: [GameKind] {
         GameKind.allCases.filter { kind in
             partnerGameKinds.contains(kind) && !conversations.contains {
                 guard case .game(let game) = $0.subject else { return false }

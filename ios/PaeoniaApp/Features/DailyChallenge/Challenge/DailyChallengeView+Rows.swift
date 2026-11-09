@@ -31,7 +31,9 @@ extension DailyChallengeScreen {
                     .font(PaeoniaTypography.sectionTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .accessibilityAddTraits(.isHeader)
-                rowsList(waitingRows)
+                // A few rows, so no lazy stack. A lazy one fading out with the section
+                // draws the recent list's first row in its place.
+                ForEach(waitingRows) { todayRow($0) }
             }
         }
     }
@@ -44,18 +46,36 @@ extension DailyChallengeScreen {
                     .font(PaeoniaTypography.sectionTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .accessibilityAddTraits(.isHeader)
-                rowsList(tabContent.recent)
+                LazyVStack(spacing: PaeoniaSpacing.space12) {
+                    ForEach(tabContent.recent) { todayRow($0) }
+                }
+                // Lazy rows sit in the scroll view's space. Without the group, a section that
+                // glides moves its rows twice, so they start a section's height out of place.
+                .geometryGroup()
+            }
+        }
+    }
+}
+
+struct ChatsSectionLayout: Equatable {
+    enum HistoryStatus: Equatable {
+        case loading
+        case failed
+        case done
+
+        init(_ state: DailyChallengeHistoryViewModel.ViewState) {
+            switch state {
+            case .loading: self = .loading
+            case .failed: self = .failed
+            case .empty, .content: self = .done
             }
         }
     }
 
-    @ViewBuilder
-    func rowsList(_ rows: [QuestionsTabRow]) -> some View {
-        if !rows.isEmpty {
-            LazyVStack(spacing: PaeoniaSpacing.space12) {
-                ForEach(rows) { todayRow($0) }
-            }
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: rows.map(\.id))
-        }
-    }
+    let isDayComplete: Bool
+    let isCalm: Bool
+    let waiting: [UUID]
+    let recent: [UUID]
+    let quietGames: [GameKind]
+    let history: HistoryStatus?
 }

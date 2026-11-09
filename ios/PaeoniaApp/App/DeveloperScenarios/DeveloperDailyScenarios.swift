@@ -216,11 +216,6 @@
     func editPartnerChoice(
       instanceID _: UUID, selectedUserID _: UUID, operation _: SyncClientOperation
     ) throws -> UUID { UUID() }
-    func shuffleQuestion(currentUserID: UUID, operation _: SyncClientOperation)
-      async throws -> DailyChallengeLoadResult
-    {
-      try await loadToday(currentUserID: currentUserID)
-    }
 
     private var healthyStreak: CoupleStreak {
       CoupleStreak(
@@ -274,6 +269,33 @@
         ),
         streak: healthyStreak
       )
+    }
+  }
+
+  extension DeveloperDailyChallengeService {
+    /// Swaps today's question for another after a short wait, as the server does, so a
+    /// skip shows its spinner and the new question arriving.
+    func shuffleQuestion(currentUserID: UUID, operation _: SyncClientOperation)
+      async throws -> DailyChallengeLoadResult
+    {
+      let loaded = try await loadToday(currentUserID: currentUserID)
+      try await Task.sleep(for: .milliseconds(600))
+      let questions = loaded.snapshot.questions.map { question in
+        guard question.isCurrentDay else { return question }
+        return previewDailyQuestion(
+          coupleDayID: question.coupleDayID, localDate: question.localDate,
+          prompt: "Which song would you put on for the two of you tonight?", short: "A song for tonight"
+        )
+      }
+      let result = DailyChallengeLoadResult(
+        snapshot: DailyChallengeSnapshot(
+          currentUserID: currentUserID, coupleDayID: loaded.snapshot.coupleDayID,
+          questions: questions, refreshedAt: loaded.snapshot.refreshedAt
+        ),
+        streak: loaded.streak
+      )
+      today = result
+      return result
     }
   }
 

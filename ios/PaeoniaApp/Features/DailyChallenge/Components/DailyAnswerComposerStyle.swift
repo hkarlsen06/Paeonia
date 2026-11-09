@@ -40,6 +40,12 @@ struct DailyAnswerFlowHeader: View {
     /// A quiet line between Close and Skip, such as that the last answer was sent.
     var sentNote: LocalizedStringResource?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var showsPartnerBadge: Bool {
+        question?.hasPartnerAnswer == true
+    }
+
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
             Button(action: onClose) {
@@ -67,7 +73,7 @@ struct DailyAnswerFlowHeader: View {
 
             // The middle stretches to fill whatever is left, so it must not take
             // width the badge and Skip need to stay on one line.
-            if question?.hasPartnerAnswer == true {
+            if showsPartnerBadge {
                 partnerBadge.layoutPriority(1)
             }
 
@@ -76,6 +82,9 @@ struct DailyAnswerFlowHeader: View {
             }
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isSkipping)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: showsPartnerBadge)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: canSkip)
     }
 
     private var skipButton: some View {
