@@ -8,6 +8,9 @@ nonisolated enum PaeoniaPalette {
     static let plumRaised = Color(paeoniaHex: 0x4F_20_3A)
     static let plumPressed = Color(paeoniaHex: 0x5C_2A_47)
     static let outgoingMessage = Color(paeoniaHex: 0x68_1B_3C)
+    /// OKLCh 0.30 / 0.070 / 315: plum's lightness plus a little, at lavender's hue, so a tile
+    /// reads as lavender instead of lighter plum.
+    static let plumLavender = Color(paeoniaHex: 0x3B_22_46)
     static let petalLight = Color("AccentColor")
     static let pink = Color(paeoniaHex: 0xEF_50_94)
     static let petalWarm = Color(paeoniaHex: 0xE8_5D_86)

@@ -44,7 +44,7 @@ enum PaeoniaTileTone: Equatable {
     var fill: Color {
         switch self {
         case .plain, .attention: .paeoniaBackgroundPrimary
-        case .partnerWaiting: Color.paeoniaBackgroundPrimary.mix(with: .paeoniaInkLavender, by: 0.16)
+        case .partnerWaiting: PaeoniaPalette.plumLavender
         }
     }
 
