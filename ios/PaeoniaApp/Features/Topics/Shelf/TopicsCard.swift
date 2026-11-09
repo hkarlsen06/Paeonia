@@ -48,7 +48,7 @@ struct TopicsCard: View {
         }
         .padding(PaeoniaSpacing.cardContentPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .paeoniaTileSurface(needsAttention: hook != nil)
+        .paeoniaTileSurface(hook == nil ? .plain : .attention)
         .contentShape(shape)
     }
 

@@ -63,7 +63,7 @@ struct DailyChallengeReadCard: View {
     }
 
     var body: some View {
-        PaeoniaCard(padding: 0) {
+        PaeoniaCard(padding: 0, surface: isAnswerable ? .partnerWaiting : .tile) {
             VStack(alignment: .leading, spacing: 0) {
                 cardAction
                 if let completionState, !completionState.lockedPartnerQuestions.isEmpty {
