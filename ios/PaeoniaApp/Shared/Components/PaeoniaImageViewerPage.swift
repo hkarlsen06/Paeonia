@@ -34,7 +34,9 @@ struct PaeoniaImageViewerPage: View {
                     image: image,
                     isActive: isSelected,
                     controls: zoomControls,
-                    onZoomStateChanged: onZoomStateChanged
+                    onZoomStateChanged: onZoomStateChanged,
+                    // A photo the viewer was handed shows at once. One that loads fades in.
+                    fadesIn: item.image == nil
                 )
                 .accessibilityElement(children: .ignore)
                 .accessibilityAddTraits(.isImage)

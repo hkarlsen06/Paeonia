@@ -7,6 +7,9 @@ struct PaeoniaZoomableImageView: UIViewRepresentable {
     let isActive: Bool
     let controls: PaeoniaImageZoomController
     let onZoomStateChanged: (Bool) -> Void
+    /// Fades the photo in when it arrives after a spinner. The fade runs in UIKit,
+    /// because a SwiftUI transition does not animate this view in the viewer's pages.
+    var fadesIn = false
 
     func makeCoordinator() -> Coordinator {
         Coordinator(controls: controls, onZoomStateChanged: onZoomStateChanged)
@@ -42,6 +45,15 @@ struct PaeoniaZoomableImageView: UIViewRepresentable {
         }
         context.coordinator.isActive = isActive
         context.coordinator.configure(image: image, in: scrollView, forceReset: true)
+        if fadesIn {
+            scrollView.alpha = 0
+            UIView.animate(
+                withDuration: PaeoniaMotion.motionDefault, delay: 0,
+                options: [.curveEaseInOut, .allowUserInteraction]
+            ) {
+                scrollView.alpha = 1
+            }
+        }
 
         return scrollView
     }

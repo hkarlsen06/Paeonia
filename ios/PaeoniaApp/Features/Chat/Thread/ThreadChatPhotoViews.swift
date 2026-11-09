@@ -131,8 +131,12 @@ struct ThreadChatPhotoCard: View {
             nil
         }
         guard !Task.isCancelled else { return }
-        image = decoded
-        didFail = decoded == nil
+        // Only a photo that had to load fades in over the spinner. A cached one is
+        // set above without animation, so scrolling and cell reuse never fade.
+        withAnimation(PaeoniaMotion.stateChange) {
+            image = decoded
+            didFail = decoded == nil
+        }
     }
 }
 

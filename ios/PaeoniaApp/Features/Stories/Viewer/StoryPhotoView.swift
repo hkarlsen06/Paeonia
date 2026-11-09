@@ -69,9 +69,14 @@ struct StoryPhotoView: View {
         guard !Task.isCancelled else { return }
         if let decoded {
             MemoryImageDecoding.store(decoded, for: mediaAssetID, maxPixelSize: Self.maxPixelSize)
-            loaded = (id: mediaAssetID, image: decoded)
-        } else {
-            didFail = true
+        }
+        // A downloaded photo fades in over the spinner. A cached one shows at once above.
+        withAnimation(PaeoniaMotion.stateChange) {
+            if let decoded {
+                loaded = (id: mediaAssetID, image: decoded)
+            } else {
+                didFail = true
+            }
         }
     }
 }
