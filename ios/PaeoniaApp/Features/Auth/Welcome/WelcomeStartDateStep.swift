@@ -63,6 +63,7 @@ struct WelcomeStartDateStep: View {
             .screenEntrance(order: 3)
             .onboardingBottomBarFade()
         }
+        .closesOnSwipeRight(perform: onBack)
     }
 
     private var pickingContent: some View {

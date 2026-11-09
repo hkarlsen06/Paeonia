@@ -123,6 +123,7 @@ struct DailyPartnerAnswerFlow: View {
         .paeoniaReadableWidth()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background { PaeoniaGlowBackground() }
+        .closesOnSwipeRight(perform: dismiss)
     }
 
     // MARK: - State

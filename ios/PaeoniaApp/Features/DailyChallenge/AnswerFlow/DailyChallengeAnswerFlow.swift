@@ -78,6 +78,7 @@ struct DailyChallengeAnswerFlow: View {
             .paeoniaReadableWidth()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background { PaeoniaGlowBackground() }
+            .closesOnSwipeRight(perform: dismiss)
     }
 }
 

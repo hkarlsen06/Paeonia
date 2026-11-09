@@ -41,6 +41,7 @@ struct WelcomeSignInStep: View {
                     .paeoniaBottomBar(spacing: 0) { signInActions }
             }
         }
+        .closesOnSwipeRight(isEnabled: !isWorking, perform: onBack)
         .onAppear(perform: onAppear)
         .task(id: mode) {
             guard mode == .start(hasDrawing: true), drawing == nil else { return }

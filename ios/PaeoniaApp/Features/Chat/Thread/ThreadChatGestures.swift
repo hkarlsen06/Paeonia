@@ -330,12 +330,7 @@ extension UITouch {
     /// A drag on a slider, such as a voice message's scrubber, only moves the slider,
     /// so no chat swipe takes it.
     var threadChatStartsOnSlider: Bool {
-        var current = view
-        while let view = current {
-            if view is UISlider { return true }
-            current = view.superview
-        }
-        return false
+        startsInView { $0 is UISlider }
     }
 }
 

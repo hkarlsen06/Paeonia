@@ -102,6 +102,7 @@ struct FirstDayQuestionsFlow: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             continueButton
         }
+        .closesOnSwipeRight(perform: close)
     }
 
     /// Ignores typing while the answer saves, without disabling the field, so the
