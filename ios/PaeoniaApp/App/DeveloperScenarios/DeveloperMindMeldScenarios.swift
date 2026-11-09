@@ -360,7 +360,7 @@
       try? await store.markSending(clientOperationID: operation.id, at: DeveloperGamesFixture.now)
       try? await store.markRetryableFailure(
         clientOperationID: operation.id,
-        errorDescription: "Retry later",
+        failure: .retryLater,
         nextRetryAt: nil,
         at: DeveloperGamesFixture.now
       )

@@ -40,7 +40,7 @@ struct ThreadChatTakeBackTests {
         try await fixture.pendingStore.markSending(clientOperationID: send.id, at: Date())
         try await fixture.pendingStore.markRetryableFailure(
             clientOperationID: send.id,
-            errorDescription: "The connection was lost",
+            failure: PendingSyncFailure(kind: .offline, description: "The connection was lost"),
             nextRetryAt: nil,
             at: Date()
         )

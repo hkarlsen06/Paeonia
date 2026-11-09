@@ -17,6 +17,7 @@ final class LocalPendingSyncOperation {
     var lastAttemptAt: Date?
     var nextRetryAt: Date?
     var lastError: String?
+    var lastFailureKindRawValue: String?
     var completedAt: Date?
 
     init(
@@ -46,6 +47,10 @@ final class LocalPendingSyncOperation {
         set { operationKindRawValue = newValue?.rawValue ?? operationKindRawValue }
     }
 
+    var lastFailureKind: PendingSyncFailureKind? {
+        lastFailureKindRawValue.flatMap(PendingSyncFailureKind.init(rawValue:))
+    }
+
     var status: SyncPendingOperationStatus {
         get { SyncPendingOperationStatus(rawValue: statusRawValue) ?? .queued }
         set { statusRawValue = newValue.rawValue }
@@ -65,23 +70,26 @@ final class LocalPendingSyncOperation {
         attemptCount += 1
         lastAttemptAt = date
         lastError = nil
+        lastFailureKindRawValue = nil
     }
 
     func markRetryableFailure(
-        _ errorDescription: String,
+        _ failure: PendingSyncFailure,
         nextRetryAt: Date?,
         at date: Date = Date()
     ) {
         status = .failedRetryable
         lastAttemptAt = date
         self.nextRetryAt = nextRetryAt
-        lastError = errorDescription
+        lastError = failure.description
+        lastFailureKindRawValue = failure.kind.rawValue
     }
 
     func markTerminalFailure(_ errorDescription: String, at date: Date = Date()) {
         status = .failedTerminal
         lastAttemptAt = date
         lastError = errorDescription
+        lastFailureKindRawValue = nil
     }
 
     func markSucceeded(at date: Date = Date()) {
@@ -90,5 +98,6 @@ final class LocalPendingSyncOperation {
         lastAttemptAt = date
         nextRetryAt = nil
         lastError = nil
+        lastFailureKindRawValue = nil
     }
 }

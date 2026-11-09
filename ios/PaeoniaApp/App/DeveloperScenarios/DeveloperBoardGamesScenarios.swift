@@ -49,7 +49,7 @@
       try? await store.enqueue(request)
       try? await store.markRetryableFailure(
         clientOperationID: operation.id,
-        errorDescription: "NSURLErrorDomain -1009",
+        failure: PendingSyncFailure(kind: .offline, description: "NSURLErrorDomain -1009"),
         nextRetryAt: nil,
         at: now
       )

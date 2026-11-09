@@ -337,7 +337,7 @@ extension MemoryPendingOperationHandlerTests {
         )
         try await pendingStore.markRetryableFailure(
             clientOperationID: operation.id,
-            errorDescription: "offline",
+            failure: PendingSyncFailure(kind: .offline, description: "offline"),
             nextRetryAt: retryAt,
             at: Date()
         )

@@ -259,13 +259,13 @@ private actor OutboxReadGate: PendingSyncOperationPersisting {
 
     func markRetryableFailure(
         clientOperationID: UUID,
-        errorDescription: String,
+        failure: PendingSyncFailure,
         nextRetryAt: Date?,
         at date: Date
     ) async throws {
         try await inner.markRetryableFailure(
             clientOperationID: clientOperationID,
-            errorDescription: errorDescription,
+            failure: failure,
             nextRetryAt: nextRetryAt,
             at: date
         )

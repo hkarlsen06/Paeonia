@@ -44,7 +44,7 @@ struct DailyChallengeSubmitTests {
         // The try fails. The answer is now held on this phone, and the screen says so.
         try await pendingStore.markRetryableFailure(
             clientOperationID: try #require(queued.first).operation.id,
-            errorDescription: String(describing: URLError(.notConnectedToInternet)), nextRetryAt: nil, at: Date()
+            failure: PendingSyncFailure(URLError(.notConnectedToInternet)), nextRetryAt: nil, at: Date()
         )
 
         let relaunched = DailyChallengeViewModel(

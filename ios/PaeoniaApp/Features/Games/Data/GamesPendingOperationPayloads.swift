@@ -146,13 +146,3 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
         return work
     }
 }
-
-extension PendingSyncOperationSnapshot {
-    /// The last attempt reached the server or the sign-in and failed there. A
-    /// move that waits behind an earlier one and a lost connection do not count.
-    /// The drain keeps `String(describing:)` of the error in `lastError`.
-    nonisolated var failedWhileOnline: Bool {
-        guard let lastError else { return false }
-        return lastError != "Retry later" && !lastError.contains("NSURLErrorDomain")
-    }
-}

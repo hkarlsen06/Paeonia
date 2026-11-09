@@ -71,7 +71,7 @@ struct SyncRepositoryTests {
         )
         try await repository.markRetryableFailure(
             clientOperationID: pendingOperation.id,
-            errorDescription: "Offline",
+            failure: PendingSyncFailure(kind: .offline, description: "Offline"),
             nextRetryAt: Date(timeIntervalSince1970: 200),
             at: Date(timeIntervalSince1970: 120)
         )

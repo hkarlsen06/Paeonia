@@ -487,7 +487,7 @@ private actor FailingFirstEnqueuePendingStore: PendingSyncOperationPersisting {
     func markSucceeded(clientOperationID _: UUID, at _: Date) async throws {}
     func markRetryableFailure(
         clientOperationID _: UUID,
-        errorDescription _: String,
+        failure _: PendingSyncFailure,
         nextRetryAt _: Date?,
         at _: Date
     ) async throws {}

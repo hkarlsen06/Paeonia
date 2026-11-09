@@ -131,7 +131,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
 
     func markRetryableFailure(
         clientOperationID: UUID,
-        errorDescription: String,
+        failure: PendingSyncFailure,
         nextRetryAt: Date?,
         at date: Date
     ) throws {
@@ -143,7 +143,8 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
                     attemptCount: operation.attemptCount,
                     lastAttemptAt: date,
                     nextRetryAt: nextRetryAt,
-                    lastError: errorDescription,
+                    lastError: failure.description,
+                    lastFailureKind: failure.kind,
                     completedAt: operation.completedAt
                 )
             )
@@ -209,6 +210,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
                     lastAttemptAt: operation.lastAttemptAt,
                     nextRetryAt: operation.nextRetryAt,
                     lastError: operation.lastError,
+                    lastFailureKind: operation.lastFailureKind,
                     completedAt: operation.completedAt
                 )
             )
@@ -237,6 +239,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
         let lastAttemptAt: Date?
         let nextRetryAt: Date?
         let lastError: String?
+        var lastFailureKind: PendingSyncFailureKind?
         let completedAt: Date?
     }
 
@@ -256,6 +259,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
             lastAttemptAt: progress.lastAttemptAt,
             nextRetryAt: progress.nextRetryAt,
             lastError: progress.lastError,
+            lastFailureKind: progress.lastFailureKind,
             completedAt: progress.completedAt
         )
     }

@@ -255,7 +255,7 @@ struct PendingSyncOperationDrainRunTests {
         try await pendingStore.markSending(clientOperationID: operation.id, at: Date())
         try await pendingStore.markRetryableFailure(
             clientOperationID: operation.id,
-            errorDescription: "offline",
+            failure: PendingSyncFailure(kind: .offline, description: "offline"),
             nextRetryAt: Date().addingTimeInterval(3_600),
             at: Date()
         )
@@ -274,7 +274,7 @@ struct PendingSyncOperationDrainRunTests {
         try await pendingStore.markSending(clientOperationID: operation.id, at: Date())
         try await pendingStore.markRetryableFailure(
             clientOperationID: operation.id,
-            errorDescription: "offline",
+            failure: PendingSyncFailure(kind: .offline, description: "offline"),
             nextRetryAt: Date().addingTimeInterval(3_600),
             at: Date()
         )

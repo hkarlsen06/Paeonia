@@ -9,7 +9,7 @@ struct StoryChainPendingWorkTests {
     private typealias Fixture = StoryChainFixture
 
     private let environment = StoryChainDataEnvironment()
-    private let serverRefusal = String(describing: PaeoniaConvexError.server(code: nil, message: "Server Error"))
+    private let serverRefusal = PaeoniaConvexError.server(code: nil, message: "Server Error")
 
     private func load(from store: (any PendingSyncOperationPersisting)? = nil) async -> StoryChainPendingWork? {
         await StoryChainPendingWork.load(from: store ?? environment.pending, ownerUserID: Fixture.me)
@@ -87,11 +87,11 @@ struct StoryChainPendingWorkTests {
 
     // MARK: Held on the phone
 
-    private func fail(_ operationID: UUID, with error: String) async throws {
+    private func fail(_ operationID: UUID, with failure: PendingSyncFailure) async throws {
         try await environment.pending.markSending(clientOperationID: operationID, at: Fixture.now)
         try await environment.pending.markRetryableFailure(
             clientOperationID: operationID,
-            errorDescription: error,
+            failure: failure,
             nextRetryAt: nil,
             at: Fixture.now
         )
@@ -111,12 +111,12 @@ struct StoryChainPendingWorkTests {
         let operationID = try #require(await environment.queued(.storyChainAddLine).first?.operation.id)
 
         // A move that waits behind an earlier one, or has no connection, is held but not failing.
-        try await fail(operationID, with: "Retry later")
+        try await fail(operationID, with: .retryLater)
         let waiting = try #require(await load())
         #expect(waiting.hasFailedMoveAttempt)
         #expect(!waiting.lastSendFailedWhileOnline)
 
-        try await fail(operationID, with: "NSURLErrorDomain Code=-1009")
+        try await fail(operationID, with: PendingSyncFailure(URLError(.notConnectedToInternet)))
         let offline = try #require(await load())
         #expect(offline.hasFailedMoveAttempt)
         #expect(!offline.lastSendFailedWhileOnline)
@@ -127,7 +127,7 @@ struct StoryChainPendingWorkTests {
         try await environment.enqueue(.storyChainNameStory, name, sequence: 1)
         let operationID = try #require(await environment.queued(.storyChainNameStory).first?.operation.id)
 
-        try await fail(operationID, with: serverRefusal)
+        try await fail(operationID, with: PendingSyncFailure(serverRefusal))
 
         let work = try #require(await load())
         #expect(work.hasFailedMoveAttempt)
@@ -138,7 +138,7 @@ struct StoryChainPendingWorkTests {
         try await environment.enqueue(.storyChainMarkSeen, StoryChainSeenPayload(storyID: Fixture.storyID), sequence: 1)
         let operationID = try #require(await environment.queued(.storyChainMarkSeen).first?.operation.id)
 
-        try await fail(operationID, with: serverRefusal)
+        try await fail(operationID, with: PendingSyncFailure(serverRefusal))
 
         let work = try #require(await load())
         #expect(!work.hasFailedMoveAttempt)

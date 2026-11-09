@@ -49,10 +49,10 @@ actor RetainedContentPendingStore: PendingSyncOperationPersisting {
         try await base.markSucceeded(clientOperationID: clientOperationID, at: date)
     }
     func markRetryableFailure(
-        clientOperationID: UUID, errorDescription: String, nextRetryAt: Date?, at date: Date
+        clientOperationID: UUID, failure: PendingSyncFailure, nextRetryAt: Date?, at date: Date
     ) async throws {
         try await base.markRetryableFailure(
-            clientOperationID: clientOperationID, errorDescription: errorDescription, nextRetryAt: nextRetryAt, at: date
+            clientOperationID: clientOperationID, failure: failure, nextRetryAt: nextRetryAt, at: date
         )
     }
     func markTerminalFailure(clientOperationID: UUID, errorDescription: String, at date: Date) async throws {

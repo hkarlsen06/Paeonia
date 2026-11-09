@@ -450,7 +450,7 @@
       // The phone is offline, so the screen says the part is saved on it.
       try? await store.markRetryableFailure(
         clientOperationID: operation.id,
-        errorDescription: "NSURLErrorDomain",
+        failure: PendingSyncFailure(kind: .offline, description: "NSURLErrorDomain"),
         nextRetryAt: nil,
         at: ExquisiteCorpseDeveloperFixture.now
       )

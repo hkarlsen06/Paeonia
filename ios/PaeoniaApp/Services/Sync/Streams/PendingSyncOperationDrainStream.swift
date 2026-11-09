@@ -181,7 +181,7 @@ struct PendingSyncOperationDrainStream: SyncStream {
             try await recordRetryOrTerminalFailure(
                 operation: operation,
                 attemptNumber: attemptNumber,
-                errorDescription: String(describing: error),
+                failure: PendingSyncFailure(error),
                 nextRetryAt: nil,
                 // A write that waits for a connection is safe on the phone, however long it waits.
                 // A slow upload that ran out of time is the same case.
@@ -213,7 +213,7 @@ struct PendingSyncOperationDrainStream: SyncStream {
             try await recordRetryOrTerminalFailure(
                 operation: operation,
                 attemptNumber: attemptNumber,
-                errorDescription: "Retry later",
+                failure: .retryLater,
                 nextRetryAt: nextRetryAt,
                 handler: handler,
                 context: context
@@ -278,7 +278,7 @@ struct PendingSyncOperationDrainStream: SyncStream {
     private func recordRetryOrTerminalFailure(
         operation: PendingSyncOperationSnapshot,
         attemptNumber: Int,
-        errorDescription: String,
+        failure: PendingSyncFailure,
         nextRetryAt: Date?,
         mayGiveUp: Bool = true,
         handler: any PendingSyncOperationHandling,
@@ -293,7 +293,7 @@ struct PendingSyncOperationDrainStream: SyncStream {
             await handler.gaveUp(on: operation, context: context)
             try await context.pendingOperationStore.markTerminalFailure(
                 clientOperationID: operation.operation.id,
-                errorDescription: errorDescription,
+                errorDescription: failure.description,
                 at: now
             )
             return
@@ -301,7 +301,7 @@ struct PendingSyncOperationDrainStream: SyncStream {
 
         try await context.pendingOperationStore.markRetryableFailure(
             clientOperationID: operation.operation.id,
-            errorDescription: errorDescription,
+            failure: failure,
             nextRetryAt: nextRetryAt ?? retryPolicy.nextRetryDate(
                 attemptNumber: attemptNumber,
                 now: now

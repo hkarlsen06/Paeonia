@@ -378,13 +378,13 @@ private actor GatedReadPendingStore: PendingSyncOperationPersisting {
 
     func markRetryableFailure(
         clientOperationID: UUID,
-        errorDescription: String,
+        failure: PendingSyncFailure,
         nextRetryAt: Date?,
         at date: Date
     ) async throws {
         try await base.markRetryableFailure(
             clientOperationID: clientOperationID,
-            errorDescription: errorDescription,
+            failure: failure,
             nextRetryAt: nextRetryAt,
             at: date
         )

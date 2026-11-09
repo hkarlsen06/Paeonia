@@ -22,7 +22,7 @@ protocol PendingSyncOperationPersisting: Actor {
     func markSucceeded(clientOperationID: UUID, at date: Date) async throws
     func markRetryableFailure(
         clientOperationID: UUID,
-        errorDescription: String,
+        failure: PendingSyncFailure,
         nextRetryAt: Date?,
         at date: Date
     ) async throws
@@ -186,13 +186,13 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
 
     func markRetryableFailure(
         clientOperationID: UUID,
-        errorDescription: String,
+        failure: PendingSyncFailure,
         nextRetryAt: Date?,
         at date: Date
     ) throws {
         try update(clientOperationID: clientOperationID) { operation in
             operation.markRetryableFailure(
-                errorDescription,
+                failure,
                 nextRetryAt: nextRetryAt,
                 at: date
             )
@@ -312,6 +312,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             lastAttemptAt: operation.lastAttemptAt,
             nextRetryAt: operation.nextRetryAt,
             lastError: operation.lastError,
+            lastFailureKind: operation.lastFailureKind,
             completedAt: operation.completedAt
         )
     }

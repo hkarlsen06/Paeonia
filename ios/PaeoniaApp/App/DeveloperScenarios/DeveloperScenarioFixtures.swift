@@ -194,11 +194,11 @@
       try await storage.markSucceeded(clientOperationID: clientOperationID, at: date)
     }
     func markRetryableFailure(
-      clientOperationID: UUID, errorDescription: String, nextRetryAt: Date?, at date: Date
+      clientOperationID: UUID, failure: PendingSyncFailure, nextRetryAt: Date?, at date: Date
     ) async throws {
       try await seedIfNeeded()
       try await storage.markRetryableFailure(
-        clientOperationID: clientOperationID, errorDescription: errorDescription,
+        clientOperationID: clientOperationID, failure: failure,
         nextRetryAt: nextRetryAt, at: date)
     }
     func markTerminalFailure(clientOperationID: UUID, errorDescription: String, at date: Date)

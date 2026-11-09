@@ -38,7 +38,7 @@ struct PendingSyncOperationRepositoryTests {
             try await repository.markSending(clientOperationID: operation.id, at: now)
             try await repository.markRetryableFailure(
                 clientOperationID: operation.id,
-                errorDescription: "offline",
+                failure: PendingSyncFailure(kind: .offline, description: "offline"),
                 nextRetryAt: now.addingTimeInterval(delay),
                 at: now
             )
@@ -121,7 +121,7 @@ struct PendingSyncOperationRepositoryTests {
         try await repository.markSending(clientOperationID: tried.id, at: Date())
         try await repository.markRetryableFailure(
             clientOperationID: tried.id,
-            errorDescription: "The connection was lost",
+            failure: PendingSyncFailure(kind: .offline, description: "The connection was lost"),
             nextRetryAt: nil,
             at: Date()
         )

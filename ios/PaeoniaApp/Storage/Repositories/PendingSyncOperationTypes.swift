@@ -45,8 +45,40 @@ nonisolated struct PendingSyncOperationSnapshot: Equatable, Sendable {
     let attemptCount: Int
     let lastAttemptAt: Date?
     let nextRetryAt: Date?
+    /// For logs. Screens read `lastFailureKind`.
     let lastError: String?
+    /// Set by a failed try that will be retried. Nil after a terminal failure.
+    var lastFailureKind: PendingSyncFailureKind?
     let completedAt: Date?
+}
+
+/// Why the last try of a queued write did not get through, as a screen needs it.
+nonisolated enum PendingSyncFailureKind: String, Sendable {
+    /// The phone has no connection (`PaeoniaFailure.offline`).
+    case offline
+    /// The write waits behind another one, or the server asked it to try later.
+    case waiting
+    /// Anything that may happen on a working connection, such as a server error,
+    /// a refusal or a timeout.
+    case other
+}
+
+/// A failed try of a queued write that will be retried.
+nonisolated struct PendingSyncFailure: Equatable, Sendable {
+    let kind: PendingSyncFailureKind
+    let description: String
+
+    init(kind: PendingSyncFailureKind, description: String) {
+        self.kind = kind
+        self.description = description
+    }
+
+    init(_ error: any Error) {
+        kind = PaeoniaFailure(error) == .offline ? .offline : .other
+        description = String(describing: error)
+    }
+
+    static let retryLater = PendingSyncFailure(kind: .waiting, description: "Retry later")
 }
 
 extension PendingSyncOperationSnapshot {
@@ -58,5 +90,11 @@ extension PendingSyncOperationSnapshot {
     /// a normal send never flashes that line.
     nonisolated var hasFailedAttempt: Bool {
         lastError != nil || attemptCount > 1
+    }
+
+    /// The last try failed on what may be a working connection. A write that
+    /// waits behind an earlier one and a phone with no connection do not count.
+    nonisolated var failedWhileOnline: Bool {
+        lastFailureKind == .other
     }
 }

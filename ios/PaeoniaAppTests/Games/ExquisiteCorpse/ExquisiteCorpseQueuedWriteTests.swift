@@ -28,15 +28,15 @@ struct ExquisiteCorpseQueuedWriteTests {
         try #require(await ExquisiteCorpsePendingWork.load(from: environment.pending, ownerUserID: owner))
     }
 
-    /// Queues a part, tries it once, and leaves it waiting for a retry with `lastError` set.
-    private func queueFailedPart(lastError: String) async throws {
+    /// Queues a part, tries it once, and leaves it waiting for a retry after `failure`.
+    private func queueFailedPart(_ failure: PendingSyncFailure) async throws {
         let operation = makeOperation(1)
         let part = Fixture.queuedPart(figure: 2, partIndex: 0)
         try await environment.enqueue(.exquisiteCorpseSubmitPart, part, operation: operation)
         try await environment.pending.markSending(clientOperationID: operation.id, at: Fixture.now)
         try await environment.pending.markRetryableFailure(
             clientOperationID: operation.id,
-            errorDescription: lastError,
+            failure: failure,
             nextRetryAt: nil,
             at: Fixture.now
         )
@@ -176,7 +176,7 @@ extension ExquisiteCorpseQueuedWriteTests {
     }
 
     @Test func aPartThatWaitedBehindSomethingIsNotAFailedAttempt() async throws {
-        try await queueFailedPart(lastError: "Retry later")
+        try await queueFailedPart(.retryLater)
 
         let work = try await loadWork()
 
@@ -185,7 +185,7 @@ extension ExquisiteCorpseQueuedWriteTests {
     }
 
     @Test func aPartTheServerAnsweredBadlyIsAFailedAttemptWhileOnline() async throws {
-        try await queueFailedPart(lastError: String(describing: Fixture.refusal("XX000", "something we do not know")))
+        try await queueFailedPart(PendingSyncFailure(Fixture.refusal("XX000", "something we do not know")))
 
         let work = try await loadWork()
 
@@ -199,7 +199,7 @@ extension ExquisiteCorpseQueuedWriteTests {
         try await environment.pending.markSending(clientOperationID: operation.id, at: Fixture.now)
         try await environment.pending.markRetryableFailure(
             clientOperationID: operation.id,
-            errorDescription: String(describing: Fixture.refusal("XX000", "something we do not know")),
+            failure: PendingSyncFailure(Fixture.refusal("XX000", "something we do not know")),
             nextRetryAt: nil,
             at: Fixture.now
         )

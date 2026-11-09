@@ -229,7 +229,7 @@ actor UnreadableStoryChainPendingStore: PendingSyncOperationPersisting {
 
     func markRetryableFailure(
         clientOperationID _: UUID,
-        errorDescription _: String,
+        failure _: PendingSyncFailure,
         nextRetryAt _: Date?,
         at _: Date
     ) async throws {

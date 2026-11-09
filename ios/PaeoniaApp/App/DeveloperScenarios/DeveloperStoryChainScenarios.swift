@@ -269,7 +269,7 @@
       try? await store.markSending(clientOperationID: operationID, at: Fixture.now)
       try? await store.markRetryableFailure(
         clientOperationID: operationID,
-        errorDescription: "NSURLErrorDomain Code=-1009",
+        failure: PendingSyncFailure(kind: .offline, description: "NSURLErrorDomain Code=-1009"),
         nextRetryAt: Fixture.now.addingTimeInterval(60),
         at: Fixture.now
       )

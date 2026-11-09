@@ -227,10 +227,10 @@ private actor HeldDrawingEnqueueStore: PendingSyncOperationPersisting {
     }
 
     func markRetryableFailure(
-        clientOperationID: UUID, errorDescription: String, nextRetryAt: Date?, at date: Date
+        clientOperationID: UUID, failure: PendingSyncFailure, nextRetryAt: Date?, at date: Date
     ) async throws {
         try await kept.markRetryableFailure(
-            clientOperationID: clientOperationID, errorDescription: errorDescription, nextRetryAt: nextRetryAt, at: date
+            clientOperationID: clientOperationID, failure: failure, nextRetryAt: nextRetryAt, at: date
         )
     }
 

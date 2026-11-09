@@ -105,7 +105,7 @@ struct BoardGamePendingWorkTests {
         try await pending.markSending(clientOperationID: waiting.id, at: Fixture.now)
         try await pending.markRetryableFailure(
             clientOperationID: waiting.id,
-            errorDescription: "Retry later",
+            failure: .retryLater,
             nextRetryAt: nil,
             at: Fixture.now
         )
@@ -120,7 +120,7 @@ struct BoardGamePendingWorkTests {
         try await pending.markSending(clientOperationID: refused.id, at: Fixture.now)
         try await pending.markRetryableFailure(
             clientOperationID: refused.id,
-            errorDescription: String(describing: PaeoniaConvexError.http(status: 503, body: "")),
+            failure: PendingSyncFailure(PaeoniaConvexError.http(status: 503, body: "")),
             nextRetryAt: nil,
             at: Fixture.now
         )
@@ -135,7 +135,7 @@ struct BoardGamePendingWorkTests {
         try await pending.markSending(clientOperationID: offline.id, at: Fixture.now)
         try await pending.markRetryableFailure(
             clientOperationID: offline.id,
-            errorDescription: "Error Domain=NSURLErrorDomain Code=-1009",
+            failure: PendingSyncFailure(kind: .offline, description: "Error Domain=NSURLErrorDomain Code=-1009"),
             nextRetryAt: nil,
             at: Fixture.now
         )
@@ -149,7 +149,7 @@ struct BoardGamePendingWorkTests {
         try await pending.markSending(clientOperationID: refused.id, at: Fixture.now)
         try await pending.markRetryableFailure(
             clientOperationID: refused.id,
-            errorDescription: String(describing: PaeoniaConvexError.http(status: 503, body: "")),
+            failure: PendingSyncFailure(PaeoniaConvexError.http(status: 503, body: "")),
             nextRetryAt: nil,
             at: Fixture.now
         )

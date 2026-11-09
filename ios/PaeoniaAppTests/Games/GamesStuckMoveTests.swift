@@ -191,12 +191,12 @@ struct GamesStuckMoveTests {
     }
 
     @Test func anOfflineFailureIsNotCountedAsAFailureWhileOnline() throws {
-        let offline = snapshotWithError(String(describing: URLError(.notConnectedToInternet)))
-
-        #expect(!offline.failedWhileOnline)
-        #expect(!snapshotWithError("Retry later").failedWhileOnline)
-        #expect(snapshotWithError(String(describing: serverError)).failedWhileOnline)
-        #expect(!snapshotWithError(nil).failedWhileOnline)
+        #expect(!snapshot(failedWith: PendingSyncFailure(URLError(.notConnectedToInternet))).failedWhileOnline)
+        #expect(!snapshot(failedWith: .retryLater).failedWhileOnline)
+        #expect(snapshot(failedWith: PendingSyncFailure(serverError)).failedWhileOnline)
+        // A timeout can happen on a working connection, so it is not called offline.
+        #expect(snapshot(failedWith: PendingSyncFailure(URLError(.timedOut))).failedWhileOnline)
+        #expect(!snapshot(failedWith: nil).failedWhileOnline)
     }
 
     /// The server took a guess, but the read after it failed. The guess stayed
@@ -239,7 +239,10 @@ struct GamesStuckMoveTests {
         #expect(await environment.queued(.submitGameGuess).isEmpty)
     }
 
-    private func snapshotWithError(_ error: String?, attemptCount: Int = 1) -> PendingSyncOperationSnapshot {
+    private func snapshot(
+        failedWith failure: PendingSyncFailure?,
+        attemptCount: Int = 1
+    ) -> PendingSyncOperationSnapshot {
         PendingSyncOperationSnapshot(
             ownerUserID: GameFixture.me,
             operation: SyncClientOperation(clientID: clientID, clientSequence: 1),
@@ -251,7 +254,8 @@ struct GamesStuckMoveTests {
             attemptCount: attemptCount,
             lastAttemptAt: nil,
             nextRetryAt: nil,
-            lastError: error,
+            lastError: failure?.description,
+            lastFailureKind: failure?.kind,
             completedAt: nil
         )
     }
