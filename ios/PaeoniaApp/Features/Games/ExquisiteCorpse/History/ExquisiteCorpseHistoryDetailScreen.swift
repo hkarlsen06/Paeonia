@@ -22,6 +22,14 @@ struct ExquisiteCorpseHistoryDetailHost: View {
     }
 
     var body: some View {
+        // The background sits under both states, so the crossfade between them does not dip.
+        ZStack {
+            state
+        }
+        .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
+    }
+
+    @ViewBuilder private var state: some View {
         switch load {
         case let .loaded(viewModel):
             ExquisiteCorpseHistoryDetailScreen(viewModel: viewModel)
@@ -41,7 +49,7 @@ struct ExquisiteCorpseHistoryDetailHost: View {
                     failedMessage: .exquisiteCorpseHistoryFailedMessage
                 ) {
                     Button {
-                        load = .loading
+                        show(.loading)
                     } label: {
                         Text(.commonTryAgain)
                     }
@@ -66,16 +74,21 @@ struct ExquisiteCorpseHistoryDetailHost: View {
     private func loadFigure() async {
         do {
             if let figure = try await history.loadFigure(id: figureID) {
-                load = .loaded(history.makeDetail(figure: figure))
+                show(.loaded(history.makeDetail(figure: figure)))
             } else if !Task.isCancelled {
                 // The couple has no such creature, which no connection would fix.
-                load = .failed(.other)
+                show(.failed(.other))
             }
         } catch {
             if !Task.isCancelled {
-                load = .failed(PaeoniaFailure(error))
+                show(.failed(PaeoniaFailure(error)))
             }
         }
+    }
+
+    /// Crossfades from the spinner or the failure to what comes next.
+    private func show(_ next: Load) {
+        withAnimation(PaeoniaMotion.stateChange) { load = next }
     }
 }
 

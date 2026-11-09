@@ -12,6 +12,7 @@ struct GamesRootView: View {
     var body: some View {
         NavigationStack(path: $path) {
             content
+                .animation(PaeoniaMotion.stateChange, value: viewModel.screen)
                 .analyticsScreen("games")
                 .paeoniaTabBackdrop()
                 .toolbarVisibility(tabBarVisibility, for: .tabBar)

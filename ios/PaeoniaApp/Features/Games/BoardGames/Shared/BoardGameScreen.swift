@@ -44,6 +44,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
 
     var body: some View {
         content
+            .animation(PaeoniaMotion.stateChange, value: viewModel.phase)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
             .navigationTitle("")

@@ -67,20 +67,25 @@ struct StoryChainHistoryDetailHost: View {
 
     private func loadStory() async {
         if case .failed = load {
-            load = .loading
+            show(.loading)
         }
         do {
             if let story = try await history.loadStory(id: storyID) {
-                load = .loaded(story)
+                show(.loaded(story))
             } else if !Task.isCancelled {
                 // The couple has no such story, which no connection would fix.
-                load = .failed(.other)
+                show(.failed(.other))
             }
         } catch {
             if !Task.isCancelled {
-                load = .failed(PaeoniaFailure(error))
+                show(.failed(PaeoniaFailure(error)))
             }
         }
+    }
+
+    /// Crossfades from the spinner or the failure to what comes next.
+    private func show(_ next: Load) {
+        withAnimation(PaeoniaMotion.stateChange) { load = next }
     }
 }
 

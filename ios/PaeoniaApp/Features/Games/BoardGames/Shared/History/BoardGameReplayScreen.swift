@@ -20,15 +20,20 @@ struct BoardGameReplayHost<Board: BoardGameRules>: View {
     let boardView: (BoardGameReplayBoard<Board>) -> AnyView
 
     var body: some View {
-        if let game = history.game(numbered: gameNumber) {
-            BoardGameReplayScreen(game: game, players: players, boardView: boardView)
-        } else {
-            ProgressView()
-                .tint(.paeoniaAccentPrimary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-                .task { await history.load() }
+        let game = history.game(numbered: gameNumber)
+        // The background sits under both states, so the crossfade between them does not dip.
+        ZStack {
+            if let game {
+                BoardGameReplayScreen(game: game, players: players, boardView: boardView)
+            } else {
+                ProgressView()
+                    .tint(.paeoniaAccentPrimary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .task { await history.load() }
+            }
         }
+        .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
+        .animation(PaeoniaMotion.stateChange, value: game != nil)
     }
 }
 

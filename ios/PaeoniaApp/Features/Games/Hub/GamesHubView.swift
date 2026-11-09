@@ -114,7 +114,10 @@ struct GamesHubView: View {
         // A card moves between "Right now" and the grid when the partner comes or goes, a turn
         // changes, or "Not now" is tapped. These arrive in separate updates, so the animation
         // follows the cards that end up under "Right now" rather than any one of them.
+        // The play-days strip and Today's pick move the sections the same way.
         .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.hubFeaturedGames.map(\.kind))
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.playDays.total > 0)
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.hubTodaysPick?.kind)
     }
 
     /// One card per row, two on a wide iPad. A `Grid` rather than a lazy grid, so the

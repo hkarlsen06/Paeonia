@@ -271,7 +271,10 @@
     }
 
     func loadMindMeldHistory(beforeGameNumber: Int?, limit: Int) async throws -> RemoteMindMeldHistoryPage {
-      await MainActor.run { [historyIsEmpty] in
+      // `-paeonia-scenario-history-delay <seconds>` holds the spinner, to check how the list arrives.
+      let delay = UserDefaults.standard.double(forKey: "paeonia-scenario-history-delay")
+      if delay > 0 { try await Task.sleep(for: .seconds(delay)) }
+      return await MainActor.run { [historyIsEmpty] in
         historyIsEmpty
           ? DeveloperMindMeldFixture.emptyHistoryPage
           : DeveloperMindMeldFixture.historyPage(before: beforeGameNumber, limit: limit)

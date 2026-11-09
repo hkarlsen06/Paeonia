@@ -10,6 +10,10 @@ struct BoardGameHistoryScreen<Board: BoardGameRules>: View {
     var body: some View {
         ScrollView {
             content
+                // The spinner, a failure, the empty state and the list crossfade.
+                .animation(PaeoniaMotion.stateChange, value: viewModel.isLoading)
+                .animation(PaeoniaMotion.stateChange, value: viewModel.loadFailure)
+                .animation(PaeoniaMotion.stateChange, value: viewModel.games.isEmpty)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.top, PaeoniaSpacing.space16)
                 .padding(.bottom, PaeoniaSpacing.space32)

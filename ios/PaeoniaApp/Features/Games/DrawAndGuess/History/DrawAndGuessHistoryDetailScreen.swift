@@ -22,6 +22,14 @@ struct DrawAndGuessHistoryDetailHost: View {
     }
 
     var body: some View {
+        // The background sits under both states, so the crossfade between them does not dip.
+        ZStack {
+            state
+        }
+        .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
+    }
+
+    @ViewBuilder private var state: some View {
         switch load {
         case let .loaded(viewModel):
             DrawAndGuessHistoryDetailScreen(viewModel: viewModel)
@@ -41,7 +49,7 @@ struct DrawAndGuessHistoryDetailHost: View {
                     failedMessage: .gamesDrawAndGuessHistoryFailedMessage
                 ) {
                     Button {
-                        load = .loading
+                        show(.loading)
                     } label: {
                         Text(.commonTryAgain)
                     }
@@ -66,16 +74,21 @@ struct DrawAndGuessHistoryDetailHost: View {
     private func loadRound() async {
         do {
             if let round = try await history.loadRound(id: roundID) {
-                load = .loaded(history.makeDetail(round: round))
+                show(.loaded(history.makeDetail(round: round)))
             } else if !Task.isCancelled {
                 // The couple has no such drawing, which no connection would fix.
-                load = .failed(.other)
+                show(.failed(.other))
             }
         } catch {
             if !Task.isCancelled {
-                load = .failed(PaeoniaFailure(error))
+                show(.failed(PaeoniaFailure(error)))
             }
         }
+    }
+
+    /// Crossfades from the spinner or the failure to what comes next.
+    private func show(_ next: Load) {
+        withAnimation(PaeoniaMotion.stateChange) { load = next }
     }
 }
 

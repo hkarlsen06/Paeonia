@@ -24,6 +24,8 @@ struct DrawAndGuessHistoryScreen: View {
 
                 content
             }
+            // The spinner, a failure, the empty state and the list crossfade.
+            .animation(PaeoniaMotion.stateChange, value: viewModel.phase)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space32)
