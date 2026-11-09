@@ -85,7 +85,7 @@ struct ThreadChatViewModelTests {
         #expect(creates.count == 1)
         #expect(viewModel.messages.count == 1)
         #expect(viewModel.messages.first?.body == "I liked your answer.")
-        #expect(viewModel.messages.first?.isSending == true)
+        #expect(viewModel.messages.first?.delivery == .sending)
     }
 
     @Test func laterOfflineSendsQueueSendOperationsWithoutCreatingAnotherThread() async throws {
@@ -139,7 +139,7 @@ struct ThreadChatViewModelTests {
         await viewModel.load()
 
         #expect(viewModel.messages.map(\.id) == [fixture.messageID])
-        #expect(viewModel.messages.first?.isSending == false)
+        #expect(viewModel.messages.first?.delivery == .sent)
     }
 
     @Test func failedCachedSendStaysVisibleWithoutRaisingABannerOnOpen() async {
@@ -152,7 +152,7 @@ struct ThreadChatViewModelTests {
         // The red icon on the message is enough. A banner on every visit would nag.
         #expect(viewModel.notice == nil)
         #expect(viewModel.messages.first?.body == "Keep this message")
-        #expect(viewModel.messages.first?.sendFailed == true)
+        #expect(viewModel.messages.first?.delivery == .failed)
     }
 
     @Test func aRejectedFirstMessageDoesNotBlockTheRetryFromCreatingTheThread() async throws {
@@ -167,7 +167,7 @@ struct ThreadChatViewModelTests {
             clientOperationID: operation.operation.id
         )
         LocalStoreChanges.post(.threadChat, ownerUserID: fixture.ownerUserID)
-        #expect(await waitForMain { viewModel.messages.first?.sendFailed == true })
+        #expect(await waitForMain { viewModel.messages.first?.delivery == .failed })
 
         #expect(await viewModel.send("Hello", replacingFailed: operation.operation.id))
 
@@ -200,17 +200,17 @@ struct ThreadChatViewModelTests {
         let operation = await fixture.cacheFailedMessage("Keep this message")
         let viewModel = fixture.makeViewModel()
         await viewModel.load()
-        #expect(viewModel.messages.map(\.sendFailed) == [true])
+        #expect(viewModel.messages.map(\.delivery) == [.failed])
 
         let sent = await viewModel.send("Keep this message", replacingFailed: operation.id)
 
         #expect(sent)
         #expect(viewModel.messages.count == 1)
-        #expect(viewModel.messages.first?.sendFailed == false)
-        #expect(viewModel.messages.first?.isSending == true)
+        #expect(viewModel.messages.first?.delivery != .failed)
+        #expect(viewModel.messages.first?.delivery == .sending)
         let cached = await fixture.cachedMessages()
         #expect(cached.count == 1)
-        #expect(cached.first?.sendFailed == false)
+        #expect(cached.first?.delivery != .failed)
     }
 
     @Test func messageLimitCountsCodePointsLikeTheServer() async throws {

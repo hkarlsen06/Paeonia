@@ -107,7 +107,7 @@ enum SiriChats {
         return ThreadChatMessage(
             id: id, threadID: summary.threadID, subjectID: summary.subject.id,
             senderUserID: sender, body: summary.lastMessageBody ?? "", createdAt: date,
-            clientOperationID: nil, isSending: false)
+            clientOperationID: nil, delivery: .sent)
     }
 
     private static func title(

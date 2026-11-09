@@ -148,7 +148,7 @@ struct ThreadChatDeleteTests {
             )
         }
         #expect(try await fixture.queuedOperations(.sendThreadMessage).count == 1)
-        #expect(await fixture.cachedMessages().map(\.isSending) == [true])
+        #expect(await fixture.cachedMessages().map(\.delivery) == [.sending])
     }
 
     @Test func theFirstMessageStaysWhileLaterMessagesWaitForItsChat() async throws {

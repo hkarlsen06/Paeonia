@@ -14,7 +14,7 @@ struct ThreadChatReceiptAndTypingRowTests {
     private func message(_ sender: UUID, at seconds: TimeInterval) -> ThreadChatMessage {
         ThreadChatMessage(
             id: UUID(), threadID: UUID(), subjectID: UUID(), senderUserID: sender, body: "Hi",
-            createdAt: Date(timeIntervalSince1970: 1_000 + seconds), clientOperationID: nil, isSending: false
+            createdAt: Date(timeIntervalSince1970: 1_000 + seconds), clientOperationID: nil, delivery: .sent
         )
     }
 

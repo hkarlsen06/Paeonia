@@ -22,7 +22,7 @@ struct MediaAlternativeEditingFixture {
         pending = SwiftDataPendingSyncOperationRepository(container: localStore.container)
         message = ThreadChatMessage(id: UUID(), threadID: UUID(), subjectID: UUID(), senderUserID: owner,
                                     body: "Original message", createdAt: Date(timeIntervalSince1970: 1),
-                                    clientOperationID: nil, isSending: false,
+                                    clientOperationID: nil, delivery: .sent,
                                     voice: ThreadChatVoice(
                                         mediaAssetID: assetID, data: Data([1, 2]), durationMs: 1_000,
                                         transcript: "Original transcript"

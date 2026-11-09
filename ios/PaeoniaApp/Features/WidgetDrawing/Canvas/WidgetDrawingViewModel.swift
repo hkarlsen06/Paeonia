@@ -75,9 +75,8 @@ final class WidgetDrawingViewModel {
     }
 
     var delivery: Delivery = .idle
-    /// True while the drawing is being saved on this phone. Sending another
-    /// drawing waits for this, but not for the upload to the partner.
-    private(set) var isPublishing = false
+    /// A send is running. Sending another drawing waits for it.
+    var isPublishing: Bool { delivery == .sending }
     private(set) var saveFailure: WidgetDrawingSaveFailure?
     /// The partner sent a drawing while this canvas had changes that were not
     /// sent. The canvas keeps the changes; the screen says what sending does.
@@ -129,7 +128,6 @@ final class WidgetDrawingViewModel {
     @ObservationIgnored private var sentConfirmationTask: Task<Void, Never>?
     @ObservationIgnored var draftPersistenceTask: Task<Void, Never>?
     @ObservationIgnored let draftOrder = DraftWriteOrder()
-    @ObservationIgnored private var sendGeneration = 0
     /// The drawing on the widgets, kept in the canvas's coordinates so its
     /// signature can be recomputed after a resize.
     @ObservationIgnored var savedBaseline: PKDrawing?
@@ -313,10 +311,7 @@ extension WidgetDrawingViewModel {
             return
         }
 
-        sendGeneration += 1
-        let generation = sendGeneration
         sentConfirmationTask?.cancel()
-        isPublishing = true
         delivery = .sending
         saveFailure = nil
         let savedAt = Date()
@@ -337,7 +332,6 @@ extension WidgetDrawingViewModel {
             )
         } catch {
             await uploader.restorePending(previousPending, replacing: uploadPayload)
-            isPublishing = false
             delivery = .idle
             saveFailure = WidgetDrawingSaveFailure()
             return
@@ -350,12 +344,7 @@ extension WidgetDrawingViewModel {
         // the sent drawing reads as "not sent yet".
         adoptPublishedDrawing(sentDrawing.scaled(fromSide: canvasSide, toSide: currentCanvasSide()), savedAt: savedAt)
 
-        let outcome = await uploader.send(uploadPayload)
-        isPublishing = false
-        // A newer send owns the status now.
-        if generation == sendGeneration {
-            applyDelivery(outcome)
-        }
+        applyDelivery(await uploader.send(uploadPayload))
     }
 
     private func applyDelivery(_ outcome: WidgetDrawingDelivery) {

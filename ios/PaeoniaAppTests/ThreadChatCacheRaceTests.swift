@@ -12,7 +12,8 @@ struct ThreadChatCacheRaceTests {
         func message(_ id: UUID, operation: UUID? = nil, sending: Bool = false) -> ThreadChatMessage {
             ThreadChatMessage(
                 id: id, threadID: nil, subjectID: question, senderUserID: owner, body: "ok",
-                createdAt: Date(timeIntervalSince1970: 3), clientOperationID: operation, isSending: sending
+                createdAt: Date(timeIntervalSince1970: 3), clientOperationID: operation,
+                delivery: sending ? .sending : .sent
             )
         }
         let pending = message(operation, operation: operation, sending: true)
@@ -95,7 +96,8 @@ struct ThreadChatCacheRaceTests {
         ) -> ThreadChatMessage {
             ThreadChatMessage(
                 id: id, threadID: nil, subjectID: question, senderUserID: owner, body: body,
-                createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: operation, isSending: sending
+                createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: operation,
+                delivery: sending ? .sending : .sent
             )
         }
         let earlierServerID = UUID()
@@ -199,14 +201,14 @@ struct ThreadChatCacheRaceTests {
                 body: "Hi",
                 createdAt: operation.localCreatedAt,
                 clientOperationID: operation.id,
-                isSending: true
+                delivery: .sending
             ),
             ownerUserID: fixture.ownerUserID
         )
 
         let messages = await cache.messages(ownerUserID: fixture.ownerUserID, subjectID: fixture.question.questionID)
         #expect(messages.map(\.id) == [fixture.messageID])
-        #expect(messages.first?.isSending == false)
+        #expect(messages.first?.delivery == .sent)
     }
 
     @Test func theFileCacheDiscardsOnlyAFailedMessage() async {
@@ -227,7 +229,7 @@ struct ThreadChatCacheRaceTests {
                     body: "Hi",
                     createdAt: operation.localCreatedAt,
                     clientOperationID: operation.id,
-                    isSending: true
+                    delivery: .sending
                 ),
                 ownerUserID: fixture.ownerUserID
             )

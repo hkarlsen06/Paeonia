@@ -131,7 +131,7 @@ struct DailyChatRoundsTests {
     func message(at seconds: TimeInterval) -> ThreadChatMessage {
         ThreadChatMessage(
             id: UUID(), threadID: UUID(), subjectID: questionID, senderUserID: me, body: "Hey",
-            createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: nil, isSending: false
+            createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: nil, delivery: .sent
         )
     }
 

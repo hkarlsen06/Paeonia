@@ -15,7 +15,7 @@ struct ThreadChatCacheFilesTests {
     private func message(_ question: UUID, _ body: String, at seconds: Double = 5) -> ThreadChatMessage {
         ThreadChatMessage(
             id: UUID(), threadID: thread, subjectID: question, senderUserID: UUID(), body: body,
-            createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: nil, isSending: false
+            createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: nil, delivery: .sent
         )
     }
 
@@ -26,7 +26,7 @@ struct ThreadChatCacheFilesTests {
         let operation = UUID()
         let sending = ThreadChatMessage(
             id: operation, threadID: nil, subjectID: question, senderUserID: owner, body: "Hi",
-            createdAt: Date(timeIntervalSince1970: 5), clientOperationID: operation, isSending: true
+            createdAt: Date(timeIntervalSince1970: 5), clientOperationID: operation, delivery: .sending
         )
         await FileThreadChatCache(directoryURL: directory).append(sending, ownerUserID: owner)
         let reopened = FileThreadChatCache(directoryURL: directory)
@@ -35,7 +35,7 @@ struct ThreadChatCacheFilesTests {
 
         let messages = await reopened.messages(ownerUserID: owner, subjectID: question)
         #expect(messages.count == 1)
-        #expect(messages.first?.sendFailed == true)
+        #expect(messages.first?.delivery == .failed)
         await reopened.discardFailed(ownerUserID: owner, clientOperationID: operation)
         #expect(await reopened.messages(ownerUserID: owner, subjectID: question).isEmpty)
     }

@@ -3,7 +3,8 @@ import SwiftUI
 struct PaywallFooterActionsView: View {
     /// A purchase or restore is talking to the App Store. Account actions wait,
     /// so nobody signs out or deletes the account in the middle of a payment.
-    let isBusyWithStore: Bool
+    /// A purchase, a restore or leaving the relationship is running.
+    let isBusy: Bool
     let isRestoring: Bool
     let showsUnpair: Bool
     let isLeavingRelationship: Bool
@@ -50,7 +51,7 @@ struct PaywallFooterActionsView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.paeoniaAccentPrimary)
-        .disabled(isBusyWithStore)
+        .disabled(isBusy)
     }
 
     private func manageSubscriptionButton(_ action: @escaping () -> Void) -> some View {
@@ -63,7 +64,7 @@ struct PaywallFooterActionsView: View {
         .buttonStyle(.plain)
         .foregroundStyle(.paeoniaAccentPrimary)
         .accessibilityIdentifier("paywall.manageSubscription")
-        .disabled(isBusyWithStore)
+        .disabled(isBusy)
     }
 
     private var accountActions: some View {
@@ -91,7 +92,7 @@ struct PaywallFooterActionsView: View {
         }
         .font(PaeoniaTypography.caption)
         .foregroundStyle(.paeoniaTextTertiary)
-        .disabled(isBusyWithStore)
+        .disabled(isBusy)
     }
 
     private var signOutButton: some View {
@@ -106,7 +107,7 @@ struct PaywallFooterActionsView: View {
             footerLabel(.paywallUnpairButton)
         }
         .buttonStyle(.plain)
-        .disabled(isLeavingRelationship)
+        .disabled(isBusy)
     }
 
     private var dataExportButton: some View {

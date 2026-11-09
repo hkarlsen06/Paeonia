@@ -138,7 +138,7 @@
       let message = ThreadChatMessage(
         id: UUID(), threadID: threadID, subjectID: subject.id, senderUserID: senderUserID,
         body: body, createdAt: operation.localCreatedAt, clientOperationID: operation.id,
-        isSending: false, replyTo: replyTo
+        delivery: .sent, replyTo: replyTo
       )
       messages.append(message)
       let firstInThread = messages.first { $0.threadID == threadID } ?? message

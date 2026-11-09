@@ -11,14 +11,13 @@ struct DailyDecodedPhoto<Content: View, Failure: View>: View {
     @ViewBuilder let content: (UIImage) -> Content
     @ViewBuilder let failure: () -> Failure
 
-    @State private var image: UIImage?
-    @State private var didFail = false
+    @State private var load = ImageLoad<Data>.loading
 
     var body: some View {
         Group {
-            if let image {
+            if let image = load.image(for: data) {
                 content(image)
-            } else if didFail {
+            } else if load.hasFailed(for: data) {
                 failure()
             } else {
                 Color.clear.frame(height: reservedHeight)
@@ -29,8 +28,7 @@ struct DailyDecodedPhoto<Content: View, Failure: View>: View {
         .task(id: data) {
             let decoded = await MemoryImageDecoding.downsample(data, maxPixelSize: Int(ImageCompressor.maxDimension))
             guard !Task.isCancelled else { return }
-            image = decoded
-            didFail = decoded == nil
+            load = ImageLoad(decoded, for: data)
         }
     }
 }

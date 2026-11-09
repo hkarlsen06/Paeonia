@@ -44,7 +44,7 @@ extension ThreadChatService {
         // The handler marks a rejected message failed before the drain records the
         // operation as finished. That operation is no longer creating the thread.
         let cached = await cache.messages(ownerUserID: ownerUserID, subjectID: subjectID)
-        let failedOperationIDs = Set(cached.filter(\.sendFailed).compactMap(\.clientOperationID))
+        let failedOperationIDs = Set(cached.filter { $0.delivery == .failed }.compactMap(\.clientOperationID))
         return operations.contains { operation in
             guard !failedOperationIDs.contains(operation.operation.id),
                   let data = operation.requestData,
@@ -74,8 +74,7 @@ extension ThreadChatService {
             body: content.body,
             createdAt: operation.operation.localCreatedAt,
             clientOperationID: operation.operation.id,
-            isSending: true,
-            isHeldOnPhone: operation.hasFailedAttempt,
+            delivery: .sending,
             voice: content.voice?.pendingVoice,
             photos: content.photos?.pendingPhotos,
             replyTo: content.replyTo
@@ -207,7 +206,7 @@ private nonisolated struct OutgoingChatMessage {
             body: body,
             createdAt: operation.localCreatedAt,
             clientOperationID: operation.id,
-            isSending: true,
+            delivery: .sending,
             voice: voice?.pendingVoice,
             photos: photos?.pendingPhotos,
             // A first message can reply to a question's answer or a game's result.

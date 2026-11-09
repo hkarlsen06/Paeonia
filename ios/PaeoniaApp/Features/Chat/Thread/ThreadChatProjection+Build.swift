@@ -33,7 +33,7 @@ extension ThreadChatProjection {
             $0.senderUserID != input.currentUserID && !$0.hasMedia && !$0.isDeleted
         } == true
         let lastSentOwnMessage = input.messages.last {
-            $0.senderUserID == input.currentUserID && !$0.isSending && !$0.sendFailed && !$0.isDeleted
+            $0.senderUserID == input.currentUserID && $0.delivery == .sent && !$0.isDeleted
         }
 
         let sections = input.rounds.map {
@@ -253,7 +253,7 @@ extension ThreadChatProjection {
                 reactions: reactions
             ),
             text: message.voice == nil ? message.body : "",
-            status: message.isSending || message.sendFailed ? .sending : .sent
+            status: message.isUnsent ? .sending : .sent
         )
         placed.reactions = ownExyteReaction(in: reactions, input: input)
         return placed
@@ -288,9 +288,9 @@ extension ThreadChatProjection {
         _ message: ThreadChatMessage,
         context: MessageRowContext
     ) -> ThreadChatMessageStatus? {
-        if message.sendFailed {
+        if message.delivery == .failed {
             .failed
-        } else if message.isSending {
+        } else if message.delivery == .sending {
             .sending
         } else if message.id == context.readReceiptMessageID {
             .read
@@ -414,8 +414,7 @@ extension ThreadChatProjection {
         guard let readID = input.partnerLastReadMessageID, let readThrough = messagesByID[readID] else { return nil }
         return input.messages.last { message in
             message.senderUserID == input.currentUserID
-                && !message.isSending
-                && !message.sendFailed
+                && message.delivery == .sent
                 && !message.isDeleted
                 && (message.createdAt, message.id.uuidString) <= (readThrough.createdAt, readThrough.id.uuidString)
         }?.id
@@ -448,8 +447,7 @@ extension ThreadChatProjection {
 
     private struct MessageRedrawKey: Hashable {
         let body: String
-        let isSending: Bool
-        let sendFailed: Bool
+        let delivery: ThreadChatDelivery
         let voiceAssetID: UUID?
         let hasLocalVoice: Bool
         let photoAssetIDs: [UUID?]
@@ -469,8 +467,7 @@ extension ThreadChatProjection {
             reactions: [EmojiReaction]
         ) {
             body = message.body
-            isSending = message.isSending
-            sendFailed = message.sendFailed
+            delivery = message.delivery
             voiceAssetID = message.voice?.mediaAssetID
             hasLocalVoice = message.voice?.data != nil
             photoAssetIDs = (message.photos ?? []).map(\.mediaAssetID)

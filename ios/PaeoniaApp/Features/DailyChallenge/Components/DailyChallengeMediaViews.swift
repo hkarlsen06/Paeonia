@@ -133,8 +133,7 @@ struct DailyAnswerImageView: View {
 
     private let authoredDescription: String?
 
-    @State private var image: UIImage?
-    @State private var didFail = false
+    @State private var load = ImageLoad<LoadKey>.loading
     /// Bumped by a tap on the failed placeholder to run the load again.
     @State private var attempt = 0
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
@@ -152,8 +151,10 @@ struct DailyAnswerImageView: View {
         self.allowsViewing = allowsViewing
         self.authoredDescription = authoredDescription
         // A photo shown before is in the first frame, with no placeholder in between.
-        let cached = Self.cacheKey(for: mediaAssetID, height: height).flatMap(PaeoniaImageMemoryCache.image(forKey:))
-        _image = State(initialValue: cached)
+        let key = Self.cacheKey(for: mediaAssetID, height: height)
+        if let cached = key.flatMap(PaeoniaImageMemoryCache.image(forKey:)) {
+            _load = State(initialValue: .loaded(LoadKey(mediaAssetID: mediaAssetID, attempt: 0), cached))
+        }
     }
 
     /// The memory cache holds the copy decoded for this frame height, not the full photo.
@@ -165,6 +166,10 @@ struct DailyAnswerImageView: View {
         let mediaAssetID: UUID?
         let attempt: Int
     }
+
+    private var loadKey: LoadKey { LoadKey(mediaAssetID: mediaAssetID, attempt: attempt) }
+    private var image: UIImage? { load.image(for: loadKey) }
+    private var didFail: Bool { load.hasFailed(for: loadKey) }
 
     var body: some View {
         // The surface rectangle owns the size (full available width × fixed height), so
@@ -181,7 +186,7 @@ struct DailyAnswerImageView: View {
             // placeholder instead of snapping into the frame when the download lands.
             .animation(PaeoniaMotion.stateChange, value: image != nil)
             .animation(PaeoniaMotion.stateChange, value: didFail)
-            .task(id: LoadKey(mediaAssetID: mediaAssetID, attempt: attempt)) { await load() }
+            .task(id: loadKey) { await loadPhoto() }
             .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
             .onTapGesture {
                 if didFail {
@@ -223,15 +228,15 @@ struct DailyAnswerImageView: View {
         }
     }
 
-    private func load() async {
+    private func loadPhoto() async {
         // Already showing this photo from memory. A new photo or a retry loads again.
+        let loadKey = loadKey
         let key = Self.cacheKey(for: mediaAssetID, height: height)
         if let image, let key, image === PaeoniaImageMemoryCache.image(forKey: key) { return }
-        image = nil
-        didFail = false
+        load = .loading
 
         guard let mediaAssetID, let provider, let key else {
-            didFail = true
+            load = .failed(loadKey)
             return
         }
 
@@ -249,11 +254,9 @@ struct DailyAnswerImageView: View {
         }
         guard !Task.isCancelled else { return }
         if let loaded {
-            image = loaded
             PaeoniaImageMemoryCache.store(loaded, forKey: key)
-        } else {
-            didFail = true
         }
+        load = ImageLoad(loaded, for: loadKey)
     }
 
     /// The viewer zooms, so it gets a larger copy than the frame shows.

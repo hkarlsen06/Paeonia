@@ -335,7 +335,7 @@ extension ThreadChatView {
     // MARK: - Actions
 
     private func retry(_ message: ThreadChatMessage?) {
-        guard let message, message.sendFailed else { return }
+        guard let message, message.delivery == .failed else { return }
         Task {
             if message.voice != nil {
                 await viewModel.resendVoice(message)

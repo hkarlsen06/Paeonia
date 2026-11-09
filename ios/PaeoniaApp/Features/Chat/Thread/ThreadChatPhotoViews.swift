@@ -55,9 +55,7 @@ struct ThreadChatPhotoCard: View {
     var isCurrentUser = false
     var provider: (any DailyAnswerMediaImageProviding)? = DailyAnswerMediaImageProviderFactory.shared
 
-    @State private var image: UIImage?
-    @State private var loadedKey: String?
-    @State private var didFail = false
+    @State private var load = ImageLoad<String>.loading
 
     init(
         photo: ThreadChatPhoto,
@@ -72,9 +70,10 @@ struct ThreadChatPhotoCard: View {
         self.isCurrentUser = isCurrentUser
         self.provider = provider
         // A photo shown before is in the first frame, with no placeholder in between.
-        let cached = ThreadChatPhotoLayout.cacheKey(for: photo).flatMap(PaeoniaImageMemoryCache.image(forKey:))
-        _image = State(initialValue: cached)
-        _loadedKey = State(initialValue: ThreadChatPhotoLayout.cacheKey(for: photo))
+        if let key = ThreadChatPhotoLayout.cacheKey(for: photo),
+           let cached = PaeoniaImageMemoryCache.image(forKey: key) {
+            _load = State(initialValue: .loaded(key, cached))
+        }
     }
 
     var body: some View {
@@ -82,13 +81,14 @@ struct ThreadChatPhotoCard: View {
             .fill(.paeoniaSurfacePrimary)
             .frame(width: size.width, height: size.height)
             .overlay {
-                if loadedKey == ThreadChatPhotoLayout.cacheKey(for: photo), let image {
+                let key = ThreadChatPhotoLayout.cacheKey(for: photo)
+                if let key, let image = load.image(for: key) {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
                         .frame(width: size.width, height: size.height)
                         .accessibilityHidden(true)
-                } else if loadedKey == ThreadChatPhotoLayout.cacheKey(for: photo), didFail {
+                } else if let key, load.hasFailed(for: key) {
                     Image(systemName: "photo")
                         .font(.title3)
                         .foregroundStyle(.paeoniaTextTertiary)
@@ -104,19 +104,20 @@ struct ThreadChatPhotoCard: View {
                     lineWidth: 1
                 )
             }
-            .task(id: ThreadChatPhotoLayout.cacheKey(for: photo)) { await load() }
+            .task(id: ThreadChatPhotoLayout.cacheKey(for: photo)) { await loadPhoto() }
             .accessibilityElement()
             .accessibilityLabel(Text(verbatim: photo.accessibilityText?.trimmedNonEmpty
                 ?? String(localized: .dailyChatPhotoPreview)))
             .accessibilityAddTraits(.isImage)
     }
 
-    private func load() async {
+    private func loadPhoto() async {
         guard let key = ThreadChatPhotoLayout.cacheKey(for: photo) else { return }
-        loadedKey = key
-        image = PaeoniaImageMemoryCache.image(forKey: key)
-        didFail = false
-        guard image == nil else { return }
+        if let cached = PaeoniaImageMemoryCache.image(forKey: key) {
+            load = .loaded(key, cached)
+            return
+        }
+        load = .loading
         let data: Data? = if let local = photo.data {
             local
         } else if let mediaAssetID = photo.mediaAssetID {
@@ -134,8 +135,7 @@ struct ThreadChatPhotoCard: View {
         // Only a photo that had to load fades in over the spinner. A cached one is
         // set above without animation, so scrolling and cell reuse never fade.
         withAnimation(PaeoniaMotion.stateChange) {
-            image = decoded
-            didFail = decoded == nil
+            load = ImageLoad(decoded, for: key)
         }
     }
 }

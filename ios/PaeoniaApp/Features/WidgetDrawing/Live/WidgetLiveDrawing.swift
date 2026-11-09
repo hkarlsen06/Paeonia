@@ -21,16 +21,19 @@ final class WidgetLiveDrawing {
     private(set) var partnerActivity: WidgetLivePresence.PartnerActivity = .away
     /// Watching only: the partner's canvas has arrived and is on screen.
     private(set) var isShowingPartnerCanvas = false
-    /// Watching only: the partner's whole canvas arrived as a snapshot since this
-    /// phone or the partner last connected, so it holds every stroke. A canvas
-    /// left over from before a drop can miss strokes even when it is not empty.
-    private(set) var isPartnerCanvasCaughtUp = false
+    /// The two canvases are in step since either phone last joined. Drawing, the
+    /// watching partner asked for this canvas and got it. In any other role, the
+    /// partner's whole canvas arrived as a snapshot. One flag, because a role
+    /// change resets it.
+    private(set) var isCanvasInStep = false
+    /// Not drawing: the partner's canvas holds every stroke. A canvas left over
+    /// from before a drop can miss strokes even when it is not empty.
+    var isPartnerCanvasCaughtUp: Bool { role != .drawing && isCanvasInStep }
     /// Watching only: a stroke of the partner's is on screen, finished or still
     /// being drawn.
     private(set) var hasPartnerStrokes = false
-    /// Drawing only: the watching partner asked for this whole canvas and got it
-    /// since either phone last joined, so they see the strokes as they are drawn.
-    private(set) var hasSentCanvasToPartner = false
+    /// Drawing only: the watching partner sees the strokes as they are drawn.
+    var hasSentCanvasToPartner: Bool { role == .drawing && isCanvasInStep }
 
     /// Called with the canvas drawing plus the partner's latest strokes. The view
     /// model puts it on the canvas.
@@ -123,8 +126,7 @@ final class WidgetLiveDrawing {
         }
         role = newRole
         room.clear()
-        isPartnerCanvasCaughtUp = false
-        hasSentCanvasToPartner = false
+        isCanvasInStep = false
         isSnapshotOwed = false
         playback.removeAll()
         pendingRemote = []
@@ -208,7 +210,7 @@ final class WidgetLiveDrawing {
         case .ops where role != .drawing:
             room.apply(message, upserts: Self.upserts(in: message, side: WidgetLiveRoom.side))
             if message.snapshot == true {
-                isPartnerCanvasCaughtUp = true
+                isCanvasInStep = true
             }
             playback.remove(message.ended ?? [])
         case .ops:
@@ -223,8 +225,7 @@ final class WidgetLiveDrawing {
         case .welcome:
             isConnected = true
             beginPresenceRenewal()
-            isPartnerCanvasCaughtUp = false
-            hasSentCanvasToPartner = false
+            isCanvasInStep = false
             presence.welcome(id: message.id, peers: message.peers ?? 0)
             isAwaitingRoomState = role == .drawing && presence.peerCount > 0
             sendHello(needsCanvas: presence.peerCount > 0)
@@ -233,8 +234,7 @@ final class WidgetLiveDrawing {
             // The partner may be back after a drop the relay never saw, with
             // strokes drawn while away. Their whole canvas is asked for again.
             presence.joined()
-            isPartnerCanvasCaughtUp = false
-            hasSentCanvasToPartner = false
+            isCanvasInStep = false
             sendHello(needsCanvas: role == .watching)
             announceArrivalIfPartnerIsHere()
         case .hello:
@@ -279,8 +279,7 @@ final class WidgetLiveDrawing {
         presenceTask?.cancel()
         presenceTask = nil
         isSnapshotOwed = false
-        isPartnerCanvasCaughtUp = false
-        hasSentCanvasToPartner = false
+        isCanvasInStep = false
         presence.reset()
         outgoing = nil
         endedLiveIDs = []
@@ -289,8 +288,9 @@ final class WidgetLiveDrawing {
 
     private func updatePresence() {
         partnerActivity = presence.partnerActivity
-        if partnerActivity != .watching {
-            hasSentCanvasToPartner = false
+        // Each role is in step only with a partner in the other role.
+        if partnerActivity != (role == .drawing ? .watching : .drawing) {
+            isCanvasInStep = false
         }
         if presence.peerCount == 0 {
             playback.removeAll()
@@ -299,7 +299,6 @@ final class WidgetLiveDrawing {
         // The partner left the canvas. The Us tab shows the widget again.
         if partnerActivity != .drawing {
             room.clear()
-            isPartnerCanvasCaughtUp = false
         }
         isShowingPartnerCanvas = room.drawing != nil
         hasPartnerStrokes = room.drawing?.strokes.isEmpty == false || !playback.isEmpty
@@ -335,7 +334,7 @@ extension WidgetLiveDrawing {
             ended: [],
             snapshot: true
         )
-        hasSentCanvasToPartner = true
+        isCanvasInStep = true
     }
 
     private func send(

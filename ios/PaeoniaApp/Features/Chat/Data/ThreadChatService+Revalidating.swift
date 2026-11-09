@@ -56,7 +56,7 @@ extension ThreadChatService {
     private func oldestConfirmedCursor(ownerUserID: UUID, subjectID: UUID) async -> ThreadChatMessageCursor? {
         let cached = await cache.messages(ownerUserID: ownerUserID, subjectID: subjectID)
         return cached
-            .filter { !$0.isSending && !$0.sendFailed }
+            .filter { $0.delivery == .sent }
             .min(by: Self.isOlder)
             .map { ThreadChatMessageCursor(createdAt: $0.createdAt, messageID: $0.id) }
     }

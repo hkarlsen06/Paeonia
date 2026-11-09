@@ -115,7 +115,7 @@ final class ChatTestFixture {
             body: body,
             createdAt: Date(timeIntervalSince1970: 2),
             clientOperationID: nil,
-            isSending: false
+            delivery: .sent
         )
     }
 
@@ -157,7 +157,7 @@ final class ChatTestFixture {
                 body: body,
                 createdAt: operation.localCreatedAt,
                 clientOperationID: operation.id,
-                isSending: true
+                delivery: .sending
             ),
             ownerUserID: ownerUserID
         )
@@ -176,7 +176,7 @@ extension ChatTestFixture {
             body: body,
             createdAt: Date(timeIntervalSince1970: seconds),
             clientOperationID: nil,
-            isSending: false
+            delivery: .sent
         )
     }
 
@@ -190,7 +190,7 @@ extension ChatTestFixture {
             body: body,
             createdAt: Date(timeIntervalSince1970: seconds),
             clientOperationID: nil,
-            isSending: false
+            delivery: .sent
         )
     }
 
@@ -245,7 +245,7 @@ extension ChatTestFixture {
                 body: body,
                 createdAt: operation.localCreatedAt,
                 clientOperationID: operation.id,
-                isSending: true
+                delivery: .sending
             ),
             ownerUserID: ownerUserID
         )

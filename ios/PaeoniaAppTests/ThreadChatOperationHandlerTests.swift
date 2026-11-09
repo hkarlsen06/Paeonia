@@ -18,7 +18,7 @@ struct ThreadChatOperationHandlerTests {
         #expect(result == .succeeded)
         #expect(messages.first?.id == fixture.messageID)
         #expect(messages.first?.clientOperationID == operation.id)
-        #expect(messages.first?.isSending == false)
+        #expect(messages.first?.delivery == .sent)
     }
 
     @Test func sendHandlerResolvesThreadCreatedByEarlierQueuedOperation() async throws {
@@ -85,8 +85,7 @@ struct ThreadChatOperationFailureTests {
         if case .terminalFailure = result { isTerminal = true }
         #expect(isTerminal)
         let cached = await fixture.cachedMessages()
-        #expect(cached.first?.sendFailed == true)
-        #expect(cached.first?.isSending == false)
+        #expect(cached.first?.delivery == .failed)
         let changes = recorder.count
         #expect(await waitUntil { changes.value == 1 })
     }
@@ -102,8 +101,7 @@ struct ThreadChatOperationFailureTests {
         )
 
         let cached = await fixture.cachedMessages()
-        #expect(cached.first?.sendFailed == true)
-        #expect(cached.first?.isSending == false)
+        #expect(cached.first?.delivery == .failed)
     }
 
     @Test func sendHandlerKeepsAConnectionErrorRetryable() async throws {
@@ -146,7 +144,7 @@ struct ThreadChatOperationFailureTests {
         if case .terminalFailure = result { isTerminal = true }
         #expect(isTerminal)
         #expect(await fixture.gateway.createCallCount == 0)
-        #expect(await fixture.cachedMessages().first?.sendFailed == true)
+        #expect(await fixture.cachedMessages().first?.delivery == .failed)
     }
 
     private func enqueueCreate(_ fixture: ChatTestFixture, operation: SyncClientOperation, data: Data) async throws {
@@ -219,9 +217,9 @@ struct ThreadChatOperationFailureTests {
         let stillWaiting = try await fixture.queuedOperations(.sendThreadMessage)
         #expect(stillWaiting.map(\.operation.id) == [otherChat.id])
         let refusedChat = await fixture.cachedMessages()
-        #expect(refusedChat.first(where: { $0.clientOperationID == waiting.id })?.sendFailed == true)
+        #expect(refusedChat.first(where: { $0.clientOperationID == waiting.id })?.delivery == .failed)
         let untouchedChat = await fixture.cache.messages(ownerUserID: ownerUserID, subjectID: otherQuestionID)
-        #expect(untouchedChat.first?.sendFailed == false)
-        #expect(untouchedChat.first?.isSending == true)
+        #expect(untouchedChat.first?.delivery != .failed)
+        #expect(untouchedChat.first?.delivery == .sending)
     }
 }

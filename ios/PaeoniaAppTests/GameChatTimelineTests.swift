@@ -213,6 +213,6 @@ struct GameChatTimelineTests {
     private func message(at date: Date) -> ThreadChatMessage {
         ThreadChatMessage(
             id: UUID(), threadID: UUID(), subjectID: subject.id, senderUserID: ownerID,
-            body: "Hello", createdAt: date, clientOperationID: nil, isSending: false)
+            body: "Hello", createdAt: date, clientOperationID: nil, delivery: .sent)
     }
 }

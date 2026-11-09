@@ -286,7 +286,7 @@ final class ThreadChatViewModel {
         dropSavedPendingReactions(ownerUserID: ownerUserID)
         // Removed messages are left out of the cache, so a count of what is shown cannot tell
         // whether older ones exist. A short chat costs one extra read at the top, which ends it.
-        hasOlderMessages = !hasReachedChatStart && cached.contains { !$0.isSending && !$0.sendFailed }
+        hasOlderMessages = !hasReachedChatStart && cached.contains { $0.delivery == .sent }
         if let cachedTimeline { applyGameTimeline(cachedTimeline) }
         hasReadStore = true
         raiseNoticeForNewFailures()
@@ -315,7 +315,7 @@ final class ThreadChatViewModel {
     }
 
     var newestDeliveredMessage: ThreadChatMessage? {
-        messages.last { !$0.isSending && !$0.sendFailed && $0.threadID != nil }
+        messages.last { $0.delivery == .sent && $0.threadID != nil }
     }
 
     private var visiblePartnerRounds: [DailyChallengeQuestion] {
@@ -355,7 +355,7 @@ final class ThreadChatViewModel {
     }
 
     private func raiseNoticeForNewFailures() {
-        let failed = Set(messages.filter(\.sendFailed).compactMap(\.clientOperationID))
+        let failed = Set(messages.filter { $0.delivery == .failed }.compactMap(\.clientOperationID))
         if let seen = seenFailedOperationIDs, !failed.isSubset(of: seen) {
             notice = .deliveryFailed
         }

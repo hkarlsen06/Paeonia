@@ -46,16 +46,27 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     /// redraw the map card without another store read.
     private var loadedVisibility: LocationVisibilitySnapshot?
     private var loadedOwnLocation: OwnLocationSnapshot?
-    private var hasLoadedSnapshots = false
+    /// How far the first read of the stored snapshots got.
+    private enum Readiness {
+        case loading
+        /// The store could not be read. The controls still work offline.
+        case loadFailed
+        case loaded
+    }
+
+    private var readiness = Readiness.loading
+    private var hasLoadedSnapshots: Bool { readiness == .loaded }
     @ObservationIgnored var pauseExpiryTask: Task<Void, Never>?
 
     private(set) var mapState: CoupleMapState = .loading
-    private(set) var isPresentationReady = false
+    var isPresentationReady: Bool { readiness != .loading }
     private(set) var sharingEnabled = false
     /// When your pause ends, while sharing is on but paused. The partner never gets this time.
     /// Only `trackPause` (in `LocationMapViewModel+Pause.swift`) sets it.
     var pausedUntil: Date?
-    private(set) var isSharingLoaded = false
+    /// The settings switch can be used: the first read finished, or the person
+    /// already made a choice.
+    var isSharingLoaded: Bool { isPresentationReady || hasResolvedSharingPreference }
     private(set) var hasResolvedSharingPreference = false
     private(set) var notice: Notice?
     /// iOS location permission as of the last check. Stored so SwiftUI can
@@ -187,13 +198,11 @@ final class LocationMapViewModel: PresentationReadinessProviding {
                 return
             }
 
-            hasLoadedSnapshots = false
+            readiness = .loadFailed
             mapState = .partnerUnknown(.unknown("local_load_failed"))
-            isPresentationReady = true
             // Local-first controls remain available offline. Automatic priming
             // uses the separate resolved flag and stays quiet until a cached or
             // server snapshot establishes the actual preference.
-            isSharingLoaded = true
             hasResolvedSharingPreference = false
         }
     }
@@ -201,13 +210,11 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     private func resetPresentation() {
         loadedVisibility = nil
         loadedOwnLocation = nil
-        hasLoadedSnapshots = false
+        readiness = .loading
         lastLookupFailed = false
         mapState = .loading
-        isPresentationReady = false
         sharingEnabled = false
         trackPause(until: nil)
-        isSharingLoaded = false
         hasResolvedSharingPreference = false
     }
 
@@ -218,13 +225,11 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             sharingEnabled = visibility?.viewerSharingEnabled ?? false
             trackPause(until: visibility?.pausedUntil(at: Date()))
         }
-        isSharingLoaded = true
         hasResolvedSharingPreference = visibility != nil
         loadedVisibility = visibility
         loadedOwnLocation = ownLocation
-        hasLoadedSnapshots = true
+        readiness = .loaded
         publishMapState()
-        isPresentationReady = true
     }
 
     func promptForCurrentLocation() async {
@@ -327,7 +332,6 @@ extension LocationMapViewModel {
     /// Shows a sharing choice before it is saved, so the switch follows the tap.
     func showSharingChoice(_ enabled: Bool) {
         sharingEnabled = enabled
-        isSharingLoaded = true
         hasResolvedSharingPreference = true
     }
 

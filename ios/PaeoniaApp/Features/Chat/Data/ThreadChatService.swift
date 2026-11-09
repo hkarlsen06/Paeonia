@@ -309,7 +309,7 @@ actor ThreadChatService: ThreadChatServicing {
         let generation = await cache.purgeGeneration()
         let cached = await cache.messages(ownerUserID: ownerUserID, subjectID: subjectID)
         guard let oldest = cached
-            .filter({ !$0.isSending && !$0.sendFailed })
+            .filter({ $0.delivery == .sent })
             .min(by: { ($0.createdAt, $0.id.uuidString) < ($1.createdAt, $1.id.uuidString) })
         else { return false }
         let page = try await gateway.loadMessages(

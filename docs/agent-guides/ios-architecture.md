@@ -61,6 +61,9 @@ When two or more stored properties together say what stage something is in, such
 - `GameSendState` (`Features/Games/Models/`) is how a game's queued moves are doing. A game screen reads `sendState.isHeldOnPhone` or `sendState.isFailing`, never its own flags.
 - `SyncRunLock` (`Services/Sync/PaeoniaSyncService.swift`) holds the sync service's one run slot. Only `finishPrivacyPurgeQuiescence` ends a privacy purge's hold.
 - `MainTabView.isModalOpen` lists every sheet and cover on the tab view. A sheet or cover added there goes into that list, so moments that open by themselves wait for it.
+- `ThreadChatDelivery` (`Features/Chat/ThreadChatModels.swift`) is where a chat message stands: sent, sending or failed.
+- `ImageLoad<Key>` (`Services/Media/ImageLoad.swift`) is a view's photo load. It keeps the key with the image or the failure, so a reused view never shows the last photo's result.
+- `PendingSyncFailure` (`Storage/Repositories/PendingSyncOperationTypes.swift`) records why a queued write's try failed, classified with `PaeoniaFailure` when it happens. Read `failedWhileOnline` or `lastFailureKind`, never the text in `lastError`.
 
 ### Stable Presentation Readiness
 

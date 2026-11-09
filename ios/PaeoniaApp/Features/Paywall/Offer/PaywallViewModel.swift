@@ -18,9 +18,9 @@ final class PaywallViewModel: PresentationReadinessProviding {
     var billingPeriod: PaeoniaBillingPeriod = .yearly
     private(set) var isLoading = false
     private(set) var hasFinishedLoadingProducts = false
-    private(set) var isPurchasing = false
-    private(set) var isRestoring = false
-    private(set) var isLeavingRelationship = false
+    /// What the paywall is doing for the person. One action runs at a time, so a
+    /// purchase, a restore and leaving the relationship never overlap.
+    private(set) var runningAction: PaywallAction?
     private(set) var error: PaywallError?
     private(set) var purchaseSucceeded = false
 
@@ -82,13 +82,17 @@ final class PaywallViewModel: PresentationReadinessProviding {
         hasFinishedLoadingProducts
     }
 
-    /// A purchase or restore is talking to the App Store. Only one runs at a time.
+    var isPurchasing: Bool { runningAction == .purchasing }
+    var isRestoring: Bool { runningAction == .restoring }
+    var isLeavingRelationship: Bool { runningAction == .leavingRelationship }
+
+    /// A purchase or restore is talking to the App Store.
     var isBusyWithStore: Bool {
         isPurchasing || isRestoring
     }
 
     func purchaseSelectedProduct() async -> Bool {
-        guard !isBusyWithStore else {
+        guard runningAction == nil else {
             return false
         }
 
@@ -105,13 +109,13 @@ final class PaywallViewModel: PresentationReadinessProviding {
     /// The purchase flow around one App Store call. Separate from the product
     /// lookup because unit tests cannot create a StoreKit `Product`.
     func runPurchase(_ purchase: () async throws -> Bool) async -> Bool {
-        guard !isBusyWithStore else {
+        guard runningAction == nil else {
             return false
         }
 
-        isPurchasing = true
+        runningAction = .purchasing
         error = nil
-        defer { isPurchasing = false }
+        defer { runningAction = nil }
 
         do {
             // `false` means the user closed the App Store sheet, so say nothing.
@@ -129,13 +133,13 @@ final class PaywallViewModel: PresentationReadinessProviding {
     }
 
     func restorePurchases() async -> Bool {
-        guard !isBusyWithStore else {
+        guard runningAction == nil else {
             return false
         }
 
-        isRestoring = true
+        runningAction = .restoring
         error = nil
-        defer { isRestoring = false }
+        defer { runningAction = nil }
 
         do {
             let restored = try await storeKitService.restorePurchases()
@@ -158,7 +162,7 @@ final class PaywallViewModel: PresentationReadinessProviding {
     /// couple is linked but no one has an active subscription. On success the root
     /// re-resolves access and the user lands back in the unpaired flow.
     func leaveRelationship() async -> Bool {
-        guard !isLeavingRelationship else {
+        guard runningAction == nil else {
             return false
         }
 
@@ -167,9 +171,9 @@ final class PaywallViewModel: PresentationReadinessProviding {
             return false
         }
 
-        isLeavingRelationship = true
+        runningAction = .leavingRelationship
         error = nil
-        defer { isLeavingRelationship = false }
+        defer { runningAction = nil }
 
         do {
             let operation = operationProvider.makeOperation()
@@ -300,4 +304,10 @@ private extension String {
         let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
+}
+
+enum PaywallAction: Equatable {
+    case purchasing
+    case restoring
+    case leavingRelationship
 }

@@ -16,7 +16,7 @@ extension ThreadChatViewModel {
         let photos = (message.photos ?? []).compactMap { photo -> ThreadChatPhoto? in
             photo.data == nil ? nil : photo
         }
-        guard message.sendFailed, !photos.isEmpty else { return }
+        guard message.delivery == .failed, !photos.isEmpty else { return }
         _ = await send(
             message.body,
             photos: photos,
@@ -43,7 +43,7 @@ extension ThreadChatViewModel {
 
     /// Sends a voice message that failed again, from the copy kept on this phone.
     func resendVoice(_ message: ThreadChatMessage) async {
-        guard message.sendFailed, let data = message.voice?.data else { return }
+        guard message.delivery == .failed, let data = message.voice?.data else { return }
         _ = await sendVoice(
             data: data,
             durationMs: message.voice?.durationMs ?? 0,

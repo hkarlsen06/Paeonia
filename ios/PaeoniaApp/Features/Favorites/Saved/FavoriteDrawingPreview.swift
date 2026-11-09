@@ -8,8 +8,8 @@ struct FavoriteDrawingPreview: View {
     let people: StoryPeople
 
     @State private var loader = WidgetRevisionThumbnailLoader(gateway: WidgetDrawingHistoryFactory.makeGateway())
-    @State private var image: UIImage?
-    @State private var didFail = false
+    /// Keyed by the try, so a retry shows the spinner at once.
+    @State private var load = ImageLoad<Int>.loading
     @State private var attempt = 0
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -36,7 +36,7 @@ struct FavoriteDrawingPreview: View {
         }
         .preferredColorScheme(.dark)
         .paeoniaTopBanner(bannerCenter)
-        .task(id: attempt) { await load() }
+        .task(id: attempt) { await loadDrawing() }
     }
 
     private var picture: some View {
@@ -54,14 +54,13 @@ struct FavoriteDrawingPreview: View {
 
     @ViewBuilder
     private var content: some View {
-        if let image {
+        if let image = load.image(for: attempt) {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
                 .accessibilityHidden(true)
-        } else if didFail {
+        } else if load.hasFailed(for: attempt) {
             Button {
-                didFail = false
                 attempt += 1
             } label: {
                 Image(systemName: "arrow.clockwise")
@@ -86,9 +85,10 @@ struct FavoriteDrawingPreview: View {
             .foregroundStyle(.paeoniaTextSecondary)
     }
 
-    private func load() async {
+    private func loadDrawing() async {
+        let attempt = attempt
         guard let mediaAssetID = favorite.mediaAssetID else {
-            didFail = true
+            load = .failed(attempt)
             return
         }
         let side = favorite.bounds.map { CGFloat($0.canvasSide) } ?? WidgetDrawingViewModel.fallbackCanvasSide
@@ -96,11 +96,7 @@ struct FavoriteDrawingPreview: View {
         guard !Task.isCancelled else { return }
         // The drawing fades in over the spinner instead of replacing it in one frame.
         withAnimation(PaeoniaMotion.stateChange) {
-            if let data, let loaded = UIImage(data: data) {
-                image = loaded
-            } else {
-                didFail = true
-            }
+            load = ImageLoad(data.flatMap(UIImage.init(data:)), for: attempt)
         }
     }
 }

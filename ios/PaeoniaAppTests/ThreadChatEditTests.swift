@@ -16,7 +16,7 @@ struct ThreadChatEditTests {
             body: "Se you soon",
             createdAt: Date.now.addingTimeInterval(-seconds),
             clientOperationID: nil,
-            isSending: false
+            delivery: .sent
         )
     }
 
@@ -27,7 +27,7 @@ struct ThreadChatEditTests {
         let partners = ThreadChatMessage(
             id: UUID(), threadID: fresh.threadID, subjectID: fresh.subjectID,
             senderUserID: fixture.partnerUserID, body: "Hi", createdAt: fresh.createdAt,
-            clientOperationID: nil, isSending: false
+            clientOperationID: nil, delivery: .sent
         )
         var voice = fresh
         voice.voice = ThreadChatVoice(mediaAssetID: UUID(), durationMs: 1_000)
@@ -93,7 +93,7 @@ struct ThreadChatMergeTests {
             body: "First",
             createdAt: Date(timeIntervalSince1970: 1),
             clientOperationID: nil,
-            isSending: false
+            delivery: .sent
         )
         let confirmed = ThreadChatMessage(
             id: UUID(),
@@ -103,7 +103,7 @@ struct ThreadChatMergeTests {
             body: "Second",
             createdAt: Date(timeIntervalSince1970: 2),
             clientOperationID: operationID,
-            isSending: false
+            delivery: .sent
         )
         let optimistic = ThreadChatMessage(
             id: operationID,
@@ -113,7 +113,7 @@ struct ThreadChatMergeTests {
             body: "Second",
             createdAt: Date(timeIntervalSince1970: 2),
             clientOperationID: operationID,
-            isSending: true
+            delivery: .sending
         )
 
         let merged = ThreadChatMessage.visibleOrdered(

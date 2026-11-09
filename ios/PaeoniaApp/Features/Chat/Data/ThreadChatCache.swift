@@ -119,7 +119,7 @@ extension ThreadChatCaching {
     ) -> Bool {
         guard generation == purgeGeneration() else { return false }
         let confirmed = messages(ownerUserID: ownerUserID, subjectID: subjectID)
-            .filter { !$0.isSending && !$0.sendFailed }
+            .filter { $0.delivery == .sent }
         saveMessages(confirmed + older, ownerUserID: ownerUserID, subjectID: subjectID)
         return true
     }
@@ -135,7 +135,7 @@ extension ThreadChatCaching {
     ) -> Bool {
         guard generation == purgeGeneration() else { return false }
         let kept = messages(ownerUserID: ownerUserID, subjectID: subjectID).filter { message in
-            message.isSending || message.sendFailed
+            message.isUnsent
                 || (message.createdAt, message.id.uuidString) >= (cursor.createdAt, cursor.messageID.uuidString)
         }
         saveMessages(kept, ownerUserID: ownerUserID, subjectID: subjectID)
@@ -209,7 +209,7 @@ actor FileThreadChatCache: ThreadChatCaching {
             // A confirmation that ran first already stored the final copy. Adding the
             // sending copy again would show a sent message as sending.
             if let operationID = message.clientOperationID,
-               document.messages.contains(where: { $0.clientOperationID == operationID && !$0.isSending }) {
+               document.messages.contains(where: { $0.clientOperationID == operationID && $0.delivery != .sending }) {
                 return
             }
             document.messages.removeAll { $0.clientOperationID == message.clientOperationID }
@@ -233,8 +233,7 @@ actor FileThreadChatCache: ThreadChatCaching {
                     body: message.body,
                     createdAt: message.createdAt,
                     clientOperationID: clientOperationID,
-                    isSending: false,
-                    sendFailed: true,
+                    delivery: .failed,
                     voice: message.voice,
                     photos: message.photos,
                     replyTo: message.replyTo
@@ -247,7 +246,7 @@ actor FileThreadChatCache: ThreadChatCaching {
     func discardFailed(ownerUserID: UUID, clientOperationID: UUID) {
         for key in subjectKeys(ownerUserID) {
             updateSubject(ownerUserID, key) { document in
-                document.messages.removeAll { $0.clientOperationID == clientOperationID && $0.sendFailed }
+                document.messages.removeAll { $0.clientOperationID == clientOperationID && $0.delivery == .failed }
             }
         }
     }

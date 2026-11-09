@@ -128,7 +128,7 @@
         func append(_ message: ThreadChatMessage, ownerUserID: UUID) {
             let existing = storedMessages[ownerUserID]?[message.subjectID] ?? []
             if let operationID = message.clientOperationID,
-                existing.contains(where: { $0.clientOperationID == operationID && !$0.isSending })
+                existing.contains(where: { $0.clientOperationID == operationID && $0.delivery != .sending })
             {
                 return
             }
@@ -151,8 +151,7 @@
                     body: message.body,
                     createdAt: message.createdAt,
                     clientOperationID: clientOperationID,
-                    isSending: false,
-                    sendFailed: true,
+                    delivery: .failed,
                     voice: message.voice,
                     photos: message.photos,
                     replyTo: message.replyTo
@@ -165,7 +164,7 @@
             guard let subjectIDs = storedMessages[ownerUserID]?.keys else { return }
             for subjectID in Array(subjectIDs) {
                 storedMessages[ownerUserID]?[subjectID]?.removeAll {
-                    $0.clientOperationID == clientOperationID && $0.sendFailed
+                    $0.clientOperationID == clientOperationID && $0.delivery == .failed
                 }
             }
         }

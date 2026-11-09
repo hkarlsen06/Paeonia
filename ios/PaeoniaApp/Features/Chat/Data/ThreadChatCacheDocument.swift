@@ -57,7 +57,7 @@ nonisolated extension ThreadChatSubjectDocument {
             body: send.body,
             createdAt: send.createdAt,
             clientOperationID: send.clientOperationID,
-            isSending: false,
+            delivery: .sent,
             voice: index.flatMap { messages[$0].voice },
             photos: index.flatMap { messages[$0].photos },
             replyTo: index.flatMap { messages[$0].replyTo }

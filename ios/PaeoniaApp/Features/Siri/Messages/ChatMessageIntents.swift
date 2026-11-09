@@ -95,7 +95,7 @@ struct SendChatMessageReactionIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<ChatMessageEntity> {
         let couple = try await coupleToActFor()
         let current = try await SiriChats.resolve(message, couple: couple)
-        guard !current.isSending, !current.sendFailed, let threadID = current.threadID else {
+        guard current.delivery == .sent, let threadID = current.threadID else {
             throw SiriFailure(.siriMessagesUnavailable)
         }
         guard let emoji = ReactionPalette.normalized(emoji),

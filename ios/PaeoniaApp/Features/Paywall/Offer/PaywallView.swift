@@ -253,7 +253,7 @@ private extension PaywallView {
 
     var footerActions: some View {
         PaywallFooterActionsView(
-            isBusyWithStore: viewModel.isBusyWithStore || isOpening,
+            isBusy: viewModel.runningAction != nil || isOpening,
             isRestoring: viewModel.isRestoring,
             showsUnpair: audience.isPaired,
             isLeavingRelationship: viewModel.isLeavingRelationship,

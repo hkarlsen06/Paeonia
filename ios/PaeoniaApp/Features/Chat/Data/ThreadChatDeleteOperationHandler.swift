@@ -75,7 +75,7 @@ struct DeleteChatMessageOperationHandler: PendingSyncOperationHandling {
     ) async throws -> Resolution {
         let cached = await cache.messages(ownerUserID: operation.ownerUserID, subjectID: payload.subjectID)
         if let sent = cached.first(where: {
-            $0.clientOperationID == sendOperationID && !$0.isSending && !$0.sendFailed
+            $0.clientOperationID == sendOperationID && $0.delivery == .sent
         }) {
             return .delete(messageID: sent.id)
         }

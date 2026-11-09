@@ -119,7 +119,7 @@ extension ThreadChatService {
         operation: SyncClientOperation
     ) async throws {
         guard let operationID = message.clientOperationID else { return }
-        if message.isSending {
+        if message.delivery == .sending {
             guard let waiting = try await waitingOperation(operationID, ownerUserID: ownerUserID),
                   waiting.status != .sending
             else { throw ThreadChatServiceError.stillSending }

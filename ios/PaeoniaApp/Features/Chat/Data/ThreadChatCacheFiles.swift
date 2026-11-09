@@ -3,7 +3,7 @@ import Foundation
 /// The cache's files for each user: `core.json` for the summaries and marks, and one
 /// `subject-<id>.json` for each question, memory and story chat.
 nonisolated struct ThreadChatCacheFiles: Sendable {
-    private static let schemaVersion = 6
+    private static let schemaVersion = 7
     private static let subjectFilePrefix = "subject-"
 
     let directoryURL: URL

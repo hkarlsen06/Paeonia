@@ -64,7 +64,7 @@ struct ThreadChatVoiceTests {
         #expect(await uploader.uploadedAccessibilityTexts == ["Jeg savner deg. En hund bjeffer."])
         #expect(await fixture.gateway.lastMediaAssetIDs == [assetID])
         let cached = await fixture.cachedMessages()
-        #expect(cached.first?.isSending == false)
+        #expect(cached.first?.delivery == .sent)
         #expect(cached.first?.voice?.transcript == "Jeg savner deg. En hund bjeffer.")
     }
 
@@ -77,7 +77,7 @@ struct ThreadChatVoiceTests {
         await SendChatMessageOperationHandler(gateway: fixture.gateway, cache: fixture.cache)
             .gaveUp(on: operation, context: chatSyncContext(ownerUserID: fixture.ownerUserID))
         let cached = await fixture.cachedMessages()
-        #expect(cached.first?.sendFailed == true)
+        #expect(cached.first?.delivery == .failed)
         #expect(cached.first?.voice?.data == recording)
         #expect(cached.first?.voice?.transcript == "Jeg savner deg. En hund bjeffer.")
     }
@@ -91,7 +91,7 @@ struct ThreadChatVoiceTests {
         let operationID = UUID()
         let message = ThreadChatMessage(
             id: UUID(), threadID: nil, subjectID: UUID(), senderUserID: owner, body: "",
-            createdAt: Date(timeIntervalSince1970: 1), clientOperationID: operationID, isSending: true,
+            createdAt: Date(timeIntervalSince1970: 1), clientOperationID: operationID, delivery: .sending,
             voice: ThreadChatVoice(data: Data([7]), durationMs: 900, transcript: "A dog barks.")
         )
         await cache.append(message, ownerUserID: owner)
@@ -104,7 +104,7 @@ struct ThreadChatVoiceTests {
 
         let reopened = FileThreadChatCache(directoryURL: directory)
         let confirmed = try #require(await reopened.messages(ownerUserID: owner, subjectID: message.subjectID).first)
-        #expect(!confirmed.isSending)
+        #expect(confirmed.delivery == .sent)
         #expect(confirmed.voice == message.voice)
     }
 
@@ -151,7 +151,7 @@ struct ThreadChatVoiceTests {
         func pendingVoice(_ id: UUID) -> ThreadChatMessage {
             ThreadChatMessage(
                 id: id, threadID: nil, subjectID: UUID(), senderUserID: me, body: "",
-                createdAt: Date(timeIntervalSince1970: 1), clientOperationID: UUID(), isSending: true,
+                createdAt: Date(timeIntervalSince1970: 1), clientOperationID: UUID(), delivery: .sending,
                 voice: ThreadChatVoice(data: Data([1]))
             )
         }
@@ -159,7 +159,7 @@ struct ThreadChatVoiceTests {
         let second = pendingVoice(UUID())
         let remoteSecond = ThreadChatMessage(
             id: second.id, threadID: UUID(), subjectID: second.subjectID, senderUserID: me, body: "",
-            createdAt: Date(timeIntervalSince1970: 2), clientOperationID: nil, isSending: false,
+            createdAt: Date(timeIntervalSince1970: 2), clientOperationID: nil, delivery: .sent,
             voice: ThreadChatVoice(mediaAssetID: UUID())
         )
 

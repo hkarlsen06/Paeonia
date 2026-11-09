@@ -8,8 +8,7 @@ struct StoryPhotoView: View {
     /// Called once the photo shows, so the viewer only starts its timer then.
     var onLoaded: () -> Void = {}
 
-    @State private var loaded: (id: UUID, image: UIImage)?
-    @State private var didFail = false
+    @State private var load = ImageLoad<UUID>.loading
 
     /// The longest side a story photo is decoded at for the screen.
     static let maxPixelSize = 2_048
@@ -18,22 +17,22 @@ struct StoryPhotoView: View {
         self.mediaAssetID = mediaAssetID
         self.onLoaded = onLoaded
         if let cached = MemoryImageDecoding.cachedImage(for: mediaAssetID, maxPixelSize: Self.maxPixelSize) {
-            _loaded = State(initialValue: (id: mediaAssetID, image: cached))
+            _load = State(initialValue: .loaded(mediaAssetID, cached))
         }
     }
 
     var body: some View {
         ZStack {
-            if let loaded, loaded.id == mediaAssetID {
-                Image(uiImage: loaded.image)
+            if let image = load.image(for: mediaAssetID) {
+                Image(uiImage: image)
                     .resizable()
                     .scaledToFit()
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
                     .onAppear(perform: onLoaded)
-            } else if didFail {
+            } else if load.hasFailed(for: mediaAssetID) {
                 Button {
-                    Task { await load() }
+                    Task { await loadPhoto() }
                 } label: {
                     VStack(spacing: PaeoniaSpacing.space8) {
                         Image(systemName: "photo")
@@ -52,16 +51,16 @@ struct StoryPhotoView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task(id: mediaAssetID) { await load() }
+        .task(id: mediaAssetID) { await loadPhoto() }
     }
 
-    private func load() async {
-        if let loaded, loaded.id == mediaAssetID { return }
+    private func loadPhoto() async {
+        if load.image(for: mediaAssetID) != nil { return }
         if let cached = MemoryImageDecoding.cachedImage(for: mediaAssetID, maxPixelSize: Self.maxPixelSize) {
-            loaded = (id: mediaAssetID, image: cached)
+            load = .loaded(mediaAssetID, cached)
             return
         }
-        didFail = false
+        load = .loading
         var decoded: UIImage?
         if let data = await MemoryMediaImageProviderFactory.shared?.imageData(for: mediaAssetID) {
             decoded = await MemoryImageDecoding.downsample(data, maxPixelSize: Self.maxPixelSize)
@@ -72,11 +71,7 @@ struct StoryPhotoView: View {
         }
         // A downloaded photo fades in over the spinner. A cached one shows at once above.
         withAnimation(PaeoniaMotion.stateChange) {
-            if let decoded {
-                loaded = (id: mediaAssetID, image: decoded)
-            } else {
-                didFail = true
-            }
+            load = ImageLoad(decoded, for: mediaAssetID)
         }
     }
 }

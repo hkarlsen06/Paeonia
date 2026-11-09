@@ -144,7 +144,7 @@ nonisolated struct ThreadMessageRow: Decodable {
                 body: "",
                 createdAt: createdAt,
                 clientOperationID: nil,
-                isSending: false,
+                delivery: .sent,
                 deletedAt: deletedAt
             )
         }
@@ -163,7 +163,7 @@ nonisolated struct ThreadMessageRow: Decodable {
             body: body ?? "",
             createdAt: createdAt,
             clientOperationID: nil,
-            isSending: false,
+            delivery: .sent,
             voice: voice,
             photos: photos.isEmpty ? nil : photos,
             replyTo: replyToGameResultSource.map(ThreadChatItemID.gameResult)

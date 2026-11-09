@@ -23,10 +23,7 @@ struct MemoryMediaImageView: View {
     let allowsViewing: Bool
     let onTapImage: ((UUID?, UIImage) -> Void)?
 
-    /// The decoded photo and the asset it belongs to, so a reused view never shows a
-    /// stale photo after `mediaAssetID` changes.
-    @State private var loaded: (id: UUID, image: UIImage)?
-    @State private var didFail = false
+    @State private var load = ImageLoad<UUID?>.loading
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 
     init(
@@ -52,7 +49,7 @@ struct MemoryMediaImageView: View {
                for: mediaAssetID,
                maxPixelSize: MemoryImageDecoding.maxPixelSize(forHeight: height)
            ) {
-            _loaded = State(initialValue: (id: mediaAssetID, image: cached))
+            _load = State(initialValue: .loaded(mediaAssetID, cached))
         }
     }
 
@@ -62,10 +59,8 @@ struct MemoryMediaImageView: View {
             .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
-    private var image: UIImage? {
-        guard let loaded, loaded.id == mediaAssetID else { return nil }
-        return loaded.image
-    }
+    private var image: UIImage? { load.image(for: mediaAssetID) }
+    private var didFail: Bool { load.hasFailed(for: mediaAssetID) }
 
     private var maxPixelSize: Int {
         MemoryImageDecoding.maxPixelSize(forHeight: height)
@@ -97,7 +92,7 @@ struct MemoryMediaImageView: View {
             // placeholder instead of snapping into the frame when the download lands.
             .animation(PaeoniaMotion.stateChange, value: image != nil)
             .animation(PaeoniaMotion.stateChange, value: didFail)
-            .task(id: mediaAssetID) { await load() }
+            .task(id: mediaAssetID) { await loadPhoto() }
     }
 
     private var imageShape: RoundedRectangle {
@@ -121,22 +116,21 @@ struct MemoryMediaImageView: View {
         }
     }
 
-    private func load() async {
+    private func loadPhoto() async {
         guard image == nil else { return }
 
         guard let mediaAssetID, let provider else {
-            didFail = true
+            load = .failed(mediaAssetID)
             return
         }
 
         // Covers a reused view whose asset changed to one that is already decoded.
         if let cached = MemoryImageDecoding.cachedImage(for: mediaAssetID, maxPixelSize: maxPixelSize) {
-            loaded = (id: mediaAssetID, image: cached)
-            didFail = false
+            load = .loaded(mediaAssetID, cached)
             return
         }
 
-        didFail = false
+        load = .loading
         var decoded: UIImage?
         if let data = await provider.imageData(for: mediaAssetID) {
             decoded = await MemoryImageDecoding.downsample(data, maxPixelSize: maxPixelSize)
@@ -148,11 +142,7 @@ struct MemoryMediaImageView: View {
         // A cancelled load (the view moved to another asset or went away) must not
         // report a failure or overwrite newer state.
         guard !Task.isCancelled else { return }
-        if let decoded {
-            loaded = (id: mediaAssetID, image: decoded)
-        } else {
-            didFail = true
-        }
+        load = ImageLoad(decoded, for: mediaAssetID)
     }
 
     private func handleTap() {
@@ -161,7 +151,7 @@ struct MemoryMediaImageView: View {
         if let mediaAssetID, let image {
             presentImageViewer(mediaAssetID: mediaAssetID, image: image)
         } else if didFail {
-            Task { await load() }
+            Task { await loadPhoto() }
         }
     }
 

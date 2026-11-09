@@ -30,14 +30,14 @@ struct ThreadChatLiveTests {
         #expect(await waitForMain { source.subscriptionCount.value == 1 })
 
         #expect(await viewModel.send("On my way"))
-        #expect(await waitForMain { viewModel.messages.map(\.isSending) == [true] })
+        #expect(await waitForMain { viewModel.messages.map(\.delivery) == [.sending] })
 
         // The server copy arrives before the send's own response confirms it.
         let serverCopy = fixture.ownServerCopy(body: "On my way", at: 3)
         await fixture.gateway.liveSource.push([serverCopy])
         let settled = await waitForMain { viewModel.messages.map(\.id) == [fixture.messageID] }
         #expect(settled)
-        #expect(viewModel.messages.first?.isSending == false)
+        #expect(viewModel.messages.first?.delivery == .sent)
 
         // The confirmation that follows keeps a single message.
         let sends = try await fixture.queuedOperations(.sendThreadMessage)
@@ -63,7 +63,7 @@ struct ThreadChatLiveTests {
 
         let both = await waitForMain { viewModel.messages.map(\.body).sorted() == ["Hello", "Not sent yet"] }
         #expect(both)
-        #expect(viewModel.messages.first(where: { $0.body == "Not sent yet" })?.isSending == true)
+        #expect(viewModel.messages.first(where: { $0.body == "Not sent yet" })?.delivery == .sending)
         observing.cancel()
         await observing.value
     }
@@ -137,7 +137,7 @@ struct ThreadChatLiveTests {
         try await Task.sleep(for: .milliseconds(50))
 
         #expect(viewModel.messages.map(\.body) == ["On my way", "Hello"])
-        let isStillSending = viewModel.messages.contains(where: \.isSending)
+        let isStillSending = viewModel.messages.contains { $0.delivery == .sending }
         #expect(!isStillSending)
         observing.cancel()
         await observing.value

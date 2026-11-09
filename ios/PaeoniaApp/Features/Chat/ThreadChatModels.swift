@@ -74,6 +74,17 @@ nonisolated struct ThreadChatMessageCursor: Codable, Comparable, Sendable {
     }
 }
 
+/// Where a message stands between this phone and the server.
+nonisolated enum ThreadChatDelivery: String, Codable, Sendable {
+    /// On the server. Every message from the partner is sent.
+    case sent
+    /// Waiting in the send queue.
+    case sending
+    /// The send queue gave up. It stays on this phone until the person sends it
+    /// again or deletes it.
+    case failed
+}
+
 nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable {
     let id: UUID
     let threadID: UUID?
@@ -83,10 +94,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
     let body: String
     let createdAt: Date
     let clientOperationID: UUID?
-    let isSending: Bool
-    /// A try to send it failed, so it may stay on this phone a while.
-    var isHeldOnPhone = false
-    var sendFailed = false
+    var delivery: ThreadChatDelivery
     /// Set when the message is a voice message instead of text.
     var voice: ThreadChatVoice?
     /// Photos in the message, in order. The text, if any, is their caption. Optional, so
@@ -115,7 +123,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
     /// message has no text to change. A question's answers are not chat messages, so
     /// they never get here.
     func canEdit(by userID: UUID?, now: Date = .now) -> Bool {
-        senderUserID == userID && !isSending && !sendFailed && !isDeleted && threadID != nil && voice == nil
+        senderUserID == userID && delivery == .sent && !isDeleted && threadID != nil && voice == nil
             && !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && now.timeIntervalSince(createdAt) <= Self.editWindow
     }
@@ -127,8 +135,8 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
         senderUserID == userID && !isDeleted && (isUnsent || threadID != nil)
     }
 
-    /// Not on the server yet: it is waiting in the send queue, or it gave up.
-    var isUnsent: Bool { isSending || sendFailed }
+    /// Not on the server yet. It waits in the send queue, or the queue gave up on it.
+    var isUnsent: Bool { delivery != .sent }
 
     /// What is left of a message once its sender took it back: who sent it and when.
     var takenBack: ThreadChatMessage {
@@ -140,7 +148,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
             body: "",
             createdAt: createdAt,
             clientOperationID: clientOperationID,
-            isSending: false,
+            delivery: .sent,
             deletedAt: deletedAt ?? .now
         )
     }
@@ -184,7 +192,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
             uniquingKeysWith: { _, latest in latest }
         )
 
-        for message in optimistic where message.isSending || message.sendFailed {
+        for message in optimistic where message.isUnsent {
             if let operationID = message.clientOperationID,
                messagesByID.values.contains(where: { $0.clientOperationID == operationID }) {
                 continue
@@ -210,7 +218,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
         let newest = snapshot.map(\.createdAt).max() ?? .distantPast
         let snapshotIDs = Set(snapshot.map(\.id))
         return snapshot + cached.filter {
-            !$0.isSending && !$0.sendFailed && !snapshotIDs.contains($0.id) && $0.createdAt > newest
+            $0.delivery == .sent && !snapshotIDs.contains($0.id) && $0.createdAt > newest
         }
     }
 
@@ -226,7 +234,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
         cached: [ThreadChatMessage]
     ) -> [ThreadChatMessage] {
         guard page.hasMore, let oldestAt = page.oldestAt else { return remote }
-        let confirmed = cached.filter { !$0.isSending && !$0.sendFailed }
+        let confirmed = cached.filter { $0.delivery == .sent }
         let pageIDs = Set(page.messages.map(\.id))
         guard confirmed.contains(where: { pageIDs.contains($0.id) }) else { return remote }
         return remote + confirmed.filter { $0.createdAt < oldestAt }
@@ -248,7 +256,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
         cached: [ThreadChatMessage],
         pending: [ThreadChatMessage]
     ) -> [ThreadChatMessage] {
-        let confirmed = cached.filter { !$0.isSending && !$0.sendFailed }
+        let confirmed = cached.filter { $0.delivery == .sent }
         let claimedOperations = Dictionary(
             confirmed.compactMap { message in message.clientOperationID.map { (message.id, $0) } },
             uniquingKeysWith: { first, _ in first }
@@ -256,7 +264,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
         let claimedOperationIDs = Set(claimedOperations.values)
         var waiting = pending
             .filter { message in
-                guard message.isSending, let operationID = message.clientOperationID else { return false }
+                guard message.delivery == .sending, let operationID = message.clientOperationID else { return false }
                 return !claimedOperationIDs.contains(operationID)
             }
             .sorted { $0.createdAt < $1.createdAt }
@@ -292,7 +300,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
             body: body,
             createdAt: createdAt,
             clientOperationID: operationID,
-            isSending: false,
+            delivery: .sent,
             voice: voice,
             photos: photos,
             replyTo: replyTo,
