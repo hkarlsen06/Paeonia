@@ -41,6 +41,7 @@ import { applyCoupleActivity } from "./lib/streaks";
 import { charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
 import { literals } from "./lib/validators";
+import { isUsableMediaAsset } from "./lib/mediaAssetState";
 
 // Draw & Guess functions. The rules and decisions are in docs/games-plan.md and
 // docs/games/draw-and-guess.md. Helpers are in lib/drawAndGuess.ts. Settings, invites, presence,
@@ -284,11 +285,8 @@ async function assertDrawingAssetUsable(
     asset.media_type !== "drawing_payload" ||
     asset.expected_media_type !== "drawing_payload" ||
     !asset.storage_path.startsWith(`${move.couple_id}/${move.game_id}/rounds/${move.id}/`) ||
-    asset.upload_status !== "finalized" ||
-    asset.upload_finalized_at === undefined ||
-    asset.storage_delete_status !== "none" ||
-    asset.moderation_status !== "visible" ||
-    asset.deleted_at !== undefined
+    !isUsableMediaAsset(asset) ||
+    asset.upload_finalized_at === undefined
   ) {
     fail("23514", "game drawing asset is not usable");
   }

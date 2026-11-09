@@ -8,6 +8,7 @@ import { fail } from "./errors";
 import { uuidArg } from "./ids";
 import { isJsonObject } from "./json";
 import { isChatSubjectAvailable, subjectOfThread } from "./threadSubjects";
+import { isUsableMediaAsset } from "./mediaAssetState";
 
 export const mediaAlternativeTarget = v.union(
   v.object({ kind: v.literal("chat"), message_id: v.string(), media_asset_id: v.string() }),
@@ -61,9 +62,7 @@ function requireUsableAsset(
   mediaTypes: readonly Doc<"media_assets">["media_type"][] = ["image", "voice"],
 ) {
   if (!asset || asset.owner_user_id !== userId || asset.couple_id !== coupleId ||
-      asset.deleted_at !== undefined || asset.moderation_status !== "visible" ||
-      asset.upload_status !== "finalized" || asset.storage_delete_status !== "none" ||
-      !mediaTypes.includes(asset.media_type)) {
+      !isUsableMediaAsset(asset) || !mediaTypes.includes(asset.media_type)) {
     return fail("42501", "media description is not writable");
   }
   return asset;

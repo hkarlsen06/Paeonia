@@ -5,6 +5,7 @@ import { QuestionContentReader, visibleAnswersOf } from "./dailyQuestions";
 import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
 import { addDaysToDate, endOfLocalDay, localDateOf, startOfLocalDay } from "./time";
+import { isUsableMediaAsset } from "./mediaAssetState";
 
 /**
  * The Home look-back card: one old piece of the couple's shared history for the current couple day.
@@ -322,10 +323,7 @@ async function loadDrawing(
   const asset = await getByUuid(frame.ctx, "media_assets", revision.payload_media_asset_id);
   if (
     !asset ||
-    asset.upload_status !== "finalized" ||
-    asset.storage_delete_status !== "none" ||
-    asset.moderation_status !== "visible" ||
-    asset.deleted_at !== undefined
+    !isUsableMediaAsset(asset)
   ) {
     return null;
   }
@@ -384,10 +382,7 @@ async function firstPhotoAssetId(ctx: ReaderCtx, memoryId: string): Promise<stri
       asset.media_type === "image" &&
       asset.reserved_parent_kind === "memory_media" &&
       asset.reserved_parent_id === link.id &&
-      asset.upload_status === "finalized" &&
-      asset.storage_delete_status === "none" &&
-      asset.moderation_status === "visible" &&
-      asset.deleted_at === undefined
+      isUsableMediaAsset(asset)
     ) {
       return asset.id;
     }

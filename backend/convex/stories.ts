@@ -17,6 +17,7 @@ import { deleteReactionsOf } from "./lib/reactions";
 import { deleteThreadOfSubject } from "./lib/threadSubjects";
 import { charLength } from "./lib/text";
 import { addMs, nowIso } from "./lib/time";
+import { isUsableMediaAsset } from "./lib/mediaAssetState";
 
 // A story is a photo with an optional short caption that one partner posts as an
 // "I thought about you" check-in. The phone shows it in a ring on Home for 24 hours after
@@ -139,10 +140,7 @@ export const post_story = mutation({
         asset.media_type !== "image" ||
         asset.reserved_parent_kind !== "story" ||
         asset.reserved_parent_id !== storyId ||
-        asset.upload_status !== "finalized" ||
-        asset.storage_delete_status !== "none" ||
-        asset.moderation_status !== "visible" ||
-        asset.deleted_at !== undefined
+        !isUsableMediaAsset(asset)
       ) {
         return fail("23514", "story photo is not usable");
       }

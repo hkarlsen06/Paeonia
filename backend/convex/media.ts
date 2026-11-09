@@ -27,6 +27,7 @@ import { assertFirstDayDraftAllowed, firstDayDrawingPath } from "./lib/firstDay"
 import { btrim } from "./lib/text";
 import { addMs, nowIso } from "./lib/time";
 import { updateMediaAlternative, updateMediaAlternativeArgs } from "./lib/mediaAlternatives";
+import { isUsableMediaAsset } from "./lib/mediaAssetState";
 
 type MediaAsset = Doc<"media_assets">;
 
@@ -522,9 +523,7 @@ export const get_media_serve_target = internalQuery({
     if (
       !asset ||
       !asset.storage_id ||
-      asset.upload_status !== "finalized" ||
-      asset.storage_delete_status !== "none" ||
-      asset.moderation_status !== "visible"
+      !isUsableMediaAsset(asset)
     ) {
       return null;
     }

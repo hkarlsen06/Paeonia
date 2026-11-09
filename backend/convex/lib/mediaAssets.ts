@@ -5,6 +5,7 @@ import { getByUuid } from "./db";
 import { fail } from "./errors";
 import { canReadCorpseAsset } from "./exquisiteCorpse"; // Exquisite corpse
 import { canReadGuessMySpotPhoto } from "./guessMySpot"; // Guess my spot
+import { isUsableMediaAsset } from "./mediaAssetState";
 
 /** Port of `internal.media_byte_limit`. */
 export function mediaByteLimit(mediaType: string): number {
@@ -223,11 +224,8 @@ async function canReadFirstDayDrawing(ctx: ReaderCtx, userId: string, asset: Doc
 export async function canReadMediaAsset(ctx: ReaderCtx, userId: string, asset: Doc<"media_assets">): Promise<boolean> {
   if (
     asset.bucket === "report-snapshots" ||
-    asset.upload_status !== "finalized" ||
-    asset.upload_finalized_at === undefined ||
-    asset.storage_delete_status !== "none" ||
-    asset.moderation_status !== "visible" ||
-    asset.deleted_at !== undefined
+    !isUsableMediaAsset(asset) ||
+    asset.upload_finalized_at === undefined
   ) {
     return false;
   }

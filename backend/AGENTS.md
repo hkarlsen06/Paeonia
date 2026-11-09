@@ -88,6 +88,8 @@ Import these instead of re-porting the SQL.
 | `auth.ts` | `getCurrentUserId`, `requireUserId`, `ensureCurrentUser` |
 | `clientOperations.ts` | `runClientOperation`, and `isSupersededClientOperation` for writes where a late retry must not overwrite a newer write from the same phone |
 | `backgroundWorkpool.ts` | `backgroundWorkpool`, the `@convex-dev/workpool` pool for report snapshot copies and Clerk account deletes |
+| `mediaAssetState.ts` | `isUsableMediaAsset`, the one check that an asset finished uploading and is not deleted, queued for deletion or hidden by moderation. Every read and serve of an asset uses it |
+| `pushStatus.ts` | `pushStatus`, which reads an outbox row's `sent_at` and `failed_at` as `pending`, `sent` or `failed` |
 | `rateLimits.ts` | every rate limit in one `RateLimiter` (`@convex-dev/rate-limiter`), and `consumeRateLimit`. To add a limit, add an entry to `LIMITS` and call `consumeRateLimit(ctx, name, userId)` first thing inside the `runClientOperation` callback (`consumeGlobalRateLimit(ctx, name)` for a limit with no user, such as `welcomeStep`), so replays are free and a refusal rolls back. It fails with `53300`, which the app retries later instead of dropping the write. Set the capacity above the backlog an offline phone sends at once |
 | `accountDeletion.ts` | `assertNoPendingAccountDeletion` |
 | `dataExportRegistry.ts` | `TABLE_EXPORTS`: one entry for every table in `schema.ts`, saying how "Download my data" exports it or why it does not. A new table needs an entry (`tsc` and `dataExportRegistry.test.ts` fail without one). `shapeRow`, `exportedTablesInOrder`, `mediaFilePath`, `isExportableMedia`. See [privacy and data export](../docs/privacy-and-data-export.md) |

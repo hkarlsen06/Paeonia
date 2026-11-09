@@ -2,6 +2,7 @@ import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
 import { reactionsOf } from "./reactions";
+import { isUsableMediaAsset } from "./mediaAssetState";
 
 /** The shared safe wire projection for a message page or a merged game timeline. */
 export async function projectThreadMessages(ctx: ReaderCtx, thread: Doc<"conversation_threads">, messages: Doc<"thread_messages">[]) {
@@ -47,10 +48,7 @@ export async function projectThreadMessages(ctx: ReaderCtx, thread: Doc<"convers
         messageVisible &&
         asset.reserved_parent_kind === "thread_message_media" &&
         asset.reserved_parent_id === message.id &&
-        asset.upload_status === "finalized" &&
-        asset.storage_delete_status === "none" &&
-        asset.moderation_status === "visible" &&
-        asset.deleted_at === undefined
+        isUsableMediaAsset(asset)
       ) {
         mediaAssetIds.push(link.media_asset_id);
         media.push({

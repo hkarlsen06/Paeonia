@@ -5,6 +5,7 @@ import { getByUuid } from "./db";
 import { isLive, visibleAnswersOf } from "./dailyQuestions";
 import { enqueueNotificationForUser, notificationAlertBody, notificationAlertTitle } from "./notifications";
 import { addMs, nowIso } from "./time";
+import { pushStatus } from "./pushStatus";
 
 /**
  * The pushes a partner's daily answer sends. When the partner answers a question the recipient
@@ -65,8 +66,7 @@ async function openLaneRows(
   return rows.filter(
     (row) =>
       isDailyPartnerPushKind(row.kind) &&
-      row.sent_at === undefined &&
-      row.failed_at === undefined &&
+      pushStatus(row) === "pending" &&
       row.scheduled_for > now &&
       (row.payload as Record<string, unknown>).couple_id === coupleId,
   );

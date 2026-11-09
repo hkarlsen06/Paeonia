@@ -36,6 +36,7 @@ import { projectThreadMessages } from "./lib/threadMessageProjection";
 import { topicOfQuestion } from "./lib/topics";
 
 import { finishedGameForChat, gameChatSource, gameChatSubjectId, normalizeGameChatSource, type GameChatSource } from "./lib/gameChatSubjects";
+import { isUsableMediaAsset } from "./lib/mediaAssetState";
 
 const nullableMediaIds = v.optional(v.union(v.null(), v.array(v.string())));
 
@@ -89,10 +90,7 @@ async function assertThreadMessageMediaAllowed(ctx: ReaderCtx, messageId: string
     asset.reserved_parent_id !== messageId ||
     !["thread_media", "voice_note"].includes(asset.upload_purpose) ||
     !["image", "voice"].includes(asset.media_type) ||
-    asset.upload_status !== "finalized" ||
-    asset.storage_delete_status !== "none" ||
-    asset.moderation_status !== "visible" ||
-    asset.deleted_at !== undefined
+    !isUsableMediaAsset(asset)
   ) {
     fail("23514", "thread message media asset is not usable");
   }

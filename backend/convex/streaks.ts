@@ -21,6 +21,7 @@ import {
   readCoupleStreak,
 } from "./lib/streaks";
 import { addHours, nowIso } from "./lib/time";
+import { pushStatus } from "./lib/pushStatus";
 
 /**
  * The streak card: counts, the free save or paid restore of a broken streak, and who has contributed today.
@@ -243,7 +244,7 @@ async function gotReminder(ctx: MutationCtx, key: string): Promise<boolean> {
     .query("notification_outbox")
     .withIndex("by_dedupe_key", (q) => q.gte("dedupe_key", `${key}:`).lt("dedupe_key", `${key};`))
     .collect();
-  return rows.some((row) => row.failed_at === undefined);
+  return rows.some((row) => pushStatus(row) !== "failed");
 }
 
 /** Who has contributed to the couple day running at `now`. */

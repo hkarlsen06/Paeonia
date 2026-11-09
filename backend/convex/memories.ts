@@ -17,6 +17,7 @@ import { deleteReactionsOf, deleteReactionsOfThread } from "./lib/reactions";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
+import { isUsableMediaAsset } from "./lib/mediaAssetState";
 
 const nullableUuidArray = v.optional(v.union(v.null(), v.array(v.string())));
 
@@ -139,10 +140,7 @@ export async function assertMemoryMediaAllowed(
     asset.reserved_parent_id !== row.id ||
     !["memory_photo", "voice_note"].includes(asset.upload_purpose) ||
     !["image", "voice"].includes(asset.media_type) ||
-    asset.upload_status !== "finalized" ||
-    asset.storage_delete_status !== "none" ||
-    asset.moderation_status !== "visible" ||
-    asset.deleted_at !== undefined
+    !isUsableMediaAsset(asset)
   ) {
     fail("23514", "memory media asset is not usable");
   }
@@ -313,10 +311,7 @@ async function attachMemoryMediaAssets(
       asset.reserved_parent_kind !== "memory_media" ||
       !["memory_photo", "voice_note"].includes(asset.upload_purpose) ||
       !["image", "voice"].includes(asset.media_type) ||
-      asset.upload_status !== "finalized" ||
-      asset.storage_delete_status !== "none" ||
-      asset.moderation_status !== "visible" ||
-      asset.deleted_at !== undefined
+      !isUsableMediaAsset(asset)
     ) {
       return fail("23514", "memory media asset is not usable");
     }
@@ -727,10 +722,7 @@ async function buildMemoryRow(ctx: ReaderCtx, userId: string, memory: Doc<"memor
       link.moderation_status === "visible" &&
       asset.reserved_parent_kind === "memory_media" &&
       asset.reserved_parent_id === link.id &&
-      asset.upload_status === "finalized" &&
-      asset.storage_delete_status === "none" &&
-      asset.moderation_status === "visible" &&
-      asset.deleted_at === undefined
+      isUsableMediaAsset(asset)
     ) {
       memoryMediaIds.push(link.id);
       mediaAssetIds.push(link.media_asset_id);

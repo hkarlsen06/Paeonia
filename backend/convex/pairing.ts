@@ -17,6 +17,7 @@ import { createRelationshipSyncEvent } from "./lib/syncEvents";
 import { consumeRateLimit, rateLimiter } from "./lib/rateLimits";
 import { addDaysToInstant, nowIso } from "./lib/time";
 import { signMediaUrl } from "./media";
+import { isUsableMediaAsset } from "./lib/mediaAssetState";
 
 const CODE_PATTERN = /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}$/;
 
@@ -242,10 +243,7 @@ async function profilePhotoUrl(ctx: ReaderCtx, profile: Doc<"profiles"> | null):
   const asset = await getByUuid(ctx, "media_assets", profile.profile_photo_asset_id ?? profile.provider_profile_photo_asset_id);
   if (
     !asset ||
-    asset.upload_status !== "finalized" ||
-    asset.storage_delete_status !== "none" ||
-    asset.moderation_status !== "visible" ||
-    asset.deleted_at !== undefined
+    !isUsableMediaAsset(asset)
   ) {
     return null;
   }

@@ -33,6 +33,7 @@ import { newUuid, uuidArg } from "./lib/ids";
 import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
 import { applyCoupleActivity } from "./lib/streaks";
 import { addMs, nowIso } from "./lib/time";
+import { isUsableMediaAsset } from "./lib/mediaAssetState";
 
 // Guess my spot. The rules and decisions are in docs/games/guess-my-spot.md. The tables, the
 // scoring, the input rules, and the hooks the shared games code calls are in lib/guessMySpot.ts.
@@ -320,10 +321,7 @@ export const send_guess_my_spot_photo = mutation({
           asset.reserved_parent_kind !== "guess_my_spot_round" ||
           asset.reserved_parent_id !== roundId ||
           asset.media_type !== "image" ||
-          asset.upload_status !== "finalized" ||
-          asset.storage_delete_status !== "none" ||
-          asset.moderation_status !== "visible" ||
-          asset.deleted_at !== undefined
+          !isUsableMediaAsset(asset)
         ) {
           return fail("23514", "guess my spot photo is not usable");
         }

@@ -30,6 +30,7 @@ import {
   widgetDrawingPayloadArgs,
   widgetDrawingPayloadHashFields,
 } from "./lib/widgetDrawings";
+import { isUsableMediaAsset } from "./lib/mediaAssetState";
 
 const nullableInt = v.optional(v.union(v.null(), v.number()));
 
@@ -76,14 +77,11 @@ async function assertWidgetDrawingRevisionAllowed(
     asset.upload_purpose !== "widget_drawing_payload" ||
     asset.expected_media_type !== "drawing_payload" ||
     asset.expected_bucket !== "widget-drawings" ||
-    asset.upload_status !== "finalized" ||
+    !isUsableMediaAsset(asset) ||
     asset.upload_finalized_at === undefined ||
     asset.byte_size !== revision.payload_bytes ||
     asset.byte_size > MAX_WIDGET_PAYLOAD_BYTES ||
-    asset.sha256 === undefined ||
-    asset.storage_delete_status !== "none" ||
-    asset.moderation_status !== "visible" ||
-    asset.deleted_at !== undefined
+    asset.sha256 === undefined
   ) {
     fail("23514", "widget drawing payload asset is not usable");
   }

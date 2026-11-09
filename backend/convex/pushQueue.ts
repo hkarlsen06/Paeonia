@@ -14,6 +14,7 @@ import { uuidArg } from "./lib/ids";
 import { notificationPayloadIsSafe, reactionPreferenceAllows, UNSAFE_PAYLOAD_ERROR } from "./lib/notifications";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { isValidTimeZone, nowIso } from "./lib/time";
+import { pushStatus } from "./lib/pushStatus";
 
 // The database side of one APNs send. Each outbox row is one pushWorkpool work item
 // (`enqueuePush` in lib/notifications.ts). `push:send_push` asks `prepare_*` whether the row
@@ -39,7 +40,7 @@ async function pendingRow<T extends "notification_outbox" | "widget_push_outbox"
   outboxId: string,
 ): Promise<Doc<T> | null> {
   const row = await getByUuid(ctx, table, uuidArg(outboxId));
-  return row && row.sent_at === undefined && row.failed_at === undefined ? row : null;
+  return row && pushStatus({ sent_at: row.sent_at, failed_at: row.failed_at }) === "pending" ? row : null;
 }
 
 async function drop(

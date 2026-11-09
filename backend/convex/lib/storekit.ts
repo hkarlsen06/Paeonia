@@ -9,6 +9,7 @@ import { isJsonObject } from "./json";
 import { applyStreakRestore } from "./streaks";
 import { invalidateAccessEndingPushes, queuePaymentFailedPush } from "./subscriptionNotices";
 import { nowIso } from "./time";
+import { pushStatus } from "./pushStatus";
 
 export const STOREKIT_STATUSES = ["active", "grace", "billing_retry", "expired", "revoked", "refunded"] as const;
 export type StorekitStatus = (typeof STOREKIT_STATUSES)[number];
@@ -118,8 +119,7 @@ export async function invalidateSubscriptionTrialReminder(ctx: WriterCtx, subscr
   for (const row of rows) {
     if (
       row.kind === "subscription_trial_reminder" &&
-      row.sent_at === undefined &&
-      row.failed_at === undefined &&
+      pushStatus(row) === "pending" &&
       isJsonObject(row.payload) &&
       row.payload.subscription_id === subscriptionId
     ) {

@@ -3,6 +3,7 @@
 import { internal } from "./_generated/api";
 import type { PreparedNotification } from "./lib/apns";
 import { transactionIso, type TestConvex } from "./test.setup";
+import { pushStatus } from "./lib/pushStatus";
 
 /**
  * Stands in for the APNs sends. Tests have no APNs keys, so `push:send_push` leaves every row
@@ -13,7 +14,7 @@ export async function deliverDuePushes(t: TestConvex): Promise<PreparedNotificat
   const records = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
   const now = await transactionIso(t);
   const rows = records
-    .filter((row) => row.sent_at === undefined && row.failed_at === undefined && row.scheduled_for <= now)
+    .filter((row) => pushStatus(row) === "pending" && row.scheduled_for <= now)
     .sort((a, b) => a.scheduled_for.localeCompare(b.scheduled_for) || a._creationTime - b._creationTime);
   const delivered: PreparedNotification[] = [];
   for (const row of rows) {

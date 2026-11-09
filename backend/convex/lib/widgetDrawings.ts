@@ -10,6 +10,7 @@ import { enqueuePartnerNotification, enqueueWidgetPushForUser, enqueueWidgetUpda
 import { applyCoupleActivity } from "./streaks";
 import { btrim, btrimToNull, charLength } from "./text";
 import { nowIso } from "./time";
+import { isUsableMediaAsset } from "./mediaAssetState";
 
 /**
  * Widget drawing revisions: the payload checks, the canvas, and the revision insert with its
@@ -156,15 +157,12 @@ export function isUsableWidgetPayloadAsset(
     asset.upload_purpose === "widget_drawing_payload" &&
     asset.expected_media_type === "drawing_payload" &&
     asset.expected_bucket === "widget-drawings" &&
-    asset.upload_status === "finalized" &&
+    isUsableMediaAsset(asset) &&
     asset.upload_finalized_at !== undefined &&
     asset.byte_size === expected.payload.payloadBytes &&
     asset.byte_size <= MAX_WIDGET_PAYLOAD_BYTES &&
     ["application/octet-stream", "application/x-pkdrawing"].includes(asset.mime_type ?? "") &&
-    asset.sha256 === expected.payload.sha256 &&
-    asset.storage_delete_status === "none" &&
-    asset.moderation_status === "visible" &&
-    asset.deleted_at === undefined
+    asset.sha256 === expected.payload.sha256
   );
 }
 
@@ -341,10 +339,7 @@ export function payloadIsVisible(
     revision.deleted_at === undefined &&
     revision.moderation_status === "visible" &&
     asset !== null &&
-    asset.upload_status === "finalized" &&
-    asset.storage_delete_status === "none" &&
-    asset.moderation_status === "visible" &&
-    asset.deleted_at === undefined
+    isUsableMediaAsset(asset)
   );
 }
 

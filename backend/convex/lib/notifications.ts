@@ -10,6 +10,7 @@ import { newUuid } from "./ids";
 import { nameForViewer } from "./partnerNames";
 import { notificationAlertBody, notificationAlertTitle, notificationLocaleLanguage } from "./notificationCopy";
 import { addMs, nowIso } from "./time";
+import { pushStatus } from "./pushStatus";
 
 export * from "./notificationCopy";
 
@@ -406,7 +407,7 @@ export async function insertWidgetPushOutbox(
       )
       .order("desc")
       .first();
-    if (newest && newest.sent_at === undefined && newest.failed_at === undefined) {
+    if (newest && pushStatus(newest) === "pending") {
       return false;
     }
   }

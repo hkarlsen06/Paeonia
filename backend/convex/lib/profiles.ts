@@ -5,6 +5,7 @@ import { fail } from "./errors";
 import { queueOldMediaAssetIfOrphaned } from "./mediaOrphans";
 import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./notifications";
 import { refreshStreakAfterProfileTimeZoneChange } from "./streaks";
+import { isUsableMediaAsset } from "./mediaAssetState";
 
 type ProfileColumns = Omit<Doc<"profiles">, "_id" | "_creationTime" | "user_id" | "revision" | "created_at" | "updated_at">;
 
@@ -87,10 +88,7 @@ async function assertProfilePhotoAssetOwner(
       asset.owner_user_id !== next.user_id ||
       asset.bucket !== "profile-photos" ||
       asset.media_type !== "image" ||
-      asset.upload_status !== "finalized" ||
-      asset.storage_delete_status !== "none" ||
-      asset.moderation_status !== "visible" ||
-      asset.deleted_at !== undefined
+      !isUsableMediaAsset(asset)
     ) {
       fail("23514", "profile photo asset is not usable");
     }

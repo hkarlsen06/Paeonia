@@ -22,6 +22,7 @@ import {
   visibleAnswersOf,
   type LoadedDailyQuestion,
 } from "./dailyQuestions";
+import { isUsableMediaAsset } from "./mediaAssetState";
 
 /**
  * Daily answers: reveal rules, read models, and the answer writes. The reveal rule
@@ -96,10 +97,7 @@ async function visibleMediaAssetIds(ctx: ReaderCtx, answerId: string): Promise<s
     const asset = await getByUuid(ctx, "media_assets", link.media_asset_id);
     if (
       asset &&
-      asset.upload_status === "finalized" &&
-      asset.storage_delete_status === "none" &&
-      asset.moderation_status === "visible" &&
-      asset.deleted_at === undefined
+      isUsableMediaAsset(asset)
     ) {
       ids.push(asset.id);
     }
@@ -363,10 +361,7 @@ async function insertAnswerMedia(
     asset.reserved_parent_kind !== "daily_answer_media" ||
     asset.reserved_parent_id !== answer.id ||
     (asset.upload_purpose !== "daily_answer_media" && asset.upload_purpose !== "voice_note") ||
-    asset.upload_status !== "finalized" ||
-    asset.storage_delete_status !== "none" ||
-    asset.moderation_status !== "visible" ||
-    asset.deleted_at !== undefined
+    !isUsableMediaAsset(asset)
   ) {
     fail("23514", "daily answer media asset is not usable for this answer");
   }
@@ -469,10 +464,7 @@ export async function parseAnswerPayload(
       asset.owner_user_id !== userId ||
       asset.couple_id !== instance.couple_id ||
       asset.reserved_parent_kind !== "daily_answer_media" ||
-      asset.upload_status !== "finalized" ||
-      asset.storage_delete_status !== "none" ||
-      asset.moderation_status !== "visible" ||
-      asset.deleted_at !== undefined
+      !isUsableMediaAsset(asset)
     ) {
       fail("23514", "daily answer media asset is not usable");
     }

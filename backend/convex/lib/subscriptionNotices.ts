@@ -5,6 +5,7 @@ import { enqueueNotificationForUser } from "./notifications";
 import { addMs } from "./time";
 import { getByUuid } from "./db";
 import type { Doc } from "../_generated/dataModel";
+import { pushStatus } from "./pushStatus";
 
 /** Test purchases stay quiet unless an operator explicitly enables subscription push testing. */
 export function subscriptionNotificationsEnabled(environment: Doc<"storekit_transactions">["environment"]): boolean {
@@ -127,7 +128,7 @@ export async function invalidateAccessEndingPushes(ctx: WriterCtx, userId: strin
     .withIndex("by_dedupe_key", (q) => q.gte("dedupe_key", prefix).lt("dedupe_key", `${prefix}\uffff`))
     .collect();
   for (const row of rows) {
-    if (row.sent_at === undefined && row.failed_at === undefined) await ctx.db.delete(row._id);
+    if (pushStatus(row) === "pending") await ctx.db.delete(row._id);
   }
 }
 

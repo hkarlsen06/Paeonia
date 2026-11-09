@@ -5,6 +5,7 @@ import { isLive, type QuestionRowContent, visibleAnswersOf } from "./dailyQuesti
 import { fail } from "./errors";
 import { enqueueNotificationForUser } from "./notifications";
 import { addMs, nowIso } from "./time";
+import { pushStatus } from "./pushStatus";
 
 /**
  * Question topics: extra questions grouped by theme, which a couple answers as many of as they like,
@@ -269,7 +270,7 @@ export async function queueTopicPush(
   if (!(await hasTopicWaiting(ctx, coupleId, recipientId))) return;
   const now = nowIso();
   const recent = await recentTopicPushes(ctx, recipientId, now);
-  if (recent.some((row) => row.sent_at === undefined && row.failed_at === undefined)) return;
+  if (recent.some((row) => pushStatus(row) === "pending")) return;
   const lastSent = recent.reduce<string | null>(
     (latest, row) => (row.sent_at !== undefined && (latest === null || row.sent_at > latest) ? row.sent_at : latest),
     null,

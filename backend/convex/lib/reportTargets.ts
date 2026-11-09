@@ -7,6 +7,7 @@ import { canAccessCoupleContent } from "./access";
 import { fail } from "./errors";
 import { newUuid } from "./ids";
 import { addMs, nowIso } from "./time";
+import { isUsableMediaAsset } from "./mediaAssetState";
 
 const REPORTABLE_MEMBER_STATUSES = ["active", "left", "ended_notice_pending", "ended_notice_seen"];
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -83,10 +84,7 @@ function stripNulls(value: Record<string, unknown>): Record<string, unknown> {
 function isReportableAsset(asset: Doc<"media_assets"> | null): asset is Doc<"media_assets"> {
   return (
     asset !== null &&
-    asset.upload_status === "finalized" &&
-    asset.storage_delete_status === "none" &&
-    asset.moderation_status === "visible" &&
-    asset.deleted_at === undefined
+    isUsableMediaAsset(asset)
   );
 }
 

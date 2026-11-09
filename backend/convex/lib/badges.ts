@@ -8,6 +8,7 @@ import { gamesWaitingFor } from "./gameRegistry";
 import { insertNotificationOutbox, listActiveUserDevices, preferenceAllows } from "./notifications";
 import { addMs, nowIso } from "./time";
 import { topicsWaitingQuestionIds } from "./topics";
+import { pushStatus } from "./pushStatus";
 
 // The app icon counts outstanding conversations, games and unseen partner stories.
 // A question with both an unopened answer and unread messages counts once.
@@ -199,5 +200,5 @@ export async function queueBadgeUpdate(ctx: WriterCtx, userId: string): Promise<
 }
 
 function isPending(row: Doc<"notification_outbox">): boolean {
-  return row.sent_at === undefined && row.failed_at === undefined;
+  return pushStatus(row) === "pending";
 }

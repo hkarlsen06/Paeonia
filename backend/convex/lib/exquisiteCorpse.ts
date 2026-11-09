@@ -9,6 +9,7 @@ import { enqueueGamePush, TURN_REMINDER_AFTER_MS } from "./games";
 import { uuidArg } from "./ids";
 import { gameDrawingDescription } from "./gameDrawingDescriptions";
 import { addMs, nowIso } from "./time";
+import { isUsableMediaAsset } from "./mediaAssetState";
 
 // Exquisite corpse: the rules, the json shapes, the media hooks, and the hooks the shared games code
 // calls (`exquisiteCorpseBackend` at the end). The registered functions are in convex/exquisiteCorpse.ts.
@@ -282,11 +283,8 @@ export async function assertCorpseAssetUsable(
     asset.media_type !== "drawing_payload" ||
     asset.expected_media_type !== "drawing_payload" ||
     !asset.storage_path.startsWith(`${part.couple_id}/${part.game_id}/parts/${part.id}/`) ||
-    asset.upload_status !== "finalized" ||
-    asset.upload_finalized_at === undefined ||
-    asset.storage_delete_status !== "none" ||
-    asset.moderation_status !== "visible" ||
-    asset.deleted_at !== undefined
+    !isUsableMediaAsset(asset) ||
+    asset.upload_finalized_at === undefined
   ) {
     fail("23514", `exquisite corpse ${label} asset is not usable`);
   }
