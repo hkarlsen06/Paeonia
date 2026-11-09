@@ -19,4 +19,17 @@ extension View {
             )
         }
     }
+
+    /// The plum tile of the Us tab's cards and the drawing widget: the page's own color, a thin
+    /// edge and a soft shadow.
+    func paeoniaTileSurface() -> some View {
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
+
+        return background(.paeoniaBackgroundPrimary)
+            .clipShape(shape)
+            .overlay {
+                shape.stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
+            }
+            .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
+    }
 }

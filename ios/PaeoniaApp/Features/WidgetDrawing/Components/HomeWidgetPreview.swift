@@ -183,7 +183,7 @@ struct HomeWidgetCard: View {
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: live?.isShowingPartnerCanvas)
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
-        .homeWidgetCardSurface()
+        .paeoniaTileSurface()
     }
 
     /// One short line, so the drawing keeps most of the tile. It shows the partner
@@ -266,21 +266,6 @@ struct HomeWidgetCard: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .clipShape(DrawingCanvasShape())
-    }
-}
-
-extension View {
-    /// The plum tile with a thin edge and a soft shadow that `HomeWidgetCard` draws the
-    /// widget on, for other pictures of the widget.
-    func homeWidgetCardSurface() -> some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
-
-        return background(.paeoniaBackgroundPrimary)
-            .clipShape(shape)
-            .overlay {
-                shape.stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
-            }
-            .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
     }
 }
 

@@ -65,7 +65,7 @@ struct WelcomeWidgetDoodle: View {
         // The system's content margin on a widget.
         .padding(PaeoniaSpacing.space16)
         .aspectRatio(1, contentMode: .fit)
-        .homeWidgetCardSurface()
+        .paeoniaTileSurface()
         .frame(minHeight: Self.minSide, idealHeight: Self.minSide, maxHeight: Self.maxSide)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(doodle == nil ? .welcomeDoodleAccessibility : .widgetDrawingCanvasLabel))

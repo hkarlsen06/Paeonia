@@ -58,7 +58,7 @@ struct WelcomeSignInPicture: View {
             .clipShape(DrawingCanvasShape())
             .padding(PaeoniaSpacing.space12)
             .frame(width: side, height: side)
-            .homeWidgetCardSurface()
+            .paeoniaTileSurface()
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(.welcomeSignInDrawingAccessibility))
             .accessibilityAddTraits(.isImage)

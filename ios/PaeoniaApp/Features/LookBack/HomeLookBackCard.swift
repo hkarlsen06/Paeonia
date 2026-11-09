@@ -14,19 +14,17 @@ struct HomeLookBackCard: View {
 
     var body: some View {
         Button(action: onOpen) {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                header
-                LookBackContent(
-                    item: item,
-                    currentUserID: currentUserID,
-                    partnerName: partnerName,
-                    thumbnailLoader: thumbnailLoader
-                )
+            PaeoniaCard(surface: .tile) {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+                    header
+                    LookBackContent(
+                        item: item,
+                        currentUserID: currentUserID,
+                        partnerName: partnerName,
+                        thumbnailLoader: thumbnailLoader
+                    )
+                }
             }
-            .padding(PaeoniaSpacing.cardContentPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            // The drawing tile's surface, so the Us tab's cards match.
-            .homeWidgetCardSurface()
         }
         .buttonStyle(.paeoniaPressableCard)
         .accessibilityElement(children: .ignore)
