@@ -72,7 +72,7 @@ struct BoardGameViewModelTests {
         #expect(!viewModel.canPlay)
         #expect(viewModel.turnLabel == .partnerTurn)
         #expect(viewModel.stakeState == .fixed("Loser makes coffee"))
-        #expect(!viewModel.isWaitingToSend)
+        #expect(!viewModel.sendState.isHeldOnPhone)
         let queued = await harness.queuedMoves()
         #expect(queued == [Fixture.move(3, on: game, expectedVersion: 1, stake: "Loser makes coffee")])
         await harness.expectShown(game: 1, moves: 1)
@@ -145,7 +145,7 @@ struct BoardGameViewModelTests {
         #expect(viewModel.snapshot?.moves == serverMoves)
         #expect(viewModel.snapshot?.version == serverMoves.count + 1)
         #expect(viewModel.snapshot?.unsentCount == 0)
-        #expect(!viewModel.isWaitingToSend)
+        #expect(!viewModel.sendState.isHeldOnPhone)
         #expect(await harness.queuedMoves().count == 1)
     }
 

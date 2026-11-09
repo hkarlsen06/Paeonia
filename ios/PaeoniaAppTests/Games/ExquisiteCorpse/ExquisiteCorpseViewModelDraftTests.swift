@@ -122,7 +122,7 @@ struct ExquisiteCorpseViewModelDraftTests {
         #expect(viewModel.board.drawing.strokes.count == 2)
         #expect(viewModel.idea == Fixture.ideas[0])
         #expect(viewModel.notice == .exquisiteCorpsePartRejected)
-        #expect(!viewModel.isWaitingToSend)
+        #expect(!viewModel.sendState.isWaiting)
         #expect(viewModel.canFinishDrawing)
     }
 

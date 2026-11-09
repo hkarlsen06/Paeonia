@@ -236,7 +236,7 @@ struct GuessMySpotRevealView: View {
     private var card: some View {
         Group {
             if isHeld {
-                if viewModel.isHeldOnPhone {
+                if viewModel.sendState.isHeldOnPhone {
                     GuessMySpotHeldLine(viewModel: viewModel)
                 }
             } else if let plan {
@@ -277,7 +277,7 @@ struct GuessMySpotRevealView: View {
 
     @ViewBuilder
     private var actions: some View {
-        let isShown = (isHeld && viewModel.isHeldOnPhone) || timeline.actionsShown
+        let isShown = (isHeld && viewModel.sendState.isHeldOnPhone) || timeline.actionsShown
         Button {
             PaeoniaHaptics.gameContinued()
             viewModel.continueFromReveal()

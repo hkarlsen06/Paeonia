@@ -45,7 +45,7 @@ struct ConsensioWaitingView: View {
             identifier: "consensio.invite"
         )
         .animation(stateChange, value: viewModel.partnerStatus)
-        .animation(stateChange, value: viewModel.isHeldOnPhone)
+        .animation(stateChange, value: viewModel.sendState.isHeldOnPhone)
         .animation(reduceMotion ? nil : .spring(duration: 0.18, bounce: 0), value: viewModel.partnerMarker)
         .onChange(of: viewModel.partnerStatus) { old, new in
             if old == .away, new != .away {

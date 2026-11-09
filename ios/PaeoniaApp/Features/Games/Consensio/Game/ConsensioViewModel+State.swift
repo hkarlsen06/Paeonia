@@ -105,14 +105,13 @@ extension ConsensioViewModel {
         if game != state?.game {
             game = state?.game
         }
-        let isHeld = (phase == .waitingForGuess(isQueued: true) || phase == .reveal(isHeld: true))
-            && pending.hasFailedMoveAttempt
-        if isHeldOnPhone != isHeld {
-            isHeldOnPhone = isHeld
-        }
-        let isFailing = isHeld && pending.lastSendFailedWhileOnline
-        if isSendFailing != isFailing {
-            isSendFailing = isFailing
+        let sendState = GameSendState(
+            isWaiting: phase == .waitingForGuess(isQueued: true) || phase == .reveal(isHeld: true),
+            hasFailedAttempt: pending.hasFailedMoveAttempt,
+            failedWhileOnline: pending.lastSendFailedWhileOnline
+        )
+        if self.sendState != sendState {
+            self.sendState = sendState
         }
         followMarkerRound()
         updatePartnerStatus()

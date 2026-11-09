@@ -2,12 +2,11 @@ import SwiftUI
 
 /// A failed move and its retry action. Routine queued moves show no status.
 struct BoardGameOfflineLine: View {
-    let isWaiting: Bool
-    let failedWhileOnline: Bool
+    let isFailing: Bool
     let onRetry: () -> Void
 
     var body: some View {
-        if isWaiting, failedWhileOnline {
+        if isFailing {
             failed
         }
     }
@@ -38,9 +37,8 @@ struct BoardGameOfflineLine: View {
 #if DEBUG
 #Preview {
     VStack(spacing: PaeoniaSpacing.space24) {
-        BoardGameOfflineLine(isWaiting: true, failedWhileOnline: false, onRetry: {})
-        BoardGameOfflineLine(isWaiting: true, failedWhileOnline: true, onRetry: {})
-        BoardGameOfflineLine(isWaiting: false, failedWhileOnline: false, onRetry: {})
+        BoardGameOfflineLine(isFailing: false, onRetry: {})
+        BoardGameOfflineLine(isFailing: true, onRetry: {})
     }
     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
     .frame(maxHeight: .infinity)

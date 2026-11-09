@@ -184,7 +184,7 @@ struct ConsensioRevealView: View {
 
     @ViewBuilder
     private var result: some View {
-        if isHeld, viewModel.isHeldOnPhone {
+        if isHeld, viewModel.sendState.isHeldOnPhone {
             ConsensioHeldLine(viewModel: viewModel)
         } else if let plan {
             // Laid out from the start and faded in, so the line above never moves.
@@ -255,7 +255,7 @@ struct ConsensioRevealView: View {
 
     @ViewBuilder
     private var actions: some View {
-        let isShown = (isHeld && viewModel.isHeldOnPhone) || timeline.actionsShown
+        let isShown = (isHeld && viewModel.sendState.isHeldOnPhone) || timeline.actionsShown
         VStack(spacing: PaeoniaSpacing.space12) {
             Button {
                 PaeoniaHaptics.gameContinued()

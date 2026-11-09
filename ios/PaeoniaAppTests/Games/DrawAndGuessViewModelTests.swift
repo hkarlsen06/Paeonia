@@ -48,7 +48,7 @@ struct DrawAndGuessViewModelTests {
 
         #expect(viewModel.phase == .drawing)
         #expect(viewModel.round?.word == "umbrella")
-        #expect(viewModel.isWaitingToSend)
+        #expect(viewModel.sendState.isWaiting)
         let queued = await env.queued(.pickDrawWord)
         #expect(queued.count == 1)
         let payload = try JSONDecoder().decode(GamePickWordPayload.self, from: try #require(queued.first?.requestData))

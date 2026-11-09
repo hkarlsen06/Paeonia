@@ -80,11 +80,8 @@ final class GuessMySpotViewModel {
     var roundPhoto: UIImage?
     /// The photo of `round` could not be fetched.
     var roundPhotoFailed = false
-    /// The send or guess on this phone has had a try that did not get through.
-    var isHeldOnPhone = false
-    /// That try failed on a working connection, so the screen offers Try again
-    /// instead of talking about being offline.
-    var isSendFailing = false
+    /// The send or guess on this phone, while the screen shows it as waiting.
+    var sendState = GameSendState.nothingWaiting
     var notice: GamesNotice?
     /// Shown once on the picker when a picked photo can't be read.
     var pickFailed = false

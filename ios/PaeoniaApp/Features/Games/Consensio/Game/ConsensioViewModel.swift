@@ -54,11 +54,8 @@ final class ConsensioViewModel {
     var invite: GameInviteState = .hidden
     var isStartingGame = false
     var startFailure: PaeoniaFailure?
-    /// The placement or guess on this phone has had a try that did not get through.
-    var isHeldOnPhone = false
-    /// That try failed on a working connection, so the screen offers Try again
-    /// instead of talking about being offline.
-    var isSendFailing = false
+    /// The placement or guess on this phone, while the screen shows it as waiting.
+    var sendState = GameSendState.nothingWaiting
     var notice: GamesNotice?
     var prefersReducedMotion = false
     /// The round whose reveal reached its verdict on screen.

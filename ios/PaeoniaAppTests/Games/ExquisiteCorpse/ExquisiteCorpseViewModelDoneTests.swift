@@ -41,7 +41,7 @@ struct ExquisiteCorpseViewModelDoneTests {
         #expect(try PKDrawing(data: payload.drawing.data).strokes.count == 1)
         // The phone moves on at once; acceptance retires the matching retained draft.
         #expect(viewModel.phase == .waiting)
-        #expect(viewModel.isWaitingToSend)
+        #expect(viewModel.sendState.isWaiting)
         #expect(env.drawingStore.draft(ownerUserID: Fixture.me, roundID: payload.partID) == payload.drawing.data)
     }
 

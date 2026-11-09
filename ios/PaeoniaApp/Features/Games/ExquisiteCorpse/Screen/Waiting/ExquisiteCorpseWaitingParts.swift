@@ -30,9 +30,9 @@ struct ExquisiteCorpseSendStatus: View {
     let viewModel: ExquisiteCorpseViewModel
 
     var body: some View {
-        if viewModel.isSendFailing {
+        if viewModel.sendState.isFailing {
             ExquisiteCorpseSendFailure(viewModel: viewModel)
-        } else if viewModel.didSendPreviousPart, !viewModel.isWaitingToSend {
+        } else if viewModel.didSendPreviousPart, !viewModel.sendState.isWaiting {
             Label {
                 Text(.exquisiteCorpseWaitSent(viewModel.partnerName))
             } icon: {

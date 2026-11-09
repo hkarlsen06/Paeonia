@@ -113,7 +113,7 @@ struct CorpseSimulationRegressionTests {
             try await driver.scriptDone(second)
             let offline = try #require(second.activeViewModel)
             #expect(offline.phase == .waiting || offline.phase == .watching)
-            #expect(offline.isWaitingToSend)
+            #expect(offline.sendState.isWaiting)
             #expect(driver.server.parts.count == 1)
             #expect(first.activeViewModel?.phase != .drawing)
 
@@ -121,7 +121,7 @@ struct CorpseSimulationRegressionTests {
             await driver.settle()
             #expect(driver.server.parts.count == 2)
             try driver.require(first, in: .drawing)
-            #expect(second.activeViewModel?.isWaitingToSend == false)
+            #expect(second.activeViewModel?.sendState.isWaiting == false)
         }
     }
 

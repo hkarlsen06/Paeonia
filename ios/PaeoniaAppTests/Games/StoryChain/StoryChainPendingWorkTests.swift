@@ -102,7 +102,7 @@ struct StoryChainPendingWorkTests {
 
         let work = try #require(await load())
 
-        #expect(!work.isHeldOnPhone)
+        #expect(!work.hasFailedMoveAttempt)
         #expect(!work.lastSendFailedWhileOnline)
     }
 
@@ -113,12 +113,12 @@ struct StoryChainPendingWorkTests {
         // A move that waits behind an earlier one, or has no connection, is held but not failing.
         try await fail(operationID, with: "Retry later")
         let waiting = try #require(await load())
-        #expect(waiting.isHeldOnPhone)
+        #expect(waiting.hasFailedMoveAttempt)
         #expect(!waiting.lastSendFailedWhileOnline)
 
         try await fail(operationID, with: "NSURLErrorDomain Code=-1009")
         let offline = try #require(await load())
-        #expect(offline.isHeldOnPhone)
+        #expect(offline.hasFailedMoveAttempt)
         #expect(!offline.lastSendFailedWhileOnline)
     }
 
@@ -130,7 +130,7 @@ struct StoryChainPendingWorkTests {
         try await fail(operationID, with: serverRefusal)
 
         let work = try #require(await load())
-        #expect(work.isHeldOnPhone)
+        #expect(work.hasFailedMoveAttempt)
         #expect(work.lastSendFailedWhileOnline)
     }
 
@@ -141,7 +141,7 @@ struct StoryChainPendingWorkTests {
         try await fail(operationID, with: serverRefusal)
 
         let work = try #require(await load())
-        #expect(!work.isHeldOnPhone)
+        #expect(!work.hasFailedMoveAttempt)
         #expect(!work.lastSendFailedWhileOnline)
     }
 

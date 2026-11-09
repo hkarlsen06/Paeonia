@@ -117,7 +117,7 @@ extension PiccanteScreen {
                     // A turn, a sniff or a failed send adds or removes a control. The rest glide to make room.
                     .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: game)
                     .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.heldTile)
-                    .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.isSendFailing)
+                    .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.sendState.isFailing)
             }
         }
     }
@@ -202,7 +202,7 @@ extension PiccanteScreen {
                 .buttonStyle(PaeoniaQuietButtonStyle())
                 .accessibilityIdentifier("piccante.controls.open")
             }
-            if viewModel.isSendFailing {
+            if viewModel.sendState.isFailing {
                 Text(.piccanteSendFailed).foregroundStyle(.paeoniaTextSecondary)
                 Button {
                     Task { await viewModel.retry() }

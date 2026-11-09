@@ -55,7 +55,7 @@ extension ExquisiteCorpseViewModel {
     /// this phone and not on the server yet stays `drawing`, so the watcher keeps
     /// the folded paper through the hand-off.
     var liveRole: WidgetLivePresence.Role {
-        let isHandingOff = isWaitingToSend && (phase == .waiting || phase == .watching || phase == .waitingToSync)
+        let isHandingOff = sendState.isWaiting && (phase == .waiting || phase == .watching || phase == .waitingToSync)
         return isHandingOff ? .drawing : ExquisiteCorpsePhase.liveRole(phase: phase)
     }
 

@@ -193,7 +193,7 @@ struct DrawAndGuessGuessView: View {
                         animates: !timeline.wasSkipped,
                         showsSpeedBonus: timeline.speedBonusShown,
                         showsFirstTryBonus: timeline.firstTryBonusShown,
-                        isHeldOnPhone: viewModel.isHeldOnPhone
+                        isHeldOnPhone: viewModel.sendState.isHeldOnPhone
                     )
                     .transition(transition)
                 }

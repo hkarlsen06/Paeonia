@@ -45,7 +45,7 @@ extension CorpseSimDriver {
         if viewModel.invite == .available, random.chance(0.15) {
             log.add("\(phone.name) invite")
             Task { await viewModel.sendInvite() }
-        } else if viewModel.isSendFailing, random.chance(0.5) {
+        } else if viewModel.sendState.isFailing, random.chance(0.5) {
             log.add("\(phone.name) try again")
             Task { await viewModel.retrySending() }
         } else if random.chance(0.2) {

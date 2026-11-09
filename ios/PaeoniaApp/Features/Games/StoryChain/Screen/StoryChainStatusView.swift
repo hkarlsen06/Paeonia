@@ -53,7 +53,7 @@ struct StoryChainStatusView: View {
                 .buttonStyle(PaeoniaSecondaryButtonStyle())
                 .accessibilityIdentifier("storyChain.retryStart")
             }
-        case .waitingToSync where viewModel.isSendFailing:
+        case .waitingToSync where viewModel.sendState.isFailing:
             PaeoniaEmptyStateView(
                 title: .storyChainWaitingToSyncFailedTitle,
                 message: .storyChainWaitingToSyncFailedMessage,

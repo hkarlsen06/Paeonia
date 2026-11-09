@@ -141,7 +141,7 @@ extension DrawAndGuessViewModel {
             partner: partnerPresence,
             guesserFirstSeenAt: round?.guesserFirstSeenAt,
             isPartnerWatchingLive: live?.hasSentCanvasToPartner == true,
-            isWaitingToSend: isWaitingToSend
+            isWaitingToSend: sendState.isWaiting
         )
     }
 

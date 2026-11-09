@@ -171,8 +171,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
                     Task { await viewModel.rematch() }
                 }
             }
-        } else if viewModel.isWaitingToSend {
-            BoardGameOfflineLine(isWaiting: true, failedWhileOnline: viewModel.failedWhileOnline) {
+        } else if viewModel.sendState.isHeldOnPhone {
+            BoardGameOfflineLine(isFailing: viewModel.sendState.isFailing) {
                 Task { await viewModel.retrySending() }
             }
         } else if let action {

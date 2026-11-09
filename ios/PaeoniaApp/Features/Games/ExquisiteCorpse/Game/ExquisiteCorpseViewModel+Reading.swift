@@ -89,9 +89,11 @@ extension ExquisiteCorpseViewModel {
         figure = resolution.figure
         figureNumber = state?.game?.figureNumber ?? figureNumber
         figuresFinished = state?.game?.figuresFinished ?? 0
-        isWaitingToSend = resolution.isWaitingToSend
-        isHeldOnPhone = isWaitingToSend && pending.hasFailedMoveAttempt
-        isSendFailing = pending.lastSendFailedWhileOnline
+        sendState = GameSendState(
+            isWaiting: resolution.isWaitingToSend,
+            hasFailedAttempt: pending.hasFailedMoveAttempt,
+            failedWhileOnline: pending.lastSendFailedWhileOnline
+        )
         settings = overview?.settings
         if phase == .preparing || phase == .needsSetup {
             if phase != .preparing {

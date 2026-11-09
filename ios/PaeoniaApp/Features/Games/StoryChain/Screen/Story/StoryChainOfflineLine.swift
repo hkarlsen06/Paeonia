@@ -5,7 +5,7 @@ struct StoryChainOfflineLine: View {
     let viewModel: StoryChainViewModel
 
     var body: some View {
-        if viewModel.isHeldOnPhone, viewModel.isSendFailing {
+        if viewModel.sendState.isFailing {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                 Label {
                     Text(.storyChainWaitingToSyncFailedTitle)

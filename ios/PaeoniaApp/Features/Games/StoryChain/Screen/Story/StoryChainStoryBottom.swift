@@ -24,7 +24,7 @@ struct StoryChainStoryBottom: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         // The writer's field rises in when the partner's line has landed.
         .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: viewModel.bottomPhase)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.isHeldOnPhone)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.sendState.isHeldOnPhone)
     }
 
     private var rise: AnyTransition {

@@ -33,7 +33,7 @@ struct ExquisiteCorpseViewModelPhaseTests {
         // The screen shows the partner's turn, and the watcher keeps the folded paper.
         #expect(viewModel.phase == .waiting)
         #expect(viewModel.part == .legs)
-        #expect(viewModel.isWaitingToSend)
+        #expect(viewModel.sendState.isWaiting)
         #expect(env.room.role == .drawing)
 
         // The server has the part, the queue is empty, and the role follows the phase.
@@ -45,7 +45,7 @@ struct ExquisiteCorpseViewModelPhaseTests {
         ))
         await viewModel.reload()
 
-        #expect(!viewModel.isWaitingToSend)
+        #expect(!viewModel.sendState.isWaiting)
         #expect(env.room.role == .watching)
     }
 

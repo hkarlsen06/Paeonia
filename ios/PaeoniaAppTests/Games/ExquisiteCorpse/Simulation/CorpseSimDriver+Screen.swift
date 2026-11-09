@@ -67,7 +67,7 @@ extension CorpseSimDriver {
     ) -> Set<ExquisiteCorpsePhase> {
         guard phase == .waiting || phase == .watching, !isLive else { return [phase] }
         let other = partner(of: phone)
-        let otherWorking = other.activeViewModel.map { $0.phase == .drawing || $0.isWaitingToSend } ?? false
+        let otherWorking = other.activeViewModel.map { $0.phase == .drawing || $0.sendState.isWaiting } ?? false
         let isInTheRoom = phone.socket?.isConnected == true && other.socket?.isConnected == true
         return !otherWorking && isInTheRoom && other.activeViewModel != nil ? [.waiting] : [.waiting, .watching]
     }
@@ -102,7 +102,7 @@ extension CorpseSimDriver {
         let other = partner(of: phone)
         guard let model = other.activeViewModel, phone.socket?.isConnected == true, other.socket?.isConnected == true
         else { return false }
-        let isHandingOff = model.isWaitingToSend && [.waiting, .watching, .waitingToSync].contains(model.phase)
+        let isHandingOff = model.sendState.isWaiting && [.waiting, .watching, .waitingToSync].contains(model.phase)
         return model.phase == .drawing || isHandingOff
     }
 

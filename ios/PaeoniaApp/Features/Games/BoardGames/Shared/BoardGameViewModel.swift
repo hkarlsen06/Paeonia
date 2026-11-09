@@ -67,10 +67,8 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     var score: BoardGameScore?
     /// Goes up on each extra turn of mine, so the status row can say "Another turn".
     var extraTurnCount = 0
-    /// A move or rematch waits on this phone after a try that did not get through.
-    var isWaitingToSend = false
-    /// The last try failed for a reason other than being offline.
-    var failedWhileOnline = false
+    /// A move or rematch on this phone. Only a failing one shows a line.
+    var sendState = GameSendState.nothingWaiting
     /// The hidden photo of a Dots and Boxes game.
     var photo: UIImage?
     var notice: BoardGamesNotice?
@@ -123,6 +121,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     @ObservationIgnored var colorDraft: (gameNumber: Int, color: LudoColor)?
     @ObservationIgnored var now: Date
     @ObservationIgnored var hasFailedAttempt = false
+    @ObservationIgnored var failedWhileOnline = false
     @ObservationIgnored var reloadGate = GameReloadGate()
     /// Taps when the partner's move lands on the board and it is this person's move.
     @ObservationIgnored var attentionCue = GameAttentionCue()
@@ -295,8 +294,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
             return
         }
         self.snapshot = snapshot
-        // A first send says nothing, so a normal move never flashes the line.
-        isWaitingToSend = snapshot.unsentCount > 0 && hasFailedAttempt
+        updateSendState(unsentCount: snapshot.unsentCount)
         phase = .game
         updateSummary(snapshot, userID: userID)
         // The hub reloads this model while the screen is closed. The board moves
@@ -344,6 +342,16 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         colorChoice = nil
         summary = nil
         phase = .loading
+    }
+}
+
+extension BoardGameViewModel {
+    func updateSendState(unsentCount: Int) {
+        sendState = GameSendState(
+            isWaiting: unsentCount > 0,
+            hasFailedAttempt: hasFailedAttempt,
+            failedWhileOnline: failedWhileOnline
+        )
     }
 }
 

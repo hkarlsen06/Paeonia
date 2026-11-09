@@ -25,7 +25,7 @@ final class PiccanteViewModel {
     var notice: GamesNotice?
     var failure: PaeoniaFailure?
     var isSaving = false
-    var isSendFailing = false
+    var sendState = GameSendState.nothingWaiting
     var playStyle = GamePlayStyle.against
     let reactions = GameLiveReactions()
     @ObservationIgnored let dependencies: GamesDependencies
@@ -163,12 +163,10 @@ final class PiccanteViewModel {
             return
         }
         var operationsInFlight: [PendingSyncOperationSnapshot] = []
-        var sendFailed = false
         do {
             for kind in PiccanteAction.allCases.map(\.pendingKind) {
                 let operations = try await dependencies.pendingOperationStore.inFlightOperations(
                     ownerUserID: userID, kind: kind)
-                sendFailed = sendFailed || operations.contains(where: \.failedWhileOnline)
                 operationsInFlight += operations
             }
         } catch { return }
@@ -179,7 +177,7 @@ final class PiccanteViewModel {
         guard self.userID == userID, document.state.map({ $0.coupleID == participants.coupleID }) ?? true,
             reloadGate.apply(ticket)
         else { return }
-        isSendFailing = sendFailed
+        sendState = GameSendState(waiting: operationsInFlight)
         playStyle = overview?.settings?.playStyle ?? .against
         partnerHere =
             live.map { $0.partnerActivity != .away } == true

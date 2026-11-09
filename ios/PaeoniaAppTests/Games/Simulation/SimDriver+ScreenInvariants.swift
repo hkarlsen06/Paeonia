@@ -256,7 +256,7 @@ extension SimDriver {
 
     private func checkSentStatus(_ phone: SimPhone, _ viewModel: DrawAndGuessViewModel) throws {
         try checkPartnerLine(phone, viewModel)
-        guard !viewModel.isWaitingToSend, let round = viewModel.round else { return }
+        guard !viewModel.sendState.isWaiting, let round = viewModel.round else { return }
         let expected = DrawAndGuessSentStatus.make(
             partner: expectedPresence(of: partner(of: phone), seenFrom: phone),
             guesserFirstSeenAt: server.round(round.id)?.firstSeenAt

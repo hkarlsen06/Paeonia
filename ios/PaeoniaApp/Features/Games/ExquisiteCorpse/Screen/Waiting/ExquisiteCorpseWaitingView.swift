@@ -75,8 +75,8 @@ struct ExquisiteCorpseAwayView: View {
         // The partner's phone changes the title and ring while this screen is
         // open. Everything moves to its new place together.
         .animation(PaeoniaMotion.stateChange, value: viewModel.partnerPresence)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.isHeldOnPhone)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.isSendFailing)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.sendState.isHeldOnPhone)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.sendState.isFailing)
         .onChange(of: viewModel.partnerPresence) { old, new in
             guard !old.isHere, new.isHere else { return }
             AccessibilityNotification.Announcement(String(localized: title)).post()
@@ -130,7 +130,7 @@ struct ExquisiteCorpseSyncingView: View {
                 Spacer(minLength: PaeoniaSpacing.space16)
                 VStack(spacing: PaeoniaSpacing.space16) {
                     ExquisiteCorpseMiniFold(partsDone: ExquisiteCorpsePartKind.allCases.count, openPart: nil)
-                    if viewModel.isSendFailing {
+                    if viewModel.sendState.isFailing {
                         ExquisiteCorpseSendFailure(viewModel: viewModel)
                     } else {
                         opening
@@ -142,8 +142,8 @@ struct ExquisiteCorpseSyncingView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .animation(PaeoniaMotion.stateChange, value: viewModel.isHeldOnPhone)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.isSendFailing)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.sendState.isHeldOnPhone)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.sendState.isFailing)
     }
 
     private var opening: some View {

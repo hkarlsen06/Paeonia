@@ -71,8 +71,8 @@ final class MindMeldViewModel {
     var startFailed: Bool {
         startFailure != nil
     }
-    /// The lock-in on this phone has had a try that did not get through.
-    var isHeldOnPhone = false
+    /// The lock-in on this phone, while the screen shows it as queued.
+    var sendState = GameSendState.nothingWaiting
     /// The round whose reveal reached its verdict on screen.
     @ObservationIgnored var settledRevealRoundID: UUID?
     /// Show it through the banner center, then call `clearNotice()`.

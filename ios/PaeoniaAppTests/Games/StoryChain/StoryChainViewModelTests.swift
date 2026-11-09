@@ -373,13 +373,13 @@ struct StoryChainViewModelTests {
         let environment = Env(state: Env.writing(turn: Fixture.me, lines: [Env.line(1, by: Fixture.partner)]))
         let viewModel = environment.viewModel()
         await viewModel.reload()
-        #expect(!viewModel.isWaitingToSend)
+        #expect(!viewModel.sendState.isWaiting)
 
         viewModel.draft = "The door was open."
         await viewModel.sendLine()
 
         #expect(viewModel.phase == .waitingForLine)
-        #expect(viewModel.isWaitingToSend)
+        #expect(viewModel.sendState.isWaiting)
         #expect(viewModel.page.lines.count == 2)
         #expect(viewModel.page.lines.last?.isMine == true)
     }

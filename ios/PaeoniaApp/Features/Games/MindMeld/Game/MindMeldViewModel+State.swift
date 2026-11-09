@@ -105,9 +105,13 @@ extension MindMeldViewModel {
         if stats != state?.stats {
             stats = state?.stats
         }
-        let isHeld = phase == .waiting(isQueued: true) && pending.hasFailedMoveAttempt
-        if isHeldOnPhone != isHeld {
-            isHeldOnPhone = isHeld
+        let sendState = GameSendState(
+            isWaiting: phase == .waiting(isQueued: true),
+            hasFailedAttempt: pending.hasFailedMoveAttempt,
+            failedWhileOnline: pending.lastSendFailedWhileOnline
+        )
+        if self.sendState != sendState {
+            self.sendState = sendState
         }
         followDraftRound()
         updatePartnerStatus()

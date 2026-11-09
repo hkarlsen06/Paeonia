@@ -40,7 +40,7 @@ struct MindMeldViewModelTests {
         #expect(viewModel.phase == .waiting(isQueued: true))
         #expect(viewModel.round?.myWord == "ocean")
         // The first send has not failed.
-        #expect(!viewModel.isHeldOnPhone)
+        #expect(!viewModel.sendState.isHeldOnPhone)
     }
 
     @Test func aReadBeforeTheQueueHasTheWordKeepsItLockedIn() async {

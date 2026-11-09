@@ -46,7 +46,7 @@ nonisolated struct StoryChainPendingWork: Equatable, Sendable {
     /// Finished stories this person moved past, with the mark still on this phone.
     var seenStoryIDs: Set<UUID> = []
     /// A waiting move has had a try that did not get through, for any reason.
-    var isHeldOnPhone = false
+    var hasFailedMoveAttempt = false
     /// A waiting move was tried again and the attempt failed for a reason other
     /// than having no connection, such as the server refusing it. The waiting
     /// screen then offers a retry.

@@ -65,16 +65,10 @@ final class DrawAndGuessViewModel {
     /// Drawer only: the partner's guess screen while they are on it, from the live room.
     var partnerGuess: DrawAndGuessPartnerGuess?
     let liveReactions = GameLiveReactions()
-    /// A move is saved on this phone and not sent yet. It may be on its way.
-    var isWaitingToSend = false
+    /// A failing move gets `retrySending()` on the waiting screen.
+    var sendState = GameSendState.nothingWaiting
     /// A live solve kept this drawing as a draft because its description or queue needs recovery.
     var drawingAwaitingRetry = false
-    /// A waiting move has failed to send at least once, so it really is held on
-    /// this phone.
-    var isHeldOnPhone = false
-    /// A move that waits could not be sent although the phone is online. The
-    /// waiting screen then says so and offers `retrySending()`.
-    var isSendFailing = false
     var reveal: DrawAndGuessReveal?
     /// Show it through the banner center, then call `clearNotice()`.
     var notice: GamesNotice?
@@ -288,9 +282,11 @@ final class DrawAndGuessViewModel {
         )
         phase = resolution.phase
         round = resolution.round
-        isWaitingToSend = resolution.isWaitingToSend
-        isHeldOnPhone = isWaitingToSend && pending.hasFailedMoveAttempt
-        isSendFailing = pending.lastSendFailedWhileOnline
+        sendState = GameSendState(
+            isWaiting: resolution.isWaitingToSend,
+            hasFailedAttempt: pending.hasFailedMoveAttempt,
+            failedWhileOnline: pending.lastSendFailedWhileOnline
+        )
         settings = state?.settings
         score = state?.game.flatMap { game in
             settings.map { DrawAndGuessScore(game: game, playStyle: $0.playStyle) }

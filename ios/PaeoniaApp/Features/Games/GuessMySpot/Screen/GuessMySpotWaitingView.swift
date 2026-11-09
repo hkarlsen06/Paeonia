@@ -37,7 +37,7 @@ struct GuessMySpotWaitingView: View {
             identifier: "guessMySpot.invite"
         )
         .animation(stateChange, value: viewModel.partnerStatus)
-        .animation(stateChange, value: viewModel.isHeldOnPhone)
+        .animation(stateChange, value: viewModel.sendState.isHeldOnPhone)
         .onChange(of: viewModel.partnerStatus) { old, new in
             if old == .away, new != .away {
                 PaeoniaHaptics.partnerDrawingReceived()
@@ -178,7 +178,7 @@ struct GuessMySpotWaitingView: View {
 
     @ViewBuilder
     private var heldLine: some View {
-        if viewModel.isHeldOnPhone {
+        if viewModel.sendState.isHeldOnPhone {
             GuessMySpotHeldLine(viewModel: viewModel)
             .transition(.opacity)
         }

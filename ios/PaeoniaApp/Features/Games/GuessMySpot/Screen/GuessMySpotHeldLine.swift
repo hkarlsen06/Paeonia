@@ -5,7 +5,7 @@ struct GuessMySpotHeldLine: View {
     let viewModel: GuessMySpotViewModel
 
     var body: some View {
-        if viewModel.isSendFailing {
+        if viewModel.sendState.isFailing {
             VStack(spacing: PaeoniaSpacing.space8) {
                 Text(.gamesWaitingToSyncFailedTitle)
                     .font(PaeoniaTypography.caption)

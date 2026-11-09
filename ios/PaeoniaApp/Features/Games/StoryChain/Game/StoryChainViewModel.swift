@@ -69,14 +69,8 @@ final class StoryChainViewModel {
     let liveReactions = GameLiveReactions()
 
     // Sending.
-    /// A move is saved on this phone and not sent yet. It may be on its way.
-    private(set) var isWaitingToSend = false
-    /// A waiting move has failed to send at least once, so it really is held on
-    /// this phone.
-    private(set) var isHeldOnPhone = false
-    /// A waiting move could not be sent although the phone is online. The waiting
-    /// screen says so and offers `retrySend()`.
-    private(set) var isSendFailing = false
+    /// A failing move gets `retrySend()` on the waiting screen.
+    private(set) var sendState = GameSendState.nothingWaiting
     /// Creating the game is in progress.
     var isStartingGame = false
     /// Why creating the game failed. The screen offers another try.
@@ -278,9 +272,11 @@ final class StoryChainViewModel {
         let resolution = resolver.resolve(state: state, settings: settings, pending: pending)
         phase = resolvedPhase(for: resolution)
         story = resolution.story
-        isWaitingToSend = resolution.isWaitingToSend
-        isHeldOnPhone = isWaitingToSend && pending.isHeldOnPhone
-        isSendFailing = isWaitingToSend && pending.lastSendFailedWhileOnline
+        sendState = GameSendState(
+            isWaiting: resolution.isWaitingToSend,
+            hasFailedAttempt: pending.hasFailedMoveAttempt,
+            failedWhileOnline: pending.lastSendFailedWhileOnline
+        )
         if phase != .preparing {
             startFailure = nil
         }

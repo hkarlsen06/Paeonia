@@ -32,7 +32,7 @@ nonisolated extension StoryChainPendingWork {
                 work.lastSendFailedWhileOnline = true
             }
             if isMove, operations.contains(where: \.hasFailedAttempt) {
-                work.isHeldOnPhone = true
+                work.hasFailedMoveAttempt = true
             }
             return operations.compactMap { operation in
                 operation.requestData.flatMap { try? decoder.decode(Payload.self, from: $0) }
