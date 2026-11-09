@@ -17,6 +17,7 @@ struct MemoryEditorPhotosField: View {
     let isSaving: Bool
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isCameraPresented = false
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
@@ -100,7 +101,7 @@ struct MemoryEditorPhotosField: View {
 
             if media.ownerUserID == currentUserID {
                 removeButton {
-                    removedExistingMediaIDs.insert(media.memoryMediaID)
+                    animateStrip { _ = removedExistingMediaIDs.insert(media.memoryMediaID) }
                 }
             }
         }
@@ -117,7 +118,7 @@ struct MemoryEditorPhotosField: View {
                 .accessibilityAddTraits(.isButton)
 
             removeButton {
-                photos.removeAll { $0.id == photo.id }
+                animateStrip { photos.removeAll { $0.id == photo.id } }
             }
         }
     }
@@ -189,7 +190,7 @@ struct MemoryEditorPhotosField: View {
         guard !items.isEmpty else { return }
         let picked = Array(items.prefix(remainingPhotoSlots))
         pickerItems = []
-        loadingPhotoCount += picked.count
+        animateStrip { loadingPhotoCount += picked.count }
         Task {
             var loaded: [Data] = []
             for item in picked {
@@ -198,8 +199,10 @@ struct MemoryEditorPhotosField: View {
                 }
             }
             // One append, so a saved draft writes its photo files once.
-            loadingPhotoCount -= picked.count
-            photos.append(contentsOf: loaded.map { MemoryDraftPhoto(data: $0) })
+            animateStrip {
+                loadingPhotoCount -= picked.count
+                photos.append(contentsOf: loaded.map { MemoryDraftPhoto(data: $0) })
+            }
             if loaded.count < picked.count {
                 bannerCenter.show(.error(message: String(localized: .memoriesEditorPhotoLoadFailed)))
             }
@@ -208,7 +211,13 @@ struct MemoryEditorPhotosField: View {
 
     private func appendCapturedPhoto(_ data: Data) {
         guard allowsPhotos, remainingPhotoSlots > 0 else { return }
-        photos.append(MemoryDraftPhoto(data: data))
+        animateStrip { photos.append(MemoryDraftPhoto(data: data)) }
+    }
+
+    /// Tiles fade in and out and the strip and the fields below glide to their new
+    /// place. The animation wraps the write, so it reaches the form outside this view.
+    private func animateStrip(_ change: () -> Void) {
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange, change)
     }
 
     private func presentStagedImage(_ data: Data) {
