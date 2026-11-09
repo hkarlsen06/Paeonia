@@ -14,17 +14,19 @@ struct HomeLookBackCard: View {
 
     var body: some View {
         Button(action: onOpen) {
-            PaeoniaCard {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                    header
-                    LookBackContent(
-                        item: item,
-                        currentUserID: currentUserID,
-                        partnerName: partnerName,
-                        thumbnailLoader: thumbnailLoader
-                    )
-                }
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+                header
+                LookBackContent(
+                    item: item,
+                    currentUserID: currentUserID,
+                    partnerName: partnerName,
+                    thumbnailLoader: thumbnailLoader
+                )
             }
+            .padding(PaeoniaSpacing.cardContentPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // The drawing tile's surface, so the Us tab's cards match.
+            .homeWidgetCardSurface()
         }
         .buttonStyle(.paeoniaPressableCard)
         .accessibilityElement(children: .ignore)
@@ -35,7 +37,13 @@ struct HomeLookBackCard: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space12) {
-            PaeoniaCardEyebrow(eyebrow)
+            Label {
+                Text(eyebrow)
+            } icon: {
+                Image(systemName: "clock.arrow.circlepath")
+            }
+            .labelStyle(.titleAndIcon)
+            .paeoniaEyebrowStyle(foreground: .paeoniaAccentPrimary)
             Spacer(minLength: PaeoniaSpacing.space8)
             if let whenText {
                 Text(verbatim: whenText)

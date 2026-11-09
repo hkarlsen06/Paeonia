@@ -26,10 +26,11 @@ struct LookBackContent: View {
                     MemoryMediaImageView(
                         mediaAssetID: photoID,
                         height: LookBackLayout.pictureSide,
-                        cornerRadius: PaeoniaRadius.radius16,
+                        cornerRadius: LookBackLayout.pictureRadius,
                         allowsViewing: false
                     )
                     .frame(width: LookBackLayout.pictureSide)
+                    .lookBackPrint()
                 }
             } text: {
                 Text(verbatim: memory.title)
@@ -118,7 +119,21 @@ struct LookBackContent: View {
 }
 
 private enum LookBackLayout {
-    static let pictureSide: CGFloat = 88
+    static let pictureSide: CGFloat = 76
+    static let pictureRadius: CGFloat = 4
+    static let printBorder: CGFloat = 6
+    static let printTilt: Angle = .degrees(-4)
+}
+
+private extension View {
+    /// A picture as a small keepsake print: a pale frame with a wider bottom edge, tilted a little.
+    func lookBackPrint() -> some View {
+        padding(LookBackLayout.printBorder)
+            .padding(.bottom, LookBackLayout.printBorder * 2)
+            .background(.paeoniaMemory, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius8, style: .continuous))
+            .shadow(color: .black.opacity(0.35), radius: 10, y: 6)
+            .rotationEffect(LookBackLayout.printTilt)
+    }
 }
 
 /// One person's answer on one line: their name, then their words or how they answered.
@@ -179,8 +194,8 @@ private struct LookBackAnswerRow: View {
     }
 }
 
-/// A saved drawing, rendered small over the same plum surface the history timeline uses. It shows a
-/// quiet placeholder while loading and when the picture cannot be built.
+/// A saved drawing as a small print, rendered over the same plum surface the history timeline uses.
+/// It shows a quiet placeholder while loading and when the picture cannot be built.
 private struct LookBackDrawingThumbnail: View {
     let drawing: LookBackItem.Drawing
     let loader: any WidgetRevisionThumbnailLoading
@@ -188,7 +203,7 @@ private struct LookBackDrawingThumbnail: View {
     @State private var image: UIImage?
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: LookBackLayout.pictureRadius, style: .continuous)
         shape
             .fill(.paeoniaBackgroundPrimary)
             .frame(width: LookBackLayout.pictureSide, height: LookBackLayout.pictureSide)
@@ -204,7 +219,7 @@ private struct LookBackDrawingThumbnail: View {
                 }
             }
             .clipShape(shape)
-            .overlay { shape.stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault) }
+            .lookBackPrint()
             .accessibilityHidden(true)
             .task(id: drawing.revisionID) {
                 let side = drawing.canvasSide.map { CGFloat($0) } ?? WidgetDrawingViewModel.fallbackCanvasSide
