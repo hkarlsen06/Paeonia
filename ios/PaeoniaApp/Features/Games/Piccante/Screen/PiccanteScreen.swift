@@ -79,6 +79,9 @@ extension PiccanteScreen {
             }
         }
         .frame(minHeight: max(0, minimumHeight - PaeoniaSpacing.screenHorizontalPadding * 2))
+        // The inner animation wins when both change, so the game arriving is a plain crossfade.
+        .animation(PaeoniaMotion.stateChange, value: loadStage)
+        .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .padding(PaeoniaSpacing.screenHorizontalPadding)
         .paeoniaReadableWidth()
     }
@@ -88,6 +91,14 @@ extension PiccanteScreen {
             scoreControl(score).frame(maxWidth: .infinity, alignment: .leading)
         }
         players
+        ZStack(alignment: .top) {
+            phaseContent(game)
+                .id(phaseIdentity)
+                .transition(phaseTransition)
+        }
+    }
+
+    @ViewBuilder private func phaseContent(_ game: RemotePiccanteGame) -> some View {
         if game.phase == .choosing {
             VStack(spacing: PaeoniaSpacing.space16) {
                 status
@@ -95,12 +106,37 @@ extension PiccanteScreen {
             }
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxHeight: .infinity)
+            // The sizes go while the choice saves. The box glides to the new center.
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.canAct)
         } else {
-            status
-            box(game)
-                .frame(maxWidth: 480)
-            controls(game)
+            VStack(spacing: PaeoniaSpacing.space16) {
+                status
+                box(game)
+                    .frame(maxWidth: 480)
+                controls(game)
+                    // A turn, a sniff or a failed send adds or removes a control. The rest glide to make room.
+                    .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: game)
+                    .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.heldTile)
+                    .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.isSendFailing)
+            }
         }
+    }
+
+    /// The spinner, the failure or the game. Moving between them is a crossfade.
+    private var loadStage: String {
+        viewModel.game != nil ? "game" : viewModel.failure != nil ? "failure" : "loading"
+    }
+
+    /// A new game, and the box once it is chosen, get the phase transition the other games use.
+    private var phaseIdentity: String? {
+        viewModel.game.map { "\($0.gameNumber)-\($0.phase == .choosing ? "choosing" : "box")" }
+    }
+
+    /// Cross-fade and a 12 point rise. Reduce Motion keeps only the cross-fade.
+    private var phaseTransition: AnyTransition {
+        reduceMotion
+            ? .opacity
+            : .asymmetric(insertion: .opacity.combined(with: .offset(y: 12)), removal: .opacity)
     }
 
     private var status: some View {

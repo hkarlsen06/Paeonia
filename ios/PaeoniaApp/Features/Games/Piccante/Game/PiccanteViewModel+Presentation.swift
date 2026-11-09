@@ -57,10 +57,10 @@ extension PiccanteViewModel {
         GameSound.piccanteBurn.play(variation: 0)
         await wait(until: start.addingTimeInterval(0.72))
         guard !Task.isCancelled else { return }
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { revealSettled = true }
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { revealSettled = true }
         await wait(until: start.addingTimeInterval(0.96))
         guard !Task.isCancelled else { return }
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.28)) { noteRevealed = true }
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment) { noteRevealed = true }
         if !reduceMotion, let game, Set(game.chilis.map(\.tile)).count == 1 {
             GameSound.piccanteSameOne.play(variation: 0)
         }
