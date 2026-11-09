@@ -75,7 +75,7 @@ struct LockedPartnerQuestionRows: View {
             }
         }
         .padding(PaeoniaSpacing.space12)
-        .background(Self.tone.fill, in: Self.rowShape)
+        .background(.paeoniaBackgroundPrimary, in: Self.rowShape)
         .overlay { Self.rowShape.strokeBorder(Self.tone.edge, lineWidth: Self.tone.edgeWidth) }
         .contentShape(Rectangle())
     }
@@ -128,7 +128,7 @@ struct LockedPartnerQuestionRows: View {
                 .frame(width: Self.lockSize, height: Self.lockSize)
                 .background(Color.paeoniaInkLavender, in: Circle())
                 // A ring in the row's color keeps the badge apart from the photo.
-                .overlay(Circle().strokeBorder(Self.tone.fill, lineWidth: 1.5))
+                .overlay(Circle().strokeBorder(.paeoniaBackgroundPrimary, lineWidth: 1.5))
                 .offset(x: 3, y: 3)
         }
         .accessibilityHidden(true)

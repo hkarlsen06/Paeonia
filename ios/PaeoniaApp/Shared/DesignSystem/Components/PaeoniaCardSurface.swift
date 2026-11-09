@@ -24,43 +24,36 @@ extension View {
     func paeoniaTileSurface(_ tone: PaeoniaTileTone = .plain) -> some View {
         let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
-        return background(tone.fill)
+        return background(.paeoniaBackgroundPrimary)
             .clipShape(shape)
             .overlay { shape.stroke(tone.edge, lineWidth: tone.edgeWidth) }
-            .shadow(color: tone.shadow, radius: 18, x: 0, y: tone == .attention ? 6 : 10)
+            .shadow(color: tone.shadow, radius: 18, x: 0, y: tone == .plain ? 10 : 6)
     }
 }
 
-/// How a plum tile looks for what it holds.
+/// How a plum tile's edge and shadow look for what it holds. The fill is always the page's
+/// plum: a whole card in another hue looks out of place, so the color stays in the edge.
 enum PaeoniaTileTone: Equatable {
-    /// The page's own color, a thin edge and a soft shadow.
+    /// A thin edge and a soft shadow.
     case plain
     /// A pink edge and glow while content waits for this person.
     case attention
-    /// Lavender, like the daily card's wax seal, for something the partner left that opens
-    /// once this person answers too.
+    /// A lavender edge and glow, like the daily card's wax seal, for something the partner
+    /// left that opens once this person answers too.
     case partnerWaiting
 
-    var fill: Color {
+    /// The edge's color, and the glow's at a lower opacity.
+    var tint: Color? {
         switch self {
-        case .plain, .attention: .paeoniaBackgroundPrimary
-        case .partnerWaiting: PaeoniaPalette.plumLavender
+        case .plain: nil
+        case .attention: .paeoniaAccentPrimary
+        case .partnerWaiting: .paeoniaInkLavender
         }
     }
 
-    var edge: Color {
-        switch self {
-        case .plain: .paeoniaBorder
-        case .attention: Color.paeoniaAccentPrimary.opacity(0.6)
-        case .partnerWaiting: Color.paeoniaInkLavender.opacity(0.4)
-        }
-    }
+    var edge: Color { tint?.opacity(0.6) ?? .paeoniaBorder }
 
-    var edgeWidth: CGFloat {
-        self == .attention ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
-    }
+    var edgeWidth: CGFloat { tint == nil ? PaeoniaRadius.strokeDefault : PaeoniaRadius.strokeEmphasis }
 
-    var shadow: Color {
-        self == .attention ? Color.paeoniaAccentPrimary.opacity(0.25) : .black.opacity(0.25)
-    }
+    var shadow: Color { tint?.opacity(0.25) ?? .black.opacity(0.25) }
 }
