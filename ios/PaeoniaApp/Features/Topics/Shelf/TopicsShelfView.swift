@@ -8,10 +8,14 @@ struct TopicsShelfView: View {
     let onOpenTopic: (String) -> Void
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ScrollView {
             content
+                // The spinner and the shelf or its failure cross-fade.
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.hasLoadedOverview)
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.overviewFailure != nil)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.vertical, PaeoniaSpacing.space16)
                 .paeoniaReadableWidth()

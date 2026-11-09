@@ -307,15 +307,7 @@ extension PairedHomeView {
                 .padding(.bottom, PaeoniaSpacing.space16)
         }
         // On the whole page, so the map and the avatars move with a card that changes height.
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: unreadChats.isEmpty)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: accessNotice)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeStreak.isSavable)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: games?.partnerGame?.kind)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: lookBack?.item)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: firstSteps)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeCardState.kind)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: milestoneIsLoading)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: relationshipStartedOn)
+        .modifier(cardChangeAnimations)
     }
 
     private var classicContent: some View {
@@ -362,14 +354,23 @@ extension PairedHomeView {
         .paeoniaReadableWidth(
             isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
         )
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: unreadChats.isEmpty)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: accessNotice)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeStreak.isSavable)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: games?.partnerGame?.kind)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: lookBack?.item)
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: firstSteps)
-        // The daily card is tall until today's question is answered, then a short row.
-        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeCardState.kind)
+        .modifier(cardChangeAnimations)
+    }
+
+    /// Both layouts glide their cards with the same changes.
+    private var cardChangeAnimations: HomeCardChangeAnimations {
+        HomeCardChangeAnimations(
+            animation: reduceMotion ? nil : PaeoniaMotion.homeLayoutChange,
+            hasUnreadChats: !unreadChats.isEmpty,
+            accessNotice: accessNotice,
+            isStreakSavable: dailyChallengeStreak.isSavable,
+            partnerGame: games?.partnerGame?.kind,
+            lookBack: lookBack?.item,
+            firstSteps: firstSteps,
+            dailyCard: dailyChallengeCardState.kind,
+            milestoneIsLoading: milestoneIsLoading,
+            relationshipStartedOn: relationshipStartedOn
+        )
     }
 
     /// iPhone, which is portrait only, and a narrow iPad window, where the tab bar is at
@@ -382,6 +383,35 @@ extension PairedHomeView {
 private enum HomeLayoutSwitchCard {
     case dailyPrompt
     case tiles
+}
+
+/// The changes that add, remove or resize a Home card. The page animates on them as a
+/// whole, so the cards under one that changes glide to their new place.
+private struct HomeCardChangeAnimations: ViewModifier {
+    let animation: Animation?
+    let hasUnreadChats: Bool
+    let accessNotice: AccessNotice?
+    let isStreakSavable: Bool
+    let partnerGame: GameKind?
+    let lookBack: LookBackItem?
+    let firstSteps: HomeFirstSteps?
+    /// The daily card is tall until today's question is answered, then a short row.
+    let dailyCard: DailyChallengeCardState.Kind
+    let milestoneIsLoading: Bool
+    let relationshipStartedOn: String?
+
+    func body(content: Content) -> some View {
+        content
+            .animation(animation, value: hasUnreadChats)
+            .animation(animation, value: accessNotice)
+            .animation(animation, value: isStreakSavable)
+            .animation(animation, value: partnerGame)
+            .animation(animation, value: lookBack)
+            .animation(animation, value: firstSteps)
+            .animation(animation, value: dailyCard)
+            .animation(animation, value: milestoneIsLoading)
+            .animation(animation, value: relationshipStartedOn)
+    }
 }
 
 #Preview {

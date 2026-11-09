@@ -7,9 +7,12 @@ struct HomeStreakSaveCard: View {
     let streak: StreakPillState
     var onTap: (() -> Void)?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var now = Date.now
+
     var body: some View {
-        TimelineView(.explicit(streak.changeDates)) { _ in
-            let state = streak.resolved(at: .now)
+        let state = streak.resolved(at: now)
+        Group {
             if state.isSavable {
                 Button {
                     onTap?()
@@ -19,6 +22,18 @@ struct HomeStreakSaveCard: View {
                 .buttonStyle(.plain)
                 .transition(.opacity)
             }
+        }
+        .task(id: streak.changeDates) { await followChangeDates() }
+    }
+
+    /// Looks again at each moment the streak changes without new data. The card fades out
+    /// when the save day ends, and the Home cards under it glide up.
+    private func followChangeDates() async {
+        now = .now
+        for date in streak.changeDates where date > now {
+            try? await Task.sleep(for: .seconds(date.timeIntervalSinceNow))
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange) { now = .now }
         }
     }
 

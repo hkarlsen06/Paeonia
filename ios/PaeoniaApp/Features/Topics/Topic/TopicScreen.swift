@@ -33,6 +33,9 @@ struct TopicScreen: View {
 
     var body: some View {
         content
+            // The spinner and the questions or their failure cross-fade.
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.items[topicKey] != nil)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.failedTopics[topicKey] != nil)
             .paeoniaTabBackdrop()
             .navigationTitle(Text(verbatim: topic?.title ?? ""))
             .navigationBarTitleDisplayMode(.inline)
