@@ -59,7 +59,7 @@ struct HomeFirstStepsCard: View {
     private static let scrollID = "home.firstSteps"
 
     var body: some View {
-        PaeoniaCard(surface: .tile) {
+        PaeoniaCard {
             list
         }
         // Over the card's own frame, so the card keeps its height until Home removes it.

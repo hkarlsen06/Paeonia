@@ -38,7 +38,7 @@ struct HomeStreakSaveCard: View {
     }
 
     private func card(count: Int) -> some View {
-        PaeoniaCard(surface: .tile) {
+        PaeoniaCard {
             HStack(alignment: .center, spacing: PaeoniaSpacing.space16) {
                 FlameShape()
                     .fill(

@@ -2,10 +2,12 @@ import SwiftUI
 
 struct PaeoniaCard<Content: View>: View {
     enum Surface {
-        /// The raised plum fill that matches `PaeoniaGroupedList` rows.
-        case raised
-        /// The Us tab's tile, the same as the drawing widget's (`paeoniaTileSurface`).
+        /// The plum tile with a thin edge and a soft shadow, the same as the drawing widget's
+        /// (`paeoniaTileSurface`).
         case tile
+        /// The raised plum fill of `PaeoniaGroupedList` rows, for cards on settings screens
+        /// that sit beside those lists.
+        case raised
     }
 
     private let content: Content
@@ -14,7 +16,7 @@ struct PaeoniaCard<Content: View>: View {
 
     init(
         padding: CGFloat = PaeoniaSpacing.cardContentPadding,
-        surface: Surface = .raised,
+        surface: Surface = .tile,
         @ViewBuilder content: () -> Content
     ) {
         self.content = content()
@@ -29,12 +31,12 @@ struct PaeoniaCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
         switch surface {
+        case .tile:
+            padded.paeoniaTileSurface()
         case .raised:
             padded
                 .clipShape(shape)
                 .paeoniaCardSurface(in: shape, fill: Color.paeoniaSurfacePrimary)
-        case .tile:
-            padded.paeoniaTileSurface()
         }
     }
 }

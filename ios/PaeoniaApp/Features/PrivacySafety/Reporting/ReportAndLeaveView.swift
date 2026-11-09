@@ -105,7 +105,7 @@ struct ReportAndLeaveView: View {
         selectedReason: Binding<PrivacyReportReason?>,
         note: Binding<String>
     ) -> some View {
-        PaeoniaCard {
+        PaeoniaCard(surface: .raised) {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 ReportReasonField(selection: selectedReason)
 
@@ -138,7 +138,7 @@ struct ReportAndLeaveView: View {
     }
 
     private func blockCard(blockPartner: Binding<Bool>) -> some View {
-        PaeoniaCard {
+        PaeoniaCard(surface: .raised) {
             Toggle(isOn: blockPartner) {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                     Text(.reportAndLeaveBlockTitle(partnerName))

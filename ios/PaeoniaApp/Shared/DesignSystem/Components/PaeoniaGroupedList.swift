@@ -2,8 +2,8 @@ import SwiftUI
 
 extension View {
     /// Puts a native grouped `List` or `Form` on the plum background. Give its rows
-    /// `.listRowBackground(Color.paeoniaSurfacePrimary)` so they match the cards
-    /// elsewhere in the app.
+    /// `.listRowBackground(Color.paeoniaSurfacePrimary)`, the fill of
+    /// `PaeoniaCard(surface: .raised)`.
     ///
     /// On iPad the sections stop at `PaeoniaSpacing.readableContentWidth`, and the
     /// list still scrolls from anywhere on the screen.

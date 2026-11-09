@@ -20,16 +20,24 @@ extension View {
         }
     }
 
-    /// The plum tile of the Us tab's cards and the drawing widget: the page's own color, a thin
-    /// edge and a soft shadow.
-    func paeoniaTileSurface() -> some View {
+    /// The plum tile of `PaeoniaCard` and the drawing widget: the page's own color, a thin edge
+    /// and a soft shadow, or a pink edge and glow while content waits for this person.
+    func paeoniaTileSurface(needsAttention: Bool = false) -> some View {
         let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
         return background(.paeoniaBackgroundPrimary)
             .clipShape(shape)
             .overlay {
-                shape.stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
+                shape.stroke(
+                    needsAttention ? Color.paeoniaAccentPrimary.opacity(0.6) : .paeoniaBorder,
+                    lineWidth: needsAttention ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
+                )
             }
-            .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
+            .shadow(
+                color: needsAttention ? .paeoniaAccentPrimary.opacity(0.25) : .black.opacity(0.25),
+                radius: 18,
+                x: 0,
+                y: needsAttention ? 6 : 10
+            )
     }
 }

@@ -86,7 +86,7 @@ struct PrivacySafetyView: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             sectionHeader(.privacySafetyRequestsSectionTitle)
 
-            PaeoniaCard(padding: 0) {
+            PaeoniaCard(padding: 0, surface: .raised) {
                 VStack(spacing: 0) {
                     DataExportSection(viewModel: dataExport)
 
@@ -111,7 +111,7 @@ struct PrivacySafetyView: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             sectionHeader(.privacySafetyUsageSectionTitle)
 
-            PaeoniaCard {
+            PaeoniaCard(surface: .raised) {
                 Toggle(isOn: Binding(
                     get: { usageSharing.shares == true },
                     set: { shares in Task { await usageSharing.answer(shares) } }
@@ -127,7 +127,7 @@ struct PrivacySafetyView: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             sectionHeader(.privacySafetySafetySectionTitle)
 
-            PaeoniaCard(padding: 0) {
+            PaeoniaCard(padding: 0, surface: .raised) {
                 NavigationLink {
                     ReportAndLeaveView(
                         partnerUserID: partnerUserID,

@@ -20,7 +20,7 @@ struct HomeUnreadChatsCard: View {
     private static let maximumRows = 3
 
     var body: some View {
-        PaeoniaCard(surface: .tile) {
+        PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
                 HStack {
                     PaeoniaCardEyebrow(.homeUnreadChatsEyebrow)

@@ -14,7 +14,7 @@ struct HomeLookBackCard: View {
 
     var body: some View {
         Button(action: onOpen) {
-            PaeoniaCard(surface: .tile) {
+            PaeoniaCard {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
                     header
                     LookBackContent(

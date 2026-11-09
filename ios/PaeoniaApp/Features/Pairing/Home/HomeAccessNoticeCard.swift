@@ -11,7 +11,7 @@ struct HomeAccessNoticeCard: View {
     @State private var isManagingSubscription = false
 
     var body: some View {
-        PaeoniaCard(surface: .tile) {
+        PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
                 HStack(alignment: .top, spacing: PaeoniaSpacing.space12) {
                     text
