@@ -1,5 +1,17 @@
 import Foundation
 
+/// Who holds the sync service's single run slot. A run, a session handover and a
+/// privacy purge each need every other run to wait.
+nonisolated enum SyncRunLock: Equatable, Sendable {
+    case free
+    /// A sync run or a session handover.
+    case run
+    /// Held from `quiesceActiveWorkForPrivacyPurge` until
+    /// `finishPrivacyPurgeQuiescence`. Stopping or changing the session in
+    /// between keeps it, so no run can write rows the purge is deleting.
+    case privacyPurge
+}
+
 actor PaeoniaSyncService: PaeoniaSyncing {
     let streams: [any SyncStream]
     let stateStore: any SyncStatePersisting
@@ -12,8 +24,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
 
     var session: SyncSession?
     var hasStarted = false
-    var isSyncing = false
-    var isPrivacyQuiescing = false
+    var runLock = SyncRunLock.free
     // A follow-up pass is only needed when a *local write* was requested while a
     // run was already in flight: that run may have already drained the pending-
     // operations stream, so the new write needs another push. A foreground /
@@ -142,9 +153,8 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         needsLocalChangeFollowUp = false
         lastForegroundSyncAt = nil
 
-        guard scheduledRun != nil || !runningPipelines.isEmpty || isSyncing else {
+        guard scheduledRun != nil || !runningPipelines.isEmpty || runLock != .free else {
             scheduledTask = nil
-            isSyncing = false
             resumeActiveRunWaiters()
             if hasStarted, session != nil {
                 scheduleSync(reason: .startup)
@@ -155,7 +165,9 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         // Keep the sync lock held across the boundary. A replacement session
         // must not start until every task from the previous session has
         // settled, even when a stream is slow to cooperate with cancellation.
-        isSyncing = true
+        if runLock == .free {
+            runLock = .run
+        }
         scheduledTask = Task {
             for pipeline in runningPipelines {
                 _ = await pipeline.value
@@ -202,9 +214,8 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         retryTask = nil
         activePipelineTasks.values.forEach { $0.cancel() }
         hasStarted = false
-        isSyncing = false
         needsLocalChangeFollowUp = false
-        resumeActiveRunWaiters()
+        releaseRunLock()
     }
 
     func resetForUserChange() async {

@@ -24,7 +24,7 @@ extension PaeoniaSyncService {
     }
 
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult {
-        guard !isSyncing else {
+        guard runLock == .free else {
             if reason == .localChange {
                 needsLocalChangeFollowUp = true
             }
@@ -38,7 +38,7 @@ extension PaeoniaSyncService {
 
         hasStarted = true
         needsLocalChangeFollowUp = false
-        isSyncing = true
+        runLock = .run
         let generation = sessionGeneration
 
         let result = await drainSyncRuns(
@@ -49,10 +49,7 @@ extension PaeoniaSyncService {
         guard generation == sessionGeneration, self.session == session else {
             return result
         }
-        if !isPrivacyQuiescing {
-            isSyncing = false
-            resumeActiveRunWaiters()
-        }
+        releaseRunLock()
 
         if result.status != .cancelled {
             await scheduleRetryIfNeeded(after: result)
@@ -62,7 +59,7 @@ extension PaeoniaSyncService {
     }
 
     func scheduleSync(reason: SyncRequestReason) {
-        guard !isSyncing else {
+        guard runLock == .free else {
             if reason == .localChange {
                 needsLocalChangeFollowUp = true
             }
@@ -73,7 +70,7 @@ extension PaeoniaSyncService {
             return
         }
 
-        isSyncing = true
+        runLock = .run
         needsLocalChangeFollowUp = false
         scheduleGeneration &+= 1
         let generation = scheduleGeneration
@@ -163,9 +160,8 @@ extension PaeoniaSyncService {
             return
         }
 
-        isSyncing = false
         scheduledTask = nil
-        resumeActiveRunWaiters()
+        releaseRunLock()
     }
 
     func finishSessionTransition(
@@ -180,8 +176,7 @@ extension PaeoniaSyncService {
         }
 
         scheduledTask = nil
-        isSyncing = false
-        resumeActiveRunWaiters()
+        releaseRunLock()
 
         if hasStarted, session != nil {
             scheduleSync(reason: .startup)
@@ -192,7 +187,7 @@ extension PaeoniaSyncService {
     /// route. Quiesce the current session here so an old-couple stream cannot
     /// repopulate SwiftData after the privacy purge has deleted its records.
     func quiesceActiveWorkForPrivacyPurge() async {
-        if isPrivacyQuiescing {
+        if runLock == .privacyPurge {
             await waitForActiveRunToFinish()
         }
 
@@ -203,8 +198,7 @@ extension PaeoniaSyncService {
         retryTask?.cancel()
         retryTask = nil
         runningPipelines.forEach { $0.cancel() }
-        isPrivacyQuiescing = true
-        isSyncing = true
+        runLock = .privacyPurge
         needsLocalChangeFollowUp = false
 
         for pipeline in runningPipelines {
@@ -218,13 +212,22 @@ extension PaeoniaSyncService {
     }
 
     func finishPrivacyPurgeQuiescence() {
-        isPrivacyQuiescing = false
-        isSyncing = false
+        runLock = .free
+        resumeActiveRunWaiters()
+    }
+
+    /// Ends a run or a session handover. A privacy purge keeps the lock, and only
+    /// `finishPrivacyPurgeQuiescence` gives it back.
+    func releaseRunLock() {
+        guard runLock == .run else {
+            return
+        }
+        runLock = .free
         resumeActiveRunWaiters()
     }
 
     func waitForActiveRunToFinish() async {
-        guard isSyncing else {
+        guard runLock != .free else {
             return
         }
 
@@ -242,7 +245,7 @@ extension PaeoniaSyncService {
     }
 
     func scheduleRetryIfNeeded(after result: SyncRunResult) async {
-        guard !isSyncing, hasStarted, let session else {
+        guard runLock == .free, hasStarted, let session else {
             return
         }
 

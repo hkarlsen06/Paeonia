@@ -20,6 +20,36 @@ actor RecordingSyncPrivacyPurger {
 
 extension RecordingSyncPrivacyPurger: LocalPrivacyPurging {}
 
+/// Holds every purge until the test releases it.
+actor BlockingSyncPrivacyPurger {
+    private var hasStarted = false
+    private var startWaiters: [CheckedContinuation<Void, Never>] = []
+    private var release: CheckedContinuation<Void, Never>?
+
+    func purge(
+        ownerUserID _: UUID,
+        scope _: LocalPrivacyPurgeScope
+    ) async -> LocalPrivacyPurgeResult {
+        hasStarted = true
+        startWaiters.forEach { $0.resume() }
+        startWaiters.removeAll()
+        await withCheckedContinuation { release = $0 }
+        return .completed
+    }
+
+    func waitForPurgeToStart() async {
+        guard !hasStarted else { return }
+        await withCheckedContinuation { startWaiters.append($0) }
+    }
+
+    func releasePurge() {
+        release?.resume()
+        release = nil
+    }
+}
+
+extension BlockingSyncPrivacyPurger: LocalPrivacyPurging {}
+
 actor AsyncCompletionProbe {
     private var completed = false
 

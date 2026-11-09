@@ -107,6 +107,37 @@ struct PaeoniaSyncServicePrivacyTests {
         )
     }
 
+    @Test func stoppingDuringRelationshipPurgeKeepsSyncWaitingUntilThePurgeFinishes() async {
+        let stream = RecordingSyncStream(streamKey: .relationship)
+        let privacyPurger = BlockingSyncPrivacyPurger()
+        let coordinator = PaeoniaSyncService(
+            streams: [stream],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            localPrivacyPurger: privacyPurger
+        )
+        await coordinator.configure(session: .test())
+        let purge = Task {
+            await coordinator.purgeRelationshipAccess(
+                ownerUserID: .testUserID,
+                permanently: true
+            )
+        }
+        await privacyPurger.waitForPurgeToStart()
+
+        await coordinator.stop()
+        let sync = Task { await coordinator.runOnce(reason: .manualRefresh) }
+        for _ in 0..<100 {
+            await Task.yield()
+        }
+        #expect(await stream.events.isEmpty, "no sync run during the purge")
+
+        await privacyPurger.releasePurge()
+        #expect(await purge.value == .completed)
+        _ = await sync.value
+        #expect(await stream.events.isEmpty)
+    }
+
     @Test func sameUserCoupleChangeSettlesOldPipelineBeforeStartingNewSession() async throws {
         let oldCoupleID = try #require(
             UUID(uuidString: "22222222-2222-2222-2222-222222222222")
