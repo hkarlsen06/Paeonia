@@ -5,6 +5,8 @@ import SwiftUI
 struct AppLockSettingsView: View {
     let model: AppLockModel
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         Form {
             Group {
@@ -36,6 +38,8 @@ struct AppLockSettingsView: View {
             }
             .listRowBackground(Color.paeoniaSurfacePrimary)
         }
+        // The timeout picker glides in and out with the switch.
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.isEnabled)
         .paeoniaGroupedList()
         .navigationTitle(Text(.appLockScreenTitle))
         .navigationBarTitleDisplayMode(.inline)

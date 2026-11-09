@@ -15,6 +15,7 @@ struct PrivacySafetyView: View {
     /// Missing in previews and tests, which then hide the usage switch.
     @Environment(UsageSharingModel.self) private var usageSharing: UsageSharingModel?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @MainActor
     init(
@@ -51,6 +52,9 @@ struct PrivacySafetyView: View {
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
             .padding(.bottom, PaeoniaSpacing.space40)
             .paeoniaReadableWidth(alignment: .leading)
+            // The download card changes height between phases. Animating here moves
+            // the card's edge and the sections below with its content.
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dataExport.phase.withoutProgress)
         }
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle(Text(.privacySafetyTitle))

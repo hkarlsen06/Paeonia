@@ -11,6 +11,7 @@ struct LocationSettingsView: View {
     var updates: LocationUpdateController = .shared
 
     @Environment(\.openURL) private var openURL
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isChoosingPause = false
 
     var body: some View {
@@ -31,6 +32,10 @@ struct LocationSettingsView: View {
             }
             .listRowBackground(Color.paeoniaSurfacePrimary)
         }
+        // Rows that follow a switch or a pause glide in and out with it.
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.sharingEnabled)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.isSharingPaused)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: updates.prefersUpdatesWhileClosed)
         .paeoniaGroupedList()
         .navigationTitle(Text(.settingsLocationSectionTitle))
         .navigationBarTitleDisplayMode(.inline)

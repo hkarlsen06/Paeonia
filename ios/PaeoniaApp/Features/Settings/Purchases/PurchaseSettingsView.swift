@@ -10,6 +10,7 @@ struct PurchaseSettingsView: View {
     let onPurchasesRestored: @MainActor @Sendable () async -> Void
 
     @State private var isManagingSubscription = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Form {
@@ -42,6 +43,8 @@ struct PurchaseSettingsView: View {
             }
             .listRowBackground(Color.paeoniaSurfacePrimary)
         }
+        // The details replace the spinner with a crossfade, and the rows below glide.
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.subscriptionDetailsState)
         .paeoniaGroupedList()
         .navigationTitle(Text(.settingsPurchasesSectionTitle))
         .navigationBarTitleDisplayMode(.inline)

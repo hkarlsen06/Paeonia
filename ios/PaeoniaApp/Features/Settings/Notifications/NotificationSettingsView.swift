@@ -12,6 +12,7 @@ struct NotificationSettingsView: View {
 
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Form {
@@ -35,6 +36,9 @@ struct NotificationSettingsView: View {
             }
             .listRowBackground(Color.paeoniaSurfacePrimary)
         }
+        // The time picker row glides in and out with the switch. The switch saves in
+        // a task, so the animation sits here instead of around the binding's setter.
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.questionTime.isEnabled)
         .paeoniaGroupedList()
         .navigationTitle(Text(.settingsNotificationsSectionTitle))
         .navigationBarTitleDisplayMode(.inline)

@@ -6,6 +6,7 @@ import SwiftUI
 struct DataExportScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: DataExportViewModel
 
     @MainActor
@@ -23,6 +24,7 @@ struct DataExportScreen: View {
                 .padding(.top, PaeoniaSpacing.screenTopSpacing)
                 .padding(.bottom, PaeoniaSpacing.space24)
                 .paeoniaReadableWidth(alignment: .leading)
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.phase.withoutProgress)
             }
             .scrollBounceBehavior(.basedOnSize)
             .paeoniaScreenBackground()

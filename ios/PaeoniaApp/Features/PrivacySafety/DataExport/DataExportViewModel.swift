@@ -27,6 +27,19 @@ final class DataExportViewModel {
         case downloading(DataExport, DataExportDownloadProgress)
         case failed
         case expired
+
+        /// The phase with its progress set to zero. A host animates the card's
+        /// layout on this, so a new phase glides in and a progress update does not.
+        var withoutProgress: Phase {
+            switch self {
+            case .preparing:
+                .preparing(progress: 0)
+            case let .downloading(export, _):
+                .downloading(export, DataExportDownloadProgress(part: 0, partCount: 0, fraction: 0))
+            default:
+                self
+            }
+        }
     }
 
     private let service: DataExportService?
