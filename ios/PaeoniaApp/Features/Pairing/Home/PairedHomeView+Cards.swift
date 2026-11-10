@@ -72,6 +72,14 @@ extension PairedHomeView {
         }
     }
 
+    /// The next visit, or the question of when the partners meet next.
+    @ViewBuilder
+    var visitCard: some View {
+        if let visits {
+            HomeVisitCard(visits: visits)
+        }
+    }
+
     @ViewBuilder
     var firstStepsCard: some View {
         if let firstSteps {

@@ -328,6 +328,24 @@
         }
       }
     },
+    "widget.home.countdown.visit" : {
+      "comment" : "Countdown widget title for the next time the partners meet in person",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next visit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste besøk"
+          }
+        }
+      }
+    },
     "widget.home.daysTogether.nextMilestone" : {
       "comment" : "Under the progress bar in the days together widget. %lld is the day count of the next milestone, such as 500.",
       "extractionState" : "manual",

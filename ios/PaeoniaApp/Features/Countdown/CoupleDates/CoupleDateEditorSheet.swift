@@ -5,6 +5,8 @@ enum CoupleDateEditor: Identifiable, Hashable {
     case newCountdown
     case countdown(UUID)
     case birthday(UUID)
+    case newVisit
+    case visit(UUID)
 
     /// The editor for a tapped row. Milestones have none.
     init?(_ event: CoupleDateEvent) {
@@ -15,17 +17,22 @@ enum CoupleDateEditor: Identifiable, Hashable {
             self = .countdown(countdown.id)
         case let .birthday(userID):
             self = .birthday(userID)
+        case let .visit(visit):
+            self = .visit(visit.id)
         }
     }
 
     var id: Self { self }
 }
 
-/// Opens the countdown or birthday editor and saves through `CoupleDatesViewModel`.
+/// Opens the countdown or birthday editor and saves through `CoupleDatesViewModel`, or the
+/// visit editor, which saves through the `VisitsViewModel` in the environment.
 struct CoupleDateEditorSheet: View {
     let editor: CoupleDateEditor
     let coupleDates: CoupleDatesViewModel
     let names: CoupleDateNames
+
+    @Environment(VisitsViewModel.self) private var visits: VisitsViewModel?
 
     var body: some View {
         switch editor {
@@ -56,6 +63,14 @@ struct CoupleDateEditorSheet: View {
                     await coupleDates.setBirthday(day, for: userID)
                 }
             )
+        case .newVisit:
+            if let visits {
+                VisitEditorView(visit: nil, visits: visits)
+            }
+        case let .visit(id):
+            if let visits, let visit = visits.state.visits.first(where: { $0.id == id }) {
+                VisitEditorView(visit: visit, visits: visits)
+            }
         }
     }
 }

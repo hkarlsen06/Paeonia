@@ -130,6 +130,23 @@ nonisolated struct LockScreenSnapshot: Codable, Equatable, Sendable {
     struct Dates: Codable, Equatable, Sendable {
         var countdowns: [DatedCountdown]
         var birthdays: [Birthday]
+        /// The visits that are not over. The widgets count down to the first day of the next one.
+        var visits: [DatedVisit] = []
+    }
+
+    struct DatedVisit: Codable, Equatable, Identifiable, Sendable {
+        var id: String
+        var startDate: LockScreenCalendarDate
+        var endDate: LockScreenCalendarDate
+        /// When it was planned. The Lock Screen progress bar starts here.
+        var createdAt: Date
+
+        enum CodingKeys: String, CodingKey {
+            case id
+            case startDate = "start_date"
+            case endDate = "end_date"
+            case createdAt = "created_at"
+        }
     }
 
     struct DatedCountdown: Codable, Equatable, Identifiable, Sendable {

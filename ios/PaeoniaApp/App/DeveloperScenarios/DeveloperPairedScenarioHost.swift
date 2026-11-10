@@ -12,6 +12,7 @@
     @State private var milestoneViewModel: RelationshipMilestoneViewModel
     @State private var memoriesViewModel: MemoriesViewModel
     @State private var gamesViewModel: GamesViewModel
+    @State private var visitsViewModel: VisitsViewModel
     private let locationViewModel: LocationMapViewModel
     private let scenario: DeveloperScenario
 
@@ -55,6 +56,7 @@
         initialValue: Self.makeMemoriesViewModel(scenario: scenario, operationProvider: operationProvider)
       )
       _gamesViewModel = State(initialValue: DeveloperGamesScenarioFactory.gamesViewModel(for: scenario))
+      _visitsViewModel = State(initialValue: DeveloperVisitsFixture.model(for: scenario))
       locationViewModel = Self.makeLocationViewModel(operationProvider: operationProvider)
     }
 
@@ -199,7 +201,8 @@
             dailyChallengeViewModel: dailyChallengeViewModel,
             milestoneViewModel: milestoneViewModel,
             memoriesViewModel: memoriesViewModel,
-            gamesViewModel: gamesViewModel
+            gamesViewModel: gamesViewModel,
+            visitsViewModel: visitsViewModel
           ),
           // Past the first day with a saved card, for the `home-first-steps` scenarios.
           pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(firstSteps: scenario.firstStepsProgress),

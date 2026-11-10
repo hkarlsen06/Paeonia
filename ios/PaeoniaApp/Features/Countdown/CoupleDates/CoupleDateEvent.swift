@@ -1,12 +1,14 @@
 import Foundation
 
 /// One row of the milestones timeline and the Home tile: a relationship milestone, a
-/// countdown the couple added, or a partner's birthday.
+/// countdown the couple added, a partner's birthday, or a visit.
 nonisolated struct CoupleDateEvent: Identifiable, Equatable, Sendable {
     enum Kind: Equatable, Sendable {
         case milestone(RelationshipMilestone.Kind)
         case countdown(CustomCountdown)
         case birthday(userID: UUID)
+        /// On its first day. It counts as today while it is ongoing.
+        case visit(Visit)
     }
 
     let kind: Kind
@@ -23,6 +25,8 @@ nonisolated struct CoupleDateEvent: Identifiable, Equatable, Sendable {
             "countdown-\(countdown.id.uuidString)"
         case let .birthday(userID):
             "birthday-\(userID.uuidString)-\(date.timeIntervalSinceReferenceDate)"
+        case let .visit(visit):
+            "visit-\(visit.id.uuidString)"
         }
     }
 
@@ -32,6 +36,7 @@ nonisolated struct CoupleDateEvent: Identifiable, Equatable, Sendable {
         case .milestone: 0
         case .birthday: 1
         case .countdown: 2
+        case .visit: 3
         }
     }
 
@@ -61,10 +66,12 @@ nonisolated struct CoupleDateTimeline {
     }
 
     /// Events today or later, soonest first: the next `milestoneLimit` milestones, every
-    /// countdown that hasn't passed, and each partner's next birthday.
+    /// countdown that hasn't passed, each partner's next birthday, and every visit that
+    /// isn't over.
     func upcoming(
         startedOn: String?,
         dates: CoupleDates,
+        visits: [Visit] = [],
         now: Date = Date(),
         milestoneLimit: Int
     ) -> [CoupleDateEvent] {
@@ -75,20 +82,28 @@ nonisolated struct CoupleDateTimeline {
         let birthdayEvents = dates.birthdays.compactMap { userID, birthday in
             nextBirthday(userID: userID, birthday: birthday, today: today)
         }
-        return (milestoneEvents.map(Self.event) + countdownEvents + birthdayEvents)
+        let visitEvents = visitEvents(visits, today: today).filter { $0.daysRemaining >= 0 }
+        return (milestoneEvents.map(Self.event) + countdownEvents + birthdayEvents + visitEvents)
             .sorted(by: CoupleDateEvent.chronological)
     }
 
-    /// The last `limit` events before today, oldest first: past milestones and countdowns
-    /// whose day has gone. Birthdays and yearly countdowns come back every year, so only
-    /// the next one shows.
-    func past(startedOn: String?, dates: CoupleDates, now: Date = Date(), limit: Int) -> [CoupleDateEvent] {
+    /// The last `limit` events before today, oldest first: past milestones, countdowns
+    /// whose day has gone, and visits that are over. Birthdays and yearly countdowns come
+    /// back every year, so only the next one shows.
+    func past(
+        startedOn: String?,
+        dates: CoupleDates,
+        visits: [Visit] = [],
+        now: Date = Date(),
+        limit: Int
+    ) -> [CoupleDateEvent] {
         let today = calendar.startOfDay(for: now)
         let milestoneEvents = startedOn
             .map { milestones.pastMilestones(startedOn: $0, now: now, limit: limit) } ?? []
         let countdownEvents = countdownEvents(dates, today: today).filter { $0.daysRemaining < 0 }
+        let visitEvents = visitEvents(visits, today: today).filter { $0.daysRemaining < 0 }
         return Array(
-            (milestoneEvents.map(Self.event) + countdownEvents)
+            (milestoneEvents.map(Self.event) + countdownEvents + visitEvents)
                 .sorted(by: CoupleDateEvent.chronological)
                 .suffix(limit)
         )
@@ -126,6 +141,21 @@ nonisolated struct CoupleDateTimeline {
                 date: date,
                 daysRemaining: milestones.days(from: today, to: date)
             )
+        }
+    }
+
+    /// A visit sits on its first day. While it is ongoing it counts as today, so it stays with
+    /// what's ahead until its last day has passed.
+    private func visitEvents(_ visits: [Visit], today: Date) -> [CoupleDateEvent] {
+        let todayDate = LockScreenCalendarDate(containing: today, in: calendar)
+        return visits.compactMap { visit in
+            guard let date = visit.startDay(calendar: calendar) else { return nil }
+            let daysRemaining = switch visit.phase(on: todayDate) {
+            case let .upcoming(days): days
+            case .ongoing: 0
+            case .ended: milestones.days(from: today, to: date)
+            }
+            return CoupleDateEvent(kind: .visit(visit), date: date, daysRemaining: daysRemaining)
         }
     }
 

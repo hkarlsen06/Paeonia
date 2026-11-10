@@ -29,12 +29,12 @@ nonisolated enum CoupleDateID: Hashable, Sendable, EntityIdentifierConvertible {
 }
 
 extension CoupleDateEvent {
-    /// The entity for a countdown or a birthday. Nil for a milestone.
+    /// The entity for a countdown or a birthday. Nil for a milestone or a visit.
     var coupleDateID: CoupleDateID? {
         switch kind {
         case let .countdown(countdown): .countdown(countdown.id)
         case let .birthday(userID): .birthday(userID: userID)
-        case .milestone: nil
+        case .milestone, .visit: nil
         }
     }
 }

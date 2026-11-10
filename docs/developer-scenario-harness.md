@@ -24,7 +24,7 @@ replaced with in-memory implementations.
 - `local-flow-pairing`: begin entitled and unpaired, on the invite screen. Nothing
   simulates the partner joining yet.
 - `local-flow-paired`: begin in the paired app, past the pairing celebration and
-  the first day, with local questions, memories, settings, countdown, location, and
+  the first day, with local questions, memories, settings, countdown, visits, location, and
   widget dependencies. `AccountJourneyUITests` logs out, leaves, and deletes the
   account from here.
 

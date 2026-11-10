@@ -2,8 +2,8 @@ import AppIntents
 import SwiftUI
 
 /// Sheet opened from the Us tab milestone card: the couple's milestone history and
-/// what's ahead, laid out like a lyrics screen. The couple's own countdowns and both
-/// birthdays sit between the milestones by date. Tapping one edits it, and the plus
+/// what's ahead, laid out like a lyrics screen. The couple's own countdowns, both
+/// birthdays and their visits sit between the milestones by date. Tapping one edits it, and the plus
 /// menu adds them. "Together for X days" is the focal
 /// line; past milestones sit above it and upcoming ones below, each blurring and
 /// fading a step further the more milestones it is away from "now" — anchored to
@@ -26,6 +26,8 @@ struct RelationshipTimelineView: View {
     var names = CoupleDateNames()
 
     @Environment(\.dismiss) private var dismiss
+    /// The couple's visits. Nil leaves them out (previews).
+    @Environment(VisitsViewModel.self) private var visits: VisitsViewModel?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var isEditorPresented = false
@@ -254,6 +256,11 @@ struct RelationshipTimelineView: View {
             Button { dateEditor = .newCountdown } label: {
                 Label { Text(.homeMilestoneCountdownNewAction) } icon: { Image(systemName: "calendar.badge.plus") }
             }
+            if visits != nil {
+                Button { dateEditor = .newVisit } label: {
+                    Label { Text(.homeVisitPlanAction) } icon: { Image(systemName: "airplane") }
+                }
+            }
             ForEach(missingBirthdays, id: \.self) { userID in
                 Button { dateEditor = .birthday(userID) } label: {
                     Label {
@@ -271,6 +278,25 @@ struct RelationshipTimelineView: View {
         }
     }
 
+    private var startDate: Date? {
+        startedOn.flatMap { try? PairingStartDate(rawValue: $0) }?.date()
+    }
+
+    /// The elapsed whole days. The count comes from the calculator so it matches the
+    /// milestone schedule (100 days together lands exactly on the 100-days
+    /// milestone). It is never negative: a partner who set the start date from a
+    /// time zone that is already on the next day would otherwise produce -1.
+    private func daysTogether(startedOn: String) -> Int {
+        max(0, RelationshipMilestoneCalculator().daysTogether(startedOn: startedOn, now: now) ?? 0)
+    }
+
+    private func presentEditor() {
+        selectedDate = startDate ?? Date()
+        isEditorPresented = true
+    }
+}
+
+extension RelationshipTimelineView {
     // MARK: - Derived values
 
     private var dates: CoupleDates {
@@ -287,11 +313,23 @@ struct RelationshipTimelineView: View {
     /// Recomputed per render so the list refreshes after an edit while the sheet stays
     /// open. The math is a handful of bounded calendar additions.
     private var pastEvents: [CoupleDateEvent] {
-        CoupleDateTimeline().past(startedOn: startedOn, dates: dates, now: now, limit: Self.pastLimit)
+        CoupleDateTimeline().past(
+            startedOn: startedOn,
+            dates: dates,
+            visits: visits?.state.visits ?? [],
+            now: now,
+            limit: Self.pastLimit
+        )
     }
 
     private var upcomingEvents: [CoupleDateEvent] {
-        CoupleDateTimeline().upcoming(startedOn: startedOn, dates: dates, now: now, milestoneLimit: Self.upcomingLimit)
+        CoupleDateTimeline().upcoming(
+            startedOn: startedOn,
+            dates: dates,
+            visits: visits?.state.visits ?? [],
+            now: now,
+            milestoneLimit: Self.upcomingLimit
+        )
     }
 
     /// Weekday, day and month, plus the year when the date is not in the current
@@ -300,23 +338,6 @@ struct RelationshipTimelineView: View {
     private func dateFormat(for date: Date) -> Date.FormatStyle {
         let format = Date.FormatStyle.dateTime.weekday(.wide).day().month(.wide)
         return Calendar.current.isDate(date, equalTo: now, toGranularity: .year) ? format : format.year()
-    }
-
-    private var startDate: Date? {
-        startedOn.flatMap { try? PairingStartDate(rawValue: $0) }?.date()
-    }
-
-    /// The elapsed whole days. The count comes from the calculator so it matches the
-    /// milestone schedule (100 days together lands exactly on the 100-days
-    /// milestone). It is never negative: a partner who set the start date from a
-    /// time zone that is already on the next day would otherwise produce -1.
-    private func daysTogether(startedOn: String) -> Int {
-        max(0, RelationshipMilestoneCalculator().daysTogether(startedOn: startedOn, now: now) ?? 0)
-    }
-
-    private func presentEditor() {
-        selectedDate = startDate ?? Date()
-        isEditorPresented = true
     }
 }
 

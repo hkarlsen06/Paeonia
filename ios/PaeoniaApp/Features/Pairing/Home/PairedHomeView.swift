@@ -50,6 +50,8 @@ struct PairedHomeView: View {
     var onRefresh: () async -> Void = {}
     /// The access notice this person closed (`AccessNotice.id`). A new notice shows again.
     @AppStorage("home.accessNotice.dismissed") var dismissedAccessNoticeID = ""
+    /// The next visit and the couple's list (`HomeVisitCard`). Nil hides the card.
+    @Environment(VisitsViewModel.self) var visits: VisitsViewModel?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.dynamicTypeSize) var dynamicTypeSize
@@ -293,6 +295,7 @@ extension PairedHomeView {
                     )
                 unreadChatsCard
                 firstStepsCard
+                visitCard
                 milestoneAndWidget
                     .matchedGeometryEffect(id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: usesMapHeader)
             }
@@ -336,6 +339,7 @@ extension PairedHomeView {
                     )
                 unreadChatsCard
                 firstStepsCard
+                visitCard
                 milestoneAndWidget
                     .matchedGeometryEffect(
                         id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: !usesMapHeader

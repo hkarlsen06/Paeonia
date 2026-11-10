@@ -96,6 +96,7 @@ final class MainTabModels {
         dependencies.gamesViewModel ?? GamesViewModel(dependencies: .live())
     lazy var hearts = HeartsViewModel()
     lazy var coupleDates = CoupleDatesViewModel()
+    lazy var visits = dependencies.visitsViewModel ?? VisitsViewModel()
     lazy var stories = dependencies.storiesViewModel ?? StoriesViewModel()
     lazy var avatarStyling = dependencies.avatarStylingModel ?? AvatarStylingModel()
     lazy var mapTiles = dependencies.homeMapTiles ?? HomeMapTileStatus()
@@ -254,6 +255,7 @@ struct MainTabView: View {
             // Outside the covers and sheets, so the Home drawing, the story viewer and every game
             // screen can show and take reactions.
             .environment(reactionStore)
+            .visitsLifecycle(models.visits, ownerUserID: identity.currentUserID, sync: actions.syncAfterLocalChange)
             .environment(\.avatarStyling, models.avatarStyling)
             .onChange(of: identity.avatarDecorations, initial: true) { _, decorations in
                 models.avatarStyling.update(decorations)

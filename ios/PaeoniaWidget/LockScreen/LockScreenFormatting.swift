@@ -34,12 +34,13 @@ extension LockScreenCountdown.Remaining {
 }
 
 extension LockScreenDateItem {
-    /// "Trip to Bergen", "Your birthday" or "Alex's birthday".
+    /// "Trip to Bergen", "Your birthday", "Alex's birthday" or "Next visit".
     func title(partnerName: String) -> String {
         switch kind {
         case let .countdown(title): title
         case .birthday(isMine: true): String(localized: .widgetHomeCountdownBirthdayYours)
         case .birthday(isMine: false): String(localized: .widgetHomeCountdownBirthdayPartner(partnerName))
+        case .visit: String(localized: .widgetHomeCountdownVisit)
         }
     }
 
@@ -53,6 +54,7 @@ extension LockScreenDateItem {
         switch kind {
         case .countdown: "calendar"
         case .birthday: "gift.fill"
+        case .visit: "person.2.fill"
         }
     }
 }

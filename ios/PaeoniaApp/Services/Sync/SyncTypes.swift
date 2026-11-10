@@ -158,6 +158,11 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case saveCountdown = "save_countdown"
     case deleteCountdown = "delete_countdown"
     case setBirthday = "set_birthday"
+    case saveVisit = "save_visit"
+    case deleteVisit = "delete_visit"
+    case saveTogetherItem = "save_together_item"
+    case setTogetherItemDone = "set_together_item_done"
+    case deleteTogetherItem = "delete_together_item"
     case setFavorite = "set_favorite"
     // Board games (Connect Four, Dots and Boxes, Ultimate Tic-Tac-Toe)
     case boardGameMove = "board_game_move"

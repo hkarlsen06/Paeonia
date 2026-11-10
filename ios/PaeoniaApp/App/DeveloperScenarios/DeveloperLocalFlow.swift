@@ -252,6 +252,7 @@
         milestoneViewModel: milestoneViewModel,
         memoriesViewModel: memoriesViewModel,
         gamesViewModel: gameFlow?.games,
+        visitsViewModel: DeveloperVisitsFixture.model(CoupleVisits()),
         settingsViewModel: settingsViewModel,
         avatarStylingModel: AvatarStylingModel(gateway: DeveloperAvatarDecorationGateway(store: store)),
         storiesViewModel: avatar?.viewModel,

@@ -17,6 +17,8 @@ extension CoupleDateEvent {
             countdown.title
         case let .birthday(userID):
             CoupleDateNames.birthdayTitle(for: userID, names: names)
+        case let .visit(visit):
+            visit.timelineTitle
         }
     }
 }

@@ -15,6 +15,7 @@ struct RootFeatureDependencies {
     var milestoneViewModel: RelationshipMilestoneViewModel?
     var memoriesViewModel: MemoriesViewModel?
     var gamesViewModel: GamesViewModel?
+    var visitsViewModel: VisitsViewModel?
     var settingsViewModel: SettingsViewModel?
     var avatarStylingModel: AvatarStylingModel?
     var storiesViewModel: StoriesViewModel?
@@ -35,6 +36,7 @@ struct RootFeatureDependencies {
         milestoneViewModel: RelationshipMilestoneViewModel? = nil,
         memoriesViewModel: MemoriesViewModel? = nil,
         gamesViewModel: GamesViewModel? = nil,
+        visitsViewModel: VisitsViewModel? = nil,
         settingsViewModel: SettingsViewModel? = nil,
         avatarStylingModel: AvatarStylingModel? = nil,
         storiesViewModel: StoriesViewModel? = nil,
@@ -54,6 +56,7 @@ struct RootFeatureDependencies {
         self.milestoneViewModel = milestoneViewModel
         self.memoriesViewModel = memoriesViewModel
         self.gamesViewModel = gamesViewModel
+        self.visitsViewModel = visitsViewModel
         self.settingsViewModel = settingsViewModel
         self.avatarStylingModel = avatarStylingModel
         self.storiesViewModel = storiesViewModel

@@ -1,12 +1,13 @@
 import Foundation
 
-/// One date the Home Screen countdown widget can show: a countdown or a birthday,
-/// with the day it falls on next.
+/// One date the Home Screen countdown widget can show: a countdown, a birthday or the
+/// first day of a visit, with the day it falls on next.
 nonisolated struct LockScreenDateItem: Equatable, Identifiable, Sendable {
     enum Kind: Equatable, Sendable {
         case countdown(title: String)
         /// `isMine` is true for the person who owns this phone.
         case birthday(isMine: Bool)
+        case visit
     }
 
     /// Stable across refreshes, so a widget keeps showing the date it was set to.
@@ -17,7 +18,7 @@ nonisolated struct LockScreenDateItem: Equatable, Identifiable, Sendable {
     let date: LockScreenCalendarDate
     let daysRemaining: Int
     let repeatsYearly: Bool
-    /// Where the countdown widget's progress bar starts. Nil for a birthday.
+    /// Where the countdown widget's progress bar starts. Nil for a birthday, which isn't a countdown.
     let progressStart: ProgressStart?
 
     enum ProgressStart: Equatable, Sendable {
@@ -34,6 +35,7 @@ nonisolated struct LockScreenDateItem: Equatable, Identifiable, Sendable {
         switch kind {
         case .birthday: 0
         case .countdown: 1
+        case .visit: 2
         }
     }
 }
@@ -46,10 +48,11 @@ nonisolated enum LockScreenDates {
 
     static func countdownID(_ id: String) -> String { "countdown:\(id)" }
     static func birthdayID(isMine: Bool) -> String { isMine ? "birthday:me" : "birthday:partner" }
+    static func visitID(_ id: String) -> String { "visit:\(id)" }
 
     /// Dates that are today or later, soonest first. Yearly countdowns and
     /// birthdays show their next occurrence. A one-off countdown that passed
-    /// before today is left out.
+    /// before today is left out, and so is a visit that has started.
     static func items(in dates: LockScreenSnapshot.Dates, today: LockScreenCalendarDate) -> [LockScreenDateItem] {
         let countdowns = dates.countdowns.compactMap { countdown -> LockScreenDateItem? in
             let date = countdown.repeatsYearly
@@ -79,10 +82,28 @@ nonisolated enum LockScreenDates {
                 progressStart: nil
             )
         }
-        return (countdowns + birthdays).sorted {
+        return (countdowns + birthdays + visitItems(in: dates, today: today)).sorted {
             if $0.date != $1.date { return $0.date < $1.date }
             if $0.sortRank != $1.sortRank { return $0.sortRank < $1.sortRank }
             return $0.id < $1.id
+        }
+    }
+
+    /// The first day of each visit that hasn't started yet.
+    private static func visitItems(
+        in dates: LockScreenSnapshot.Dates,
+        today: LockScreenCalendarDate
+    ) -> [LockScreenDateItem] {
+        dates.visits.compactMap { visit in
+            guard visit.startDate >= today else { return nil }
+            return LockScreenDateItem(
+                id: visitID(visit.id),
+                kind: .visit,
+                date: visit.startDate,
+                daysRemaining: today.days(until: visit.startDate),
+                repeatsYearly: false,
+                progressStart: .created(visit.createdAt)
+            )
         }
     }
 

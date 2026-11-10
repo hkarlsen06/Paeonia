@@ -223,6 +223,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let lookBackCache: any LookBackCaching
     private let heartsCache: any HeartsCaching
     private let coupleDatesCache: any CoupleDatesCaching
+    private let visitsCache: any VisitsCaching
     private let favoritesCache: any FavoritesCaching
     private let storiesCache: any StoriesCaching
     private let reactionsCache: any ReactionsCaching
@@ -252,6 +253,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         lookBackCache: any LookBackCaching = FileLookBackCache.shared,
         heartsCache: any HeartsCaching = FileHeartsCache.shared,
         coupleDatesCache: any CoupleDatesCaching = FileCoupleDatesCache.shared,
+        visitsCache: any VisitsCaching = FileVisitsCache.shared,
         favoritesCache: any FavoritesCaching = FileFavoritesCache.shared,
         storiesCache: any StoriesCaching = FileStoriesCache.shared,
         reactionsCache: any ReactionsCaching = FileReactionsCache.shared,
@@ -280,6 +282,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.lookBackCache = lookBackCache
         self.heartsCache = heartsCache
         self.coupleDatesCache = coupleDatesCache
+        self.visitsCache = visitsCache
         self.favoritesCache = favoritesCache
         self.storiesCache = storiesCache
         self.reactionsCache = reactionsCache
@@ -390,6 +393,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         if scope != .relationshipAccessHidden { guessMySpotPhotos.clearAll() }
         await heartsCache.clearAll()
         await coupleDatesCache.clearAll()
+        await visitsCache.clearAll()
         await favoritesCache.clearAll()
         await storiesCache.clearAll()
         await reactionsCache.clearAll()

@@ -22527,6 +22527,96 @@
         }
       }
     },
+    "home.visit.label" : {
+      "comment" : "Small heading on the Us tab card and title of the screen about the next time the partners meet in person",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next visit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste besøk"
+          }
+        }
+      }
+    },
+    "home.visit.plan.action" : {
+      "comment" : "Button and screen title for planning a new visit, when the partners meet in person",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan a visit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planlegg et besøk"
+          }
+        }
+      }
+    },
+    "home.visit.prompt.hide" : {
+      "comment" : "Accessibility label of the close button that hides the 'When do you meet next?' card for 30 days",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide for 30 days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skjul i 30 dager"
+          }
+        }
+      }
+    },
+    "home.visit.prompt.message" : {
+      "comment" : "Us tab card text under 'When do you meet next?'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan your next visit and count down to it together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planlegg neste besøk og tell ned til det sammen."
+          }
+        }
+      }
+    },
+    "home.visit.prompt.title" : {
+      "comment" : "Us tab card title when the couple has no visit planned",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When do you meet next?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når ses dere neste gang?"
+          }
+        }
+      }
+    },
     "home.widget.card.hint" : {
       "comment" : "Accessibility hint for the tappable widget preview on the home screen",
       "extractionState" : "manual",
@@ -43624,6 +43714,438 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ja, del"
+          }
+        }
+      }
+    },
+    "visit.countdown.days" : {
+      "comment" : "Countdown to a visit when it is more than one day away. %@ is the number of days, such as 12",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ days to go"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ dager igjen"
+          }
+        }
+      }
+    },
+    "visit.countdown.ongoing" : {
+      "comment" : "Shown instead of a countdown while the visit is happening",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere er sammen"
+          }
+        }
+      }
+    },
+    "visit.countdown.tomorrow" : {
+      "comment" : "Countdown to a visit that starts tomorrow",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tomorrow"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I morgen"
+          }
+        }
+      }
+    },
+    "visit.detail.edit" : {
+      "comment" : "Button on the visit screen that opens the visit editor",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre"
+          }
+        }
+      }
+    },
+    "visit.editor.delete" : {
+      "comment" : "Button and confirm action that deletes a visit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete visit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett besøk"
+          }
+        }
+      }
+    },
+    "visit.editor.delete.confirm.message" : {
+      "comment" : "Message of the alert that confirms deleting a visit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's removed for both of you. Your list stays."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det fjernes for dere begge. Listen blir værende."
+          }
+        }
+      }
+    },
+    "visit.editor.delete.confirm.title" : {
+      "comment" : "Title of the alert that confirms deleting a visit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this visit?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slette dette besøket?"
+          }
+        }
+      }
+    },
+    "visit.editor.edit.title" : {
+      "comment" : "Title of the editor for a visit that is already planned",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit visit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre besøk"
+          }
+        }
+      }
+    },
+    "visit.editor.end" : {
+      "comment" : "Date picker label for the last day of a visit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siste dag"
+          }
+        }
+      }
+    },
+    "visit.editor.message" : {
+      "comment" : "Text at the top of the visit editor",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick the first and last day you're together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg første og siste dag dere er sammen."
+          }
+        }
+      }
+    },
+    "visit.editor.range.error" : {
+      "comment" : "Shown in the visit editor when the last day is before the first day, and Save is off",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last day can't be before the first day."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siste dag kan ikke være før første dag."
+          }
+        }
+      }
+    },
+    "visit.editor.start" : {
+      "comment" : "Date picker label for the first day of a visit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Første dag"
+          }
+        }
+      }
+    },
+    "visit.error.listFull" : {
+      "comment" : "Banner when the couple's list of things to do together is full. %@ is the limit, such as 100",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your list holds up to %@ things. Delete a few to add more."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen har plass til %@ ting. Slett noen for å legge til flere."
+          }
+        }
+      }
+    },
+    "visit.error.saveFailed" : {
+      "comment" : "Banner when a visit or list change could not be saved on this phone",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That wasn't saved. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det ble ikke lagret. Prøv igjen."
+          }
+        }
+      }
+    },
+    "visit.error.visitLimit" : {
+      "comment" : "Banner when the couple already has the most visits allowed. %@ is the limit, such as 20",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can have up to %@ visits. Delete an old one to plan a new one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere kan ha opptil %@ besøk. Slett et gammelt for å planlegge et nytt."
+          }
+        }
+      }
+    },
+    "visit.list.add.action" : {
+      "comment" : "Button that adds the typed item to the list of things to do together",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til"
+          }
+        }
+      }
+    },
+    "visit.list.add.placeholder" : {
+      "comment" : "Placeholder of the field that adds something to the list of things to do together",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add something to do"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til noe å gjøre"
+          }
+        }
+      }
+    },
+    "visit.list.delete" : {
+      "comment" : "Swipe action that deletes an item from the list of things to do together",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett"
+          }
+        }
+      }
+    },
+    "visit.list.empty" : {
+      "comment" : "Shown under the empty list of things to do together",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add ideas as they come. The list stays even if your visit moves."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til ideer når dere kommer på dem. Listen blir værende selv om besøket flyttes."
+          }
+        }
+      }
+    },
+    "visit.list.item.done" : {
+      "comment" : "Accessibility value of a list item that is ticked off",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjort"
+          }
+        }
+      }
+    },
+    "visit.list.item.notDone" : {
+      "comment" : "Accessibility value of a list item that is not ticked off",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke gjort"
+          }
+        }
+      }
+    },
+    "visit.list.title" : {
+      "comment" : "Heading of the couple's shared list of things to do when they meet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Things to do together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ting å gjøre sammen"
+          }
+        }
+      }
+    },
+    "visit.timeline.title" : {
+      "comment" : "Row title for a visit without a place in the couple's dates timeline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen igjen"
+          }
+        }
+      }
+    },
+    "visit.timeline.title.place" : {
+      "comment" : "Row title for a visit in the couple's dates timeline. %@ is the city or place, such as Bergen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together in %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen i %@"
           }
         }
       }

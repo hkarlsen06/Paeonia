@@ -15,12 +15,12 @@ struct NextCountdownLockScreenView: View {
         if let countdown {
             VStack(alignment: .leading, spacing: 2) {
                 Label {
-                    // The title is the couple's own text. The system hides it
+                    // A countdown title is the couple's own text. The system hides it
                     // while the phone is locked and shows it after Face ID.
-                    Text(countdown.title)
-                        .privacySensitive()
+                    Text(countdown.item.title(partnerName: entry.snapshot?.partnerFirstName ?? ""))
+                        .privacySensitive(countdown.item.isPrivateTitle)
                 } icon: {
-                    Image(systemName: "calendar")
+                    Image(systemName: countdown.item.symbol)
                 }
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)

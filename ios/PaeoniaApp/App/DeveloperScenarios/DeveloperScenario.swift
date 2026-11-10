@@ -18,7 +18,7 @@
     /// list here.
     static let allCases: [DeveloperScenario] =
       [gamePresenceControls, accessibilityColors, gameChatPreviews] + keyboardDiagnostics
-      + app + accessNotices + firstSteps + memoriesMap + inviter + dailyCard + lookBack
+      + app + visits + accessNotices + firstSteps + memoriesMap + inviter + dailyCard + lookBack
       + drawAndGuess + storyChain + mindMeld + consensio + piccante + guessMySpot + exquisiteCorpse + boardGames
 
     nonisolated enum Category: String, CaseIterable, Identifiable, Sendable {
