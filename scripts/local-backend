@@ -22,8 +22,9 @@
 # file. APNs and Apple keys are left out, so a local backend sends no pushes and
 # never talks to Apple. On the first run, or with --reseed, it also replaces all
 # local data with a snapshot of api.paeonia.no (every table and stored file).
-# Then it runs scripts/test-couple, so the test couple Shared and Panci exist,
-# paired and entitled. Reading the hosted deployment needs the admin key
+# Until a copy succeeds, every run starts again from an empty backend and copies
+# again. Then it runs scripts/test-couple, so the test couple Shared and Panci
+# exist, paired and entitled. Reading the hosted deployment needs the admin key
 # (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from one-s over ssh).
 set -euo pipefail
 
@@ -62,7 +63,17 @@ if pid=$(lsof -ti "tcp:$port" -sTCP:LISTEN); then
   exit 1
 fi
 
-[[ -f .convex/local/default/config.json ]] || reseed=true
+# Written once the hosted copy is in and the functions are pushed over it.
+copied=.convex/local/default/hosted-copy-done
+[[ -f $copied ]] || reseed=true
+# The snapshot must go into an empty backend, before the first push. The first
+# push numbers tables in name order, and the snapshot brings the hosted numbers,
+# which follow creation order. Imported over a pushed backend, a table that the
+# schema has and the snapshot lacks gets the next local number, which can belong
+# to a snapshot table ("conflict between ... with table number ..."). Imported
+# first, the snapshot takes its numbers, and the push numbers new tables after.
+$reseed && rm -rf "$copied" .convex/local/default/convex_local_backend.sqlite3* \
+  .convex/local/default/convex_local_storage
 
 dev_issuer=$(hosted env get CLERK_DEV_JWT_ISSUER_DOMAIN)
 [[ -n $dev_issuer ]] || { echo "CLERK_DEV_JWT_ISSUER_DOMAIN is not set on api.paeonia.no" >&2; exit 1; }
@@ -101,27 +112,34 @@ wait_for() {
   exit 1
 }
 
+pushed() {
+  if grep -q "Schema validation failed" "$log"; then
+    echo "The data does not fit this branch's schema. Fix the schema or the data, then run again." >&2
+    exit 1
+  fi
+  grep -q "Convex functions ready" "$log"
+}
+
 wait_for curl -fs -o /dev/null "http://127.0.0.1:$port/instance_name"
-# The first push of a new backend fails until CLERK_JWT_ISSUER_DOMAIN is set.
-# convex dev retries on its own once the env vars change.
+# The first push of a new backend fails until CLERK_JWT_ISSUER_DOMAIN is set,
+# and convex dev retries on its own once the env vars change. The import runs
+# before it is set, so the push comes after the import.
 for name in "${copy_vars[@]}"; do
   hosted env get "$name" | npx convex env set "$name" >/dev/null 2>&1 ||
     { echo "Could not copy $name from api.paeonia.no" >&2; exit 1; }
 done
-printf '%s' "$dev_issuer" | npx convex env set CLERK_JWT_ISSUER_DOMAIN >/dev/null 2>&1 &&
-  hosted env get CLERK_DEV_SECRET_KEY | npx convex env set CLERK_SECRET_KEY >/dev/null 2>&1 ||
-  { echo "Could not set the development Clerk instance on the local backend" >&2; exit 1; }
-wait_for grep -q "Convex functions ready" "$log"
-
 if $reseed; then
   echo "Copying the data on api.paeonia.no to the local backend..."
   hosted export --include-file-storage --path "$work/hosted.zip" >/dev/null
-  if ! npx convex import --replace-all -y "$work/hosted.zip" 2>&1 | tail -3; then
-    echo "The hosted data does not fit this branch's schema. Fix the schema or the data, then run again with --reseed." >&2
-    exit 1
-  fi
+  npx convex import --replace-all -y "$work/hosted.zip" 2>&1 | tail -3 ||
+    { echo "Could not import the data from api.paeonia.no" >&2; exit 1; }
   rm -f "$work/hosted.zip"
 fi
+printf '%s' "$dev_issuer" | npx convex env set CLERK_JWT_ISSUER_DOMAIN >/dev/null 2>&1 &&
+  hosted env get CLERK_DEV_SECRET_KEY | npx convex env set CLERK_SECRET_KEY >/dev/null 2>&1 ||
+  { echo "Could not set the development Clerk instance on the local backend" >&2; exit 1; }
+wait_for pushed
+$reseed && touch "$copied"
 "$root/scripts/test-couple"
 
 cat <<EOF
