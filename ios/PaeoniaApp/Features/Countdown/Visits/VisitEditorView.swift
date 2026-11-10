@@ -9,6 +9,7 @@ struct VisitEditorView: View {
     let visits: VisitsViewModel
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @State private var start: Date
     @State private var end: Date
     @State private var place: MemoryPlace?
@@ -36,6 +37,7 @@ struct VisitEditorView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
         }
+        .paeoniaBanner(bannerCenter)
         .presentationDetents([.large])
         .presentationBackground(.paeoniaSurfacePrimary)
         .interactiveDismissDisabled(isWorking)
@@ -84,35 +86,34 @@ struct VisitEditorView: View {
                 Text(.visitEditorStart)
             }
             .accessibilityIdentifier("visit.editor.start")
-            .onChange(of: start, moveEndWithStart)
+            .onChange(of: start) { old, new in
+                end = Visit.end(end, afterStartMovedFrom: old, to: new)
+            }
 
             DatePicker(selection: $end, displayedComponents: .date) {
                 Text(.visitEditorEnd)
             }
             .accessibilityIdentifier("visit.editor.end")
 
-            if !isRangeValid {
-                Label {
-                    Text(.visitEditorRangeError)
-                } icon: {
-                    Image(systemName: "exclamationmark.circle")
-                }
-                .foregroundStyle(.paeoniaTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("visit.editor.rangeError")
+            if isDeleted {
+                notice(.visitEditorDeleted)
+            } else if !isRangeValid {
+                notice(.visitEditorRangeError)
+                    .accessibilityIdentifier("visit.editor.rangeError")
             }
         }
         .font(PaeoniaTypography.body)
         .tint(.paeoniaAccentPrimary)
     }
 
-    /// Moving the first day moves the last day with it, so the visit keeps its length.
-    private func moveEndWithStart(from old: Date, to new: Date) {
-        let calendar = Calendar.current
-        let days = calendar.dateComponents(
-            [.day], from: calendar.startOfDay(for: old), to: calendar.startOfDay(for: new)
-        ).day ?? 0
-        end = calendar.date(byAdding: .day, value: days, to: end) ?? end
+    private func notice(_ text: LocalizedStringResource) -> some View {
+        Label {
+            Text(text)
+        } icon: {
+            Image(systemName: "exclamationmark.circle")
+        }
+        .foregroundStyle(.paeoniaTextPrimary)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     /// The places of the couple's other visits, for "Places you've used".
@@ -137,9 +138,16 @@ struct VisitEditorView: View {
             Button(action: save) {
                 Text(.homeMilestoneEditorSaveAction)
             }
-            .disabled(!isRangeValid || isWorking)
+            .disabled(!isRangeValid || isWorking || isDeleted)
             .accessibilityIdentifier("visit.editor.save")
         }
+    }
+
+    /// The visit being edited is gone, deleted by the partner while this sheet was open.
+    /// Once this phone saves or deletes, `isWorking` stays on until the sheet closes.
+    private var isDeleted: Bool {
+        guard let visit, !isWorking else { return false }
+        return !visits.state.visits.contains { $0.id == visit.id }
     }
 
     private func save() {
@@ -147,8 +155,9 @@ struct VisitEditorView: View {
         Task {
             if await visits.saveVisit(id: visit?.id, from: start, to: end, place: place) {
                 dismiss()
+            } else {
+                isWorking = false
             }
-            isWorking = false
         }
     }
 
@@ -158,8 +167,9 @@ struct VisitEditorView: View {
         Task {
             if await visits.deleteVisit(id: visit.id) {
                 dismiss()
+            } else {
+                isWorking = false
             }
-            isWorking = false
         }
     }
 }

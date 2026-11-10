@@ -6,7 +6,8 @@ enum CoupleDateEditor: Identifiable, Hashable {
     case countdown(UUID)
     case birthday(UUID)
     case newVisit
-    case visit(UUID)
+    /// The visit as it was tapped, so the editor stays when the visit is deleted while it is open.
+    case visit(Visit)
 
     /// The editor for a tapped row. Milestones have none.
     init?(_ event: CoupleDateEvent) {
@@ -18,7 +19,7 @@ enum CoupleDateEditor: Identifiable, Hashable {
         case let .birthday(userID):
             self = .birthday(userID)
         case let .visit(visit):
-            self = .visit(visit.id)
+            self = .visit(visit)
         }
     }
 
@@ -67,8 +68,8 @@ struct CoupleDateEditorSheet: View {
             if let visits {
                 VisitEditorView(visit: nil, visits: visits)
             }
-        case let .visit(id):
-            if let visits, let visit = visits.state.visits.first(where: { $0.id == id }) {
+        case let .visit(visit):
+            if let visits {
                 VisitEditorView(visit: visit, visits: visits)
             }
         }

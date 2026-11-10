@@ -329,19 +329,19 @@
       }
     },
     "widget.home.countdown.visit" : {
-      "comment" : "Countdown widget title for the next time the partners meet in person",
+      "comment" : "Countdown widget title for a visit, a time the partners meet in person. Every visit has this title, and the widget shows its date beside it",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Next visit"
+            "value" : "Together again"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Neste besøk"
+            "value" : "Sammen igjen"
           }
         }
       }

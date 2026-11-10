@@ -1,7 +1,7 @@
 import Foundation
 
 /// The visit and list backend functions (`backend/convex/visits.ts`). Each write returns the
-/// row as stored, or nil when it was deleted.
+/// row as stored, or nil when it is gone.
 nonisolated protocol VisitsGateway: Sendable {
     func saveVisit(_ visit: Visit, operation: SyncClientOperation) async throws -> Visit?
     func deleteVisit(id: UUID, operation: SyncClientOperation) async throws
@@ -105,6 +105,7 @@ nonisolated private struct SetItemDoneRequest: Encodable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: ArgumentKey.self)
         try container.encode(payload.id, forKey: ArgumentKey("p_item_id"))
+        try container.encode(payload.title, forKey: ArgumentKey("p_title"))
         try container.encode(payload.isDone, forKey: ArgumentKey("p_done"))
         try ClientOperationFields(operation).encode(to: encoder)
     }

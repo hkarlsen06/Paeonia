@@ -13,7 +13,7 @@ nonisolated struct CustomCountdown: Codable, Equatable, Identifiable, Sendable {
     /// falls on 28 February in other years.
     var repeatsYearly: Bool = false
 
-    /// The editor caps titles at this many characters.
+    /// The server's limit for a trimmed title, in Unicode code points (`ShortTitle`).
     static let maxTitleLength = 40
     /// The server refuses more per couple, so the phone says so before queueing one.
     static let maxCount = 50

@@ -4,11 +4,11 @@ import SwiftUI
 /// asks when they meet next, and the list still shows, since ideas come before a date does.
 /// Owns its whole presentation, so callers only need `.sheet { VisitDetailView(...) }`.
 struct VisitDetailView: View {
-    let visits: VisitsViewModel
+    @Bindable var visits: VisitsViewModel
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @State private var editor: Editor?
-    @State private var newItemTitle = ""
     @FocusState private var isAddFieldFocused: Bool
     /// Refreshed at midnight so the count moves on while the screen stays open.
     @State private var now = Date()
@@ -44,22 +44,9 @@ struct VisitDetailView: View {
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(Text(.homeVisitLabel))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                if let visit {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button { editor = .edit(visit) } label: {
-                            Text(.visitDetailEdit)
-                        }
-                        .accessibilityIdentifier("visit.detail.edit")
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button { dismiss() } label: {
-                        Text(.commonDone)
-                    }
-                }
-            }
+            .toolbar { toolbar(editing: visit) }
         }
+        .paeoniaBanner(bannerCenter)
         .presentationDetents([.large])
         .presentationBackground(.paeoniaBackgroundPrimary)
         .onCalendarDayChange { now = Date() }
@@ -73,11 +60,29 @@ struct VisitDetailView: View {
         }
     }
 
+    @ToolbarContentBuilder
+    private func toolbar(editing visit: Visit?) -> some ToolbarContent {
+        if let visit {
+            ToolbarItem(placement: .primaryAction) {
+                Button { editor = .edit(visit) } label: {
+                    Text(.visitDetailEdit)
+                }
+                .accessibilityIdentifier("visit.detail.edit")
+            }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+            Button { dismiss() } label: {
+                Text(.commonDone)
+            }
+            .accessibilityIdentifier("visit.detail.done")
+        }
+    }
+
     private var listSection: some View {
         Section {
             ForEach(visits.state.items) { item in
                 TogetherListRow(item: item) {
-                    Task { await visits.setItemDone(id: item.id, !item.isDone) }
+                    Task { await visits.setItemDone(item, !item.isDone) }
                 }
                 .swipeActions {
                     Button(role: .destructive) {
@@ -122,8 +127,10 @@ struct VisitDetailView: View {
                         }
                     }
                 } icon: {
-                    MemoryPlaceMapThumbnail(coordinate: place.coordinate, size: 40)
+                    Image(systemName: "mappin.and.ellipse")
+                        .foregroundStyle(.paeoniaAccentPrimary)
                 }
+                .font(PaeoniaTypography.bodyEmphasis)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -148,19 +155,21 @@ struct VisitDetailView: View {
 
     private var addRow: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            TextField(text: $newItemTitle, axis: .vertical) {
+            TextField(text: $visits.itemDraft, axis: .vertical) {
                 Text(.visitListAddPlaceholder)
             }
             .lineLimit(1...3)
             .focused($isAddFieldFocused)
             .submitLabel(.done)
-            .onChange(of: newItemTitle) { _, title in
+            .onChange(of: visits.itemDraft) { _, title in
                 // The vertical field takes a return as a new line. It adds the item instead.
                 if title.contains("\n") {
-                    newItemTitle = title.replacingOccurrences(of: "\n", with: "")
+                    visits.itemDraft = title.replacingOccurrences(of: "\n", with: "")
                     addItem()
-                } else if title.count > TogetherListItem.maxTitleLength {
-                    newItemTitle = String(title.prefix(TogetherListItem.maxTitleLength))
+                } else if MemoryDataService.isOverLimit(title, TogetherListItem.maxTitleCodePoints) {
+                    visits.itemDraft = MemoryDataService.prefix(
+                        title, fittingCodePoints: TogetherListItem.maxTitleCodePoints
+                    )
                 }
             }
             .accessibilityIdentifier("visit.list.add.field")
@@ -170,23 +179,21 @@ struct VisitDetailView: View {
                     .font(PaeoniaTypography.bodyEmphasis)
             }
             .buttonStyle(.borderless)
-            .disabled(newItemTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(TogetherListItem.title(visits.itemDraft) == nil)
             .accessibilityIdentifier("visit.list.add")
         }
     }
 
     private func addItem() {
-        let title = newItemTitle
-        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        newItemTitle = ""
-        Task { await visits.addItem(title) }
+        Task { await visits.addItem() }
     }
 }
 
-/// One thing on the list, ticked by tapping the row.
 private struct TogetherListRow: View {
     let item: TogetherListItem
     let onToggle: () -> Void
+
+    @ScaledMetric(relativeTo: .title3) private var iconSize: CGFloat = 28
 
     var body: some View {
         Button(action: onToggle) {
@@ -194,6 +201,8 @@ private struct TogetherListRow: View {
                 Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
                     .foregroundStyle(item.isDone ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
+                    // Both symbols get one box, so a ticked row is as tall as the others.
+                    .frame(width: iconSize, height: iconSize)
                     .accessibilityHidden(true)
                 Text(item.title)
                     .font(PaeoniaTypography.body)

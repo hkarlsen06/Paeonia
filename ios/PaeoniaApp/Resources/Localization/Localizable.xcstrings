@@ -22581,24 +22581,6 @@
         }
       }
     },
-    "home.visit.prompt.message" : {
-      "comment" : "Us tab card text under 'When do you meet next?'",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plan your next visit and count down to it together."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planlegg neste besøk og tell ned til det sammen."
-          }
-        }
-      }
-    },
     "home.visit.prompt.title" : {
       "comment" : "Us tab card title when the couple has no visit planned",
       "extractionState" : "manual",
@@ -43844,6 +43826,24 @@
         }
       }
     },
+    "visit.editor.deleted" : {
+      "comment" : "Shown in the visit editor when the partner deleted the visit while it was open, so it can't be saved",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This visit was deleted, so your changes can't be saved."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette besøket ble slettet, så endringene dine kan ikke lagres."
+          }
+        }
+      }
+    },
     "visit.editor.edit.title" : {
       "comment" : "Title of the editor for a visit that is already planned",
       "extractionState" : "manual",
@@ -43934,6 +43934,24 @@
         }
       }
     },
+    "visit.error.itemsNotAdded" : {
+      "comment" : "Banner when things this person added to the shared list could not be added later, because the list filled up. %@ is the list of what they typed, such as 'Ice skating and Cook ramen'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your list is full, so this wasn't added: %@. Delete something to make room, then add it again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen er full, så dette ble ikke lagt til: %@. Slett noe for å få plass, og legg det til igjen."
+          }
+        }
+      }
+    },
     "visit.error.listFull" : {
       "comment" : "Banner when the couple's list of things to do together is full. %@ is the limit, such as 100",
       "extractionState" : "manual",
@@ -43971,19 +43989,37 @@
       }
     },
     "visit.error.visitLimit" : {
-      "comment" : "Banner when the couple already has the most visits allowed. %@ is the limit, such as 20",
+      "comment" : "Banner when the couple already has the most visits that are not over. %@ is the limit, such as 20",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You can have up to %@ visits. Delete an old one to plan a new one."
+            "value" : "You can have %@ visits planned at a time. Delete one to plan another."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dere kan ha opptil %@ besøk. Slett et gammelt for å planlegge et nytt."
+            "value" : "Dere kan ha %@ besøk planlagt om gangen. Slett ett for å planlegge et nytt."
+          }
+        }
+      }
+    },
+    "visit.error.visitNotSaved" : {
+      "comment" : "Banner when a visit this person planned could not be saved later, because the couple already had the most visits planned. The first %@ is the visit's first and last day, written by the system date formatter. The second %@ is the limit, such as 20",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your visit for %@ wasn't saved. You can have %@ visits planned at a time, so delete one first."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besøket for %@ ble ikke lagret. Dere kan ha %@ besøk planlagt om gangen, så slett ett først."
           }
         }
       }

@@ -372,7 +372,8 @@ extension PairedHomeView {
             firstSteps: firstSteps,
             dailyCard: dailyChallengeCardState.kind,
             milestoneIsLoading: milestoneIsLoading,
-            relationshipStartedOn: relationshipStartedOn
+            relationshipStartedOn: relationshipStartedOn,
+            visitCard: visits?.homeCard(on: LockScreenCalendarDate(containing: Date(), in: .current))
         )
     }
 
@@ -402,6 +403,8 @@ private struct HomeCardChangeAnimations: ViewModifier {
     let dailyCard: DailyChallengeCardState.Kind
     let milestoneIsLoading: Bool
     let relationshipStartedOn: String?
+    /// The visit card shows nothing until the cache is read, then a short question or a tall countdown.
+    let visitCard: HomeVisitCardState?
 
     func body(content: Content) -> some View {
         content
@@ -414,6 +417,7 @@ private struct HomeCardChangeAnimations: ViewModifier {
             .animation(animation, value: dailyCard)
             .animation(animation, value: milestoneIsLoading)
             .animation(animation, value: relationshipStartedOn)
+            .animation(animation, value: visitCard)
     }
 }
 

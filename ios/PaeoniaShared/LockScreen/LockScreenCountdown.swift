@@ -16,7 +16,6 @@ nonisolated struct LockScreenCountdown: Equatable, Sendable {
         }
     }
 
-    /// A countdown or a visit.
     let item: LockScreenDateItem
     let remaining: Remaining
     /// From the start of the bar to the start of the target day (1). A one-off

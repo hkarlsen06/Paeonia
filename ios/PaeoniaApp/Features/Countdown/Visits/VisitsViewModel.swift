@@ -6,13 +6,18 @@ import Observation
 ///
 /// `state` is the cached server state with this phone's queued writes laid over it, so an
 /// edit shows at once, survives a relaunch while offline, and either partner's change arrives
-/// through the live feed. Every write goes through the pending operations.
+/// through the live feed. Every write goes through the pending operations. A write the server
+/// refuses for good comes back as `error`, and a refused list item goes back into `itemDraft`.
 @Observable
 final class VisitsViewModel {
     private(set) var state = CoupleVisits()
     private(set) var error: VisitsError?
     /// `state` holds this person's cached visits, so no visits means there are none.
     private(set) var hasLoaded = false
+    /// The text in the visit screen's add field. A refused add leaves it there.
+    var itemDraft = ""
+    /// The day the "When do you meet next?" card comes back after the person hid it.
+    private(set) var promptReturnDay: LockScreenCalendarDate?
 
     @ObservationIgnored private let cache: any VisitsCaching
     @ObservationIgnored private let pendingOperationStore: any PendingSyncOperationPersisting
@@ -21,6 +26,8 @@ final class VisitsViewModel {
     @ObservationIgnored private var ownerUserID: UUID?
     /// Drops a reload that finished after a newer one started or the account changed.
     @ObservationIgnored private var reloadGeneration = 0
+
+    static let promptHiddenDays = 30
 
     init(
         cache: (any VisitsCaching)? = nil,
@@ -37,6 +44,9 @@ final class VisitsViewModel {
         if self.ownerUserID != ownerUserID {
             state = CoupleVisits()
             hasLoaded = false
+            promptReturnDay = nil
+            // Text typed by the person who was signed in before.
+            if self.ownerUserID != nil { itemDraft = "" }
         }
         self.ownerUserID = ownerUserID
         await reload()
@@ -64,6 +74,7 @@ final class VisitsViewModel {
             return
         }
         let server = await cache.visits(ownerUserID: ownerUserID)
+        let returnDay = await cache.promptReturnDay(ownerUserID: ownerUserID)
         var operations: [PendingSyncOperationSnapshot] = []
         for kind in VisitsWrite.operationKinds {
             let inFlight = try? await pendingOperationStore.inFlightOperations(ownerUserID: ownerUserID, kind: kind)
@@ -74,7 +85,26 @@ final class VisitsViewModel {
             .sorted { $0.operation.clientSequence < $1.operation.clientSequence }
             .compactMap(VisitsWrite.init)
         state = server.applying(writes)
+        promptReturnDay = returnDay
         hasLoaded = true
+        show(await cache.takeRefusals(ownerUserID: ownerUserID))
+    }
+
+    func homeCard(on today: LockScreenCalendarDate) -> HomeVisitCardState {
+        guard hasLoaded else { return .hidden }
+        if let visit = state.currentOrNext(on: today) {
+            return .visit(visit)
+        }
+        return promptReturnDay.map { today < $0 } == true ? .hidden : .prompt
+    }
+
+    func hidePrompt(now: Date = Date(), calendar: Calendar = .current) async {
+        guard let ownerUserID,
+              let returnDate = calendar.date(byAdding: .day, value: Self.promptHiddenDays, to: now)
+        else { return }
+        let returnDay = LockScreenCalendarDate(containing: returnDate, in: calendar)
+        promptReturnDay = returnDay
+        await cache.setPromptReturnDay(returnDay, ownerUserID: ownerUserID)
     }
 
     /// Plans a visit with `newID` when `id` is nil, otherwise edits that one. The editor
@@ -91,12 +121,19 @@ final class VisitsViewModel {
         let startDate = PairingStartDate(date: start, calendar: calendar).rawValue
         let endDate = PairingStartDate(date: end, calendar: calendar).rawValue
         guard endDate >= startDate else { return false }
-        // A write the server refuses for good would drop out of the list without a word.
-        guard id != nil || state.visits.count < Visit.maxCount else {
+        let normalizedPlace: MemoryPlace?
+        do {
+            normalizedPlace = try MemoryDataService.normalizedPlace(place)
+        } catch {
+            self.error = .saveFailed
+            return false
+        }
+        let visit = Visit(id: id ?? newID, startDate: startDate, endDate: endDate, place: normalizedPlace)
+        // A write the server refuses for good would only come back later, after the editor closed.
+        guard !state.isFull(saving: visit, on: LockScreenCalendarDate(containing: Date(), in: calendar)) else {
             error = .visitLimit
             return false
         }
-        let visit = Visit(id: id ?? newID, startDate: startDate, endDate: endDate, place: place)
         return await enqueue(.saveVisit(visit), kind: .saveVisit, payload: visit)
     }
 
@@ -105,23 +142,24 @@ final class VisitsViewModel {
         await enqueue(.deleteVisit(id), kind: .deleteVisit, payload: VisitIDPayload(id: id))
     }
 
+    /// Adds `itemDraft` to the list and empties the field. A full list keeps the text in it.
     @discardableResult
-    func addItem(_ title: String, newID: UUID = UUID()) async -> Bool {
-        let title = String(
-            title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(TogetherListItem.maxTitleLength)
-        )
-        guard !title.isEmpty else { return false }
+    func addItem(newID: UUID = UUID()) async -> Bool {
+        let draft = itemDraft
+        guard let title = TogetherListItem.title(draft) else { return false }
         guard state.items.count < TogetherListItem.maxCount else {
             error = .listFull
             return false
         }
         let payload = SaveTogetherItemPayload(id: newID, title: title)
-        return await enqueue(.saveItem(payload), kind: .saveTogetherItem, payload: payload)
+        guard await enqueue(.saveItem(payload), kind: .saveTogetherItem, payload: payload) else { return false }
+        if itemDraft == draft { itemDraft = "" }
+        return true
     }
 
     @discardableResult
-    func setItemDone(id: UUID, _ isDone: Bool) async -> Bool {
-        let payload = SetTogetherItemDonePayload(id: id, isDone: isDone)
+    func setItemDone(_ item: TogetherListItem, _ isDone: Bool) async -> Bool {
+        let payload = SetTogetherItemDonePayload(id: item.id, title: item.title, isDone: isDone)
         return await enqueue(.setItemDone(payload), kind: .setTogetherItemDone, payload: payload)
     }
 
@@ -132,6 +170,27 @@ final class VisitsViewModel {
 
     func clearError() {
         error = nil
+    }
+
+    /// Tells the person about writes the server refused, and puts a refused item back in the
+    /// add field when it is empty. The message names every refused item, so no text is lost.
+    private func show(_ refusals: [VisitsRefusal]) {
+        var titles: [String] = []
+        var visit: Visit?
+        for refusal in refusals {
+            switch refusal {
+            case let .item(title): titles.append(title)
+            case let .visit(refused): visit = visit ?? refused
+            }
+        }
+        if let title = titles.first, itemDraft.isEmpty {
+            itemDraft = title
+        }
+        if !titles.isEmpty {
+            error = .itemsNotAdded(titles)
+        } else if let visit {
+            error = .visitNotSaved(visit)
+        }
     }
 
     private func enqueue(_ write: VisitsWrite, kind: SyncPendingOperationKind, payload: some Encodable) async -> Bool {
@@ -161,19 +220,36 @@ final class VisitsViewModel {
     }
 }
 
+nonisolated enum HomeVisitCardState: Equatable, Sendable {
+    /// Nothing: the cache isn't read yet, or the person hid the question.
+    case hidden
+    /// "When do you meet next?"
+    case prompt
+    /// The visit that is ongoing, or else the next one.
+    case visit(Visit)
+}
+
 nonisolated enum VisitsError: Equatable, Sendable {
     case saveFailed
     case visitLimit
     case listFull
+    /// The server refused these list items for good, so they aren't on the list.
+    case itemsNotAdded([String])
+    /// The server refused this visit for good.
+    case visitNotSaved(Visit)
 
     var message: String {
         switch self {
         case .saveFailed:
             String(localized: .visitErrorSaveFailed)
         case .visitLimit:
-            String(localized: .visitErrorVisitLimit(Visit.maxCount.formatted()))
+            String(localized: .visitErrorVisitLimit(Visit.maxOpenCount.formatted()))
         case .listFull:
             String(localized: .visitErrorListFull(TogetherListItem.maxCount.formatted()))
+        case let .itemsNotAdded(titles):
+            String(localized: .visitErrorItemsNotAdded(titles.formatted(.list(type: .and))))
+        case let .visitNotSaved(visit):
+            String(localized: .visitErrorVisitNotSaved(visit.dateRangeText(), Visit.maxOpenCount.formatted()))
         }
     }
 }

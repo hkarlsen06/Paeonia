@@ -89,7 +89,7 @@ final class CoupleDatesViewModel {
         calendar: Calendar = .current,
         newID: UUID = UUID()
     ) async -> Bool {
-        let title = String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(CustomCountdown.maxTitleLength))
+        let title = ShortTitle.normalized(title, maxCodePoints: CustomCountdown.maxTitleLength)
         guard !title.isEmpty else { return false }
         // A write the server refuses for good would drop out of the list without a word.
         guard id != nil || dates.countdowns.count < CustomCountdown.maxCount else {

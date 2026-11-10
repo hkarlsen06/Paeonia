@@ -10,12 +10,17 @@ nonisolated extension Visit {
         LockScreenCalendarDate(endDate)?.startOfDay(in: calendar)
     }
 
-    /// "Fri 20 Nov – Mon 23 Nov", or one day when the visit is a single day.
+    /// The first and last day in the phone's language, such as Fri 20 to Mon 23 Nov, or one
+    /// day when the visit is a single day.
     func dateRangeText(calendar: Calendar = .current) -> String {
         guard let start = startDay(calendar: calendar), let end = endDay(calendar: calendar) else { return "" }
-        let style = Date.FormatStyle.dateTime.weekday(.abbreviated).day().month(.abbreviated)
-        guard end > start else { return start.formatted(style) }
-        return "\(start.formatted(style)) – \(end.formatted(style))"
+        guard end > start else {
+            return start.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
+        }
+        var style = Date.IntervalFormatStyle().weekday(.abbreviated).day().month(.abbreviated)
+        style.calendar = calendar
+        style.timeZone = calendar.timeZone
+        return (start..<end).formatted(style)
     }
 
     /// The dates timeline row: "Together in Bergen", or "Together again" without a place.

@@ -2,7 +2,8 @@ import Foundation
 
 /// Sends one queued visit or list write, then writes what the server stored into the cache,
 /// so the screen doesn't flash the old state between the send and the live feed. One handler
-/// type serves the five write kinds.
+/// type serves the five write kinds. A write the server refuses for good is kept in the cache
+/// until a screen tells the person.
 struct VisitsPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind
 
@@ -22,34 +23,35 @@ struct VisitsPendingOperationHandler: PendingSyncOperationHandling {
         }
         do {
             let confirmed = try await send(write, operation: operation.operation)
-            await cache.apply(confirmed, ownerUserID: operation.ownerUserID)
+            await cache.confirm(confirmed, ownerUserID: operation.ownerUserID)
             LocalStoreChanges.post(.visits, ownerUserID: operation.ownerUserID)
             return .succeeded
         } catch let error as PaeoniaConvexError where CoupleDatesRejection.isPermanent(error) {
+            if let refusal = write.refusal {
+                await cache.recordRefusal(refusal, ownerUserID: operation.ownerUserID)
+            }
             return .terminalFailure(error.description)
         }
     }
 
-    /// The write as the server stored it. A nil row means it was deleted, so the cache drops it too.
-    private func send(_ write: VisitsWrite, operation: SyncClientOperation) async throws -> VisitsWrite {
+    /// The row as the server stored it. A nil row means it is gone, so the cache drops it too.
+    private func send(_ write: VisitsWrite, operation: SyncClientOperation) async throws -> VisitsConfirmation {
         switch write {
         case let .saveVisit(visit):
             let stored = try await gateway.saveVisit(visit, operation: operation)
-            return stored.map(VisitsWrite.saveVisit) ?? .deleteVisit(visit.id)
+            return stored.map(VisitsConfirmation.visit) ?? .visitGone(visit.id)
         case let .deleteVisit(id):
             try await gateway.deleteVisit(id: id, operation: operation)
-            return write
+            return .visitGone(id)
         case let .saveItem(payload):
             let stored = try await gateway.saveItem(payload, operation: operation)
-            return stored.map { .saveItem(SaveTogetherItemPayload(id: $0.id, title: $0.title)) }
-                ?? .deleteItem(payload.id)
+            return stored.map { .item($0.item) } ?? .itemGone(payload.id)
         case let .setItemDone(payload):
             let stored = try await gateway.setItemDone(payload, operation: operation)
-            return stored.map { .setItemDone(SetTogetherItemDonePayload(id: $0.id, isDone: $0.doneAt != nil)) }
-                ?? .deleteItem(payload.id)
+            return stored.map { .item($0.item) } ?? .itemGone(payload.id)
         case let .deleteItem(id):
             try await gateway.deleteItem(id: id, operation: operation)
-            return write
+            return .itemGone(id)
         }
     }
 }

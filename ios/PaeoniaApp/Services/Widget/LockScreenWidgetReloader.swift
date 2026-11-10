@@ -32,12 +32,13 @@ nonisolated enum LockScreenWidgetReloader {
 
 nonisolated extension SyncPendingOperationKind {
     /// Whether a successful write of this kind changes what a snapshot widget
-    /// shows: the start date, countdowns and birthdays, the daily answer (and so the streak),
+    /// shows: the start date, countdowns, visits and birthdays, the daily answer (and so the streak),
     /// location sharing, and any move in a game.
     var changesLockScreenWidgets: Bool {
         switch self {
         case .setRelationshipStartedOn,
              .saveCountdown, .deleteCountdown, .setBirthday,
+             .saveVisit, .deleteVisit,
              .submitDailyAnswer,
              .updateLocationSharingPreference,
              .pickDrawWord, .submitGameDrawing, .submitGameGuess, .giveUpGameRound,
