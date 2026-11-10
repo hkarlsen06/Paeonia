@@ -1,7 +1,7 @@
 import XCTest
 
-/// Planning a visit from the Us tab card in the paired local flow: the card asks when the
-/// partners meet next, the editor saves a visit, and the card counts down to it.
+/// Planning a visit from the Us tab in the paired local flow: a row asks when the partners
+/// meet next, the visit screen opens the editor, and after the save the card counts down.
 final class VisitJourneyUITests: XCTestCase {
 
     override func setUpWithError() throws {
@@ -16,10 +16,14 @@ final class VisitJourneyUITests: XCTestCase {
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
 
-        let plan = app.buttons["home.visit.plan"]
-        XCTAssertTrue(plan.waitForExistence(timeout: 15))
-        scrollUntilHittable(plan, in: app)
-        XCTAssertTrue(app.staticTexts["When do you meet next?"].exists)
+        let prompt = app.buttons["home.visit.prompt"]
+        XCTAssertTrue(prompt.waitForExistence(timeout: 15))
+        scrollUntilHittable(prompt, in: app)
+        XCTAssertTrue(prompt.label.contains("When do you meet next?"), prompt.label)
+        prompt.tap()
+
+        let plan = app.buttons["visit.detail.plan"]
+        XCTAssertTrue(plan.waitForExistence(timeout: 5))
         plan.tap()
 
         // A new visit starts two weeks out and lasts four days, so it saves as it is.
@@ -28,10 +32,15 @@ final class VisitJourneyUITests: XCTestCase {
         XCTAssertTrue(save.isEnabled)
         save.tap()
 
+        // The editor closes onto the visit screen, which now shows the visit.
+        XCTAssertTrue(save.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["visit.detail.edit"].exists)
+        app.buttons["visit.detail.done"].tap()
+
         let card = app.buttons["home.visit.card"]
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         XCTAssertTrue(card.label.contains("14 days to go"), card.label)
-        XCTAssertFalse(app.buttons["home.visit.plan"].exists)
+        XCTAssertFalse(app.buttons["home.visit.prompt"].exists)
     }
 
     @MainActor

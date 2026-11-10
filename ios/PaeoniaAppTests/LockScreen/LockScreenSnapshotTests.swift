@@ -19,7 +19,8 @@ struct LockScreenSnapshotTests {
             "created_at": "2026-09-02T10:00:00.500Z"
           }
         ],
-        "birthdays": [ { "is_mine": false, "birthday": "2001-07-01" } ]
+        "birthdays": [ { "is_mine": false, "birthday": "2001-07-01" } ],
+        "visits": []
       },
       "distance": { "meters": 7750000.5, "as_of": "2026-10-17T09:10:00.000Z" },
       "couple_day": {
@@ -71,7 +72,7 @@ struct LockScreenSnapshotTests {
           "generated_at": "2026-10-17T09:15:30Z",
           "partner": null,
           "started_on": null,
-          "dates": { "countdowns": [], "birthdays": [] },
+          "dates": { "countdowns": [], "birthdays": [], "visits": [] },
           "distance": null,
           "couple_day": null,
           "streak": null,

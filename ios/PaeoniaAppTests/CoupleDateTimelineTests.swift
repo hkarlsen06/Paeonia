@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// Covers how the couple's own countdowns and birthdays merge with the milestones on
+/// Covers how the couple's own countdowns, birthdays and visits merge with the milestones on
 /// the Home tile and the milestones timeline, and how queued writes lay over the
 /// server's copy.
 @MainActor
@@ -64,6 +64,31 @@ struct CoupleDateTimelineTests {
         let past = timeline().past(startedOn: nil, dates: dates, now: dayAfter, limit: 4)
         #expect(past.map(\.kind) == [.countdown(trip)])
         #expect(past.first?.daysRemaining == -1)
+    }
+
+    @Test func aVisitCountsAsTodayWhileItIsOngoingAndMovesToThePastAfterItsLastDay() throws {
+        let visit = Visit(id: UUID(), startDate: "2026-01-20", endDate: "2026-01-23")
+        let dates = CoupleDates()
+        func upcoming(_ iso: String) throws -> [CoupleDateEvent] {
+            timeline().upcoming(startedOn: nil, dates: dates, visits: [visit], now: try day(iso), milestoneLimit: 0)
+        }
+        func past(_ iso: String) throws -> [CoupleDateEvent] {
+            timeline().past(startedOn: nil, dates: dates, visits: [visit], now: try day(iso), limit: 4)
+        }
+
+        #expect(try upcoming("2026-01-18").map(\.daysRemaining) == [2])
+        #expect(try upcoming("2026-01-20").map(\.daysRemaining) == [0])
+        // On the last day it still sits with today, on its first day's date.
+        let lastDay = try upcoming("2026-01-23")
+        #expect(lastDay.map(\.kind) == [.visit(visit)])
+        #expect(lastDay.first?.daysRemaining == 0)
+        #expect(lastDay.first?.date == (try day("2026-01-20")))
+        #expect(try past("2026-01-23").isEmpty)
+
+        #expect(try upcoming("2026-01-24").isEmpty)
+        let after = try past("2026-01-24")
+        #expect(after.map(\.kind) == [.visit(visit)])
+        #expect(after.first?.daysRemaining == -4)
     }
 
     @Test func birthdaysCountToTheNextOneAndNeverShowAsPast() throws {
