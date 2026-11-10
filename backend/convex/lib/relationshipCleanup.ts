@@ -86,7 +86,7 @@ async function deleteCoupleDates(ctx: WriterCtx, coupleId: string): Promise<numb
 async function deleteCoupleVisits(ctx: WriterCtx, coupleId: string): Promise<number> {
   const visits = await ctx.db
     .query("visits")
-    .withIndex("by_couple_id_deleted_at", (q) => q.eq("couple_id", coupleId))
+    .withIndex("by_couple_id_deleted_at_end_date", (q) => q.eq("couple_id", coupleId))
     .collect();
   for (const visit of visits) await ctx.db.delete(visit._id);
   const items = await ctx.db

@@ -841,7 +841,7 @@ export default defineSchema({
     deleted_at: optTs,
   })
     .index("by_uuid", ["id"])
-    .index("by_couple_id_deleted_at", ["couple_id", "deleted_at"]),
+    .index("by_couple_id_deleted_at_end_date", ["couple_id", "deleted_at", "end_date"]),
 
   // The couple's one list of things to do together. It belongs to the couple, not to a visit, so
   // it survives a moved or deleted visit. Either partner adds, ticks, or deletes an item. Delete

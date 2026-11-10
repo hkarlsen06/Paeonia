@@ -111,7 +111,11 @@ describe("countdowns", () => {
 
 describe("visits", () => {
   test("both hear the day before a visit starts, once for several visits that start that day", () => {
-    const visits = [{ start_date: "2026-10-22" }, { start_date: "2026-10-22" }, { start_date: "2026-10-30" }];
+    const visits = [
+      { start_date: "2026-10-22", end_date: "2026-10-24" },
+      { start_date: "2026-10-22", end_date: "2026-10-22" },
+      { start_date: "2026-10-30", end_date: "2026-11-02" },
+    ];
     expect(plan({ today: "2026-10-21", visits })).toEqual([
       { reminder: "visit_tomorrow", occurrence: "2026-10-22", extra: {} },
     ]);
@@ -120,6 +124,16 @@ describe("visits", () => {
   });
 
   test("the day before can be in the old year", () => {
-    expect(kinds({ today: "2026-12-31", visits: [{ start_date: "2027-01-01" }] })).toEqual(["visit_tomorrow"]);
+    expect(kinds({ today: "2026-12-31", visits: [{ start_date: "2027-01-01", end_date: "2027-01-03" }] })).toEqual([
+      "visit_tomorrow",
+    ]);
+  });
+
+  test("no reminder while a visit already covers today, even when the next one starts tomorrow", () => {
+    const visits = [
+      { start_date: "2026-10-20", end_date: "2026-10-21" },
+      { start_date: "2026-10-22", end_date: "2026-10-25" },
+    ];
+    expect(kinds({ today: "2026-10-21", visits })).toEqual([]);
   });
 });

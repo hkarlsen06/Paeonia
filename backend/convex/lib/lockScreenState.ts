@@ -10,7 +10,7 @@ import { isSharingNow } from "./locationPause";
 import { findProfile } from "./profiles";
 import { getCoupleStreakParticipationForDay, readCoupleStreak } from "./streaks";
 import { addDaysToDate } from "./time";
-import { liveVisits } from "./visits";
+import { openVisits } from "./visits";
 
 // Everything the Lock Screen widgets show, in one read. It carries no question text, answer text,
 // message text, or coordinates, because a widget can sit on a locked phone.
@@ -57,9 +57,12 @@ async function coupleDates(ctx: ReaderCtx, coupleId: string, userId: string, now
     .filter((member) => member.birthday !== undefined)
     .map((member) => ({ is_mine: member.user_id === userId, birthday: member.birthday! }));
   // The countdown widgets count down to the start of the next visit. The phone picks it on its own day.
-  const visits = (await liveVisits(ctx, coupleId))
-    .filter((row) => row.end_date >= earliest)
-    .map((row) => ({ id: row.id, start_date: row.start_date, end_date: row.end_date, created_at: row.created_at }));
+  const visits = (await openVisits(ctx, coupleId, earliest)).map((row) => ({
+    id: row.id,
+    start_date: row.start_date,
+    end_date: row.end_date,
+    created_at: row.created_at,
+  }));
   return { countdowns, birthdays, visits };
 }
 

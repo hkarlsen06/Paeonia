@@ -14,7 +14,7 @@ import { optionalTimestampArg } from "./lib/ids";
 import { enqueueNotificationForUser } from "./lib/notifications";
 import { resolveMemberStreakTimeZone } from "./lib/streakDeadlines";
 import { endOfLocalDay, localTimeWindow, nowIso } from "./lib/time";
-import { liveVisits } from "./lib/visits";
+import { openVisits } from "./lib/visits";
 
 const USER_PAGE_SIZE = 50;
 
@@ -73,7 +73,7 @@ async function remindUser(ctx: MutationCtx, preference: Doc<"notification_prefer
       members.flatMap((member) => (member.birthday === undefined ? [] : [[member.user_id, member.birthday] as const])),
     ),
     countdowns,
-    visits: await liveVisits(ctx, coupleId),
+    visits: await openVisits(ctx, coupleId, morning.localDate),
   });
   // A reminder stops being true when the recipient's day ends.
   const expiresAt = endOfLocalDay(morning.localDate, timeZone);

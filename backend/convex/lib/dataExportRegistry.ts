@@ -349,7 +349,7 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       nb: "Nedtellingene du og partneren din har laget sammen.",
     },
   }),
-  visits: shared("by_couple_id_deleted_at", {
+  visits: shared("by_couple_id_deleted_at_end_date", {
     group: "relationship",
     about: {
       en: "The visits you and your partner planned: the first and last day, and the place if you added one.",

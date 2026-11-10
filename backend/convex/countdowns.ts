@@ -9,14 +9,15 @@ import { getByUuid, withUpdatedAt, type ReaderCtx, type WriterCtx } from "./lib/
 import { fail } from "./lib/errors";
 import { dateArg, uuidArg } from "./lib/ids";
 import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./lib/notifications";
+import { requireTitle } from "./lib/text";
 import { addDaysToDate, nowIso } from "./lib/time";
 
 // The couple's own dates on the milestones timeline: countdowns either partner adds
 // ("Trip to Bergen") and both partners' birthdays. The relationship milestones are derived
 // on the phone from couples.started_on and are not stored here.
 
-/** The app caps titles at 40 characters. Code points are counted here, so an emoji never trips it. */
-const MAX_TITLE_CODE_POINTS = 80;
+/** The app trims and counts a title the same way. */
+const MAX_TITLE_CODE_POINTS = 40;
 const MAX_COUNTDOWNS_PER_COUPLE = 50;
 
 /** The partner's Lock Screen widget lists the next countdowns, so any change to them refreshes it. */
@@ -91,10 +92,7 @@ export const save_countdown = mutation({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const countdownId = uuidArg(args.p_countdown_id);
-    const title = args.p_title.trim();
-    if (title.length === 0 || Array.from(title).length > MAX_TITLE_CODE_POINTS) {
-      fail("23514", "countdown title must be 1 to 40 characters");
-    }
+    const title = requireTitle(args.p_title, MAX_TITLE_CODE_POINTS, "countdown title");
     const targetDate = dateArg(args.p_target_date);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
 

@@ -95,11 +95,13 @@ describe("save_countdown", () => {
     expect((await read(couple.first)).countdowns.map((row) => row.id)).toEqual([id]);
   });
 
-  test("rejects an empty title and an invalid date", async () => {
+  test("rejects an empty or long title and an invalid date", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     expect(await failure(save(couple.first, newUuid(), "   ", "2026-12-20"))).toMatchObject({ code: "23514" });
-    expect(await failure(save(couple.first, newUuid(), "x".repeat(81), "2026-12-20"))).toMatchObject({ code: "23514" });
+    expect(await failure(save(couple.first, newUuid(), "x".repeat(41), "2026-12-20"))).toMatchObject({ code: "23514" });
+    // Code points count, as on the phone: this emoji is one character made of eight.
+    expect(await failure(save(couple.first, newUuid(), "👩‍❤️‍💋‍👨".repeat(6), "2026-12-20"))).toMatchObject({ code: "23514" });
     expect(await failure(save(couple.first, newUuid(), "Trip", "2026-02-30"))).toMatchObject({ code: "22007" });
     expect((await read(couple.first)).countdowns).toEqual([]);
   });

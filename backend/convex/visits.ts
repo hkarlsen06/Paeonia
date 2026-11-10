@@ -5,24 +5,31 @@ import { getCurrentEntitledCoupleId } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { isSupersededClientOperation, runClientOperation } from "./lib/clientOperations";
+import { userLocalDate } from "./lib/coupleDays";
 import { getByUuid, withUpdatedAt, type ReaderCtx, type WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dateArg, uuidArg } from "./lib/ids";
 import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./lib/notifications";
 import { normalizePlace, placeArg } from "./lib/places";
+import { requireTitle } from "./lib/text";
 import { nowIso } from "./lib/time";
 import {
   liveTogetherItems,
-  liveVisits,
+  MAX_OPEN_VISITS_PER_COUPLE,
+  MAX_TOGETHER_ITEM_TITLE_CODE_POINTS,
   MAX_TOGETHER_ITEMS_PER_COUPLE,
-  MAX_VISITS_PER_COUPLE,
+  openVisits,
+  recentVisits,
+  visitPhase,
 } from "./lib/visits";
 
 // The couple's visits, the times they meet in person, and their one shared list of things to do
 // together. Either partner plans, edits or deletes a visit, and adds, ticks or deletes an item.
-
-/** The app caps item titles at 40 characters. Code points are counted here, so an emoji never trips it. */
-const MAX_ITEM_TITLE_CODE_POINTS = 80;
+//
+// The phone queues writes and may send them in any order, since a failed send waits while later
+// ones go. All writes on one visit, or on one list item, share an idempotency scope, so a write
+// that arrives after a newer one from the same phone changes nothing. A tick carries the item's
+// title and adds the item when its add has not arrived yet. An item's title never changes.
 
 /** The partner's Lock Screen widget counts down to the next visit, so a visit change refreshes it. */
 const refreshPartnerLockScreen = (ctx: WriterCtx, coupleId: string, userId: string) =>
@@ -51,6 +58,7 @@ function itemRow(row: Doc<"together_list_items">) {
     done_at: row.done_at ?? null,
     done_by_user_id: row.done_by_user_id ?? null,
     created_at: row.created_at,
+    updated_at: row.updated_at,
   };
 }
 
@@ -61,16 +69,16 @@ const byCreatedAt = (a: Doc<"together_list_items">, b: Doc<"together_list_items"
   a.created_at !== b.created_at ? (a.created_at < b.created_at ? -1 : 1) : a.id < b.id ? -1 : 1;
 
 /**
- * The caller's couple's visits, earliest first, and the list, oldest item first. The phone works out
- * which visit is next on its own day. The app subscribes to this. Fails with `42501` without an
- * entitled couple.
+ * The caller's couple's visits that are not over and the ones that ended last (`recentVisits`),
+ * earliest first, and the list, oldest item first. The phone works out which visit is next on its
+ * own day. The app subscribes to this. Fails with `42501` without an entitled couple.
  */
 export const get_visits = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    const visits = (await liveVisits(ctx, coupleId)).sort(byStartDate).map(visitRow);
+    const visits = (await recentVisits(ctx, coupleId)).sort(byStartDate).map(visitRow);
     const items = (await liveTogetherItems(ctx, coupleId)).sort(byCreatedAt).map(itemRow);
     return { couple_id: coupleId, visits, items };
   },
@@ -89,9 +97,10 @@ async function currentItem(ctx: ReaderCtx, itemId: string, coupleId: string) {
 /**
  * Plans or edits the visit `p_visit_id`. The phone picks the id, so a create and its retries are the
  * same write. The last day may equal the first and may not be before it. A visit in the past is
- * fine. A deleted visit stays deleted, and a retry that a newer write from the same phone already
- * replaced changes nothing. Returns the visit as stored now, also on a replay, or null when it was
- * deleted.
+ * fine. At most `MAX_OPEN_VISITS_PER_COUPLE` visits are open on the caller's day, so a save that
+ * adds an open one fails with `23514` when that many are. A deleted visit stays deleted, and a
+ * write that a newer one from the same phone already replaced changes nothing. Returns the visit as
+ * stored now, also on a replay, or null when it is deleted or was never saved.
  */
 export const save_visit = mutation({
   args: {
@@ -127,12 +136,17 @@ export const save_visit = mutation({
       }
 
       const fields = { start_date: startDate, end_date: endDate, place: place ?? undefined, last_edited_by_user_id: userId };
+      const today = await userLocalDate(ctx, userId, nowIso());
+      const wasOpen = existing !== null && visitPhase(existing, today) !== "ended";
+      if (!wasOpen && visitPhase(fields, today) !== "ended") {
+        const others = (await openVisits(ctx, coupleId, today)).filter((row) => row.id !== visitId);
+        if (others.length >= MAX_OPEN_VISITS_PER_COUPLE) {
+          return fail("23514", `a couple can have at most ${MAX_OPEN_VISITS_PER_COUPLE} visits that are not over`);
+        }
+      }
       if (existing) {
         await ctx.db.patch(existing._id, withUpdatedAt(fields));
       } else {
-        if ((await liveVisits(ctx, coupleId)).length >= MAX_VISITS_PER_COUPLE) {
-          return fail("23514", `a couple can have at most ${MAX_VISITS_PER_COUPLE} visits`);
-        }
         const now = nowIso();
         await ctx.db.insert("visits", {
           id: visitId,
@@ -152,7 +166,10 @@ export const save_visit = mutation({
   },
 });
 
-/** Deletes the visit `p_visit_id` for both partners. The list stays. A missing or already deleted one is fine. */
+/**
+ * Deletes the visit `p_visit_id` for both partners. The list stays. A missing or already deleted one
+ * is fine, and a save of it from the same phone that arrives later changes nothing.
+ */
 export const delete_visit = mutation({
   args: { p_visit_id: v.string(), ...clientOperationArgs },
   handler: async (ctx, args) => {
@@ -179,19 +196,38 @@ export const delete_visit = mutation({
   },
 });
 
+/** Adds `itemId` with `title`, ticked by `userId` when `done`, unless the list is full. */
+async function insertItem(ctx: WriterCtx, coupleId: string, userId: string, itemId: string, title: string, done: boolean) {
+  if ((await liveTogetherItems(ctx, coupleId)).length >= MAX_TOGETHER_ITEMS_PER_COUPLE) {
+    return fail("23514", `a couple can have at most ${MAX_TOGETHER_ITEMS_PER_COUPLE} list items`);
+  }
+  const now = nowIso();
+  await ctx.db.insert("together_list_items", {
+    id: itemId,
+    couple_id: coupleId,
+    title,
+    added_by_user_id: userId,
+    last_edited_by_user_id: userId,
+    ...(done ? { done_at: now, done_by_user_id: userId } : {}),
+    created_at: now,
+    updated_at: now,
+  });
+}
+
+const itemTitle = (title: string) => requireTitle(title, MAX_TOGETHER_ITEM_TITLE_CODE_POINTS, "list item title");
+
 /**
- * Adds the list item `p_item_id`, or renames it. Like `save_visit`, a deleted item stays deleted and
- * a superseded retry changes nothing. Returns the item as stored now, or null when it was deleted.
+ * Adds the list item `p_item_id`. An item that exists, deleted or not, stays as it is, and so does
+ * one that a later tick or delete from the same phone already wrote. Fails with `23514` for an
+ * empty or long title, or when the list is full. Returns the item as stored now, or null when it is
+ * deleted or was never added.
  */
 export const save_together_item = mutation({
   args: { p_item_id: v.string(), p_title: v.string(), ...clientOperationArgs },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const itemId = uuidArg(args.p_item_id);
-    const title = args.p_title.trim();
-    if (title.length === 0 || Array.from(title).length > MAX_ITEM_TITLE_CODE_POINTS) {
-      fail("23514", "list item title must be 1 to 40 characters");
-    }
+    const title = itemTitle(args.p_title);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
 
     const input = toClientOperation(args, {
@@ -204,26 +240,8 @@ export const save_together_item = mutation({
       if (existing && existing.couple_id !== coupleId) {
         return fail("42501", "list item belongs to another couple");
       }
-      if (existing?.deleted_at !== undefined || (await isSupersededClientOperation(ctx, userId, input))) {
-        return null;
-      }
-      if (existing) {
-        await ctx.db.patch(existing._id, withUpdatedAt({ title, last_edited_by_user_id: userId }));
-        return null;
-      }
-      if ((await liveTogetherItems(ctx, coupleId)).length >= MAX_TOGETHER_ITEMS_PER_COUPLE) {
-        return fail("23514", `a couple can have at most ${MAX_TOGETHER_ITEMS_PER_COUPLE} list items`);
-      }
-      const now = nowIso();
-      await ctx.db.insert("together_list_items", {
-        id: itemId,
-        couple_id: coupleId,
-        title,
-        added_by_user_id: userId,
-        last_edited_by_user_id: userId,
-        created_at: now,
-        updated_at: now,
-      });
+      if (existing || (await isSupersededClientOperation(ctx, userId, input))) return null;
+      await insertItem(ctx, coupleId, userId, itemId, title, false);
       return null;
     });
     return await currentItem(ctx, itemId, coupleId);
@@ -232,27 +250,35 @@ export const save_together_item = mutation({
 
 /**
  * Ticks (`p_done: true`) or unticks the list item `p_item_id`. Ticking a ticked item keeps who ticked
- * it first. Returns the item as stored now, or null when it is missing or deleted.
+ * it first. When the item's add has not arrived yet, this adds it with `p_title`, so it fails like
+ * `save_together_item` for a bad title or a full list. Returns the item as stored now, or null when
+ * it is deleted.
  */
 export const set_together_item_done = mutation({
-  args: { p_item_id: v.string(), p_done: v.boolean(), ...clientOperationArgs },
+  args: { p_item_id: v.string(), p_title: v.string(), p_done: v.boolean(), ...clientOperationArgs },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const itemId = uuidArg(args.p_item_id);
+    const title = itemTitle(args.p_title);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
 
     const input = toClientOperation(args, {
       kind: "set_together_item_done",
-      scope: `together_item:${itemId}:done`,
-      request: { kind: "set_together_item_done", couple_id: coupleId, id: itemId, done: args.p_done },
+      scope: `together_item:${itemId}`,
+      request: { kind: "set_together_item_done", couple_id: coupleId, id: itemId, title, done: args.p_done },
     });
     await runClientOperation(ctx, userId, input, async () => {
       const existing = await getByUuid(ctx, "together_list_items", itemId);
-      if (!existing || existing.deleted_at !== undefined) return null;
-      if (existing.couple_id !== coupleId) {
+      if (existing && existing.couple_id !== coupleId) {
         return fail("42501", "list item belongs to another couple");
       }
-      if (await isSupersededClientOperation(ctx, userId, input)) return null;
+      if (existing?.deleted_at !== undefined || (await isSupersededClientOperation(ctx, userId, input))) {
+        return null;
+      }
+      if (!existing) {
+        await insertItem(ctx, coupleId, userId, itemId, title, args.p_done);
+        return null;
+      }
       if (args.p_done === (existing.done_at !== undefined)) return null;
       await ctx.db.patch(
         existing._id,
@@ -268,7 +294,10 @@ export const set_together_item_done = mutation({
   },
 });
 
-/** Deletes the list item `p_item_id` for both partners. A missing or already deleted one is fine. */
+/**
+ * Deletes the list item `p_item_id` for both partners. A missing or already deleted one is fine, and
+ * an add or tick of it from the same phone that arrives later changes nothing.
+ */
 export const delete_together_item = mutation({
   args: { p_item_id: v.string(), ...clientOperationArgs },
   handler: async (ctx, args) => {

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { currentOrNextVisit, visitPhase } from "./visits";
+import { localDateOf } from "./time";
+import { visitPhase } from "./visits";
 
 const visit = { start_date: "2026-11-20", end_date: "2026-11-23" };
 
@@ -21,26 +22,12 @@ describe("visitPhase", () => {
     expect(visitPhase(day, "2026-11-21")).toBe("ended");
   });
 
-  test("each partner reads the visit on their own local day", () => {
-    // 23:30 on 19 November in New York is already 20 November in Oslo.
-    const newYork = "2026-11-19";
-    const oslo = "2026-11-20";
-    expect(visitPhase(visit, newYork)).toBe("upcoming");
-    expect(visitPhase(visit, oslo)).toBe("ongoing");
-    // 23:30 on 23 November in New York is 24 November in Oslo, after the last day there.
-    expect(visitPhase(visit, "2026-11-23")).toBe("ongoing");
-    expect(visitPhase(visit, "2026-11-24")).toBe("ended");
-  });
-});
-
-describe("currentOrNextVisit", () => {
-  const past = { start_date: "2026-10-01", end_date: "2026-10-03" };
-  const later = { start_date: "2026-12-20", end_date: "2026-12-27" };
-
-  test("picks the ongoing visit, else the soonest upcoming one, and skips the ones that are over", () => {
-    expect(currentOrNextVisit([later, past, visit], "2026-11-21")).toBe(visit);
-    expect(currentOrNextVisit([later, past, visit], "2026-11-10")).toBe(visit);
-    expect(currentOrNextVisit([later, past, visit], "2026-11-24")).toBe(later);
-    expect(currentOrNextVisit([past], "2026-11-24")).toBeNull();
+  test("at one moment, partners in Oslo and New York each read the visit on their own day", () => {
+    const phases = (instant: string) =>
+      ["Europe/Oslo", "America/New_York"].map((zone) => visitPhase(visit, localDateOf(instant, zone)));
+    // 04:30 UTC on 20 November is 05:30 in Oslo and still 23:30 on the 19th in New York.
+    expect(phases("2026-11-20T04:30:00Z")).toEqual(["ongoing", "upcoming"]);
+    // 04:30 UTC on 24 November is the day after the visit in Oslo and its last evening in New York.
+    expect(phases("2026-11-24T04:30:00Z")).toEqual(["ended", "ongoing"]);
   });
 });

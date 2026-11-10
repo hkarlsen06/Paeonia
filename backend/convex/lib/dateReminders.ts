@@ -1,5 +1,6 @@
 import { countdownDay, milestoneToday, nextYearlyOccurrence, type MilestoneToday } from "./coupleDates";
 import { addDaysToDate } from "./time";
+import { visitPhase } from "./visits";
 
 // Which gentle reminders a person gets on one local day for the dates the couple keeps. This file
 // only decides. `dateReminders.ts` runs it each morning and queues the pushes.
@@ -16,7 +17,8 @@ import { addDaysToDate } from "./time";
 // - Both partners hear about the relationship anniversary a week ahead and on the day.
 // - Both hear about the first month, half a year and the round day counts on the day.
 // - Both hear on the day of a countdown. Several countdowns on one day are one push.
-// - Both hear the day before a visit starts, so there is time to get ready.
+// - Both hear the day before a visit starts, so there is time to get ready, unless they are already
+//   together on another visit that day.
 
 export const DATE_REMINDER_MINUTES = 9 * 60;
 /** Two 15-minute cron runs see the window, so one late run still sends. The dedupe key stops a repeat. */
@@ -53,8 +55,8 @@ export type DateReminderFacts = {
   /** Birthdays by user id, for the couple's active members. */
   birthdays: ReadonlyMap<string, string>;
   countdowns: ReadonlyArray<{ target_date: string; repeats_yearly?: boolean }>;
-  /** The couple's visits that are not deleted. */
-  visits: ReadonlyArray<{ start_date: string }>;
+  /** The couple's visits that are not over on `today`. */
+  visits: ReadonlyArray<{ start_date: string; end_date: string }>;
 };
 
 /**
@@ -118,7 +120,11 @@ export function planDateReminders(facts: DateReminderFacts): DateReminder[] {
   }
 
   const tomorrow = addDaysToDate(today, 1);
-  if (facts.visits.some((visit) => visit.start_date === tomorrow)) {
+  const startsTomorrow = facts.visits.some(
+    (visit) => visitPhase(visit, today) === "upcoming" && visitPhase(visit, tomorrow) === "ongoing",
+  );
+  const togetherToday = facts.visits.some((visit) => visitPhase(visit, today) === "ongoing");
+  if (startsTomorrow && !togetherToday) {
     reminders.push({ reminder: "visit_tomorrow", occurrence: tomorrow, extra: {} });
   }
   return reminders;
