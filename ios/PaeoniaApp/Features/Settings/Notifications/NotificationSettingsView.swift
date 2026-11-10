@@ -83,6 +83,7 @@ struct NotificationSettingsView: View {
                 .memories,
                 title: .settingsNotificationsMemoriesTitle
             )
+            lettersRow
             toggleRow(
                 .games,
                 title: .settingsNotificationsGamesTitle,
@@ -91,6 +92,10 @@ struct NotificationSettingsView: View {
         } header: {
             Text(.settingsNotificationsPartnerSectionTitle(partnerName))
         }
+    }
+
+    private var lettersRow: some View {
+        toggleRow(.letters, title: .settingsNotificationsLettersTitle, subtitle: .settingsNotificationsLettersSubtitle)
     }
 
     private var remindersSection: some View {

@@ -7,18 +7,20 @@ nonisolated enum MemoryMediaPurpose: String, Codable, Sendable, Equatable {
     case story = "story_photo"
     /// A Guess my spot photo, stripped of its metadata before upload.
     case guessMySpot = "guess_my_spot_photo"
+    /// The photo in a letter. Only the author reads it until the partner opens the letter.
+    case letter = "letter_image"
 
     var mediaType: String {
         switch self {
-        case .photo, .story, .guessMySpot:
+        case .photo, .story, .guessMySpot, .letter:
             "image"
         case .voice:
             "voice"
         }
     }
 
-    /// What the upload is reserved for. A story photo belongs to its story, and a
-    /// Guess my spot photo to its round.
+    /// What the upload is reserved for. A story photo belongs to its story, a letter's
+    /// photo to its letter, and a Guess my spot photo to its round.
     var reservedParentKind: String {
         switch self {
         case .photo, .voice:
@@ -27,6 +29,8 @@ nonisolated enum MemoryMediaPurpose: String, Codable, Sendable, Equatable {
             "story"
         case .guessMySpot:
             "guess_my_spot_round"
+        case .letter:
+            "letter"
         }
     }
 }

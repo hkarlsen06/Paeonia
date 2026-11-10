@@ -142,15 +142,18 @@ extension MainTabView {
         }
     }
 
+    var mailViewModel: MailViewModel { models.mail }
+
     func badgeCount(for tab: MainTab) -> Int {
         switch tab {
         // The server's counts, the same ones the app icon adds up. Questions includes
         // the unread memory and story chats, since its list shows them. Home counts
-        // the stories from this phone's own list, so opening one clears it at once.
+        // the stories and letters from this phone's own lists, so opening one clears it at once.
         case .questions: AppBadges.shared.counts.questions
         case .games: AppBadges.shared.counts.games
         case .us:
             StoryTimeline.unseenCount(storiesViewModel.stories, partner: identity.partnerUserID, at: storyBadgeDate)
+                + mailViewModel.waiting.count
         case .memories, .settings: 0
         }
     }
@@ -248,6 +251,12 @@ extension MainTabView {
                     isPresented: $isLookBackDrawingHistoryPresented,
                     revisionID: lookBackDrawingRevisionID, dependencies: dependencies
                 )
+                .mailSheet(mailViewModel, people: MailPeople(
+                    currentUserID: identity.currentUserID,
+                    partnerUserID: identity.partnerUserID,
+                    partnerName: dailyChallengeParticipants.partnerName,
+                    onReportedAndLeft: actions.leftRelationship
+                ))
                 .onChange(of: widgetDrawingPresented.wrappedValue) { _, isPresented in
                     if !isPresented, dependencies.widgetDrawingViewModel?.hasSentDrawing == true {
                         actions.sentSomethingToPartner(.drawing)
@@ -311,6 +320,7 @@ extension MainTabView {
             onOpenLookBack: openLookBack,
             stories: storiesViewModel,
             storyPeople: storyPeople,
+            mail: mailViewModel,
             onRefresh: {
                 await refreshDailyChallenge()
                 await actions.refreshHome()

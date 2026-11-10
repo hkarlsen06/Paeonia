@@ -98,6 +98,7 @@ final class MainTabModels {
     lazy var coupleDates = CoupleDatesViewModel()
     lazy var visits = dependencies.visitsViewModel ?? VisitsViewModel()
     lazy var stories = dependencies.storiesViewModel ?? StoriesViewModel()
+    lazy var mail = dependencies.mailViewModel ?? MailViewModel()
     lazy var avatarStyling = dependencies.avatarStylingModel ?? AvatarStylingModel()
     lazy var mapTiles = dependencies.homeMapTiles ?? HomeMapTileStatus()
     lazy var search = SearchViewModel.live()
@@ -384,6 +385,7 @@ struct MainTabView: View {
             await storiesViewModel.configure(ownerUserID: identity.currentUserID, coupleID: identity.coupleID)
             await storiesViewModel.observeStoreChanges()
         }
+        .mailLifecycle(models.mail, ownerUserID: identity.currentUserID, coupleID: identity.coupleID)
         .onChange(of: identity.coupleID) { _, coupleID in
             storiesViewModel.updateCoupleID(coupleID)
             memoriesViewModel.updateContext(coupleID: coupleID)

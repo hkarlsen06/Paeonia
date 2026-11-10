@@ -39,6 +39,7 @@ nonisolated struct NotificationPreferences: Equatable, Sendable {
     var memoriesEnabled = true
     var gamesEnabled = true
     var dateRemindersEnabled = true
+    var lettersEnabled = true
     /// Off by default. On, the lock screen keeps who a notification is from and what it is
     /// while iOS hides previews (`PaeoniaNotificationCategory`). The server stores it as
     /// `lock_screen_detail_level`: "descriptive" when on, "private" when off.
@@ -58,6 +59,7 @@ nonisolated extension NotificationPreferences {
             case .memories: memoriesEnabled
             case .games: gamesEnabled
             case .dateReminders: dateRemindersEnabled
+            case .letters: lettersEnabled
             case .lockScreenDetails: lockScreenDetailsEnabled
             }
         }
@@ -71,6 +73,7 @@ nonisolated extension NotificationPreferences {
             case .memories: memoriesEnabled = newValue
             case .games: gamesEnabled = newValue
             case .dateReminders: dateRemindersEnabled = newValue
+            case .letters: lettersEnabled = newValue
             case .lockScreenDetails: lockScreenDetailsEnabled = newValue
             }
         }
@@ -87,6 +90,8 @@ nonisolated enum NotificationPreferenceKind: CaseIterable, Hashable, Sendable {
     case games
     /// Birthdays, the anniversary, milestones and countdowns.
     case dateReminders
+    /// A letter arrived, or the partner opened one.
+    case letters
     /// Not a column: the server keeps it as `lock_screen_detail_level` and sets it with its own call.
     case lockScreenDetails
 
@@ -108,6 +113,8 @@ nonisolated enum NotificationPreferenceKind: CaseIterable, Hashable, Sendable {
             "games_enabled"
         case .dateReminders:
             "date_reminders_enabled"
+        case .letters:
+            "letters_enabled"
         case .lockScreenDetails:
             "lock_screen_detail_level"
         }
@@ -229,6 +236,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
     let memoriesEnabled: Bool
     let gamesEnabled: Bool
     let dateRemindersEnabled: Bool
+    let lettersEnabled: Bool
     let lockScreenDetailLevel: String
     let questionTimeEnabled: Bool
     let questionTimeMinutes: Int
@@ -243,6 +251,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
             memoriesEnabled: memoriesEnabled,
             gamesEnabled: gamesEnabled,
             dateRemindersEnabled: dateRemindersEnabled,
+            lettersEnabled: lettersEnabled,
             lockScreenDetailsEnabled: lockScreenDetailLevel == "descriptive",
             questionTime: QuestionTimeReminder(isEnabled: questionTimeEnabled, minutes: questionTimeMinutes)
         )
@@ -257,6 +266,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
         case memoriesEnabled = "memories_enabled"
         case gamesEnabled = "games_enabled"
         case dateRemindersEnabled = "date_reminders_enabled"
+        case lettersEnabled = "letters_enabled"
         case lockScreenDetailLevel = "lock_screen_detail_level"
         case questionTimeEnabled = "question_time_enabled"
         case questionTimeMinutes = "question_time_minutes"

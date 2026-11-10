@@ -79,6 +79,7 @@ nonisolated enum PrivacyReportTarget: Hashable, Sendable {
     case conduct(userID: UUID)
     case dailyAnswer(answerID: UUID)
     case threadMessage(messageID: UUID)
+    case letter(letterID: UUID)
 
     var kind: String {
         switch self {
@@ -88,6 +89,8 @@ nonisolated enum PrivacyReportTarget: Hashable, Sendable {
             "daily_answer"
         case .threadMessage:
             "thread_message"
+        case .letter:
+            "letter"
         }
     }
 
@@ -99,6 +102,8 @@ nonisolated enum PrivacyReportTarget: Hashable, Sendable {
             answerID
         case let .threadMessage(messageID):
             messageID
+        case let .letter(letterID):
+            letterID
         }
     }
 }

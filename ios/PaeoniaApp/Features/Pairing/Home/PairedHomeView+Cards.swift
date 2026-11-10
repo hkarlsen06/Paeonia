@@ -32,6 +32,13 @@ extension PairedHomeView {
         }
     }
 
+    @ViewBuilder
+    var mailCard: some View {
+        if let mail {
+            HomeMailCard(mail: mail, partnerName: partnerName)
+        }
+    }
+
     /// Only the game the partner opened last. Whose turn it is belongs on the Games tab.
     @ViewBuilder
     var partnerGameCard: some View {

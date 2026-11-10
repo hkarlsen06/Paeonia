@@ -226,6 +226,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let visitsCache: any VisitsCaching
     private let favoritesCache: any FavoritesCaching
     private let storiesCache: any StoriesCaching
+    private let mailCache: any MailCaching
     private let reactionsCache: any ReactionsCaching
     private let topicsCache: any TopicsCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
@@ -256,6 +257,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         visitsCache: any VisitsCaching = FileVisitsCache.shared,
         favoritesCache: any FavoritesCaching = FileFavoritesCache.shared,
         storiesCache: any StoriesCaching = FileStoriesCache.shared,
+        mailCache: any MailCaching = FileMailCache.shared,
         reactionsCache: any ReactionsCaching = FileReactionsCache.shared,
         topicsCache: any TopicsCaching = FileTopicsCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
@@ -285,6 +287,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.visitsCache = visitsCache
         self.favoritesCache = favoritesCache
         self.storiesCache = storiesCache
+        self.mailCache = mailCache
         self.reactionsCache = reactionsCache
         self.topicsCache = topicsCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
@@ -311,6 +314,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
             FileThreadChatVoiceDraftStore.shared.clearAll()
             FileThreadChatPhotoDraftStore.shared.clearAll()
             dailyAnswerMediaDraftStore.clearAll()
+            await mailCache.clearDrafts()
             Self.removeTemporaryVoiceFiles(in: temporaryDirectory)
             MemoryPhotoInbox.clearAll()
             if !keepsFirstDayUpload {
@@ -396,6 +400,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await visitsCache.clearAll()
         await favoritesCache.clearAll()
         await storiesCache.clearAll()
+        await mailCache.clearAll()
         await reactionsCache.clearAll()
         await topicsCache.clearAll()
         await exquisiteCorpseCache.clearAll()

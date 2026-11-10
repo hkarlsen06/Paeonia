@@ -45,6 +45,7 @@ extension PaeoniaDeepLink {
         case .game, .gameChat: "gamecontroller.fill"
         case .memories, .memory, .memoryPhoto, .newMemory: "photo.on.rectangle"
         case .stories, .story: "camera.fill"
+        case .mail: "envelope.fill"
         case .us: "heart.fill"
         case .dates: "calendar"
         case .streak: "flame.fill"

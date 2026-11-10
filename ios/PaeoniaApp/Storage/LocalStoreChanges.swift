@@ -15,6 +15,7 @@ nonisolated enum LocalStoreDomain: String, CaseIterable, Sendable {
     case coupleDates
     case visits
     case stories
+    case mail
     case reactions
     case topics
     case favorites

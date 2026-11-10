@@ -47,6 +47,8 @@ struct PairedHomeView: View {
     /// The partners' avatars at the top, with their stories. Nil hides the row.
     var stories: StoriesViewModel?
     var storyPeople: StoryPeople?
+    /// The couple's letters. Nil hides the Mail card.
+    var mail: MailViewModel?
     var onRefresh: () async -> Void = {}
     /// The access notice this person closed (`AccessNotice.id`). A new notice shows again.
     @AppStorage("home.accessNotice.dismissed") var dismissedAccessNoticeID = ""
@@ -71,6 +73,7 @@ struct PairedHomeView: View {
 
     private static let alertTypesSeenOnHome: Set<String> = [
         "widget_updated", "streak_reminder", "story_posted", "date_reminder", "partner_joined",
+        "letter_arrived", "letter_opened",
     ]
 
     init(
@@ -110,6 +113,7 @@ struct PairedHomeView: View {
         onOpenLookBack: @escaping (LookBackItem) -> Void = { _ in },
         stories: StoriesViewModel? = nil,
         storyPeople: StoryPeople? = nil,
+        mail: MailViewModel? = nil,
         onRefresh: @escaping () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
@@ -149,6 +153,7 @@ struct PairedHomeView: View {
         self.onOpenLookBack = onOpenLookBack
         self.stories = stories
         self.storyPeople = storyPeople
+        self.mail = mail
         self.onRefresh = onRefresh
     }
 
@@ -294,6 +299,7 @@ extension PairedHomeView {
                         id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: usesMapHeader
                     )
                 unreadChatsCard
+                mailCard
                 firstStepsCard
                 visitCard
                 milestoneAndWidget
@@ -338,6 +344,7 @@ extension PairedHomeView {
                         id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: !usesMapHeader
                     )
                 unreadChatsCard
+                mailCard
                 firstStepsCard
                 visitCard
                 milestoneAndWidget
@@ -373,7 +380,8 @@ extension PairedHomeView {
             dailyCard: dailyChallengeCardState.kind,
             milestoneIsLoading: milestoneIsLoading,
             relationshipStartedOn: relationshipStartedOn,
-            visitCard: visits?.homeCard(at: Date(), streak: dailyChallengeStreak)
+            visitCard: visits?.homeCard(at: Date(), streak: dailyChallengeStreak),
+            waitingLetters: mail?.waiting.count ?? 0
         )
     }
 
@@ -405,6 +413,7 @@ private struct HomeCardChangeAnimations: ViewModifier {
     let relationshipStartedOn: String?
     /// The visit card shows nothing until the cache is read, then a short question or a tall countdown.
     let visitCard: HomeVisitCardState?
+    let waitingLetters: Int
 
     func body(content: Content) -> some View {
         content
@@ -418,6 +427,7 @@ private struct HomeCardChangeAnimations: ViewModifier {
             .animation(animation, value: milestoneIsLoading)
             .animation(animation, value: relationshipStartedOn)
             .animation(animation, value: visitCard)
+            .animation(animation, value: waitingLetters)
     }
 }
 

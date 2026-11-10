@@ -412,12 +412,13 @@ struct LocalPrivacyPurgeTests {
 
 /// The real purge service and file purger, with the widget files and memory photos
 /// in temporary directories. The other caches are the app's own, as at sign-out.
-private struct LivePurgeFixture {
+struct LivePurgeFixture {
     let localStore: PaeoniaLocalStore
     let purger: LocalPrivacyPurgeService
 
     init(widgetCanvas: WidgetCanvasService, memoryMediaURL: URL,
-         guessMySpotPhotos: any GuessMySpotPhotoStoring = FileGuessMySpotPhotoStore.shared) throws {
+         guessMySpotPhotos: any GuessMySpotPhotoStoring = FileGuessMySpotPhotoStore.shared,
+         mailCache: any MailCaching = FileMailCache.shared) throws {
         let client = PaeoniaConvexClient(
             deploymentURL: try #require(URL(string: "https://privacy-purge.invalid")),
             session: URLSession(configuration: .ephemeral),
@@ -433,7 +434,8 @@ private struct LivePurgeFixture {
                 dailyAnswerMediaCache: nil,
                 memoryMediaCache: MemoryMediaImageService(client: client, directoryURL: memoryMediaURL),
                 profilePhotoCache: nil,
-                guessMySpotPhotos: guessMySpotPhotos
+                guessMySpotPhotos: guessMySpotPhotos,
+                mailCache: mailCache
             ),
             entityIndex: FakeSpotlightIndex(),
             retryStore: InMemoryLocalPrivacyPurgeRetryStore(),

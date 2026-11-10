@@ -23937,6 +23937,1464 @@
         }
       }
     },
+    "mail.card.emptyMessage" : {
+      "comment" : "Line on the Mail card when no letter waits. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write something %@ can open later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv noe %@ kan åpne senere."
+          }
+        }
+      }
+    },
+    "mail.card.title" : {
+      "comment" : "Name of the Mail card on the Us tab and of the Mail feature, where partners send each other letters",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mail"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Post"
+          }
+        }
+      }
+    },
+    "mail.card.waitingMany" : {
+      "comment" : "Title of the Mail card when several letters from the partner wait. %1$lld is how many, at least 2. %2$@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld letters from %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld brev fra %2$@"
+          }
+        }
+      }
+    },
+    "mail.card.waitingMessage" : {
+      "comment" : "Line on the Mail card under the title when a letter from the partner waits to be opened",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to open it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk for å åpne det."
+          }
+        }
+      }
+    },
+    "mail.card.waitingOne" : {
+      "comment" : "Title of the Mail card when one letter from the partner waits to be opened. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A letter from %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et brev fra %@"
+          }
+        }
+      }
+    },
+    "mail.card.write" : {
+      "comment" : "Button that starts writing a new letter to the partner",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write a letter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv et brev"
+          }
+        }
+      }
+    },
+    "mail.composer.back" : {
+      "comment" : "Button that goes back one step",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilbake"
+          }
+        }
+      }
+    },
+    "mail.composer.delivery.title" : {
+      "comment" : "Title of the step where the author picks when the letter arrives",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When should it arrive?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når skal det komme fram?"
+          }
+        }
+      }
+    },
+    "mail.composer.discard" : {
+      "comment" : "Button that throws away the letter being written",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forkast"
+          }
+        }
+      }
+    },
+    "mail.composer.discardTitle" : {
+      "comment" : "Question before throwing away the letter being written",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard this letter?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du forkaste brevet?"
+          }
+        }
+      }
+    },
+    "mail.composer.next" : {
+      "comment" : "Button that goes to the next step",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste"
+          }
+        }
+      }
+    },
+    "mail.composer.note.title" : {
+      "comment" : "Title of the step where the note is written",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write your note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv hilsenen din"
+          }
+        }
+      }
+    },
+    "mail.composer.notePlaceholder" : {
+      "comment" : "Placeholder in the empty note. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write something for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv noe til %@"
+          }
+        }
+      }
+    },
+    "mail.composer.noteRemaining" : {
+      "comment" : "How many characters are left in the note. %lld is the number",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld characters left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld tegn igjen"
+          }
+        }
+      }
+    },
+    "mail.composer.photo.title" : {
+      "comment" : "Title of the step where a photo can be added",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til et bilde"
+          }
+        }
+      }
+    },
+    "mail.composer.photoChange" : {
+      "comment" : "Button that opens the photo picker to pick a different photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose another photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et annet bilde"
+          }
+        }
+      }
+    },
+    "mail.composer.photoChoose" : {
+      "comment" : "Button that opens the photo picker",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et bilde"
+          }
+        }
+      }
+    },
+    "mail.composer.photoOptional" : {
+      "comment" : "Explains the photo step",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A photo is optional. It stays hidden until the letter is opened."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et bilde er valgfritt. Det holdes skjult til brevet er åpnet."
+          }
+        }
+      }
+    },
+    "mail.composer.photoRemove" : {
+      "comment" : "Button that removes the chosen photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern bildet"
+          }
+        }
+      }
+    },
+    "mail.composer.send" : {
+      "comment" : "Button that sends the letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send letter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send brevet"
+          }
+        }
+      }
+    },
+    "mail.composer.skip" : {
+      "comment" : "Button that goes on without adding a photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hopp over"
+          }
+        }
+      }
+    },
+    "mail.composer.step" : {
+      "comment" : "Which step of writing a letter this is. %1$lld is the step, %2$lld how many steps there are",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step %1$lld of %2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steg %1$lld av %2$lld"
+          }
+        }
+      }
+    },
+    "mail.composer.template.title" : {
+      "comment" : "Title of the step where a card is picked for the letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a card"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et kort"
+          }
+        }
+      }
+    },
+    "mail.composer.title" : {
+      "comment" : "Title of the screen where a letter is written",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New letter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt brev"
+          }
+        }
+      }
+    },
+    "mail.delete.action" : {
+      "comment" : "Button that deletes a letter for both partners",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett"
+          }
+        }
+      }
+    },
+    "mail.delete.message" : {
+      "comment" : "Explains what deleting a letter does",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It disappears for both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det forsvinner for dere begge."
+          }
+        }
+      }
+    },
+    "mail.delete.sealedAction" : {
+      "comment" : "Button that takes back a letter before it arrives",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsend"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angre sending"
+          }
+        }
+      }
+    },
+    "mail.delete.sealedMessage" : {
+      "comment" : "Explains what unsending does. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will never get it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ får det aldri."
+          }
+        }
+      }
+    },
+    "mail.delete.sealedTitle" : {
+      "comment" : "Question before taking back a letter that has not arrived yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsend this letter?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du angre sendingen?"
+          }
+        }
+      }
+    },
+    "mail.delete.title" : {
+      "comment" : "Question before deleting a letter that already arrived",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this letter?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du slette brevet?"
+          }
+        }
+      }
+    },
+    "mail.delivery.at.label" : {
+      "comment" : "Label of the date and time picker for when the letter arrives",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrives"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer fram"
+          }
+        }
+      }
+    },
+    "mail.delivery.at.title" : {
+      "comment" : "Option where the author picks the day and time the letter arrives",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At a time you pick"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På et tidspunkt du velger"
+          }
+        }
+      }
+    },
+    "mail.delivery.morning.detail" : {
+      "comment" : "When a morning letter arrives. %1$@ is the partner's name, %2$@ the date on the partner's clock",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "08:00 for %1$@, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klokken 08.00 for %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "mail.delivery.morning.title" : {
+      "comment" : "Option that delivers the letter at 08:00 on the partner's clock",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the morning"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Om morgenen"
+          }
+        }
+      }
+    },
+    "mail.delivery.morning.yourTime" : {
+      "comment" : "The same moment on the author's clock when the partner lives in another time zone. %@ is the day and time",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That's %@ for you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det er %@ for deg."
+          }
+        }
+      }
+    },
+    "mail.delivery.now.detail" : {
+      "comment" : "Detail of the Now option. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gets it right away."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ får det med en gang."
+          }
+        }
+      }
+    },
+    "mail.delivery.now.title" : {
+      "comment" : "Option that sends the letter right away",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nå"
+          }
+        }
+      }
+    },
+    "mail.done" : {
+      "comment" : "Button that closes the Mail screens",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
+          }
+        }
+      }
+    },
+    "mail.error.deleteFailed" : {
+      "comment" : "Error when a letter could not be deleted for another reason",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong, so the letter wasn't deleted. Try again later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt, så brevet ble ikke slettet. Prøv igjen senere."
+          }
+        }
+      }
+    },
+    "mail.error.deleteOffline" : {
+      "comment" : "Error when a letter could not be deleted because the phone has no connection",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Try again when you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet. Prøv igjen når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "mail.error.letterGone" : {
+      "comment" : "Shown when the partner deleted the letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This letter is no longer here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette brevet finnes ikke lenger."
+          }
+        }
+      }
+    },
+    "mail.error.openFailed" : {
+      "comment" : "Error when a letter could not be opened for another reason",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong opening the letter. Try again later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt da brevet skulle åpnes. Prøv igjen senere."
+          }
+        }
+      }
+    },
+    "mail.error.openOffline" : {
+      "comment" : "Error when a letter could not be opened because the phone has no connection",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Open the letter when you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet. Åpne brevet når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "mail.error.photoUnreadable" : {
+      "comment" : "Error when the chosen photo cannot be read",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't read that photo. Pick another one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å lese bildet. Velg et annet."
+          }
+        }
+      }
+    },
+    "mail.error.sendFailed" : {
+      "comment" : "Error when a letter could not be sent for another reason",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong, so the letter wasn't sent. It's saved, so try again later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt, så brevet ble ikke sendt. Det er lagret, så prøv igjen senere."
+          }
+        }
+      }
+    },
+    "mail.error.sendOffline" : {
+      "comment" : "Error when a letter could not be sent because the phone has no connection",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. The letter is saved, so you can send it when you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet. Brevet er lagret, så du kan sende det når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "mail.mailbox.emptyReceived.message" : {
+      "comment" : "Line in the empty received list. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When %@ writes to you, the letter shows up here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når %@ skriver til deg, dukker brevet opp her."
+          }
+        }
+      }
+    },
+    "mail.mailbox.emptyReceived.title" : {
+      "comment" : "Title in the mailbox when no letter has arrived yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No letters yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen brev ennå"
+          }
+        }
+      }
+    },
+    "mail.mailbox.emptySent.message" : {
+      "comment" : "Invitation in the empty sent list. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a card, write a note, and choose when %@ gets it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et kort, skriv en hilsen og velg når %@ får det."
+          }
+        }
+      }
+    },
+    "mail.mailbox.emptySent.title" : {
+      "comment" : "Title in the mailbox when the person has not sent a letter yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write your first letter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv ditt første brev"
+          }
+        }
+      }
+    },
+    "mail.mailbox.received" : {
+      "comment" : "Mailbox tab with the letters the partner sent to this person",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Received"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mottatt"
+          }
+        }
+      }
+    },
+    "mail.mailbox.sent" : {
+      "comment" : "Mailbox tab with the letters this person sent",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sendt"
+          }
+        }
+      }
+    },
+    "mail.mailbox.title" : {
+      "comment" : "Title of the screen that lists the letters a person received and sent",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mailbox"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Postkasse"
+          }
+        }
+      }
+    },
+    "mail.reader.from" : {
+      "comment" : "Who wrote the letter. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra %@"
+          }
+        }
+      }
+    },
+    "mail.reader.more" : {
+      "comment" : "Accessibility name of the menu with more actions for a letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mer"
+          }
+        }
+      }
+    },
+    "mail.reader.openAction" : {
+      "comment" : "Accessibility name of the sealed envelope, which opens the letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the letter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne brevet"
+          }
+        }
+      }
+    },
+    "mail.reader.photo" : {
+      "comment" : "Accessibility name of the photo in a letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo in the letter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilde i brevet"
+          }
+        }
+      }
+    },
+    "mail.reader.report" : {
+      "comment" : "Menu item that reports a received letter, which also leaves the relationship",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report letter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter brevet"
+          }
+        }
+      }
+    },
+    "mail.reader.tapToOpen" : {
+      "comment" : "Hint under a sealed envelope",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the envelope to open it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk på konvolutten for å åpne den."
+          }
+        }
+      }
+    },
+    "mail.reader.to" : {
+      "comment" : "Who the letter is for. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Til %@"
+          }
+        }
+      }
+    },
+    "mail.reader.writeBack" : {
+      "comment" : "Button under a received letter that starts a letter back to the partner",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv tilbake"
+          }
+        }
+      }
+    },
+    "mail.reader.written" : {
+      "comment" : "When the letter was written. %@ is the date and time",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Written %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skrevet %@"
+          }
+        }
+      }
+    },
+    "mail.status.arrives" : {
+      "comment" : "Status of a sent letter that has not arrived yet. %@ is the day and time it arrives",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrives %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer fram %@"
+          }
+        }
+      }
+    },
+    "mail.status.delivered" : {
+      "comment" : "Status of a sent letter that arrived but the partner has not opened",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delivered, not opened yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Levert, ikke åpnet ennå"
+          }
+        }
+      }
+    },
+    "mail.status.opened" : {
+      "comment" : "Status of a sent letter the partner opened. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ opened it"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har åpnet det"
+          }
+        }
+      }
+    },
+    "mail.status.sealed" : {
+      "comment" : "Status of a received letter that waits to be opened",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sealed. Tap to open."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forseglet. Trykk for å åpne."
+          }
+        }
+      }
+    },
+    "mail.template.anniversary.firstLine" : {
+      "comment" : "First line of an anniversary letter, which the author can change",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Happy anniversary to us."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratulerer med dagen vår."
+          }
+        }
+      }
+    },
+    "mail.template.anniversary.name" : {
+      "comment" : "Name of a letter card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anniversary"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jubileum"
+          }
+        }
+      }
+    },
+    "mail.template.birthday.firstLine" : {
+      "comment" : "First line of a birthday letter, which the author can change",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Happy birthday!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratulerer med dagen!"
+          }
+        }
+      }
+    },
+    "mail.template.birthday.name" : {
+      "comment" : "Name of a letter card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Birthday"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bursdag"
+          }
+        }
+      }
+    },
+    "mail.template.blank.name" : {
+      "comment" : "Name of the letter card with no first line",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blank page"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blankt ark"
+          }
+        }
+      }
+    },
+    "mail.template.goodLuck.firstLine" : {
+      "comment" : "First line of a good luck letter, which the author can change",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good luck today. You've got this."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lykke til i dag. Du fikser det."
+          }
+        }
+      }
+    },
+    "mail.template.goodLuck.name" : {
+      "comment" : "Name of a letter card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good luck"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lykke til"
+          }
+        }
+      }
+    },
+    "mail.template.goodMorning.firstLine" : {
+      "comment" : "First line of a good morning letter, which the author can change",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good morning, love."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "God morgen, kjære."
+          }
+        }
+      }
+    },
+    "mail.template.goodMorning.name" : {
+      "comment" : "Name of a letter card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good morning"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "God morgen"
+          }
+        }
+      }
+    },
+    "mail.template.goodNight.firstLine" : {
+      "comment" : "First line of a good night letter, which the author can change",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep well. I'm thinking of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sov godt. Jeg tenker på deg."
+          }
+        }
+      }
+    },
+    "mail.template.goodNight.name" : {
+      "comment" : "Name of a letter card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good night"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "God natt"
+          }
+        }
+      }
+    },
+    "mail.template.missYou.firstLine" : {
+      "comment" : "First line of a miss you letter, which the author can change",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I miss you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeg savner deg."
+          }
+        }
+      }
+    },
+    "mail.template.missYou.name" : {
+      "comment" : "Name of a letter card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Miss you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Savner deg"
+          }
+        }
+      }
+    },
+    "mail.template.thankYou.firstLine" : {
+      "comment" : "First line of a thank you letter, which the author can change",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thank you for being you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Takk for at du er deg."
+          }
+        }
+      }
+    },
+    "mail.template.thankYou.name" : {
+      "comment" : "Name of a letter card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thank you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Takk"
+          }
+        }
+      }
+    },
     "mainTab.games" : {
       "comment" : "Title for the Games tab in the main tab bar",
       "extractionState" : "manual",
@@ -35365,6 +36823,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spill"
+          }
+        }
+      }
+    },
+    "settings.notifications.letters.subtitle" : {
+      "comment" : "Explains the Mail notification setting",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When a letter arrives or is opened"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når et brev kommer fram eller blir åpnet"
+          }
+        }
+      }
+    },
+    "settings.notifications.letters.title" : {
+      "comment" : "Notification setting for letters from the partner",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mail"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Post"
           }
         }
       }

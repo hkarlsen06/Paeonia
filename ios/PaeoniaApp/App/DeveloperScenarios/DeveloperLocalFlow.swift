@@ -11,11 +11,12 @@
     @State private var environment: DeveloperLocalFlowEnvironment
 
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil, gameConversation: Bool = false,
-         avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live) {
+         avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
+         mail: DeveloperMailSeed = .none) {
       _environment = State(
         initialValue: DeveloperLocalFlowEnvironment(
           seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation, avatarStories: avatarStories,
-          mapTiles: mapTiles))
+          mapTiles: mapTiles, mail: mail))
     }
 
     var body: some View {
@@ -98,7 +99,7 @@
     // This is the single Debug composition boundary for the full local app graph.
     // swiftlint:disable:next function_body_length
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: Bool,
-         avatarStories: StoryRingState?, mapTiles: DeveloperHomeMapTiles) {
+         avatarStories: StoryRingState?, mapTiles: DeveloperHomeMapTiles, mail: DeveloperMailSeed) {
       self.homeLaunch = homeLaunch
       let store = DeveloperLocalFlowStore(seed: seed, avatarScenario: avatarStories != nil)
       let authService = DeveloperLocalFlowAuthService(store: store)
@@ -256,6 +257,7 @@
         settingsViewModel: settingsViewModel,
         avatarStylingModel: AvatarStylingModel(gateway: DeveloperAvatarDecorationGateway(store: store)),
         storiesViewModel: avatar?.viewModel,
+        mailViewModel: DeveloperMailFixture.viewModel(mail),
         homeMapTiles: mapTiles.makeStatus(),
         settingsPrivacyService: nil,
         settingsPrivacyOperationProvider: operationProvider,

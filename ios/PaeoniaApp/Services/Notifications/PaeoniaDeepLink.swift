@@ -31,6 +31,9 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     /// `paeonia://stories/story?storyId=...`: opens one story in the viewer. `showsReplies`
     /// (`&replies=1`) is for a reply push, so the story opens with its replies.
     case story(storyID: UUID, showsReplies: Bool)
+    /// `paeonia://mail/<letter id>`: opens Mail on that letter, and `paeonia://mail` on the
+    /// mailbox. Mirrors `letterDeepLink` in `backend/convex/lib/deepLinks.ts`.
+    case mail(letterID: UUID?)
     /// `paeonia://us`: opens the Us tab, for example after the partner joined.
     case us
     /// `paeonia://dates`: a reminder about a birthday, the anniversary or a countdown.
@@ -161,10 +164,21 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         let pathComponents = url.pathComponents.filter { $0 != "/" }
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
 
-        guard let link = Self.link(host: host, pathComponents: pathComponents, query: query) else {
+        let link = host == "mail"
+            ? Self.mailLink(pathComponents: pathComponents)
+            : Self.link(host: host, pathComponents: pathComponents, query: query)
+        guard let link else {
             return nil
         }
         self = link
+    }
+
+    private static func mailLink(pathComponents: [String]) -> Self? {
+        switch pathComponents.count {
+        case 0: .mail(letterID: nil)
+        case 1: UUID(uuidString: pathComponents[0]).map { .mail(letterID: $0) }
+        default: nil
+        }
     }
 
     /// Links that are just a host, such as `paeonia://memories`.
