@@ -5,7 +5,7 @@ import Testing
 struct RelationshipEventsLiveFeedTests {
     private let ownerUserID = UUID()
 
-    @Test func savesAppliesAndResubscribesFromTheLastEvent() async throws {
+    @Test func appliesAndResubscribesFromTheLastEvent() async throws {
         let env = EventsFeedEnv(ownerUserID: ownerUserID)
         let first = try event(id: "22222222-2222-2222-2222-222222222222", createdAt: 100)
         let second = try event(id: "33333333-3333-3333-3333-333333333333", createdAt: 200)
@@ -20,7 +20,6 @@ struct RelationshipEventsLiveFeedTests {
         try env.transport.send([first, second])
 
         #expect(await waitUntil { env.transport.subscriptionCount == 2 })
-        #expect(try await env.eventStore.events(ownerUserID: ownerUserID).map(\.id) == [first.id, second.id])
         #expect(await env.applier.appliedEventIDs == [first.id, second.id])
         let cursor = try await env.stateStore.cursor(
             ownerUserID: ownerUserID,
@@ -103,7 +102,6 @@ struct RelationshipEventsLiveFeedTests {
         try env.transport.send([try event(id: "22222222-2222-2222-2222-222222222222", createdAt: 100)])
         try? await Task.sleep(for: .milliseconds(80))
 
-        #expect(try await env.eventStore.events(ownerUserID: ownerUserID).isEmpty)
         #expect(await env.applier.appliedEventIDs.isEmpty)
     }
 
@@ -125,7 +123,6 @@ struct RelationshipEventsLiveFeedTests {
         #expect(await waitUntil { env.transport.subscriptionCount == 3 })
 
         #expect(await env.applier.appliedEventIDs.isEmpty)
-        #expect(try await env.eventStore.events(ownerUserID: ownerUserID).map(\.id) == [lost.id])
         let cursor = try await env.stateStore.cursor(
             ownerUserID: ownerUserID,
             scope: SyncStreamScope(kind: .user),
@@ -272,7 +269,6 @@ private actor RecordingRelationshipSyncEventApplier: RelationshipSyncEventApplyi
 
 private final class EventsFeedEnv: @unchecked Sendable {
     let transport = RecordingLiveTransport()
-    let eventStore = InMemoryRelationshipSyncEventRepository()
     let stateStore = InMemorySyncStateRepository()
     let applier: RecordingRelationshipSyncEventApplier
     private let feed: RelationshipEventsLiveFeed
@@ -284,7 +280,6 @@ private final class EventsFeedEnv: @unchecked Sendable {
         applier = RecordingRelationshipSyncEventApplier(failingApplies: failingApplies)
         session = SyncSession(userID: ownerUserID)
         feed = RelationshipEventsLiveFeed(
-            eventStore: eventStore,
             stateStore: stateStore,
             applier: applier,
             retryDelay: .milliseconds(1)

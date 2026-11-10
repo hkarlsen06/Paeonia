@@ -4,7 +4,6 @@ import Synchronization
 /// A part of the local store that view models can watch.
 nonisolated enum LocalStoreDomain: String, CaseIterable, Sendable {
     case access
-    case relationshipEvents
     case locationVisibility
     case ownLocation
     case memories

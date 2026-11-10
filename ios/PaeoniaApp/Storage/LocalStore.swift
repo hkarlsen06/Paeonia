@@ -24,7 +24,6 @@ nonisolated final class PaeoniaLocalStore: Sendable {
             LocalSyncState.self,
             LocalPendingSyncOperation.self,
             LocalAccessSyncSnapshot.self,
-            LocalRelationshipSyncEvent.self,
             LocalLocationVisibilitySnapshot.self,
             LocalOwnLocationSnapshot.self,
             LocalMemoryRecord.self

@@ -41,13 +41,6 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
         ) {
             context.delete(value)
         }
-        for value in try context.fetch(
-            FetchDescriptor<LocalRelationshipSyncEvent>(
-                predicate: #Predicate { value in value.ownerUserID == ownerUserID }
-            )
-        ) {
-            context.delete(value)
-        }
         try deleteLocationRecords(ownerUserID: ownerUserID, in: context)
         PendingSharingChoiceLedger.shared.removeChoices(ownerUserID: ownerUserID)
         try deleteMemoryRecords(ownerUserID: ownerUserID, in: context)
@@ -84,7 +77,6 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
         try deleteLocationRecords(ownerUserID: ownerUserID, in: context)
         PendingSharingChoiceLedger.shared.removeChoices(ownerUserID: ownerUserID)
         try deleteMemoryRecords(ownerUserID: ownerUserID, in: context)
-        try deleteRelationshipEvents(ownerUserID: ownerUserID, in: context)
         if clearAccessSnapshot {
             try deleteAccessSnapshot(ownerUserID: ownerUserID, in: context)
         }
@@ -98,7 +90,6 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
     /// here would run that routing again.
     private static let purgedDomains: [LocalStoreDomain] = [
         .pendingOperations,
-        .relationshipEvents,
         .locationVisibility,
         .ownLocation,
         .memories,
@@ -152,19 +143,6 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
     ) throws {
         for value in try context.fetch(
             FetchDescriptor<LocalMemoryRecord>(
-                predicate: #Predicate { value in value.ownerUserID == ownerUserID }
-            )
-        ) {
-            context.delete(value)
-        }
-    }
-
-    private func deleteRelationshipEvents(
-        ownerUserID: UUID,
-        in context: ModelContext
-    ) throws {
-        for value in try context.fetch(
-            FetchDescriptor<LocalRelationshipSyncEvent>(
                 predicate: #Predicate { value in value.ownerUserID == ownerUserID }
             )
         ) {

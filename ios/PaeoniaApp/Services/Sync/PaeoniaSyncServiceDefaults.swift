@@ -5,7 +5,6 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         let stateStore: any SyncStatePersisting
         let pendingOperationStore: any PendingSyncOperationPersisting
         let accessSnapshotStore: any AccessSyncSnapshotPersisting
-        let relationshipEventStore: any RelationshipSyncEventPersisting
         let locationVisibilityStore: any LocationVisibilitySnapshotPersisting
         let ownLocationStore: any OwnLocationSnapshotPersisting
         let memoryStore: any MemoryRecordPersisting
@@ -19,7 +18,6 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             stateStore: SwiftDataSyncStateRepository(container: localStore.container),
             pendingOperationStore: SwiftDataPendingSyncOperationRepository(container: localStore.container),
             accessSnapshotStore: SwiftDataAccessSyncSnapshotRepository(container: localStore.container),
-            relationshipEventStore: SwiftDataRelationshipSyncEventRepository(container: localStore.container),
             locationVisibilityStore: SwiftDataLocationVisibilityRepository(container: localStore.container),
             ownLocationStore: SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
             memoryStore: SwiftDataMemoryRecordRepository(container: localStore.container),

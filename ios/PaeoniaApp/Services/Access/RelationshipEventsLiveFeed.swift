@@ -1,12 +1,12 @@
 @preconcurrency import ConvexMobile
 import Foundation
 
-/// Saves relationship sync events as the server records them and applies their
+/// Reads relationship sync events as the server records them and applies their
 /// privacy effects (hide or purge local data, clear the widget cache).
 ///
-/// The query returns events after a cursor. Each non-empty result is saved and
-/// applied, the cursor moves to the last event, and the feed subscribes again
-/// from the new cursor. The cursor advances only after the events are applied,
+/// The query returns events after a cursor. Each non-empty result is applied,
+/// the cursor moves to the last event, and the feed subscribes again from the
+/// new cursor. The cursor advances only after the events are applied,
 /// so a failure or a cancelled purge replays the same events on the next run.
 ///
 /// A replayed `entitlement_lost` event can be older than a renewal. Before the
@@ -19,20 +19,17 @@ import Foundation
 /// purge runs with every feed paused, so anything this feed or another feed
 /// wrote for the old couple in between is removed there.
 nonisolated struct RelationshipEventsLiveFeed: LiveFeed {
-    private let eventStore: any RelationshipSyncEventPersisting
     private let stateStore: any SyncStatePersisting
     private let applier: any RelationshipSyncEventApplying
     private let pageSize: Int
     private let retryDelay: Duration
 
     init(
-        eventStore: any RelationshipSyncEventPersisting,
         stateStore: any SyncStatePersisting,
         applier: any RelationshipSyncEventApplying,
         pageSize: Int = 100,
         retryDelay: Duration = .seconds(5)
     ) {
-        self.eventStore = eventStore
         self.stateStore = stateStore
         self.applier = applier
         self.pageSize = pageSize
@@ -43,7 +40,6 @@ nonisolated struct RelationshipEventsLiveFeed: LiveFeed {
     /// `LocalPrivacyPurgeService`.
     static func make(stores: PaeoniaSyncServiceDefaults.Stores) -> RelationshipEventsLiveFeed {
         RelationshipEventsLiveFeed(
-            eventStore: stores.relationshipEventStore,
             stateStore: stores.stateStore,
             applier: RelationshipSyncEventApplier(
                 localPrivacyPurger: LocalPrivacyPurgeService(recordStore: stores.privacyRecordStore)
@@ -73,7 +69,6 @@ nonisolated struct RelationshipEventsLiveFeed: LiveFeed {
             }
 
             do {
-                try await eventStore.save(events)
                 guard let applicable = await dropRenewedEntitlementLoss(events, live: live) else {
                     return
                 }

@@ -7,7 +7,6 @@ extension LocalPrivacyPurgeTests {
         let coupleID = UUID()
         let now = Date(timeIntervalSince1970: 100)
         insertSyncRecords(ownerUserID: ownerUserID, coupleID: coupleID, now: now, in: context)
-        try insertRelationshipEvent(ownerUserID: ownerUserID, coupleID: coupleID, now: now, in: context)
         insertLocationRecords(ownerUserID: ownerUserID, coupleID: coupleID, now: now, in: context)
         insertMemoryRecord(ownerUserID: ownerUserID, coupleID: coupleID, now: now, in: context)
         try context.save()
@@ -44,36 +43,6 @@ extension LocalPrivacyPurgeTests {
             )
         )
         context.insert(LocalAccessSyncSnapshot(ownerUserID: ownerUserID, refreshedAt: now))
-    }
-
-    private func insertRelationshipEvent(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        now: Date,
-        in context: ModelContext
-    ) throws {
-        let relationshipEvent = RemoteRelationshipSyncEvent(
-            id: UUID(),
-            userID: ownerUserID,
-            coupleID: coupleID,
-            initiatedByUserID: nil,
-            eventKind: "relationship_ended",
-            reason: "left_relationship",
-            occurredAt: now,
-            relationshipStatus: "ended",
-            memberStatus: "ended_notice_pending",
-            endedAt: now,
-            deleteAfter: now.addingTimeInterval(2_592_000),
-            localPurgeScope: ["relationship_content": "hide"],
-            createdAt: now,
-            updatedAt: now
-        )
-        context.insert(
-            LocalRelationshipSyncEvent(
-                event: relationshipEvent,
-                localPurgeScopeData: try JSONEncoder().encode(relationshipEvent.localPurgeScope)
-            )
-        )
     }
 
     private func insertLocationRecords(ownerUserID: UUID, coupleID: UUID, now: Date, in context: ModelContext) {
@@ -173,11 +142,6 @@ extension LocalPrivacyPurgeTests {
                     predicate: #Predicate { value in value.ownerUserID == ownerUserID }
                 )
             ),
-            relationshipEvents: context.fetchCount(
-                FetchDescriptor<LocalRelationshipSyncEvent>(
-                    predicate: #Predicate { value in value.ownerUserID == ownerUserID }
-                )
-            ),
             locationSnapshots: context.fetchCount(
                 FetchDescriptor<LocalLocationVisibilitySnapshot>(
                     predicate: #Predicate { value in value.ownerUserID == ownerUserID }
@@ -201,7 +165,6 @@ struct RecordCounts: Equatable {
     let syncStates: Int
     let pendingOperations: Int
     let accessSnapshots: Int
-    let relationshipEvents: Int
     let locationSnapshots: Int
     let ownLocationSnapshots: Int
     let memories: Int
@@ -210,7 +173,6 @@ struct RecordCounts: Equatable {
         syncStates: 0,
         pendingOperations: 0,
         accessSnapshots: 0,
-        relationshipEvents: 0,
         locationSnapshots: 0,
         ownLocationSnapshots: 0,
         memories: 0
@@ -220,7 +182,6 @@ struct RecordCounts: Equatable {
         syncStates: 2,
         pendingOperations: 1,
         accessSnapshots: 1,
-        relationshipEvents: 1,
         locationSnapshots: 1,
         ownLocationSnapshots: 1,
         memories: 1
@@ -231,7 +192,6 @@ struct RecordCounts: Equatable {
         syncStates: 1,
         pendingOperations: 1,
         accessSnapshots: 1,
-        relationshipEvents: 1,
         locationSnapshots: 0,
         ownLocationSnapshots: 0,
         memories: 1
@@ -242,7 +202,6 @@ struct RecordCounts: Equatable {
         syncStates: 1,
         pendingOperations: 0,
         accessSnapshots: 1,
-        relationshipEvents: 0,
         locationSnapshots: 0,
         ownLocationSnapshots: 0,
         memories: 0
@@ -252,7 +211,6 @@ struct RecordCounts: Equatable {
         syncStates: 1,
         pendingOperations: 0,
         accessSnapshots: 0,
-        relationshipEvents: 0,
         locationSnapshots: 0,
         ownLocationSnapshots: 0,
         memories: 0
