@@ -6,8 +6,6 @@ import Foundation
 /// into the cache, then the Games tab re-reads. Each game has a feed of its own
 /// for its game state (`DrawAndGuessLiveFeed`).
 nonisolated struct GamesOverviewLiveFeed: LiveFeed {
-    let name = "games_overview"
-
     private let cache: any GamesCaching
 
     init(cache: any GamesCaching) {

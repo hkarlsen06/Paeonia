@@ -108,10 +108,6 @@ final class StreakRestoreViewModel {
         return true
     }
 
-    func clearError() {
-        error = nil
-    }
-
     /// The restored length, or `nil` when nothing came back. `error` says why,
     /// except when the user cancelled or the App Store is still waiting on approval.
     private func recoverOrBuy() async -> Int? {

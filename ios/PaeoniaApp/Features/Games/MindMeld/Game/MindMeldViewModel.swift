@@ -216,14 +216,6 @@ final class MindMeldViewModel {
         resolution.round.flatMap { $0.state == .open ? $0 : nil }
     }
 
-    /// The person is in a game in play, writing or waiting.
-    var isPlaying: Bool {
-        switch phase {
-        case .write, .waiting: true
-        default: false
-        }
-    }
-
     /// Names who is playing. Safe to call again when the names load. A change of
     /// user or couple resets what was loaded.
     func configure(participants newParticipants: GameParticipants) {

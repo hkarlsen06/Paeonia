@@ -217,7 +217,6 @@ private struct QueuedDailyVoiceAnswer {
         try await drain.push(context: SyncContext(
             session: SyncSession(userID: ownerUserID),
             reason: reason,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: outbox
         ))
     }

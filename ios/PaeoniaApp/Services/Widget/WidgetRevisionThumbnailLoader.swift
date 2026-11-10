@@ -10,7 +10,7 @@ nonisolated protocol WidgetRevisionThumbnailLoading: Sendable {
 
     /// A full-quality PNG of a revision for saving to the device, rendered larger
     /// than the timeline thumbnail. Not cached: saving is a one-off action.
-    func exportPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) async -> Data?
+    func exportPNG(mediaAssetID: UUID, canvasSide: CGFloat) async -> Data?
 }
 
 /// Downloads a revision's payload and rasterizes it into a thumbnail. Loads are
@@ -56,7 +56,7 @@ actor WidgetRevisionThumbnailLoader: WidgetRevisionThumbnailLoading {
         return data
     }
 
-    func exportPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) async -> Data? {
+    func exportPNG(mediaAssetID: UUID, canvasSide: CGFloat) async -> Data? {
         // Render fresh at full quality; the small thumbnail cache isn't reused so
         // the saved image is crisp rather than a 240pt preview blown up.
         await render(mediaAssetID: mediaAssetID, canvasSide: canvasSide, pixelWidth: exportPixelWidth)
@@ -79,5 +79,5 @@ actor WidgetRevisionThumbnailLoader: WidgetRevisionThumbnailLoading {
 /// never exercise thumbnail or export rendering.
 nonisolated struct NoOpWidgetRevisionThumbnailLoader: WidgetRevisionThumbnailLoading {
     func thumbnailPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { nil }
-    func exportPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { nil }
+    func exportPNG(mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { nil }
 }

@@ -54,7 +54,6 @@ struct PairedHomeView: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.dynamicTypeSize) var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     /// iPad landscape: three columns that the cards fill left to right and then down,
     /// with a square map (`HomeWideLayout`).
     @State var isWideLayout = false

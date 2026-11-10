@@ -5,8 +5,6 @@ import Foundation
 /// a new location, or the relationship ends. Each result goes into the
 /// visibility store, which tells the view models to re-read.
 nonisolated struct LocationVisibilityLiveFeed: LiveFeed {
-    let name = "location_visibility"
-
     private let visibilityStore: any LocationVisibilitySnapshotPersisting
     private let pendingOperationStore: any PendingSyncOperationPersisting
     private let now: @Sendable () -> Date

@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct ReportAndLeaveView: View {
-    let partnerUserID: UUID
     let partnerName: String
     let onReportedAndLeft: () -> Void
 
@@ -20,7 +19,6 @@ struct ReportAndLeaveView: View {
         operationProvider: (any SyncClientOperationProviding)? = nil,
         onReportedAndLeft: @escaping () -> Void = {}
     ) {
-        self.partnerUserID = partnerUserID
         self.partnerName = partnerName
         self.reportTarget = reportTarget ?? .conduct(userID: partnerUserID)
         self.onReportedAndLeft = onReportedAndLeft

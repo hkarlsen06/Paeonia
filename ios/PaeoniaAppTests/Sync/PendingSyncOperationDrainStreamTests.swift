@@ -26,7 +26,6 @@ struct PendingSyncOperationDrainStreamTests {
         let context = SyncContext(
             session: SyncSession(userID: ownerUserID),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pendingStore
         )
 
@@ -73,7 +72,6 @@ struct PendingSyncOperationDrainStreamTests {
         let context = SyncContext(
             session: SyncSession(userID: ownerUserID),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pendingStore
         )
 
@@ -103,7 +101,6 @@ struct PendingSyncOperationDrainStreamTests {
         let context = SyncContext(
             session: SyncSession(userID: ownerUserID),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pendingStore
         )
 
@@ -149,7 +146,6 @@ struct PendingSyncOperationDrainStreamTests {
         let context = SyncContext(
             session: SyncSession(userID: ownerUserID),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pendingStore
         )
 
@@ -191,7 +187,6 @@ struct PendingSyncOperationDrainStreamTests {
         let context = SyncContext(
             session: SyncSession(userID: ownerUserID),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pendingStore
         )
 
@@ -343,7 +338,6 @@ struct PendingSyncOperationDrainRunTests {
         SyncContext(
             session: SyncSession(userID: owner),
             reason: reason,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: store
         )
     }

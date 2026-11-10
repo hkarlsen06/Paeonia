@@ -196,16 +196,6 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         }
     }
 
-    func requestSync(reason: SyncRequestReason) {
-        hasStarted = true
-
-        guard session != nil else {
-            return
-        }
-
-        scheduleSync(reason: reason)
-    }
-
     func stop() {
         scheduleGeneration &+= 1
         scheduledTask?.cancel()

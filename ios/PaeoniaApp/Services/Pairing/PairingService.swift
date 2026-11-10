@@ -28,8 +28,6 @@ protocol PairingServicing: Actor {
         startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship
 
-    func revokeInvite(id: UUID) async throws -> Bool
-
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool
 }
 
@@ -144,10 +142,6 @@ actor RemotePairingService: PairingServicing {
         )
 
         return PairingAcceptedRelationship(coupleID: coupleID)
-    }
-
-    func revokeInvite(id: UUID) async throws -> Bool {
-        try await gateway.revokeInvite(id: id)
     }
 
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {

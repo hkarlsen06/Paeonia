@@ -25,7 +25,7 @@ extension CorpseSimServer {
             return existing
         }
         let id = UUID()
-        assets[id] = Asset(id: id, owner: user, partID: parent.id, purpose: parent.purpose, data: data, createdAt: now)
+        assets[id] = Asset(owner: user, partID: parent.id, purpose: parent.purpose, data: data, createdAt: now)
         uploadsByReservation[reserveOperation.id] = id
         return id
     }
@@ -53,11 +53,9 @@ extension CorpseSimServer {
             && (isStrip || isFinished || part?.drawer == user)
         downloads.append(Download(
             user: user,
-            assetID: assetID,
             purpose: asset?.purpose,
             drawer: part?.drawer,
-            figureFinished: isFinished,
-            allowed: allowed
+            figureFinished: isFinished
         ))
         guard allowed, let asset else { throw GameDrawingTransferError.downloadUnavailable }
         return asset.data

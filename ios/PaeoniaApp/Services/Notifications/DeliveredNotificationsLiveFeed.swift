@@ -41,7 +41,6 @@ nonisolated struct SystemDeliveredNotificationCenter: DeliveredNotificationCente
 /// Follows the server state of alerts still in Notification Center, including reads on another phone.
 /// Rescans each minute for alerts delivered while suspended and for deadlines that pass while offline.
 nonisolated struct DeliveredNotificationsLiveFeed: LiveFeed {
-    let name = "delivered-notifications"
     var center: any DeliveredNotificationCenter = SystemDeliveredNotificationCenter()
     var now: @Sendable () -> Date = { Date() }
     var sleep: @Sendable () async throws -> Void = { try await Task.sleep(for: .seconds(60)) }

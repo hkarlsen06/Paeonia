@@ -42,13 +42,6 @@ extension RootViewModel {
         }
     }
 
-    func signInForDevelopment() async {
-        await performAuthAction(failureNotice: RootNotice.signInFailed) {
-            let session = try await authService.signInForDevelopment()
-            await apply(AuthRoute(session: session))
-        }
-    }
-
     func completeOnboarding(
         displayName: String,
         timeZoneID: String,

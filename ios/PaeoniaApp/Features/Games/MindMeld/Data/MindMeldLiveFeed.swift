@@ -4,8 +4,6 @@ import Foundation
 /// `mindMeld:get_mind_meld` carries the game with its rounds and the couple's
 /// numbers. Each result goes into the cache, then the game re-reads.
 nonisolated struct MindMeldLiveFeed: LiveFeed {
-    let name = "mind_meld"
-
     /// Read by the Games tab, and while the partner plays this game by the Home card
     /// and the tab badge.
     var activation: LiveFeedActivation {

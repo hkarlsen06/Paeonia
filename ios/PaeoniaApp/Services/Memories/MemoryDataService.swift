@@ -283,16 +283,3 @@ nonisolated enum MemoryDataServiceFactory {
     }
 
 }
-
-extension MemoryDataServicing {
-    // swiftlint:disable:next function_parameter_count
-    func updateMemory(
-        ownerUserID: UUID, memoryID: UUID, expectedRevision: Int,
-        title: String, memoryDate: String, operation: SyncClientOperation
-    ) async throws -> MemoryRecord {
-        try await updateMemory(
-            ownerUserID: ownerUserID, memoryID: memoryID, expectedRevision: expectedRevision,
-            title: title, memoryDate: memoryDate, photoDescriptions: [], operation: operation
-        )
-    }
-}

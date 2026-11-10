@@ -4,15 +4,6 @@ import StoreKit
 nonisolated enum PaeoniaSubscriptionProductID: String, CaseIterable, Sendable {
     case coupleMonthly = "no.paeonia.couple"
     case coupleYearly = "no.paeonia.couple.year"
-
-    var billingPeriod: PaeoniaBillingPeriod {
-        switch self {
-        case .coupleMonthly:
-            .monthly
-        case .coupleYearly:
-            .yearly
-        }
-    }
 }
 
 nonisolated enum PaeoniaBillingPeriod: String, CaseIterable, Sendable {

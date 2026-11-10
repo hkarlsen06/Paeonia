@@ -7201,24 +7201,6 @@
         }
       }
     },
-    "dailyChallenge.combinedChoice.hint" : {
-      "comment" : "Short label above the optional partner-choice picker when a daily question also accepts text",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick one of you (optional)"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg en av dere (valgfritt)"
-          }
-        }
-      }
-    },
     "dailyChallenge.composer.change" : {
       "comment" : "Button that dismisses the keyboard to change the selected person or option.",
       "extractionState" : "manual",
@@ -7291,150 +7273,6 @@
         }
       }
     },
-    "dailyChallenge.earlierAnswer.date" : {
-      "comment" : "Second line of the small note about an earlier answer. %@ is the earlier day, such as March 3.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Last time: %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sist: %@"
-          }
-        }
-      }
-    },
-    "dailyChallenge.earlierAnswer.dismiss" : {
-      "comment" : "VoiceOver label on the button that hides the small note about an earlier answer.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hide"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skjul"
-          }
-        }
-      }
-    },
-    "dailyChallenge.earlierAnswer.hint" : {
-      "comment" : "VoiceOver hint on the small note about an earlier answer. Tapping it opens the question's chat.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opens both of your answers, then and now."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpner begge svarene deres, da og nå."
-          }
-        }
-      }
-    },
-    "dailyChallenge.earlierAnswer.title" : {
-      "comment" : "Title of a small note in the answer flow, shown after the user answers a question they have answered on an earlier day.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You answered this before"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du har svart på dette før"
-          }
-        }
-      }
-    },
-    "dailyChallenge.editFailed.message" : {
-      "comment" : "Message shown when saving an edit to an answer did not work",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your text is still here. Try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teksten din er fortsatt her. Prøv igjen."
-          }
-        }
-      }
-    },
-    "dailyChallenge.editFailed.title" : {
-      "comment" : "Title shown when saving an edit to an answer did not work",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We could not save your changes"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke lagre endringene dine"
-          }
-        }
-      }
-    },
-    "dailyChallenge.editLocked.message" : {
-      "comment" : "Why an answer can no longer be edited. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ has answered, so this answer can't be changed now."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ har svart, så dette svaret kan ikke endres nå."
-          }
-        }
-      }
-    },
-    "dailyChallenge.editLocked.title" : {
-      "comment" : "Title shown when an answer can no longer be edited because the partner has answered",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Already shared"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Allerede delt"
-          }
-        }
-      }
-    },
     "dailyChallenge.emptyAnswer.message" : {
       "comment" : "Banner message shown when the user tries to submit an empty daily challenge text answer",
       "extractionState" : "manual",
@@ -7503,24 +7341,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ferdig"
-          }
-        }
-      }
-    },
-    "dailyChallenge.flow.saveButton" : {
-      "comment" : "Button that saves edits to an answer the user already sent",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre"
           }
         }
       }
@@ -8263,42 +8083,6 @@
         }
       }
     },
-    "dailyChallenge.partnerRevealed" : {
-      "comment" : "Status label shown when the named partner answered and their answer is visible. %@ is the partner name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ answered"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ svarte"
-          }
-        }
-      }
-    },
-    "dailyChallenge.photo.add" : {
-      "comment" : "Button to add a photo to a daily answer",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add a photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legg til et bilde"
-          }
-        }
-      }
-    },
     "dailyChallenge.photo.change" : {
       "comment" : "Button to replace the chosen photo on a daily answer",
       "extractionState" : "manual",
@@ -8493,96 +8277,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Si hvorfor, om du vil"
-          }
-        }
-      }
-    },
-    "dailyChallenge.progress.accessibilityLabel" : {
-      "comment" : "Accessibility label for the daily challenge progress pill",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Daily challenge progress"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fremdrift for dagens spørsmål"
-          }
-        }
-      }
-    },
-    "dailyChallenge.progress.pillAccessibility" : {
-      "comment" : "VoiceOver value for the daily question step bar. First number is answered questions, second is the total.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld of %lld answered"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld av %lld besvart"
-          }
-        }
-      }
-    },
-    "dailyChallenge.questions.done.bothAnswered" : {
-      "comment" : "Second line on the compact done card on the Questions tab when both partners have answered today's question.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You both answered. Read the answers below."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dere har begge svart. Les svarene under."
-          }
-        }
-      }
-    },
-    "dailyChallenge.questions.done.partnerQuestions" : {
-      "comment" : "Second line on the compact done card on the Questions tab when the partner has answered a question from an earlier day that the user can answer below. The argument is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ answered an earlier question. You'll find it below."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ har svart på et tidligere spørsmål. Du finner det under."
-          }
-        }
-      }
-    },
-    "dailyChallenge.questions.done.waiting" : {
-      "comment" : "Second line on the compact done card on the Questions tab when the partner has not answered today's question yet. The argument is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Waiting for %@ to answer."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Venter på at %@ skal svare."
           }
         }
       }
@@ -8947,24 +8641,6 @@
         }
       }
     },
-    "dailyChallenge.voice.label" : {
-      "comment" : "Label above the voice answer recorder/preview",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your voice note"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Talemeldingen din"
-          }
-        }
-      }
-    },
     "dailyChallenge.voice.loadFailed" : {
       "comment" : "Shown when a voice note can't be loaded for playback",
       "extractionState" : "manual",
@@ -9195,24 +8871,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi kunne ikke lagre talemeldingen din"
-          }
-        }
-      }
-    },
-    "dailyChallenge.youAnswered" : {
-      "comment" : "Status label indicating the current user answered a daily challenge question",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You answered"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du svarte"
           }
         }
       }
@@ -11499,24 +11157,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ferdig, send til %@"
-          }
-        }
-      }
-    },
-    "exquisiteCorpse.draw.eyebrow" : {
-      "comment" : "Small uppercase label above the instruction on the drawing screen. It tells the player this is the part they draw.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your part"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Din del"
           }
         }
       }
@@ -14683,24 +14323,6 @@
         }
       }
     },
-    "games.drawAndGuess.handoff.watch" : {
-      "comment" : "Button on the result screen once the partner has started drawing the next round",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watch %@ draw"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se %@ tegne"
-          }
-        }
-      }
-    },
     "games.drawAndGuess.hint" : {
       "comment" : "Quiet button under the tiles that places the next letter of the answer. Also the confirm button of its alert.",
       "extractionState" : "manual",
@@ -15843,24 +15465,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Poengene oppdateres når du er på nett."
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.reveal.partnerWaiting" : {
-      "comment" : "Line above the button on the guesser's result screen while the partner waits for them to pick the next word",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ is waiting for you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ venter på deg"
           }
         }
       }
@@ -19597,24 +19201,6 @@
         }
       }
     },
-    "guessMySpot.photo.a11y" : {
-      "comment" : "VoiceOver label of the photo in Guess my spot.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The photo. Pinch to look closer."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bildet. Klyp for å se nærmere."
-          }
-        }
-      }
-    },
     "guessMySpot.photo.preview.a11y" : {
       "comment" : "VoiceOver label of the partner's photo, shown blurred while they pick it and while it loads.",
       "extractionState" : "manual",
@@ -20035,42 +19621,6 @@
         }
       }
     },
-    "guessMySpot.reveal.off" : {
-      "comment" : "Reveal line naming how far off the guess was. %@ is the distance, such as '3.2 km'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ off."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ unna."
-          }
-        }
-      }
-    },
-    "guessMySpot.reveal.off.sender" : {
-      "comment" : "Reveal line on the sender's phone naming how far off the partner's guess was. %1$@ is the partner's name, %2$@ the distance, such as '3.2 km'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@'s guess was %2$@ off."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gjetningen til %1$@ var %2$@ unna."
-          }
-        }
-      }
-    },
     "guessMySpot.reveal.points" : {
       "comment" : "This round's points beside the counting total. %@ is the number.",
       "extractionState" : "manual",
@@ -20121,42 +19671,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Så nær!"
-          }
-        }
-      }
-    },
-    "guessMySpot.reveal.spotOn.guesser" : {
-      "comment" : "Reveal line for the guesser on a spot on guess.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You found it."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du fant det."
-          }
-        }
-      }
-    },
-    "guessMySpot.reveal.spotOn.sender" : {
-      "comment" : "Reveal line for the sender on a spot on guess. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ found it."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ fant det."
           }
         }
       }
@@ -23791,24 +23305,6 @@
         }
       }
     },
-    "ludo.board.label" : {
-      "comment" : "VoiceOver label of the whole Ludo board, the 3D picture with the pawns and the die.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ludo board"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ludo-brett"
-          }
-        }
-      }
-    },
     "ludo.color.gold" : {
       "comment" : "Name of the soft gold pawn color in Ludo. VoiceOver reads it on the color circle.",
       "extractionState" : "manual",
@@ -24229,42 +23725,6 @@
         }
       }
     },
-    "ludo.pawn.movable" : {
-      "comment" : "VoiceOver label of one of this person's pawns that can move with the roll. %1$lld is the pawn, 1 or 2. %2$lld is how many squares are left before the pawn is home.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your pawn %1$lld. Squares to home: %2$lld"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Din brikke %1$lld. Ruter til mål: %2$lld"
-          }
-        }
-      }
-    },
-    "ludo.pawn.move" : {
-      "comment" : "VoiceOver action name on a pawn that can move. %lld is the number on the die, so the pawn moves that many squares.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Move by %lld"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flytt %lld"
-          }
-        }
-      }
-    },
     "ludo.pawn.safe" : {
       "comment" : "Pawn cannot be captured on this square.",
       "extractionState" : "manual",
@@ -24675,24 +24135,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ingen bildebeskrivelse lagt til"
-          }
-        }
-      }
-    },
-    "media.accessibility.reviewRecording" : {
-      "comment" : "Stops a chat recording and opens playback and transcript editing before sending",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Review recording"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se gjennom opptaket"
           }
         }
       }
@@ -26205,24 +25647,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "For langt til å lagre"
-          }
-        }
-      }
-    },
-    "memories.photo.accessibility" : {
-      "comment" : "Accessibility label for a photo shown inside a memory.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Memory photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Minnebilde"
           }
         }
       }
@@ -30801,24 +30225,6 @@
         }
       }
     },
-    "paywall.cta.purchasing" : {
-      "comment" : "Primary purchase button label while purchase is in progress.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confirming"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bekrefter"
-          }
-        }
-      }
-    },
     "paywall.cta.subscribe" : {
       "comment" : "Paywall button that opens the App Store purchase sheet.",
       "extractionState" : "manual",
@@ -31845,24 +31251,6 @@
         }
       }
     },
-    "piccante.gamesTogether" : {
-      "comment" : "Piccante game. gamesTogether.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld games together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld spill sammen"
-          }
-        }
-      }
-    },
     "piccante.gotYou" : {
       "comment" : "Piccante game. gotYou.",
       "extractionState" : "manual",
@@ -32421,24 +31809,6 @@
         }
       }
     },
-    "piccante.tally" : {
-      "comment" : "Piccante game. tally.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You %1$lld · %2$lld partner"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du %1$lld · %2$lld partner"
-          }
-        }
-      }
-    },
     "piccante.tile.burned" : {
       "comment" : "VoiceOver description of the eaten chocolate that ended the game.",
       "extractionState" : "manual",
@@ -32777,24 +32147,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hvit trøffel"
-          }
-        }
-      }
-    },
-    "piccante.waiting" : {
-      "comment" : "Piccante game. waiting.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Waiting for %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Venter på %@"
           }
         }
       }
@@ -39444,24 +38796,6 @@
         }
       }
     },
-    "stories.badge.own" : {
-      "comment" : "Short badge on your avatar when you have an active story. Separate from the add button.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Story"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Story"
-          }
-        }
-      }
-    },
     "stories.badge.seen" : {
       "comment" : "Short badge on the partner avatar when all active stories have been viewed.",
       "extractionState" : "manual",
@@ -42948,24 +42282,6 @@
         }
       }
     },
-    "streakSave.waitingMessage" : {
-      "comment" : "Shown after the user answers today's question on the free save day of a broken streak, before the partner has done anything today. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your part is done. If %@ does one small thing today too, your streak comes back for free."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Din del er gjort. Hvis %@ også gjør én liten ting i dag, kommer rekken tilbake gratis."
-          }
-        }
-      }
-    },
     "streakSave.yourTurn" : {
       "comment" : "Streak sheet line on the free save day of a broken streak: the partner did something today, the user has not yet.",
       "extractionState" : "manual",
@@ -43196,24 +42512,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi gir %@ beskjed"
-          }
-        }
-      }
-    },
-    "topics.flow.youGoFirst" : {
-      "comment" : "Note on a topic question nobody has answered yet. Partner name",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ sees your answer after answering too."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ ser svaret ditt etter å ha svart selv."
           }
         }
       }
@@ -43668,42 +42966,6 @@
         }
       }
     },
-    "ultimateTicTacToe.cell.empty.a11y" : {
-      "comment" : "VoiceOver label of an empty cell inside a small board. Row and column count from 1.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Row %1$lld, column %2$lld, empty"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rad %1$lld, kolonne %2$lld, tom"
-          }
-        }
-      }
-    },
-    "ultimateTicTacToe.cell.partner.a11y" : {
-      "comment" : "VoiceOver label of a cell the partner played. %3$@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Row %1$lld, column %2$lld, %3$@'s"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rad %1$lld, kolonne %2$lld, %3$@ sin"
-          }
-        }
-      }
-    },
     "ultimateTicTacToe.cell.picked.a11y" : {
       "comment" : "VoiceOver announcement after the player picks a square in Ultimate Tic-Tac-Toe. Row and column numbers. The square is played only after the Lock in button.",
       "extractionState" : "manual",
@@ -43718,24 +42980,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rad %1$lld, kolonne %2$lld er valgt. Trykk på Bekreft trekk for å spille."
-          }
-        }
-      }
-    },
-    "ultimateTicTacToe.cell.yours.a11y" : {
-      "comment" : "VoiceOver label of a cell this person played.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Row %1$lld, column %2$lld, yours"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rad %1$lld, kolonne %2$lld, din"
           }
         }
       }
@@ -45179,24 +44423,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "På widgetene nå: en tegning av %1$@, %2$@"
-          }
-        }
-      }
-    },
-    "widgetDrawing.partnerSent.message" : {
-      "comment" : "Note on the drawing screen when the partner sent a drawing while the user was drawing. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ just sent a drawing. Sending yours will replace it on your widgets."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ sendte nettopp en tegning. Sender du din, bytter den ut tegningen på widgetene."
           }
         }
       }

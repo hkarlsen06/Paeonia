@@ -5,7 +5,6 @@ import Testing
 struct LiveSyncCoordinatorTests {
     /// Records each run and blocks until cancelled, then records the cancellation.
     private final class RecordingFeed: LiveFeed, @unchecked Sendable {
-        let name: String
         let started = LockedBox<[SyncSession]>([])
         let finished = LockedBox<[SyncSession]>([])
         /// Counts runs that saw their cancellation, before the simulated write finishes.
@@ -14,10 +13,6 @@ struct LiveSyncCoordinatorTests {
         let holdsFinish = LockedBox<Bool>(false)
         /// Sessions that were still running when another session started.
         private let events = LockedBox<[String]>([])
-
-        init(name: String) {
-            self.name = name
-        }
 
         var log: [String] {
             events.value
@@ -59,20 +54,20 @@ struct LiveSyncCoordinatorTests {
     }
 
     @Test func startRunsEveryFeedWithTheSession() async {
-        let first = RecordingFeed(name: "first")
-        let second = RecordingFeed(name: "second")
+        let first = RecordingFeed()
+        let second = RecordingFeed()
         let coordinator = Self.makeCoordinator(feeds: [first, second])
         let session = Self.session(couple: Self.coupleA)
 
         await coordinator.start(session: session)
 
         #expect(await waitUntil { first.started.value == [session] && second.started.value == [session] })
-        #expect(await coordinator.isRunning)
+        #expect(await coordinator.runningSession != nil)
         await coordinator.stop()
     }
 
     @Test func startingTheSameSessionAgainDoesNothing() async {
-        let feed = RecordingFeed(name: "feed")
+        let feed = RecordingFeed()
         let coordinator = Self.makeCoordinator(feeds: [feed])
         let session = Self.session(couple: Self.coupleA)
 
@@ -86,7 +81,7 @@ struct LiveSyncCoordinatorTests {
     }
 
     @Test func aDifferentCoupleRestartsFeedsAfterTheOldRunFinished() async {
-        let feed = RecordingFeed(name: "feed")
+        let feed = RecordingFeed()
         let coordinator = Self.makeCoordinator(feeds: [feed])
 
         await coordinator.start(session: Self.session(couple: Self.coupleA))
@@ -100,7 +95,7 @@ struct LiveSyncCoordinatorTests {
     }
 
     @Test func aChangedUserRestartsFeeds() async {
-        let feed = RecordingFeed(name: "feed")
+        let feed = RecordingFeed()
         let coordinator = Self.makeCoordinator(feeds: [feed])
         let other = SyncSession(userID: UUID(), activeCoupleID: Self.coupleA)
 
@@ -114,7 +109,7 @@ struct LiveSyncCoordinatorTests {
     }
 
     @Test func stopWaitsForFeedsToFinish() async {
-        let feed = RecordingFeed(name: "feed")
+        let feed = RecordingFeed()
         let coordinator = Self.makeCoordinator(feeds: [feed])
         await coordinator.start(session: Self.session(couple: Self.coupleA))
         #expect(await waitUntil { feed.started.value.count == 1 })
@@ -122,11 +117,11 @@ struct LiveSyncCoordinatorTests {
         await coordinator.stop()
 
         #expect(feed.finished.value.count == 1)
-        #expect(await !coordinator.isRunning)
+        #expect(await coordinator.runningSession == nil)
     }
 
     @Test func stopDuringASessionChangeWaitsForOldFeedsAndBlocksTheStaleStart() async {
-        let feed = RecordingFeed(name: "feed")
+        let feed = RecordingFeed()
         let coordinator = Self.makeCoordinator(feeds: [feed])
         let stale = Self.session(couple: Self.coupleA)
         await coordinator.start(session: stale)
@@ -151,11 +146,11 @@ struct LiveSyncCoordinatorTests {
         await restart.value
         try? await Task.sleep(for: .milliseconds(30))
         #expect(feed.started.value == [stale])
-        #expect(await !coordinator.isRunning)
+        #expect(await coordinator.runningSession == nil)
     }
 
     @Test func theNewestOfTwoOverlappingStartsWins() async {
-        let feed = RecordingFeed(name: "feed")
+        let feed = RecordingFeed()
         let coordinator = Self.makeCoordinator(feeds: [feed])
         let first = Self.session(couple: Self.coupleA)
         let older = Self.session(couple: Self.coupleB)
@@ -183,7 +178,7 @@ struct LiveSyncCoordinatorTests {
     }
 
     @Test func pauseStopsFeedsAndIgnoresStartsUntilResumed() async {
-        let feed = RecordingFeed(name: "feed")
+        let feed = RecordingFeed()
         let coordinator = Self.makeCoordinator(feeds: [feed])
         let stale = Self.session(couple: Self.coupleA)
         let fresh = Self.session(couple: nil)
@@ -208,7 +203,7 @@ struct LiveSyncCoordinatorTests {
     }
 
     @Test func nestedPausesNeedMatchingResumes() async {
-        let feed = RecordingFeed(name: "feed")
+        let feed = RecordingFeed()
         let coordinator = Self.makeCoordinator(feeds: [feed])
         await coordinator.pause()
         await coordinator.pause()

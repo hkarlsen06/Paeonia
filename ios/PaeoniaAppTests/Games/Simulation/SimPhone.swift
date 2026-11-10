@@ -11,7 +11,6 @@ import Foundation
 final class SimPhone {
     let name: String
     let userID: UUID
-    let partnerID: UUID
     let server: SimServer
     let relay: SimRelay
     let clock: SimClock
@@ -60,7 +59,6 @@ final class SimPhone {
     init(
         name: String,
         userID: UUID,
-        partnerID: UUID,
         server: SimServer,
         relay: SimRelay,
         clock: SimClock,
@@ -70,7 +68,6 @@ final class SimPhone {
     ) {
         self.name = name
         self.userID = userID
-        self.partnerID = partnerID
         self.server = server
         self.relay = relay
         self.clock = clock
@@ -339,7 +336,6 @@ extension SimPhone {
             session: SyncSession(userID: userID),
             // A settled phone has waited out every retry delay, so the run tries all writes.
             reason: .manualRefresh,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pending
         )
         try? await drain.push(context: context)
@@ -376,10 +372,6 @@ extension SimPhone {
         await cache.saveState(state, ownerUserID: userID)
         await cache.saveOverview(RemoteGamesOverview(drawAndGuess: state), ownerUserID: userID)
         LocalStoreChanges.post(.games, ownerUserID: userID)
-    }
-
-    var feedHasBacklog: Bool {
-        !feedQueue.isEmpty || feedCapturedVersion != server.viewVersion
     }
 
     // MARK: - Screens

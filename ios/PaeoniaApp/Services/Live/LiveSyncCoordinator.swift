@@ -4,9 +4,6 @@ import Foundation
 /// result into its repository or cache. View models never see a feed. They
 /// observe the store through `LocalStoreChanges`.
 nonisolated protocol LiveFeed: Sendable {
-    /// Shown in logs and tests.
-    var name: String { get }
-
     /// When the coordinator runs the feed. Defaults to `.always`.
     var activation: LiveFeedActivation { get }
 
@@ -90,10 +87,6 @@ actor LiveSyncCoordinator: LiveSyncCoordinating {
         )
         LiveFeedDemand.shared.attach { event in await coordinator.apply(event) }
         return coordinator
-    }
-
-    var isRunning: Bool {
-        runningSession != nil
     }
 
     func start(session: SyncSession) async {

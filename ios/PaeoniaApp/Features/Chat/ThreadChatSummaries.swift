@@ -48,11 +48,6 @@ final class ThreadChatSummaries {
         summaries[subject]
     }
 
-    /// The newest message of the chat, as the preview line shows it.
-    func preview(for subject: ThreadChatSubject) -> String? {
-        summaries[subject]?.lastMessagePreview
-    }
-
     /// The partner wrote in this chat after the user last read it.
     func isUnread(_ subject: ThreadChatSubject) -> Bool {
         guard let summary = summaries[subject], let currentUserID else { return false }

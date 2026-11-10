@@ -4,7 +4,6 @@ enum AuthServiceError: Error, Equatable {
     case noActiveSession
     case invalidDisplayName
     case missingConfiguration
-    case developmentSignInUnavailable
     case accountDeletionUnavailable
     case invalidProfilePhoto
 }
@@ -27,7 +26,6 @@ protocol AuthServicing: Actor {
     func savedSession() async -> AuthSession?
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession
     func signInWithGoogle() async throws -> AuthSession
-    func signInForDevelopment() async throws -> AuthSession
     func completeOnboarding(
         displayName: String,
         timeZoneID: String,
@@ -78,19 +76,6 @@ actor DevelopmentAuthService: AuthServicing {
             id: "development-google-user",
             provider: .google,
             displayName: nil,
-            timeZoneID: nil,
-            profilePhotoAssetID: nil,
-            profileStatus: .needsOnboarding
-        )
-        self.session = session
-        return session
-    }
-
-    func signInForDevelopment() async throws -> AuthSession {
-        let session = AuthSession(
-            id: "development-user",
-            provider: .development,
-            displayName: "Local test account",
             timeZoneID: nil,
             profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
@@ -177,10 +162,6 @@ actor UnavailableAuthService: AuthServicing {
 
     func signInWithGoogle() async throws -> AuthSession {
         throw error
-    }
-
-    func signInForDevelopment() async throws -> AuthSession {
-        throw AuthServiceError.developmentSignInUnavailable
     }
 
     func completeOnboarding(

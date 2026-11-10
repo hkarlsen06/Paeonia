@@ -106,7 +106,6 @@ struct ExquisiteCorpseViewModelDraftTests {
         let context = SyncContext(
             session: SyncSession(userID: Fixture.me),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: env.pending
         )
         let result = try await handler.send(queued, context: context)

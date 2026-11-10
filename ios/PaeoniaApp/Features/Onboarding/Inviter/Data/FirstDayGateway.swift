@@ -23,9 +23,6 @@ nonisolated protocol FirstDayGateway: Sendable {
         mediaAssetID: UUID,
         operation: SyncClientOperation
     ) async throws -> FirstDayDrawingReference
-
-    /// A short-lived URL for downloading the draft's drawing.
-    func signedDrawingURL(mediaAssetID: UUID) async throws -> URL?
 }
 
 actor LiveFirstDayGateway: FirstDayGateway {
@@ -85,10 +82,6 @@ actor LiveFirstDayGateway: FirstDayGateway {
             "firstDay:save_first_day_drawing",
             args: SaveFirstDayDrawingRequest(payload: payload, mediaAssetID: mediaAssetID, operation: operation)
         )
-    }
-
-    func signedDrawingURL(mediaAssetID: UUID) async throws -> URL? {
-        try await widget.signedPayloadURL(mediaAssetID: mediaAssetID)
     }
 }
 

@@ -23,8 +23,6 @@ enum PaeoniaMotion {
     static let stateChange = standardCurve(duration: motionDefault)
     /// Home's cards and map camera share this timing when the page changes height.
     static let homeLayoutChange = standardCurve(duration: homeLayoutDuration)
-    /// Matches the keyboard's own slide, for layout that changes as it opens or closes.
-    static let keyboard = Animation.spring(duration: 0.3, bounce: 0)
     static let cardReveal = Animation.spring(duration: motionDefault, bounce: 0.18)
     static let meaningfulMoment = standardCurve(duration: motionSlow)
     /// Text and numbers coming into focus once their data loads (`paeoniaLoadingReveal`).

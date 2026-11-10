@@ -200,7 +200,6 @@ func dailyChallengeSyncContext() -> SyncContext {
     SyncContext(
         session: SyncSession(userID: TestDailyChallengeIDs.currentUser, activeCoupleID: TestDailyChallengeIDs.couple),
         reason: .localChange,
-        stateStore: InMemorySyncStateRepository(),
         pendingOperationStore: InMemoryPendingSyncOperationRepository()
     )
 }

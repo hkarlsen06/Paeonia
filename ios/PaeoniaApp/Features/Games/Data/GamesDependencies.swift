@@ -149,10 +149,6 @@ nonisolated extension UnavailableGamesGateway: DrawAndGuessGateway {
         throw Unavailable()
     }
 
-    func loadDrawAndGuessRound(roundID _: UUID) async throws -> RemoteDrawAndGuessRound? {
-        throw Unavailable()
-    }
-
     func pickWord(_: GamePickWordPayload, operation _: SyncClientOperation) async throws -> RemotePickedWord {
         throw Unavailable()
     }

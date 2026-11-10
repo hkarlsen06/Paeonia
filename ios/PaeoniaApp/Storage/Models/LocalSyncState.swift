@@ -41,14 +41,6 @@ final class LocalSyncState {
         self.lastSyncError = lastSyncError
     }
 
-    var scopeKind: SyncScopeKind {
-        SyncScopeKind(rawValue: scopeKindRawValue) ?? .user
-    }
-
-    var streamKey: SyncStreamKey {
-        SyncStreamKey(rawValue: streamKeyRawValue) ?? .relationship
-    }
-
     var cursor: SyncCursor {
         SyncCursor(updatedAt: lastUpdatedAt, tieID: lastTieID)
     }

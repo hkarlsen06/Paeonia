@@ -62,18 +62,6 @@ final class DailyChallengeHistoryViewModel {
         }
     }
 
-    /// Cached conversations remain available while question history loads or fails.
-    func days(
-        adding conversations: [SubjectConversation],
-        before today: String,
-        excluding shownIDs: Set<UUID>,
-        timeZone: TimeZone = .gmt
-    ) -> [DailyChallengeHistoryDay] {
-        let loaded = DailyChallengeHistory.grouped(questions, timeZone: timeZone)
-        let days = DailyChallengeHistory.adding(conversations, before: today, to: loaded, timeZone: timeZone)
-        return DailyChallengeHistory.removing(shownIDs, from: days)
-    }
-
     /// Loads (or reloads) the history. The first load drives the loading → content /
     /// empty / failed state. A reload that fails while content is already on screen
     /// keeps that content and surfaces a recoverable banner instead of an error state.

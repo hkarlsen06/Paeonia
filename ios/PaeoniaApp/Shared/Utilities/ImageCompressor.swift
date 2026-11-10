@@ -6,8 +6,7 @@ import UIKit
 /// only as much as needed to stay within a predictable byte budget.
 ///
 /// Compression decodes the full image and encodes several JPEGs, which takes long
-/// enough to freeze the UI. The type is `nonisolated` so it can run anywhere. Call
-/// the `compressAsync` variants from UI code so the work leaves the main thread.
+/// enough to freeze the UI. The type is `nonisolated` so it can run anywhere.
 nonisolated enum ImageCompressor {
     nonisolated struct CompressedImage: Equatable, Sendable {
         let data: Data
@@ -54,18 +53,6 @@ nonisolated enum ImageCompressor {
             width: result.pixelSize.width,
             height: result.pixelSize.height
         )
-    }
-
-    /// Same as `compress(_:quality:)`, run off the main actor.
-    @concurrent
-    static func compressAsync(_ imageData: Data, quality: CGFloat = defaultQuality) async -> CompressedImage? {
-        compress(imageData, quality: quality)
-    }
-
-    /// Same as `compress(_:quality:)`, run off the main actor.
-    @concurrent
-    static func compressAsync(_ image: UIImage, quality: CGFloat = defaultQuality) async -> CompressedImage? {
-        compress(image, quality: quality)
     }
 
     private static func compressedJPEGData(

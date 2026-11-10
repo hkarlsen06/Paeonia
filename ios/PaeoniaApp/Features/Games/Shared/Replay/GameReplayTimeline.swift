@@ -112,20 +112,6 @@ nonisolated struct GameReplayTimeline: Sendable {
         items.filter { time >= $0.end }.map(\.stroke)
     }
 
-    /// The drawing as the guesser sees it at `time`: strokes that have finished,
-    /// plus the stroke in progress cut at the points drawn so far.
-    func drawing(at time: TimeInterval) -> PKDrawing {
-        PKDrawing(strokes: items.compactMap { item in
-            if time < item.start {
-                nil
-            } else if time >= item.end {
-                item.stroke
-            } else {
-                Self.partialStroke(item, at: time)
-            }
-        })
-    }
-
     private static func onOriginalTimeLine(_ drawing: PKDrawing) -> [Timed] {
         drawing.strokes.enumerated()
             .compactMap { index, stroke in visibleWindow(of: stroke).map { (index, stroke, $0) } }

@@ -69,7 +69,7 @@ struct DrawAndGuessSpeedBonusTests {
 
         #expect(live == .counting(startedAt: now.addingTimeInterval(-10)))
         #expect(live.remaining(at: now) == 20)
-        #expect(!bonus(.against, round(drawing: false), seenAgo: 40).isAvailable(at: now))
+        #expect(bonus(.against, round(drawing: false), seenAgo: 40).tier(at: now) == 0)
     }
 
     @Test func sendingTheDrawingDoesNotRestartTheThirtySeconds() {

@@ -13,14 +13,9 @@ final class MindMeldHistoryViewModel {
     private(set) var isLoading = true
     /// Why the first read failed, while there is nothing to show.
     private(set) var loadFailure: PaeoniaFailure?
-    var loadFailed: Bool {
-        loadFailure != nil
-    }
     private(set) var loadMoreFailed = false
     /// There are older games to load.
     private(set) var hasMore = false
-    private(set) var me: MindMeldPlayer
-    private(set) var partner: MindMeldPlayer
 
     nonisolated static let defaultPageSize = 30
     /// A row this close to the end of the list loads the next page.
@@ -42,15 +37,10 @@ final class MindMeldHistoryViewModel {
         self.dependencies = dependencies
         self.participants = participants
         self.pageSize = pageSize
-        (me, partner) = participants.mindMeldPlayers
     }
 
     var currentUserID: UUID? {
         participants.currentUserID
-    }
-
-    var partnerName: String {
-        partner.name
     }
 
     /// Names who is playing. Safe to call again when the names load. A change of
@@ -59,7 +49,6 @@ final class MindMeldHistoryViewModel {
         let identityChanged = participants.currentUserID != newParticipants.currentUserID
             || participants.coupleID != newParticipants.coupleID
         participants = newParticipants
-        (me, partner) = newParticipants.mindMeldPlayers
         if identityChanged {
             games = []
             stats = nil

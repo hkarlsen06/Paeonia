@@ -227,7 +227,6 @@ private actor StubTopicsGateway: TopicsGateway {
 
     func failSkips(with error: any Error) { skipError = error }
     func setOverview(_ value: RemoteTopicsOverview) { overview = value }
-    func setDetail(_ value: RemoteTopicDetail) { detail = value }
 
     func loadOverview() -> RemoteTopicsOverview { overview }
     func loadTopic(key _: String) -> RemoteTopicDetail { detail }

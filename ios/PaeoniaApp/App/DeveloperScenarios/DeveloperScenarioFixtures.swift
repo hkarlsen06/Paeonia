@@ -296,7 +296,6 @@
     ) throws -> PairingAcceptedRelationship {
       PairingAcceptedRelationship(coupleID: DeveloperScenarioFixture.coupleID)
     }
-    func revokeInvite(id _: UUID) throws -> Bool { true }
     func leaveRelationship(operation _: PairingClientOperation) throws -> Bool { true }
   }
 

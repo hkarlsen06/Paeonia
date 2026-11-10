@@ -9,8 +9,6 @@ import Foundation
 /// service, which coalesces overlapping runs, and the feed awaits each one
 /// before it reads the next canvas update.
 nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
-    let name = "widgetCanvas"
-
     private let descriptions: (any WidgetDrawingDescriptionCaching)?
     private let syncer: any WidgetCanvasSyncing
     private let lastSyncedRevisionID: @Sendable () -> String?

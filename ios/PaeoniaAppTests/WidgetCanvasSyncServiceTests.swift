@@ -12,7 +12,7 @@ struct WidgetCanvasSyncServiceTests {
         env.gateway.state = Self.state(authorUserID: partnerID, canvasSide: 280)
         env.gateway.signedURL = URL(string: "https://example.com/payload")
 
-        await env.service.sync(identity: Self.identity(partnerID: partnerID))
+        await env.service.sync(identity: Self.identity())
 
         let save = try #require(env.localStore.savedCalls.first)
         #expect(env.localStore.savedCalls.count == 1)
@@ -28,8 +28,8 @@ struct WidgetCanvasSyncServiceTests {
         env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
         env.gateway.signedURL = URL(string: "https://example.com/payload")
 
-        await env.service.sync(identity: Self.identity(partnerID: UUID()))
-        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+        await env.service.sync(identity: Self.identity())
+        await env.service.sync(identity: Self.identity())
 
         #expect(env.localStore.savedCalls.count == 1)
     }
@@ -54,7 +54,7 @@ struct WidgetCanvasSyncServiceTests {
 
     @Test func syncMarksOwnRevisionSeenWhileTheWidgetShowsIt() async throws {
         let env = SyncEnvironment()
-        let identity = Self.identity(partnerID: UUID())
+        let identity = Self.identity()
         env.gateway.state = Self.state(authorUserID: try #require(identity.currentUserID), canvasSide: 280)
         env.gateway.signedURL = URL(string: "https://example.com/payload")
 
@@ -67,7 +67,7 @@ struct WidgetCanvasSyncServiceTests {
     /// access came back, the person's own last drawing never reappeared.
     @Test func syncPublishesOwnRevisionAgainAfterAPrivacyHide() async throws {
         let env = SyncEnvironment()
-        let identity = Self.identity(partnerID: UUID())
+        let identity = Self.identity()
         env.gateway.state = Self.state(authorUserID: try #require(identity.currentUserID), canvasSide: 280)
         env.gateway.signedURL = URL(string: "https://example.com/payload")
         env.localStore.isShowingDrawing = false
@@ -85,10 +85,10 @@ struct WidgetCanvasSyncServiceTests {
         let env = SyncEnvironment()
         env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
         env.gateway.signedURL = URL(string: "https://example.com/payload")
-        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+        await env.service.sync(identity: Self.identity())
 
         env.localStore.isShowingDrawing = false
-        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+        await env.service.sync(identity: Self.identity())
 
         #expect(env.localStore.savedCalls.count == 2)
     }
@@ -98,7 +98,7 @@ struct WidgetCanvasSyncServiceTests {
         let downloader = SyncSuspendingDownloaderSpy(data: downloadedData)
         let env = SyncEnvironment(downloadedData: downloadedData, downloader: downloader)
         let partnerID = UUID()
-        let identity = Self.identity(partnerID: partnerID)
+        let identity = Self.identity()
         env.gateway.state = Self.state(authorUserID: partnerID, canvasSide: 280)
         env.gateway.signedURL = URL(string: "https://example.com/payload")
 
@@ -131,7 +131,7 @@ struct WidgetCanvasSyncServiceTests {
         env.gateway.state = Self.state(authorUserID: partnerID, canvasSide: 280)
         env.gateway.signedURL = URL(string: "https://example.com/payload")
 
-        async let sync: Void = env.service.sync(identity: Self.identity(partnerID: partnerID))
+        async let sync: Void = env.service.sync(identity: Self.identity())
         await downloader.waitUntilDownloadStarted()
         // The person sends a drawing while the partner's one downloads.
         env.pendingStore.markPending(
@@ -153,7 +153,7 @@ struct WidgetCanvasSyncServiceTests {
             contentHash: WidgetCanvasUploadService.sha256Hex(of: env.downloadedData)
         )
 
-        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+        await env.service.sync(identity: Self.identity())
 
         #expect(env.localStore.savedCalls.isEmpty)
         #expect(env.uploadSpy.uploadedPayloads.isEmpty)
@@ -171,7 +171,7 @@ struct WidgetCanvasSyncServiceTests {
             at: Date(timeIntervalSince1970: 0)
         )
 
-        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+        await env.service.sync(identity: Self.identity())
 
         #expect(env.uploadSpy.uploadedPayloads.count == 1)
         #expect(!env.pendingStore.hasPending)
@@ -191,7 +191,7 @@ struct WidgetCanvasSyncServiceTests {
             at: Date(timeIntervalSince1970: 0)
         )
 
-        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+        await env.service.sync(identity: Self.identity())
 
         #expect(env.uploadSpy.uploadedPayloads.count == 1)
         #expect(env.pendingStore.hasPending)
@@ -223,7 +223,7 @@ struct WidgetCanvasSyncServiceTests {
         env.gateway.signedURL = URL(string: "https://example.com/payload")
 
         let firstSync = Task {
-            await env.service.sync(identity: Self.identity(partnerID: partnerID))
+            await env.service.sync(identity: Self.identity())
         }
         await downloader.waitUntilDownloadStarted()
 
@@ -262,7 +262,7 @@ struct WidgetCanvasSyncServiceTests {
         )
     }
 
-    private static func identity(partnerID: UUID) -> WidgetSyncIdentity {
+    private static func identity() -> WidgetSyncIdentity {
         WidgetSyncIdentity(currentUserID: UUID(), currentDisplayName: "Me", partnerDisplayName: "Partner")
     }
 

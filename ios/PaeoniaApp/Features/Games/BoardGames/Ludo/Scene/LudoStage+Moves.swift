@@ -20,9 +20,8 @@ extension LudoStage {
         if move.number > presented {
             presentedNumber = move.number
             if let result = shownBoard.resolve(move.move), result.board == new.board {
-                let old = shownBoard
                 shownBoard = new.board
-                play(result.transition, from: old, to: new.board, isMine: move.isMine)
+                play(result.transition, to: new.board, isMine: move.isMine)
                 return PresentedMove(transition: result.transition, isMine: move.isMine)
             }
             if new.board != shownBoard { snap(new.board) }
@@ -48,7 +47,7 @@ extension LudoStage {
 
     // MARK: A move
 
-    private func play(_ transition: LudoTransition, from old: LudoBoard, to new: LudoBoard, isMine: Bool) {
+    private func play(_ transition: LudoTransition, to new: LudoBoard, isMine: Bool) {
         // A roll that tumbled live is already on the partner's tray, and may still be tumbling.
         let liveTumbleLeft = isMine ? nil : takePartnerLiveRoll(matching: transition.die)
         finishAllClips(keepsDie: liveTumbleLeft != nil)

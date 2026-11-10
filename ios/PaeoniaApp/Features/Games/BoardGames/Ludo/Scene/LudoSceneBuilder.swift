@@ -9,8 +9,6 @@ struct LudoSceneParts {
     let die: LudoDieNode
     /// The glow over each player's half of the middle, by `player.rawValue - 1`.
     let homeGlows: [ModelEntity]
-    /// The picture material on top of each player's pawns, by `player.rawValue - 1`.
-    let capMaterials: [PhysicallyBasedMaterial]
     /// The pieces that take the players' colors, so a new pick can paint them again.
     let paint: LudoPaintTargets
 }
@@ -46,14 +44,13 @@ enum LudoSceneBuilder {
         let capMaterials = await makeCapMaterials(styles: styles, colors: colors)
         let die = LudoDieNode(startsOnNearTray: true)
         root.addChild(die.root)
-        let pawns = makePawns(viewer: viewer, colors: colors, capMaterials: capMaterials)
+        let pawns = makePawns(colors: colors, capMaterials: capMaterials)
         for pawn in pawns { root.addChild(pawn.root) }
         return LudoSceneParts(
             root: root,
             pawns: pawns,
             die: die,
             homeGlows: paint.homeGlows,
-            capMaterials: capMaterials,
             paint: paint
         )
     }
@@ -175,7 +172,6 @@ enum LudoSceneBuilder {
     // MARK: Pawns
 
     private static func makePawns(
-        viewer: BoardPlayer,
         colors: CornerColors,
         capMaterials: [PhysicallyBasedMaterial]
     ) -> [LudoPawnNode] {

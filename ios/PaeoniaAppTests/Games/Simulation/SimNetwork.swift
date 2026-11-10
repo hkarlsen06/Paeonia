@@ -213,10 +213,6 @@ final class SimGateway: DrawAndGuessGateway, @unchecked Sendable {
         try await call("load") { $0.view(for: $1) }
     }
 
-    func loadDrawAndGuessRound(roundID: UUID) async throws -> RemoteDrawAndGuessRound? {
-        try await call("loadRound") { $0.round(roundID, for: $1) }
-    }
-
     func pickWord(_ pick: GamePickWordPayload, operation: SyncClientOperation) async throws -> RemotePickedWord {
         try await call("pick") { try $0.pickWord(user: $1, pick, operation: operation) }
     }

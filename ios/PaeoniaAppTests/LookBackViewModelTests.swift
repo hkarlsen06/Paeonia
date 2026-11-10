@@ -6,7 +6,6 @@ import Testing
 struct LookBackViewModelTests {
     private struct Setup {
         let model: LookBackViewModel
-        let service: StubLookBackService
         let cache: MemoryLookBackCache
     }
 
@@ -16,7 +15,7 @@ struct LookBackViewModelTests {
     ) -> Setup {
         let service = StubLookBackService(results)
         let model = LookBackViewModel(service: service, cache: cache, storeChangeQuietPeriod: .milliseconds(50))
-        return Setup(model: model, service: service, cache: cache)
+        return Setup(model: model, cache: cache)
     }
 
     @Test func showsTheServerItemAndSavesIt() async {

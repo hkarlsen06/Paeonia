@@ -5,8 +5,6 @@ import Foundation
 /// figure in progress, the latest finished figures, and the idea deck for this
 /// person's next part. Each result goes into the cache, then the game re-reads.
 nonisolated struct ExquisiteCorpseLiveFeed: LiveFeed {
-    let name = "exquisite_corpse"
-
     /// Read by the Games tab, and while the partner plays this game by the Home card
     /// and the tab badge.
     var activation: LiveFeedActivation {

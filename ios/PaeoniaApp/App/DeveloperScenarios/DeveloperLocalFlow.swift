@@ -6,15 +6,12 @@
   /// External systems are replaced, while routing and feature views stay real.
   @MainActor
   struct DeveloperLocalFlowHost: View {
-    let seed: DeveloperLocalFlowSeed
-
     @State private var deepLink: PaeoniaDeepLink?
     @State private var pendingInviteCode: String?
     @State private var environment: DeveloperLocalFlowEnvironment
 
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil, gameConversation: Bool = false,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live) {
-      self.seed = seed
       _environment = State(
         initialValue: DeveloperLocalFlowEnvironment(
           seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation, avatarStories: avatarStories,
@@ -28,7 +25,6 @@
         viewModel: environment.rootViewModel,
         locationViewModel: environment.locationViewModel,
         appleSignInProvider: environment.appleSignInProvider,
-        widgetCanvasService: environment.widgetCanvasService,
         widgetCanvasSync: NoOpWidgetCanvasSync(),
         pushAuthorization: DeveloperScenarioPushAuthorization(denied: false),
         pushPermissionPrimerStore: DeveloperLocalFlowPrimerStore(),
@@ -92,7 +88,6 @@
     let rootViewModel: RootViewModel
     let locationViewModel: LocationMapViewModel
     let appleSignInProvider = DeveloperLocalFlowAppleSignInProvider()
-    let widgetCanvasService: DeveloperWidgetCanvasService
     let featureDependencies: RootFeatureDependencies
     let gameConversationFlow: DeveloperGameConversationFlow?
     let mediaAlternativeEditingService: MediaAlternativeEditingService
@@ -125,7 +120,6 @@
       let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
       let storeKitService = DeveloperScenarioStoreKitService()
       let widgetCanvasService = DeveloperWidgetCanvasService()
-      self.widgetCanvasService = widgetCanvasService
       // The first drawing's "not sent yet" markers: the welcome flow's before sign-in,
       // and the widget's, which the invite screen sends from. Every local flow starts
       // without them.

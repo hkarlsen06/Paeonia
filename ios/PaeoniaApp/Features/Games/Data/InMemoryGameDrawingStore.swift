@@ -102,10 +102,6 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
         }
     }
 
-    func removeDraftDescription(ownerUserID: UUID, roundID: UUID?) {
-        lock.withLock { descriptions["\(ownerUserID)/\(roundID?.uuidString ?? "rescued")"] = nil }
-    }
-
     func moveDraftDescription(ownerUserID: UUID, from: UUID?, to: UUID?,
                               privacyToken: LocalPrivacyWriteGuard.Token) throws {
         try LocalPrivacyWriteGuard.shared.write(ownerUserID: ownerUserID, token: privacyToken) {

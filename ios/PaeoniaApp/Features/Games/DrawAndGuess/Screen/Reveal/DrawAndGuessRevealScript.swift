@@ -44,11 +44,6 @@ nonisolated struct DrawAndGuessRevealSchedule: Sendable {
     var missedActions: TimeInterval = 1.10
 
     static let standard = Self()
-    static let instant = Self(
-        lightStart: 0, lightSpan: 0, maxLetterGap: 0, bloom: 0, glowSettle: 0, title: 0, panel: 0,
-        countLead: 0, countSpan: 0, speedBonus: 0, firstTryBonus: 0, actions: 0,
-        missedFill: 0, missedTitle: 0, missedActions: 0
-    )
 }
 
 /// The haptics and sounds of the reveal, injected so tests can record them.

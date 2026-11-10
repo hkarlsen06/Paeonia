@@ -153,10 +153,6 @@ private actor PaywallTestPairing: PairingServicing {
         fatalError("unused")
     }
 
-    func revokeInvite(id: UUID) async throws -> Bool {
-        fatalError("unused")
-    }
-
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
         fatalError("unused")
     }

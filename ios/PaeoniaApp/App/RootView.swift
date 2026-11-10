@@ -46,7 +46,6 @@ struct RootView: View {
     @Environment(\.openURL) var openURL
     @Environment(\.scenePhase) var scenePhase
     let appleSignInProvider: any AppleSignInProviding
-    let widgetCanvasService: any WidgetCanvasManaging
     let widgetCanvasSync: any WidgetCanvasSyncing
     let pushAuthorization: any PushAuthorizationProviding
     let widgetPushRegistration: any WidgetPushRegistering
@@ -67,7 +66,6 @@ struct RootView: View {
         viewModel: RootViewModel? = nil,
         locationViewModel: LocationMapViewModel? = nil,
         appleSignInProvider: (any AppleSignInProviding)? = nil,
-        widgetCanvasService: (any WidgetCanvasManaging)? = nil,
         widgetCanvasSync: (any WidgetCanvasSyncing)? = nil,
         pushAuthorization: (any PushAuthorizationProviding)? = nil,
         pushPermissionPrimerStore: (any PushPermissionPrimerPersisting)? = nil,
@@ -101,7 +99,6 @@ struct RootView: View {
         _deepLink = deepLink
         _pendingJoinInviteCode = pendingJoinInviteCode
         self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
-        self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
         self.widgetCanvasSync = widgetCanvasSync ?? WidgetCanvasSyncServiceFactory.makeDefault()
         self.pushAuthorization = pushAuthorization ?? PushAuthorizationService()
         self.widgetPushRegistration = widgetPushRegistration ?? WidgetPushRegistrationServiceFactory.makeDefault()

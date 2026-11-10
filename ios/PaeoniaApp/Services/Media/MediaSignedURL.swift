@@ -56,10 +56,6 @@ nonisolated struct MediaMissLog: Sendable {
         missedAt[mediaAssetID] = now
     }
 
-    mutating func forget(_ mediaAssetID: UUID) {
-        missedAt[mediaAssetID] = nil
-    }
-
     mutating func removeAll() {
         missedAt.removeAll()
     }

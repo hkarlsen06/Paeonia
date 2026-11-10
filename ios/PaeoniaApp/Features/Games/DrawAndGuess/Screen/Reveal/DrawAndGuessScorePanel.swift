@@ -181,14 +181,12 @@ private struct DrawAndGuessSteppedNumber: View {
 
 /// A total that counts from the old number to the new one.
 struct DrawAndGuessCountingNumber: View {
-    let from: Int
     let to: Int
     let isCounting: Bool
     let animates: Bool
     @State private var shown: Int
 
     init(from: Int, to: Int, isCounting: Bool, animates: Bool) {
-        self.from = from
         self.to = to
         self.isCounting = isCounting
         self.animates = animates

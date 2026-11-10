@@ -5,8 +5,6 @@ nonisolated protocol FavoritesGateway: Sendable {
     /// Saves or unsaves an item for this person. The server sets the given value, so a
     /// retry changes nothing. The partner is never told.
     func setFavorite(_ target: FavoriteTarget, favorited: Bool) async throws
-    /// This person's favorites, newest first, as ids only.
-    func listFavorites() async throws -> [FavoriteRef]
     /// What the list shows for these favorites, in the same order. An item that is gone is left out.
     func summaries(of targets: [FavoriteTarget]) async throws -> [FavoriteSummary]
 }
@@ -19,10 +17,6 @@ nonisolated struct LiveFavoritesGateway: FavoritesGateway {
             "favorites:set_favorite",
             args: SetFavoriteRequest(target: target, favorited: favorited)
         )
-    }
-
-    func listFavorites() async throws -> [FavoriteRef] {
-        try await client.query("favorites:list_favorites")
     }
 
     func summaries(of targets: [FavoriteTarget]) async throws -> [FavoriteSummary] {
@@ -79,10 +73,6 @@ nonisolated struct UnavailableFavoritesGateway: FavoritesGateway {
     struct Unavailable: Error {}
 
     func setFavorite(_: FavoriteTarget, favorited _: Bool) async throws {
-        throw Unavailable()
-    }
-
-    func listFavorites() async throws -> [FavoriteRef] {
         throw Unavailable()
     }
 

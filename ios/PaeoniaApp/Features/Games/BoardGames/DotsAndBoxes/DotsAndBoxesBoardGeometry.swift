@@ -13,10 +13,6 @@ nonisolated struct DotsAndBoxesBoardGeometry: Equatable, Sendable {
         let end: CGPoint
         let isHorizontal: Bool
 
-        var midpoint: CGPoint {
-            CGPoint(x: (start.x + end.x) / 2, y: (start.y + end.y) / 2)
-        }
-
         var length: CGFloat {
             abs(end.x - start.x) + abs(end.y - start.y)
         }

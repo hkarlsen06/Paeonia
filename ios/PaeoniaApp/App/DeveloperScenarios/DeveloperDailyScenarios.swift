@@ -206,17 +206,6 @@
       mode == .streakSaveDay ? DeveloperStreakScenarioView.brokenStreak(saveEndsIn: 6 * 3_600) : healthyStreak
     }
 
-    func submitAnswer(
-      instanceID _: UUID, answerID _: UUID, payload _: DailyAnswerPayload,
-      operation _: SyncClientOperation
-    ) throws -> UUID { UUID() }
-    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation)
-      throws -> UUID
-    { UUID() }
-    func editPartnerChoice(
-      instanceID _: UUID, selectedUserID _: UUID, operation _: SyncClientOperation
-    ) throws -> UUID { UUID() }
-
     private var healthyStreak: CoupleStreak {
       CoupleStreak(
         currentCount: 6,

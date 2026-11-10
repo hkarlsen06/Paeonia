@@ -4,8 +4,6 @@ import Foundation
 /// same on both of their devices and a favorite whose item was deleted drops out. Each
 /// result of `favorites:list_favorites` goes into the cache, then the stars re-read.
 nonisolated struct FavoritesLiveFeed: LiveFeed {
-    let name = "favorites"
-
     /// Favorites show on every tab and in Search, which opens from any of them.
     var activation: LiveFeedActivation {
         .always

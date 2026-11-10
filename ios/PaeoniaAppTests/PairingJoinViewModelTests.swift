@@ -221,10 +221,6 @@ private actor JoinFlowPairingService: PairingServicing {
         fatalError("unused")
     }
 
-    func revokeInvite(id: UUID) async throws -> Bool {
-        fatalError("unused")
-    }
-
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
         fatalError("unused")
     }
@@ -289,10 +285,6 @@ private actor LostAnswerPairing: PairingServicing {
         operation: PairingClientOperation,
         expiresAt: Date
     ) async throws -> PairingInvite {
-        fatalError("unused")
-    }
-
-    func revokeInvite(id: UUID) async throws -> Bool {
         fatalError("unused")
     }
 

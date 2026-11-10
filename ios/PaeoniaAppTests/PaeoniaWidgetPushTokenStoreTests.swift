@@ -22,8 +22,8 @@ struct PaeoniaWidgetPushTokenStoreTests {
             widgetKinds: ["PaeoniaWidget"],
             savedAt: savedAt
         ))
-        #expect(store.loadToken(forWidgetKind: "PaeoniaWidget") == "000fff")
-        #expect(store.loadToken(forWidgetKind: "OtherWidget") == nil)
+        #expect(store.loadToken(forAnyOf: ["PaeoniaWidget"]) == "000fff")
+        #expect(store.loadToken(forAnyOf: ["OtherWidget"]) == nil)
     }
 
     @Test func emptyWidgetKindListDoesNotReturnStaleTokenForRegistration() throws {
@@ -34,7 +34,7 @@ struct PaeoniaWidgetPushTokenStoreTests {
         let store = PaeoniaWidgetPushTokenStore(defaults: defaults)
         store.save(token: "token", widgetKinds: [])
 
-        #expect(store.loadToken(forWidgetKind: "PaeoniaWidget") == nil)
+        #expect(store.loadToken(forAnyOf: ["PaeoniaWidget"]) == nil)
     }
 
     @Test func lockScreenOnlyWidgetsStillGiveAToken() throws {
@@ -45,7 +45,7 @@ struct PaeoniaWidgetPushTokenStoreTests {
         let store = PaeoniaWidgetPushTokenStore(defaults: defaults)
         store.save(token: "token", widgetKinds: [LockScreenWidgetKind.streak])
 
-        #expect(store.loadToken(forWidgetKind: "PaeoniaWidget") == nil)
+        #expect(store.loadToken(forAnyOf: ["PaeoniaWidget"]) == nil)
         #expect(store.loadToken(forAnyOf: ["PaeoniaWidget"] + LockScreenWidgetKind.all) == "token")
         #expect(store.loadToken(forAnyOf: ["OtherWidget"]) == nil)
     }

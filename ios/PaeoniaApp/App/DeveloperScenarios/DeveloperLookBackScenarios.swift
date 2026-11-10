@@ -80,6 +80,6 @@
       await MainActor.run { UIImage(resource: .placeholderSketch).pngData() }
     }
 
-    func exportPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { nil }
+    func exportPNG(mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { nil }
   }
 #endif

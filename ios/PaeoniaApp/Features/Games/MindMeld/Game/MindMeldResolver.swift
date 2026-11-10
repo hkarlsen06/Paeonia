@@ -200,8 +200,6 @@ nonisolated extension RemoteMindMeldGame {
 }
 
 nonisolated extension MindMeldResolution {
-    var partnerRestartedNote: Bool { partnerRestartedGameID != nil }
-
     /// The partner locked in and this person has not, or a reveal waits. A round
     /// nobody has locked in is nobody's turn.
     var isYourTurn: Bool {

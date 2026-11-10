@@ -32,17 +32,6 @@ nonisolated struct SubjectConversation: Identifiable, Equatable, Sendable {
         }
     }
 
-    /// The phone's local date of `startedAt`, as `yyyy-MM-dd`.
-    var localDate: String {
-        MemoryTimeline.localDateString(for: startedAt)
-    }
-
-    /// Whether the row sits in today's list rather than under an earlier day. A row dated
-    /// after `today` (the phone's day turned before the couple's) counts as today.
-    func isToday(_ today: String, timeZone: TimeZone = .current) -> Bool {
-        MemoryTimeline.localDateString(for: startedAt, timeZone: timeZone) >= today
-    }
-
     /// The card that opens the chat, the same one the memory page or the story viewer uses.
     @MainActor
     func header(people: StoryPeople) -> ThreadChatHeader {

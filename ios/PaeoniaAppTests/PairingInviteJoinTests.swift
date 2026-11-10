@@ -236,10 +236,6 @@ private actor JoinTestPairingService: PairingServicing {
         PairingAcceptedRelationship(coupleID: UUID())
     }
 
-    func revokeInvite(id: UUID) async throws -> Bool {
-        true
-    }
-
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
         true
     }
@@ -256,7 +252,6 @@ private final class JoinTestOperationProvider: SyncClientOperationProviding {
 @MainActor
 private final class JoinTestInviteStore: PairingInviteStoring {
     private let initialInvite: PairingInvite?
-    private(set) var savedInvite: PairingInvite?
     private(set) var didClearInvite = false
 
     init(initialInvite: PairingInvite? = nil) {
@@ -267,9 +262,7 @@ private final class JoinTestInviteStore: PairingInviteStoring {
         initialInvite
     }
 
-    func saveInvite(_ invite: PairingInvite, for userID: String) {
-        savedInvite = invite
-    }
+    func saveInvite(_ invite: PairingInvite, for userID: String) {}
 
     func clearInvite(for userID: String) {
         didClearInvite = true

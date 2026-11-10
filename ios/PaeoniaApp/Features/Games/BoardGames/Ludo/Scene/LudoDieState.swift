@@ -20,12 +20,4 @@ nonisolated extension LudoDieState {
         case .ready: me
         }
     }
-
-    /// The face the die shows or lands on, when it has one.
-    var value: Int? {
-        switch self {
-        case let .rolling(die, _, _, _), let .showing(die, _): die
-        case .idle, .ready: nil
-        }
-    }
 }

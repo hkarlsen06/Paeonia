@@ -38,7 +38,7 @@ struct MindMeldHistoryViewModelTests {
         await viewModel.load()
 
         #expect(viewModel.games.count == 5)
-        #expect(!viewModel.loadFailed)
+        #expect(viewModel.loadFailure == nil)
         #expect(!viewModel.isLoading)
         #expect(viewModel.stats?.melds == 2)
     }

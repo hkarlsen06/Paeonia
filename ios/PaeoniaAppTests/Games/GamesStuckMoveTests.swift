@@ -8,7 +8,6 @@ private func triesEveryWriteContext(_ store: any PendingSyncOperationPersisting)
     SyncContext(
         session: SyncSession(userID: GameFixture.me),
         reason: .manualRefresh,
-        stateStore: InMemorySyncStateRepository(),
         pendingOperationStore: store
     )
 }

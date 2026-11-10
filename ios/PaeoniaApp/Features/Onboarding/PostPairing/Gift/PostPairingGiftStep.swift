@@ -276,7 +276,7 @@ private struct GiftAccessibility: ViewModifier {
 #Preview("Gift") {
     PostPairingGiftStep(
         model: PostPairingGiftModel(
-            gift: PostPairingGift(revisionID: UUID(), drawing: DeveloperPostPairingFixture.heart())
+            gift: PostPairingGift(drawing: DeveloperPostPairingFixture.heart())
         ),
         partnerName: "Hjalmar",
         onOpen: {},

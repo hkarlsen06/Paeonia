@@ -13,8 +13,6 @@ final class DailyChallengeViewModel {
         case emptyAnswer
         case shuffleLimitReached
         case shuffleFailed(PaeoniaFailure)
-        case editLocked
-        case editFailed
         case photoFailed
         case voiceFailed
         case dayEnded

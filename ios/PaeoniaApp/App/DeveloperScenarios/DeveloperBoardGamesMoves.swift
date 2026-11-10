@@ -35,7 +35,6 @@
     /// Player two just drew a third side of the box in the third row, last column.
     /// Player one closes it with line 34 and moves again.
     static let dotsAndBoxesExtraTurn = Array(dotsAndBoxesGame.prefix(21)) + [11]
-    static let dotsAndBoxesExtraTurnLine = 34
 
     // MARK: Ultimate Tic-Tac-Toe
 
@@ -49,7 +48,6 @@
     /// Player two's last move sent player one to the bottom left board (6).
     /// Each player has won one small board.
     static let ultimateTicTacToeForced = Array(ultimateTicTacToeGame.prefix(34))
-    static let ultimateTicTacToeForcedBoard = 6
 
     /// Player two's last move pointed at the top right board, which player one
     /// already won, so player one may play in any open board.

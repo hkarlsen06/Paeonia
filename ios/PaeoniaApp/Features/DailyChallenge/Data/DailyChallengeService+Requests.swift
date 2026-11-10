@@ -29,14 +29,6 @@ nonisolated struct DailyChallengeClientOperationRequest: Encodable {
     }
 }
 
-nonisolated struct DailyAnswerDetailsRequest: Encodable {
-    let coupleDayID: UUID
-
-    enum CodingKeys: String, CodingKey {
-        case coupleDayID = "p_couple_day_id"
-    }
-}
-
 nonisolated struct SubmitDailyAnswerRequest: Encodable {
     let instanceID: UUID
     let payload: DailyAnswerPayloadBody
@@ -145,60 +137,6 @@ nonisolated struct DailyAnswerPayloadBody: Encodable {
         if let option = payload.optionChoice {
             try container.encode(option, forKey: .optionChoice)
         }
-    }
-}
-
-nonisolated struct EditDailyTextAnswerRequest: Encodable {
-    let instanceID: UUID
-    let text: String
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(instanceID: UUID, text: String, operation: SyncClientOperation) {
-        self.instanceID = instanceID
-        self.text = text
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case instanceID = "p_instance_id"
-        case text = "p_text"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-    }
-}
-
-nonisolated struct EditDailyPartnerChoiceRequest: Encodable {
-    let instanceID: UUID
-    let selectedUserID: UUID
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) {
-        self.instanceID = instanceID
-        self.selectedUserID = selectedUserID
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case instanceID = "p_instance_id"
-        case selectedUserID = "p_selected_user_id"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
     }
 }
 

@@ -4,8 +4,6 @@ import Foundation
 /// the Questions tab shows what the partner answered without a reload. Each result
 /// goes into the cache, then the Topics view model re-reads.
 nonisolated struct TopicsLiveFeed: LiveFeed {
-    let name = "topics"
-
     /// Only the Topics card and shelf on the Questions tab read the overview.
     var activation: LiveFeedActivation {
         .whileNeeded([.questionsTab])

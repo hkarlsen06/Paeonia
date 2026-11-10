@@ -110,10 +110,6 @@
             state.game = game
             return state
         }
-        func loadPiccanteResult(number _: Int) async throws -> RemotePiccanteGame {
-            guard let game = state.game else { throw UnavailableGamesGateway.Unavailable() }
-            return game
-        }
         // swiftlint:enable async_without_await
     }
 

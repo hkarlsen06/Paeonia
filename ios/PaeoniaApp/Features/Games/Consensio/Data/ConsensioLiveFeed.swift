@@ -4,8 +4,6 @@ import Foundation
 /// `consensio:get_consensio` carries the game and its two newest rounds. Each
 /// result goes into the cache, then the game re-reads.
 nonisolated struct ConsensioLiveFeed: LiveFeed {
-    let name = "consensio"
-
     /// Read by the Games tab, and while the partner plays this game by the Home card
     /// and the tab badge.
     var activation: LiveFeedActivation {

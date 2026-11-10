@@ -210,7 +210,7 @@ final class SimServer {
             return existing
         }
         let id = UUID()
-        assets[id] = Asset(id: id, owner: user, roundID: roundID, data: data, createdAt: now)
+        assets[id] = Asset(owner: user, roundID: roundID, data: data, createdAt: now)
         uploadsByReservation[reserveOperation.id] = id
         return id
     }
@@ -307,11 +307,6 @@ extension SimServer {
             partnerPresent: presence[partnerID] != nil,
             lastInviteAt: invites[user]
         )
-    }
-
-    /// `get_draw_and_guess_round` for `user`.
-    func round(_ id: UUID, for user: UUID) -> RemoteDrawAndGuessRound? {
-        round(id).map { json($0, for: user) }
     }
 
     private func json(_ round: Round, for user: UUID) -> RemoteDrawAndGuessRound {

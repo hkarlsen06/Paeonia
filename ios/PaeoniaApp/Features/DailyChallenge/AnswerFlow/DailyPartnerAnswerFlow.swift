@@ -208,7 +208,7 @@ struct DailyPartnerAnswerFlow: View {
         bannerCenter.show(
             .error(
                 title: String(localized: notice.title),
-                message: String(localized: notice.message(partnerName: viewModel.participants.partnerName))
+                message: String(localized: notice.message)
             )
         )
         viewModel.dismissNotice()

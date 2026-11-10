@@ -23,7 +23,6 @@ final class ScriptedStoryChainDataGateway: StoryChainGateway, @unchecked Sendabl
         var calls: [String] = []
         var starts: [StoryChainQueuedStart] = []
         var lines: [StoryChainQueuedLine] = []
-        var names: [StoryChainQueuedName] = []
         var seenStories: [UUID] = []
         var starredStoryIDs: Set<UUID> = []
         var historyRequests: [HistoryRequest] = []
@@ -48,7 +47,6 @@ final class ScriptedStoryChainDataGateway: StoryChainGateway, @unchecked Sendabl
     var calls: [String] { read(\.calls) }
     var starts: [StoryChainQueuedStart] { read(\.starts) }
     var lines: [StoryChainQueuedLine] { read(\.lines) }
-    var names: [StoryChainQueuedName] { read(\.names) }
     var seenStories: [UUID] { read(\.seenStories) }
     /// The stories this person favorited, which the starred filter of the history returns.
     func setStarredStories(_ ids: Set<UUID>) {
@@ -138,7 +136,6 @@ final class ScriptedStoryChainDataGateway: StoryChainGateway, @unchecked Sendabl
         operation _: SyncClientOperation
     ) async throws -> RemoteNameStoryResult {
         try begin("name")
-        write { $0.names.append(name) }
         return RemoteNameStoryResult(storyID: name.storyID, title: name.title)
     }
 
@@ -280,14 +277,6 @@ func storyChainHistoryPage(_ numbers: [Int], next: Int?) -> RemoteStoryChainHist
     RemoteStoryChainHistoryPage(stories: numbers.map { storyChainHistoryItem($0) }, nextBeforeStoryNumber: next)
 }
 
-/// The state of a game that waits for the next story to start, right after `story` was named.
-func finishedStoryChainState(_ story: RemoteStoryChainStory, version: Int = 1) -> RemoteStoryChainState {
-    StoryChainFixture.state(
-        StoryChainFixture.game(.choosingOpening, turn: StoryChainFixture.me, current: story.id, version: version),
-        current: story
-    )
-}
-
 /// A finished story, for a state.
 func finishedStoryChainStory(
     id: UUID = StoryChainFixture.storyID,
@@ -381,7 +370,6 @@ struct StoryChainDataEnvironment {
         SyncContext(
             session: SyncSession(userID: StoryChainFixture.me),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pending
         )
     }

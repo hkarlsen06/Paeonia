@@ -78,10 +78,6 @@ nonisolated struct LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading 
         self.reservedParentKind = reservedParentKind
     }
 
-    static func live() throws -> LiveDailyAnswerMediaUploadService {
-        LiveDailyAnswerMediaUploadService(client: try PaeoniaConvexClientProvider.shared.client())
-    }
-
     func uploadMedia(
         _ media: DailyAnswerUploadMedia,
         answerID: UUID,

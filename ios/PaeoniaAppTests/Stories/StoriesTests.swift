@@ -279,7 +279,6 @@ actor FakeStoriesGateway {
     private(set) var noteTexts: [String?] = []
     private var failsNextPost = false
     private var deleteError: (any Error)?
-    private var noteError: (any Error)?
     private var seenFails = false
     /// Runs before a post or note answers, like a purge that lands while the call is out.
     private var beforeAnswer: (@Sendable () async -> Void)?
@@ -292,12 +291,7 @@ actor FakeStoriesGateway {
         beforeAnswer = action
     }
 
-    func failNotes(with error: any Error) {
-        noteError = error
-    }
-
     func setNote(_ text: String?, operation: SyncClientOperation) async throws -> StoryNote? {
-        if let noteError { throw noteError }
         await beforeAnswer?()
         noteTexts.append(text)
         return text.map { StoryNote(userID: StoryFixture.me, text: $0, createdAt: Date()) }

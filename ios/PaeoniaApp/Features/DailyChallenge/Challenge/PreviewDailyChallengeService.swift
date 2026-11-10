@@ -74,27 +74,6 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
         )
     }
 
-    func submitAnswer(
-        instanceID _: UUID,
-        answerID _: UUID,
-        payload _: DailyAnswerPayload,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        UUID()
-    }
-
-    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) throws -> UUID {
-        UUID()
-    }
-
-    func editPartnerChoice(
-        instanceID _: UUID,
-        selectedUserID _: UUID,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        UUID()
-    }
-
     func shuffleQuestion(
         currentUserID: UUID,
         operation _: SyncClientOperation

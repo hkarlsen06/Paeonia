@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 @Observable
-final class RelationshipMilestoneViewModel: PresentationReadinessProviding {
+final class RelationshipMilestoneViewModel {
     private(set) var startedOn: String?
     private(set) var isPresentationReady = false
     private(set) var isSaving = false

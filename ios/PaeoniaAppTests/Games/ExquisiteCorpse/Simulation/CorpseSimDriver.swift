@@ -57,11 +57,11 @@ final class CorpseSimDriver {
         let sides: [CGFloat] = [300, 320, 360, 390]
         phones = [
             CorpseSimPhone(
-                name: "A", userID: userA, partnerID: userB, server: server, relay: relay, clock: clock,
+                name: "A", userID: userA, server: server, relay: relay, clock: clock,
                 log: log, random: random.split(), canvasSide: random.pick(sides)
             ),
             CorpseSimPhone(
-                name: "B", userID: userB, partnerID: userA, server: server, relay: relay, clock: clock,
+                name: "B", userID: userB, server: server, relay: relay, clock: clock,
                 log: log, random: random.split(), canvasSide: random.pick(sides)
             ),
         ]

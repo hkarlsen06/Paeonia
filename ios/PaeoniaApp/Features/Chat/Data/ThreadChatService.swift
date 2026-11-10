@@ -504,5 +504,4 @@ nonisolated enum ThreadChatServiceError: Error, Equatable, Sendable {
     /// The message is on its way to the server, so it can't be taken back yet.
     case stillSending
     case missingResponse
-    case missingThread
 }

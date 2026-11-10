@@ -177,10 +177,6 @@ actor FlowAuthService: AuthServicing {
         try signIn()
     }
 
-    func signInForDevelopment() async throws -> AuthSession {
-        try signIn()
-    }
-
     private func signIn() throws -> AuthSession {
         guard let signInSession else {
             throw FlowTestError.unavailable

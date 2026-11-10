@@ -132,7 +132,7 @@ nonisolated struct DailyAnswerDraft: Codable, Equatable, Sendable {
     }
 
     /// The backend rejects answer text longer than this, counted in code points after
-    /// trimming (`submit_daily_answer` / `update_daily_answer_text`). A rejected
+    /// trimming (`submit_daily_answer`). A rejected
     /// queued answer would retry forever, so the composer stops it before sending.
     static let maxTextLength = 2_000
 
@@ -178,10 +178,6 @@ nonisolated struct DailyAnswerPayload: Equatable, Sendable {
         self.mediaAssetIDs = mediaAssetIDs
         self.mediaAccessibilityText = mediaAccessibilityText
         self.optionChoice = optionChoice
-    }
-
-    var isEmpty: Bool {
-        (text?.isEmpty ?? true) && partnerChoiceUserID == nil && mediaAssetIDs.isEmpty && optionChoice == nil
     }
 }
 
@@ -307,13 +303,6 @@ nonisolated struct DailyQuestionAnswerDetail: Equatable, Hashable, Sendable {
     var hasMedia: Bool {
         !mediaAssetIDs.isEmpty
     }
-
-    /// A partner-choice answer carrying only the pick — no caption, no media — so the
-    /// only thing it renders is the chosen person. Used to decide when two identical
-    /// picks can collapse into one shared answer.
-    var isPurePartnerChoice: Bool {
-        selectedUserID != nil && (textBody?.isEmpty ?? true) && mediaAssetIDs.isEmpty
-    }
 }
 
 nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Sendable {
@@ -365,24 +354,6 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
         topicKey != nil
     }
 
-    /// The single person both partners picked when a partner-choice exchange has the
-    /// *same* viewable pick on both sides and nothing else to show. When set, the two
-    /// otherwise-identical answer rows collapse into one shared answer headed by both
-    /// names. Nil unless both answers are pure same-person picks and the partner's is
-    /// viewable, so any caption, media, or differing pick keeps the rows separate.
-    var sharedPartnerChoiceUserID: UUID? {
-        guard
-            let own = ownAnswerDetail,
-            let partner = partnerAnswerDetail,
-            partner.canViewAnswer,
-            let chosen = own.selectedUserID,
-            chosen == partner.selectedUserID,
-            own.isPurePartnerChoice,
-            partner.isPurePartnerChoice
-        else { return nil }
-        return chosen
-    }
-
     var hasOwnAnswer: Bool {
         ownAnswer != nil
     }
@@ -398,18 +369,6 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     /// Today's question can be swapped for another one until either partner answers it.
     var canBeSkipped: Bool {
         !isTopicQuestion && isCurrentDay && status != .shuffled && !hasOwnAnswer && !hasPartnerAnswer
-    }
-
-    var supportsTextAnswer: Bool {
-        answerKinds.contains(.text)
-    }
-
-    var supportsPartnerChoiceAnswer: Bool {
-        answerKinds.contains(.partnerChoice)
-    }
-
-    var canSubmitTextAnswer: Bool {
-        isAvailableToAnswer && supportsTextAnswer
     }
 
     /// Answer kinds the app can compose a reply for today.
@@ -450,30 +409,6 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
 
     var usesCombinedCompose: Bool {
         combinedSecondaryKind != nil
-    }
-
-    /// The kind of a still-private own answer the user is allowed to change. Editing
-    /// is allowed only while the answer is private — once the partner has answered the
-    /// same instance the content is revealed and locked. Text and partner-choice
-    /// answers can be changed; media answers cannot.
-    var editableAnswerKind: DailyChallengeAnswerKind? {
-        guard
-            hasOwnAnswer,
-            partnerAnswer == nil,
-            status != .shuffled,
-            // Combined answers can hold media, which can't be edited, so the whole
-            // answer is locked once sent (same rule as any media answer).
-            !usesCombinedCompose
-        else { return nil }
-
-        if supportsTextAnswer { return .text }
-        if supportsPartnerChoiceAnswer { return .partnerChoice }
-        return nil
-    }
-
-    /// Whether the user may still change their own answer (text or partner-choice).
-    var canEditOwnAnswer: Bool {
-        editableAnswerKind != nil
     }
 
     /// A question the partner has answered and the user can still answer to see it. A

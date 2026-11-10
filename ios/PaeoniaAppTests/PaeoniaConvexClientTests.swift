@@ -265,7 +265,7 @@ extension PaeoniaConvexClientTests {
         let client = Self.makeClient()
 
         try await client.mutation("observerTest:write")
-        try await client.query("observerTest:read")
+        let _: PaeoniaConvexIgnoredResult = try await client.query("observerTest:read")
         await #expect(throws: PaeoniaConvexError.self) {
             try await client.mutation("observerTest:failing_write")
         }

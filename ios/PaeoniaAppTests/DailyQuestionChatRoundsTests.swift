@@ -157,7 +157,6 @@ struct ChatRoundDay {
 func decodedChatRounds(
     threadID: UUID?,
     rounds: [ChatRoundDay],
-    user: UUID,
     coupleID: UUID,
     questionID: UUID
 ) throws -> DailyQuestionChatRoundsRow {
@@ -188,7 +187,6 @@ func decodedChatRounds(
 
 struct DailyChatRoundsDecodingTests {
     @Test func theServersDaysBecomeQuestionsInTheSameOrder() throws {
-        let user = UUID()
         let coupleID = UUID()
         let questionID = UUID()
         let first = UUID()
@@ -200,7 +198,7 @@ struct DailyChatRoundsDecodingTests {
                 ChatRoundDay(instance: first, date: "2026-03-03", startsAt: "2026-03-03T00:00:00.000Z"),
                 ChatRoundDay(instance: second, date: "2026-10-09", startsAt: "2026-10-09T00:00:00.000Z"),
             ],
-            user: user, coupleID: coupleID, questionID: questionID
+            coupleID: coupleID, questionID: questionID
         )
         let rounds = row.rounds(locale: Locale(identifier: "en"))
 
@@ -221,7 +219,7 @@ struct DailyChatRoundsDecodingTests {
         let row = try decodedChatRounds(
             threadID: nil,
             rounds: [ChatRoundDay(instance: UUID(), date: "2026-03-03", startsAt: "2026-03-03T00:00:00.000Z")],
-            user: user, coupleID: UUID(), questionID: questionID
+            coupleID: UUID(), questionID: questionID
         )
 
         let generation = await cache.purgeGeneration()

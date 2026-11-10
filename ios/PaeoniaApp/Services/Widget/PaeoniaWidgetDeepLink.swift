@@ -39,8 +39,4 @@ nonisolated enum PaeoniaWidgetDeepLink: Equatable {
             return nil
         }
     }
-
-    static func handles(_ url: URL) -> Bool {
-        Self(url) != nil
-    }
 }

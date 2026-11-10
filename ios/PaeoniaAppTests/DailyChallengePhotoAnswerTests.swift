@@ -89,26 +89,6 @@ struct DailyChallengePhotoAnswerTests {
         #expect(secondaryKind([.text, .photo, .voice]) == nil)
     }
 
-    @Test func combinedAnswersAreNotEditable() {
-        let combined = makeDailySnapshot(rows: [
-            dailyQuestionRow(
-                answerKinds: [.photo, .text],
-                ownAnswerID: UUID()
-            ),
-        ]).questions[0]
-        #expect(combined.usesCombinedCompose)
-        #expect(combined.editableAnswerKind == nil)
-
-        // A plain text answer is still editable while it's private.
-        let textOnly = makeDailySnapshot(rows: [
-            dailyQuestionRow(
-                answerKinds: [.text],
-                ownAnswerID: UUID()
-            ),
-        ]).questions[0]
-        #expect(textOnly.editableAnswerKind == .text)
-    }
-
     @MainActor
     @Test func submitCombinedPhotoAndTextQueuesBothTogether() async throws {
         let snapshot = makeDailySnapshot(rows: [

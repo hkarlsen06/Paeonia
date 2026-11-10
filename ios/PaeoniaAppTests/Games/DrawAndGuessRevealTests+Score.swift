@@ -16,7 +16,6 @@ struct DrawAndGuessRevealScoreTests {
         return DrawAndGuessReveal(
             outcome: outcome,
             word: "umbrella",
-            difficulty: .medium,
             wordPoints: 2,
             speedBonus: bonus,
             firstTryBonus: firstTry,
@@ -24,7 +23,6 @@ struct DrawAndGuessRevealScoreTests {
             personalBest: false,
             solveDuration: duration,
             pointsForMe: solved ? 2 + (outcome == .iSolvedIt ? bonus + firstTry : 0) : 0,
-            pointsForCouple: solved ? 2 : 0,
             attempts: [],
             isConfirmed: isConfirmed
         )

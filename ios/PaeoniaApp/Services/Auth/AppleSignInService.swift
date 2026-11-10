@@ -7,7 +7,6 @@ import UIKit
 enum AppleSignInError: Error, Equatable {
     case missingIdentityToken
     case invalidIdentityToken
-    case missingPresentationAnchor
 }
 
 protocol AppleSignInProviding: AnyObject {

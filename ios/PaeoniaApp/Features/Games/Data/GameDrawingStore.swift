@@ -19,7 +19,6 @@ nonisolated protocol GameDrawingStoring: Sendable {
     func draftDescription(ownerUserID: UUID, coupleID: UUID, roundID: UUID?) throws -> String?
     func saveDraftDescription(_ text: String, ownerUserID: UUID, coupleID: UUID, roundID: UUID?,
                               privacyToken: LocalPrivacyWriteGuard.Token) throws
-    func removeDraftDescription(ownerUserID: UUID, roundID: UUID?)
     func moveDraftDescription(ownerUserID: UUID, from: UUID?, to: UUID?,
                               privacyToken: LocalPrivacyWriteGuard.Token) throws
     /// Starts a save that runs in the background, and returns its ticket. Any
@@ -232,13 +231,6 @@ nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sen
                 try JSONEncoder().encode(GameDrawingDescriptionDraft(coupleID: coupleID, text: text))
                     .write(to: url, options: .atomic)
             }
-        }
-    }
-
-    func removeDraftDescription(ownerUserID: UUID, roundID: UUID?) {
-        lock.withLock {
-            if let roundID { invalidatePublication(ownerUserID: ownerUserID, roundID: roundID) }
-            try? FileManager.default.removeItem(at: draftDescriptionURL(ownerUserID: ownerUserID, roundID: roundID))
         }
     }
 

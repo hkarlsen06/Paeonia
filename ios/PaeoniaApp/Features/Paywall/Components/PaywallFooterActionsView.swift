@@ -7,7 +7,6 @@ struct PaywallFooterActionsView: View {
     let isBusy: Bool
     let isRestoring: Bool
     let showsUnpair: Bool
-    let isLeavingRelationship: Bool
     let onRestorePurchases: () -> Void
     /// Opens Apple's subscription sheet. Only someone whose own subscription
     /// ended gets it, so nil hides the link.

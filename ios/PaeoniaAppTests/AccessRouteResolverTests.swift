@@ -5,12 +5,11 @@ import Testing
 struct AccessRouteResolverTests {
     private let resolver = AccessRouteResolver()
 
-    @Test func noRelationshipWithoutEntitlementStaysLimitedAndAllowsInviteAcceptance() {
+    @Test func noRelationshipWithoutEntitlementStaysLimited() {
         let route = resolver.route(for: .test(userEntitlement: .notEntitled()))
 
         #expect(route == .limitedAuthenticated)
         #expect(route.appState == .limitedAuthenticated)
-        #expect(route.allowsInviteAcceptance)
     }
 
     @Test func directEntitlementWithoutRelationshipRoutesToUnpaired() {
@@ -18,7 +17,6 @@ struct AccessRouteResolverTests {
 
         #expect(route == .unpaired)
         #expect(route.appState == .unpaired)
-        #expect(route.allowsInviteAcceptance)
     }
 
     @Test func pendingInviteRoutesToInvitePending() {
@@ -31,7 +29,6 @@ struct AccessRouteResolverTests {
 
         #expect(route == .invitePending)
         #expect(route.appState == .invitePending)
-        #expect(route.allowsInviteAcceptance)
     }
 
     @Test func pendingInviteWithoutEntitlementStaysLimitedAuthenticated() {
@@ -44,7 +41,6 @@ struct AccessRouteResolverTests {
 
         #expect(route == .limitedAuthenticated)
         #expect(route.appState == .limitedAuthenticated)
-        #expect(route.allowsInviteAcceptance)
     }
 
     @Test func capturedIncomingInviteOverridesEntitledUnpairedDestination() {
@@ -127,7 +123,6 @@ struct AccessRouteResolverTests {
 
         #expect(route == .accountClosed)
         #expect(route.appState == .accountClosed)
-        #expect(!route.allowsInviteAcceptance)
     }
 
     @Test func activeRelationshipWithCoupleEntitlementRoutesToPaired() {
@@ -141,7 +136,6 @@ struct AccessRouteResolverTests {
 
         #expect(route == .paired)
         #expect(route.appState == .paired)
-        #expect(!route.allowsInviteAcceptance)
     }
 
     @Test func activeRelationshipWithoutCoupleCoverageRoutesToPaywall() {

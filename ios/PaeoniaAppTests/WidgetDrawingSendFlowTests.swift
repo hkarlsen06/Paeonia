@@ -107,7 +107,7 @@ struct WidgetDrawingSendFlowTests {
         await viewModel.save()
 
         #expect(viewModel.delivery == .waiting)
-        #expect(!viewModel.recentlySaved)
+        #expect(viewModel.delivery != .sent)
         #expect(!viewModel.canSave)
 
         uploader.pendingUpload = false

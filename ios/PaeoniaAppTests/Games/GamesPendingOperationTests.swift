@@ -234,7 +234,7 @@ struct GamesPendingOperationTests {
         )
 
         #expect(work.pick?.word == "umbrella")
-        #expect(work.hasDrawing(roundID: GameFixture.roundID))
+        #expect(work.drawings.contains { $0.roundID == GameFixture.roundID })
         #expect(work.guesses(roundID: GameFixture.roundID).map(\.guess) == ["cat"])
         #expect(work.hasGiveUp(roundID: GameFixture.roundID))
         #expect(work.hasMoveWaiting)

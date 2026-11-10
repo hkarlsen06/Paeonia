@@ -45,17 +45,14 @@ extension SimServer {
     ) throws -> RemotePickedWord {
         var game = try requireOpenPick(user: user, pick: pick)
         let word: String
-        let wordID: String?
         if let customWord {
             word = customWord
-            wordID = nil
         } else {
             guard let choice = game.choices?.first(where: { $0.difficulty == pick.choice }) else {
                 throw Self.fail("23514", "word choice is not available")
             }
             guard choice.wordID == seenWordID else { throw Self.fail("23514", "word choice is out of date") }
             word = choice.word
-            wordID = choice.wordID
         }
         let points = [DrawAndGuessDifficulty.easy: 1, .medium: 2, .hard: 3, .custom: 2][pick.choice] ?? 2
         rounds.append(Round(
@@ -65,7 +62,6 @@ extension SimServer {
             guesser: partner(of: user),
             state: .drawing,
             difficulty: pick.choice,
-            wordID: wordID,
             word: word,
             points: points,
             startedAt: now

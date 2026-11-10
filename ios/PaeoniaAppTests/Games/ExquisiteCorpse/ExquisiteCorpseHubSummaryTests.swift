@@ -8,7 +8,6 @@ import Testing
 @MainActor
 struct ExquisiteCorpseHubSummaryTests {
     private typealias Fixture = ExquisiteCorpseFixture
-    private typealias Status = ExquisiteCorpseHubSummary.Status
 
     private func summary(
         _ state: RemoteExquisiteCorpseState,

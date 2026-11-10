@@ -28,18 +28,6 @@ actor BlockingDailyChallengeService: DailyChallengeServicing {
 
     func loadStreak() throws -> CoupleStreak { .none }
 
-    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
-
-    func editPartnerChoice(
-        instanceID _: UUID,
-        selectedUserID _: UUID,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
-
     func shuffleQuestion(
         currentUserID: UUID,
         operation _: SyncClientOperation
@@ -67,18 +55,6 @@ actor ImmediateDailyChallengeService: DailyChallengeServicing {
     func loadHistory(currentUserID _: UUID) throws -> [DailyChallengeQuestion] { [] }
 
     func loadStreak() throws -> CoupleStreak { .none }
-
-    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
-
-    func editPartnerChoice(
-        instanceID _: UUID,
-        selectedUserID _: UUID,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
 
     func shuffleQuestion(
         currentUserID: UUID,

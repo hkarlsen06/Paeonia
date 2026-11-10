@@ -160,7 +160,6 @@ struct PendingSyncOperationDrainGiveUpTests {
         SyncContext(
             session: SyncSession(userID: owner),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: store
         )
     }

@@ -19,8 +19,6 @@ import Foundation
 /// purge runs with every feed paused, so anything this feed or another feed
 /// wrote for the old couple in between is removed there.
 nonisolated struct RelationshipEventsLiveFeed: LiveFeed {
-    let name = "relationshipEvents"
-
     private let eventStore: any RelationshipSyncEventPersisting
     private let stateStore: any SyncStatePersisting
     private let applier: any RelationshipSyncEventApplying

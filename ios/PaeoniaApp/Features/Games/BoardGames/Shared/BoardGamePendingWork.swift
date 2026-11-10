@@ -72,7 +72,6 @@ nonisolated enum BoardGamePendingWork {
     // MARK: - Reading the queue
 
     nonisolated private struct Entry {
-        let localCreatedAt: Date
         let clientSequence: Int64
         let action: BoardGamePendingAction
         let failedWhileOnline: Bool
@@ -114,7 +113,6 @@ nonisolated enum BoardGamePendingWork {
             return nil
         }
         return Entry(
-            localCreatedAt: operation.operation.localCreatedAt,
             clientSequence: operation.operation.clientSequence,
             action: wrap(payload),
             failedWhileOnline: operation.failedWhileOnline,

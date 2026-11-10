@@ -32,13 +32,11 @@ nonisolated extension Color {
     static let paeoniaErrorText = PaeoniaPalette.coralLight
     static let paeoniaErrorPressed = PaeoniaPalette.coralBright
     static let paeoniaSyncPending = PaeoniaPalette.orange
-    static let paeoniaSyncError = PaeoniaPalette.coralLight
 
     static let paeoniaPartnerOne = PaeoniaPalette.petalLight
     static let paeoniaPartnerTwo = PaeoniaPalette.petalWarm
     static let paeoniaPartnerTwoText = PaeoniaPalette.petalWarmLight
     static let paeoniaMemory = PaeoniaPalette.petalMist
-    static let paeoniaPrompt = PaeoniaPalette.pink
     static let paeoniaWidgetDrawing = PaeoniaPalette.blush
     static let paeoniaInkGold = PaeoniaPalette.gold
     static let paeoniaInkBlue = PaeoniaPalette.blue
@@ -62,9 +60,7 @@ nonisolated extension ShapeStyle where Self == Color {
     static var paeoniaBackgroundElevated: Color { Color.paeoniaBackgroundElevated }
     static var paeoniaSurfacePrimary: Color { Color.paeoniaSurfacePrimary }
     static var paeoniaSurfaceSecondary: Color { Color.paeoniaSurfaceSecondary }
-    static var paeoniaSurfacePressed: Color { Color.paeoniaSurfacePressed }
     static var paeoniaSurfaceHighlight: Color { Color.paeoniaSurfaceHighlight }
-    static var paeoniaSurfaceDisabled: Color { Color.paeoniaSurfaceDisabled }
     static var paeoniaBorder: Color { Color.paeoniaBorder }
     static var paeoniaTextPrimary: Color { Color.paeoniaTextPrimary }
     static var paeoniaTextSecondary: Color { Color.paeoniaTextSecondary }
@@ -77,14 +73,11 @@ nonisolated extension ShapeStyle where Self == Color {
     static var paeoniaWarning: Color { Color.paeoniaWarning }
     static var paeoniaError: Color { Color.paeoniaError }
     static var paeoniaErrorText: Color { Color.paeoniaErrorText }
-    static var paeoniaErrorPressed: Color { Color.paeoniaErrorPressed }
     static var paeoniaSyncPending: Color { Color.paeoniaSyncPending }
-    static var paeoniaSyncError: Color { Color.paeoniaSyncError }
     static var paeoniaPartnerOne: Color { Color.paeoniaPartnerOne }
     static var paeoniaPartnerTwo: Color { Color.paeoniaPartnerTwo }
     static var paeoniaPartnerTwoText: Color { Color.paeoniaPartnerTwoText }
     static var paeoniaMemory: Color { Color.paeoniaMemory }
-    static var paeoniaPrompt: Color { Color.paeoniaPrompt }
     static var paeoniaWidgetDrawing: Color { Color.paeoniaWidgetDrawing }
 }
 

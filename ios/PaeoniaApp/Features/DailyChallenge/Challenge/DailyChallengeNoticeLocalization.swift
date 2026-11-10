@@ -15,10 +15,6 @@ extension DailyChallengeViewModel.Notice {
             .dailyChallengeShuffleLimitTitle
         case .shuffleFailed:
             .dailyChallengeShuffleFailedTitle
-        case .editLocked:
-            .dailyChallengeEditLockedTitle
-        case .editFailed:
-            .dailyChallengeEditFailedTitle
         case .photoFailed:
             .dailyChallengePhotoFailedTitle
         case .voiceFailed:
@@ -28,9 +24,7 @@ extension DailyChallengeViewModel.Notice {
         }
     }
 
-    /// The message takes the partner's name so notices that name the partner (e.g.
-    /// "Oda has answered…") read with the real name; other notices ignore it.
-    func message(partnerName: String) -> LocalizedStringResource { // swiftlint:disable:this cyclomatic_complexity
+    var message: LocalizedStringResource {
         switch self {
         // Only a phone without a connection is told to check it.
         case .loadFailed(let failure):
@@ -45,10 +39,6 @@ extension DailyChallengeViewModel.Notice {
             .dailyChallengeShuffleLimitMessage
         case .shuffleFailed(let failure):
             failure == .offline ? .dailyChallengeShuffleFailedMessage : .commonActionFailedMessage
-        case .editLocked:
-            .dailyChallengeEditLockedMessage(partnerName)
-        case .editFailed:
-            .dailyChallengeEditFailedMessage
         case .photoFailed:
             .dailyChallengePhotoFailedMessage
         case .voiceFailed:

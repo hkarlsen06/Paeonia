@@ -10,7 +10,6 @@ actor SimPendingStore: PendingSyncOperationPersisting {
         let operationID: UUID
         let kind: SyncPendingOperationKind
         let requestData: Data?
-        let createdAt: Date
         var outcome: Outcome = .inFlight
     }
 
@@ -45,8 +44,7 @@ actor SimPendingStore: PendingSyncOperationPersisting {
             entries[request.operation.id] = Entry(
                 operationID: request.operation.id,
                 kind: request.operationKind,
-                requestData: request.requestData,
-                createdAt: request.operation.localCreatedAt
+                requestData: request.requestData
             )
             order.append(request.operation.id)
             onEnqueue?(request.operationKind, request.requestData)

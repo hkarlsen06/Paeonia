@@ -33,8 +33,4 @@ enum ReplayFixtures {
             mask: mask
         )
     }
-
-    static func drawing(_ strokes: PKStroke...) -> PKDrawing {
-        PKDrawing(strokes: strokes)
-    }
 }

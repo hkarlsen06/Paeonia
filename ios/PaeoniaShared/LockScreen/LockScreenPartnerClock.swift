@@ -17,10 +17,6 @@ nonisolated struct LockScreenPartnerClock: Equatable, Sendable {
 
     let timeZone: TimeZone
 
-    init(timeZone: TimeZone) {
-        self.timeZone = timeZone
-    }
-
     init?(timeZoneID: String?) {
         guard let timeZoneID, let timeZone = TimeZone(identifier: timeZoneID) else { return nil }
         self.timeZone = timeZone

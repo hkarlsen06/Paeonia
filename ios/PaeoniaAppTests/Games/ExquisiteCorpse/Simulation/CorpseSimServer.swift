@@ -44,7 +44,6 @@ final class CorpseSimServer {
     }
 
     struct Asset {
-        let id: UUID
         let owner: UUID
         let partID: UUID
         let purpose: String
@@ -56,11 +55,9 @@ final class CorpseSimServer {
     /// One request for an asset, as the server saw it, for the privacy check.
     struct Download {
         let user: UUID
-        let assetID: UUID
         let purpose: String?
         let drawer: UUID?
         let figureFinished: Bool
-        let allowed: Bool
     }
 
     let coupleID = UUID()

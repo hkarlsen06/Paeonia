@@ -89,22 +89,6 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
         )
     }
 
-    func editTextAnswer(
-        instanceID _: UUID,
-        text _: String,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        UUID()
-    }
-
-    func editPartnerChoice(
-        instanceID _: UUID,
-        selectedUserID _: UUID,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        UUID()
-    }
-
     func shuffleQuestion(
         currentUserID: UUID,
         operation _: SyncClientOperation
@@ -122,7 +106,6 @@ actor RecordingDailyChallengeReadGateway: DailyChallengeGateway {
     private let detailsByCoupleDayID: [UUID: [DailyAnswerDetailRow]]
     private let historyRows: [DailyQuestionRow]
     private let historyDetails: [DailyAnswerDetailRow]
-    private(set) var loadedAnswerDetailCoupleDayIDs: [UUID] = []
     private(set) var todaySnapshotLoadCount = 0
     private(set) var startSnapshotLoadCount = 0
     private(set) var shuffleSnapshotLoadCount = 0
@@ -165,11 +148,6 @@ actor RecordingDailyChallengeReadGateway: DailyChallengeGateway {
         .none
     }
 
-    func loadAnswerDetails(coupleDayID: UUID) throws -> [DailyAnswerDetailRow] {
-        loadedAnswerDetailCoupleDayIDs.append(coupleDayID)
-        return detailsByCoupleDayID[coupleDayID] ?? []
-    }
-
     func submitAnswer(
         instanceID _: UUID,
         answerID: UUID,
@@ -177,22 +155,6 @@ actor RecordingDailyChallengeReadGateway: DailyChallengeGateway {
         operation _: SyncClientOperation
     ) throws -> UUID {
         answerID
-    }
-
-    func editTextAnswer(
-        instanceID _: UUID,
-        text _: String,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        UUID()
-    }
-
-    func editPartnerChoice(
-        instanceID _: UUID,
-        selectedUserID _: UUID,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        UUID()
     }
 
     func shuffleQuestion(
@@ -250,8 +212,6 @@ actor RecordingDailyChallengeGateway: DailyChallengeGateway {
 
     func loadCoupleStreak() throws -> CoupleStreak { .none }
 
-    func loadAnswerDetails(coupleDayID _: UUID) throws -> [DailyAnswerDetailRow] { [] }
-
     func submitAnswer(
         instanceID _: UUID,
         answerID: UUID,
@@ -264,18 +224,6 @@ actor RecordingDailyChallengeGateway: DailyChallengeGateway {
         submittedPayloads.append(payload)
         submittedAnswerIDs.append(answerID)
         return UUID()
-    }
-
-    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) throws -> UUID {
-        UUID()
-    }
-
-    func editPartnerChoice(
-        instanceID _: UUID,
-        selectedUserID _: UUID,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        UUID()
     }
 
     func shuffleQuestion(

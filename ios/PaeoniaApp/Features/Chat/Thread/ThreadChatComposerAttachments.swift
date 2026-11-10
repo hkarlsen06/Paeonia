@@ -25,7 +25,7 @@ final class ThreadChatPhotoStaging {
     /// While true, the field and send button wait, so a half-loaded pick can't send.
     private(set) var isProcessing = false
     var pickerItems: [PhotosPickerItem] = [] {
-        didSet { syncPicker(oldValue: oldValue) }
+        didSet { syncPicker() }
     }
     var isDrawerOpen = false
     var isShowingLibrary = false
@@ -93,7 +93,7 @@ final class ThreadChatPhotoStaging {
 
     /// Mirrors the picker's selection: new picks are loaded and staged, picks taken
     /// away are unstaged.
-    private func syncPicker(oldValue: [PhotosPickerItem]) {
+    private func syncPicker() {
         let selectedIDs = Set(pickerItems.compactMap(\.itemIdentifier))
         staged.removeAll { item in
             guard let pickerItemID = item.pickerItemID else { return false }

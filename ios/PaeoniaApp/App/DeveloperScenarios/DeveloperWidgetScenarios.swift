@@ -162,15 +162,6 @@
 
     func loadSavedDrawing() -> Data? { snapshot?.drawingData }
     func loadSavedSnapshot() -> WidgetCanvasSnapshot? { snapshot }
-    func saveDrawing(
-      _ drawingData: Data, canvasSize _: CGSize, authorName: String?, createdAt: Date
-    ) throws {
-      snapshot = WidgetCanvasSnapshot(
-        drawingData: drawingData,
-        authorName: authorName,
-        createdAt: createdAt
-      )
-    }
     func clearForPrivacy() { snapshot = nil }
     func saveDescribedDrawing(
       _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,

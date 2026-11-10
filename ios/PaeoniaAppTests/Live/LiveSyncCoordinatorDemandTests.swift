@@ -5,13 +5,11 @@ import Testing
 struct LiveSyncCoordinatorDemandTests {
     /// Counts runs and how many are running now.
     private final class CountingFeed: LiveFeed, @unchecked Sendable {
-        let name: String
         let activation: LiveFeedActivation
         let runs = LockedBox<Int>(0)
         let running = LockedBox<Int>(0)
 
-        init(name: String, activation: LiveFeedActivation) {
-            self.name = name
+        init(activation: LiveFeedActivation) {
             self.activation = activation
         }
 
@@ -41,8 +39,8 @@ struct LiveSyncCoordinatorDemandTests {
     }
 
     @Test func aFeedWithTopicsRunsOnlyWhileATopicIsHeld() async {
-        let always = CountingFeed(name: "always", activation: .always)
-        let games = CountingFeed(name: "games", activation: .whileNeeded([.gamesTab]))
+        let always = CountingFeed(activation: .always)
+        let games = CountingFeed(activation: .whileNeeded([.gamesTab]))
         let coordinator = Self.makeCoordinator(feeds: [always, games])
 
         await coordinator.start(session: Self.session)
@@ -59,7 +57,7 @@ struct LiveSyncCoordinatorDemandTests {
     }
 
     @Test func comingBackWithinTheLingerKeepsTheSameRun() async {
-        let games = CountingFeed(name: "games", activation: .whileNeeded([.gamesTab]))
+        let games = CountingFeed(activation: .whileNeeded([.gamesTab]))
         let coordinator = Self.makeCoordinator(feeds: [games], linger: .milliseconds(300))
         await coordinator.start(session: Self.session)
 
@@ -75,7 +73,7 @@ struct LiveSyncCoordinatorDemandTests {
     }
 
     @Test func aTouchRunsTheFeedForTheLingerOnly() async {
-        let games = CountingFeed(name: "games", activation: .whileNeeded([.gameTurns]))
+        let games = CountingFeed(activation: .whileNeeded([.gameTurns]))
         let coordinator = Self.makeCoordinator(feeds: [games])
         await coordinator.start(session: Self.session)
 
@@ -87,7 +85,7 @@ struct LiveSyncCoordinatorDemandTests {
     }
 
     @Test func aTouchBeforeTheSessionStartsRunsWhenItStarts() async {
-        let games = CountingFeed(name: "games", activation: .whileNeeded([.gameTurns]))
+        let games = CountingFeed(activation: .whileNeeded([.gameTurns]))
         let coordinator = Self.makeCoordinator(feeds: [games])
 
         await coordinator.apply(.touched([.gameTurns]))
@@ -99,7 +97,7 @@ struct LiveSyncCoordinatorDemandTests {
     }
 
     @Test func anOlderHeldEventDoesNotUndoANewerOne() async {
-        let games = CountingFeed(name: "games", activation: .whileNeeded([.gamesTab]))
+        let games = CountingFeed(activation: .whileNeeded([.gamesTab]))
         let coordinator = Self.makeCoordinator(feeds: [games], linger: .milliseconds(10))
         await coordinator.start(session: Self.session)
 
@@ -112,7 +110,7 @@ struct LiveSyncCoordinatorDemandTests {
     }
 
     @Test func stopEndsFeedsThatAreStillLingering() async {
-        let games = CountingFeed(name: "games", activation: .whileNeeded([.gamesTab]))
+        let games = CountingFeed(activation: .whileNeeded([.gamesTab]))
         let coordinator = Self.makeCoordinator(feeds: [games], linger: .seconds(30))
         await coordinator.start(session: Self.session)
         await coordinator.apply(.held([.gamesTab], sequence: 1))

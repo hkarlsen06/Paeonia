@@ -4,8 +4,6 @@ import Foundation
 /// to the server. It runs for every signed-in user, paired or not. Root
 /// observes the store change this feed causes and re-routes.
 nonisolated struct AccessLiveFeed: LiveFeed {
-    let name = "access"
-
     private let snapshotStore: any AccessSyncSnapshotPersisting
 
     init(snapshotStore: any AccessSyncSnapshotPersisting) {

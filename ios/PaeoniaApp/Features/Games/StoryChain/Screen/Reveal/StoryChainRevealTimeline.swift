@@ -104,22 +104,6 @@ final class StoryChainRevealTimeline {
         applySettledState()
     }
 
-    /// Clears the reveal and stops its run, so another story can play it.
-    func reset() {
-        cancelRun()
-        storyID = nil
-        scrolledToTop = false
-        titleShown = false
-        titleProgress = 0
-        bylineShown = false
-        ornamentShown = false
-        bloomStart = nil
-        statsShown = false
-        actionsShown = false
-        isSettled = false
-        wasSkipped = false
-    }
-
     // MARK: Script
 
     /// The beats of the reveal in order. Pure, so tests read the script itself.

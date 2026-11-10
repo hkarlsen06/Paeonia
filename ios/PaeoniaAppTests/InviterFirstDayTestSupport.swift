@@ -95,11 +95,6 @@ actor FirstDayGatewaySpy {
         acceptedDrawings.append(accepted)
         return accepted
     }
-
-    func signedDrawingURL(mediaAssetID _: UUID) throws -> URL? {
-        try record("signedURL")
-        return URL(fileURLWithPath: "/first-day-drawing")
-    }
 }
 
 extension FirstDayGatewaySpy: FirstDayGateway {}
@@ -112,7 +107,6 @@ actor FirstDayCanvasFake {
     func acceptPublication(_: WidgetCanvasPublicationTicket, revisionID _: UUID) {}
 
     private(set) var drawingData: Data?
-    private(set) var accessibilityText: String?
 
     init(drawingData: Data? = nil) {
         self.drawingData = drawingData
@@ -128,14 +122,12 @@ actor FirstDayCanvasFake {
 
     func saveDescribedDrawing(
         _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
-        revisionID _: UUID?, accessibilityText: String?, publicationID _: UUID?
+        revisionID _: UUID?, accessibilityText _: String?, publicationID _: UUID?
     ) {
         saveDrawing(data, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
-        self.accessibilityText = accessibilityText
     }
 
     func clearForPrivacy() {
-        accessibilityText = nil
         drawingData = nil
     }
 }

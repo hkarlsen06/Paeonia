@@ -19,7 +19,6 @@ struct ConsensioRevealStage: View {
     let isSpotOn: Bool
 
     @State private var width: CGFloat = 340
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// How far above its spot the partner's pin starts its drop.
     private static let dropHeight: CGFloat = 90

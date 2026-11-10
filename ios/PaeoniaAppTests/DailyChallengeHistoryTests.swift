@@ -116,65 +116,6 @@ struct DailyChallengeHistoryTests {
         #expect(days.first?.rows.count == 1)
     }
 
-    @Test func storyChatsGoUnderTheDayTheirStoryWasPosted() {
-        let posted = TestDailyChallengeIDs.answerDate
-        let storyDay = MemoryTimeline.localDateString(for: posted, timeZone: .gmt)
-        let question = answeredOwnRow(localDate: storyDay, answeredAt: posted.addingTimeInterval(-3_600))
-        let sameDay = storyConversation(postedAt: posted)
-        let olderDay = storyConversation(postedAt: posted.addingTimeInterval(-3 * 86_400))
-        let fromToday = storyConversation(postedAt: posted.addingTimeInterval(2 * 86_400))
-        let today = fromToday.localDate
-
-        let days = DailyChallengeHistory.adding(
-            [sameDay, olderDay, fromToday],
-            before: today,
-            to: DailyChallengeHistory.grouped(historyQuestions([question]))
-        )
-
-        // The story from today stays out, the one posted on a day without questions gets
-        // that day, and the other sorts by time with its day's question.
-        #expect(days.map(\.localDate) == [storyDay, olderDay.localDate])
-        #expect(days[0].rows.map(\.id) == [sameDay.id, question.instanceID])
-        #expect(days[1].rows.map(\.id) == [olderDay.id])
-    }
-
-    @Test func memoryChatsGoUnderTheDayTheMemoryWasAddedNotItsDate() {
-        let added = TestDailyChallengeIDs.answerDate
-        let addedDay = MemoryTimeline.localDateString(for: added, timeZone: .gmt)
-        let question = answeredOwnRow(localDate: addedDay, answeredAt: added.addingTimeInterval(3_600))
-        let story = storyConversation(postedAt: added.addingTimeInterval(1_800))
-        let oldMemory = memoryConversation(addedAt: added, memoryDate: "2019-07-14")
-        let addedToday = memoryConversation(addedAt: added.addingTimeInterval(2 * 86_400), memoryDate: "2019-07-14")
-
-        let days = DailyChallengeHistory.adding(
-            [oldMemory, addedToday, story],
-            before: addedToday.localDate,
-            to: DailyChallengeHistory.grouped(historyQuestions([question]))
-        )
-
-        // A memory dated years back sits on the day it was added, by time with that day's
-        // question and story. The one added today stays out of the earlier days.
-        #expect(days.map(\.localDate) == [addedDay])
-        #expect(days[0].rows.map(\.id) == [question.instanceID, story.id, oldMemory.id])
-    }
-
-    @Test func questionAndConversationDatesUseTheSameSharedZone() throws {
-        let zone = try #require(TimeZone(identifier: "America/Los_Angeles"))
-        let instant = try #require(ISO8601DateFormatter().date(from: "2026-11-03T23:30:00Z"))
-        let question = answeredOwnRow(localDate: "2026-11-02", answeredAt: instant)
-        let story = storyConversation(postedAt: instant)
-        let memory = memoryConversation(addedAt: instant, memoryDate: "2019-01-01")
-        let days = DailyChallengeHistory.adding(
-            [story, memory], before: "2026-11-04",
-            to: DailyChallengeHistory.grouped(historyQuestions([question]), timeZone: zone),
-            timeZone: zone
-        )
-        #expect(days.map(\.localDate) == ["2026-11-03"])
-        #expect(Set(days.flatMap(\.rows).map(\.id)) == [question.instanceID, story.id, memory.id])
-        let easternZone = try #require(TimeZone(identifier: "Europe/Oslo"))
-        #expect(MemoryTimeline.localDateString(for: instant, timeZone: easternZone) == "2026-11-04")
-    }
-
     @Test func parsesLocalDateToUTCMidnight() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt

@@ -147,7 +147,6 @@ struct FirstDayStartedOnTests {
         SyncContext(
             session: SyncSession(userID: owner),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: InMemoryPendingSyncOperationRepository()
         )
     }

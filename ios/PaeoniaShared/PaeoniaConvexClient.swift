@@ -41,10 +41,6 @@ nonisolated final class PaeoniaConvexClient: Sendable {
         try await call(kind: "query", path: path, args: args)
     }
 
-    func query(_ path: String, args: some Encodable = PaeoniaConvexNoArgs()) async throws {
-        let _: PaeoniaConvexIgnoredResult = try await call(kind: "query", path: path, args: args)
-    }
-
     func mutation<Result: Decodable>(
         _ path: String,
         args: some Encodable = PaeoniaConvexNoArgs()

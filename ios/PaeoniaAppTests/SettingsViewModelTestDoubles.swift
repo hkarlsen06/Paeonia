@@ -12,15 +12,12 @@ enum SettingsFakePreferencesError: Error {
 actor SettingsFakeNotificationPreferences {
     private var preferences: NotificationPreferences
     private var failOnSet: Bool
-    private var failOnLoad: Bool
     private let holdSets: Bool
     private var heldSets = [CheckedContinuation<Void, Never>]()
     private var holdsLoads = false
     private var heldLoads = [CheckedContinuation<Void, Never>]()
     private let updates = AsyncStream<NotificationPreferences>.makeStream()
     private(set) var setCallCount = 0
-    private(set) var lastSetKind: NotificationPreferenceKind?
-    private(set) var lastSetValue: Bool?
     /// Every value that reached the "server", in arrival order.
     private(set) var sentValues = [Bool]()
     /// Every question time that reached the "server", in arrival order.
@@ -29,21 +26,15 @@ actor SettingsFakeNotificationPreferences {
     init(
         preferences: NotificationPreferences = NotificationPreferences(),
         failOnSet: Bool = false,
-        failOnLoad: Bool = false,
         holdSets: Bool = false
     ) {
         self.preferences = preferences
         self.failOnSet = failOnSet
-        self.failOnLoad = failOnLoad
         self.holdSets = holdSets
     }
 
     func setFailing(_ failing: Bool) {
         failOnSet = failing
-    }
-
-    func setLoadFailing(_ failing: Bool) {
-        failOnLoad = failing
     }
 
     func setLoadHolding(_ holding: Bool) {
@@ -90,9 +81,6 @@ actor SettingsFakeNotificationPreferences {
         if holdsLoads {
             await withCheckedContinuation { heldLoads.append($0) }
         }
-        if failOnLoad {
-            throw SettingsFakePreferencesError.failed
-        }
         return snapshot
     }
 
@@ -116,8 +104,6 @@ actor SettingsFakeNotificationPreferences {
         if failOnSet {
             throw SettingsFakePreferencesError.failed
         }
-        lastSetKind = kind
-        lastSetValue = value
         sentValues.append(value)
         store(value, for: kind)
     }

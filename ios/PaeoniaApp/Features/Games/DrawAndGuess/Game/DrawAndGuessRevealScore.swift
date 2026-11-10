@@ -137,8 +137,4 @@ nonisolated enum DrawAndGuessSpeedBonus: Equatable, Sendable {
             return elapsed <= Self.window ? Self.slowPoints : 0
         }
     }
-
-    func isAvailable(at now: Date) -> Bool {
-        tier(at: now) > 0
-    }
 }

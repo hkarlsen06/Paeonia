@@ -13,7 +13,6 @@ final class ScriptedCorpseHistoryGateway: ExquisiteCorpseGateway, @unchecked Sen
     struct Request: Equatable {
         var starredOnly: Bool
         var beforeFigureNumber: Int?
-        var limit: Int
     }
 
     private let lock = NSLock()
@@ -44,7 +43,7 @@ final class ScriptedCorpseHistoryGateway: ExquisiteCorpseGateway, @unchecked Sen
     ) async throws -> RemoteExquisiteCorpseHistoryPage {
         let (figures, starred, failing) = lock.withLock {
             recordedRequests.append(
-                Request(starredOnly: starredOnly, beforeFigureNumber: beforeFigureNumber, limit: limit)
+                Request(starredOnly: starredOnly, beforeFigureNumber: beforeFigureNumber)
             )
             return (self.figures, self.starred, isFailing)
         }

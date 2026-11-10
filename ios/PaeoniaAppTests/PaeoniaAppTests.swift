@@ -558,7 +558,6 @@ struct RootLiveAccessTests {
 
 actor TestPaeoniaSyncService {
     private(set) var startCallCount = 0
-    private(set) var requestedReasons: [SyncRequestReason] = []
     private(set) var runOnceReasons: [SyncRequestReason] = []
     private(set) var configuredSessions: [SyncSession?] = []
     private(set) var resetCallCount = 0
@@ -592,10 +591,6 @@ actor TestPaeoniaSyncService {
 
     func start() {
         startCallCount += 1
-    }
-
-    func requestSync(reason: SyncRequestReason) {
-        requestedReasons.append(reason)
     }
 
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult {
@@ -643,10 +638,6 @@ actor StaticAccessRouteService: AccessRouteServicing {
 
     init(route: AccessRoute) {
         self.resolution = .test(route: route)
-    }
-
-    init(resolution: AccessRouteResolution) {
-        self.resolution = resolution
     }
 
     func resolveAccess(hasPendingInvite: Bool) async throws -> AccessRouteResolution {
@@ -1050,8 +1041,6 @@ private actor OrderedPaeoniaSyncService: PaeoniaSyncing {
         recorder.record(.startSync)
     }
 
-    func requestSync(reason _: SyncRequestReason) {}
-
     func runOnce(reason _: SyncRequestReason) async -> SyncRunResult {
         SyncRunResult(
             status: .succeeded,
@@ -1104,10 +1093,6 @@ private actor OrderedAuthService: AuthServicing {
             profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
-    }
-
-    func signInForDevelopment() async throws -> AuthSession {
-        .test(profileStatus: .needsOnboarding)
     }
 
     func completeOnboarding(

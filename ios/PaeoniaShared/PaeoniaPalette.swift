@@ -17,7 +17,6 @@ nonisolated enum PaeoniaPalette {
     static let gold = Color(paeoniaHex: 0xF2_B8_4B)
     static let blue = Color(paeoniaHex: 0x6F_B1_F0)
     static let lavender = Color(paeoniaHex: 0xB9_9C_F2)
-    static let coral = Color(paeoniaHex: 0xE5_48_4D)
     static let coralLight = Color(paeoniaHex: 0xFF_80_84)
     static let coralBright = Color(paeoniaHex: 0xEA_5C_61)
     static let orange = Color(paeoniaHex: 0xE8_91_5D)

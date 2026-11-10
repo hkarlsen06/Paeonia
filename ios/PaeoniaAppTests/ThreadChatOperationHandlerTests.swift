@@ -131,7 +131,6 @@ struct ThreadChatOperationFailureTests {
         let context = SyncContext(
             session: SyncSession(userID: fixture.ownerUserID, activeCoupleID: UUID()),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: fixture.pendingStore
         )
 

@@ -4,8 +4,6 @@ import Foundation
 /// `hearts:get_hearts` carries how many hearts the partner has sent and how many
 /// this person was shown. Each result goes into the cache, then Home re-reads.
 nonisolated struct HeartsLiveFeed: LiveFeed {
-    let name = "hearts"
-
     /// Hearts play only while Home is on screen.
     var activation: LiveFeedActivation {
         .whileNeeded([.usTab])

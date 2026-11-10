@@ -107,7 +107,6 @@ final class CorpseSimGateway: DrawAndGuessGateway, ExquisiteCorpseGateway, @unch
 
     func ensureDrawAndGuessGame() async throws -> RemoteEnsureGameResult { throw Unused() }
     func loadDrawAndGuess() async throws -> RemoteDrawAndGuessState { throw Unused() }
-    func loadDrawAndGuessRound(roundID _: UUID) async throws -> RemoteDrawAndGuessRound? { throw Unused() }
     func pickWord(_: GamePickWordPayload, operation _: SyncClientOperation) async throws -> RemotePickedWord {
         throw Unused()
     }

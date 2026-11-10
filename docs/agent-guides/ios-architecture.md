@@ -69,7 +69,7 @@ When two or more stored properties together say what stage something is in, such
 
 For any screen that can be the first app surface after launch, do not dismiss the launch/loading screen until the screen has a stable first presentation.
 
-- View models for launch-adjacent screens must expose `isPresentationReady` by conforming to `PresentationReadinessProviding`.
+- View models for launch-adjacent screens must expose `isPresentationReady`.
 - `isPresentationReady` means all data that can materially change the first visible layout, offer, eligibility, entitlement, pairing, or primary CTA has either loaded successfully or reached a final unavailable/error state.
 - While `isPresentationReady == false`, keep showing the existing app loading surface instead of rendering partial feature UI.
 - The app loading surface should be visually blank and copy-free; it may be present for only a split second, so do not add explanatory loading text that users cannot read.

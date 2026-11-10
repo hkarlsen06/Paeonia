@@ -3,14 +3,11 @@ import SwiftData
 
 protocol RelationshipSyncEventPersisting: Actor {
     func save(_ events: [RemoteRelationshipSyncEvent]) async throws
-    func events(ownerUserID: UUID) async throws -> [RemoteRelationshipSyncEvent]
-    func deleteEvents(ownerUserID: UUID) async throws
 }
 
 actor SwiftDataRelationshipSyncEventRepository: RelationshipSyncEventPersisting {
     private let container: ModelContainer
     private let encoder = JSONEncoder()
-    private let decoder = JSONDecoder()
 
     init(container: ModelContainer) {
         self.container = container
@@ -42,37 +39,6 @@ actor SwiftDataRelationshipSyncEventRepository: RelationshipSyncEventPersisting 
         postChanges(for: events)
     }
 
-    func events(ownerUserID: UUID) throws -> [RemoteRelationshipSyncEvent] {
-        let context = ModelContext(container)
-        let descriptor = FetchDescriptor<LocalRelationshipSyncEvent>(
-            predicate: #Predicate { event in
-                event.ownerUserID == ownerUserID
-            },
-            sortBy: [
-                SortDescriptor(\.createdAt),
-                SortDescriptor(\.id)
-            ]
-        )
-
-        return try context.fetch(descriptor).map(event(from:))
-    }
-
-    func deleteEvents(ownerUserID: UUID) throws {
-        let context = ModelContext(container)
-        let descriptor = FetchDescriptor<LocalRelationshipSyncEvent>(
-            predicate: #Predicate { event in
-                event.ownerUserID == ownerUserID
-            }
-        )
-
-        for event in try context.fetch(descriptor) {
-            context.delete(event)
-        }
-
-        try context.save()
-        LocalStoreChanges.post(.relationshipEvents, ownerUserID: ownerUserID)
-    }
-
     private func fetchEvent(
         id: UUID,
         in context: ModelContext
@@ -84,30 +50,6 @@ actor SwiftDataRelationshipSyncEventRepository: RelationshipSyncEventPersisting 
         )
         descriptor.fetchLimit = 1
         return try context.fetch(descriptor).first
-    }
-
-    private func event(
-        from localEvent: LocalRelationshipSyncEvent
-    ) throws -> RemoteRelationshipSyncEvent {
-        RemoteRelationshipSyncEvent(
-            id: localEvent.id,
-            userID: localEvent.ownerUserID,
-            coupleID: localEvent.coupleID,
-            initiatedByUserID: localEvent.initiatedByUserID,
-            eventKind: localEvent.eventKind,
-            reason: localEvent.reason,
-            occurredAt: localEvent.occurredAt,
-            relationshipStatus: localEvent.relationshipStatus,
-            memberStatus: localEvent.memberStatus,
-            endedAt: localEvent.endedAt,
-            deleteAfter: localEvent.deleteAfter,
-            localPurgeScope: try decoder.decode(
-                [String: String].self,
-                from: localEvent.localPurgeScopeData ?? Data("{}".utf8)
-            ),
-            createdAt: localEvent.createdAt,
-            updatedAt: localEvent.updatedAt
-        )
     }
 }
 
@@ -131,11 +73,6 @@ actor InMemoryRelationshipSyncEventRepository: RelationshipSyncEventPersisting {
 
                 return $0.createdAt < $1.createdAt
             }
-    }
-
-    func deleteEvents(ownerUserID: UUID) throws {
-        eventsByID = eventsByID.filter { $0.value.userID != ownerUserID }
-        LocalStoreChanges.post(.relationshipEvents, ownerUserID: ownerUserID)
     }
 }
 

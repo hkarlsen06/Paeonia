@@ -74,10 +74,6 @@ nonisolated extension RemoteDrawAndGuessHistoryRound {
     var tries: Int {
         max(1, attemptCount)
     }
-
-    func isDrawer(_ userID: UUID?) -> Bool {
-        userID != nil && drawerUserID == userID
-    }
 }
 
 /// One page of the history. `nextBeforeRoundNumber` is the cursor for the next

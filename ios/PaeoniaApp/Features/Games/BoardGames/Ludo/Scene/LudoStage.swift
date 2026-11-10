@@ -52,7 +52,6 @@ final class LudoStage {
     var pawns: [LudoPawnNode] = []
     var dieNode: LudoDieNode?
     var homeGlows: [ModelEntity] = []
-    var capMaterials: [PhysicallyBasedMaterial] = []
     /// The board pieces that take the players' colors.
     var paint = LudoPaintTargets()
     /// Goes up with each new look, so a slow mark texture of an earlier one never lands over a later one.
@@ -144,7 +143,6 @@ final class LudoStage {
         pawns = parts.pawns
         dieNode = parts.die
         homeGlows = parts.homeGlows
-        capMaterials = parts.capMaterials
         paint = parts.paint
         landingMarks = Self.makeLandingMarks(in: parts.root)
         targets[parts.die.root.id] = .die
@@ -229,7 +227,6 @@ final class LudoStage {
             guard generation == lookGeneration else { return }
             if let board { paint.boardTop?.model?.materials = [board] }
             guard materials.count == 2 else { return }
-            capMaterials = materials
             for pawn in pawns {
                 pawn.setCapMaterial(materials[pawn.player.rawValue - 1])
             }

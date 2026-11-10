@@ -182,9 +182,7 @@ extension PaeoniaSyncService {
         let context = SyncContext(
             session: session,
             reason: reason,
-            startedAt: startedAt,
             streamCursor: cursor,
-            stateStore: stateStore,
             pendingOperationStore: pendingOperationStore
         )
 

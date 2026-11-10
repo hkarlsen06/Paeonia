@@ -132,9 +132,6 @@ private struct RejectingPiccanteGateway: PiccanteGateway {
         if move.action == .seen { return state }
         throw PaeoniaConvexError.server(code: "40001", message: "the game has changed")
     }
-    func loadPiccanteResult(number: Int) throws -> RemotePiccanteGame {
-        try #require(state.game)
-    }
 }
 
 private actor RematchRacePiccanteGateway {
@@ -152,6 +149,5 @@ private actor RematchRacePiccanteGateway {
         if state.unseenResult?.gameNumber == move.gameNumber { state.unseenResult = nil }
         return state
     }
-    func loadPiccanteResult(number: Int) throws -> RemotePiccanteGame { try #require(state.game) }
 }
 extension RematchRacePiccanteGateway: PiccanteGateway {}

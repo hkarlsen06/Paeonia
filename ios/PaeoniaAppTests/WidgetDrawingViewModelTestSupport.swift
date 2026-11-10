@@ -51,8 +51,6 @@ final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sendable {
     private(set) var loadCount = 0
     private(set) var clearCount = 0
     private(set) var lastSavedData: Data?
-    private(set) var lastCanvasSize: CGSize?
-    private(set) var lastAuthorName: String?
     var saveError: Error?
     var savedDrawingData: Data?
     var savedAuthorName: String?
@@ -84,8 +82,6 @@ final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sendable {
     ) async throws {
         saveCount += 1
         lastSavedData = drawingData
-        lastCanvasSize = canvasSize
-        lastAuthorName = authorName
         if let saveError {
             throw saveError
         }
@@ -189,17 +185,14 @@ actor SuspendedWidgetCanvasService {
         }
     }
 
-    private(set) var savedAccessibilityText: String?
-
     func saveDescribedDrawing(
         _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
-        revisionID _: UUID?, accessibilityText: String?, publicationID _: UUID?
+        revisionID _: UUID?, accessibilityText _: String?, publicationID _: UUID?
     ) async throws {
         try await saveDrawing(data, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
-        savedAccessibilityText = accessibilityText
     }
 
-    func clearForPrivacy() async { savedAccessibilityText = nil }
+    func clearForPrivacy() async {}
 }
 
 extension SuspendedWidgetCanvasService: WidgetCanvasManaging {}
@@ -251,7 +244,6 @@ final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     private var bases: [WidgetDrawingDraftKey: String] = [:]
 
     func description(for key: WidgetDrawingDraftKey) -> String? { descriptions[key] }
-    func setDescription(_ text: String, for key: WidgetDrawingDraftKey) { descriptions[key] = text }
 
     func draftBase(for key: WidgetDrawingDraftKey) -> String? {
         drafts[key] == nil ? nil : bases[key]
@@ -259,13 +251,6 @@ final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
 
     func setDraftBase(_ fingerprint: String, for key: WidgetDrawingDraftKey) {
         bases[key] = fingerprint
-    }
-
-    nonisolated func setDraft(_ data: Data, base fingerprint: String, for key: WidgetDrawingDraftKey) {
-        Task { @MainActor in
-            setDraft(data, for: key)
-            setDraftBase(fingerprint, for: key)
-        }
     }
 }
 

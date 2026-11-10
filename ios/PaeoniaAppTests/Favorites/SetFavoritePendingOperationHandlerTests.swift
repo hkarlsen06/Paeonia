@@ -20,7 +20,6 @@ struct SetFavoritePendingOperationHandlerTests {
         SyncContext(
             session: SyncSession(userID: owner),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pending
         )
     }
@@ -149,8 +148,6 @@ final class RecordingFavoritesGateway: FavoritesGateway, @unchecked Sendable {
         if let error { throw error }
         lock.withLock { recorded.append(Write(target: target, favorited: favorited)) }
     }
-
-    func listFavorites() async throws -> [FavoriteRef] { [] }
 
     func summaries(of _: [FavoriteTarget]) async throws -> [FavoriteSummary] { [] }
 }

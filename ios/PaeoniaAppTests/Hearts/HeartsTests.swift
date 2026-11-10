@@ -364,7 +364,6 @@ struct HeartsPendingOperationHandlerTests {
         SyncContext(
             session: SyncSession(userID: HeartsFixture.me, activeCoupleID: HeartsFixture.couple),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: InMemoryPendingSyncOperationRepository()
         )
     }

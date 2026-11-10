@@ -3,8 +3,6 @@ import Foundation
 /// Keeps the couple's countdowns and birthdays current while the app is open. Each
 /// result of `countdowns:get_countdowns` goes into the cache, then the timeline re-reads.
 nonisolated struct CoupleDatesLiveFeed: LiveFeed {
-    let name = "coupleDates"
-
     /// Home shows the dates and the More tab edits them.
     var activation: LiveFeedActivation {
         .whileNeeded([.usTab, .settingsTab])

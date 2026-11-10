@@ -44,10 +44,6 @@ nonisolated struct StoryChainEffectiveStory: Equatable, Identifiable, Sendable {
     var isWaitingToSend: Bool {
         isOnlyOnThisPhone || hasUnsentName || !unsentLineIDs.isEmpty
     }
-
-    func isUnsent(_ line: RemoteStoryLine) -> Bool {
-        unsentLineIDs.contains(line.id)
-    }
 }
 
 nonisolated struct StoryChainResolution: Equatable, Sendable {

@@ -119,11 +119,9 @@
 
   /// The join screen in place of the paywall, with a local partner code.
   private struct DeveloperJoinScenarioView: View {
-    let hasSafetyWarning: Bool
     @State private var viewModel: PairingJoinViewModel
 
     init(hasSafetyWarning: Bool) {
-      self.hasSafetyWarning = hasSafetyWarning
       _viewModel = State(
         initialValue: PairingJoinViewModel(
           pairingService: DeveloperScenarioPairingService(mode: hasSafetyWarning ? .safetyWarning : .ready),

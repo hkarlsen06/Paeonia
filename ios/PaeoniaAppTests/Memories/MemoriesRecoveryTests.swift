@@ -252,13 +252,6 @@ private actor FailingMemoryRecordStore {
     func saveRemote(_ rows: [MemoryRemoteRow], ownerUserID: UUID, mergePolicy: MemoryRemoteMergePolicy) async throws {
         try await base.saveRemote(rows, ownerUserID: ownerUserID, mergePolicy: mergePolicy)
     }
-    func markConflict(ownerUserID: UUID, memoryID: UUID, reason: String) async throws {
-        try await base.markConflict(ownerUserID: ownerUserID, memoryID: memoryID, reason: reason)
-    }
-    func delete(ownerUserID: UUID, memoryID: UUID) async throws {
-        try await base.delete(ownerUserID: ownerUserID, memoryID: memoryID)
-    }
-    func deleteAll(ownerUserID: UUID) async throws { try await base.deleteAll(ownerUserID: ownerUserID) }
 }
 
 extension FailingMemoryRecordStore: MemoryRecordPersisting {}

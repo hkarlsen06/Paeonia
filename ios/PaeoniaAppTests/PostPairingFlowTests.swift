@@ -379,7 +379,7 @@ private extension AccessRouteResolution {
 }
 
 private extension PostPairingGift {
-    static let sample = PostPairingGift(revisionID: UUID(), drawing: PKDrawing())
+    static let sample = PostPairingGift(drawing: PKDrawing())
 }
 
 private struct PostPairingFakeLoader: PostPairingDataLoading {

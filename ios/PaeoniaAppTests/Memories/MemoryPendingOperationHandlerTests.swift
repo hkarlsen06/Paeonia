@@ -349,7 +349,6 @@ extension MemoryPendingOperationHandlerTests {
         SyncContext(
             session: SyncSession(userID: ownerUserID),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pendingStore
         )
     }

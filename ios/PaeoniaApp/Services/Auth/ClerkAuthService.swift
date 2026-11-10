@@ -3,8 +3,6 @@ import Foundation
 import OSLog
 #endif
 
-// swiftlint:disable async_without_await
-
 actor ClerkAuthService: AuthServicing {
     let gateway: any AuthGateway
     let profilePhotoCache: any ProfilePhotoImageCaching
@@ -172,10 +170,6 @@ actor ClerkAuthService: AuthServicing {
         }
     }
 
-    func signInForDevelopment() async throws -> AuthSession {
-        throw AuthServiceError.developmentSignInUnavailable
-    }
-
     func logProfilePhotoIssue(_ message: String) {
         #if DEBUG
         logger.error("Profile photo \(message, privacy: .public); continuing sign-in without it.")
@@ -255,5 +249,3 @@ actor ClerkAuthService: AuthServicing {
         }
     }
 }
-
-// swiftlint:enable async_without_await

@@ -148,25 +148,6 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         )
     }
 
-    func saveSyncedDrawing(
-        _ drawingData: Data,
-        canvasSize: CGSize,
-        authorName: String?,
-        createdAt: Date,
-        revisionID: UUID
-    ) async throws {
-        try await publish(
-            WidgetCanvasPublication(
-                drawingData: drawingData,
-                canvasSize: canvasSize,
-                authorName: authorName,
-                createdAt: createdAt,
-                serverRevisionID: revisionID.uuidString.lowercased(),
-                localPublicationID: nil
-            )
-        )
-    }
-
     func saveDescribedDrawing(
         _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
         revisionID: UUID?, accessibilityText: String?, publicationID: UUID?

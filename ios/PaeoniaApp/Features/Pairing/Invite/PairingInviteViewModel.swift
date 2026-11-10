@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 @Observable
-final class PairingInviteViewModel: PresentationReadinessProviding {
+final class PairingInviteViewModel {
     private(set) var invite: PairingInvite?
     private(set) var isLoading = false
     private(set) var isRevoking = false

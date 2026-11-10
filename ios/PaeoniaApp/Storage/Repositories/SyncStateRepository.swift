@@ -50,9 +50,6 @@ protocol SyncStatePersisting: Actor {
         errorDescription: String,
         at date: Date
     ) async throws
-
-    func snapshots(ownerUserID: UUID) async throws -> [SyncStateSnapshot]
-    func deleteStates(ownerUserID: UUID) async throws
 }
 
 actor SwiftDataSyncStateRepository: SyncStatePersisting {
@@ -130,35 +127,6 @@ actor SwiftDataSyncStateRepository: SyncStatePersisting {
         try context.save()
     }
 
-    func snapshots(ownerUserID: UUID) throws -> [SyncStateSnapshot] {
-        let context = ModelContext(container)
-        let descriptor = FetchDescriptor<LocalSyncState>(
-            predicate: #Predicate { state in
-                state.ownerUserID == ownerUserID
-            },
-            sortBy: [
-                SortDescriptor(\.streamKeyRawValue),
-                SortDescriptor(\.key)
-            ]
-        )
-
-        return try context.fetch(descriptor).map(Self.snapshot(from:))
-    }
-
-    func deleteStates(ownerUserID: UUID) throws {
-        let context = ModelContext(container)
-        let descriptor = FetchDescriptor<LocalSyncState>(
-            predicate: #Predicate { state in
-                state.ownerUserID == ownerUserID
-            }
-        )
-        for state in try context.fetch(descriptor) {
-            context.delete(state)
-        }
-
-        try context.save()
-    }
-
     private func fetchOrCreateState(
         ownerUserID: UUID,
         scope: SyncStreamScope,
@@ -190,18 +158,6 @@ actor SwiftDataSyncStateRepository: SyncStatePersisting {
         )
         context.insert(state)
         return state
-    }
-
-    private static func snapshot(from state: LocalSyncState) -> SyncStateSnapshot {
-        SyncStateSnapshot(
-            ownerUserID: state.ownerUserID,
-            scope: SyncStreamScope(kind: state.scopeKind, id: state.scopeID),
-            streamKey: state.streamKey,
-            cursor: state.cursor,
-            lastSuccessfulSyncAt: state.lastSuccessfulSyncAt,
-            lastSyncAttemptAt: state.lastSyncAttemptAt,
-            lastSyncError: state.lastSyncError
-        )
     }
 }
 
@@ -279,10 +235,6 @@ actor InMemorySyncStateRepository: SyncStatePersisting {
         states.values
             .filter { $0.ownerUserID == ownerUserID }
             .sorted { $0.streamKey.rawValue < $1.streamKey.rawValue }
-    }
-
-    func deleteStates(ownerUserID: UUID) throws {
-        states = states.filter { $0.value.ownerUserID != ownerUserID }
     }
 
     private func state(

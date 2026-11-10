@@ -102,10 +102,6 @@ extension CorpseSimServer {
         changed()
     }
 
-    func presenceStamp(of user: UUID) -> Date? {
-        presence[user]
-    }
-
     /// Like the presence component, closes a game screen 60 seconds after its
     /// last heartbeat and tells the subscribers.
     func expirePresence() {

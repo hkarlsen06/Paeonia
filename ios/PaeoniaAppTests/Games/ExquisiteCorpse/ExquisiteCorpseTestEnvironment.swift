@@ -53,10 +53,6 @@ final class RecordingCorpseConnection: WidgetLiveConnection {
         onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: role))
     }
 
-    func partnerLeaves() {
-        onMessage?(WidgetLiveMessage(type: .left, id: "partner"))
-    }
-
     /// The partner's phone sends one of the game's messages.
     func partnerSends(_ message: ExquisiteCorpseLiveMessage) {
         guard let data = try? JSONEncoder().encode(

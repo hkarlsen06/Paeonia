@@ -14,18 +14,14 @@ actor FakePairingGateway: PairingGateway {
     private(set) var createdInviteCodes: [String] = []
     private(set) var createdOperation: PairingClientOperation?
     private(set) var createdExpiresAt: Date?
-    private(set) var validatedInviteID: UUID?
-    private(set) var validatedInviteCode: String?
     private(set) var previewedInviteCode: String?
     private(set) var rotatedCurrentInviteID: UUID?
-    private(set) var rotatedInviteCode: String?
     private(set) var rotatedInviteCodes: [String] = []
     private(set) var rotatedOperation: PairingClientOperation?
     private(set) var rotatedExpiresAt: Date?
     private(set) var acceptedInviteCode: String?
     private(set) var acceptedOperation: PairingClientOperation?
     private(set) var acceptedStartedOn: PairingStartDate?
-    private(set) var leftOperation: PairingClientOperation?
 
     init(
         createdInviteID: UUID = UUID(),
@@ -68,9 +64,7 @@ actor FakePairingGateway: PairingGateway {
     }
 
     func validateInvite(inviteID: UUID, inviteCode: String) async throws -> PairingInviteValidation {
-        validatedInviteID = inviteID
-        validatedInviteCode = inviteCode
-        return validation
+        validation
     }
 
     func previewInvite(inviteCode: String) async throws -> PairingInvitePreview? {
@@ -85,7 +79,6 @@ actor FakePairingGateway: PairingGateway {
         expiresAt: Date
     ) async throws -> UUID {
         rotatedCurrentInviteID = currentInviteID
-        rotatedInviteCode = inviteCode
         rotatedInviteCodes.append(inviteCode)
         rotatedOperation = operation
         rotatedExpiresAt = expiresAt
@@ -109,13 +102,8 @@ actor FakePairingGateway: PairingGateway {
         return acceptedCoupleID
     }
 
-    func revokeInvite(id: UUID) async throws -> Bool {
-        true
-    }
-
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
-        leftOperation = operation
-        return leaveResult
+        leaveResult
     }
 }
 // swiftlint:enable async_without_await
@@ -220,10 +208,6 @@ actor CachedInviteRecoveryPairingService: PairingServicing {
         fatalError("unused")
     }
 
-    func revokeInvite(id: UUID) throws -> Bool {
-        fatalError("unused")
-    }
-
     func leaveRelationship(operation: PairingClientOperation) throws -> Bool {
         fatalError("unused")
     }
@@ -297,11 +281,6 @@ actor PendingCreatePairingService: PairingServicing {
     ) async throws -> PairingAcceptedRelationship {
         await Task.yield()
         return PairingAcceptedRelationship(coupleID: UUID())
-    }
-
-    func revokeInvite(id: UUID) async throws -> Bool {
-        await Task.yield()
-        return true
     }
 
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {

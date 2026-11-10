@@ -9,8 +9,6 @@ import UserNotifications
 /// other phones get the number too. Pushes carry the number while the app is
 /// closed (`backend/convex/lib/badges.ts`).
 nonisolated struct AppBadgeLiveFeed: LiveFeed {
-    let name = "app-badge"
-
     func run(session: SyncSession, live: LiveQueryService) async {
         guard session.activeCoupleID != nil else {
             // Nothing can wait without a couple.

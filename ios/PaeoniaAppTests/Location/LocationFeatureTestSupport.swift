@@ -52,8 +52,6 @@ actor IdentitySwitchVisibilityStore: LocationVisibilitySnapshotPersisting {
         self.suspendedSnapshot = suspendedSnapshot
     }
 
-    func save(_ snapshot: LocationVisibilitySnapshot) throws {}
-
     func saveRemote(
         _ snapshot: LocationVisibilitySnapshot,
         preservingLocalSharingChoiceIf hasPendingSharingOperation: Bool
@@ -81,8 +79,6 @@ actor IdentitySwitchVisibilityStore: LocationVisibilitySnapshotPersisting {
         updatedAt: Date,
         otherChoicesPending: Bool
     ) throws {}
-
-    func delete(ownerUserID: UUID, coupleID: UUID) throws {}
 
     func waitUntilSuspendedLoadStarts() async {
         while loadContinuation == nil {
@@ -362,7 +358,6 @@ func syncContext(ownerUserID: UUID, coupleID: UUID) -> SyncContext {
     SyncContext(
         session: SyncSession(userID: ownerUserID, activeCoupleID: coupleID),
         reason: .manualRefresh,
-        stateStore: InMemorySyncStateRepository(),
         pendingOperationStore: InMemoryPendingSyncOperationRepository()
     )
 }

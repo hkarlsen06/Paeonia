@@ -114,45 +114,14 @@ struct DailyChallengeHistoryViewModelTests {
     }
 
     @MainActor
-    @Test func cachedConversationsRemainWhileQuestionHistoryLoadsAndFails() async {
+    @Test func historyLoadWithoutConnectionFailsAsOffline() async {
         let service = GatedHistoryService()
         let viewModel = DailyChallengeHistoryViewModel(service: service, currentUserID: HistoryTestIDs.currentUser)
-        let conversation = storyConversation(postedAt: HistoryTestIDs.answerDate, isUnread: false)
-        let before = viewModel.days(adding: [conversation], before: "2026-07-01", excluding: [])
-        #expect(before.flatMap(\.rows).map(\.id) == [conversation.id])
         let load = Task { await viewModel.load() }
         await waitForHistory { await service.loadHistoryCount == 1 }
         await service.finish(call: 0, with: .failure(URLError(.notConnectedToInternet)))
         await load.value
         #expect(viewModel.state == .failed(.offline))
-        let after = viewModel.days(adding: [conversation], before: "2026-07-01", excluding: [])
-        #expect(after.flatMap(\.rows).map(\.id) == [conversation.id])
-    }
-
-    // MARK: - Earlier days next to today's list
-
-    @MainActor
-    @Test func daysLeaveOutQuestionsTodaysListShows() async {
-        let shown = makeQuestion(localDate: Self.day2)
-        let kept = makeQuestion(localDate: Self.day2)
-        let onlyShown = makeQuestion(localDate: Self.day1)
-        let service = GatedHistoryService(immediateResult: [shown, kept, onlyShown])
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: service,
-            currentUserID: HistoryTestIDs.currentUser
-        )
-
-        await viewModel.load()
-
-        let allDays = viewModel.days(adding: [], before: "2026-06-28", excluding: [])
-        #expect(allDays.map(\.localDate) == [Self.day2, Self.day1])
-
-        // A question shown in today's list drops out of its day, and a day left with
-        // nothing under it loses its divider.
-        let days = viewModel.days(adding: [], before: "2026-06-28", excluding: [shown.id, onlyShown.id])
-        #expect(days.map(\.localDate) == [Self.day2])
-        #expect(days.first?.rows.map(\.id) == [kept.id])
-        #expect(await service.loadHistoryCount == 1)
     }
 }
 
@@ -160,9 +129,7 @@ struct DailyChallengeHistoryViewModelTests {
 
 private enum HistoryTestIDs {
     static let currentUser = UUID()
-    static let partnerUser = UUID()
     static let startsAt = Date(timeIntervalSince1970: 1_782_432_000)
-    static let answerDate = Date(timeIntervalSince1970: 1_782_450_000)
 }
 
 /// A question the current user answered on `localDate`.
@@ -216,26 +183,17 @@ private func waitForHistory(_ condition: @MainActor () async -> Bool) async {
 
 private struct UnusedHistoryServiceCall: Error {}
 
-/// A history service the test steers by hand. Without `immediateResult`, each
-/// `loadHistory` call waits until the test finishes it with `finish(call:with:)`, so a
-/// test decides which of several overlapping loads completes first. Cancelling the
-/// caller finishes the call with `CancellationError`, like a real network read.
+/// A history service the test steers by hand. Each `loadHistory` call waits until the
+/// test finishes it with `finish(call:with:)`, so a test decides which of several
+/// overlapping loads completes first. Cancelling the caller finishes the call with
+/// `CancellationError`, like a real network read.
 private actor GatedHistoryService: DailyChallengeServicing {
-    private let immediateResult: [DailyChallengeQuestion]?
-    private let immediateFailure: Error?
     private var gates: [Int: CheckedContinuation<[DailyChallengeQuestion], Error>] = [:]
     private(set) var loadHistoryCount = 0
-
-    init(immediateResult: [DailyChallengeQuestion]? = nil, failure: Error? = nil) {
-        self.immediateResult = immediateResult
-        immediateFailure = failure
-    }
 
     func loadHistory(currentUserID _: UUID) async throws -> [DailyChallengeQuestion] {
         let call = loadHistoryCount
         loadHistoryCount += 1
-        if let immediateFailure { throw immediateFailure }
-        if let immediateResult { return immediateResult }
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 gates[call] = continuation
@@ -261,22 +219,6 @@ private actor GatedHistoryService: DailyChallengeServicing {
     }
 
     func loadStreak() throws -> CoupleStreak {
-        throw UnusedHistoryServiceCall()
-    }
-
-    func editTextAnswer(
-        instanceID _: UUID,
-        text _: String,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        throw UnusedHistoryServiceCall()
-    }
-
-    func editPartnerChoice(
-        instanceID _: UUID,
-        selectedUserID _: UUID,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
         throw UnusedHistoryServiceCall()
     }
 

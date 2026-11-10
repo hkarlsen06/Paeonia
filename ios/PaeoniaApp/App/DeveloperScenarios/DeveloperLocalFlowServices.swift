@@ -208,9 +208,6 @@
     func signInWithGoogle() async throws -> AuthSession {
       await store.signIn(provider: .google)
     }
-    func signInForDevelopment() async throws -> AuthSession {
-      await store.signIn(provider: .development)
-    }
     func completeOnboarding(
       displayName: String,
       timeZoneID: String,
@@ -286,7 +283,6 @@
       await store.acceptInvite()
       return PairingAcceptedRelationship(coupleID: DeveloperScenarioFixture.coupleID)
     }
-    func revokeInvite(id _: UUID) async throws -> Bool { true }
     func leaveRelationship(operation _: PairingClientOperation) async throws -> Bool {
       await store.leaveRelationship()
       return true
@@ -296,7 +292,6 @@
   actor DeveloperLocalFlowSyncService: PaeoniaSyncing {
     func configure(session _: SyncSession?) {}
     func start() {}
-    func requestSync(reason _: SyncRequestReason) {}
     func runOnce(reason _: SyncRequestReason) async -> SyncRunResult {
       SyncRunResult(
         status: .succeeded,

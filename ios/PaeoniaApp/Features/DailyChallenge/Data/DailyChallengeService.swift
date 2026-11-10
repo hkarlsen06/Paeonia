@@ -12,8 +12,6 @@ protocol DailyChallengeServicing: Actor {
     /// chronological list. The caller groups it by day for the history overview.
     func loadHistory(currentUserID: UUID) async throws -> [DailyChallengeQuestion]
     func loadStreak() async throws -> CoupleStreak
-    func editTextAnswer(instanceID: UUID, text: String, operation: SyncClientOperation) async throws -> UUID
-    func editPartnerChoice(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) async throws -> UUID
     func shuffleQuestion(
         currentUserID: UUID,
         operation: SyncClientOperation
@@ -26,17 +24,10 @@ protocol DailyChallengeGateway: Actor {
     func loadHistoryQuestions() async throws -> [DailyQuestionRow]
     func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow]
     func loadCoupleStreak() async throws -> CoupleStreak
-    func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow]
     func submitAnswer(
         instanceID: UUID,
         answerID: UUID,
         payload: DailyAnswerPayload,
-        operation: SyncClientOperation
-    ) async throws -> UUID
-    func editTextAnswer(instanceID: UUID, text: String, operation: SyncClientOperation) async throws -> UUID
-    func editPartnerChoice(
-        instanceID: UUID,
-        selectedUserID: UUID,
         operation: SyncClientOperation
     ) async throws -> UUID
     func shuffleQuestion(operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow
@@ -147,48 +138,6 @@ actor DailyChallengeService: DailyChallengeServicing {
         try await gateway.loadCoupleStreak()
     }
 
-    func editTextAnswer(
-        instanceID: UUID,
-        text: String,
-        operation: SyncClientOperation
-    ) async throws -> UUID {
-        do {
-            return try await gateway.editTextAnswer(
-                instanceID: instanceID,
-                text: text,
-                operation: operation
-            )
-        } catch {
-            // Translate the "partner already answered" rejection into a typed error
-            // so the UI can explain it plainly instead of inviting a pointless retry.
-            if String(describing: error).contains("answers cannot be edited after your partner has answered") {
-                throw DailyChallengeEditLockedError()
-            }
-            throw error
-        }
-    }
-
-    func editPartnerChoice(
-        instanceID: UUID,
-        selectedUserID: UUID,
-        operation: SyncClientOperation
-    ) async throws -> UUID {
-        do {
-            return try await gateway.editPartnerChoice(
-                instanceID: instanceID,
-                selectedUserID: selectedUserID,
-                operation: operation
-            )
-        } catch {
-            // Same lock as text: once the partner has answered, the picks are revealed
-            // and can no longer be changed. Surface it as a friendly, non-retry notice.
-            if String(describing: error).contains("answers cannot be edited after your partner has answered") {
-                throw DailyChallengeEditLockedError()
-            }
-            throw error
-        }
-    }
-
     func shuffleQuestion(
         currentUserID: UUID,
         operation: SyncClientOperation
@@ -287,13 +236,6 @@ actor LiveDailyChallengeGateway: DailyChallengeGateway {
         return rows.first?.streak ?? .none
     }
 
-    func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow] {
-        try await client.query(
-            "daily:get_daily_answer_details",
-            args: DailyAnswerDetailsRequest(coupleDayID: coupleDayID)
-        )
-    }
-
     func submitAnswer(
         instanceID: UUID,
         answerID: UUID,
@@ -325,36 +267,6 @@ actor LiveDailyChallengeGateway: DailyChallengeGateway {
                 instanceID: instanceID,
                 answerID: answerID,
                 payload: payload,
-                operation: operation
-            )
-        )
-    }
-
-    func editTextAnswer(
-        instanceID: UUID,
-        text: String,
-        operation: SyncClientOperation
-    ) async throws -> UUID {
-        try await client.mutation(
-            "daily:update_daily_answer_text",
-            args: EditDailyTextAnswerRequest(
-                instanceID: instanceID,
-                text: text,
-                operation: operation
-            )
-        )
-    }
-
-    func editPartnerChoice(
-        instanceID: UUID,
-        selectedUserID: UUID,
-        operation: SyncClientOperation
-    ) async throws -> UUID {
-        try await client.mutation(
-            "daily:update_daily_answer_partner_choice",
-            args: EditDailyPartnerChoiceRequest(
-                instanceID: instanceID,
-                selectedUserID: selectedUserID,
                 operation: operation
             )
         )
@@ -397,22 +309,6 @@ private actor EmptyDailyChallengeService: DailyChallengeServicing {
         .none
     }
 
-    func editTextAnswer(
-        instanceID _: UUID,
-        text _: String,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
-
-    func editPartnerChoice(
-        instanceID _: UUID,
-        selectedUserID _: UUID,
-        operation _: SyncClientOperation
-    ) throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
-
     func shuffleQuestion(
         currentUserID: UUID,
         operation _: SyncClientOperation
@@ -426,7 +322,3 @@ nonisolated struct DailyChallengeServiceUnavailableError: Error, Equatable, Send
 /// Raised when the backend rejects a question swap because the user has already
 /// used all of today's swaps. The view model maps this to a friendly message.
 nonisolated struct DailyChallengeShuffleLimitError: Error, Equatable, Sendable {}
-
-/// Raised when an answer can no longer be edited because the partner has already
-/// answered the same question (so the content is revealed).
-nonisolated struct DailyChallengeEditLockedError: Error, Equatable, Sendable {}

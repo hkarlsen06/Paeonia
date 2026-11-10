@@ -40,7 +40,6 @@ extension CorpseSimPhone {
             session: SyncSession(userID: userID),
             // A settled phone has waited out every retry delay, so the run tries all writes.
             reason: .manualRefresh,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pending
         )
         try? await drain.push(context: context)

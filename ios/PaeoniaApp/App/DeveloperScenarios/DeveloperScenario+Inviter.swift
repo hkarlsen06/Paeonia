@@ -150,9 +150,5 @@
       )
       return drawing
     }
-
-    func signedDrawingURL(mediaAssetID _: UUID) -> URL? {
-      nil
-    }
   }
 #endif

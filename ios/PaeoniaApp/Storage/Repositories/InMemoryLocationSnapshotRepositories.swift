@@ -99,12 +99,6 @@ actor InMemoryLocationVisibilityRepository: LocationVisibilitySnapshotPersisting
         )
     }
 
-    func delete(ownerUserID: UUID, coupleID: UUID) throws {
-        snapshots[key(ownerUserID: ownerUserID, coupleID: coupleID)] = nil
-        pendingChoices[key(ownerUserID: ownerUserID, coupleID: coupleID)] = nil
-        LocalStoreChanges.post(.locationVisibility, ownerUserID: ownerUserID)
-    }
-
     private func key(ownerUserID: UUID, coupleID: UUID) -> String {
         LocalLocationVisibilitySnapshot.storageKey(ownerUserID: ownerUserID, coupleID: coupleID)
     }

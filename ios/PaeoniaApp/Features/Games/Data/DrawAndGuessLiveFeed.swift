@@ -6,8 +6,6 @@ import Foundation
 /// presence. Each result goes into the cache, then the game re-reads. The
 /// couple's settings for the Games tab come from `GamesOverviewLiveFeed`.
 nonisolated struct DrawAndGuessLiveFeed: LiveFeed {
-    let name = "draw_and_guess"
-
     /// Read by the Games tab, and while the partner plays this game by the Home card
     /// and the tab badge.
     var activation: LiveFeedActivation {

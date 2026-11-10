@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 
 protocol LocationVisibilitySnapshotPersisting: Actor {
-    func save(_ snapshot: LocationVisibilitySnapshot) async throws
     func load(ownerUserID: UUID, coupleID: UUID) async throws -> LocationVisibilitySnapshot?
 
     /// Stores a snapshot that came from the server. If the user made a sharing
@@ -36,8 +35,6 @@ protocol LocationVisibilitySnapshotPersisting: Actor {
         updatedAt: Date,
         otherChoicesPending: Bool
     ) async throws
-
-    func delete(ownerUserID: UUID, coupleID: UUID) async throws
 }
 
 extension LocationVisibilitySnapshotPersisting {
@@ -350,23 +347,6 @@ actor SwiftDataLocationVisibilityRepository: LocationVisibilitySnapshotPersistin
             .viewerPaused
         } else {
             .unknown("local")
-        }
-    }
-
-    func delete(ownerUserID: UUID, coupleID: UUID) throws {
-        let key = LocalLocationVisibilitySnapshot.storageKey(ownerUserID: ownerUserID, coupleID: coupleID)
-        let deleted = try ledger.withChoices { choices -> Bool in
-            choices[key] = nil
-            let context = ModelContext(container)
-            guard let existing = try fetch(ownerUserID: ownerUserID, coupleID: coupleID, in: context) else {
-                return false
-            }
-            context.delete(existing)
-            try context.save()
-            return true
-        }
-        if deleted {
-            LocalStoreChanges.post(.locationVisibility, ownerUserID: ownerUserID)
         }
     }
 

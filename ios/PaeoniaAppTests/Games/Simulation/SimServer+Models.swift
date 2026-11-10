@@ -9,7 +9,6 @@ extension SimServer {
         let guesser: UUID
         var state: DrawAndGuessRoundState
         let difficulty: DrawAndGuessDifficulty
-        let wordID: String?
         let word: String
         let points: Int
         var drawingAssetID: UUID?
@@ -28,7 +27,6 @@ extension SimServer {
     }
 
     struct Asset {
-        let id: UUID
         let owner: UUID
         /// The round the drawing was reserved for.
         let roundID: UUID

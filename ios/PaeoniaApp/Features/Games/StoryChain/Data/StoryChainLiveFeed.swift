@@ -6,8 +6,6 @@ import Foundation
 /// cache, then the game re-reads. The couple's settings and the partner's
 /// presence come from `GamesOverviewLiveFeed`.
 nonisolated struct StoryChainLiveFeed: LiveFeed {
-    let name = "story_chain"
-
     /// Read by the Games tab, and while the partner plays this game by the Home card
     /// and the tab badge.
     var activation: LiveFeedActivation {

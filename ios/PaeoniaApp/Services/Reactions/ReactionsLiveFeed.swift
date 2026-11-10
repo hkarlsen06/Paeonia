@@ -3,8 +3,6 @@ import Foundation
 /// Keeps the couple's reactions current while a screen that shows them is open. Each result of
 /// `reactions:get_reactions` goes into the cache, then `ReactionStore` re-reads.
 nonisolated struct ReactionsLiveFeed: LiveFeed {
-    let name = "reactions"
-
     /// Stories and drawings show on Home, which also opens the game the partner is in, memories
     /// on the Memories tab, and game creations on the Games tab.
     var activation: LiveFeedActivation {

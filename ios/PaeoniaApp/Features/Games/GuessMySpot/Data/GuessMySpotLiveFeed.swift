@@ -4,8 +4,6 @@ import Foundation
 /// to `guessMySpot:get_guess_my_spot` carries the game and its two newest rounds.
 /// Each result goes into the cache, then the game re-reads.
 nonisolated struct GuessMySpotLiveFeed: LiveFeed {
-    let name = "guess_my_spot"
-
     /// Read by the Games tab, and while the partner plays this game by the Home card
     /// and the tab badge.
     /// The Memories tab draws the rounds on its map.

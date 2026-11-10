@@ -22,10 +22,6 @@ nonisolated struct StoryChainRevealSchedule: Equatable, Sendable {
     var actions: TimeInterval = 1.85
 
     static let standard = Self()
-    /// Every beat at once, so tests run the whole script without waiting.
-    static let instant = Self(
-        scrollTop: 0, title: 0, titleDuration: 0, bloom: 0, byline: 0, ornament: 0, stats: 0, actions: 0
-    )
 }
 
 /// The haptics and sounds of the reveal, injected so tests can record them.

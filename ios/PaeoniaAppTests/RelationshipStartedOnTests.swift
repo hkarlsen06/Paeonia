@@ -114,7 +114,6 @@ struct RelationshipStartedOnDataServiceTests {
             context: SyncContext(
                 session: SyncSession(userID: ownerUserID),
                 reason: .localChange,
-                stateStore: InMemorySyncStateRepository(),
                 pendingOperationStore: InMemoryPendingSyncOperationRepository()
             )
         )

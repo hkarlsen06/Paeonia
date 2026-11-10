@@ -3,7 +3,6 @@ import Foundation
 nonisolated protocol PaeoniaSyncing: Actor {
     func configure(session: SyncSession?)
     func start()
-    func requestSync(reason: SyncRequestReason)
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult
     func stop()
     func resetForUserChange() async
@@ -54,41 +53,23 @@ nonisolated struct SyncSession: Equatable, Sendable {
         self.activeCoupleID = activeCoupleID
         self.relationshipCoupleID = relationshipCoupleID ?? activeCoupleID
     }
-
-    init?(authSession: AuthSession, activeCoupleID: UUID? = nil) {
-        guard let userID = UUID(uuidString: authSession.id) else {
-            return nil
-        }
-
-        self.init(
-            userID: userID,
-            activeCoupleID: activeCoupleID,
-            relationshipCoupleID: activeCoupleID
-        )
-    }
 }
 
 nonisolated struct SyncContext: Sendable {
     let session: SyncSession
     let reason: SyncRequestReason
-    let startedAt: Date
     let streamCursor: SyncCursor
-    let stateStore: any SyncStatePersisting
     let pendingOperationStore: any PendingSyncOperationPersisting
 
     init(
         session: SyncSession,
         reason: SyncRequestReason,
-        startedAt: Date = Date(),
         streamCursor: SyncCursor = SyncCursor(),
-        stateStore: any SyncStatePersisting,
         pendingOperationStore: any PendingSyncOperationPersisting
     ) {
         self.session = session
         self.reason = reason
-        self.startedAt = startedAt
         self.streamCursor = streamCursor
-        self.stateStore = stateStore
         self.pendingOperationStore = pendingOperationStore
     }
 }
@@ -254,16 +235,6 @@ nonisolated struct SyncRunResult: Equatable, Sendable {
             completedStreamCount: 0,
             failedStreamKey: nil,
             errorDescription: nil
-        )
-    }
-
-    static func timedOut() -> SyncRunResult {
-        SyncRunResult(
-            status: .timedOut,
-            attemptedStreamCount: 0,
-            completedStreamCount: 0,
-            failedStreamKey: nil,
-            errorDescription: "Sync timed out"
         )
     }
 

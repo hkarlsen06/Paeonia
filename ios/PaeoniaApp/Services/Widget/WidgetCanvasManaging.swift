@@ -31,27 +31,6 @@ nonisolated protocol WidgetCanvasManaging: Sendable {
     /// drawing with no attribution; `WidgetCanvasService` fills in the metadata.
     func loadSavedSnapshot() async -> WidgetCanvasSnapshot?
 
-    /// Persists the drawing locally, renders widget previews, updates the App
-    /// Group payload, and reloads the widget. `authorName` is the display name
-    /// of whoever saved the drawing, and `createdAt` is when it was drawn (the
-    /// author's save time for synced revisions), both shown on the widget.
-    func saveDrawing(
-        _ drawingData: Data,
-        canvasSize: CGSize,
-        authorName: String?,
-        createdAt: Date
-    ) async throws
-
-    /// Shows a partner's drawing that came from the server. `revisionID` is the
-    /// server's revision, so the widget can tell it already has this drawing.
-    func saveSyncedDrawing(
-        _ drawingData: Data,
-        canvasSize: CGSize,
-        authorName: String?,
-        createdAt: Date,
-        revisionID: UUID
-    ) async throws
-
     func saveDescribedDrawing(
         _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
         revisionID: UUID?, accessibilityText: String?, publicationID: UUID?
@@ -89,27 +68,5 @@ extension WidgetCanvasManaging {
 
     func isShowingSavedDrawing() -> Bool {
         true
-    }
-
-    func saveSyncedDrawing(
-        _ drawingData: Data,
-        canvasSize: CGSize,
-        authorName: String?,
-        createdAt: Date,
-        revisionID: UUID
-    ) async throws {
-        try await saveDescribedDrawing(
-            drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt,
-            revisionID: revisionID, accessibilityText: nil, publicationID: nil
-        )
-    }
-
-    func saveDrawing(
-        _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date
-    ) async throws {
-        try await saveDescribedDrawing(
-            drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt,
-            revisionID: nil, accessibilityText: nil, publicationID: UUID()
-        )
     }
 }

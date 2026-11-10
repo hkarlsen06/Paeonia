@@ -16,7 +16,6 @@ final class CorpseSimPhone {
 
     let name: String
     let userID: UUID
-    let partnerID: UUID
     let server: CorpseSimServer
     let relay: SimRelay
     let clock: SimClock
@@ -67,7 +66,6 @@ final class CorpseSimPhone {
     init(
         name: String,
         userID: UUID,
-        partnerID: UUID,
         server: CorpseSimServer,
         relay: SimRelay,
         clock: SimClock,
@@ -77,7 +75,6 @@ final class CorpseSimPhone {
     ) {
         self.name = name
         self.userID = userID
-        self.partnerID = partnerID
         self.server = server
         self.relay = relay
         self.clock = clock

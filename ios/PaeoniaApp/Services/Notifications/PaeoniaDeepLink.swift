@@ -45,10 +45,6 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
 
     static let scheme = "paeonia"
 
-    static var widgetDrawingURL: URL {
-        PaeoniaWidgetDeepLink.drawingURL
-    }
-
     static func dailyRevealURL(instanceID: UUID, coupleDayID: UUID) -> URL {
         var components = URLComponents()
         components.scheme = scheme
@@ -97,42 +93,6 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         return url
     }
 
-    /// Mirrors `coupleChatDeepLink` in `backend/convex/lib/deepLinks.ts`.
-    static var coupleChatURL: URL {
-        var components = URLComponents()
-        components.scheme = scheme
-        components.host = "chat"
-
-        guard let url = components.url else {
-            preconditionFailure("Invalid Paeonia couple chat URL")
-        }
-        return url
-    }
-
-    static var streakURL: URL {
-        var components = URLComponents()
-        components.scheme = scheme
-        components.host = "streak"
-
-        guard let url = components.url else {
-            preconditionFailure("Invalid Paeonia streak URL")
-        }
-
-        return url
-    }
-
-    static var memoriesURL: URL {
-        var components = URLComponents()
-        components.scheme = scheme
-        components.host = "memories"
-
-        guard let url = components.url else {
-            preconditionFailure("Invalid Paeonia memories URL")
-        }
-
-        return url
-    }
-
     /// Mirrors `memoryDeepLink` in `backend/convex/lib/deepLinks.ts`.
     static func memoryURL(memoryID: UUID, showsComments: Bool = false) -> URL {
         var components = URLComponents()
@@ -171,19 +131,6 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
 
         guard let url = components.url else {
             preconditionFailure("Invalid Paeonia game URL")
-        }
-
-        return url
-    }
-
-    static var subscriptionURL: URL {
-        var components = URLComponents()
-        components.scheme = scheme
-        components.host = "settings"
-        components.path = "/subscription"
-
-        guard let url = components.url else {
-            preconditionFailure("Invalid Paeonia subscription URL")
         }
 
         return url
@@ -275,13 +222,6 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         }
     }
 
-    init?(_ widgetDeepLink: PaeoniaWidgetDeepLink) {
-        switch widgetDeepLink {
-        case .drawing:
-            self = .widgetDrawing
-        }
-    }
-
     /// Every backend push carries a `deeplink` URL. The notification service
     /// extension keeps it when it rewrites a widget alert.
     init?(notificationUserInfo userInfo: [AnyHashable: Any]) {
@@ -291,10 +231,6 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             return nil
         }
         self.init(url)
-    }
-
-    static func handles(_ url: URL) -> Bool {
-        Self(url) != nil
     }
 }
 

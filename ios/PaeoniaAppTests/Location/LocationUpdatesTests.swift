@@ -284,8 +284,6 @@ private actor BackgroundTestLocationGateway: LocationGateway {
 }
 
 private actor UnreadableVisibilityStore: LocationVisibilitySnapshotPersisting {
-    func save(_: LocationVisibilitySnapshot) throws {}
-
     func load(ownerUserID _: UUID, coupleID _: UUID) throws -> LocationVisibilitySnapshot? {
         throw CocoaError(.fileReadUnknown)
     }
@@ -307,6 +305,4 @@ private actor UnreadableVisibilityStore: LocationVisibilitySnapshotPersisting {
         updatedAt _: Date,
         otherChoicesPending _: Bool
     ) throws {}
-
-    func delete(ownerUserID _: UUID, coupleID _: UUID) throws {}
 }

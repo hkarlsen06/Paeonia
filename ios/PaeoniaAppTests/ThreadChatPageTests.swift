@@ -60,7 +60,6 @@ struct ThreadChatPageTests {
                 ChatRoundDay(instance: earlierID, date: "1960-03-03", startsAt: "1960-03-03T00:00:00.000Z"),
                 ChatRoundDay(instance: fixture.question.id, date: "1970-01-01", startsAt: "1970-01-01T00:00:01.000Z"),
             ],
-            user: fixture.ownerUserID,
             coupleID: fixture.question.coupleID,
             questionID: fixture.question.questionID
         ))

@@ -92,7 +92,7 @@ struct FavoriteDrawingPreview: View {
             return
         }
         let side = favorite.bounds.map { CGFloat($0.canvasSide) } ?? WidgetDrawingViewModel.fallbackCanvasSide
-        let data = await loader.exportPNG(revisionID: favorite.target.id, mediaAssetID: mediaAssetID, canvasSide: side)
+        let data = await loader.exportPNG(mediaAssetID: mediaAssetID, canvasSide: side)
         guard !Task.isCancelled else { return }
         // The drawing fades in over the spinner instead of replacing it in one frame.
         withAnimation(PaeoniaMotion.stateChange) {

@@ -100,7 +100,6 @@ final class ScriptedMindMeldGateway: MindMeldGateway, @unchecked Sendable {
         var locks: [Lock] = []
         var counts: [UUID] = []
         var revealsSeen: [UUID] = []
-        var endsSeen: [UUID] = []
         var restarts: [UUID] = []
         var starts = 0
         var failing: Set<String> = []
@@ -128,17 +127,12 @@ final class ScriptedMindMeldGateway: MindMeldGateway, @unchecked Sendable {
     var locks: [Lock] { read(\.locks) }
     var counts: [UUID] { read(\.counts) }
     var revealsSeen: [UUID] { read(\.revealsSeen) }
-    var endsSeen: [UUID] { read(\.endsSeen) }
     var restarts: [UUID] { read(\.restarts) }
     var starts: Int { read(\.starts) }
     var historyRequests: [HistoryRequest] { read(\.historyRequests) }
 
     func fail(_ name: String) {
         write { $0.failing.insert(name) }
-    }
-
-    func unfail(_ name: String) {
-        write { $0.failing.remove(name) }
     }
 
     func setLockError(_ error: PaeoniaConvexError?) {
@@ -225,7 +219,6 @@ final class ScriptedMindMeldGateway: MindMeldGateway, @unchecked Sendable {
     func markMindMeldEndSeen(gameID: UUID) async throws -> RemoteMindMeldEndSeenResult {
         try begin("endSeen")
         if let error = read(\.markError) { throw error }
-        write { $0.endsSeen.append(gameID) }
         return RemoteMindMeldEndSeenResult(gameID: gameID, endSeenAt: GameFixture.now)
     }
 
@@ -258,7 +251,6 @@ final class ScriptedMindMeldGateway: MindMeldGateway, @unchecked Sendable {
 /// Everything a Mind Meld test needs, in memory.
 @MainActor
 struct MindMeldTestEnvironment {
-    let fixtures = MindMeldFixtures()
     let gateway = ScriptedMindMeldGateway()
     let cache: InMemoryMindMeldCache
     let gamesGateway = ScriptedGamesGateway()
@@ -272,36 +264,6 @@ struct MindMeldTestEnvironment {
         cache = InMemoryMindMeldCache(state: state, ownerUserID: GameFixture.me)
         gamesCache = InMemoryGamesCache(overview: overview, ownerUserID: GameFixture.me)
         gateway.setStateToLoad(state)
-    }
-
-    /// The shared Games overview with the game language and, for Mind Meld, the
-    /// partner's presence and this person's last invite.
-    static func overview(
-        language: GameLanguage = .en,
-        partnerPresent: Bool = false,
-        lastInviteAt: Date? = nil
-    ) -> RemoteGamesOverview {
-        RemoteGamesOverview(
-            userID: GameFixture.me,
-            partnerUserID: GameFixture.partner,
-            coupleID: DeveloperScenarioFixture.coupleID,
-            settings: RemoteGameSettings(
-                coupleID: DeveloperScenarioFixture.coupleID,
-                playStyle: .together,
-                language: language,
-                updatedByUserID: GameFixture.me,
-                createdAt: GameFixture.now,
-                updatedAt: GameFixture.now
-            ),
-            presence: [
-                RemoteGamePresence(
-                    kind: .mindMeld,
-                    myPresent: false,
-                    partnerPresent: partnerPresent,
-                    lastInviteAt: lastInviteAt
-                ),
-            ]
-        )
     }
 
     func dependencies(live: WidgetLiveDrawing? = nil) -> GamesDependencies {

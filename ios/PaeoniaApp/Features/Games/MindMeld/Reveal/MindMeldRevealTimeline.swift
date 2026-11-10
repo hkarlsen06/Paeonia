@@ -141,26 +141,6 @@ final class MindMeldRevealTimeline {
         applySettledState(plan)
     }
 
-    /// Clears the reveal and stops its run, so the next round can play.
-    func reset() {
-        cancelRun()
-        plan = nil
-        glow = 0
-        pulse = 0
-        myCardFlipped = false
-        partnerCardFlipped = false
-        verdictShown = false
-        merged = false
-        joined = false
-        leaning = false
-        linkDrawn = false
-        bloomStart = nil
-        titleShown = false
-        statsShown = false
-        actionsShown = false
-        isSettled = false
-    }
-
     /// A partner counted the near miss on screen. The cards slide together, the
     /// bloom bursts, and the title and buttons change to the meld's. Does
     /// nothing unless the reveal is for a near miss.

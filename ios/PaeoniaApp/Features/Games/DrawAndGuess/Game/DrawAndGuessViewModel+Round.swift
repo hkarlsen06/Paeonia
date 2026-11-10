@@ -216,7 +216,6 @@ extension DrawAndGuessViewModel {
         reveal = DrawAndGuessReveal(
             outcome: outcome,
             word: round.word,
-            difficulty: round.difficulty,
             wordPoints: round.points,
             speedBonus: isSolved ? round.speedBonus : 0,
             firstTryBonus: isSolved ? round.firstTryBonus : 0,
@@ -224,7 +223,6 @@ extension DrawAndGuessViewModel {
             personalBest: isSolved && isConfirmed && round.personalBest,
             solveDuration: isSolved ? solveDuration(for: round) : nil,
             pointsForMe: isSolved ? round.points + bonuses : 0,
-            pointsForCouple: isSolved ? round.points : 0,
             attempts: round.attempts,
             isConfirmed: isConfirmed
         )

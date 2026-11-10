@@ -8,7 +8,6 @@ struct PaeoniaWidgetDeepLinkTests {
 
         #expect(url.absoluteString == "paeonia://widget/drawing")
         #expect(PaeoniaWidgetDeepLink(url) == .drawing)
-        #expect(PaeoniaWidgetDeepLink.handles(url))
         #expect(PaeoniaDeepLink(url) == .widgetDrawing)
     }
 
@@ -17,12 +16,12 @@ struct PaeoniaWidgetDeepLinkTests {
         let authURL = try #require(URL(string: "paeonia://auth/callback"))
         let widgetRootURL = try #require(URL(string: "paeonia://widget"))
 
-        #expect(!PaeoniaWidgetDeepLink.handles(joinURL))
-        #expect(!PaeoniaWidgetDeepLink.handles(authURL))
-        #expect(!PaeoniaWidgetDeepLink.handles(widgetRootURL))
-        #expect(!PaeoniaDeepLink.handles(joinURL))
-        #expect(!PaeoniaDeepLink.handles(authURL))
-        #expect(!PaeoniaDeepLink.handles(widgetRootURL))
+        #expect(PaeoniaWidgetDeepLink(joinURL) == nil)
+        #expect(PaeoniaWidgetDeepLink(authURL) == nil)
+        #expect(PaeoniaWidgetDeepLink(widgetRootURL) == nil)
+        #expect(PaeoniaDeepLink(joinURL) == nil)
+        #expect(PaeoniaDeepLink(authURL) == nil)
+        #expect(PaeoniaDeepLink(widgetRootURL) == nil)
     }
 }
 
@@ -108,16 +107,5 @@ struct PaeoniaDeepLinkTests {
         #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "memories"]) == nil)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["deeplink": "https://example.com"]) == nil)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["deeplink": ""]) == nil)
-    }
-
-    @MainActor
-    @Test func notificationRouterRoutesPayloadsToPendingDeepLink() {
-        let router = PaeoniaNotificationRouter.shared
-        router.consumePendingDeepLink()
-
-        router.routeNotification(userInfo: ["type": "streak_reminder", "deeplink": "paeonia://streak"])
-
-        #expect(router.pendingDeepLink == .streak)
-        router.consumePendingDeepLink()
     }
 }

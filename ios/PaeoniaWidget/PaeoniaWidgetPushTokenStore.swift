@@ -56,14 +56,6 @@ nonisolated final class PaeoniaWidgetPushTokenStore: @unchecked Sendable {
         )
     }
 
-    func loadToken(forWidgetKind widgetKind: String) -> String? {
-        guard let snapshot = load(), snapshot.widgetKinds.contains(widgetKind) else {
-            return nil
-        }
-
-        return snapshot.token
-    }
-
     /// The token when the extension has any of `widgetKinds` installed. WidgetKit
     /// gives one token per extension, so a person with only Lock Screen widgets
     /// still has a token to register.
@@ -73,11 +65,5 @@ nonisolated final class PaeoniaWidgetPushTokenStore: @unchecked Sendable {
         }
 
         return snapshot.token
-    }
-
-    func clear() {
-        defaults.removeObject(forKey: Key.token)
-        defaults.removeObject(forKey: Key.widgetKinds)
-        defaults.removeObject(forKey: Key.savedAt)
     }
 }

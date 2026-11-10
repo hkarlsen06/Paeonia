@@ -3,7 +3,7 @@ import Testing
 import UIKit
 @testable import PaeoniaApp
 
-struct DailyChallengeEditingTests {
+struct DailyChallengeDraftAndShuffleTests {
     @MainActor
     @Test func draftsSurviveReopenAndClearOnSubmit() async throws {
         let baseSnapshot = makeDailySnapshot(rows: [
@@ -96,32 +96,5 @@ struct DailyChallengeEditingTests {
             #expect(await service.shuffleCount == 0)
             #expect(viewModel.notice == nil)
         }
-    }
-
-    @Test func ownTextAnswerIsEditableOnlyWhilePrivate() {
-        let privateAnswerID = UUID()
-        let snapshot = makeDailySnapshot(
-            rows: [
-                dailyQuestionRow(
-                    ownAnswerID: privateAnswerID,
-                    ownAnsweredAt: TestDailyChallengeIDs.answerDate
-                ),
-                dailyQuestionRow(
-                    ownAnswerID: UUID(),
-                    ownAnsweredAt: TestDailyChallengeIDs.answerDate,
-                    partnerAnswerID: UUID(),
-                    partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
-                    canViewPartnerAnswer: true
-                ),
-                dailyQuestionRow(),
-            ],
-            details: [dailyAnswerDetail(answerID: privateAnswerID, isOwnAnswer: true, textBody: "Private draft")]
-        )
-
-        let own = snapshot.questions
-
-        #expect(own[0].canEditOwnAnswer)   // answered, partner hasn't seen it
-        #expect(!own[1].canEditOwnAnswer)  // revealed once partner answered
-        #expect(!own[2].canEditOwnAnswer)  // not answered yet
     }
 }

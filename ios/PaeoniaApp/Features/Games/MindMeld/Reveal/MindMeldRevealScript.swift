@@ -35,10 +35,6 @@ nonisolated struct MindMeldRevealSchedule: Sendable {
     var bloomDuration: TimeInterval = 0.9
 
     static let standard = Self()
-    static let instant = Self(
-        pulses: [0, 0, 0], myFlip: 0, partnerFlip: 0, verdict: 0, contact: 0,
-        title: 0, stats: 0, actions: 0, bloomDuration: 0
-    )
 }
 
 nonisolated enum MindMeldRevealEvent: Equatable, Sendable {

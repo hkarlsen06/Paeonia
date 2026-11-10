@@ -16,16 +16,6 @@ protocol MemoryRecordPersisting: Actor {
         ownerUserID: UUID,
         memoryID: UUID
     ) async throws -> MemoryRecord?
-    func markConflict(
-        ownerUserID: UUID,
-        memoryID: UUID,
-        reason: String
-    ) async throws
-    func delete(
-        ownerUserID: UUID,
-        memoryID: UUID
-    ) async throws
-    func deleteAll(ownerUserID: UUID) async throws
 }
 
 nonisolated enum MemoryRemoteMergePolicy: Equatable, Sendable {
@@ -143,52 +133,6 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         }
 
         return try record(from: localRecord)
-    }
-
-    func markConflict(
-        ownerUserID: UUID,
-        memoryID: UUID,
-        reason: String
-    ) throws {
-        let context = ModelContext(container)
-        guard let record = try fetch(ownerUserID: ownerUserID, memoryID: memoryID, in: context) else {
-            return
-        }
-
-        record.syncStatusRawValue = SyncRecordStatus.conflict.rawValue
-        record.conflictReason = reason
-        record.pendingOperationID = nil
-        record.localUpdatedAt = Date()
-        try context.save()
-        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
-    }
-
-    func delete(
-        ownerUserID: UUID,
-        memoryID: UUID
-    ) throws {
-        let context = ModelContext(container)
-        if let record = try fetch(ownerUserID: ownerUserID, memoryID: memoryID, in: context) {
-            context.delete(record)
-            try context.save()
-            LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
-        }
-    }
-
-    func deleteAll(ownerUserID: UUID) throws {
-        let context = ModelContext(container)
-        let descriptor = FetchDescriptor<LocalMemoryRecord>(
-            predicate: #Predicate { record in
-                record.ownerUserID == ownerUserID
-            }
-        )
-
-        for record in try context.fetch(descriptor) {
-            context.delete(record)
-        }
-
-        try context.save()
-        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     private func localRecord(from record: MemoryRecord) throws -> LocalMemoryRecord {
@@ -350,37 +294,6 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
         memoryID: UUID
     ) throws -> MemoryRecord? {
         records[key(ownerUserID: ownerUserID, memoryID: memoryID)]
-    }
-
-    func markConflict(
-        ownerUserID: UUID,
-        memoryID: UUID,
-        reason: String
-    ) throws {
-        let recordKey = key(ownerUserID: ownerUserID, memoryID: memoryID)
-        guard var record = records[recordKey] else {
-            return
-        }
-
-        record.syncStatus = .conflict
-        record.pendingOperationID = nil
-        record.conflictReason = reason
-        record.localUpdatedAt = Date()
-        records[recordKey] = record
-        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
-    }
-
-    func delete(
-        ownerUserID: UUID,
-        memoryID: UUID
-    ) throws {
-        records[key(ownerUserID: ownerUserID, memoryID: memoryID)] = nil
-        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
-    }
-
-    func deleteAll(ownerUserID: UUID) throws {
-        records = records.filter { $0.value.snapshot.ownerUserID != ownerUserID }
-        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     private func key(ownerUserID: UUID, memoryID: UUID) -> String {

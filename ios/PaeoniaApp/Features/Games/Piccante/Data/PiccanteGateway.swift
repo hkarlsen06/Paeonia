@@ -24,7 +24,6 @@ nonisolated protocol PiccanteGateway: Sendable {
     func loadPiccante() async throws -> RemotePiccanteState
     func ensurePiccante() async throws -> RemotePiccanteState
     func sendPiccante(_ move: PiccanteMove, operation: SyncClientOperation) async throws -> RemotePiccanteState
-    func loadPiccanteResult(number: Int) async throws -> RemotePiccanteGame
 }
 
 nonisolated extension LiveGamesGateway: PiccanteGateway {
@@ -39,9 +38,6 @@ nonisolated extension LiveGamesGateway: PiccanteGateway {
         try await client.mutation(
             "piccante:\(move.action.rawValue)", args: PiccanteRequest(move: move, operation: operation))
     }
-    func loadPiccanteResult(number: Int) async throws -> RemotePiccanteGame {
-        try await client.query("piccante:get_piccante_result", args: ["p_game_number": Double(number)])
-    }
 }
 
 // swiftlint:disable async_without_await
@@ -52,7 +48,6 @@ nonisolated extension UnavailableGamesGateway: PiccanteGateway {
     func sendPiccante(_: PiccanteMove, operation _: SyncClientOperation) async throws -> RemotePiccanteState {
         throw Unavailable()
     }
-    func loadPiccanteResult(number _: Int) async throws -> RemotePiccanteGame { throw Unavailable() }
 }
 // swiftlint:enable async_without_await
 

@@ -30,7 +30,6 @@ nonisolated struct AccessSyncSnapshot: Equatable, Sendable {
 protocol AccessSyncSnapshotPersisting: Actor {
     func save(_ snapshot: AccessSyncSnapshot) async throws
     func load(ownerUserID: UUID) async throws -> AccessSyncSnapshot?
-    func delete(ownerUserID: UUID) async throws
 }
 
 extension AccessSyncSnapshotPersisting {
@@ -114,16 +113,6 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
         )
     }
 
-    func delete(ownerUserID: UUID) throws {
-        let context = ModelContext(container)
-
-        if let snapshot = try fetchSnapshot(ownerUserID: ownerUserID, in: context) {
-            context.delete(snapshot)
-            try context.save()
-            LocalStoreChanges.post(.access, ownerUserID: ownerUserID)
-        }
-    }
-
     private func fetchSnapshot(
         ownerUserID: UUID,
         in context: ModelContext
@@ -167,10 +156,5 @@ actor InMemoryAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
 
     func load(ownerUserID: UUID) throws -> AccessSyncSnapshot? {
         snapshots[ownerUserID]
-    }
-
-    func delete(ownerUserID: UUID) throws {
-        snapshots[ownerUserID] = nil
-        LocalStoreChanges.post(.access, ownerUserID: ownerUserID)
     }
 }

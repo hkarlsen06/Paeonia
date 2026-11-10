@@ -5,7 +5,6 @@ import Testing
 @MainActor
 struct ProfileEditorDraftTests {
     private let customAssetID = UUID()
-    private let providerAssetID = UUID()
 
     @Test func doubleNameCanBeSaved() {
         let draft = ProfileEditorDraft(savedName: "Anne", typedName: "Anne  Marie")

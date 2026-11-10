@@ -24,10 +24,6 @@ nonisolated struct ConsensioRevealSchedule: Sendable {
     var bloomDuration: TimeInterval = 0.9
 
     static let standard = Self()
-    static let instant = Self(
-        pulses: [0, 0, 0], drop: 0, thread: 0, verdict: 0, title: 0, points: 0, pointGap: 0, actions: 0,
-        bloomDuration: 0
-    )
 }
 
 nonisolated enum ConsensioRevealEvent: Equatable, Sendable {

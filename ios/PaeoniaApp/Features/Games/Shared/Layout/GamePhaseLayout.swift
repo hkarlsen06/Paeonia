@@ -219,18 +219,3 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
         }
     }
 }
-
-extension GamePhaseLayout where Footer == EmptyView {
-    init(
-        @ViewBuilder header: () -> Header,
-        @ViewBuilder square: @escaping (CGFloat) -> Square,
-        @ViewBuilder bottom: () -> Bottom
-    ) {
-        self.init(
-            header: header,
-            square: square,
-            footer: { EmptyView() },
-            bottom: bottom
-        )
-    }
-}

@@ -13,7 +13,6 @@ nonisolated protocol LookBackCaching: Sendable {
     /// The saved entry for the user, or nil when there is none, it is for another couple, or the
     /// file cannot be read. Never throws.
     func load(ownerUserID: UUID, coupleID: UUID?) -> LookBackCacheEntry?
-    func save(_ entry: LookBackCacheEntry, ownerUserID: UUID)
     /// How many times the cache has been cleared. A read takes the count before it starts.
     func purgeCount() -> Int
     /// Saves unless the cache was cleared after `purgeCount` was read, so a read that was in flight

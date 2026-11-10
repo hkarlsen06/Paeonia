@@ -6,7 +6,7 @@ import OSLog
 import StoreKit
 
 @Observable
-final class PaywallViewModel: PresentationReadinessProviding {
+final class PaywallViewModel {
     #if DEBUG
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
@@ -84,7 +84,6 @@ final class PaywallViewModel: PresentationReadinessProviding {
 
     var isPurchasing: Bool { runningAction == .purchasing }
     var isRestoring: Bool { runningAction == .restoring }
-    var isLeavingRelationship: Bool { runningAction == .leavingRelationship }
 
     /// A purchase or restore is talking to the App Store.
     var isBusyWithStore: Bool {

@@ -88,10 +88,6 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
         pick == nil && drawings.isEmpty && guesses.isEmpty && giveUps.isEmpty && resultsSeen.isEmpty
     }
 
-    func hasDrawing(roundID: UUID) -> Bool {
-        drawings.contains { $0.roundID == roundID }
-    }
-
     func guesses(roundID: UUID) -> [GameGuessPayload] {
         guesses.filter { $0.roundID == roundID }
     }

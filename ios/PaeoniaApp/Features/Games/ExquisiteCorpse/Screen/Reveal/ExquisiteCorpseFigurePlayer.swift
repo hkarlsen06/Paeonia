@@ -154,14 +154,6 @@ final class ExquisiteCorpseFigurePlayer {
         return .init(timeline: track.timeline, time: clock.replayTime(at: wall))
     }
 
-    /// The part as it looks at `wall` (a steady clock such as `CACurrentMediaTime()`),
-    /// scaled to a canvas of `side` points. Nil while the part waits for its turn
-    /// or is not loaded.
-    func drawing(for part: Part, atWall wall: TimeInterval, side: CGFloat) -> PKDrawing? {
-        guard let track = tracks[part], let clock = track.clock else { return nil }
-        return GameCanvas.fitted(track.timeline.drawing(at: clock.replayTime(at: wall)), toSide: side)
-    }
-
     /// True once every stroke of the part is drawn. The first time it is true
     /// after a start, the player reports the part as finished.
     func isFinished(_ part: Part, atWall wall: TimeInterval) -> Bool {

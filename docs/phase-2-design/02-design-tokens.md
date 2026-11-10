@@ -38,14 +38,12 @@ Use semantic roles first. Do not scatter raw brand hex values through feature vi
 - `paeoniaWarning`: destructive-adjacent or expiring streak warning
 - `paeoniaError`: destructive/error
 - `paeoniaSyncPending`: pending local changes
-- `paeoniaSyncError`: sync problem requiring attention
 
 ### Relationship Content
 
 - `paeoniaPartnerOne`: current user/one partner identity accent
 - `paeoniaPartnerTwo`: partner identity accent
 - `paeoniaMemory`: memory timeline accent
-- `paeoniaPrompt`: daily prompt accent
 - `paeoniaWidgetDrawing`: widget drawing stroke default
 
 ## Spacing Tokens

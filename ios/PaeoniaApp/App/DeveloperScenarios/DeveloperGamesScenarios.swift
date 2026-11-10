@@ -354,10 +354,6 @@
       throw URLError(.notConnectedToInternet)
     }
 
-    func loadDrawAndGuessRound(roundID _: UUID) throws -> RemoteDrawAndGuessRound? {
-      throw URLError(.notConnectedToInternet)
-    }
-
     func pickWord(_ pick: GamePickWordPayload, operation _: SyncClientOperation) throws -> RemotePickedWord {
       RemotePickedWord(
         roundID: pick.roundID,

@@ -36,7 +36,6 @@ struct DailyChallengeLoadingTests {
         let result = try await service.loadToday(currentUserID: TestDailyChallengeIDs.currentUser)
 
         #expect(await gateway.todaySnapshotLoadCount == 1)
-        #expect(await gateway.loadedAnswerDetailCoupleDayIDs.isEmpty)
         #expect(result.snapshot.questions.map { $0.ownAnswerDetail?.textBody } == [
             "Today",
             "Yesterday",

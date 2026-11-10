@@ -22,7 +22,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         var calls: [String] = []
         var stateGate: GamesStateReadGate?
         var presence: [Bool] = []
-        var presenceKinds: [GameKind] = []
         var pickedWords: [GamePickWordPayload] = []
         var submittedDrawings: [(roundID: UUID, assetID: UUID)] = []
         var guesses: [String] = []
@@ -36,11 +35,9 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         var submitError: PaeoniaConvexError?
         var guessError: PaeoniaConvexError?
         var guessErrorOnlyWithClaim = false
-        var giveUpError: PaeoniaConvexError?
         var inviteError: (any Error)?
         var stateToLoad: RemoteDrawAndGuessState?
         var settingsSeen = false
-        var roundsToLoad: [UUID: RemoteDrawAndGuessRound] = [:]
         var historyRounds: [RemoteDrawAndGuessHistoryRound] = []
         var historyRequests: [HistoryRequest] = []
         var recordsToLoad: RemoteDrawAndGuessRecords?
@@ -60,8 +57,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
 
     var calls: [String] { read(\.calls) }
     var presence: [Bool] { read(\.presence) }
-    /// The game each `presence` call named.
-    var presenceKinds: [GameKind] { read(\.presenceKinds) }
     var pickedWords: [GamePickWordPayload] { read(\.pickedWords) }
     var submittedDrawings: [(roundID: UUID, assetID: UUID)] { read(\.submittedDrawings) }
     var guesses: [String] { read(\.guesses) }
@@ -101,21 +96,12 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         }
     }
 
-    func setGiveUpError(_ error: PaeoniaConvexError?) {
-        write { $0.giveUpError = error }
-    }
-
     func setInviteError(_ error: (any Error)?) {
         write { $0.inviteError = error }
     }
 
     func setStateToLoad(_ state: RemoteDrawAndGuessState?) {
         write { $0.stateToLoad = state }
-    }
-
-    /// What `loadDrawAndGuessRound` finds. A round not set here does not exist.
-    func setRoundToLoad(_ round: RemoteDrawAndGuessRound) {
-        write { $0.roundsToLoad[round.id] = round }
     }
 
     /// Like the server, this person counts as having seen the settings from now on.
@@ -158,11 +144,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         try begin("load")
         guard let state = read(\.stateToLoad) else { throw Failure() }
         return state
-    }
-
-    func loadDrawAndGuessRound(roundID: UUID) throws -> RemoteDrawAndGuessRound? {
-        try begin("loadRound")
-        return read { $0.roundsToLoad[roundID] }
     }
 
     func pickWord(_ pick: GamePickWordPayload, operation _: SyncClientOperation) throws -> RemotePickedWord {
@@ -228,7 +209,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
 
     func giveUp(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteGiveUpResult {
         try begin("giveUp")
-        if let error = read(\.giveUpError) { throw error }
         return RemoteGiveUpResult(roundID: roundID, roundState: .missed)
     }
 
@@ -306,7 +286,6 @@ extension ScriptedGamesGateway {
         write {
             $0.calls.append("presence")
             $0.presence.append(isPresent)
-            $0.presenceKinds.append(kind)
         }
     }
 
@@ -454,7 +433,6 @@ func syncContext(_ store: any PendingSyncOperationPersisting) -> SyncContext {
     SyncContext(
         session: SyncSession(userID: GameFixture.me),
         reason: .localChange,
-        stateStore: InMemorySyncStateRepository(),
         pendingOperationStore: store
     )
 }

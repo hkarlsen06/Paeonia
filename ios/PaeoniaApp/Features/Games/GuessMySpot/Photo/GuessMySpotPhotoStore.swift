@@ -5,7 +5,6 @@ import Foundation
 /// stays small, and the photo is here while the phone is offline. The send
 /// handler removes the file once the server has the round.
 nonisolated protocol GuessMySpotPhotoStoring: Sendable {
-    func save(_ jpeg: Data, ownerUserID: UUID, roundID: UUID) throws
     func photo(ownerUserID: UUID, roundID: UUID) -> Data?
     func remove(ownerUserID: UUID, roundID: UUID)
     func draftTicket(ownerUserID: UUID) -> GuessMySpotDraftTicket
@@ -34,17 +33,6 @@ nonisolated final class FileGuessMySpotPhotoStore: GuessMySpotPhotoStoring, @unc
         FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("GuessMySpotPhotos", isDirectory: true)
-    }
-
-    func save(_ jpeg: Data, ownerUserID: UUID, roundID: UUID) throws {
-        try lock.withLock {
-            let url = fileURL(ownerUserID: ownerUserID, roundID: roundID)
-            try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-            try jpeg.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-        }
     }
 
     func photo(ownerUserID: UUID, roundID: UUID) -> Data? {

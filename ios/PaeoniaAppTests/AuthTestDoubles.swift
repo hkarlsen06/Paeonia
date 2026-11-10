@@ -8,7 +8,6 @@ actor AuthServiceSpy: AuthServicing {
         case restoreSession
         case signInWithApple
         case signInWithGoogle
-        case signInForDevelopment
         case completeOnboarding
         case updateProfile
         case signOut
@@ -63,14 +62,6 @@ actor AuthServiceSpy: AuthServicing {
             profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
-        self.session = session
-        return session
-    }
-
-    func signInForDevelopment() async throws -> AuthSession {
-        try failIfNeeded(.signInForDevelopment)
-
-        let session = AuthSession.test(profileStatus: .needsOnboarding)
         self.session = session
         return session
     }
@@ -192,12 +183,6 @@ actor BlockingDeleteAuthService: AuthServicing {
             profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
-        self.session = session
-        return session
-    }
-
-    func signInForDevelopment() async throws -> AuthSession {
-        let session = AuthSession.test(profileStatus: .needsOnboarding)
         self.session = session
         return session
     }

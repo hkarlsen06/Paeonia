@@ -148,7 +148,7 @@
 
     func partnerGift(partnerUserID _: UUID) async -> PostPairingGiftLoad {
       try? await Task.sleep(for: .seconds(1.5))
-      return gift.map { .ready(PostPairingGift(revisionID: UUID(), drawing: $0)) } ?? .none
+      return gift.map { .ready(PostPairingGift(drawing: $0)) } ?? .none
     }
 
     // swiftlint:disable:next async_without_await

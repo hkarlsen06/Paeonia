@@ -8,16 +8,10 @@ import simd
 nonisolated struct LudoGridPoint: Equatable, Sendable {
     var row: Double
     var column: Double
-
-    /// Distance in cells.
-    func distance(to other: LudoGridPoint) -> Double {
-        ((row - other.row) * (row - other.row) + (column - other.column) * (column - other.column)).squareRoot()
-    }
 }
 
 /// Where one pawn stands and how big it is.
 nonisolated struct LudoPlacement: Equatable, Sendable {
-    let square: LudoSquare
     let point: LudoGridPoint
     let scale: Double
 }
@@ -161,7 +155,7 @@ nonisolated enum LudoBoardGeometry {
                     scale = Double(LudoSceneStyle.sharedPawnScale)
                 }
             }
-            return LudoPlacement(square: square, point: point, scale: scale)
+            return LudoPlacement(point: point, scale: scale)
         }
     }
 

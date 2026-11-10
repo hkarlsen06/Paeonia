@@ -25,13 +25,6 @@ struct ExquisiteCorpseViewModelLiveTests {
         }
     }
 
-    private func pens(in messages: [ExquisiteCorpseLiveMessage]) -> [[Double?]] {
-        messages.compactMap { message in
-            guard case let .pen(_, x, y) = message else { return nil }
-            return [x, y]
-        }
-    }
-
     private func isDone(_ message: ExquisiteCorpseLiveMessage) -> Bool {
         if case .done = message { return true }
         return false

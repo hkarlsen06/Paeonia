@@ -5,7 +5,6 @@ import UIKit
 /// The partner's widget drawing, ready to unwrap. The drawing is at the canonical
 /// game canvas size, which is what the replay plays at.
 nonisolated struct PostPairingGift: Sendable {
-    let revisionID: UUID
     let drawing: PKDrawing
     var accessibilityText: String?
 }
@@ -43,7 +42,7 @@ nonisolated struct LivePostPairingDataLoader: PostPairingDataLoading {
         // a failure here skips the step quietly.
         guard let state = try? await gateway.getCanvasState(),
               state.activeRevisionAuthorUserID == partnerUserID,
-              let revisionID = state.activeRevisionID,
+              state.activeRevisionID != nil,
               let mediaAssetID = state.payloadMediaAssetID
         else {
             return .none
@@ -58,7 +57,6 @@ nonisolated struct LivePostPairingDataLoader: PostPairingDataLoading {
             // Widget drawings keep the size of the canvas they were drawn on.
             let side = state.bounds?.canvasSide ?? Double(WidgetDrawingViewModel.fallbackCanvasSide)
             return .ready(PostPairingGift(
-                revisionID: revisionID,
                 drawing: drawing.scaled(fromSide: CGFloat(side), toSide: GameCanvas.canonicalSide),
                 accessibilityText: state.bounds?.accessibilityText
             ))

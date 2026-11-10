@@ -19,7 +19,6 @@ protocol PiccanteCaching: Actor {
     func recordRefusal(operationID: UUID, ownerUserID: UUID) -> Int
     func refuse(_ move: PiccanteMove, ownerUserID: UUID)
     func takeRefused(ownerUserID: UUID) -> [PiccanteMove]
-    func clearAll()
 }
 actor PiccanteCache: PiccanteCaching {
     static let shared = PiccanteCache()
@@ -61,7 +60,6 @@ actor PiccanteCache: PiccanteCaching {
 }
 
 nonisolated struct PiccanteLiveFeed: LiveFeed {
-    let name = "piccante"
     var activation: LiveFeedActivation { .gameState(.piccante) }
     let cache: any PiccanteCaching
     func run(session: SyncSession, live: LiveQueryService) async {
@@ -107,5 +105,4 @@ actor InMemoryPiccanteCache: PiccanteCaching {
         documents[ownerUserID]?.refusedMoves = []
         return moves
     }
-    func clearAll() { documents = [:] }
 }

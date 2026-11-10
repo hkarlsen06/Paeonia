@@ -79,17 +79,10 @@ actor GatedShuffleGateway: DailyChallengeGateway {
     func loadHistoryQuestions() throws -> [DailyQuestionRow] { [] }
     func loadHistoryAnswerDetails() throws -> [DailyAnswerDetailRow] { [] }
     func loadCoupleStreak() throws -> CoupleStreak { .none }
-    func loadAnswerDetails(coupleDayID _: UUID) throws -> [DailyAnswerDetailRow] { [] }
     func submitAnswer(
         instanceID _: UUID,
         answerID _: UUID,
         payload _: DailyAnswerPayload,
-        operation _: SyncClientOperation
-    ) throws -> UUID { UUID() }
-    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) throws -> UUID { UUID() }
-    func editPartnerChoice(
-        instanceID _: UUID,
-        selectedUserID _: UUID,
         operation _: SyncClientOperation
     ) throws -> UUID { UUID() }
 }

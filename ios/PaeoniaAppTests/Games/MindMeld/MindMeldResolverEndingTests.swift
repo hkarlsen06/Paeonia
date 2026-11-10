@@ -122,7 +122,7 @@ struct MindMeldResolverEndingTests: MindMeldResolverFixtures {
         #expect(resolution.phase == .reveal)
         #expect(resolution.game?.id == previous.id)
         #expect(resolution.round?.id == meld.id)
-        #expect(!resolution.partnerRestartedNote)
+        #expect(resolution.partnerRestartedGameID == nil)
     }
 
     @Test func onceThatEndingIsSeenThePlayContinuesInTheNewGame() {
@@ -150,7 +150,6 @@ struct MindMeldResolverEndingTests: MindMeldResolverFixtures {
 
         #expect(resolution.phase == .write)
         #expect(resolution.game?.id == current.id)
-        #expect(resolution.partnerRestartedNote)
         #expect(resolution.partnerRestartedGameID == previous.id)
 
         var pending = MindMeldPendingWork.none
@@ -158,7 +157,7 @@ struct MindMeldResolverEndingTests: MindMeldResolverFixtures {
         let afterMark = resolve(state(current: current, previous: previous), pending: pending)
 
         #expect(afterMark.phase == .write)
-        #expect(!afterMark.partnerRestartedNote)
+        #expect(afterMark.partnerRestartedGameID == nil)
     }
 
     @Test func myOwnRestartGoesStraightToTheNewGameWithoutANote() {
@@ -171,7 +170,7 @@ struct MindMeldResolverEndingTests: MindMeldResolverFixtures {
             let resolution = resolve(state(current: current, previous: previous))
             #expect(resolution.phase == .write)
             #expect(resolution.game?.id == current.id)
-            #expect(!resolution.partnerRestartedNote)
+            #expect(resolution.partnerRestartedGameID == nil)
         }
     }
 

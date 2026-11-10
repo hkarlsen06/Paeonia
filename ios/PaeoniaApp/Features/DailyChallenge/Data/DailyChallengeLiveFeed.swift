@@ -21,8 +21,6 @@ import Foundation
 /// subscription every half hour. The feed never starts a day. Starting stays a user
 /// action (`start_daily_challenge_snapshot`).
 nonisolated struct DailyChallengeLiveFeed: LiveFeed {
-    let name = "daily_challenge"
-
     private struct DayWindow: Sendable {
         let dayID: UUID
         let endsAt: Date

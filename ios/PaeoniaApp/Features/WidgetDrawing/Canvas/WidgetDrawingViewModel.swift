@@ -95,9 +95,6 @@ final class WidgetDrawingViewModel {
     /// Keeps Send disabled until the canvas really differs from it.
     var lastSavedDrawingSignature: Int?
 
-    var isSaving: Bool { delivery == .sending }
-    var recentlySaved: Bool { delivery == .sent }
-
     @ObservationIgnored let service: any WidgetCanvasManaging
     @ObservationIgnored let uploader: any WidgetCanvasUploading
     /// Drafts are kept per person and relationship. Without both IDs the screen

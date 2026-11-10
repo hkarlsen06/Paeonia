@@ -13,14 +13,11 @@ final class ScriptedBoardGamesGateway: BoardGamesGateway, @unchecked Sendable {
         var calls: [String] = []
         var moves: [BoardGameMovePayload] = []
         var rematches: [BoardGameRematchPayload] = []
-        var marks: [Data?] = []
         var failing: Set<String> = []
         var moveError: PaeoniaConvexError?
         var rematchError: PaeoniaConvexError?
         var stateToLoad: RemoteBoardGames?
         var marksToLoad: RemoteBoardGameMarks?
-        var historyPages: [Int?: RemoteBoardGameHistoryPage] = [:]
-        var historyRequests: [Int?] = []
     }
 
     private let lock = NSLock()
@@ -37,17 +34,10 @@ final class ScriptedBoardGamesGateway: BoardGamesGateway, @unchecked Sendable {
     var calls: [String] { read(\.calls) }
     var moves: [BoardGameMovePayload] { read(\.moves) }
     var rematches: [BoardGameRematchPayload] { read(\.rematches) }
-    var marks: [Data?] { read(\.marks) }
-    /// The cursor of each history read, in order. Nil for the first page.
-    var historyRequests: [Int?] { read(\.historyRequests) }
 
     /// Makes the call of this name throw `Failure` before it does anything.
     func fail(_ name: String) {
         write { $0.failing.insert(name) }
-    }
-
-    func unfail(_ name: String) {
-        write { $0.failing.remove(name) }
     }
 
     func setMoveError(_ error: PaeoniaConvexError?) {
@@ -66,11 +56,6 @@ final class ScriptedBoardGamesGateway: BoardGamesGateway, @unchecked Sendable {
 
     func setMarksToLoad(_ marks: RemoteBoardGameMarks?) {
         write { $0.marksToLoad = marks }
-    }
-
-    /// The history page a read with this cursor returns. Nil is the first page.
-    func setHistoryPage(_ page: RemoteBoardGameHistoryPage, before cursor: Int?) {
-        write { $0.historyPages[cursor] = page }
     }
 
     private func begin(_ name: String) throws {
@@ -100,11 +85,9 @@ final class ScriptedBoardGamesGateway: BoardGamesGateway, @unchecked Sendable {
         return marks
     }
 
-    func loadHistory(_: GameKind, beforeGameNumber: Int?, limit _: Int) async throws -> RemoteBoardGameHistoryPage {
+    func loadHistory(_: GameKind, beforeGameNumber _: Int?, limit _: Int) async throws -> RemoteBoardGameHistoryPage {
         try begin("loadHistory")
-        write { $0.historyRequests.append(beforeGameNumber) }
-        guard let page = read({ $0.historyPages[beforeGameNumber] }) else { throw Failure() }
-        return page
+        throw Failure()
     }
 
     func ensureGame(_ kind: GameKind) async throws -> RemoteBoardGame {
@@ -135,7 +118,6 @@ final class ScriptedBoardGamesGateway: BoardGamesGateway, @unchecked Sendable {
 
     func setMark(_ data: Data?) async throws -> Date? {
         try begin("setMark")
-        write { $0.marks.append(data) }
         return data == nil ? nil : BoardGameDataFixture.now
     }
 }

@@ -36,9 +36,9 @@ struct WidgetDrawingViewModelTests {
 
         #expect(spy.saveCount == 1)
         #expect(spy.lastSavedData == viewModel.drawing.dataRepresentation())
-        #expect(viewModel.recentlySaved)
+        #expect(viewModel.delivery == .sent)
         #expect(viewModel.saveFailure == nil)
-        #expect(!viewModel.isSaving)
+        #expect(!viewModel.isPublishing)
     }
 
     @Test func editsMadeWhileSaveIsSuspendedRemainAnUnsavedDraft() async throws {

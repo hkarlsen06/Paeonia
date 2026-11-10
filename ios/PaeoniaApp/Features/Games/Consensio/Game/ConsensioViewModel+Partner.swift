@@ -241,9 +241,4 @@ extension ConsensioViewModel {
             partnerStyle = styles.partner
         }
     }
-
-    /// The style of whoever placed or guessed: this person's or the partner's.
-    func style(of userID: UUID?) -> BoardPieceStyle {
-        userID == currentUserID ? myStyle : partnerStyle
-    }
 }

@@ -256,7 +256,6 @@ private extension PaywallView {
             isBusy: viewModel.runningAction != nil || isOpening,
             isRestoring: viewModel.isRestoring,
             showsUnpair: audience.isPaired,
-            isLeavingRelationship: viewModel.isLeavingRelationship,
             onRestorePurchases: restorePurchases,
             onManageSubscription: audience.offersManageSubscription ? { isManagingSubscription = true } : nil,
             onSignOut: onSignOut,

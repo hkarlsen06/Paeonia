@@ -35,7 +35,6 @@ struct DailyChallengeMappingTests {
 
         #expect(question.hasPartnerAnswer)
         #expect(question.isAwaitingCurrentUserAnswer)
-        #expect(question.canSubmitTextAnswer)
         #expect(!question.canViewPartnerAnswer)
         #expect(question.partnerAnswerDetail == nil)
     }

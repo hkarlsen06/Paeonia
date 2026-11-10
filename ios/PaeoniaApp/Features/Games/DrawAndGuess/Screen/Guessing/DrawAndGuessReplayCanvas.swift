@@ -9,7 +9,6 @@ struct DrawAndGuessReplayCanvas: View {
     let side: CGFloat
     @AppStorage("games.drawAndGuess.holdHintShown") private var holdHintShown = false
     @State private var showsHoldHint = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {

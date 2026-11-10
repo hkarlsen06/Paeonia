@@ -16,13 +16,6 @@ nonisolated struct DrawAndGuessWordChoice: Identifiable, Equatable, Sendable {
         word = choice.word
         points = choice.points
     }
-
-    init(difficulty: DrawAndGuessDifficulty, wordID: String, word: String, points: Int) {
-        self.difficulty = difficulty
-        self.wordID = wordID
-        self.word = word
-        self.points = points
-    }
 }
 
 /// How the typed "Draw your own" word reads.
@@ -144,7 +137,6 @@ nonisolated struct DrawAndGuessReveal: Equatable, Sendable {
     let outcome: Outcome
     /// Lowercase.
     let word: String
-    let difficulty: DrawAndGuessDifficulty
     /// What the word is worth.
     let wordPoints: Int
     /// The speed bonus, 0 to 2. On a result still on this phone it is the tier
@@ -162,8 +154,6 @@ nonisolated struct DrawAndGuessReveal: Equatable, Sendable {
     /// What this person earned. The drawer gets the word's points. The guesser also
     /// gets the speed bonus and the first-try bonus.
     let pointsForMe: Int
-    /// What the couple's shared score grew by.
-    let pointsForCouple: Int
     let attempts: [DrawAndGuessAttemptView]
     /// The server has confirmed the result, so the points and the time are final.
     let isConfirmed: Bool

@@ -3,8 +3,6 @@ import Foundation
 /// Keeps the couple's stories and notes current while the app is open. Each result of
 /// `stories:get_stories` goes into the cache, then Home and the archive re-read.
 nonisolated struct StoriesLiveFeed: LiveFeed {
-    let name = "stories"
-
     /// The Us tab badge counts unseen stories on every tab.
     var activation: LiveFeedActivation {
         .always

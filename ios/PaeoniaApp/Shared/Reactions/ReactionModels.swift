@@ -46,11 +46,6 @@ nonisolated struct ReactionRow: Codable, Equatable, Hashable, Sendable {
     let target: ReactionTarget
     let reaction: EmojiReaction
 
-    init(target: ReactionTarget, reaction: EmojiReaction) {
-        self.target = target
-        self.reaction = reaction
-    }
-
     private enum CodingKeys: String, CodingKey {
         case kind = "target_kind"
         case id = "target_id"

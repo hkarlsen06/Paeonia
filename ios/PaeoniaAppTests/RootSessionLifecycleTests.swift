@@ -426,8 +426,6 @@ private actor GatedSyncService: PaeoniaSyncing {
         startCallCount += 1
     }
 
-    func requestSync(reason _: SyncRequestReason) {}
-
     func runOnce(reason _: SyncRequestReason) async -> SyncRunResult {
         if holdsRun {
             holdsRun = false

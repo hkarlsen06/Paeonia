@@ -10,7 +10,6 @@ import SwiftUI
 /// haptics, the clock and the sleep are injected, so tests run it fast.
 @Observable
 final class DrawAndGuessRevealTimeline {
-    typealias Kind = DrawAndGuessRevealKind
     typealias Plan = DrawAndGuessRevealPlan
     typealias Schedule = DrawAndGuessRevealSchedule
     typealias Haptics = DrawAndGuessRevealHaptics
@@ -44,7 +43,6 @@ final class DrawAndGuessRevealTimeline {
 
     static let restingGlow = 0.16
     static let peakGlow = 0.30
-    nonisolated static let maxLetterTicks = DrawAndGuessRevealScript.maxLetterTicks
 
     @ObservationIgnored private let schedule: Schedule
     @ObservationIgnored private let haptics: Haptics

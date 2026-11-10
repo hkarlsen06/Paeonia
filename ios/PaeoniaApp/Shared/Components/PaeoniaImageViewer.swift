@@ -69,7 +69,6 @@ struct PaeoniaImageViewerSelection: Identifiable {
 
 struct PaeoniaImageViewerOverlay: View {
     let items: [PaeoniaImageViewerItem]
-    let initialItemID: String
     let onDismiss: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -102,7 +101,6 @@ struct PaeoniaImageViewerOverlay: View {
         onDismiss: @escaping () -> Void
     ) {
         self.items = items
-        self.initialItemID = initialItemID
         self.onDismiss = onDismiss
         _selectedItemID = State(initialValue: initialItemID)
     }

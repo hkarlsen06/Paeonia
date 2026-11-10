@@ -30,20 +30,6 @@ final class PaeoniaNotificationRouter {
         pendingDeepLink = deepLink
     }
 
-    func route(_ widgetDeepLink: PaeoniaWidgetDeepLink) {
-        if let deepLink = PaeoniaDeepLink(widgetDeepLink) {
-            route(deepLink)
-        }
-    }
-
-    func routeNotification(userInfo: [AnyHashable: Any]) {
-        guard let deepLink = PaeoniaDeepLink(notificationUserInfo: userInfo) else {
-            return
-        }
-
-        route(deepLink)
-    }
-
     func consumePendingDeepLink() {
         pendingDeepLink = nil
     }

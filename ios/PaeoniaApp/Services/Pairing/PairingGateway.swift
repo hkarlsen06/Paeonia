@@ -24,8 +24,6 @@ protocol PairingGateway: Actor {
         startedOn: PairingStartDate?
     ) async throws -> UUID
 
-    func revokeInvite(id: UUID) async throws -> Bool
-
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool
 }
 
@@ -112,13 +110,6 @@ actor LivePairingGateway: PairingGateway {
                 operation: operation,
                 startedOn: startedOn
             )
-        )
-    }
-
-    func revokeInvite(id: UUID) async throws -> Bool {
-        try await client.mutation(
-            "pairing:revoke_pairing_invite",
-            args: RevokePairingInviteRequest(inviteID: id)
         )
     }
 
@@ -251,14 +242,6 @@ nonisolated private struct AcceptPairingInviteRequest: Encodable {
         case clientSequence = "p_client_sequence"
         case localCreatedAt = "p_local_created_at"
         case startedOn = "p_started_on"
-    }
-}
-
-nonisolated private struct RevokePairingInviteRequest: Encodable {
-    let inviteID: UUID
-
-    enum CodingKeys: String, CodingKey {
-        case inviteID = "p_invite_id"
     }
 }
 

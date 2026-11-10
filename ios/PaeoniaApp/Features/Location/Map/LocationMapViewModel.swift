@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 @Observable
-final class LocationMapViewModel: PresentationReadinessProviding {
+final class LocationMapViewModel {
     enum Notice: Equatable {
         case saveFailed
         case permissionDenied

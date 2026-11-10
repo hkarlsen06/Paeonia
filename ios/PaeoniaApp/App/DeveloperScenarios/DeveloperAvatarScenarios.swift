@@ -25,10 +25,6 @@ enum DeveloperAvatarFixture {
     nonisolated static let partnerPhoto = UUID(uuidString: "1e61a671-473d-421a-a881-420e6f148001") ?? UUID()
     nonisolated static let storyPhoto = UUID(uuidString: "1e61a671-473d-421a-a881-420e6f148002") ?? UUID()
 
-    static func stories(_ state: StoryRingState) -> StoriesViewModel {
-        storyDependencies(state).viewModel
-    }
-
     static func storyDependencies(_ state: StoryRingState)
         -> (viewModel: StoriesViewModel, cache: DeveloperAvatarStoriesCache) {
         seedPhotos()

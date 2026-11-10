@@ -14,7 +14,6 @@ struct DrawAndGuessChooseWordView: View {
     @State private var showsTooShort = false
     @FocusState private var isFieldFocused: Bool
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(viewModel: DrawAndGuessViewModel) {

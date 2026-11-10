@@ -36,7 +36,6 @@ extension DrawAndGuessViewModelTests {
         #expect(reveal?.firstTryBonus == 1)
         #expect(reveal?.personalBest == true)
         #expect(reveal?.pointsForMe == 4)
-        #expect(reveal?.pointsForCouple == 2)
         #expect(reveal?.isConfirmed == true)
         #expect(viewModel.isNextTurnMine)
     }

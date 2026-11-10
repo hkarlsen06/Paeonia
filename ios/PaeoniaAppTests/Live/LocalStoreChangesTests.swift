@@ -81,9 +81,6 @@ struct LocalStoreChangesTests {
             AccessSyncSnapshot(ownerUserID: owner, userEntitlement: nil, coupleEntitlement: nil, relationshipState: nil)
         )
         #expect(await iterator.next()?.domain == .access)
-        // Two identical writes before a read merge into one change, so read between them.
-        try await repository.delete(ownerUserID: owner)
-        #expect(await iterator.next()?.domain == .access)
     }
 
     @Test func swiftDataSnapshotWriteWaitsForTheSaveThenPosts() async throws {
@@ -110,9 +107,6 @@ struct LocalStoreChangesTests {
         var iterator = stream.filter { $0.ownerUserID == owner }.makeAsyncIterator()
         try await repository.saveRemote([], ownerUserID: owner, mergePolicy: .preserveLocalChanges)
         #expect(await iterator.next()?.domain == .memories)
-        // Two identical writes before a read merge into one change, so read between them.
-        try await repository.deleteAll(ownerUserID: owner)
-        #expect(await iterator.next()?.domain == .memories)
     }
 
     @Test func locationWritesPostTheirOwnDomains() async throws {
@@ -130,16 +124,6 @@ struct LocalStoreChangesTests {
         )
 
         #expect(await next(stream, owner: owner)?.domain == .locationVisibility)
-    }
-
-    @Test func relationshipEventDeletePostsChanges() async throws {
-        let repository = InMemoryRelationshipSyncEventRepository()
-        let owner = UUID()
-        let stream = LocalStoreChanges.changes(in: .relationshipEvents)
-
-        try await repository.deleteEvents(ownerUserID: owner)
-
-        #expect(await next(stream, owner: owner)?.domain == .relationshipEvents)
     }
 
     @Test func pendingOperationEnqueuePostsChanges() async throws {

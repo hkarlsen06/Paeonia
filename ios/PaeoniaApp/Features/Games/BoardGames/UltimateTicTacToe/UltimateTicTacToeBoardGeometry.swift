@@ -61,14 +61,6 @@ nonisolated struct UltimateTicTacToeBoardGeometry: Equatable {
         return small.cell(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y))
     }
 
-    /// The move a point stands for: the nearest board, then the cell under it.
-    /// Without the zoom (VoiceOver) a tap plays this directly, so every point of
-    /// the board is a cell.
-    func move(at point: CGPoint) -> Int {
-        let board = nearestBoard(to: point)
-        return UltimateTicTacToeBoard.move(board: board, cell: cell(in: board, at: point))
-    }
-
     private func band(_ value: CGFloat) -> Int {
         guard pitch > 0 else { return 0 }
         let band = ((value - margin + gap / 2) / pitch).rounded(.down)
@@ -167,10 +159,6 @@ nonisolated struct UltimateTicTacToeViewTransform: Equatable {
     var translation: CGSize
 
     static let identity = UltimateTicTacToeViewTransform(scale: 1, translation: .zero)
-
-    func apply(_ point: CGPoint) -> CGPoint {
-        CGPoint(x: point.x * scale + translation.width, y: point.y * scale + translation.height)
-    }
 
     func invert(_ point: CGPoint) -> CGPoint {
         guard scale != 0 else { return point }

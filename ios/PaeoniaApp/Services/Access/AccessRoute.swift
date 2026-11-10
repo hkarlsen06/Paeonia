@@ -28,15 +28,6 @@ nonisolated enum AccessRoute: Equatable, Sendable {
             .accountClosed
         }
     }
-
-    var allowsInviteAcceptance: Bool {
-        switch self {
-        case .limitedAuthenticated, .unpaired, .invitePending:
-            true
-        case .paired, .pairedPaywalled, .relationshipEndedNotice, .accountClosed:
-            false
-        }
-    }
 }
 
 nonisolated struct AccessRouteSnapshot: Equatable, Sendable {
@@ -73,11 +64,6 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
     /// What this person calls their partner. Nil without a relationship.
     var partnerName: PartnerName? {
         snapshot.relationshipState?.partnerName
-    }
-
-    /// The partner's name as this person sees it: their nickname, otherwise the partner's own name.
-    var partnerDisplayName: String? {
-        partnerName?.display
     }
 
     var partnerUserID: UUID? {

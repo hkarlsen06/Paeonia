@@ -6,8 +6,6 @@ import Foundation
 /// result goes into the chat cache, then the screens re-read it. Messages of an open chat
 /// arrive through `ThreadChatServicing.liveMessageUpdates`.
 nonisolated struct ThreadChatLiveFeed: LiveFeed {
-    let name = "daily_question_chat"
-
     private let cache: any ThreadChatCaching
 
     init(cache: any ThreadChatCaching) {

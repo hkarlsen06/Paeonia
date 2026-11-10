@@ -304,7 +304,6 @@ struct ExquisiteCorpseDataEnvironment {
         SyncContext(
             session: SyncSession(userID: ExquisiteCorpseFixture.me),
             reason: .localChange,
-            stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pending
         )
     }
