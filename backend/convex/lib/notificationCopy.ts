@@ -272,7 +272,8 @@ function dateReminderKind(payload: Record<string, unknown>) {
     reminder === "own_birthday" ||
     reminder === "anniversary_soon" ||
     reminder === "milestone" ||
-    reminder === "countdown"
+    reminder === "countdown" ||
+    reminder === "visit_tomorrow"
     ? reminder
     : null;
 }
@@ -351,6 +352,8 @@ export function notificationAlertBody(
             : nb
               ? "En dato dere har talt ned til er her."
               : "A date you've been counting down to is here.";
+        case "visit_tomorrow":
+          return nb ? "Bare én natt igjen." : "Just one more night to go.";
         default:
           return null;
       }
@@ -543,6 +546,8 @@ function dateReminderTitle(payload: Record<string, unknown>, nb: boolean, name: 
       return milestoneTitle(payload, nb);
     case "countdown":
       return nb ? "I dag er dagen" : "Today's the day";
+    case "visit_tomorrow":
+      return nb ? "Dere ses i morgen" : "You see each other tomorrow";
     default:
       return nb ? "Noe å glede seg til" : "Something to look forward to";
   }

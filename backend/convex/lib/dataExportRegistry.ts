@@ -349,6 +349,20 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       nb: "Nedtellingene du og partneren din har laget sammen.",
     },
   }),
+  visits: shared("by_couple_id_deleted_at", {
+    group: "relationship",
+    about: {
+      en: "The visits you and your partner planned: the first and last day, and the place if you added one.",
+      nb: "Besøkene du og partneren din har planlagt: første og siste dag, og stedet hvis dere la det til.",
+    },
+  }),
+  together_list_items: shared("by_couple_id_deleted_at", {
+    group: "relationship",
+    about: {
+      en: "Your shared list of things to do together, and which ones you ticked off.",
+      nb: "Den felles listen deres over ting å gjøre sammen, og hvilke dere har krysset av.",
+    },
+  }),
   streak_states: shared("by_couple_id", {
     group: "relationship",
     about: {

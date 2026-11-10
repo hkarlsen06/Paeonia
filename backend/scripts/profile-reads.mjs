@@ -2,6 +2,8 @@
 // BEFORE_ADMIN_KEY=... AFTER_ADMIN_KEY=... node scripts/profile-reads.mjs \
 //   <before-url> <after-url> <clerk-subject> <output.json>
 // Run from backend/. PROFILE_ARTIFACT_MANIFEST names optional revision/fixture hash metadata.
+// PROFILE_HEAD_ONLY_PATHS is a comma-separated list of paths that only the after side has. They are
+// measured on the after side only and reported without a comparison.
 // The report stays incomplete if any request or comparison fails.
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
@@ -28,9 +30,11 @@ const paths = [
   'games:get_games_overview', 'memories:get_memories',
   'stories:get_stories', 'topics:get_topics_overview',
 ];
+const headOnlyPaths = (process.env.PROFILE_HEAD_ONLY_PATHS ?? '').split(',').map(path => path.trim()).filter(Boolean);
+const pathsOf = side => side.name === 'after' ? [...paths, ...headOnlyPaths] : paths;
 const report = { status: 'incomplete', startedAt: new Date().toISOString(),
   artifacts: null,
-  trials: [], telemetry: [] };
+  headOnlyPaths, trials: [], telemetry: [] };
 const save = () => writeFileSync(output, JSON.stringify(report, null, 2));
 save();
 const identity = (tokenIdentifier) => ({ subject, issuer: 'https://clerk.paeonia.no', tokenIdentifier });
@@ -59,7 +63,7 @@ async function httpBundle(side, trial, condition) {
   const client = new ConvexHttpClient(side.url, { logger: false });
   client.setAdminAuth(side.key, identity(trial));
   const results = [];
-  for (const path of paths) {
+  for (const path of pathsOf(side)) {
     const start = performance.now();
     const value = await client.query(path, argsFor(path, trial));
     results.push({ path, ms: performance.now() - start, hash: hash(comparable(path, value)),
@@ -73,7 +77,7 @@ async function liveBundle(side, trial) {
   const start = performance.now();
   const unsubscribes = [];
   try {
-    const results = await Promise.all(paths.map(path => new Promise((resolve, reject) => {
+    const results = await Promise.all(pathsOf(side).map(path => new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error(`${path} first-value timeout`)), 30000);
       unsubscribes.push(client.onUpdate(path, argsFor(path, trial), value => {
         clearTimeout(timer);
@@ -89,8 +93,8 @@ async function liveBundle(side, trial) {
   }
 }
 function compare(pair) {
-  assert.deepEqual(pair[0].results.map(({ path, hash }) => ({ path, hash })),
-    pair[1].results.map(({ path, hash }) => ({ path, hash })), 'Response mismatch between revisions');
+  const shared = row => row.results.filter(({ path }) => paths.includes(path)).map(({ path, hash }) => ({ path, hash }));
+  assert.deepEqual(shared(pair[0]), shared(pair[1]), 'Response mismatch between revisions');
 }
 try {
   if (process.env.PROFILE_ARTIFACT_MANIFEST) {
@@ -122,7 +126,7 @@ try {
     const cursor = cursors.get(side.name);
     const { entries, newCursor } = await telemetry(side, cursor);
     report.telemetry.push({ side: side.name, startCursor: cursor, endCursor: newCursor,
-      entries: entries.filter(row => row.timestamp * 1000 > cursor && paths.includes(row.identifier)).map(row => ({
+      entries: entries.filter(row => row.timestamp * 1000 > cursor && pathsOf(side).includes(row.identifier)).map(row => ({
       timestamp: row.timestamp, requestId: row.requestId, executionId: row.executionId,
       path: row.identifier, cached: row.cachedResult, ms: row.executionTime * 1000,
       reads: row.usageStats.databaseReadDocuments, readBytes: row.usageStats.databaseReadBytes,
@@ -130,7 +134,8 @@ try {
     })) });
   }
   report.status = 'complete'; report.completedAt = new Date().toISOString(); save();
-  console.log(JSON.stringify({ status: report.status, requestsAndFirstValues: report.trials.length * paths.length,
+  console.log(JSON.stringify({ status: report.status,
+    requestsAndFirstValues: report.trials.reduce((sum, trial) => sum + trial.results.length, 0),
     comparedPairs: report.trials.length / 2, output }));
 } catch (error) {
   report.error = String(error); save(); throw error;

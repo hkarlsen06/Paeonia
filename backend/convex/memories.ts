@@ -18,23 +18,9 @@ import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
 import { isUsableMediaAsset } from "./lib/mediaAssetState";
+import { normalizePlace, placeArg, type Place } from "./lib/places";
 
 const nullableUuidArray = v.optional(v.union(v.null(), v.array(v.string())));
-
-const memoryPlaceArg = v.optional(
-  v.union(
-    v.null(),
-    v.object({
-      name: v.string(),
-      latitude: v.number(),
-      longitude: v.number(),
-      city: v.optional(v.union(v.null(), v.string())),
-      country_code: v.optional(v.union(v.null(), v.string())),
-    }),
-  ),
-);
-
-type MemoryPlace = NonNullable<Doc<"memories">["place"]>;
 
 /** Port of `internal.normalize_memory_title`. */
 export function normalizeMemoryTitle(title: string | null | undefined): string {
@@ -42,48 +28,6 @@ export function normalizeMemoryTitle(title: string | null | undefined): string {
   if (normalized === null) return fail("23514", "memory title is required");
   if (charLength(normalized) > 160) return fail("23514", "memory title is too long");
   return normalized;
-}
-
-/**
- * Checks a place sent by the app and trims its text. Null means "no place". The name is required,
- * the coordinates must be on the globe, and the country is an ISO 3166 two-letter code.
- */
-export function normalizeMemoryPlace(
-  place:
-    | {
-        name: string;
-        latitude: number;
-        longitude: number;
-        city?: string | null;
-        country_code?: string | null;
-      }
-    | null
-    | undefined,
-): MemoryPlace | null {
-  if (place === null || place === undefined) return null;
-  const name = btrimToNull(place.name);
-  if (name === null) return fail("23514", "memory place name is required");
-  if (charLength(name) > 160) return fail("23514", "memory place name is too long");
-  const { latitude, longitude } = place;
-  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
-    return fail("23514", "memory place latitude is out of range");
-  }
-  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
-    return fail("23514", "memory place longitude is out of range");
-  }
-  const city = btrimToNull(place.city);
-  if (city !== null && charLength(city) > 120) return fail("23514", "memory place city is too long");
-  const countryCode = btrimToNull(place.country_code);
-  if (countryCode !== null && !/^[A-Z]{2}$/.test(countryCode)) {
-    return fail("23514", "memory place country code is not valid");
-  }
-  return {
-    name,
-    latitude,
-    longitude,
-    ...(city === null ? {} : { city }),
-    ...(countryCode === null ? {} : { country_code: countryCode }),
-  };
 }
 
 /** Port of `internal.normalize_memory_note_body`. */
@@ -157,7 +101,7 @@ async function insertMemory(
     couple_id: string;
     title: string;
     memory_date: string;
-    place?: MemoryPlace;
+    place?: Place;
     created_by_user_id: string;
     last_edited_by_user_id: string;
   },
@@ -339,7 +283,7 @@ export const create_memory = mutation({
     p_memory_date: v.string(),
     p_note_body: v.optional(v.union(v.null(), v.string())),
     p_media_asset_ids: nullableUuidArray,
-    p_place: memoryPlaceArg,
+    p_place: placeArg,
     ...clientOperationArgs,
   },
   handler: async (ctx, args): Promise<string> => {
@@ -349,7 +293,7 @@ export const create_memory = mutation({
     const memoryDate = dateArg(args.p_memory_date);
     const noteBody = btrimToNull(args.p_note_body);
     if (noteBody !== null && charLength(noteBody) > 4000) fail("23514", "memory note body is too long");
-    const place = normalizeMemoryPlace(args.p_place);
+    const place = normalizePlace(args.p_place, "memory");
     const mediaIds = (args.p_media_asset_ids ?? []).map(uuidArg);
     if (noteBody === null && mediaIds.length === 0) fail("23514", "memory must include a note or media");
 
@@ -452,13 +396,13 @@ export const update_memory = mutation({
 export const set_memory_place = mutation({
   args: {
     p_memory_id: v.string(),
-    p_place: memoryPlaceArg,
+    p_place: placeArg,
     ...clientOperationArgs,
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const memoryId = uuidArg(args.p_memory_id);
-    const place = normalizeMemoryPlace(args.p_place);
+    const place = normalizePlace(args.p_place, "memory");
 
     const stored = await runClientOperation(
       ctx,

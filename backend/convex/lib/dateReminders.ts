@@ -16,6 +16,7 @@ import { addDaysToDate } from "./time";
 // - Both partners hear about the relationship anniversary a week ahead and on the day.
 // - Both hear about the first month, half a year and the round day counts on the day.
 // - Both hear on the day of a countdown. Several countdowns on one day are one push.
+// - Both hear the day before a visit starts, so there is time to get ready.
 
 export const DATE_REMINDER_MINUTES = 9 * 60;
 /** Two 15-minute cron runs see the window, so one late run still sends. The dedupe key stops a repeat. */
@@ -29,7 +30,8 @@ export type DateReminderKind =
   | "own_birthday"
   | "anniversary_soon"
   | "milestone"
-  | "countdown";
+  | "countdown"
+  | "visit_tomorrow";
 
 export type DateReminder = {
   reminder: DateReminderKind;
@@ -51,6 +53,8 @@ export type DateReminderFacts = {
   /** Birthdays by user id, for the couple's active members. */
   birthdays: ReadonlyMap<string, string>;
   countdowns: ReadonlyArray<{ target_date: string; repeats_yearly?: boolean }>;
+  /** The couple's visits that are not deleted. */
+  visits: ReadonlyArray<{ start_date: string }>;
 };
 
 /**
@@ -111,6 +115,11 @@ export function planDateReminders(facts: DateReminderFacts): DateReminder[] {
   const countdownsToday = facts.countdowns.filter((countdown) => countdownDay(countdown, today) === today).length;
   if (countdownsToday > 0) {
     reminders.push({ reminder: "countdown", occurrence: today, extra: { count: countdownsToday } });
+  }
+
+  const tomorrow = addDaysToDate(today, 1);
+  if (facts.visits.some((visit) => visit.start_date === tomorrow)) {
+    reminders.push({ reminder: "visit_tomorrow", occurrence: tomorrow, extra: {} });
   }
   return reminders;
 }

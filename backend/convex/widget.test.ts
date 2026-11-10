@@ -710,7 +710,7 @@ describe("get_lock_screen_state", () => {
       generated_at: "2026-10-10T12:00:00.000Z",
       partner: { name: "Second Partner", uses_nickname: false, time_zone_id: "Europe/Oslo" },
       started_on: null,
-      dates: { countdowns: [], birthdays: [] },
+      dates: { countdowns: [], birthdays: [], visits: [] },
       distance: null,
       // The westmost partner sets the couple day: New York is still on 2026-10-10 until 04:00 UTC the next day.
       couple_day: { local_date: "2026-10-10", starts_at: "2026-10-10T04:00:00.000Z", ends_at: "2026-10-11T04:00:00.000Z" },

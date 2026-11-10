@@ -82,6 +82,21 @@ async function deleteCoupleDates(ctx: WriterCtx, coupleId: string): Promise<numb
   return countdowns.length + withBirthday.length;
 }
 
+/** Deletes the couple's visits and its list, deleted rows included. Returns the rows deleted. */
+async function deleteCoupleVisits(ctx: WriterCtx, coupleId: string): Promise<number> {
+  const visits = await ctx.db
+    .query("visits")
+    .withIndex("by_couple_id_deleted_at", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  for (const visit of visits) await ctx.db.delete(visit._id);
+  const items = await ctx.db
+    .query("together_list_items")
+    .withIndex("by_couple_id_deleted_at", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  for (const item of items) await ctx.db.delete(item._id);
+  return visits.length + items.length;
+}
+
 // Both reads use couple-wide indexes, so a couple with years of daily questions costs a
 // handful of database calls instead of a few per day.
 async function coupleInstances(ctx: WriterCtx, coupleId: string) {
@@ -266,6 +281,7 @@ export async function cleanupCoupleContent(
   await deleteLatestLocationsForCouple(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
   await deleteCoupleDates(ctx, couple.id);
+  await deleteCoupleVisits(ctx, couple.id);
   await clearPartnerNicknames(ctx, couple.id);
   await deleteCoupleNotes(ctx, couple.id);
   const current = (await ctx.db.get(couple._id))!;
@@ -487,6 +503,7 @@ export async function purgeCoupleContent(
   for (const deleted of [
     await deleteHeartsForCouple(ctx, couple.id),
     await deleteCoupleDates(ctx, couple.id),
+    await deleteCoupleVisits(ctx, couple.id),
     await clearPartnerNicknames(ctx, couple.id),
     await deleteCoupleNotes(ctx, couple.id),
   ]) {

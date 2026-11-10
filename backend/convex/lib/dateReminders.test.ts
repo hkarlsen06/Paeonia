@@ -5,7 +5,7 @@ const ME = "11111111-1111-4111-8111-111111111111";
 const PARTNER = "22222222-2222-4222-8222-222222222222";
 
 const plan = (facts: Partial<DateReminderFacts> & { today: string }) =>
-  planDateReminders({ user_id: ME, birthdays: new Map(), countdowns: [], ...facts });
+  planDateReminders({ user_id: ME, birthdays: new Map(), countdowns: [], visits: [], ...facts });
 const kinds = (facts: Partial<DateReminderFacts> & { today: string }) => plan(facts).map((r) => r.reminder);
 
 describe("birthdays", () => {
@@ -106,5 +106,20 @@ describe("countdowns", () => {
     expect(kinds({ today: "2026-02-28", countdowns: yearly })).toEqual(["countdown"]);
     expect(kinds({ today: "2028-02-29", countdowns: yearly })).toEqual(["countdown"]);
     expect(kinds({ today: "2028-02-28", countdowns: yearly })).toEqual([]);
+  });
+});
+
+describe("visits", () => {
+  test("both hear the day before a visit starts, once for several visits that start that day", () => {
+    const visits = [{ start_date: "2026-10-22" }, { start_date: "2026-10-22" }, { start_date: "2026-10-30" }];
+    expect(plan({ today: "2026-10-21", visits })).toEqual([
+      { reminder: "visit_tomorrow", occurrence: "2026-10-22", extra: {} },
+    ]);
+    expect(kinds({ today: "2026-10-22", visits })).toEqual([]);
+    expect(kinds({ today: "2026-10-20", visits })).toEqual([]);
+  });
+
+  test("the day before can be in the old year", () => {
+    expect(kinds({ today: "2026-12-31", visits: [{ start_date: "2027-01-01" }] })).toEqual(["visit_tomorrow"]);
   });
 });

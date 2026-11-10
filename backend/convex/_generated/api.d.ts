@@ -108,6 +108,7 @@ import type * as lib_notifications from "../lib/notifications.js";
 import type * as lib_pairingInviteReminder from "../lib/pairingInviteReminder.js";
 import type * as lib_partnerNames from "../lib/partnerNames.js";
 import type * as lib_piccante from "../lib/piccante.js";
+import type * as lib_places from "../lib/places.js";
 import type * as lib_presence from "../lib/presence.js";
 import type * as lib_profiles from "../lib/profiles.js";
 import type * as lib_pushStatus from "../lib/pushStatus.js";
@@ -137,6 +138,7 @@ import type * as lib_topicCatalog from "../lib/topicCatalog.js";
 import type * as lib_topics from "../lib/topics.js";
 import type * as lib_ultimateTicTacToe from "../lib/ultimateTicTacToe.js";
 import type * as lib_validators from "../lib/validators.js";
+import type * as lib_visits from "../lib/visits.js";
 import type * as lib_widgetDrawings from "../lib/widgetDrawings.js";
 import type * as lib_zip from "../lib/zip.js";
 import type * as location from "../location.js";
@@ -168,6 +170,7 @@ import type * as storyChain from "../storyChain.js";
 import type * as streaks from "../streaks.js";
 import type * as threads from "../threads.js";
 import type * as topics from "../topics.js";
+import type * as visits from "../visits.js";
 import type * as widget from "../widget.js";
 
 import type {
@@ -277,6 +280,7 @@ declare const fullApi: ApiFromModules<{
   "lib/pairingInviteReminder": typeof lib_pairingInviteReminder;
   "lib/partnerNames": typeof lib_partnerNames;
   "lib/piccante": typeof lib_piccante;
+  "lib/places": typeof lib_places;
   "lib/presence": typeof lib_presence;
   "lib/profiles": typeof lib_profiles;
   "lib/pushStatus": typeof lib_pushStatus;
@@ -306,6 +310,7 @@ declare const fullApi: ApiFromModules<{
   "lib/topics": typeof lib_topics;
   "lib/ultimateTicTacToe": typeof lib_ultimateTicTacToe;
   "lib/validators": typeof lib_validators;
+  "lib/visits": typeof lib_visits;
   "lib/widgetDrawings": typeof lib_widgetDrawings;
   "lib/zip": typeof lib_zip;
   location: typeof location;
@@ -337,6 +342,7 @@ declare const fullApi: ApiFromModules<{
   streaks: typeof streaks;
   threads: typeof threads;
   topics: typeof topics;
+  visits: typeof visits;
   widget: typeof widget;
 }>;
 

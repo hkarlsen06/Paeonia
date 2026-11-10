@@ -32,6 +32,7 @@ import { piccanteTables } from "./lib/piccante";
 import { consensioTables } from "./lib/consensio";
 import { guessMySpotTables } from "./lib/guessMySpot";
 import { mindMeldTables } from "./lib/mindMeld";
+import { placeField } from "./lib/places";
 
 // Conventions (see backend/AGENTS.md):
 // - Field names match the SQL columns. uuid columns are lowercase strings.
@@ -816,6 +817,44 @@ export default defineSchema({
     repeats_yearly: v.optional(v.boolean()),
     created_by_user_id: uuid,
     last_edited_by_user_id: uuid,
+    created_at: ts,
+    updated_at: ts,
+    deleted_at: optTs,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id_deleted_at", ["couple_id", "deleted_at"]),
+
+  // A time the partners meet in person, from start_date to end_date, both calendar days. Either
+  // partner can plan, edit, or delete one, and a visit in the past is fine. `lib/visits.ts` decides
+  // whether a visit is upcoming, ongoing or over. Delete sets deleted_at, like countdowns.
+  // FK: couple_id -> couples cascade.
+  visits: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    start_date: date,
+    end_date: date,
+    place: v.optional(placeField),
+    created_by_user_id: uuid,
+    last_edited_by_user_id: uuid,
+    created_at: ts,
+    updated_at: ts,
+    deleted_at: optTs,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id_deleted_at", ["couple_id", "deleted_at"]),
+
+  // The couple's one list of things to do together. It belongs to the couple, not to a visit, so
+  // it survives a moved or deleted visit. Either partner adds, ticks, or deletes an item. Delete
+  // sets deleted_at, so a late save from the other phone cannot bring an item back.
+  // FK: couple_id -> couples cascade.
+  together_list_items: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    title: v.string(),
+    added_by_user_id: uuid,
+    last_edited_by_user_id: uuid,
+    done_at: optTs,
+    done_by_user_id: v.optional(uuid),
     created_at: ts,
     updated_at: ts,
     deleted_at: optTs,
