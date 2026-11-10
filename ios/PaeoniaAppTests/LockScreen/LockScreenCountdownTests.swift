@@ -46,7 +46,8 @@ struct LockScreenCountdownTests {
             countdown("Soon", Support.day(2_026, 10, 20), createdAt: created),
         ]
 
-        #expect(LockScreenCountdown.next(in: dates(list), now: now, calendar: calendar)?.title == "Soon")
+        let soonest = LockScreenCountdown.next(in: dates(list), now: now, calendar: calendar)
+        #expect(soonest?.item.kind == .countdown(title: "Soon"))
         #expect(LockScreenCountdown.next(in: dates([list[0]]), now: now, calendar: calendar) == nil)
         #expect(LockScreenCountdown.next(in: dates([]), now: now, calendar: calendar) == nil)
     }
@@ -58,8 +59,30 @@ struct LockScreenCountdownTests {
         let later = countdown("Later", Support.day(2_026, 12, 1), createdAt: now)
 
         let both = dates([later], birthdays: [birthday])
-        #expect(LockScreenCountdown.next(in: both, now: now, calendar: calendar)?.title == "Later")
+        let next = LockScreenCountdown.next(in: both, now: now, calendar: calendar)
+        #expect(next?.item.kind == .countdown(title: "Later"))
         #expect(LockScreenCountdown.next(in: dates([], birthdays: [birthday]), now: now, calendar: calendar) == nil)
+    }
+
+    @Test func countsDownToTheFirstDayOfTheNextVisitUntilItStarts() {
+        let calendar = Support.calendar("Europe/Oslo")
+        let now = Support.date(2_026, 10, 17, 9, in: calendar)
+        let created = Support.date(2_026, 10, 1, in: calendar)
+        let later = countdown("Later", Support.day(2_026, 12, 1), createdAt: created)
+        func visit(_ start: LockScreenCalendarDate, _ end: LockScreenCalendarDate) -> LockScreenSnapshot.DatedVisit {
+            .init(id: "visit", startDate: start, endDate: end, createdAt: created)
+        }
+
+        var list = dates([later])
+        list.visits = [visit(Support.day(2_026, 10, 20), Support.day(2_026, 10, 23))]
+        let next = LockScreenCountdown.next(in: list, now: now, calendar: calendar)
+        #expect(next?.item.kind == .visit)
+        #expect(next?.remaining == .days(3))
+
+        // A visit that already started is no longer ahead, so the countdown after it shows.
+        list.visits = [visit(Support.day(2_026, 10, 16), Support.day(2_026, 10, 19))]
+        let after = LockScreenCountdown.next(in: list, now: now, calendar: calendar)
+        #expect(after?.item.kind == .countdown(title: "Later"))
     }
 
     @Test func dayMathUsesTheDeviceClockAcrossDaylightSavingTime() {
@@ -111,7 +134,7 @@ struct LockScreenCountdownTests {
         let nextMorning = LockScreenCountdown.next(
             in: list, now: Support.date(2_026, 10, 22, 0, 5, in: calendar), calendar: calendar
         )
-        #expect(nextMorning?.title == "Met")
+        #expect(nextMorning?.item.kind == .countdown(title: "Met"))
         #expect(nextMorning?.remaining == .days(364))
     }
 
