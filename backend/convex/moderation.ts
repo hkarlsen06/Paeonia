@@ -53,6 +53,7 @@ export async function inferReportTarget(
       target.media_asset_id ??
       target.profile_user_id ??
       target.conduct_user_id ??
+      target.letter_id ??
       null,
     target_aux_id: target.message_media_asset_id ?? null,
   };
@@ -216,6 +217,21 @@ async function loadTarget(
         restoreAssetIds: [row.id],
         restoreMessage: MEDIA_RESTORE_MESSAGE,
         storageAssetIds: [row.id],
+      };
+    }
+    case "letter": {
+      const row = await getByUuid(ctx, "letters", targetId);
+      if (!row) return notFound();
+      const assets = row.media_asset_id ? [row.media_asset_id] : [];
+      return {
+        previousStatus: row.moderation_status,
+        moderationReportId: row.moderation_report_id,
+        setStatus: async (status: ModerationStatus, reportId: string | undefined) => {
+          await ctx.db.patch(row._id, moderationPatch(status, reportId));
+        },
+        restoreAssetIds: assets,
+        restoreMessage: CONTENT_RESTORE_MESSAGE,
+        storageAssetIds: assets,
       };
     }
     case "profile": {

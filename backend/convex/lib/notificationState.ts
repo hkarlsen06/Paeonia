@@ -60,6 +60,12 @@ export async function notificationStillWanted(
     if (!story || story.deleted_at !== undefined || story.seen_at !== undefined ||
         addMs(story.created_at, 86_400_000) <= now) return { wanted: false, reason: "out_of_date" };
   }
+  // A letter its author took back needs no alert, and neither does one the recipient already opened.
+  if ((row.kind === "letter_arrived" || row.kind === "letter_opened") && typeof payload.letter_id === "string") {
+    const letter = await getByUuid(ctx, "letters", payload.letter_id);
+    if (!letter || letter.deleted_at !== undefined ||
+        (row.kind === "letter_arrived" && letter.state !== "delivered")) return { wanted: false, reason: "out_of_date" };
+  }
   // A reaction its sender took back before the alert went out needs no alert.
   if (
     row.kind === "reaction_added" &&

@@ -18,6 +18,7 @@ import {
   UNSAFE_PAYLOAD_ERROR,
   waitsWhileTogether,
 } from "./lib/notifications";
+import { lettersEnabled } from "./lib/letters";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { addMs, isValidTimeZone, nowIso } from "./lib/time";
 import { pushStatus } from "./lib/pushStatus";
@@ -92,6 +93,9 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
       return preference?.games_enabled ?? false;
     case "reaction_added":
       return preference !== null && reactionPreferenceAllows(row.payload?.target_kind, preference);
+    case "letter_arrived":
+    case "letter_opened":
+      return preference !== null && lettersEnabled(preference);
     default:
       return true;
   }

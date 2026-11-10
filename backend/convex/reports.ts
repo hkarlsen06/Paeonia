@@ -125,6 +125,7 @@ async function submitContentReport(ctx: MutationCtx, args: ReportArgs, leaveRela
         media_asset_id: ifKind("media_asset", targetId),
         profile_user_id: ifKind("profile", targetId),
         conduct_user_id: ifKind("conduct", targetId),
+        letter_id: ifKind("letter", targetId),
         created_at: now,
       });
       await ctx.db.insert("report_snapshots", {

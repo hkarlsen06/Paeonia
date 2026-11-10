@@ -12,6 +12,7 @@ import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
 import { sha256Hex } from "./lib/crypto";
 import { isValidQuestionTimeMinutes } from "./lib/questionTime";
+import { lettersEnabled } from "./lib/letters";
 import { literals } from "./lib/validators";
 import { findProfile, profileRow, profileSummaryRow, updateProfile } from "./lib/profiles";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
@@ -270,6 +271,7 @@ const NOTIFICATION_COLUMNS = [
   "memories_enabled",
   "games_enabled",
   "date_reminders_enabled",
+  "letters_enabled",
 ] as const;
 
 async function findNotificationPreferences(ctx: ReaderCtx, userId: string) {
@@ -297,6 +299,7 @@ function notificationPreferencesRow(row: NonNullable<Awaited<ReturnType<typeof f
     date_reminders_enabled: row.date_reminders_enabled,
     question_time_enabled: row.question_time_enabled,
     question_time_minutes: row.question_time_minutes,
+    letters_enabled: lettersEnabled(row),
   };
 }
 

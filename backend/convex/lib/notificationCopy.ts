@@ -309,6 +309,10 @@ export function notificationAlertBody(
       return nb ? "Se det blant minnene deres." : "See it in your memories.";
     case "story_posted":
       return nb ? "Den ligger i Oss-fanen i 24 timer." : "It's in the Us tab for 24 hours.";
+    case "letter_arrived":
+      return nb ? "Åpne det i Oss-fanen." : "Open it in the Us tab.";
+    case "letter_opened":
+      return nb ? "Se det blant brevene du har sendt." : "See it in the letters you sent.";
     case "thread_message_sent":
       // Every chat push has the same shape and never names the topic, so a Flirt chat looks like any other.
       return nb ? "Sendte deg en melding" : "Sent you a message";
@@ -456,6 +460,10 @@ export async function notificationAlertTitle(
       return nb ? `${name} la til et minne` : `${name} added a memory`;
     case "story_posted":
       return nb ? `${name} delte en story` : `${name} shared a story`;
+    case "letter_arrived":
+      return nb ? `${name} sendte deg et brev` : `${name} sent you a letter`;
+    case "letter_opened":
+      return nb ? `${name} åpnet brevet ditt` : `${name} opened your letter`;
     case "widget_updated":
     case "thread_message_sent":
       // The notification service extension shows these as messages from the sender.

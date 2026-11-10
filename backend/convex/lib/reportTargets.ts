@@ -314,6 +314,30 @@ export async function resolveContentReportTarget(
         },
       };
     }
+    case "letter": {
+      // Only a letter the reporter received and opened, since that is the only one they have read.
+      const letter = await getByUuid(ctx, "letters", targetId);
+      if (!letter || letter.deleted_at !== undefined || letter.moderation_status !== "visible" ||
+          letter.state !== "opened" || letter.recipient_user_id !== reporterUserId) return null;
+      const pairId = await pairIdOf(ctx, letter.couple_id);
+      if (!pairId) return null;
+      return {
+        target_kind: targetKind,
+        reported_user_id: letter.author_user_id,
+        couple_id: letter.couple_id,
+        pair_id: pairId,
+        snapshot: stripNulls({
+          target_kind: targetKind,
+          letter_id: letter.id,
+          author_user_id: letter.author_user_id,
+          template_key: letter.template_key,
+          body: letter.body,
+          created_at: letter.created_at,
+          moderation_status: letter.moderation_status,
+          media_asset_ids: await reportableMediaIds(ctx, letter.media_asset_id ? [{ media_asset_id: letter.media_asset_id }] : []),
+        }),
+      };
+    }
     case "media_asset": {
       const asset = await getByUuid(ctx, "media_assets", targetId);
       if (!isReportableAsset(asset) || asset.couple_id === undefined) return null;

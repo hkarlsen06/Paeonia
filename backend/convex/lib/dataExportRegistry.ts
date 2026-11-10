@@ -27,6 +27,7 @@ export type ExportGroup =
   | "chat"
   | "memories"
   | "stories"
+  | "letters"
   | "drawings"
   | "games"
   | "location"
@@ -44,6 +45,7 @@ export const EXPORT_GROUPS: Record<ExportGroup, { folder: string }> = {
   chat: { folder: "chat" },
   memories: { folder: "memories" },
   stories: { folder: "stories-and-notes" },
+  letters: { folder: "letters" },
   drawings: { folder: "drawings" },
   games: { folder: "games" },
   location: { folder: "location" },
@@ -547,6 +549,15 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
     },
   }),
 
+  // ---- letters ----
+  letters: yours("by_couple_id_created_at", "author_user_id", {
+    group: "letters",
+    about: {
+      en: "The letters you wrote: the words, the template, when each one arrived and when it was opened. The images are in the files folder. Letters your partner wrote to you are not included.",
+      nb: "Brevene du skrev: teksten, malen, når hvert brev kom fram og når det ble åpnet. Bildene ligger i mappen files. Brev partneren din skrev til deg er ikke med.",
+    },
+  }),
+
   // ---- drawings ----
   widget_canvases: shared("by_couple_id", {
     group: "drawings",
@@ -846,6 +857,7 @@ const MEDIA_FOLDERS: Record<string, string> = {
   exquisite_corpse_drawing: "odd-creatures",
   exquisite_corpse_strip: "odd-creatures",
   story_photo: "story-photos",
+  letter_image: "letter-images",
   guess_my_spot_photo: "guess-my-spot-photos",
 };
 

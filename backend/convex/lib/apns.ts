@@ -156,6 +156,8 @@ const NOTIFICATION_CATEGORY: Record<
   game_result: "game",
   memory_created: "partner",
   story_posted: "partner",
+  letter_arrived: "partner",
+  letter_opened: "partner",
   reaction_added: "partner",
   partner_joined: "partner",
   pairing_invite_reminder: "reminder",
@@ -196,6 +198,9 @@ export function notificationThreadId(payload: Record<string, unknown>): string |
       return "memories";
     case "story_posted":
       return "stories";
+    case "letter_arrived":
+    case "letter_opened":
+      return "letters";
     case "reaction_added":
       return "reactions";
     case "partner_joined":

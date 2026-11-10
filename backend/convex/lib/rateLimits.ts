@@ -19,6 +19,7 @@ const LIMITS = {
   memoryCreate: { kind: "token bucket", rate: 100, period: HOUR, capacity: 100 },
   storyPost: { kind: "token bucket", rate: 30, period: HOUR, capacity: 30 },
   noteSet: { kind: "token bucket", rate: 60, period: HOUR, capacity: 60 },
+  letterSend: { kind: "token bucket", rate: 30, period: HOUR, capacity: 30 },
   mediaUpload: { kind: "token bucket", rate: 300, period: HOUR, capacity: 300 },
   // One call per batch of Home heart taps, so a person tapping for a minute uses a few.
   heartsSend: { kind: "token bucket", rate: 120, period: HOUR, capacity: 60 },

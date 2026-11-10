@@ -10,7 +10,7 @@ import { addMs, nowIso } from "./time";
 import { topicsWaitingQuestionIds } from "./topics";
 import { pushStatus } from "./pushStatus";
 
-// The app icon counts outstanding conversations, games and unseen partner stories.
+// The app icon counts outstanding conversations, games, unseen partner stories and unopened letters.
 // A question with both an unopened answer and unread messages counts once.
 // Reminders, streaks and the trial notice never count. Notification preferences filter the icon.
 // The server sends the number as `aps.badge`: in every alert, and in a badge-only push
@@ -33,7 +33,7 @@ export type BadgeCounts = {
   questions: number;
   /** Games that wait on this person, and open invites. */
   games: number;
-  /** The partner's stories still on the Us tab that this person has not opened. */
+  /** The partner's stories still on the Us tab that this person has not opened, and their delivered unopened letters. */
   us: number;
   /** The tabs' items of the kinds whose alerts are on in Notifications. */
   icon: number;
@@ -51,6 +51,7 @@ export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: st
     answers.add(`question:${questionId}`);
   }
   const stories = await unseenStories(ctx, coupleId, userId, now);
+  const letters = await unopenedLetters(ctx, coupleId, userId);
   const games = await gamesWaitingFor(ctx, coupleId, userId);
   const preference = await ctx.db
     .query("notification_preferences")
@@ -66,12 +67,13 @@ export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: st
   ]);
   const icon = iconConversations.size +
     (allows("story_posted") ? stories : 0) +
+    (allows("letter_arrived") ? letters : 0) +
     (allows("game_turn_ready") ? games : 0);
   return {
     // The Questions tab lists every chat: a question's, a memory's and a story's.
     questions: new Set([...chats, ...answers]).size,
     games,
-    us: stories,
+    us: stories + letters,
     icon,
   };
 }
@@ -154,6 +156,17 @@ async function unseenStories(ctx: ReaderCtx, coupleId: string, userId: string, n
     .collect();
   return stories.filter(
     (story) => story.author_user_id !== userId && story.deleted_at === undefined && story.seen_at === undefined,
+  ).length;
+}
+
+/** Letters delivered to this person that they have not opened. */
+async function unopenedLetters(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+  const letters = await ctx.db
+    .query("letters")
+    .withIndex("by_recipient_user_id_state", (q) => q.eq("recipient_user_id", userId).eq("state", "delivered"))
+    .collect();
+  return letters.filter(
+    (letter) => letter.couple_id === coupleId && letter.deleted_at === undefined && letter.moderation_status === "visible",
   ).length;
 }
 

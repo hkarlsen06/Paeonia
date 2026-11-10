@@ -155,6 +155,17 @@ export const create_pending_media_upload = mutation({
           bucket = "couple-media";
           coupleId = coupleArg;
           storagePath = `${coupleArg}/${mediaType}/${assetId}.${extension}`;
+        } else if (purpose === "letter_image") {
+          // The letter id is the client's. `send_letter` names the image, and only then can anyone read it.
+          if (kind !== "letter" || mediaType !== "image" || coupleArg === undefined) {
+            fail("23514", "letter image upload contract is invalid");
+          }
+          if (!(await canAccessCoupleContent(ctx, userId, coupleArg))) {
+            fail("42501", "active entitled couple access is required");
+          }
+          bucket = "couple-media";
+          coupleId = coupleArg;
+          storagePath = `${coupleArg}/${mediaType}/${assetId}.${extension}`;
         } else if (purpose === "guess_my_spot_photo") {
           // Guess my spot: the round id is the client's, and the round names the photo when it is sent.
           if (kind !== "guess_my_spot_round" || mediaType !== "image" || coupleArg === undefined) {

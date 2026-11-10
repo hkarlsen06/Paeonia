@@ -205,6 +205,20 @@ async function canReadStoryPhoto(ctx: ReaderCtx, userId: string, asset: Doc<"med
   );
 }
 
+/** The author reads a letter's image from the start. The recipient reads it only once they opened the letter. */
+async function canReadLetterImage(ctx: ReaderCtx, userId: string, asset: Doc<"media_assets">): Promise<boolean> {
+  const letters = await ctx.db
+    .query("letters")
+    .withIndex("by_media_asset_id", (q) => q.eq("media_asset_id", asset.id))
+    .collect();
+  const letter = letters.find((row) =>
+    row.id === asset.reserved_parent_id && row.deleted_at === undefined && row.couple_id === asset.couple_id &&
+    row.moderation_status === "visible");
+  if (!letter) return false;
+  const mayRead = userId === letter.author_user_id || (userId === letter.recipient_user_id && letter.state === "opened");
+  return mayRead && (await canAccessCoupleContent(ctx, userId, letter.couple_id));
+}
+
 /** Before pairing, only the inviter reads the drawing their first day draft holds. */
 async function canReadFirstDayDrawing(ctx: ReaderCtx, userId: string, asset: Doc<"media_assets">): Promise<boolean> {
   if (asset.owner_user_id !== userId || asset.reserved_parent_kind !== "widget_drawing_revision" || asset.bucket !== "widget-drawings") {
@@ -242,6 +256,8 @@ export async function canReadMediaAsset(ctx: ReaderCtx, userId: string, asset: D
       return await canReadMemoryMedia(ctx, userId, asset);
     case "story":
       return await canReadStoryPhoto(ctx, userId, asset);
+    case "letter":
+      return asset.bucket === "couple-media" && (await canReadLetterImage(ctx, userId, asset));
     case "widget_drawing_revision":
       return asset.bucket === "widget-drawings" && (await canReadWidgetPayload(ctx, userId, asset));
     case "game_move":

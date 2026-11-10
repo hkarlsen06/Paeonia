@@ -12,7 +12,8 @@ export type TombstoneTargetKind =
   | "thread_message_media"
   | "widget_drawing_revision"
   | "media_asset"
-  | "profile";
+  | "profile"
+  | "letter";
 
 /**
  * Port of the `tombstone_content_report_target` trigger. Call before hard
@@ -62,7 +63,8 @@ export async function tombstoneReportTargets(
       | "by_message_id"
       | "by_widget_drawing_revision_id"
       | "by_media_asset_id"
-      | "by_profile_user_id",
+      | "by_profile_user_id"
+      | "by_letter_id",
     field: string,
   ) => {
     const rows = await ctx.db
@@ -89,6 +91,8 @@ export async function tombstoneReportTargets(
       return await byIndex("by_media_asset_id", "media_asset_id");
     case "profile":
       return await byIndex("by_profile_user_id", "profile_user_id");
+    case "letter":
+      return await byIndex("by_letter_id", "letter_id");
     default:
       return fail("23514", `content report tombstone trigger is not configured for ${targetKind}`);
   }

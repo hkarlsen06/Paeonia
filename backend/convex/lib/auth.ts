@@ -173,6 +173,7 @@ export async function ensureCurrentUser(ctx: MutationCtx): Promise<string> {
     date_reminders_enabled: true,
     question_time_enabled: false,
     question_time_minutes: DEFAULT_QUESTION_TIME_MINUTES,
+    letters_enabled: true,
   });
   return userId;
 }

@@ -240,6 +240,16 @@ export async function cleanupCoupleContent(
     budget.left -= 1;
   }
 
+  for (const letter of await ctx.db
+    .query("letters")
+    .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", couple.id))
+    .collect()) {
+    if (letter.deleted_at !== undefined) continue;
+    if (budget.left <= 0) return unfinished();
+    await ctx.db.patch(letter._id, { deleted_at: now });
+    budget.left -= 1;
+  }
+
   const canvases = await ctx.db
     .query("widget_canvases")
     .withIndex("by_couple_id", (q) => q.eq("couple_id", couple.id))
@@ -476,6 +486,15 @@ export async function purgeCoupleContent(
     }
     if (budget.left <= 0) return unfinished();
     await remove(story);
+  }
+
+  for (const letter of await ctx.db
+    .query("letters")
+    .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", couple.id))
+    .take(Math.max(budget.left, 1))) {
+    if (budget.left <= 0) return unfinished();
+    await tombstoneReportTargets(ctx, "letter", letter.id);
+    await remove(letter);
   }
 
   for (const canvas of await ctx.db

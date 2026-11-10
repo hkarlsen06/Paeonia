@@ -36,6 +36,7 @@ const GROUP_TITLES: Record<ExportGroup, Record<ExportLocale, string>> = {
   chat: { en: "Chat", nb: "Samtaler" },
   memories: { en: "Memories", nb: "Minner" },
   stories: { en: "Stories and notes", nb: "Stories og notater" },
+  letters: { en: "Letters", nb: "Brev" },
   drawings: { en: "Drawings", nb: "Tegninger" },
   games: { en: "Games", nb: "Spill" },
   location: { en: "Location", nb: "Posisjon" },

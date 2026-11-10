@@ -33,6 +33,7 @@ import { consensioTables } from "./lib/consensio";
 import { guessMySpotTables } from "./lib/guessMySpot";
 import { mindMeldTables } from "./lib/mindMeld";
 import { placeField } from "./lib/places";
+import { LETTER_DELIVERY_KINDS, LETTER_STATES, LETTER_TEMPLATE_KEYS } from "./lib/letters";
 
 // Conventions (see backend/AGENTS.md):
 // - Field names match the SQL columns. uuid columns are lowercase strings.
@@ -502,6 +503,7 @@ export default defineSchema({
       "media_asset",
       "profile",
       "conduct",
+      "letter",
     ),
     daily_answer_id: optUuid,
     memory_id: optUuid,
@@ -514,6 +516,7 @@ export default defineSchema({
     media_asset_id: optUuid,
     profile_user_id: optUuid,
     conduct_user_id: optUuid,
+    letter_id: optUuid,
     created_at: ts,
     live_target_deleted_at: optTs,
   })
@@ -530,7 +533,8 @@ export default defineSchema({
       "message_media_asset_id",
     ])
     .index("by_profile_user_id", ["profile_user_id"])
-    .index("by_widget_drawing_revision_id", ["widget_drawing_revision_id"]),
+    .index("by_widget_drawing_revision_id", ["widget_drawing_revision_id"])
+    .index("by_letter_id", ["letter_id"]),
 
   // FK: couple_id -> couples cascade; pair_id -> relationship_pairs restrict
   content_reports: defineTable({
@@ -914,6 +918,34 @@ export default defineSchema({
     .index("by_couple_id_user_id", ["couple_id", "user_id"])
     .index("by_created_at", ["created_at"]),
 
+  // A letter one partner writes to the other (lib/letters.ts). It stays sealed until deliver_at,
+  // when `deliver_letter` delivers it, and the recipient opens it. The recipient never reads a
+  // sealed letter, nor the body or image of one they have not opened (`get_letters`, the image
+  // read check). Only the author deletes, which sets deleted_at.
+  // FK: couple_id -> couples cascade; author_user_id, recipient_user_id -> users cascade;
+  // media_asset_id -> media_assets restrict.
+  letters: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    author_user_id: uuid,
+    recipient_user_id: uuid,
+    template_key: literals(...LETTER_TEMPLATE_KEYS),
+    body: v.string(),
+    media_asset_id: optUuid,
+    delivery_kind: literals(...LETTER_DELIVERY_KINDS),
+    deliver_at: optTs,
+    state: literals(...LETTER_STATES),
+    delivered_at: optTs,
+    opened_at: optTs,
+    ...moderation,
+    created_at: ts,
+    deleted_at: optTs,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id_created_at", ["couple_id", "created_at"])
+    .index("by_recipient_user_id_state", ["recipient_user_id", "state"])
+    .index("by_media_asset_id", ["media_asset_id"]),
+
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
   location_sharing_preferences: defineTable({
     couple_id: uuid,
@@ -957,6 +989,7 @@ export default defineSchema({
       "exquisite_corpse_part", // Exquisite corpse
       "story",
       "guess_my_spot_round", // Guess my spot
+      "letter",
       "report_snapshot",
     ),
     reserved_parent_id: uuid,
@@ -976,6 +1009,7 @@ export default defineSchema({
       "exquisite_corpse_strip", // Exquisite corpse
       "story_photo",
       "guess_my_spot_photo", // Guess my spot
+      "letter_image",
       "report_snapshot",
     ),
     expected_media_type: mediaType,
@@ -1147,6 +1181,8 @@ export default defineSchema({
     // Opt-in "question time" reminder. `question_time_minutes` counts minutes after local midnight (0 to 1439).
     question_time_enabled: v.boolean(),
     question_time_minutes: v.number(),
+    // Letter pushes. Missing reads as on, so rows from before letters existed need no rewrite.
+    letters_enabled: v.optional(v.boolean()),
   })
     .index("by_user_id", ["user_id"])
     .index("by_question_time_enabled", ["question_time_enabled"])

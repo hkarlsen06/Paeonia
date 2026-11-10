@@ -4,8 +4,9 @@ import type { Doc } from "../_generated/dataModel";
 import { listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { checkViolation, fail } from "./errors";
-import { memoryDeepLink, storyDeepLink } from "./deepLinks";
+import { letterDeepLink, memoryDeepLink, storyDeepLink } from "./deepLinks";
 import { isJsonObject, jsonbByteLength } from "./json";
+import { lettersEnabled } from "./letters";
 import { newUuid } from "./ids";
 import { nameForViewer } from "./partnerNames";
 import { notificationAlertBody, notificationAlertTitle, notificationLocaleLanguage } from "./notificationCopy";
@@ -67,6 +68,8 @@ const NOTIFICATION_PAYLOAD_FIELDS = {
   ],
   badge_update: ["type"],
   data_export_ready: ["type", "route", "deeplink", "export_id"],
+  letter_arrived: ["type", "couple_id", "actor_user_id", "route", "deeplink", "letter_id"],
+  letter_opened: ["type", "couple_id", "actor_user_id", "route", "deeplink", "letter_id"],
 } as const satisfies Record<string, readonly string[]>;
 export type NotificationKind = keyof typeof NOTIFICATION_PAYLOAD_FIELDS;
 export const NOTIFICATION_KINDS = Object.keys(NOTIFICATION_PAYLOAD_FIELDS) as NotificationKind[];
@@ -269,6 +272,9 @@ export function preferenceAllows(
       return preference.games_enabled;
     case "reaction_added":
       return reactionPreferenceAllows(payload?.target_kind, preference);
+    case "letter_arrived":
+    case "letter_opened":
+      return lettersEnabled(preference);
     default:
       return true;
   }
@@ -615,6 +621,36 @@ export async function enqueueStoryPostedNotification(ctx: WriterCtx, story: Doc<
     redaction_level: "private",
     apns_push_type: "alert",
     apns_collapse_id: `story:${story.couple_id}`,
+    scheduled_for: nowIso(),
+  });
+}
+
+/**
+ * Queues the push about a letter: `letter_arrived` to the recipient when it is delivered, and
+ * `letter_opened` to the author when the recipient opens it. The payload never holds the letter's words.
+ */
+export async function enqueueLetterNotification(
+  ctx: WriterCtx,
+  letter: Doc<"letters">,
+  kind: "letter_arrived" | "letter_opened",
+): Promise<void> {
+  const [recipient, actor] = kind === "letter_arrived"
+    ? [letter.recipient_user_id, letter.author_user_id]
+    : [letter.author_user_id, letter.recipient_user_id];
+  await enqueueNotificationForUser(ctx, {
+    recipient_user_id: recipient,
+    kind,
+    payload: {
+      type: kind,
+      couple_id: letter.couple_id,
+      letter_id: letter.id,
+      actor_user_id: actor,
+      route: "us",
+      deeplink: letterDeepLink(letter.id),
+    },
+    dedupe_key: `${kind}:${letter.id}`,
+    apns_push_type: "alert",
+    apns_collapse_id: `letter:${letter.id}`,
     scheduled_for: nowIso(),
   });
 }
