@@ -1,9 +1,10 @@
 /// <reference types="vite/client" />
 // Shared helpers for the daily and streak tests. The two dots in the file name keep Convex from bundling this file.
 import type { Doc } from "./_generated/dataModel";
+import { getDailyAnswerDetails } from "./lib/dailyAnswers";
 import { newUuid } from "./lib/ids";
 import { nowIso } from "./lib/time";
-import type { TestConvex } from "./test.setup";
+import type { TestConvex, TestUser } from "./test.setup";
 
 export type AnswerKind = "text" | "photo" | "voice" | "partner_choice";
 
@@ -15,6 +16,11 @@ export type SeedQuestion = {
 };
 
 export type SeededQuestion = { id: string; versionId: string; key: string };
+
+/** Every answer on one couple day as `user` sees it, with the reveal rule and the couple access check applied. */
+export function answerDetails(t: TestConvex, user: TestUser, coupleDayId: string) {
+  return t.run((ctx) => getDailyAnswerDetails(ctx, user.userId, coupleDayId));
+}
 
 /** `count` text-only questions named q_01, q_02, and so on. */
 export function textQuestions(count: number): SeedQuestion[] {

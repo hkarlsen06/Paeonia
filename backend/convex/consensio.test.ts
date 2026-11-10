@@ -373,7 +373,7 @@ describe("pushes", () => {
 });
 
 describe("turn reminder", () => {
-  const run = (s: Setup) => s.t.mutation(internal.consensio.send_due_consensio_reminders, {});
+  const run = (s: Setup) => s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {});
   const reminders = async (s: Setup) => (await outbox(s.t)).filter((row) => row.kind === "game_turn_reminder");
 
   test("one reminder per turn, for a guess and for a placement", async () => {

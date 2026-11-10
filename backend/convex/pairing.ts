@@ -8,7 +8,7 @@ import { runClientOperation } from "./lib/clientOperations";
 import { hmacSha256Hex } from "./lib/crypto";
 import { getByUuid, type ReaderCtx, withUpdatedAt } from "./lib/db";
 import { fail, uniqueViolation } from "./lib/errors";
-import { newUuid, optionalDateArg, optionalTimestampArg, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
+import { newUuid, optionalDateArg, optionalTimestampArg, timestampArg, uuidArg } from "./lib/ids";
 import { materializeFirstDayDrafts } from "./lib/firstDay";
 import { enqueueNotificationForUser } from "./lib/notifications";
 import { findActiveReviewAccessCode, redeemReviewAccess } from "./lib/reviewAccess";
@@ -194,20 +194,6 @@ export const rotate_pairing_invite = mutation({
       return { invite_id: newInviteId };
     });
     return outcome.invite_id;
-  },
-});
-
-export const revoke_pairing_invite = mutation({
-  args: { p_invite_id: v.union(v.null(), v.string()) },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const inviteId = optionalUuidArg(args.p_invite_id);
-    const invite = await getByUuid(ctx, "pairing_invites", inviteId);
-    if (!invite || invite.created_by_user_id !== userId || invite.status !== "pending") {
-      return false;
-    }
-    await ctx.db.patch(invite._id, withUpdatedAt({ status: "revoked" as const, revoked_at: nowIso() }));
-    return true;
   },
 });
 

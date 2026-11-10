@@ -7,13 +7,10 @@ import { runClientOperation } from "./lib/clientOperations";
 import { findCoupleDayAt, getOrCreateCoupleDayAt, resolveCoupleDayAnchor } from "./lib/coupleDays";
 import { getByUuid, type ReaderCtx } from "./lib/db";
 import {
-  getDailyAnswerDetails,
   getDailyAnswerDetailsForContext,
   getDailyAnswerHistoryDetails,
   resetDailyChallengeForCouple,
   submitDailyAnswer,
-  updateDailyAnswerPartnerChoice,
-  updateDailyAnswerText,
   type ClientOperationArgs,
 } from "./lib/dailyAnswers";
 import {
@@ -27,7 +24,7 @@ import {
 } from "./lib/dailyQuestions";
 import { addRoundInfo } from "./lib/dailyQuestionRounds";
 import { fail } from "./lib/errors";
-import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
+import { newUuid, timestampArg, uuidArg } from "./lib/ids";
 import {
   getCoupleStreakForCouple,
   getCoupleStreakParticipationForDay,
@@ -308,37 +305,7 @@ export const submit_daily_answer = mutation({
   },
 });
 
-export const update_daily_answer_text = mutation({
-  args: { p_instance_id: v.string(), p_text: nullableString, ...clientOperationArgs },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const operation = operationFrom(args);
-    return await updateDailyAnswerText(ctx, userId, uuidArg(args.p_instance_id), args.p_text, operation);
-  },
-});
-
-export const update_daily_answer_partner_choice = mutation({
-  args: { p_instance_id: v.string(), p_selected_user_id: nullableString, ...clientOperationArgs },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const operation = operationFrom(args);
-    return await updateDailyAnswerPartnerChoice(
-      ctx,
-      userId,
-      uuidArg(args.p_instance_id),
-      optionalUuidArg(args.p_selected_user_id),
-      operation,
-    );
-  },
-});
-
 // ---- answer reads ----
-
-export const get_daily_answer_details = query({
-  args: { p_couple_day_id: v.string() },
-  handler: async (ctx, args) =>
-    await getDailyAnswerDetails(ctx, await requireUserId(ctx), uuidArg(args.p_couple_day_id)),
-});
 
 export const get_daily_questions_history = query({
   args: {},

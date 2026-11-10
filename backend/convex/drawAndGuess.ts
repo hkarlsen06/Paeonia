@@ -175,21 +175,6 @@ export const get_draw_and_guess = query({
   },
 });
 
-/**
- * One round by id, in the same shape as the rounds of `get_draw_and_guess`. The phone uses it
- * to find a round that is no longer among the recent rounds. Null when the couple has no such round.
- */
-export const get_draw_and_guess_round = query({
-  args: { p_round_id: v.string() },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    const move = await getByUuid(ctx, "game_moves", uuidArg(args.p_round_id));
-    if (!move || move.couple_id !== coupleId) return null;
-    return await roundJson(ctx, move);
-  },
-});
-
 // --- Draw & Guess: the turn --------------------------------------------------
 
 /** Picks the word and starts the round. The round exists from this moment, so the partner can start guessing. */

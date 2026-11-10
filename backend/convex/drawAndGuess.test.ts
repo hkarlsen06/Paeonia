@@ -1418,38 +1418,6 @@ describe("recent rounds", () => {
     expect(data.game?.turn_number).toBe(23);
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
-
-  test("get_draw_and_guess_round finds a round past the recent list, for the couple only", async () => {
-    const s = await startGame();
-    const first = await pick(s.a, s.gameId, "easy");
-    await sendDrawing(s, s.a, first.round_id);
-    await guess(s.b, first.round_id, first.word);
-    let drawer = s.b;
-    let guesser = s.a;
-    for (let index = 0; index < 21; index += 1) {
-      const picked = await pick(drawer, s.gameId, "easy");
-      await sendDrawing(s, drawer, picked.round_id);
-      await guess(guesser, picked.round_id, picked.word);
-      [drawer, guesser] = [guesser, drawer];
-    }
-    const listed = await view(s.b);
-    expect([listed.current_round, ...listed.recent_rounds].map((round) => round?.id)).not.toContain(first.round_id);
-
-    const byId = (user: TestUser, roundId: string) => user.as.query(api.drawAndGuess.get_draw_and_guess_round, { p_round_id: roundId });
-    const round = await byId(s.b, first.round_id.toUpperCase());
-    expect(round).toMatchObject({ id: first.round_id, state: "solved", round_number: 1 });
-    expect(round?.drawing_media_asset_id).toEqual(expect.any(String));
-    expect(Object.keys(round ?? {}).sort()).toEqual(Object.keys(listed.recent_rounds[0]).sort());
-    expect(await byId(s.b, newUuid())).toBeNull();
-
-    const other = await createCouple(s.t);
-    expect(await byId(other.first, first.round_id)).toBeNull();
-    const loner = await createSignedInUser(s.t, { name: "Loner" });
-    expect((await failure(byId(loner, first.round_id))).code).toBe("42501");
-    await endCouple(s.t, s.couple.coupleId, s.a.userId);
-    expect((await failure(byId(s.b, first.round_id))).code).toBe("42501");
-    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
 });
 
 test("a round with more than 200 attempts returns the newest ones and the exact count", async () => {

@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import type { ApnsSendRequest, ApnsSendResult } from "./lib/apns";
 import { newUuid } from "./lib/ids";
 import { insertNotificationOutbox, insertWidgetPushOutbox } from "./lib/notifications";
+import { finishPush } from "./push.testing";
 import { addDevice, createSignedInUser, newTest, transactionClock, type TestConvex } from "./test.setup";
 
 // Stands in for APNs. `push:send_push` imports `sendWithEnvironmentFallback` from lib/apns.
@@ -94,7 +95,10 @@ describe("prepare_notification", () => {
       lock_screen_detail_level: "private",
     });
     // A sent row is not sent again.
-    await t.mutation(internal.pushQueue.mark_push_result, { kind: "app", outbox_id: (await rowByDedupe(t, "a")).id });
+    await finishPush(t, { kind: "app", outbox_id: (await rowByDedupe(t, "a")).id }, {
+      kind: "success",
+      returnValue: { device_id: device.id, invalid_token: false },
+    });
     expect(await prepare(t, "a")).toBeNull();
   });
 
@@ -176,31 +180,32 @@ describe("prepare_notification", () => {
   });
 });
 
-describe("mark_push_result", () => {
+describe("push_finished", () => {
   async function queued() {
     const { t, user, device } = await setup();
     await queue(t, user, device, { dedupe: "a" });
-    return { t, outboxId: (await rowByDedupe(t, "a")).id };
+    return { t, device, outboxId: (await rowByDedupe(t, "a")).id };
   }
   const row = async (t: TestConvex) => (await outboxRows(t))[0];
+  const fail = (t: TestConvex, outboxId: string, error: string) =>
+    finishPush(t, { kind: "app", outbox_id: outboxId }, { kind: "failed", error });
 
   test("success records the provider id, and a later result cannot undo it", async () => {
-    const { t, outboxId } = await queued();
-    await t.mutation(internal.pushQueue.mark_push_result, {
-      kind: "app",
-      outbox_id: outboxId.toUpperCase(),
-      provider_message_id: "  apns-id-1 ",
+    const { t, device, outboxId } = await queued();
+    await finishPush(t, { kind: "app", outbox_id: outboxId.toUpperCase() }, {
+      kind: "success",
+      returnValue: { device_id: device.id, provider_message_id: "  apns-id-1 ", invalid_token: false },
     });
     const timestamp = await transactionClock(t);
     expect(await row(t)).toMatchObject({ sent_at: timestamp(NOW), provider_message_id: "apns-id-1" });
-    await t.mutation(internal.pushQueue.mark_push_result, { kind: "app", outbox_id: outboxId, error: "late" });
+    await fail(t, outboxId, "late");
     expect((await row(t)).failed_at).toBeUndefined();
     expect((await row(t)).last_error).toBeUndefined();
   });
 
   test("a failure fails the row and truncates a long error", async () => {
     const { t, outboxId } = await queued();
-    await t.mutation(internal.pushQueue.mark_push_result, { kind: "app", outbox_id: outboxId, error: "x".repeat(3000) });
+    await fail(t, outboxId, "x".repeat(3000));
     const result = await row(t);
     const timestamp = await transactionClock(t);
     expect(result.failed_at).toBe(timestamp(NOW));
@@ -209,7 +214,7 @@ describe("mark_push_result", () => {
 
   test("a blank error still says the delivery failed", async () => {
     const { t, outboxId } = await queued();
-    await t.mutation(internal.pushQueue.mark_push_result, { kind: "app", outbox_id: outboxId, error: "  " });
+    await fail(t, outboxId, "  ");
     const timestamp = await transactionClock(t);
     expect(await row(t)).toMatchObject({ failed_at: timestamp(NOW), last_error: "delivery failed" });
   });
@@ -265,7 +270,7 @@ describe("prepare_widget_push", () => {
       payload: { type: "widget_updated" },
     });
 
-    await t.mutation(internal.pushQueue.disable_device, { kind: "widget", device_id: device.id });
+    await t.run((ctx) => ctx.db.patch(device._id, { disabled_at: EARLIER }));
     expect(await t.mutation(internal.pushQueue.prepare_widget_push, { outbox_id: outboxId })).toBeNull();
     const timestamp = await transactionClock(t);
     expect((await widgetRows(t))[0]).toMatchObject({ failed_at: timestamp(NOW), last_error: "notification target is no longer eligible" });
@@ -273,16 +278,18 @@ describe("prepare_widget_push", () => {
 });
 
 describe("devices", () => {
-  test("disable_device retires the device once, persist_device_environment updates it", async () => {
+  test("push_finished remembers the host APNs confirmed, and retires a dead token's device once", async () => {
     const { t, device } = await setup();
-    await t.mutation(internal.pushQueue.persist_device_environment, { kind: "app", device_id: device.id, apns_environment: "production" });
+    const finished = (outcome: { confirmed_environment?: "production"; invalid_token: boolean }) =>
+      finishPush(t, { kind: "app", outbox_id: newUuid() }, { kind: "success", returnValue: { device_id: device.id, ...outcome } });
+    await finished({ confirmed_environment: "production", invalid_token: false });
     const row = () => t.run((ctx) => ctx.db.query("user_devices").first());
     expect(await row()).toMatchObject({ apns_environment: "production", revision: 2 });
-    await t.mutation(internal.pushQueue.disable_device, { kind: "app", device_id: device.id });
+    await finished({ invalid_token: true });
     const timestamp = await transactionClock(t);
     expect(await row()).toMatchObject({ disabled_at: timestamp(NOW), revision: 3 });
     vi.setSystemTime(new Date("2026-10-10T13:00:00.000Z"));
-    await t.mutation(internal.pushQueue.disable_device, { kind: "app", device_id: device.id });
+    await finished({ invalid_token: true });
     expect(await row()).toMatchObject({ disabled_at: timestamp(NOW), revision: 3 });
   });
 });

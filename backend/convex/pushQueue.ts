@@ -256,20 +256,6 @@ async function recordResult(
   );
 }
 
-/** Port of `internal.mark_notification_result`. Without `error` the row is sent, with it the row failed for good. */
-export const mark_push_result = internalMutation({
-  args: {
-    kind: deviceKind,
-    outbox_id: v.string(),
-    provider_message_id: v.optional(v.string()),
-    error: v.optional(v.string()),
-  },
-  handler: async (ctx, { kind, outbox_id, ...result }) => {
-    await recordResult(ctx, kind, outbox_id, result);
-    return null;
-  },
-});
-
 /** What `push:send_push` returns once APNs answered for good. `push_finished` records it. */
 export type PushOutcome = {
   device_id: string;
@@ -341,21 +327,3 @@ async function disableDevice(ctx: WriterCtx, kind: DeviceKind, deviceId: string)
     }
   }
 }
-
-/** Sets the APNs host a device's pushes go to. */
-export const persist_device_environment = internalMutation({
-  args: { kind: deviceKind, device_id: v.string(), apns_environment: v.union(v.literal("sandbox"), v.literal("production")) },
-  handler: async (ctx, args) => {
-    await persistDeviceEnvironment(ctx, args.kind, args.device_id, args.apns_environment);
-    return null;
-  },
-});
-
-/** Retires a device whose token APNs rejected. */
-export const disable_device = internalMutation({
-  args: { kind: deviceKind, device_id: v.string() },
-  handler: async (ctx, args) => {
-    await disableDevice(ctx, args.kind, args.device_id);
-    return null;
-  },
-});

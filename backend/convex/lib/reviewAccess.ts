@@ -267,18 +267,6 @@ export async function redeemReviewAccess(
   return coupleId;
 }
 
-/** The review-code half of `internal.expire_stale_invites_and_review_codes`. Returns `review_codes_expired`. */
-export async function expireStaleReviewCodes(ctx: WriterCtx, now: string, limit: number): Promise<number> {
-  const codes = await ctx.db
-    .query("review_access_codes")
-    .withIndex("by_status_expires_at", (q) => q.eq("status", "active").gt("expires_at", "").lte("expires_at", now))
-    .take(limit);
-  for (const code of codes) {
-    await ctx.db.patch(code._id, { status: "expired" });
-  }
-  return codes.length;
-}
-
 /** Inserts a review access code. Port of `internal.issue_review_access_code`. */
 export async function issueReviewAccessCode(
   ctx: WriterCtx,

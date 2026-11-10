@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
@@ -17,7 +17,6 @@ import {
   patchGame,
   pointsFor,
   RESULT_PUSH_DELAY_MS,
-  sendDueConsensioReminders,
   SPOT_ON_DISTANCE,
   validateOwnTopic,
   type ConsensioGame,
@@ -412,12 +411,4 @@ export const mark_consensio_reveal_seen = mutation({
     await patchGame(ctx, game);
     return { round_id: round.id, reveal_seen_at: now };
   },
-});
-
-// --- Reminders --------------------------------------------------------------
-
-/** The single reminder for a turn that waited 72 hours. `consensioBackend.sendDueTurnReminders` runs the same code. */
-export const send_due_consensio_reminders = internalMutation({
-  args: {},
-  handler: async (ctx) => await sendDueConsensioReminders(ctx, nowIso()),
 });

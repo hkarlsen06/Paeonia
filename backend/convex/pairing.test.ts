@@ -4,7 +4,7 @@ import { sha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { setMediaEnv, uploadAsset } from "./media.testing";
 import { hashPairingInviteCode } from "./pairing";
-import { createCouple, createSignedInUser, grantLifetime, newTest, relationshipStateOf, transactionClock, type TestConvex, type TestUser } from "./test.setup";
+import { createCouple, createSignedInUser, grantLifetime, newTest, relationshipStateOf, revokeInvite, transactionClock, type TestConvex, type TestUser } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
@@ -213,7 +213,7 @@ describe("preview_pairing_invite", () => {
     });
     expect(await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ABC123" })).toEqual([]);
 
-    await owner.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: id });
+    await revokeInvite(t, id);
     expect(await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ABC123" })).toEqual([]);
   });
 
@@ -365,7 +365,7 @@ describe("accept_pairing_invite", () => {
     await expectFail(accept(guest), "22023", "pairing invite is expired");
     vi.setSystemTime(new Date(NOW));
 
-    await owner.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: inviteId });
+    await revokeInvite(t, inviteId);
     await expectFail(accept(guest), "22023", "pairing invite is not pending");
     expect(await t.run((ctx) => ctx.db.query("couples").collect())).toHaveLength(0);
   });
@@ -449,20 +449,7 @@ describe("accept_pairing_invite", () => {
   });
 });
 
-describe("revoke, validate, and rotate", () => {
-  test("revoke_pairing_invite only revokes the caller's pending invites", async () => {
-    const t = newTest();
-    const owner = await inviter(t);
-    const other = await createSignedInUser(t, {});
-    const id = await createInvite(owner);
-    expect(await other.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: id })).toBe(false);
-    expect(await owner.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: newUuid() })).toBe(false);
-    expect(await owner.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: id.toUpperCase() })).toBe(true);
-    expect(await owner.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: id })).toBe(false);
-    const timestamp = await transactionClock(t);
-    expect(await t.run((ctx) => ctx.db.query("pairing_invites").first())).toMatchObject({ status: "revoked", revoked_at: timestamp(NOW) });
-  });
-
+describe("validate and rotate", () => {
   test("validate_my_pairing_invite reports the status and expires stale invites", async () => {
     const t = newTest();
     const owner = await inviter(t);

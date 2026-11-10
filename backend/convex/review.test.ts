@@ -165,10 +165,6 @@ describe("review code lookup", () => {
 
     vi.setSystemTime(new Date(NOW.getTime() + 31 * 86_400_000));
     expect(await t.query(internal.review.find_active_review_access_code, { p_code: "ABC123" })).toBeNull();
-    expect(await t.mutation(internal.review.expire_stale_review_codes, {})).toBe(1);
-    const code = await t.run((ctx) => ctx.db.query("review_access_codes").first());
-    expect(code!.status).toBe("expired");
-    expect(await t.mutation(internal.review.expire_stale_review_codes, {})).toBe(0);
   });
 
   test("issuing validates the code row", async () => {

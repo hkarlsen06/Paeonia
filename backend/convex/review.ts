@@ -6,7 +6,6 @@ import { fail, uniqueViolation } from "./lib/errors";
 import { optionalTimestampArg, uuidArg } from "./lib/ids";
 import {
   ensureReviewPartner,
-  expireStaleReviewCodes,
   findActiveReviewAccessCode,
   hashReviewAccessCode,
   issueReviewAccessCode,
@@ -149,23 +148,4 @@ export const list_review_demo_partners = internalQuery({
 export const reset_review_demo = internalMutation({
   args: {},
   handler: async (ctx) => await resetReviewDemo(ctx),
-});
-
-/**
- * Review-code half of `internal.expire_stale_invites_and_review_codes`. The
- * pairing module owns the invite half. Returns `review_codes_expired`.
- */
-export const expire_stale_review_codes = internalMutation({
-  args: { p_now: v.optional(v.union(v.null(), v.string())), p_limit: v.optional(v.union(v.null(), v.number())) },
-  handler: async (ctx, args) => {
-    const now = args.p_now === undefined ? nowIso() : optionalTimestampArg(args.p_now);
-    if (now === undefined) {
-      return fail("23514", "expiry timestamp is required");
-    }
-    const limit = args.p_limit === undefined ? 500 : args.p_limit;
-    if (limit === null || limit < 1 || limit > 5000) {
-      return fail("23514", "expiry limit is out of range");
-    }
-    return await expireStaleReviewCodes(ctx, now, limit);
-  },
 });

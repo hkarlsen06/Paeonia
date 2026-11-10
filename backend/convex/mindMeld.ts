@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
@@ -19,7 +19,6 @@ import {
   normalizeWord,
   patchGame,
   roundOutcome,
-  sendDueMindMeldReminders,
   validateWord,
   WORD_PROBLEM_MESSAGES,
   type RoundOutcome,
@@ -515,15 +514,4 @@ export const mark_mind_meld_end_seen = mutation({
     await patchGame(ctx, game, { end_seen_by_user: { ...game.end_seen_by_user, [userId]: now } });
     return { game_id: game.id, end_seen_at: now };
   },
-});
-
-// --- Reminders --------------------------------------------------------------
-
-/**
- * The single reminder for a round that waited 72 hours for the partner who has not locked in.
- * Returns the number of pushes queued. `mindMeldBackend.sendDueTurnReminders` runs the same code.
- */
-export const send_due_mind_meld_reminders = internalMutation({
-  args: {},
-  handler: async (ctx) => await sendDueMindMeldReminders(ctx, nowIso()),
 });

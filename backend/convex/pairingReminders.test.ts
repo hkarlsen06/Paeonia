@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { deliverDuePushes } from "./push.testing";
-import { addDevice, createSignedInUser, grantLifetime, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { addDevice, createSignedInUser, grantLifetime, newTest, revokeInvite, type TestConvex, type TestUser } from "./test.setup";
 
 // 2026-10-10 is summer time in Oslo (UTC+2), so 12:00Z is 14:00 on the inviter's clock.
 const NOW = "2026-10-10T12:00:00.000Z";
@@ -104,7 +104,7 @@ describe("send_pairing_invite_reminders", () => {
     const t = newTest();
     const cancelled = await waitingInviter(t);
     const cancelledId = await createInvite(cancelled, "ABC123");
-    await cancelled.as.mutation(api.pairing.revoke_pairing_invite, { p_invite_id: cancelledId });
+    await revokeInvite(t, cancelledId);
 
     const twice = await waitingInviter(t);
     await createInvite(twice, "K7M2PQ");

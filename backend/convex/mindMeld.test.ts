@@ -610,7 +610,7 @@ describe("pushes", () => {
 });
 
 describe("turn reminder", () => {
-  const run = (s: Setup) => s.t.mutation(internal.mindMeld.send_due_mind_meld_reminders, {});
+  const run = (s: Setup) => s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {});
   const reminders = async (s: Setup) => (await outbox(s.t)).filter((row) => row.kind === "game_turn_reminder");
 
   test("goes out once, 72 hours after the first lock-in, to the partner who has not locked in", async () => {

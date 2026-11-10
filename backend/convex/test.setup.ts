@@ -164,6 +164,14 @@ export async function grantLifetime(t: TestConvex, userId: string): Promise<void
   });
 }
 
+/** Marks an invite revoked, as `rotate_pairing_invite` and account deletion leave an old one. */
+export async function revokeInvite(t: TestConvex, inviteId: string): Promise<void> {
+  await t.run(async (ctx) => {
+    const invite = await ctx.db.query("pairing_invites").withIndex("by_uuid", (q) => q.eq("id", inviteId)).unique();
+    await ctx.db.patch(invite!._id, { status: "revoked", revoked_at: nowIso() });
+  });
+}
+
 /** Convex pins Date inside a transaction and may advance it beyond a frozen wall clock. */
 export async function transactionNow(t: TestConvex): Promise<number> {
   return await t.run(async () => Date.now());

@@ -624,16 +624,21 @@ export async function insertDailyAnswer(
   }
 }
 
-type EditKind = "text" | "partner_choice";
-
-/** Shared body of `internal.update_daily_answer_text` and `internal.update_daily_answer_partner_choice`. */
-async function editDailyAnswer(
+/** Port of `internal.update_daily_answer_text`. */
+export async function updateDailyAnswerText(
   ctx: WriterCtx,
   userId: string,
   instanceId: string,
+  text: string | null | undefined,
   operation: ClientOperationArgs,
-  edit: { kind: EditKind; operationKind: string; request: unknown; text?: string; selectedUserId?: string },
 ): Promise<string> {
+  const body = btrim(text ?? "");
+  if (body === "") {
+    fail("23514", "answer text is required");
+  }
+  if (charLength(body) > 2000) {
+    fail("23514", "answer text is too long");
+  }
   const result = await runClientOperation(
     ctx,
     userId,
@@ -642,9 +647,9 @@ async function editDailyAnswer(
       client_id: operation.clientId,
       client_sequence: operation.clientSequence,
       local_created_at: operation.localCreatedAt,
-      operation_kind: edit.operationKind,
+      operation_kind: "update_daily_answer_text",
       idempotency_scope: "daily_challenges",
-      request: edit.request,
+      request: { kind: "update_daily_answer_text", instance_id: instanceId, text: body },
     },
     async () => {
       const { instance, day } = await instanceContext(ctx, instanceId, "shuffled daily questions cannot be edited");
@@ -670,62 +675,16 @@ async function editDailyAnswer(
       if (partnerAnswered) {
         fail("23514", "answers cannot be edited after your partner has answered");
       }
-      if (!(await answerKindsOf(ctx, instance.question_version_id)).includes(edit.kind)) {
+      if (!(await answerKindsOf(ctx, instance.question_version_id)).includes("text")) {
         fail("23514", "answer kind is not allowed for this question");
       }
-      if (edit.kind === "text") {
-        await upsertAnswerText(ctx, own, instance, edit.text!);
-      } else {
-        await upsertAnswerPartnerChoice(ctx, own, instance, edit.selectedUserId!);
-      }
+      await upsertAnswerText(ctx, own, instance, body);
       // Restate the answer's effective time so "answered at" follows the edit.
       await ctx.db.patch(own._id, withUpdatedAt({ created_at: nowIso() }));
       return { answer_id: own.id };
     },
   );
   return result.answer_id;
-}
-
-/** Port of `internal.update_daily_answer_text`. */
-export async function updateDailyAnswerText(
-  ctx: WriterCtx,
-  userId: string,
-  instanceId: string,
-  text: string | null | undefined,
-  operation: ClientOperationArgs,
-): Promise<string> {
-  const body = btrim(text ?? "");
-  if (body === "") {
-    fail("23514", "answer text is required");
-  }
-  if (charLength(body) > 2000) {
-    fail("23514", "answer text is too long");
-  }
-  return await editDailyAnswer(ctx, userId, instanceId, operation, {
-    kind: "text",
-    operationKind: "update_daily_answer_text",
-    request: { kind: "update_daily_answer_text", instance_id: instanceId, text: body },
-    text: body,
-  });
-}
-
-/** Port of `internal.update_daily_answer_partner_choice`. */
-export async function updateDailyAnswerPartnerChoice(
-  ctx: WriterCtx,
-  userId: string,
-  instanceId: string,
-  selectedUserId: string | null | undefined,
-  operation: ClientOperationArgs,
-): Promise<string> {
-  if (!selectedUserId) {
-    fail("23514", "partner choice selection is required");
-  }
-  return await editDailyAnswer(ctx, userId, instanceId, operation, {
-    kind: "partner_choice",
-    operationKind: "update_daily_answer_partner_choice",
-    request: { kind: "update_daily_answer_partner_choice", instance_id: instanceId, selected_user_id: selectedUserId },
-    selectedUserId,
-  });
 }
 
 /** Port of `public.reset_daily_challenge_for_testing`. Returns how many couple days were reset. */

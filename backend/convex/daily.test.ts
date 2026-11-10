@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
-import { currentQuestionFor, dailyQuestionsFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
+import { answerDetails, currentQuestionFor, dailyQuestionsFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
+import { updateDailyAnswerText } from "./lib/dailyAnswers";
 import { newUuid } from "./lib/ids";
 import { deliverDuePushes } from "./push.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, setTimeZone, transactionClock, type TestConvex, type TestUser } from "./test.setup";
@@ -36,6 +37,19 @@ const today = (user: TestUser) =>
 
 function submit(user: TestUser, instanceId: string, payload: Record<string, unknown>, at?: string) {
   return user.as.mutation(api.daily.submit_daily_answer, { p_instance_id: instanceId, p_payload: payload, ...op(at) });
+}
+
+/** The text edit that `firstDay:save_first_day_answer` runs when the answer already exists. */
+function editText(t: TestConvex, user: TestUser, instanceId: string, text: string | null) {
+  const { p_client_operation_id, p_client_id, p_client_sequence, p_local_created_at } = op();
+  return t.run((ctx) =>
+    updateDailyAnswerText(ctx, user.userId, instanceId, text, {
+      clientOperationId: p_client_operation_id,
+      clientId: p_client_id,
+      clientSequence: p_client_sequence,
+      localCreatedAt: p_local_created_at,
+    }),
+  );
 }
 
 async function readyCouple(options: { timeZones?: [string, string]; questions?: Parameters<typeof seedCatalog>[1] } = {}) {
@@ -166,7 +180,7 @@ describe("answers and the reveal rule", () => {
 
     const dayId = bRows[0].couple_day_id;
     const reads = [
-      await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId }),
+      await answerDetails(t, b, dayId),
       await b.as.query(api.daily.get_daily_answer_history_details, {}),
       await b.as.query(api.daily.get_daily_questions_history, {}),
       await b.as.query(api.daily.get_today_daily_challenge_snapshot, {}),
@@ -177,14 +191,14 @@ describe("answers and the reveal rule", () => {
     expect(reads[2]).toEqual([]);
 
     // The author sees their own text, the outsider sees nothing at all.
-    const own = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId });
+    const own = await answerDetails(t, a, dayId);
     expect(own[0]).toMatchObject({ can_view_answer: true, is_own_answer: true, text_body: secret });
     const outsider = await createCouple(t);
-    expect(await outsider.first.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId })).toEqual([]);
+    expect(await answerDetails(t, outsider.first, dayId)).toEqual([]);
 
     // The partner answers, and now both sides see both answers.
     await submit(b, question.id, { text: "reply" });
-    const afterB = await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId });
+    const afterB = await answerDetails(t, b, dayId);
     expect(afterB.map((item) => [item.text_body, item.can_view_answer]).sort()).toEqual([
       [secret, true],
       ["reply", true],
@@ -262,16 +276,16 @@ describe("answers and the reveal rule", () => {
       .toMatchObject({ media_accessibility_text: transcript });
     const day = question.couple_day_id!;
     const hidden = [
-      await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day }),
+      await answerDetails(t, b, day),
       await b.as.query(api.daily.get_daily_answer_history_details, {}),
       await b.as.query(api.daily.get_today_daily_challenge_snapshot, {}),
       await b.as.query(api.dailyQuestionChat.get_daily_question_chat, { p_couple_id: couple.coupleId, p_question_id: question.question_id }),
     ];
     expect(JSON.stringify(hidden)).not.toContain(transcript);
-    expect(await outsider.first.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day })).toEqual([]);
+    expect(await answerDetails(t, outsider.first, day)).toEqual([]);
     await expect(outsider.first.as.query(api.dailyQuestionChat.get_daily_question_chat, { p_couple_id: couple.coupleId, p_question_id: question.question_id })).rejects.toThrow(/42501/);
     await submit(b, question.id, { text: "Me too" });
-    const revealed = await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    const revealed = await answerDetails(t, b, day);
     expect(revealed.find((row) => row.answer_id === answerId)).toMatchObject({ media_accessibility_text: transcript, media_asset_ids: [asset] });
   });
 
@@ -290,9 +304,9 @@ describe("answers and the reveal rule", () => {
     const assetId = await insertAnswerAsset(t, { ownerUserId: a.userId, coupleId: couple.coupleId, answerId });
     await submit(a, question.id, { text: "caption", answer_id: answerId, media_asset_ids: [assetId.toUpperCase()], media_accessibility_text: "Two people beside a lake" });
     const day = question.couple_day_id!;
-    const mine = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    const mine = await answerDetails(t, a, day);
     expect(mine[0]).toMatchObject({ text_body: "caption", media_asset_ids: [assetId], media_accessibility_text: "Two people beside a lake", can_view_answer: true });
-    const theirs = await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    const theirs = await answerDetails(t, b, day);
     expect(theirs[0]).toMatchObject({ text_body: null, media_asset_ids: [], media_accessibility_text: null, can_view_answer: false });
     // The asset has to be reserved for this answer, so tomorrow's question cannot reuse it.
     await nextDay(a, "11");
@@ -305,51 +319,30 @@ describe("answers and the reveal rule", () => {
       const asset = (await ctx.db.query("media_assets").collect())[0];
       await ctx.db.patch(asset._id, { moderation_status: "hidden" });
     });
-    const hidden = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    const hidden = await answerDetails(t, a, day);
     expect(hidden[0].media_asset_ids).toEqual([]);
   });
 
-  test("partner choice answers pick an active member and can be edited until the partner answers", async () => {
-    const { t, couple, a, b, question } = await readyCouple({
+  test("partner choice answers pick an active member", async () => {
+    const { t, a, question } = await readyCouple({
       questions: textQuestions(12).map((item) => ({ ...item, kinds: ["text", "partner_choice"] as ("text" | "partner_choice")[] })),
     });
     const outsider = await createSignedInUser(t);
     await expect(submit(a, question.id, { partner_choice_user_id: outsider.userId })).rejects.toThrow(
       /23514.*partner choice must select an active couple member/,
     );
-    const answerId = await submit(a, question.id, { partner_choice_user_id: a.userId.toUpperCase(), text: "me" });
+    await submit(a, question.id, { partner_choice_user_id: a.userId.toUpperCase(), text: "me" });
     const day = question.couple_day_id!;
-    expect((await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day }))[0].selected_user_id).toBe(a.userId);
-    const edited = await a.as.mutation(api.daily.update_daily_answer_partner_choice, {
-      p_instance_id: question.id,
-      p_selected_user_id: couple.second.userId,
-      ...op(),
-    });
-    expect(edited).toBe(answerId);
-    expect((await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day }))[0].selected_user_id).toBe(
-      couple.second.userId,
-    );
-    await expect(
-      a.as.mutation(api.daily.update_daily_answer_partner_choice, { p_instance_id: question.id, p_selected_user_id: null, ...op() }),
-    ).rejects.toThrow(/23514.*partner choice selection is required/);
-    await submit(b, question.id, { text: "seen" });
-    await expect(
-      a.as.mutation(api.daily.update_daily_answer_partner_choice, {
-        p_instance_id: question.id,
-        p_selected_user_id: a.userId,
-        ...op(),
-      }),
-    ).rejects.toThrow(/23514.*answers cannot be edited after your partner has answered/);
+    expect((await answerDetails(t, a, day))[0].selected_user_id).toBe(a.userId);
   });
 
   test("editing text moves the answered time and locks once the partner answers", async () => {
-    const { a, b, question } = await readyCouple();
+    const { t, a, b, question } = await readyCouple();
     const answerId = await submit(a, question.id, { text: "draft" });
     vi.setSystemTime(new Date("2026-10-10T10:30:00.000Z"));
-    const edit = (user: TestUser, text: string | null) =>
-      user.as.mutation(api.daily.update_daily_answer_text, { p_instance_id: question.id, p_text: text, ...op() });
+    const edit = (user: TestUser, text: string | null) => editText(t, user, question.id, text);
     expect(await edit(a, "  better  ")).toBe(answerId);
-    const [detail] = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: question.couple_day_id! });
+    const [detail] = await answerDetails(t, a, question.couple_day_id!);
     expect(detail).toMatchObject({ text_body: "better", answered_at: "2026-10-10T10:30:00.000Z" });
     await expect(edit(a, "   ")).rejects.toThrow(/23514.*answer text is required/);
     await expect(edit(a, null)).rejects.toThrow(/23514.*answer text is required/);
@@ -554,9 +547,7 @@ describe("shuffle", () => {
     ]);
 
     await expect(submit(a, before.id, { text: "late" })).rejects.toThrow(/23514.*shuffled daily questions cannot be answered/);
-    await expect(
-      a.as.mutation(api.daily.update_daily_answer_text, { p_instance_id: before.id, p_text: "x", ...op() }),
-    ).rejects.toThrow(/23514.*shuffled daily questions cannot be edited/);
+    await expect(editText(t, a, before.id, "x")).rejects.toThrow(/23514.*shuffled daily questions cannot be edited/);
 
     // Once the partner has answered, the question is theirs to share and stays.
     await submit(a, replaced.instance_id, { text: "answered" });

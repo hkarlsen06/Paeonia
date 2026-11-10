@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
@@ -22,7 +22,6 @@ import {
   placeNameArg,
   pointsFor,
   RESULT_PUSH_DELAY_MS,
-  sendDueGuessMySpotReminders,
   type Coordinate,
   type GuessMySpotGame,
   type GuessMySpotRound,
@@ -514,12 +513,4 @@ export const delete_guess_my_spot_round = mutation({
       },
     );
   },
-});
-
-// --- Reminders --------------------------------------------------------------
-
-/** The single reminder for a turn that waited 72 hours. `guessMySpotBackend.sendDueTurnReminders` runs the same code. */
-export const send_due_guess_my_spot_reminders = internalMutation({
-  args: {},
-  handler: async (ctx) => await sendDueGuessMySpotReminders(ctx, nowIso()),
 });

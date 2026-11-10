@@ -416,7 +416,7 @@ Functions.
 - `mark_mind_meld_reveal_seen` (`p_round_id`) and `mark_mind_meld_end_seen` (`p_game_id`): keep the first time. Safe to repeat.
 - `restart_mind_meld`: `p_game_id`. Ends that game if it is still in play (reason `restart`), marks its end seen for the caller, and starts a new game. When the game already ended and a newer one is in play, it returns the newer one.
 - `get_mind_meld_history`: `p_before_game_number`, `p_limit` (capped at 50). Finished games, newest first, with their revealed rounds, and `next_before_game_number`.
-- `send_due_mind_meld_reminders` (internal, cron every 15 minutes): one reminder per round, 72 hours after `waiting_since`.
+- `sendDueTurnReminders` of `mindMeldBackend` sends one reminder per round, 72 hours after `waiting_since`. The 15-minute cron runs it through `gameHooks:send_due_game_turn_reminders`.
 
 Errors follow Draw & Guess so the app's refusal handling works: `42501` for access, `23514` for rules ("this round is already finished", "that word was already used in this game", "word must be 1 to 30 characters in at most three words"), `23505` for "you already locked in a word this round".
 

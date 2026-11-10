@@ -1,7 +1,7 @@
 import type { FunctionArgs } from "convex/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
-import { currentQuestionFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
+import { answerDetails, currentQuestionFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
 import { endCouple, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple } from "./test.setup";
@@ -61,7 +61,7 @@ async function daily(t: TestConvex, couple: TestCouple) {
     p_payload: { answer_id: answerId, media_asset_ids: [assetId], media_accessibility_text: "Original transcript" },
   });
   const target: Target = { kind: "daily", answer_id: answerId };
-  const read = () => couple.second.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: question.couple_day_id! });
+  const read = () => answerDetails(t, couple.second, question.couple_day_id!);
   const remove = () => t.run(async ctx => {
     const answer = await ctx.db.query("daily_question_answers").withIndex("by_uuid", q => q.eq("id", answerId)).unique();
     await ctx.db.patch(answer!._id, { deleted_at: NOW });
