@@ -1,8 +1,0 @@
-identifier	name	result	duration
-AccessibilityJourneyUITests/testDrawingAtAX5InNorwegian()	testDrawingAtAX5InNorwegian()	Passed	14 s
-AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	testHomeAtAX5InNorwegian()	Failed	12 s
-AccessibilityJourneyUITests/testMemoryEditorAtAX5InNorwegian()	testMemoryEditorAtAX5InNorwegian()	Passed	9 s
-AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	testPaywallAtAX5InNorwegian()	Failed	13 s
-AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()	testSettingsAtAX5InNorwegian()	Passed	11 s
-AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	testSignInAtAX5InNorwegian()	Failed	9 s
-AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	testWelcomeAtAX5InNorwegian()	Passed	9 s

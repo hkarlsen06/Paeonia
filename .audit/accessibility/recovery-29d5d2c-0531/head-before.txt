@@ -1,9 +1,0 @@
-29d5d2c096b2fb854699d7377cfee15195586015
-commit 29d5d2c096b2fb854699d7377cfee15195586015
-Author:     hkarlsen06 <hjalmar@hkarlsen06.dev>
-AuthorDate: Sun Nov 1 05:27:59 2026 +0100
-Commit:     hkarlsen06 <hjalmar@hkarlsen06.dev>
-CommitDate: Sun Nov 1 05:28:44 2026 +0100
-
-    test(accessibility): cover enlarged profile editing and cancellation
-feat/accessibility

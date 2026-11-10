@@ -1,9 +1,0 @@
-Manual simulator checks on installed build20261101.0317, sourcebb66d27e, Shared iPhone2/iOS27.0. No assistive technology was running.
-
-Native Settings showed Bold Text, Reduce Transparency, Increase Contrast, Differentiate Without Color Alone and Reduce Motion all off before this check. They were enabled through native controls and actual AX5 through the bound device driver. The screenshots record the setting states. System appearance remained light, while Paeonia retained its dark plum theme.
-
-Opened synthetic paired Home in Bokmal. The heading split within Sammen and native shape creation was below the gesture canvas in first drawing. Those findings prompted later adaptive-layout changes; these screenshots do not verify the fixes. Opened local-flow-fresh, scrolled to Start our space, opened the date step, and Continue reached the first drawing while Reduce Motion was enabled. This is a partial onboarding journey, not a completed creation or animation audit.
-
-Actual Large and all five original off settings were restored. The retained restoration trees verify each switch. One native Settings row had duplicate matches; another snapshot falsely reported a full-screen covering toolbar. The exact row reference and then a screenshot-based coordinate retry opened the visible rows. No external device mechanism was used. Panel closed, simulator lease released.
-
-Original recordings remain /tmp/paeonia-accessibility-home-combination.mp4 and /tmp/paeonia-accessibility-date-reduced-motion.mp4. They have not yet been analyzed frame by frame and establish no complete motion or dark-interface claim.

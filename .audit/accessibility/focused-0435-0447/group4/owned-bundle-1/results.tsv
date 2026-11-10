@@ -1,4 +1,0 @@
-identifier	result	duration_seconds
-DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures()	Passed	35.24989593029022
-NativeKeyboardDiagnosticUITests/testPresentedNativeFormWithSingleKeyboardItem()	Passed	14.715410947799683
-WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()	Passed	25.269450902938843

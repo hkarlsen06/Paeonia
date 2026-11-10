@@ -1,9 +1,0 @@
-Observed 31 October 2026, build 20261031.2119, Shared iPhone 2, iOS 27.0.
-Controlled negative test. The production fixes were temporarily removed in the isolated worktree and restored by an EXIT trap.
-21 tests ran. Five expected failures proved the regressions detect the original behavior:
-- Couple upload dropped the newer description for unchanged drawing bytes.
-- First-day upload dropped the newer description for unchanged drawing bytes.
-- Setting aside unsent strokes stored the remote drawing description.
-- Keeping unsent strokes during partner drawing displayed the remote description.
-- Description-only remote changes relabeled unsent local strokes.
-This is not a passing run. The restored implementation requires its own passing run.

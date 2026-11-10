@@ -1,7 +1,0 @@
-AccessibilityJourneyUITests/testDrawingAudit()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.
-AccessibilityJourneyUITests/testHomeAudit()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.
-AccessibilityJourneyUITests/testMemoryAudit()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.
-AccessibilityJourneyUITests/testPaywallAudit()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.
-AccessibilityJourneyUITests/testPrivacyAudit()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.
-AccessibilityJourneyUITests/testQuestionsAudit()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.
-AccessibilityJourneyUITests/testSignInAudit()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.

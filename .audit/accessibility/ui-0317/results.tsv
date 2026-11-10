@@ -1,7 +1,0 @@
-test	result	duration
-AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	Failed	16 s
-AccessibilityJourneyUITests/testMemoryEditorAtAX5InNorwegian()	Passed	10 s
-AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	Failed	10 s
-AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()	Passed	10 s
-AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	Failed	9 s
-AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	Passed	9 s

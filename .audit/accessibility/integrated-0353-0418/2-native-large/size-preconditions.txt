@@ -1,2 +1,0 @@
-AccessibilityJourneyUITests/testWelcomeAudit()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.
-WelcomeDoodleJourneyUITests/testWelcomeShapeCreationCarriesIntoTheFirstDrawingWithoutTracing()	Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.

@@ -1,1 +1,0 @@
-Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryL. No app size override.

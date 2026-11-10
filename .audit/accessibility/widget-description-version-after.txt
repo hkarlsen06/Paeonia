@@ -1,4 +1,0 @@
-Shared Foundation-only merge reproduction. Application verification still pending.
-Final visible description: Newer correction B
-Final server version: 1002
-Expected newer correction B, version 1002

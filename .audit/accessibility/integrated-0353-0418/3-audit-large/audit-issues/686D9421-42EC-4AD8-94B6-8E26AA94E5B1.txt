@@ -1,4 +1,0 @@
-Type: 1
-Contrast failed
-Contrast failed for SwiftUI.AccessibilityNode
-Element: unavailable

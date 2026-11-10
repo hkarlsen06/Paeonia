@@ -1,1 +1,0 @@
-The same actor probe passed scripts/swift-typecheck with exit 0 at 07c42a17.

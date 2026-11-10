@@ -1,3 +1,0 @@
-identifier	result	duration_seconds
-GameConversationJourneyUITests/testChatDuringGameAndReturnToUnfinishedWord()	Passed	62.311949014663696
-GameConversationJourneyUITests/testEmptyGameChatAndReturnToUnfinishedStory()	Passed	61.731382966041565

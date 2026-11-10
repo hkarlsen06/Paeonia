@@ -81,7 +81,6 @@ Keep `AGENTS.md` for durable rules and constraints. Put feature ownership maps, 
 - `docs/implementation-map.md`: first stop for "which file owns this behavior?"
 - `docs/mvp-release-checklist.md`: active MVP release-readiness checklist.
 - `docs/phase-3-data-contract.md`: product and data-model decisions, written for the retired Supabase schema. `backend/convex/schema.ts` is current.
-- `docs/phase-3-migration-checklist.md`: historical Supabase migration plan. The backend now runs on Convex.
 - `docs/marketing-app-contract.md`: public routes, Universal Links, Cloudflare static files, and marketing app structure.
 - `docs/games-plan.md`: Games tab decisions and build plan. Read it before any games work, and update it in the same change when a games decision or design changes.
 - `backend/AGENTS.md`: backend working rules, local commands, server access, and deploy steps.

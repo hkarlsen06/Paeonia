@@ -50,3 +50,9 @@ xcuserdata/
 *.pem
 certificates/
 .npmrc
+
+# Python bytecode
+__pycache__/
+
+# Blender backup files
+*.blend1

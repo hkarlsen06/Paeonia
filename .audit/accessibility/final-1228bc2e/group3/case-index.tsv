@@ -1,4 +1,0 @@
-identifier	result	seconds
-AccessibilityJourneyUITests/testMemoryEditorAtAX5InNorwegian()	Passed	10.804196000099182
-DailyQuestionJourneyUITests/testPhotoAnswerAtAX5KeepsQuestionAndAttachmentWhileTyping()	Passed	16.522409915924072
-WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()	Passed	25.27743709087372

@@ -36,7 +36,6 @@ Paeonia is ready for MVP when:
 - Original product/data decisions (retired Supabase schema): `docs/phase-3-data-contract.md`
 - Marketing/app contract: `docs/marketing-app-contract.md`
 - Design and copy rules: `docs/phase-2-design/`
-- Historical UX audit with a current status summary: `docs/ux-friction-report.md`
 - Question authoring rules: `.agents/skills/paeonia-questions/`
 
 ## Release Blockers

@@ -1,7 +1,0 @@
-PaeoniaAppUITests/testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing()
-Modern source line 73: XCTAssertTrue(zoom.waitForExistence(timeout: 5))
-zoom = app.steppers["imageCrop.zoom"]
-Wrapper legacy location is zero-based 72.
-Activities show actual Photos grid image selection, cropper Done existence, Adjust Framing tap, then missing stepper. No zoom change, Use framing, profile completion or pairing reached.
-Hierarchy shows framing sheet CollectionView at 0%, 3 pages. Photo preview and explanation fill initial viewport; imageCrop.zoom absent. No retry, scroll repair or source edits.
-All activities, hierarchy, debug queries, snapshots, recording and unfiltered attachments are under test/.

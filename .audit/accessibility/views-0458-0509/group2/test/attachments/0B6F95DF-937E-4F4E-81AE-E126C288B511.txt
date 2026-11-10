@@ -1,4 +1,0 @@
-Query chain:
- →Find: Target Application 'no.paeonia.app'
-  ↪︎Find: Descendants matching type Button
-    ↪︎Find: Elements matching predicate '"imageCrop.done" IN identifiers'

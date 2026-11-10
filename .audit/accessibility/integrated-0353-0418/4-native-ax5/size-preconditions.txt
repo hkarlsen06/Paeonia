@@ -1,2 +1,0 @@
-AccessibilityJourneyUITests/testAnswerAtAX5InNorwegian() Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.
-DailyQuestionJourneyUITests/testPhotoAnswerAtAX5KeepsQuestionAndAttachmentWhileTyping() Actual UIKit preferredContentSizeCategory: UICTContentSizeCategoryAccessibilityXXXL. No app size override.

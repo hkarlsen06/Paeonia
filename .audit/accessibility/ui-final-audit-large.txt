@@ -1,7 +1,0 @@
--only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testSignInAudit
--only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testPaywallAudit
--only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testHomeAudit
--only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testQuestionsAudit
--only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testMemoryAudit
--only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testPrivacyAudit
--only-testing:PaeoniaAppUITests/AccessibilityJourneyUITests/testDrawingAudit

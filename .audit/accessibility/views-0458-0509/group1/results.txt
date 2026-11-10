@@ -1,3 +1,0 @@
-Modern finalized bundle: 3 passed, 0 failed, 0 skipped, 3 total.
-Run: {'state': 'completed', 'exit': 0, 'elapsed': 369.94370913505554}
-Runtime warnings: [{'issueType': 'Runtime Warning', 'message': 'Invalid frame dimension (negative or non-finite).'}]

@@ -1,3 +1,0 @@
-Xcode 27.1
-Build version 27A9275
-/Applications/Xcode.app/Contents/Developer

@@ -1,4 +1,0 @@
-Extracted verbatim from /tmp/paeonia-accessibility-instance-0aad69a/group3/appconsole-runtime-warning-error-lines.txt
-
-2026-11-01 06:08:03.085 F  PaeoniaApp[70973:81cd6d] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
-2026-11-01 06:08:06.270 F  PaeoniaApp[70973:81cd6d] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).

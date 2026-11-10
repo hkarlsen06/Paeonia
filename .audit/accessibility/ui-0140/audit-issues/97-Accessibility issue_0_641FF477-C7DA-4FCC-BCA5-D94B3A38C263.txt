@@ -1,4 +1,0 @@
-Type: 4
-Hit area is too small
-The size of this SwiftUI.AccessibilityNode is too small for user to interact.
-Element: unavailable

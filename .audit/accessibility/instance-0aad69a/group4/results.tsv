@@ -1,4 +1,0 @@
-identifier	result	duration_seconds
-AccessibilityJourneyUITests/testSettingsAtAX5InNorwegian()	Passed	13.165480971336365
-DrawingCompositionUITests/testNativeControlsCreateADrawingWithoutCanvasGestures()	Passed	34.51569199562073
-WidgetHistoryDescriptionUITests/testOwnDescriptionCanBeCorrectedReopenedCancelledAndClearedInHistory()	Passed	27.675508975982666

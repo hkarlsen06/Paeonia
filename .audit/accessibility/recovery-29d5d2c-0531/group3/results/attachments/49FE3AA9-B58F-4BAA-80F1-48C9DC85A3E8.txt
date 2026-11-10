@@ -1,5 +1,0 @@
-Query chain:
- →Find: Target Application 'no.paeonia.app'
-  ↪︎Find: Descendants matching type Other
-    ↪︎Find: Elements matching predicate '"widgetDrawing.canvas" IN identifiers'
-      ↪︎Find: First Match
