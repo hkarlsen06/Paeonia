@@ -68,13 +68,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If you allow this, Paeonia sends your location to your partner each time you move a good distance, even when you're not using the app. You can turn it off anytime in Settings."
+            "value" : "If you allow this, Paeonia sends your location to your partner each time you move a good distance, even when you're not using the app, and notices when you're together so your streak can rest. You can turn it off anytime in Settings."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hvis du tillater dette, sender Paeonia posisjonen din til partneren din hver gang du flytter deg et godt stykke, også når du ikke bruker appen. Du kan slå det av når som helst i Innstillinger."
+            "value" : "Hvis du tillater dette, sender Paeonia posisjonen din til partneren din hver gang du flytter deg et godt stykke, også når du ikke bruker appen, og merker når dere er sammen slik at rekken kan hvile. Du kan slå det av når som helst i Innstillinger."
           }
         }
       }
@@ -86,13 +86,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia uses your location only when you turn on sharing, so your partner can see your latest location."
+            "value" : "Paeonia uses your location only when you turn on sharing, so your partner can see your latest location and your streak can rest while you're together."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia bruker posisjonen din bare når du slår på deling, slik at partneren din kan se den nyeste posisjonen din."
+            "value" : "Paeonia bruker posisjonen din bare når du slår på deling, slik at partneren din kan se den nyeste posisjonen din og rekken kan hvile mens dere er sammen."
           }
         }
       }

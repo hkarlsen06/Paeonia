@@ -108,7 +108,7 @@ export const legalEn = {
       description: 'How Paeonia collects, uses, shares, and protects your personal data.',
     },
     title: 'Privacy Policy',
-    updated: 'Last updated 1 November 2026',
+    updated: 'Last updated 11 November 2026',
     sections: [
       {
         heading: 'Who this policy is for',
@@ -127,7 +127,7 @@ export const legalEn = {
           'Usage statistics and crash reports show us which parts of Paeonia get used and where the app breaks. The app asks you once, after you pair, whether to share them, and sends none of them before you say yes. If you do, it sends which screens you open, which actions you take (for example that you sent an answer, never what it says), crash reports, and details about your iPhone such as model, iOS version, language, and time zone. It never records your screen. This data is linked to your Paeonia account, and PostHog keeps a random code on your phone to tell one phone from another. It is not used for advertising, and Paeonia does not track you across other apps or websites.',
           'Before you sign in, the app counts how many people reach each step of the welcome screens, such as choosing to start or picking a date. It sends only the name of the step, and our server adds one to a count for that day. Nothing in this count is tied to you or your phone, and it does not use PostHog.',
           'The website paeonia.no sets no cookies and uses no analytics. Cloudflare, which delivers the website, processes technical request data such as your IP address to serve the pages.',
-          'If you turn on location sharing, Paeonia processes your latest precise location and when it was recorded. We do not keep a location history for this feature.',
+          'If you turn on location sharing, Paeonia processes your latest precise location and when it was recorded. We do not keep a history of where you have been. When you both share your location and you are less than 1 km apart, Paeonia notes that date, never the place, so your streak can rest while you are together. It deletes these dates after 45 days.',
         ],
       },
       {
@@ -163,9 +163,9 @@ export const legalEn = {
         heading: 'Location sharing',
         paragraphs: [
           'Location sharing is optional and works only when both partners turn it on. Paeonia updates your latest location when you open the app, each time you move about 250 meters or more while it is open, and when you ask it to refresh. Your partner sees the location and when it was recorded, including when it may be old.',
-          'You can also choose to share while Paeonia is closed. This is a separate setting on each phone, it is off by default, and it needs location access set to Always. When it is on, iOS wakes Paeonia after you move a good distance, usually 500 meters or more, and Paeonia sends that one latest location. It does not track your route or keep a history. Turning location sharing off, or changing location access away from Always, stops it.',
+          'You can also choose to share while Paeonia is closed. This is a separate setting on each phone, it is off by default, and it needs location access set to Always. When it is on, iOS wakes Paeonia after you move a good distance, usually 500 meters or more, and Paeonia sends that one latest location. It does not track your route or keep a history of where you have been, only the dates described under Data we collect. Turning location sharing off, or changing location access away from Always, stops it.',
           'You can pause location sharing for 1 hour, 4 hours, or until morning. While it is paused, Paeonia sends no new location, and you cannot see your partner on the map. Your latest shared location is kept, so your partner still sees where you were and when that was. Your partner is not told that you paused. Sharing starts again by itself when the pause ends. If you share while Paeonia is closed, Paeonia then sends your location once, even if the app stays closed.',
-          'Turning location sharing off deletes your latest shared location. The latest locations are also removed when the relationship ends or account deletion begins.',
+          'Turning location sharing off deletes your latest shared location. Dates Paeonia already noted stay until they are 45 days old. The latest locations and the noted dates are also removed when the relationship ends or account deletion begins.',
         ],
       },
       {
