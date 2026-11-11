@@ -212,7 +212,7 @@ struct PaeoniaStreakFlame: View {
                 .foregroundStyle(Color.paeoniaTextPrimary.mix(with: .paeoniaTextSecondary, by: brokenness))
                 .opacity(1 - 0.3 * brokenness)
 
-            Text(.homeStreakLabel)
+            Text(.homeStreakLabel(count: frame.value))
                 .paeoniaEyebrowStyle(
                     foreground: Color.paeoniaAccentPrimary.mix(with: .paeoniaTextTertiary, by: brokenness)
                 )
@@ -227,10 +227,10 @@ struct PaeoniaStreakFlame: View {
 
     private var accessibilityLabel: String {
         if isBroken {
-            return String(localized: .streakFlameLostAccessibility(count.formatted()))
+            return String(localized: .streakFlameLostAccessibility(count))
         }
 
-        let text = "\(count) \(String(localized: .homeStreakLabel))"
+        let text = String(localized: .streakCountAccessibility(count))
         return isFrozen ? String(localized: .streakFrozenAccessibility(text)) : text
     }
 }

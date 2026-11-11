@@ -18,7 +18,7 @@
       pairedHome, pairedHomeTodayOpens, questions, chatsAttention, chatsAttentionAnswered, questionsPartial,
       questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
-      streakHealthy, streakAtRisk, streakFrozen, streakSaveHome, streakSaveDay, streakSaved, streakBroken,
+      streakHealthy, streakOneDay, streakAtRisk, streakFrozen, streakSaveHome, streakSaveDay, streakSaved, streakBroken,
       streakRestoreExpired, streakRestored,
       memoriesEmpty, memoriesPopulated, memoriesCards, memoryEditor, memoryDetail,
       countdownMissing, countdownUpcoming, countdownToday,
@@ -223,6 +223,9 @@
 
     static let streakHealthy = streak(
       "streak-healthy", "Streak · healthy", "Current and longest streak detail"
+    )
+    static let streakOneDay = streak(
+      "streak-one-day", "Streak · first day", "Pill and streak sheet on the first day of a streak"
     )
     static let streakAtRisk = streak(
       "streak-at-risk", "Streak · ending soon", "Five hours left to keep the streak"

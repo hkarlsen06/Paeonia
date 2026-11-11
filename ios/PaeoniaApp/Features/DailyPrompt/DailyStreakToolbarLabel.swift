@@ -232,7 +232,7 @@ struct DailyStreakToolbarLabel: View {
     /// A slipped streak must not read as a live "N day streak", so it says the streak
     /// is paused and how long it was.
     private func accessibilityLabel(for state: StreakPillState) -> String {
-        let countText = "\(state.displayCount) \(String(localized: .homeStreakLabel))"
+        let countText = String(localized: .streakCountAccessibility(state.displayCount))
         let streakText = state.isFrozen && !state.usesMutedFlame
             ? String(localized: .streakFrozenAccessibility(countText)) : countText
         if state.isAtRisk { return String(localized: .streakAtRiskPillAccessibility(streakText)) }

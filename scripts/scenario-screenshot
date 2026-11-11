@@ -2,7 +2,7 @@
 # Screenshots one developer scenario of this worktree's Debug build on a shared
 # simulator, to check how a change looks.
 #
-#   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--no-build]
+#   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--no-build]
 #
 # It builds the App scheme into a scratch derived data folder for this worktree
 # under the machine-wide compile lock, then takes a
@@ -10,6 +10,8 @@
 # debug controls hidden, waits (default 8 s, for map tiles and fade-ins), saves
 # the screenshot, uninstalls the app and releases the simulator. It prints the
 # PNG's path last. --no-build reuses the last build, for a second screenshot.
+# --language runs the app in another language, such as nb, without changing
+# the shared simulator's settings.
 #
 # For a before and after, run it once with your change stashed and once without,
 # with a different --out each time. Scenario ids are in
@@ -19,7 +21,7 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/paeonia-xcode.sh"
 
 usage() {
-  echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--no-build]" >&2
+  echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--no-build]" >&2
   exit 64
 }
 
@@ -46,10 +48,12 @@ cleanup() {
 }
 trap cleanup EXIT
 xa_install_signal_traps
+language_args=()
 while [[ $# -gt 0 ]]; do
   case $1 in
     --out) [[ $# -ge 2 ]] || usage; out=$2; shift 2 ;;
     --wait) [[ $# -ge 2 ]] || usage; wait_seconds=$2; shift 2 ;;
+    --language) [[ $# -ge 2 ]] || usage; language_args=(-AppleLanguages "($2)" -AppleLocale "$2"); shift 2 ;;
     --no-build) build=0; shift ;;
     *) usage ;;
   esac
@@ -86,7 +90,7 @@ sim=$(scripts/lock acquire simulator)
 
 xcrun simctl install "$sim" "$app"
 xcrun simctl launch --terminate-running-process "$sim" "$bundle_id" \
-  -paeonia-scenario "$scenario" -paeonia-scenario-hide-controls YES >/dev/null
+  -paeonia-scenario "$scenario" -paeonia-scenario-hide-controls YES ${language_args[@]+"${language_args[@]}"} >/dev/null
 sleep "$wait_seconds"
 xcrun simctl io "$sim" screenshot "$out" >/dev/null 2>&1
 echo "$out"

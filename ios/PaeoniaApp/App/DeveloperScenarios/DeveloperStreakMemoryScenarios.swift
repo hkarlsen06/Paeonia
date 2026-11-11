@@ -35,6 +35,10 @@
       var streak = healthyStreak
       streak.endsAt = .now.addingTimeInterval(5 * 3_600)
       streak.freezeSavedStreak = scenario == .streakFrozen
+      if scenario == .streakOneDay {
+        streak.currentCount = 1
+        streak.endsAt = nil
+      }
       return streak
     }
 
@@ -67,7 +71,7 @@
           playsCelebration: true,
           ambientMotion: false
         )
-      case .streakAtRisk, .streakFrozen:
+      case .streakOneDay, .streakAtRisk, .streakFrozen:
         let streak = statusStreak
         Color.paeoniaBackgroundPrimary
           .overlay(alignment: .topTrailing) {

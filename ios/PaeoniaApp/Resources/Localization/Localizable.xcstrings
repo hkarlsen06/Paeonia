@@ -22370,19 +22370,63 @@
       }
     },
     "home.streak.label" : {
-      "comment" : "Label under the streak number on the Us tab, e.g. 12 day streak",
+      "comment" : "Words under the big streak number, e.g. the 12 in 12 day streak. The number itself shows above, so these words leave it out. The plural follows the number.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "day streak"
+            "value" : "%#@count@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "day streak"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "day streak"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "dager på rad"
+            "value" : "%#@count@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "dag på rad"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "dager på rad"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -22410,15 +22454,39 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save your %lld-day streak today"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Save your %lld-day streak today"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Save your %lld-day streak today"
+                }
+              }
+            }
           }
         },
         "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Redd rekken på %lld dager i dag"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Redd rekken på %lld dag i dag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Redd rekken på %lld dager i dag"
+                }
+              }
+            }
           }
         }
       }
@@ -41166,6 +41234,48 @@
         }
       }
     },
+    "streak.count.accessibility" : {
+      "comment" : "VoiceOver text for the couple's streak, read on the Us tab streak pill and the streak flame. %lld is the number of days, 0 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day streak"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day streak"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag på rad"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager på rad"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "streak.detail.timeLeft" : {
       "comment" : "Label before the countdown to the live streak deadline.",
       "extractionState" : "manual",
@@ -41185,19 +41295,43 @@
       }
     },
     "streak.flame.lost.accessibility" : {
-      "comment" : "VoiceOver label for the streak flame when the streak is paused and can be restored. The argument is the number of days.",
+      "comment" : "VoiceOver label for the streak flame when the streak is paused and can be restored. %lld is the number of days.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ day streak, paused"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day streak, paused"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day streak, paused"
+                }
+              }
+            }
           }
         },
         "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ dager på rad, satt på pause"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag på rad, satt på pause"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager på rad, satt på pause"
+                }
+              }
+            }
           }
         }
       }
@@ -41369,15 +41503,39 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld days, not reached yet"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day, not reached yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days, not reached yet"
+                }
+              }
+            }
           }
         },
         "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld dager, ikke nådd ennå"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag, ikke nådd ennå"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager, ikke nådd ennå"
+                }
+              }
+            }
           }
         }
       }
@@ -41387,15 +41545,39 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld days, reached"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day, reached"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days, reached"
+                }
+              }
+            }
           }
         },
         "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld dager, nådd"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag, nådd"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager, nådd"
+                }
+              }
+            }
           }
         }
       }
@@ -41405,15 +41587,39 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld days"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days"
+                }
+              }
+            }
           }
         },
         "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld dager"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager"
+                }
+              }
+            }
           }
         }
       }
@@ -42215,15 +42421,39 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your %lld-day streak comes back for free if you both do one small thing today. Answer a question, send a drawing, add a memory, or write a message."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Your %lld-day streak comes back for free if you both do one small thing today. Answer a question, send a drawing, add a memory, or write a message."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Your %lld-day streak comes back for free if you both do one small thing today. Answer a question, send a drawing, add a memory, or write a message."
+                }
+              }
+            }
           }
         },
         "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rekken på %lld dager kommer tilbake gratis hvis dere begge gjør én liten ting i dag. Svar på et spørsmål, send en tegning, legg til et minne eller skriv en melding."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Rekken på %lld dag kommer tilbake gratis hvis dere begge gjør én liten ting i dag. Svar på et spørsmål, send en tegning, legg til et minne eller skriv en melding."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Rekken på %lld dager kommer tilbake gratis hvis dere begge gjør én liten ting i dag. Svar på et spørsmål, send en tegning, legg til et minne eller skriv en melding."
+                }
+              }
+            }
           }
         }
       }
