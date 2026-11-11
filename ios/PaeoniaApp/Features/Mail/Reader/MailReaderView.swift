@@ -15,6 +15,7 @@ struct MailReaderView: View {
     @State private var isOpeningEnvelope = false
     @State private var reportTarget: PrivacyReportTarget?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Group {
@@ -31,7 +32,16 @@ struct MailReaderView: View {
                     }
                 }
             } else {
-                PaeoniaEmptyStateView(title: .mailErrorLetterGone, systemImage: "envelope.open") { EmptyView() }
+                PaeoniaEmptyStateView(title: .mailErrorLetterGone, systemImage: "envelope.open") {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text(.mailReaderBackToMailbox)
+                    }
+                    .buttonStyle(PaeoniaPrimaryButtonStyle())
+                    .accessibilityIdentifier("mail.reader.back")
+                }
+                .padding(PaeoniaSpacing.screenHorizontalPadding)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -186,18 +196,22 @@ struct MailLetterPage: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space12))
             : AnyLayout(HStackLayout(alignment: .center, spacing: PaeoniaSpacing.space16))
         return layout {
-            Image(LetterTemplate(letter.templateKey).art)
-                .resizable()
-                .accessibilityHidden(true)
-                .scaledToFit()
-                .frame(width: min(artWidth, 160), height: min(artWidth, 160))
+            if let templateKey = letter.templateKey {
+                Image(LetterTemplate(templateKey).art)
+                    .resizable()
+                    .accessibilityHidden(true)
+                    .scaledToFit()
+                    .frame(width: min(artWidth, 160), height: min(artWidth, 160))
+            }
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                 Text(isOwn ? .mailReaderTo(people.partnerName) : .mailReaderFrom(people.partnerName))
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
-                Text(.mailReaderWritten(letter.createdAt.formatted(date: .long, time: .shortened)))
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
+                if let createdAt = letter.createdAt {
+                    Text(.mailReaderWritten(createdAt.formatted(date: .long, time: .shortened)))
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
             }
         }
     }
@@ -221,13 +235,26 @@ struct MailLetterPage: View {
     }
 }
 
-/// The photo in a letter, through the memory photo download and cache, since it is stored
-/// the same way. A failed photo retries on tap.
+/// Where a letter's photo is kept on this phone. It goes through the memory photo download
+/// cache, since it is stored the same way, and the decoded image is kept at `maxPixelSize`.
+nonisolated enum MailLetterPhotoCache {
+    static let maxPixelSize = 2_048
+
+    /// Removes the photos of letters that left this phone's lists.
+    static func evict(_ mediaAssetIDs: [UUID]) async {
+        await MemoryMediaImageService.shared?.evict(mediaAssetIDs: mediaAssetIDs)
+        for mediaAssetID in mediaAssetIDs {
+            MemoryImageDecoding.remove(mediaAssetID, maxPixelSize: maxPixelSize)
+        }
+    }
+}
+
+/// The photo in a letter. A failed photo retries on tap.
 private struct MailLetterPhoto: View {
     let mediaAssetID: UUID
     @State private var load = ImageLoad<UUID>.loading
 
-    private static let maxPixelSize = 2_048
+    private static let maxPixelSize = MailLetterPhotoCache.maxPixelSize
 
     var body: some View {
         ZStack {

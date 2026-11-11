@@ -20,7 +20,8 @@ nonisolated struct Letter: Codable, Equatable, Identifiable, Sendable {
     let id: UUID
     let authorUserID: UUID
     let recipientUserID: UUID
-    let templateKey: LetterTemplate.Key
+    /// Nil on a letter this person received and has not opened.
+    let templateKey: LetterTemplate.Key?
     /// Nil on a letter this person received and has not opened.
     let body: String?
     let mediaAssetID: UUID?
@@ -29,10 +30,8 @@ nonisolated struct Letter: Codable, Equatable, Identifiable, Sendable {
     var state: LetterState
     let deliveredAt: Date?
     var openedAt: Date?
-    let createdAt: Date
-
-    /// The longest note the composer takes, in characters. The server counts code points.
-    static let maxBodyLength = 2_000
+    /// When it was written. Nil on a letter this person received and has not opened.
+    let createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -50,45 +49,84 @@ nonisolated struct Letter: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-/// The couple's letters as this phone knows them, newest first, and the time zone the
-/// partner's morning letters follow.
-nonisolated struct MailSnapshot: Codable, Equatable, Sendable {
-    var letters: [Letter] = []
-    var partnerTimeZoneID: String?
+/// The two lists of the mailbox. The server names them `received` and `sent`.
+nonisolated enum MailboxTab: String, Codable, Hashable, Sendable {
+    case received
+    case sent
 }
 
-/// The result of `letters:get_letters`.
-nonisolated struct RemoteLetters: Decodable, Equatable, Sendable {
-    let coupleID: UUID
-    let partnerTimeZoneID: String?
-    let letters: [Letter]
+/// Where a mailbox list goes on, which is the last letter of a page as the server gave it.
+nonisolated struct LetterCursor: Codable, Equatable, Sendable {
+    let at: String
+    let id: UUID
+}
 
-    var snapshot: MailSnapshot {
-        MailSnapshot(letters: letters, partnerTimeZoneID: partnerTimeZoneID)
-    }
+/// Letters of one mailbox list, newest first, and where the older ones start.
+nonisolated struct MailPage: Codable, Equatable, Sendable {
+    var letters: [Letter] = []
+    /// Nil when no older letters exist.
+    var nextBefore: LetterCursor?
 
     enum CodingKeys: String, CodingKey {
-        case coupleID = "couple_id"
-        case partnerTimeZoneID = "partner_time_zone_id"
         case letters
+        case nextBefore = "next_before"
+    }
+}
+
+/// This person's Mail as the server last sent it, with the letters waiting to be opened
+/// (oldest first) and the newest page of each list. It is the result of `letters:get_letters`
+/// and what this phone stores. Older pages stay in memory while the mailbox is open.
+nonisolated struct MailSnapshot: Codable, Equatable, Sendable {
+    var waiting: [Letter] = []
+    var received = MailPage()
+    var sent = MailPage()
+
+    subscript(tab: MailboxTab) -> MailPage {
+        get { tab == .received ? received : sent }
+        set {
+            if tab == .received { received = newValue } else { sent = newValue }
+        }
+    }
+
+    /// Every letter the snapshot holds, each once.
+    var letters: [Letter] {
+        var seen = Set<UUID>()
+        return (waiting + received.letters + sent.letters).filter { seen.insert($0.id).inserted }
     }
 }
 
 /// Which letters show where, so the views, the badge and the tests share one rule.
 nonisolated enum MailTimeline {
-    static func received(_ letters: [Letter], by userID: UUID?) -> [Letter] {
-        letters.filter { $0.recipientUserID == userID }
+    /// The order of a list. Received letters go by when they arrived, sent ones by when they
+    /// were written, then by id, as the server pages them.
+    static func precedes(_ lhs: Letter, _ rhs: Letter, in tab: MailboxTab) -> Bool {
+        let left = sortDate(lhs, in: tab), right = sortDate(rhs, in: tab)
+        if left != right { return left > right }
+        return lhs.id.uuidString.lowercased() > rhs.id.uuidString.lowercased()
     }
 
-    static func sent(_ letters: [Letter], by userID: UUID?) -> [Letter] {
-        letters.filter { $0.authorUserID == userID }
+    private static func sortDate(_ letter: Letter, in tab: MailboxTab) -> Date {
+        (tab == .received ? letter.deliveredAt : letter.createdAt) ?? .distantPast
+    }
+
+    /// The server's newest page followed by the older letters this phone already had after
+    /// it, so loading older letters goes on where `known` ended. A page that shares no letter
+    /// with `known` means more than a page arrived since, and keeping the older letters would
+    /// leave a hole, so the list starts again from the page.
+    static func merged(_ page: MailPage, keeping known: MailPage, in tab: MailboxTab) -> MailPage {
+        guard page.nextBefore != nil, let end = page.letters.last else { return page }
+        let pageIDs = Set(page.letters.map(\.id))
+        guard known.letters.contains(where: { pageIDs.contains($0.id) }) else { return page }
+        let older = known.letters.filter { !pageIDs.contains($0.id) && precedes(end, $0, in: tab) }
+        guard !older.isEmpty else { return page }
+        return MailPage(letters: page.letters + older, nextBefore: known.nextBefore)
     }
 
     /// Letters that arrived for this person and wait to be opened, oldest first.
     static func waiting(_ letters: [Letter], for userID: UUID?) -> [Letter] {
-        received(letters, by: userID)
-            .filter { $0.state == .delivered }
-            .sorted { ($0.deliveredAt ?? $0.createdAt) < ($1.deliveredAt ?? $1.createdAt) }
+        letters
+            .filter { $0.recipientUserID == userID && $0.state == .delivered }
+            .sorted { ($0.deliveredAt ?? .distantPast) < ($1.deliveredAt ?? .distantPast) }
     }
 }
 

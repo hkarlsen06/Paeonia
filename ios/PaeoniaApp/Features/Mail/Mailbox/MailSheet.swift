@@ -22,7 +22,7 @@ extension View {
             await mail.observeStoreChanges()
         }
         .onChange(of: coupleID) { _, coupleID in
-            mail.updateCoupleID(coupleID)
+            Task { await mail.updateCoupleID(coupleID) }
         }
     }
 }
@@ -32,8 +32,8 @@ private struct MailSheetModifier: ViewModifier {
     let people: MailPeople
 
     func body(content: Content) -> some View {
-        content.sheet(item: $mail.presentation) { presentation in
-            MailNavigation(mail: mail, people: people, presentation: presentation)
+        content.sheet(item: $mail.presentation) { _ in
+            MailNavigation(mail: mail, people: people)
         }
     }
 }
@@ -41,42 +41,46 @@ private struct MailSheetModifier: ViewModifier {
 private struct MailNavigation: View {
     let mail: MailViewModel
     let people: MailPeople
-    @State private var path: [MailRoute]
-    @State private var tab: MailboxTab
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
-    init(mail: MailViewModel, people: MailPeople, presentation: MailPresentation) {
-        self.mail = mail
-        self.people = people
-        _path = State(initialValue: presentation.path)
-        _tab = State(initialValue: presentation.tab)
-    }
-
     var body: some View {
-        NavigationStack(path: $path) {
-            MailboxView(mail: mail, people: people, tab: $tab, onOpen: { path.append($0) })
-                .navigationDestination(for: MailRoute.self) { route in
-                    switch route {
-                    case let .reader(letterID):
-                        MailReaderView(
-                            mail: mail,
-                            people: people,
-                            letterID: letterID,
-                            onWriteBack: { path.append(.composer) }
-                        )
-                    case .composer:
-                        MailComposerView(mail: mail, partnerName: people.partnerName) {
-                            tab = .sent
-                            path.removeAll()
-                        }
+        NavigationStack(path: Binding(get: { mail.presentation?.path ?? [] }, set: { mail.presentation?.path = $0 })) {
+            MailboxView(
+                mail: mail,
+                people: people,
+                tab: Binding(get: { mail.presentation?.tab ?? .received }, set: { mail.presentation?.tab = $0 }),
+                onOpen: { mail.presentation?.path.append($0) }
+            )
+            .navigationDestination(for: MailRoute.self) { route in
+                switch route {
+                case let .reader(letterID):
+                    MailReaderView(
+                        mail: mail,
+                        people: people,
+                        letterID: letterID,
+                        onWriteBack: { mail.presentation?.path.append(.composer) }
+                    )
+                case .composer:
+                    MailComposerView(mail: mail, partnerName: people.partnerName) {
+                        mail.presentation?.tab = .sent
+                        mail.presentation?.path.removeAll()
                     }
                 }
+            }
         }
         .paeoniaBanner(bannerCenter)
-        .onChange(of: mail.error) { _, error in
-            guard let error else { return }
+        .mailNotices(mail, bannerCenter: bannerCenter)
+    }
+}
+
+extension View {
+    /// Shows `mail`'s notices in `bannerCenter`, the one waiting from before too.
+    func mailNotices(
+        _ mail: MailViewModel, bannerCenter: PaeoniaBannerCenter, when isShowing: Bool = true
+    ) -> some View {
+        onChange(of: isShowing ? mail.notice?.id : nil, initial: true) { _, id in
+            guard let id, let error = mail.takeNotice(id) else { return }
             bannerCenter.show(.error(message: error.message))
-            mail.clearError()
         }
     }
 }

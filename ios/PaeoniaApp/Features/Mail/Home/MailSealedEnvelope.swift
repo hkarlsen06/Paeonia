@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// A letter that waits to be opened: the daily card's envelope with the pink wax seal on the
-/// tip of its flap, at the spot measured for `DailyPromptHeroArtwork`.
+/// A letter that waits to be opened. It is the daily card's envelope with the pink wax seal on
+/// the tip of its flap, at the spot measured for `DailyPromptHeroArtwork`.
 struct MailSealedEnvelope: View {
     let width: CGFloat
 

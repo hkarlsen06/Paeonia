@@ -10,6 +10,10 @@ nonisolated protocol MailGateway: Sendable {
     func open(id: UUID) async throws -> Letter
     /// Deletes one of this person's letters for both partners. A sealed one never arrives.
     func delete(id: UUID, operation: SyncClientOperation) async throws
+    /// The page of `list` after `before`.
+    func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage
+    /// The time zone the partner's morning letters follow, or nil without a partner.
+    func partnerTimeZoneID() async throws -> String?
 }
 
 nonisolated struct LiveMailGateway: MailGateway {
@@ -47,6 +51,47 @@ nonisolated struct LiveMailGateway: MailGateway {
             "letters:delete_letter",
             args: DeleteLetterRequest(id: id, operation: ClientOperationFields(operation))
         )
+    }
+
+    func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage {
+        try await client.query(
+            "letters:get_older_letters",
+            args: OlderLettersRequest(list: list, before: before, limit: limit)
+        )
+    }
+
+    func partnerTimeZoneID() async throws -> String? {
+        let result: PartnerTimeZone = try await client.query("letters:get_letter_partner_time_zone")
+        return result.partnerTimeZoneID
+    }
+}
+
+nonisolated private struct OlderLettersRequest: Encodable {
+    let list: MailboxTab
+    let before: LetterCursor
+    let limit: Int
+
+    enum CodingKeys: String, CodingKey {
+        case list = "p_list"
+        case beforeAt = "p_before_at"
+        case beforeID = "p_before_id"
+        case limit = "p_limit"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(list, forKey: .list)
+        try container.encode(before.at, forKey: .beforeAt)
+        try container.encode(before.id, forKey: .beforeID)
+        try container.encode(limit, forKey: .limit)
+    }
+}
+
+nonisolated private struct PartnerTimeZone: Decodable {
+    let partnerTimeZoneID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case partnerTimeZoneID = "partner_time_zone_id"
     }
 }
 

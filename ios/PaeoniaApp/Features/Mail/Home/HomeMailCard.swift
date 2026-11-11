@@ -2,13 +2,14 @@ import SwiftUI
 
 /// The Mail card on the Us tab. A letter that waits for this person shows as a sealed
 /// envelope that opens it. Otherwise the card offers to write one. The mailbox is a tap away
-/// in both cases.
+/// in both cases. A problem that came up after the Mail sheet closed shows here.
 struct HomeMailCard: View {
     let mail: MailViewModel
     let partnerName: String
 
     @ScaledMetric(relativeTo: .body) private var artWidth: CGFloat = 76
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     var body: some View {
         let waiting = mail.waiting
@@ -28,6 +29,7 @@ struct HomeMailCard: View {
                 .accessibilityIdentifier(waiting.isEmpty ? "home.mail.write" : "home.mail.open")
             }
         }
+        .mailNotices(mail, bannerCenter: bannerCenter, when: mail.presentation == nil)
     }
 
     private var header: some View {

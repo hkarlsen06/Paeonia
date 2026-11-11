@@ -1,8 +1,9 @@
 import PhotosUI
 import SwiftUI
 
-/// Writing a letter in four steps: pick a card, write the note, add a photo if you like, and
-/// pick when it arrives. Every change is kept on the phone, so leaving or a failed send loses nothing.
+/// Writing a letter in four steps. Pick a card, write the note, add a photo if you like, and
+/// pick when it arrives. Every change is kept on the phone, so leaving or a failed send loses
+/// nothing. Nothing can change while the letter is sending.
 struct MailComposerView: View {
     enum Step: Int, CaseIterable {
         case template
@@ -18,13 +19,16 @@ struct MailComposerView: View {
     @State private var step: Step
     @State private var isConfirmingDiscard = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(mail: MailViewModel, partnerName: String, onSent: @escaping () -> Void) {
         self.mail = mail
         self.partnerName = partnerName
         self.onSent = onSent
-        _step = State(initialValue: mail.draft == nil ? .template : .note)
+        _step = State(initialValue: mail.composer.draft == nil ? .template : .note)
     }
+
+    private var composer: LetterComposer { mail.composer }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,6 +41,7 @@ struct MailComposerView: View {
                         .foregroundStyle(.paeoniaTextPrimary)
                         .accessibilityAddTraits(.isHeader)
                     content
+                        .disabled(composer.isSending)
                 }
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.vertical, PaeoniaSpacing.screenTopSpacing)
@@ -51,13 +56,14 @@ struct MailComposerView: View {
         .navigationTitle(Text(.mailComposerTitle))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if mail.draft != nil {
+            if composer.draft != nil {
                 ToolbarItem(placement: .destructiveAction) {
                     Button(role: .destructive) {
                         isConfirmingDiscard = true
                     } label: {
                         Text(.mailComposerDiscard)
                     }
+                    .disabled(composer.isSending)
                 }
             }
         }
@@ -65,13 +71,15 @@ struct MailComposerView: View {
             Text(.mailComposerDiscardTitle), isPresented: $isConfirmingDiscard, titleVisibility: .visible
         ) {
             Button(role: .destructive) {
-                mail.discardDraft()
+                composer.discard()
                 dismiss()
             } label: {
                 Text(.mailComposerDiscard)
             }
         }
+        .navigationBarBackButtonHidden(composer.isSending)
         .animation(.default, value: step)
+        .task { await mail.loadPartnerTimeZone() }
     }
 
     private var title: LocalizedStringResource {
@@ -87,59 +95,84 @@ struct MailComposerView: View {
     private var content: some View {
         switch step {
         case .template:
-            MailTemplatePicker(selected: mail.draft?.content.templateKey) { template in
-                mail.choose(template)
+            MailTemplatePicker(selected: composer.draft?.content.templateKey) { template in
+                composer.choose(template)
                 step = .note
             }
         case .note:
             MailNoteEditor(
-                text: Binding(get: { mail.draft?.content.body ?? "" }, set: { mail.updateBody($0) }),
+                text: Binding(get: { composer.draft?.content.body ?? "" }, set: { composer.updateBody($0) }),
                 partnerName: partnerName
             )
         case .photo:
-            MailPhotoStep(photo: mail.draftPhoto) { mail.updatePhoto($0) }
+            MailPhotoStep(
+                photo: composer.photo,
+                isMissing: composer.isPhotoMissing,
+                isPreparing: composer.isPreparingPhoto,
+                onPick: { await mail.pickPhoto($0) },
+                onRemove: composer.removePhoto
+            )
         case .delivery:
             MailDeliveryPicker(
-                delivery: Binding(get: { mail.draft?.content.delivery ?? .now }, set: { mail.updateDelivery($0) }),
+                delivery: Binding(
+                    get: { composer.draft?.content.delivery ?? .now },
+                    set: { composer.updateDelivery($0) }
+                ),
                 partnerName: partnerName,
-                partnerTimeZone: mail.partnerTimeZone ?? .current
+                partnerTimeZone: mail.partnerTimeZone,
+                movedPastTime: composer.movedPastTime
             )
+            .onAppear { composer.moveTimeIfPassed() }
         }
     }
 
+    /// Side by side, or stacked at the accessibility text sizes so neither label is cut off.
     private var actions: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space12))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space12))
+        return layout {
             Button {
                 step = Step(rawValue: step.rawValue - 1) ?? .template
             } label: {
                 Text(.mailComposerBack)
             }
             .buttonStyle(PaeoniaSecondaryButtonStyle())
+            .disabled(composer.isSending)
             .accessibilityIdentifier("mail.composer.back")
-            if step == .delivery {
-                Button {
-                    Task {
-                        if await mail.send() { onSent() }
-                    }
-                } label: {
-                    Text(.mailComposerSend)
-                }
-                .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: mail.isSending))
-                .disabled(mail.draft?.content.canSend != true)
-                .accessibilityIdentifier("mail.composer.send")
-            } else {
-                Button {
-                    step = Step(rawValue: step.rawValue + 1) ?? .delivery
-                } label: {
-                    Text(step == .photo && mail.draftPhoto == nil ? .mailComposerSkip : .mailComposerNext)
-                }
-                .buttonStyle(PaeoniaPrimaryButtonStyle())
-                .disabled(step == .note && mail.draft?.content.canSend != true)
-                .accessibilityIdentifier("mail.composer.next")
-            }
+            forward
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space12)
         .background(Color.paeoniaBackgroundPrimary)
+    }
+
+    /// Send on the last step, Next or Skip before it.
+    @ViewBuilder
+    private var forward: some View {
+        if step == .delivery {
+            Button {
+                Task {
+                    if await mail.send() { onSent() }
+                }
+            } label: {
+                Text(.mailComposerSend)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: composer.isSending))
+            .disabled(composer.draft?.content.canSend != true || composer.isSending)
+            .accessibilityIdentifier("mail.composer.send")
+        } else {
+            Button {
+                step = Step(rawValue: step.rawValue + 1) ?? .delivery
+            } label: {
+                Text(step == .photo && composer.draft?.content.photo == nil ? .mailComposerSkip : .mailComposerNext)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .disabled(
+                (step == .note && composer.draft?.content.canSend != true)
+                    || (step == .photo && (composer.isPhotoMissing || composer.isPreparingPhoto))
+            )
+            .accessibilityIdentifier("mail.composer.next")
+        }
     }
 }

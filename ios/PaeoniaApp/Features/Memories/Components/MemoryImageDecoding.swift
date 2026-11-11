@@ -31,6 +31,10 @@ nonisolated enum MemoryImageDecoding {
         cache.removeAllObjects()
     }
 
+    static func remove(_ mediaAssetID: UUID, maxPixelSize: Int) {
+        cache.removeObject(forKey: key(mediaAssetID, maxPixelSize))
+    }
+
     static func store(_ image: UIImage, for mediaAssetID: UUID, maxPixelSize: Int) {
         // Cost is the decoded size in bytes, which is what the 64 MB limit counts.
         let cost = image.cgImage.map { $0.width * $0.height * 4 } ?? 0

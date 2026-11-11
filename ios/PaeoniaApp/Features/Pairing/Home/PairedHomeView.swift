@@ -72,8 +72,7 @@ struct PairedHomeView: View {
     @Namespace private var layoutSwitch
 
     private static let alertTypesSeenOnHome: Set<String> = [
-        "widget_updated", "streak_reminder", "story_posted", "date_reminder", "partner_joined",
-        "letter_arrived", "letter_opened",
+        "widget_updated", "streak_reminder", "story_posted", "date_reminder", "partner_joined", "letter_arrived",
     ]
 
     init(

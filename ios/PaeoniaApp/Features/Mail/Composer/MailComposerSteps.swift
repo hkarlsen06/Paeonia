@@ -77,8 +77,9 @@ struct MailNoteEditor: View {
                 }
                 .accessibilityLabel(Text(.mailComposerNotePlaceholder(partnerName)))
                 .accessibilityIdentifier("mail.composer.note")
-            if text.count > Letter.maxBodyLength - 200 {
-                Text(.mailComposerNoteRemaining(Letter.maxBodyLength - text.count))
+            let used = LetterBody.length(text)
+            if used > LetterBody.maxLength - 200 {
+                Text(.mailComposerNoteRemaining(LetterBody.maxLength - used))
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextSecondary)
             }
@@ -88,26 +89,27 @@ struct MailNoteEditor: View {
 }
 
 /// An optional photo, from Apple's photo picker, so the app never reads the photo library.
+/// `photo` is already compressed, and decodes again only when it changes.
 struct MailPhotoStep: View {
     let photo: Data?
-    let onChange: (Data?) -> Void
+    let isMissing: Bool
+    let isPreparing: Bool
+    let onPick: (Data?) async -> Void
+    let onRemove: () -> Void
 
     @State private var item: PhotosPickerItem?
+    @State private var image: UIImage?
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             Text(.mailComposerPhotoOptional)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
-            if let photo, let image = UIImage(data: photo) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous))
-                    .accessibilityLabel(Text(.mailReaderPhoto))
+            preview
+            if photo != nil || isMissing {
                 Button(role: .destructive) {
                     item = nil
-                    onChange(nil)
+                    onRemove()
                 } label: {
                     Text(.mailComposerPhotoRemove)
                 }
@@ -117,31 +119,55 @@ struct MailPhotoStep: View {
                 Text(photo == nil ? .mailComposerPhotoChoose : .mailComposerPhotoChange)
             }
             .buttonStyle(PaeoniaSecondaryButtonStyle())
+            .disabled(isPreparing)
             .accessibilityIdentifier("mail.composer.photo")
         }
         .task(id: item) {
-            guard let item, let data = try? await item.loadTransferable(type: Data.self) else { return }
-            onChange(data)
+            guard let item else { return }
+            await onPick(try? await item.loadTransferable(type: Data.self))
+        }
+        .task(id: photo) {
+            image = photo.flatMap(UIImage.init(data:))
+        }
+    }
+
+    @ViewBuilder
+    private var preview: some View {
+        if isPreparing {
+            ProgressView()
+                .frame(maxWidth: .infinity, minHeight: 120)
+        } else if let image {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous))
+                .accessibilityLabel(Text(.mailReaderPhoto))
+        } else if isMissing {
+            Text(.mailErrorPhotoMissing)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextPrimary)
         }
     }
 }
 
-/// When the letter arrives: now, at the partner's next 08:00, or at a time the author picks.
+/// When the letter arrives. Now, at the partner's next 08:00, or at a time the author picks.
 struct MailDeliveryPicker: View {
     @Binding var delivery: LetterDelivery
     let partnerName: String
-    let partnerTimeZone: TimeZone
+    /// Nil until the server said where the partner is, and then the morning option names no time.
+    let partnerTimeZone: TimeZone?
+    /// The saved time had passed and the composer moved it, so the picker says so.
+    let movedPastTime: Bool
 
     @State private var setTime = Date.now.addingTimeInterval(3_600)
 
     var body: some View {
         let now = Date.now
-        let morning = LetterDelivery.nextMorning(after: now, in: partnerTimeZone)
         VStack(spacing: PaeoniaSpacing.space12) {
             option(.now, title: .mailDeliveryNowTitle, detail: String(localized: .mailDeliveryNowDetail(partnerName)))
-            option(.morning, title: .mailDeliveryMorningTitle, detail: morningDetail(morning))
+            option(.morning, title: .mailDeliveryMorningTitle, detail: morningDetail(now: now))
             option(.at(setTime), title: .mailDeliveryAtTitle, detail: nil)
-            if case .at = delivery {
+            if case let .at(date) = delivery {
                 DatePicker(
                     selection: Binding(get: { setTime }, set: {
                         setTime = $0
@@ -152,14 +178,27 @@ struct MailDeliveryPicker: View {
                     Text(.mailDeliveryAtLabel)
                 }
                 .accessibilityIdentifier("mail.delivery.at.picker")
+                if movedPastTime {
+                    let when = date.formatted(.dateTime.weekday(.wide).day().month().hour().minute())
+                    Text(.mailDeliveryAtMoved(when))
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("mail.delivery.at.moved")
+                }
             }
         }
-        .onAppear {
+        .onChange(of: delivery, initial: true) { _, delivery in
             if case let .at(date) = delivery { setTime = date }
         }
     }
 
-    private func morningDetail(_ morning: Date) -> String {
+    private func morningDetail(now: Date) -> String {
+        guard let partnerTimeZone else {
+            return String(localized: .mailDeliveryMorningDetailUnknownZone(partnerName))
+        }
+        let morning = LetterDelivery.nextMorning(after: now, in: partnerTimeZone)
         var style = Date.FormatStyle(date: .complete, time: .omitted)
         style.timeZone = partnerTimeZone
         let line = String(localized: .mailDeliveryMorningDetail(partnerName, morning.formatted(style)))

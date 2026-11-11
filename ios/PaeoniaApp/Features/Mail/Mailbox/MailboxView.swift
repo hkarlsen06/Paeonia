@@ -12,7 +12,8 @@ struct MailboxView: View {
     @State private var letterToDelete: Letter?
 
     var body: some View {
-        let letters = tab == .received ? mail.received : mail.sent
+        let page = mail.list(tab)
+        let letters = page.letters
         List {
             Section {
                 Picker(selection: $tab) {
@@ -31,6 +32,9 @@ struct MailboxView: View {
             } else {
                 Section {
                     ForEach(letters, content: row)
+                    if page.nextBefore != nil {
+                        olderButton
+                    }
                 }
             }
         }
@@ -58,6 +62,10 @@ struct MailboxView: View {
                 }
                 .accessibilityIdentifier("mail.mailbox.write")
             }
+        }
+        .task(id: tab) {
+            // The Sent list shows that the partner opened a letter, so its push has been seen.
+            if tab == .sent { await DeliveredNotifications.clear(types: ["letter_opened"]) }
         }
         .confirmationDialog(
             Text(letterToDelete?.state == .sealed ? .mailDeleteSealedTitle : .mailDeleteTitle),
@@ -92,6 +100,25 @@ struct MailboxView: View {
                 }
             }
         }
+    }
+
+    private var olderButton: some View {
+        Button {
+            Task { await mail.loadOlder(tab) }
+        } label: {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                Text(.mailMailboxOlder)
+                if mail.loadingOlder.contains(tab) {
+                    ProgressView()
+                }
+            }
+            .font(PaeoniaTypography.bodyEmphasis)
+            .foregroundStyle(.paeoniaAccentPrimary)
+            .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .disabled(mail.loadingOlder.contains(tab))
+        .listRowBackground(Color.clear)
+        .accessibilityIdentifier("mail.mailbox.older")
     }
 
     private func deleteTitle(for letter: Letter) -> LocalizedStringResource {
@@ -148,13 +175,13 @@ private struct MailboxRow: View {
         let size = min(artWidth, 96)
         layout {
             Group {
-                if letter.body == nil {
-                    MailSealedEnvelope(width: size)
-                } else {
-                    Image(LetterTemplate(letter.templateKey).art)
+                if let templateKey = letter.templateKey {
+                    Image(LetterTemplate(templateKey).art)
                         .resizable()
                         .accessibilityHidden(true)
                         .scaledToFit()
+                } else {
+                    MailSealedEnvelope(width: size)
                 }
             }
             .frame(width: size, height: size)

@@ -22,6 +22,20 @@ nonisolated extension DeveloperScenario {
             mail: .everyKind(showing: MailPresentation(path: [.reader(DeveloperMailFixture.openedLetterID)]))
         )
     }
+    static let mailComposerDelivery = DeveloperScenario(
+        "mail-composer-delivery", "Mail · delivery step",
+        "A saved letter set for a time that has passed, while the partner's time zone is unknown", .localFlows
+    ) { _ in
+        DeveloperLocalFlowHost(seed: .paired, mail: DeveloperMailSeed(
+            letters: [], presentation: MailPresentation(path: [.composer], tab: .sent),
+            draft: DeveloperMailFixture.pastDraft, partnerTimeZoneID: nil
+        ))
+    }
+    static let mailReaderGone = DeveloperScenario(
+        "mail-reader-gone", "Mail · letter gone", "A link to a letter its author deleted", .localFlows
+    ) { _ in
+        DeveloperLocalFlowHost(seed: .paired, mail: .empty(showing: MailPresentation(path: [.reader(UUID())])))
+    }
     static let homeMailWaiting = DeveloperScenario(
         "home-mail-waiting", "Home · letter waiting", "The Mail card with a sealed letter from Robin", .localFlows
     ) { _ in DeveloperLocalFlowHost(seed: .paired, mail: .everyKind(showing: nil)) }
@@ -31,6 +45,8 @@ nonisolated extension DeveloperScenario {
 struct DeveloperMailSeed {
     var letters: [Letter]
     var presentation: MailPresentation?
+    var draft: LetterDraft?
+    var partnerTimeZoneID: String? = "Asia/Tokyo"
 
     static let none = DeveloperMailSeed(letters: [], presentation: nil)
 
@@ -38,7 +54,7 @@ struct DeveloperMailSeed {
         DeveloperMailSeed(letters: [], presentation: presentation)
     }
 
-    /// A sealed letter waiting, an opened one, and two sent ones: one on its way and one opened.
+    /// A sealed letter waiting, an opened one, and two sent ones, one on its way and one opened.
     static func everyKind(showing presentation: MailPresentation?) -> DeveloperMailSeed {
         DeveloperMailSeed(letters: DeveloperMailFixture.letters(), presentation: presentation)
     }
@@ -48,21 +64,38 @@ enum DeveloperMailFixture {
     nonisolated static let waitingLetterID = UUID(uuidString: "8a1d3c5e-0000-4000-8000-000000000001") ?? UUID()
     nonisolated static let openedLetterID = UUID(uuidString: "8a1d3c5e-0000-4000-8000-000000000002") ?? UUID()
     nonisolated static let photo = UUID(uuidString: "8a1d3c5e-0000-4000-8000-0000000000aa") ?? UUID()
+    static var pastDraft: LetterDraft {
+        var content = LetterContent(templateKey: .goodNight, body: "Sleep well. I'm thinking of you.")
+        content.delivery = .at(Date.now.addingTimeInterval(-2 * 3_600))
+        return LetterDraft(content: content)
+    }
 
     static func viewModel(_ seed: DeveloperMailSeed) -> MailViewModel {
         seedPhoto()
-        let gateway = DeveloperMailGateway(letters: seed.letters)
-        let shown = seed.letters.map { letter in
-            letter.recipientUserID == DeveloperScenarioFixture.currentUserID && letter.state == .delivered
-                ? letter.sealedForRecipient : letter
-        }
+        let gateway = DeveloperMailGateway(letters: seed.letters, partnerTimeZoneID: seed.partnerTimeZoneID)
         let model = MailViewModel(
-            cache: DeveloperMailCache(MailSnapshot(letters: shown, partnerTimeZoneID: "Asia/Tokyo")),
+            cache: DeveloperMailCache(snapshot(of: seed.letters), draft: seed.draft),
             gateway: gateway,
-            operationProvider: DeveloperScenarioOperationProvider()
+            operationProvider: DeveloperScenarioOperationProvider(),
+            evictPhotos: { _ in }
         )
         model.presentation = seed.presentation
         return model
+    }
+
+    /// The letters as `letters:get_letters` gives them to the current person.
+    static func snapshot(of letters: [Letter]) -> MailSnapshot {
+        let me = DeveloperScenarioFixture.currentUserID
+        let received = letters
+            .filter { $0.recipientUserID == me && $0.state != .sealed }
+            .map { $0.state == .delivered ? $0.sealedForRecipient : $0 }
+            .sorted { MailTimeline.precedes($0, $1, in: .received) }
+        let sent = letters.filter { $0.authorUserID == me }.sorted { MailTimeline.precedes($0, $1, in: .sent) }
+        return MailSnapshot(
+            waiting: MailTimeline.waiting(received, for: me),
+            received: MailPage(letters: received),
+            sent: MailPage(letters: sent)
+        )
     }
 
     static func letters(now: Date = .now) -> [Letter] {
@@ -109,23 +142,28 @@ enum DeveloperMailFixture {
 }
 
 nonisolated extension Letter {
-    /// How the recipient's phone gets a letter it has not opened: without the note and the photo.
+    /// How the recipient's phone gets a letter it has not opened, as arrived and nothing more.
     var sealedForRecipient: Letter {
         Letter(
-            id: id, authorUserID: authorUserID, recipientUserID: recipientUserID, templateKey: templateKey,
+            id: id, authorUserID: authorUserID, recipientUserID: recipientUserID, templateKey: nil,
             body: nil, mediaAssetID: nil, deliveryKind: nil, deliverAt: nil, state: state,
-            deliveredAt: deliveredAt, openedAt: openedAt, createdAt: createdAt
+            deliveredAt: deliveredAt, openedAt: openedAt, createdAt: nil
         )
     }
 }
 
 actor DeveloperMailCache: MailCaching {
     private var value: MailSnapshot
-    private var storedDraft: LetterDraft?
-    private var storedPhoto: Data?
+    private var stored: LetterDraft?
+    private var photos: [UUID: Data] = [:]
     private(set) var purgeGeneration = 0
+    private(set) var draftGeneration = 0
 
-    init(_ value: MailSnapshot) { self.value = value }
+    init(_ value: MailSnapshot, draft: LetterDraft? = nil) {
+        self.value = value
+        stored = draft
+    }
+
     func snapshot(ownerUserID: UUID) -> MailSnapshot { value }
     func save(_ snapshot: MailSnapshot, ownerUserID: UUID) { value = snapshot }
     func update(
@@ -135,25 +173,29 @@ actor DeveloperMailCache: MailCaching {
         change(&value)
         return true
     }
-    func draft(ownerUserID: UUID) -> LetterDraft? { storedDraft }
-    func draftPhoto(ownerUserID: UUID) -> Data? { storedPhoto }
-    func saveDraft(_ draft: LetterDraft, photo: Data?, ownerUserID: UUID, ifGeneration generation: Int) {
-        guard generation == purgeGeneration else { return }
-        storedDraft = draft
-        storedPhoto = photo
+    func storedDraft(ownerUserID: UUID) -> StoredLetterDraft {
+        let photo = stored?.content.photo.flatMap { photos[$0.id] }
+        return StoredLetterDraft(draft: stored, photo: photo, generation: draftGeneration)
     }
-    func clearDraft(ownerUserID: UUID) {
-        storedDraft = nil
-        storedPhoto = nil
+    func saveDraft(_ draft: LetterDraft?, ownerUserID: UUID, ifGeneration generation: Int) -> Bool {
+        guard generation == draftGeneration else { return false }
+        stored = draft
+        photos = photos.filter { $0.key == draft?.content.photo?.id }
+        return true
+    }
+    func saveDraftPhoto(_ data: Data, id: UUID, ownerUserID: UUID, ifGeneration generation: Int) -> Bool {
+        guard generation == draftGeneration else { return false }
+        photos[id] = data
+        return true
     }
     func clearAll() {
         purgeGeneration += 1
         value = MailSnapshot()
     }
     func clearDrafts() {
-        purgeGeneration += 1
-        storedDraft = nil
-        storedPhoto = nil
+        draftGeneration += 1
+        stored = nil
+        photos = [:]
     }
 }
 
@@ -161,9 +203,11 @@ actor DeveloperMailCache: MailCaching {
 /// later stays sealed.
 actor DeveloperMailGateway: MailGateway {
     private var letters: [UUID: Letter]
+    private let partnerZone: String?
 
-    init(letters: [Letter]) {
+    init(letters: [Letter], partnerTimeZoneID: String?) {
         self.letters = Dictionary(uniqueKeysWithValues: letters.map { ($0.id, $0) })
+        partnerZone = partnerTimeZoneID
     }
 
     // Protocol methods replace the network boundary with local results.
@@ -172,7 +216,8 @@ actor DeveloperMailGateway: MailGateway {
         let now = Date()
         let deliverAt: Date = switch letter.content.delivery {
         case .now: now
-        case .morning: LetterDelivery.nextMorning(after: now, in: TimeZone(identifier: "Asia/Tokyo") ?? .current)
+        case .morning:
+            LetterDelivery.nextMorning(after: now, in: TimeZone(identifier: partnerZone ?? "UTC") ?? .current)
         case let .at(date): date
         }
         let sent = Letter(
@@ -197,6 +242,14 @@ actor DeveloperMailGateway: MailGateway {
 
     func delete(id: UUID, operation: SyncClientOperation) async throws {
         letters[id] = nil
+    }
+
+    func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage {
+        MailPage()
+    }
+
+    func partnerTimeZoneID() async throws -> String? {
+        partnerZone
     }
     // swiftlint:enable async_without_await
 }

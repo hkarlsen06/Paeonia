@@ -9,7 +9,7 @@
       relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
       localFlowGameConversation, avatarStoriesNew, avatarStoriesSeen, avatarStoriesEmpty,
-      mailEmpty, mailMailbox, mailComposerTemplates, mailReader, homeMailWaiting,
+      mailEmpty, mailMailbox, mailComposerTemplates, mailComposerDelivery, mailReader, mailReaderGone, homeMailWaiting,
       homeLaunchDuringReveal, homeLaunchLocationFirst, homeLaunchCalendarFirst, homeLaunchOverlapping,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,

@@ -164,21 +164,10 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         let pathComponents = url.pathComponents.filter { $0 != "/" }
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
 
-        let link = host == "mail"
-            ? Self.mailLink(pathComponents: pathComponents)
-            : Self.link(host: host, pathComponents: pathComponents, query: query)
-        guard let link else {
+        guard let link = Self.link(host: host, pathComponents: pathComponents, query: query) else {
             return nil
         }
         self = link
-    }
-
-    private static func mailLink(pathComponents: [String]) -> Self? {
-        switch pathComponents.count {
-        case 0: .mail(letterID: nil)
-        case 1: UUID(uuidString: pathComponents[0]).map { .mail(letterID: $0) }
-        default: nil
-        }
     }
 
     /// Links that are just a host, such as `paeonia://memories`.
@@ -190,6 +179,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         "dates": .dates,
         "chat": .coupleChat,
         "streak": .streak,
+        "mail": .mail(letterID: nil),
     ]
 
     private static func link(host: String, pathComponents: [String], query: [URLQueryItem]) -> Self? {
@@ -202,20 +192,26 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             query.uuidValue(named: "memoryId").map {
                 .memory(memoryID: $0, showsComments: query.flag(named: "comments"))
             }
+        case ("mail", _) where pathComponents.count == 1:
+            UUID(uuidString: pathComponents[0]).map { .mail(letterID: $0) }
         case ("stories", ["story"]):
             query.uuidValue(named: "storyId").map {
                 .story(storyID: $0, showsReplies: query.flag(named: "replies"))
             }
-        case ("settings", ["subscription"]):
-            .subscription
-        case ("settings", ["data-export"]):
-            .dataExport
+        case ("settings", _):
+            settingsLinks[pathComponents.joined(separator: "/")]
         case (_, []):
             hostOnlyLinks[host]
         default:
             nil
         }
     }
+
+    /// Links under `paeonia://settings/`.
+    private static let settingsLinks: [String: Self] = [
+        "subscription": .subscription,
+        "data-export": .dataExport,
+    ]
 
     private static func dailyLink(pathComponents: [String], query: [URLQueryItem]) -> Self? {
         switch pathComponents {

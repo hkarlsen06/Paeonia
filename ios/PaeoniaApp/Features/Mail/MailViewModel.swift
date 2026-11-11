@@ -10,43 +10,56 @@ enum MailRoute: Hashable {
     case composer
 }
 
-enum MailboxTab: Hashable {
-    case received
-    case sent
-}
-
-/// The Mail sheet: the mailbox, with `path` pushed on top. Each request is its own value,
-/// so asking for the same letter twice opens it twice.
+/// The Mail sheet, the mailbox with `path` pushed on top. Each request is its own value, so
+/// asking for the same letter twice opens it twice.
 struct MailPresentation: Identifiable {
     let id = UUID()
     var path: [MailRoute] = []
     var tab: MailboxTab = .received
 }
 
-/// The couple's letters for the Mail card and the mailbox, and the letter this person is writing.
+/// A problem to tell the person about. Each one is new, so the same problem twice shows twice.
+struct MailNotice: Identifiable, Equatable {
+    let id = UUID()
+    let error: MailError
+}
+
+/// This person's Mail for the Mail card and the mailbox, and the letter they are writing.
 ///
-/// `letters` is the cached server list, so both show offline. Sending and opening need a
-/// connection. A letter being written stays on the phone until it is sent, so a failed send
-/// or a closed composer loses nothing.
+/// The waiting letters and the newest page of each list come from the cache, so both show
+/// offline. Older pages load while the mailbox is open and go when it closes. Sending and
+/// opening need a connection. A letter's photo stays on this phone only while the letter is
+/// on one of its lists.
 @Observable
 final class MailViewModel {
-    private(set) var letters: [Letter] = []
-    /// The zone the partner's morning letters follow, from the server.
+    private(set) var snapshot = MailSnapshot()
+    /// The lists as the mailbox shows them, with the older pages loaded so far.
+    private(set) var lists: [MailboxTab: MailPage] = [:]
+    private(set) var loadingOlder: Set<MailboxTab> = []
+    /// The zone the partner's morning letters follow. Nil until the composer read it.
     private(set) var partnerTimeZone: TimeZone?
-    private(set) var draft: LetterDraft?
-    private(set) var draftPhoto: Data?
-    private(set) var isSending = false
     private(set) var openingLetterID: UUID?
-    private(set) var error: MailError?
-    var presentation: MailPresentation?
+    private(set) var notice: MailNotice?
+    var presentation: MailPresentation? {
+        didSet {
+            if presentation?.id != oldValue?.id { pendingLetterID = nil }
+            if presentation == nil, oldValue != nil { dropOlderPages() }
+        }
+    }
+
+    let composer: LetterComposer
 
     @ObservationIgnored private let cache: any MailCaching
     /// Nil when the server client can't be set up (previews), so a send reports a failure.
     @ObservationIgnored private let gateway: (any MailGateway)?
     @ObservationIgnored private let operationProvider: any SyncClientOperationProviding
+    @ObservationIgnored private let evictPhotos: @Sendable ([UUID]) async -> Void
     @ObservationIgnored private var ownerUserID: UUID?
     @ObservationIgnored private var coupleID: UUID?
     @ObservationIgnored private var reloadGeneration = 0
+    /// A letter a push or link asked for before this phone had it. It opens when it arrives.
+    @ObservationIgnored private var pendingLetterID: UUID?
+    @ObservationIgnored private var shownPhotoIDs: Set<UUID> = []
     #if DEBUG
     @ObservationIgnored private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
@@ -54,55 +67,78 @@ final class MailViewModel {
     )
     #endif
 
+    private static let olderPageSize = 25
+
     init(
         cache: (any MailCaching)? = nil,
         gateway: (any MailGateway)? = nil,
-        operationProvider: (any SyncClientOperationProviding)? = nil
+        operationProvider: (any SyncClientOperationProviding)? = nil,
+        evictPhotos: (@Sendable ([UUID]) async -> Void)? = nil
     ) {
-        self.cache = cache ?? FileMailCache.shared
-        self.gateway = gateway ?? (try? LiveMailGateway.live())
-        self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
+        let cache = cache ?? FileMailCache.shared
+        let gateway = gateway ?? (try? LiveMailGateway.live())
+        let operationProvider = operationProvider ?? SyncClientOperationFactory.shared
+        self.cache = cache
+        self.gateway = gateway
+        self.operationProvider = operationProvider
+        self.evictPhotos = evictPhotos ?? MailLetterPhotoCache.evict
+        composer = LetterComposer(cache: cache, gateway: gateway, operationProvider: operationProvider)
     }
 
-    var received: [Letter] { MailTimeline.received(letters, by: ownerUserID) }
-    var sent: [Letter] { MailTimeline.sent(letters, by: ownerUserID) }
+    func list(_ tab: MailboxTab) -> MailPage {
+        lists[tab] ?? snapshot[tab]
+    }
+
+    var received: [Letter] { list(.received).letters }
+    var sent: [Letter] { list(.sent).letters }
     /// Letters that arrived and wait to be opened, oldest first. The Us tab badge counts them.
-    var waiting: [Letter] { MailTimeline.waiting(letters, for: ownerUserID) }
+    var waiting: [Letter] { MailTimeline.waiting(snapshot.waiting, for: ownerUserID) }
 
     func letter(id: UUID) -> Letter? {
-        letters.first { $0.id == id }
+        received.first { $0.id == id } ?? sent.first { $0.id == id } ?? snapshot.waiting.first { $0.id == id }
     }
 
     func present(_ presentation: MailPresentation = MailPresentation()) {
         self.presentation = presentation
     }
 
-    /// Opens Mail for a push or link: on `letterID` when this phone has it, otherwise on the
-    /// mailbox, where the live feed brings it. False when a newer link took over meanwhile.
+    /// Opens Mail for a push or link, on `letterID` when this phone has it. Otherwise the
+    /// mailbox shows, and the letter opens over it when the live feed brings it. False when a
+    /// newer link took over meanwhile.
     func presentLink(_ letterID: UUID?, isCurrent: () -> Bool) async -> Bool {
         await reload()
         guard isCurrent() else { return false }
-        let letter = letterID.flatMap(letter(id:))
-        present(MailPresentation(path: letter.map { [.reader($0.id)] } ?? []))
+        let known = letterID.flatMap(letter(id:))
+        present(MailPresentation(path: known.map { [.reader($0.id)] } ?? []))
+        if known == nil { pendingLetterID = letterID }
         return true
     }
 
     func configure(ownerUserID: UUID?, coupleID: UUID?) async {
         // The first account needs no reset, so a sheet asked for before it keeps showing.
         if self.ownerUserID != nil, self.ownerUserID != ownerUserID {
-            letters = []
-            draft = nil
-            draftPhoto = nil
+            snapshot = MailSnapshot()
+            lists = [:]
+            partnerTimeZone = nil
+            notice = nil
             presentation = nil
         }
         self.ownerUserID = ownerUserID
         self.coupleID = coupleID
+        await composer.load(ownerUserID: ownerUserID)
         await reload()
     }
 
-    func updateCoupleID(_ coupleID: UUID?) {
-        if self.coupleID != coupleID { presentation = nil }
+    /// A couple that arrives after launch keeps a sheet a push opened. A change of couple closes
+    /// it and reads the letter being written again, which a privacy purge may have removed.
+    func updateCoupleID(_ coupleID: UUID?) async {
+        guard self.coupleID != coupleID else { return }
+        let hadCouple = self.coupleID != nil
         self.coupleID = coupleID
+        guard hadCouple else { return }
+        presentation = nil
+        partnerTimeZone = nil
+        await composer.load(ownerUserID: ownerUserID)
     }
 
     func observeStoreChanges() async {
@@ -113,132 +149,91 @@ final class MailViewModel {
         }
     }
 
+    /// Reads the cache again. The letter being written is the composer's and never changes here.
     func reload() async {
         reloadGeneration &+= 1
         let generation = reloadGeneration
         guard let ownerUserID else {
-            letters = []
+            snapshot = MailSnapshot()
+            lists = [:]
             return
         }
-        let snapshot = await cache.snapshot(ownerUserID: ownerUserID)
-        let storedDraft = await cache.draft(ownerUserID: ownerUserID)
-        let storedPhoto = await cache.draftPhoto(ownerUserID: ownerUserID)
+        let stored = await cache.snapshot(ownerUserID: ownerUserID)
         guard generation == reloadGeneration, self.ownerUserID == ownerUserID else { return }
-        letters = snapshot.letters
-        partnerTimeZone = snapshot.partnerTimeZoneID.flatMap(TimeZone.init(identifier:))
-        if draft == nil {
-            draft = storedDraft
-            draftPhoto = storedDraft?.content.photoID == nil ? nil : storedPhoto
+        snapshot = stored
+        for tab in Array(lists.keys) {
+            lists[tab] = MailTimeline.merged(stored[tab], keeping: lists[tab] ?? stored[tab], in: tab)
         }
-    }
-
-    // MARK: Writing
-
-    /// Starts a letter on `template`, or moves the one being written onto it. A note the
-    /// author changed stays, otherwise the new card's first line replaces the old one.
-    func choose(_ template: LetterTemplate) {
-        guard var current = draft else {
-            let content = LetterContent(templateKey: template.key, body: template.startingBody)
-            updateDraft(LetterDraft(content: content), photo: nil)
-            return
+        composer.forgetSent(Set(stored.sent.letters.map(\.id)))
+        if let pendingLetterID, letter(id: pendingLetterID) != nil, presentation != nil {
+            presentation?.path.append(.reader(pendingLetterID))
+            self.pendingLetterID = nil
         }
-        let previous = LetterTemplate(current.content.templateKey)
-        if current.content.trimmedBody.isEmpty || current.content.body == previous.startingBody {
-            current.content.body = template.startingBody
-        }
-        current.content.templateKey = template.key
-        updateDraft(current, photo: draftPhoto)
+        await evictPhotosNoLongerShown()
     }
 
-    func updateBody(_ body: String) {
-        guard var current = draft else { return }
-        current.content.body = String(body.prefix(Letter.maxBodyLength))
-        updateDraft(current, photo: draftPhoto)
-    }
-
-    func updateDelivery(_ delivery: LetterDelivery) {
-        guard var current = draft else { return }
-        current.content.delivery = delivery
-        updateDraft(current, photo: draftPhoto)
-    }
-
-    /// Attaches `photo`, or removes the photo when nil. The bytes stay on the phone until the send.
-    func updatePhoto(_ photo: Data?) {
-        guard var current = draft else { return }
-        current.content.photoID = photo == nil ? nil : UUID()
-        updateDraft(current, photo: photo)
-    }
-
-    func discardDraft() {
-        draft = nil
-        draftPhoto = nil
-        guard let ownerUserID else { return }
-        Task { await cache.clearDraft(ownerUserID: ownerUserID) }
-    }
-
-    private func updateDraft(_ updated: LetterDraft, photo: Data?) {
-        draft = updated
-        draftPhoto = photo
-        guard let ownerUserID else { return }
-        Task {
-            let generation = await cache.purgeGeneration
-            await cache.saveDraft(updated, photo: photo, ownerUserID: ownerUserID, ifGeneration: generation)
-        }
-    }
-
-    /// Sends the letter being written. Returns false and sets `error` when it could not be
-    /// sent, and the letter stays as it was, so trying again sends the same one.
-    func send() async -> Bool {
-        guard !isSending, let current = draft, current.content.canSend else { return false }
-        guard let ownerUserID, let coupleID, let gateway else {
-            error = .sendFailed
-            return false
-        }
-        isSending = true
-        defer { isSending = false }
-        let stamp = await writeStamp()
-        let attempt = current.nextSend(makeOperation: operationProvider.makeOperation)
-        var photo: MemoryUploadMedia?
-        if let draftPhoto {
-            guard let prepared = await Self.uploadMedia(draftPhoto) else {
-                error = .photoUnreadable
-                return false
-            }
-            photo = prepared
-        }
+    /// Loads the page after the last letter of `tab` the mailbox shows.
+    func loadOlder(_ tab: MailboxTab) async {
+        let current = list(tab)
+        guard let before = current.nextBefore, let gateway, !loadingOlder.contains(tab) else { return }
+        loadingOlder.insert(tab)
+        defer { loadingOlder.remove(tab) }
         do {
-            let letter = try await gateway.send(attempt, photo: photo, coupleID: coupleID)
-            guard self.ownerUserID == ownerUserID else { return false }
-            await finishSend(letter, ownerUserID: ownerUserID, stamp: stamp)
-            return true
+            let page = try await gateway.olderLetters(in: tab, before: before, limit: Self.olderPageSize)
+            guard list(tab).nextBefore == before else { return }
+            let shown = Set(current.letters.map(\.id))
+            lists[tab] = MailPage(
+                letters: current.letters + page.letters.filter { !shown.contains($0.id) },
+                nextBefore: page.nextBefore
+            )
         } catch {
+            post(PaeoniaFailure(error) == .offline ? .loadOffline : .loadFailed)
+        }
+    }
+
+    /// Reads the partner's time zone for the morning option. Without it the option shows no time.
+    func loadPartnerTimeZone() async {
+        guard let gateway, let id = try? await gateway.partnerTimeZoneID() else { return }
+        partnerTimeZone = TimeZone(identifier: id)
+    }
+
+    // MARK: Sending
+
+    /// Sends the letter being written. Returns false and posts a notice when it was not sent,
+    /// and the letter stays as it was, so trying again sends the same one.
+    func send() async -> Bool {
+        let stamp = await writeStamp()
+        switch await composer.send(coupleID: coupleID) {
+        case let .sent(letter):
+            guard let letter else { return true }
+            await save(stamp: stamp) { snapshot in
+                snapshot.sent.letters.removeAll { $0.id == letter.id }
+                snapshot.sent.letters.insert(letter, at: 0)
+            }
+            return true
+        case let .failed(error):
             #if DEBUG
             logger.error("Sending a letter failed: \(String(describing: error))")
             #endif
-            var failed = current
-            failed.failedSend = attempt
-            if self.ownerUserID == ownerUserID { updateDraft(failed, photo: draftPhoto) }
-            self.error = PaeoniaFailure(error) == .offline ? .sendOffline : .sendFailed
+            post(error)
+            return false
+        case .ignored:
             return false
         }
     }
 
-    /// Forgets the letter that was sent and shows it in the sent list at once, before the live feed brings it.
-    private func finishSend(_ letter: Letter?, ownerUserID: UUID, stamp: WriteStamp) async {
-        draft = nil
-        draftPhoto = nil
-        await cache.clearDraft(ownerUserID: ownerUserID)
-        guard let letter else { return }
-        await save(stamp: stamp) { snapshot in
-            snapshot.letters.removeAll { $0.id == letter.id }
-            snapshot.letters.insert(letter, at: 0)
+    /// Attaches a photo the picker loaded, or tells the person it could not be read.
+    func pickPhoto(_ data: Data?) async {
+        guard let data, await composer.pickPhoto(data) else {
+            post(.photoUnreadable)
+            return
         }
     }
 
     // MARK: Reading
 
     /// Opens a letter this person received. Returns it with its note and photo, or nil and
-    /// sets `error` when it could not be opened.
+    /// posts a notice when it could not be opened.
     func open(_ letter: Letter) async -> Letter? {
         if letter.state == .opened { return letter }
         guard letter.recipientUserID == ownerUserID, openingLetterID == nil, let gateway else { return nil }
@@ -248,22 +243,22 @@ final class MailViewModel {
         do {
             let opened = try await gateway.open(id: letter.id)
             await save(stamp: stamp) { snapshot in
-                guard let index = snapshot.letters.firstIndex(where: { $0.id == opened.id }) else { return }
-                snapshot.letters[index] = opened
+                snapshot.waiting.removeAll { $0.id == opened.id }
+                if let index = snapshot.received.letters.firstIndex(where: { $0.id == opened.id }) {
+                    snapshot.received.letters[index] = opened
+                }
             }
+            replaceShown(opened)
             return opened
         } catch {
             #if DEBUG
             logger.error("Opening a letter failed: \(String(describing: error))")
             #endif
-            if PaeoniaFailure(error) == .offline {
-                self.error = .openOffline
-            } else if String(describing: error).contains("letter is not available") {
-                // Its author deleted it while it showed here.
-                self.error = .letterGone
-            } else {
-                self.error = .openFailed
+            let failure = MailError(opening: error)
+            if failure == .letterGone {
+                await forget(letter.id, stamp: stamp)
             }
+            post(failure)
             return nil
         }
     }
@@ -274,17 +269,28 @@ final class MailViewModel {
         let stamp = await writeStamp()
         do {
             try await gateway.delete(id: letter.id, operation: operationProvider.makeOperation())
-            await save(stamp: stamp) { snapshot in snapshot.letters.removeAll { $0.id == letter.id } }
+            await forget(letter.id, stamp: stamp)
             return true
         } catch {
-            self.error = PaeoniaFailure(error) == .offline ? .deleteOffline : .deleteFailed
+            post(PaeoniaFailure(error) == .offline ? .deleteOffline : .deleteFailed)
             return false
         }
     }
 
-    func clearError() {
-        error = nil
+    // MARK: Notices
+
+    func post(_ error: MailError) {
+        notice = MailNotice(error: error)
     }
+
+    /// The notice `id`, once. Whichever Mail screen is showing takes it.
+    func takeNotice(_ id: UUID) -> MailError? {
+        guard let notice, notice.id == id else { return nil }
+        self.notice = nil
+        return notice.error
+    }
+
+    // MARK: Storage
 
     private struct WriteStamp {
         let ownerUserID: UUID?
@@ -304,41 +310,37 @@ final class MailViewModel {
         await reload()
     }
 
-    /// Compressing a camera photo takes a moment, so it runs off the main actor.
-    @concurrent
-    private nonisolated static func uploadMedia(_ photo: Data) async -> MemoryUploadMedia? {
-        guard let compressed = ImageCompressor.compress(photo) else { return nil }
-        return MemoryUploadMedia(
-            data: compressed.data,
-            purpose: .letter,
-            mimeType: compressed.mediaType,
-            fileExtension: compressed.fileExtension,
-            width: compressed.width,
-            height: compressed.height
-        )
-    }
-}
-
-nonisolated enum MailError: Equatable, Sendable {
-    case sendOffline
-    case sendFailed
-    case photoUnreadable
-    case openOffline
-    case openFailed
-    case letterGone
-    case deleteOffline
-    case deleteFailed
-
-    var message: String {
-        switch self {
-        case .sendOffline: String(localized: .mailErrorSendOffline)
-        case .sendFailed: String(localized: .mailErrorSendFailed)
-        case .photoUnreadable: String(localized: .mailErrorPhotoUnreadable)
-        case .openOffline: String(localized: .mailErrorOpenOffline)
-        case .openFailed: String(localized: .mailErrorOpenFailed)
-        case .letterGone: String(localized: .mailErrorLetterGone)
-        case .deleteOffline: String(localized: .mailErrorDeleteOffline)
-        case .deleteFailed: String(localized: .mailErrorDeleteFailed)
+    /// Takes a letter that is gone off every list on this phone.
+    private func forget(_ letterID: UUID, stamp: WriteStamp) async {
+        for tab in Array(lists.keys) {
+            lists[tab]?.letters.removeAll { $0.id == letterID }
         }
+        await save(stamp: stamp) { snapshot in
+            snapshot.waiting.removeAll { $0.id == letterID }
+            snapshot.received.letters.removeAll { $0.id == letterID }
+            snapshot.sent.letters.removeAll { $0.id == letterID }
+        }
+        await evictPhotosNoLongerShown()
+    }
+
+    private func replaceShown(_ letter: Letter) {
+        for tab in Array(lists.keys) {
+            guard let index = lists[tab]?.letters.firstIndex(where: { $0.id == letter.id }) else { continue }
+            lists[tab]?.letters[index] = letter
+        }
+    }
+
+    private func dropOlderPages() {
+        lists = [:]
+        Task { await evictPhotosNoLongerShown() }
+    }
+
+    /// Removes from this phone the photos of letters that left every list.
+    private func evictPhotosNoLongerShown() async {
+        let lettersShown = snapshot.letters + lists.values.flatMap(\.letters)
+        let shown = Set(lettersShown.compactMap(\.mediaAssetID))
+        let gone = shownPhotoIDs.subtracting(shown)
+        shownPhotoIDs = shown
+        if !gone.isEmpty { await evictPhotos(Array(gone)) }
     }
 }

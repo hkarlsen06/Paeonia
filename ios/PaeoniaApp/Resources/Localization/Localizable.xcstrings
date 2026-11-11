@@ -24513,6 +24513,24 @@
         }
       }
     },
+    "mail.delivery.atMoved" : {
+      "comment" : "Under the time picker when the time saved in a letter had passed. %@ is the new day and time",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The time you picked had passed, so we moved it to %@. Change it if you like."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidspunktet du valgte hadde passert, så vi flyttet det til %@. Endre det hvis du vil."
+          }
+        }
+      }
+    },
     "mail.delivery.morning.detail" : {
       "comment" : "When a morning letter arrives. %1$@ is the partner's name, %2$@ the date on the partner's clock",
       "extractionState" : "manual",
@@ -24563,6 +24581,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Det er %@ for deg."
+          }
+        }
+      }
+    },
+    "mail.delivery.morningDetailUnknownZone" : {
+      "comment" : "When a morning letter arrives while the partner's time zone is not known yet. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrives in the morning where %@ is."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer fram om morgenen der %@ er."
           }
         }
       }
@@ -24675,6 +24711,42 @@
         }
       }
     },
+    "mail.error.loadFailed" : {
+      "comment" : "Error when older letters could not load for another reason",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Older letters couldn't load. Try again later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eldre brev kunne ikke lastes inn. Prøv igjen senere."
+          }
+        }
+      }
+    },
+    "mail.error.loadOffline" : {
+      "comment" : "Error when older letters could not load because the phone is offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Older letters load when you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet. Eldre brev lastes inn når du er på nett igjen."
+          }
+        }
+      }
+    },
     "mail.error.openFailed" : {
       "comment" : "Error when a letter could not be opened for another reason",
       "extractionState" : "manual",
@@ -24707,6 +24779,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du er frakoblet. Åpne brevet når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "mail.error.photoMissing" : {
+      "comment" : "Error when the photo in a saved letter can no longer be read",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The photo couldn't be loaded. Pick it again or remove it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet kunne ikke lastes inn. Velg det på nytt, eller fjern det."
           }
         }
       }
@@ -24761,6 +24851,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du er frakoblet. Brevet er lagret, så du kan sende det når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "mail.error.timePassed" : {
+      "comment" : "Error when the time picked for a letter passed before Send. The composer moved the time",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The time you picked has passed. Check the new time, then send again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidspunktet du valgte har passert. Sjekk det nye tidspunktet, og send igjen."
+          }
+        }
+      }
+    },
+    "mail.error.tooLong" : {
+      "comment" : "Error when the server refused a letter because its note is too long. The note stays",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This letter is too long to send. Make it shorter, then try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brevet er for langt til å sendes. Gjør det kortere, og prøv igjen."
           }
         }
       }
@@ -24837,6 +24963,24 @@
         }
       }
     },
+    "mail.mailbox.older" : {
+      "comment" : "Button at the end of a mailbox list that loads older letters",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show older letters"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis eldre brev"
+          }
+        }
+      }
+    },
     "mail.mailbox.received" : {
       "comment" : "Mailbox tab with the letters the partner sent to this person",
       "extractionState" : "manual",
@@ -24887,6 +25031,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Postkasse"
+          }
+        }
+      }
+    },
+    "mail.reader.backToMailbox" : {
+      "comment" : "Button on the screen of a letter that is gone, back to the mailbox",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to Mail"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilbake til Post"
           }
         }
       }
@@ -25138,7 +25300,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gratulerer med dagen vår."
+            "value" : "Gratulerer med jubileet vårt."
           }
         }
       }
