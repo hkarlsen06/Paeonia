@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { newUuid } from "./lib/ids";
+import { MAX_TOGETHER_ITEM_TITLE_CODE_POINTS } from "./lib/visits";
 import { cleanupCoupleContent } from "./lib/relationshipCleanup";
 import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple } from "./test.setup";
 
@@ -36,6 +37,11 @@ const saveVisit = (user: Member, id: string, start: string, end: string, place: 
     p_place: place,
     ...operation,
   });
+const editVisit = (
+  user: Member,
+  id: string,
+  fields: { p_start_date?: string; p_end_date?: string; p_place?: Place | null },
+) => user.as.mutation(api.visits.save_visit, { p_visit_id: id, ...fields, ...op() });
 const deleteVisit = (user: Member, id: string) => user.as.mutation(api.visits.delete_visit, { p_visit_id: id, ...op() });
 const saveItem = (user: Member, id: string, title: string, operation = op()) =>
   user.as.mutation(api.visits.save_together_item, { p_item_id: id, p_title: title, ...operation });
@@ -152,6 +158,45 @@ describe("save_visit", () => {
     expect((await read(couple.first)).visits).toEqual([]);
   });
 
+  test("refuses a date before 2000 or after 2100, and a visit longer than 366 days", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const range = { code: "23514", message: expect.stringContaining("2000-01-01 to 2100-12-31, 366 days at most") };
+    expect(await failure(saveVisit(couple.first, newUuid(), "1999-12-31", "2000-01-02"))).toMatchObject(range);
+    expect(await failure(saveVisit(couple.first, newUuid(), "2100-12-30", "2101-01-01"))).toMatchObject(range);
+    expect(await failure(saveVisit(couple.first, newUuid(), "2027-01-01", "2028-01-02"))).toMatchObject(range);
+    await saveVisit(couple.first, newUuid(), "2000-01-01", "2000-01-02");
+    await saveVisit(couple.first, newUuid(), "2100-12-30", "2100-12-31");
+    await saveVisit(couple.first, newUuid(), "2027-01-01", "2028-01-01");
+  });
+
+  test("an edit keeps the fields it leaves out, so both partners keep their change", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const id = newUuid();
+    await saveVisit(couple.first, id, "2026-11-20", "2026-11-23", bergen);
+
+    await editVisit(couple.second, id, { p_start_date: "2026-11-19" });
+    expect(await editVisit(couple.first, id, { p_end_date: "2026-11-25" })).toMatchObject({
+      start_date: "2026-11-19",
+      end_date: "2026-11-25",
+      place: bergen,
+    });
+    expect(await editVisit(couple.second, id, { p_place: null })).toMatchObject({
+      start_date: "2026-11-19",
+      end_date: "2026-11-25",
+      place: null,
+    });
+    // The two edits together put the last day before the first, so the later one is refused.
+    expect(await failure(editVisit(couple.first, id, { p_start_date: "2026-11-30" }))).toMatchObject({
+      code: "23514",
+    });
+    expect(await failure(editVisit(couple.first, newUuid(), { p_place: bergen }))).toMatchObject({
+      code: "23514",
+      message: expect.stringContaining("needs its first and last day"),
+    });
+  });
+
   test("a late retry does not overwrite a newer edit, and a deleted visit stays deleted", async () => {
     const t = newTest();
     const couple = await createCouple(t);
@@ -167,31 +212,97 @@ describe("save_visit", () => {
     expect((await read(couple.first)).visits).toEqual([]);
   });
 
-  test("caps a couple at 20 visits that are not over, and visits that ended never count", async () => {
+  test("caps a couple at 20 visits that may not be over on some phone, and visits that ended never count", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     for (let index = 0; index < 25; index += 1) await saveVisit(couple.first, newUuid(), "2026-09-01", "2026-09-03");
     const ids = Array.from({ length: 19 }, () => newUuid());
     for (const id of ids) await saveVisit(couple.first, id, "2026-11-20", "2026-11-21");
-    // Today, 10 October, is the last day of this one, so it is not over yet.
+    // At noon UTC on 10 October it is still 9 October on a phone 12 hours behind, so this one counts.
     const lastDay = newUuid();
-    await saveVisit(couple.second, lastDay, "2026-10-08", "2026-10-10");
+    await saveVisit(couple.second, lastDay, "2026-10-08", "2026-10-09");
 
     const full = { code: "23514", message: expect.stringContaining("at most 20 visits") };
     expect(await failure(saveVisit(couple.first, newUuid(), "2026-12-01", "2026-12-02"))).toMatchObject(full);
-    // An ended visit can still be added, and an open one edited, but not one moved out of the past.
-    await saveVisit(couple.first, newUuid(), "2026-10-01", "2026-10-09");
+    // An ended visit can still be added, and a counted one edited, but not one moved out of the past.
+    await saveVisit(couple.first, newUuid(), "2026-10-01", "2026-10-08");
     await saveVisit(couple.first, ids[0], "2026-11-21", "2026-11-22");
+    await saveVisit(couple.second, lastDay, "2026-12-08", "2026-12-09");
     const past = newUuid();
     await saveVisit(couple.first, past, "2026-08-01", "2026-08-02");
     expect(await failure(saveVisit(couple.first, past, "2026-12-01", "2026-12-02"))).toMatchObject(full);
 
-    // The next day the visit that ended frees its place.
-    vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
+    await deleteVisit(couple.first, ids[1]);
     await saveVisit(couple.first, past, "2026-12-01", "2026-12-02");
     expect(await failure(saveVisit(couple.first, newUuid(), "2026-12-01", "2026-12-02"))).toMatchObject(full);
-    await deleteVisit(couple.first, ids[1]);
+  });
+
+  test("a visit stops counting once its last day is over on every phone", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    for (let index = 0; index < 19; index += 1) await saveVisit(couple.first, newUuid(), "2026-11-20", "2026-11-21");
+    await saveVisit(couple.first, newUuid(), "2026-10-08", "2026-10-09");
+    const full = { code: "23514", message: expect.stringContaining("at most 20 visits") };
+
+    // 23:00 UTC on 10 October is still 9 October in UTC-12.
+    vi.setSystemTime(new Date("2026-10-10T23:00:00.000Z"));
+    expect(await failure(saveVisit(couple.first, newUuid(), "2026-12-01", "2026-12-02"))).toMatchObject(full);
+    // 9 October is over everywhere once it is 11 October in UTC.
+    vi.setSystemTime(new Date("2026-10-11T00:00:00.000Z"));
     await saveVisit(couple.first, newUuid(), "2026-12-01", "2026-12-02");
+  });
+
+  // 20:00 UTC is 22:00 on 10 October in Oslo and 07:00 on the 11th in Sydney. 10:30 UTC is 23:30 on
+  // 9 October in Pago Pago and 00:30 on the 11th in Kiritimati, two calendar days apart.
+  test.each([
+    { now: "2026-10-10T20:00:00.000Z", behind: "Europe/Oslo", ahead: "Australia/Sydney", behindToday: "2026-10-10" },
+    { now: "2026-10-10T10:30:00.000Z", behind: "Pacific/Pago_Pago", ahead: "Pacific/Kiritimati", behindToday: "2026-10-09" },
+  ])("$behind and $ahead cannot get past 20 visits not over on either day, and get_visits sends every one", async ({
+    now,
+    behind,
+    ahead,
+    behindToday,
+  }) => {
+    vi.setSystemTime(new Date(now));
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: [behind, ahead] });
+    const [late, early] = [couple.first, couple.second];
+    const aheadYesterday = "2026-10-10";
+    // These are over for the partner ahead and not for the one behind.
+    const overAhead = Array.from({ length: 11 }, () => newUuid());
+    for (const id of overAhead) await saveVisit(late, id, aheadYesterday, aheadYesterday).catch(() => null);
+    for (let index = 0; index < 12; index += 1) {
+      await saveVisit(early, newUuid(), aheadYesterday, aheadYesterday).catch(() => null);
+    }
+    for (let index = 0; index < 20; index += 1) {
+      await saveVisit(early, newUuid(), "2026-12-01", "2026-12-02").catch(() => null);
+    }
+    const [next, ...rest] = overAhead;
+    await saveVisit(late, next, "2026-10-12", "2026-10-13").catch(() => null);
+    for (const id of rest) await saveVisit(late, id, "2026-12-10", "2026-12-11").catch(() => null);
+
+    const notOverBehind = await t.run(async (ctx) =>
+      (await ctx.db.query("visits").collect()).filter((row) => row.end_date >= behindToday).map((row) => row.id),
+    );
+    expect(notOverBehind.length).toBeLessThanOrEqual(20);
+    for (const partner of [late, early]) {
+      expect((await read(partner)).visits.map((visit) => visit.id)).toEqual(expect.arrayContaining(notOverBehind));
+    }
+  });
+
+  test("partners in Oslo and Los Angeles get the same answer for the same new visit", async () => {
+    // 05:00 UTC is 07:00 on 10 October in Oslo and 22:00 on 9 October in Los Angeles.
+    vi.setSystemTime(new Date("2026-10-10T05:00:00.000Z"));
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "America/Los_Angeles"] });
+    for (let index = 0; index < 19; index += 1) await saveVisit(couple.first, newUuid(), "2026-12-01", "2026-12-02");
+    await saveVisit(couple.second, newUuid(), "2026-10-08", "2026-10-09");
+
+    const answers = [];
+    for (const partner of [couple.first, couple.second]) {
+      answers.push((await failure(saveVisit(partner, newUuid(), "2026-12-10", "2026-12-11")))?.code ?? "saved");
+    }
+    expect(answers).toEqual(["23514", "23514"]);
   });
 
   test("refuses someone outside the couple and someone without access", async () => {
@@ -255,23 +366,19 @@ describe("save_together_item", () => {
     await saveItem(couple.first, newUuid(), "One more");
   });
 
-  test("a title is 1 to 80 code points after trimming, so 10 of this emoji fit and 11 do not", async () => {
+  test("a title counts code points after trimming, as the app does, so a long emoji uses up several", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     const kiss = "👩‍❤️‍💋‍👨";
-    expect(Array.from(kiss)).toHaveLength(8);
-    expect(await saveItem(couple.first, newUuid(), kiss.repeat(10))).toMatchObject({ title: kiss.repeat(10) });
-    expect(await saveItem(couple.first, newUuid(), ` ${"x".repeat(80)} `)).toMatchObject({ title: "x".repeat(80) });
-    for (const title of ["   ", kiss.repeat(11), "x".repeat(81)]) {
-      expect(await failure(saveItem(couple.first, newUuid(), title))).toMatchObject({
-        code: "23514",
-        message: "list item title must be 1 to 80 characters",
-      });
+    const perKiss = Array.from(kiss).length;
+    const full = kiss.repeat(Math.floor(MAX_TOGETHER_ITEM_TITLE_CODE_POINTS / perKiss)) +
+      "x".repeat(MAX_TOGETHER_ITEM_TITLE_CODE_POINTS % perKiss);
+    expect(await saveItem(couple.first, newUuid(), ` ${full} `)).toMatchObject({ title: full });
+    for (const title of ["   ", `${full}x`]) {
+      expect(await failure(saveItem(couple.first, newUuid(), title))).toMatchObject({ code: "23514" });
     }
-    expect(await failure(setDone(couple.first, newUuid(), true, op(), kiss.repeat(11)))).toMatchObject({
-      code: "23514",
-    });
-    expect((await read(couple.first)).items).toHaveLength(2);
+    expect(await failure(setDone(couple.first, newUuid(), true, op(), `${full}x`))).toMatchObject({ code: "23514" });
+    expect((await read(couple.first)).items).toHaveLength(1);
   });
 
   test("a deleted item stays deleted", async () => {
@@ -437,4 +544,50 @@ describe("cleanup", () => {
       other.coupleId,
     ]);
   });
+
+  test("a couple with a long history is cleaned up in chunks", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await insertVisits(t, couple, 450, "2025-01-01");
+
+    const row = await t.run(async (ctx) => (await ctx.db.query("couples").collect()).find((c) => c.id === couple.coupleId)!);
+    expect((await t.run((ctx) => cleanupCoupleContent(ctx, row, NOW, { left: 400 }))).done).toBe(false);
+    expect((await t.run((ctx) => ctx.db.query("visits").collect())).length).toBe(50);
+    expect((await t.run((ctx) => cleanupCoupleContent(ctx, row, NOW, { left: 400 }))).done).toBe(true);
+    expect(await t.run((ctx) => ctx.db.query("visits").collect())).toEqual([]);
+  });
 });
+
+describe("Lock Screen", () => {
+  test("reads at most 20 visits and still sends the next one", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await insertVisits(t, couple, 200, "2026-10-10");
+    const next = newUuid();
+    await t.run(async (ctx) => {
+      await ctx.db.patch((await ctx.db.query("visits").first())!._id, { id: next, end_date: "2026-11-02" });
+    });
+
+    const state = await couple.first.as.query(api.widget.get_lock_screen_state, { p_now: NOW });
+    expect(state!.dates.visits).toHaveLength(20);
+    expect(state!.dates.visits.map((visit) => visit.id)).toContain(next);
+  });
+});
+
+/** Writes `count` visits on `date` straight to the database, past the cap a save keeps. */
+async function insertVisits(t: TestConvex, couple: TestCouple, count: number, date: string) {
+  await t.run(async (ctx) => {
+    for (let index = 0; index < count; index += 1) {
+      await ctx.db.insert("visits", {
+        id: newUuid(),
+        couple_id: couple.coupleId,
+        start_date: date,
+        end_date: date,
+        created_by_user_id: couple.first.userId,
+        last_edited_by_user_id: couple.first.userId,
+        created_at: NOW,
+        updated_at: NOW,
+      });
+    }
+  });
+}

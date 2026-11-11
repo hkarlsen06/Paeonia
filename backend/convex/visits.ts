@@ -5,7 +5,7 @@ import { getCurrentEntitledCoupleId } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { isSupersededClientOperation, runClientOperation } from "./lib/clientOperations";
-import { userLocalDate } from "./lib/coupleDays";
+import { daysBetweenDates } from "./lib/coupleDates";
 import { getByUuid, withUpdatedAt, type ReaderCtx, type WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dateArg, uuidArg } from "./lib/ids";
@@ -14,13 +14,16 @@ import { normalizePlace, placeArg } from "./lib/places";
 import { requireTitle } from "./lib/text";
 import { nowIso } from "./lib/time";
 import {
+  earliestLocalDate,
+  FIRST_VISIT_DATE,
+  LAST_VISIT_DATE,
   liveTogetherItems,
   MAX_OPEN_VISITS_PER_COUPLE,
   MAX_TOGETHER_ITEM_TITLE_CODE_POINTS,
   MAX_TOGETHER_ITEMS_PER_COUPLE,
+  MAX_VISIT_DAYS,
   openVisits,
   recentVisits,
-  visitPhase,
 } from "./lib/visits";
 
 // The couple's visits, the times they meet in person, and their one shared list of things to do
@@ -94,31 +97,43 @@ async function currentItem(ctx: ReaderCtx, itemId: string, coupleId: string) {
   return row && row.couple_id === coupleId && row.deleted_at === undefined ? itemRow(row) : null;
 }
 
+/** Fails with `23514` unless the last day is not before the first, both are dates a visit can have, and the visit is not too long. */
+function checkVisitDates(startDate: string, endDate: string) {
+  if (endDate < startDate) {
+    fail("23514", "visit end date must not be before its start date");
+  }
+  const tooLong = daysBetweenDates(startDate, endDate) >= MAX_VISIT_DAYS;
+  if (startDate < FIRST_VISIT_DATE || endDate > LAST_VISIT_DATE || tooLong) {
+    fail("23514", `a visit lies from ${FIRST_VISIT_DATE} to ${LAST_VISIT_DATE}, ${MAX_VISIT_DAYS} days at most`);
+  }
+}
+
 /**
  * Plans or edits the visit `p_visit_id`. The phone picks the id, so a create and its retries are the
- * same write. The last day may equal the first and may not be before it. A visit in the past is
- * fine. At most `MAX_OPEN_VISITS_PER_COUPLE` visits are open on the caller's day, so a save that
- * adds an open one fails with `23514` when that many are. A deleted visit stays deleted, and a
- * write that a newer one from the same phone already replaced changes nothing. Returns the visit as
- * stored now, also on a replay, or null when it is deleted or was never saved.
+ * same write. A create sends every field. An edit sends only the fields the person changed, and the
+ * visit keeps the others, so partners who edit different fields at once both keep their change.
+ * `p_place: null` removes the place. The last day may equal the first and may not be before it,
+ * both fall from `FIRST_VISIT_DATE` to `LAST_VISIT_DATE`, and a visit spans at most `MAX_VISIT_DAYS`
+ * days, or this fails with `23514`. A visit in the past is fine. At most
+ * `MAX_OPEN_VISITS_PER_COUPLE` visits end on or after `earliestLocalDate`, so a save that adds one
+ * fails with `23514` when that many do. A deleted visit stays deleted, and a write that a newer one
+ * from the same phone already replaced changes nothing. Returns the visit as stored now, also on a
+ * replay, or null when it is deleted or was never saved.
  */
 export const save_visit = mutation({
   args: {
     p_visit_id: v.string(),
-    p_start_date: v.string(),
-    p_end_date: v.string(),
+    p_start_date: v.optional(v.string()),
+    p_end_date: v.optional(v.string()),
     p_place: placeArg,
     ...clientOperationArgs,
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const visitId = uuidArg(args.p_visit_id);
-    const startDate = dateArg(args.p_start_date);
-    const endDate = dateArg(args.p_end_date);
-    if (endDate < startDate) {
-      fail("23514", "visit end date must not be before its start date");
-    }
-    const place = normalizePlace(args.p_place, "visit");
+    const startDate = args.p_start_date === undefined ? undefined : dateArg(args.p_start_date);
+    const endDate = args.p_end_date === undefined ? undefined : dateArg(args.p_end_date);
+    const place = args.p_place === undefined ? undefined : normalizePlace(args.p_place, "visit");
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
 
     const input = toClientOperation(args, {
@@ -135,15 +150,25 @@ export const save_visit = mutation({
         return null;
       }
 
-      const fields = { start_date: startDate, end_date: endDate, place: place ?? undefined, last_edited_by_user_id: userId };
-      const today = await userLocalDate(ctx, userId, nowIso());
-      const wasOpen = existing !== null && visitPhase(existing, today) !== "ended";
-      if (!wasOpen && visitPhase(fields, today) !== "ended") {
-        const others = (await openVisits(ctx, coupleId, today)).filter((row) => row.id !== visitId);
+      const start = startDate ?? existing?.start_date;
+      const end = endDate ?? existing?.end_date;
+      if (start === undefined || end === undefined) {
+        return fail("23514", "a new visit needs its first and last day");
+      }
+      checkVisitDates(start, end);
+      const earliest = earliestLocalDate(nowIso());
+      if (end >= earliest) {
+        const others = (await openVisits(ctx, coupleId, earliest)).filter((row) => row.id !== visitId);
         if (others.length >= MAX_OPEN_VISITS_PER_COUPLE) {
           return fail("23514", `a couple can have at most ${MAX_OPEN_VISITS_PER_COUPLE} visits that are not over`);
         }
       }
+      const fields = {
+        start_date: start,
+        end_date: end,
+        place: place === undefined ? existing?.place : (place ?? undefined),
+        last_edited_by_user_id: userId,
+      };
       if (existing) {
         await ctx.db.patch(existing._id, withUpdatedAt(fields));
       } else {

@@ -82,19 +82,29 @@ async function deleteCoupleDates(ctx: WriterCtx, coupleId: string): Promise<numb
   return countdowns.length + withBirthday.length;
 }
 
-/** Deletes the couple's visits and its list, deleted rows included. Returns the rows deleted. */
-async function deleteCoupleVisits(ctx: WriterCtx, coupleId: string): Promise<number> {
-  const visits = await ctx.db
-    .query("visits")
-    .withIndex("by_couple_id_deleted_at_end_date", (q) => q.eq("couple_id", coupleId))
-    .collect();
-  for (const visit of visits) await ctx.db.delete(visit._id);
-  const items = await ctx.db
-    .query("together_list_items")
-    .withIndex("by_couple_id_deleted_at", (q) => q.eq("couple_id", coupleId))
-    .collect();
-  for (const item of items) await ctx.db.delete(item._id);
-  return visits.length + items.length;
+/**
+ * Deletes the couple's visits and its list, deleted rows included, at most `budget.left` rows, and
+ * takes them from the budget. Returns the rows deleted. Rows are left when the budget ran out.
+ */
+async function deleteCoupleVisits(ctx: WriterCtx, coupleId: string, budget: ChunkBudget): Promise<number> {
+  const rows = [
+    ...(await ctx.db
+      .query("visits")
+      .withIndex("by_couple_id_deleted_at_end_date", (q) => q.eq("couple_id", coupleId))
+      .take(Math.max(budget.left, 1))),
+    ...(await ctx.db
+      .query("together_list_items")
+      .withIndex("by_couple_id_deleted_at", (q) => q.eq("couple_id", coupleId))
+      .take(Math.max(budget.left, 1))),
+  ];
+  let deleted = 0;
+  for (const row of rows) {
+    if (budget.left <= 0) break;
+    await ctx.db.delete(row._id);
+    budget.left -= 1;
+    deleted += 1;
+  }
+  return deleted;
 }
 
 // Both reads use couple-wide indexes, so a couple with years of daily questions costs a
@@ -281,7 +291,8 @@ export async function cleanupCoupleContent(
   await deleteLatestLocationsForCouple(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
   await deleteCoupleDates(ctx, couple.id);
-  await deleteCoupleVisits(ctx, couple.id);
+  await deleteCoupleVisits(ctx, couple.id, budget);
+  if (budget.left <= 0) return unfinished();
   await clearPartnerNicknames(ctx, couple.id);
   await deleteCoupleNotes(ctx, couple.id);
   const current = (await ctx.db.get(couple._id))!;
@@ -500,10 +511,11 @@ export async function purgeCoupleContent(
   const favoriteRows = await deleteCoupleFavorites(ctx, couple.id);
   contentDeleted += favoriteRows;
   budget.left -= favoriteRows;
+  contentDeleted += await deleteCoupleVisits(ctx, couple.id, budget);
+  if (budget.left <= 0) return unfinished();
   for (const deleted of [
     await deleteHeartsForCouple(ctx, couple.id),
     await deleteCoupleDates(ctx, couple.id),
-    await deleteCoupleVisits(ctx, couple.id),
     await clearPartnerNicknames(ctx, couple.id),
     await deleteCoupleNotes(ctx, couple.id),
   ]) {
