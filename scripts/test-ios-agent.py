@@ -177,5 +177,48 @@ raise SystemExit(m["xcodebuild"](["build"], {str(self.fake)!r}, Path({str(self.r
         self.assertFalse((self.root / "queue").exists())
 
 
+class SimulatorLeaseTests(unittest.TestCase):
+    def test_only_current_live_explicit_reservations_keep_extras_booted(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            owners = root / "locks"
+            lease_root = root / "leases"
+            owner = owners / "simulator-2/owner"
+            owner.parent.mkdir(parents=True)
+            owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
+            with mock.patch.dict(os.environ, {"IOS_AGENT_SIMULATORS": "2"}):
+                agent.grant_simulator("Shared iPhone 2", lease_root, owners)
+            self.assertTrue(agent.simulator_reserved(agent.SIMULATORS[1][1], lease_root))
+            owner.write_text(f"checkout||{int(time.time())}")
+            self.assertTrue(agent.simulator_reserved(agent.SIMULATORS[1][1], lease_root))
+            owner.write_text(f"checkout||{int(time.time()) - 601}")
+            self.assertFalse(agent.simulator_reserved(agent.SIMULATORS[1][1], lease_root))
+            with mock.patch.dict(os.environ, {"IOS_AGENT_SIMULATORS": "2"}):
+                agent.grant_simulator("Shared iPhone 2", lease_root, owners, ttl_seconds=1800)
+                agent.grant_simulator("Shared iPhone 2", lease_root, owners)
+            self.assertTrue(agent.simulator_reserved(agent.SIMULATORS[1][1], lease_root))
+            owner.write_text(f"checkout||{int(time.time()) - 1801}")
+            self.assertFalse(agent.simulator_reserved(agent.SIMULATORS[1][1], lease_root))
+            owner.write_text(f"other-checkout|{os.getpid()}|{int(time.time())}")
+            self.assertFalse(agent.simulator_reserved(agent.SIMULATORS[1][1], lease_root))
+            devices = {"devices": {"runtime": [
+                {"name": name, "udid": udid, "state": "Booted"}
+                for name, udid in agent.SIMULATORS
+            ]}}
+            with mock.patch.object(agent.subprocess, "run", return_value=mock.Mock(stdout=json.dumps(devices))) as run:
+                agent.enforce_simulators(lease_root)
+                shutdowns = [call.args[0][-1] for call in run.call_args_list if "shutdown" in call.args[0]]
+                self.assertEqual(shutdowns, [agent.SIMULATORS[1][1], agent.SIMULATORS[2][1]])
+            owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
+            with mock.patch.object(agent.subprocess, "run", return_value=mock.Mock(stdout=json.dumps(devices))) as run:
+                agent.enforce_simulators(lease_root)
+                shutdowns = [call.args[0][-1] for call in run.call_args_list if "shutdown" in call.args[0]]
+                self.assertEqual(shutdowns, [agent.SIMULATORS[2][1]])
+            owner.parent.rename(owners / "released")
+            owner.parent.mkdir()
+            owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
+            self.assertFalse(agent.simulator_reserved(agent.SIMULATORS[1][1], lease_root))
+
+
 if __name__ == "__main__":
     unittest.main()

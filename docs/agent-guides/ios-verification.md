@@ -51,6 +51,8 @@ The Mac's `ios-agent` controller serializes CLI builds and tests, defaults Xcode
 
 The controller source is `scripts/ios-agent`. Install or refresh its user files with `./scripts/ios-agent install-user`. On a new Mac, install its prepared launchers with `sudo install -m 755 ~/.local/lib/ios-agent/xcodebuild ~/.local/lib/ios-agent/xcrun /usr/local/bin/`. Keep `/usr/local/bin` before `/usr/bin` in `PATH`. Absolute Xcode binaries and builds launched from the Xcode app bypass this CLI controller.
 
+Installation also enables the `no.hkarlsen.ios-agent` launch agent. Every 30 seconds it shuts down extra shared simulators that lack an explicitly enabled, live reservation. The simulator lock registers those reservations before booting an extra slot. Logs are in `~/Library/Logs/ios-agent.log`.
+
 `XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh` also compiles the test targets. The pre-push hook runs it when Swift files change. CI runs it with `XCODE_BUILD_AGENT_FAIL_ON_WARNINGS=1`, so any compiler warning fails the iOS job.
 
 The project compiles with `MemberImportVisibility`, so a file that uses a member from PencilKit, StoreKit, SwiftData or a similar module must import that module itself. `@testable import PaeoniaApp` does not bring it in. After a bulk trim of Swift files, put back any import removed from a file that still exists, look for orphaned attributes such as a `@Test(arguments:)` with no function under it, and run `build-for-testing`. SwiftLint catches neither. When you pipe a wrapper's output, use `set -o pipefail`: the wrapper prints `STATUS: FAILURE`, but the pipe still exits 0.

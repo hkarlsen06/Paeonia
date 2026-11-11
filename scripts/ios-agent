@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import plistlib
 import shutil
 import signal
 import subprocess
@@ -44,6 +45,73 @@ def check_simulator(target):
     if not any(target in pair for pair in allowed):
         raise ValueError(f"{target} is outside the shared simulator pool; "
                          "use Shared iPhone or explicitly set IOS_AGENT_SIMULATORS=2 or 3")
+
+
+@contextlib.contextmanager
+def simulator_guard(directory):
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / "guard").open("a") as guard:
+        fcntl.flock(guard, fcntl.LOCK_EX)
+        yield
+
+
+def grant_simulator(target, directory=None, lock_root=None, ttl_seconds=None):
+    check_simulator(target)
+    slot = next(index for index, pair in enumerate(SIMULATORS) if target in pair)
+    if slot == 0:
+        return
+    directory = directory or Path.home() / ".local/state/ios-agent/simulators"
+    lock_root = lock_root or Path(os.environ.get("AGENT_SIMULATOR_LOCK_ROOT", "/tmp/agent-locks"))
+    owner_path = lock_root / f"simulator-{slot + 1}" / "owner"
+    with simulator_guard(directory):
+        try:
+            owner = owner_path.read_text().strip()
+        except FileNotFoundError:
+            raise ValueError("take the extra simulator through scripts/lock before booting it")
+        lease = directory / SIMULATORS[slot][1]
+        inode = owner_path.parent.stat().st_ino
+        if ttl_seconds is None:
+            ttl_seconds = 60 * int(os.environ.get("PAEONIA_LOCK_TTL_MINUTES", os.environ.get("TIDEX_LOCK_TTL_MINUTES", "10")))
+            try:
+                previous = json.loads(lease.read_text())
+                if previous["inode"] == inode and previous["owner"].split("|")[0] == owner.split("|")[0]:
+                    ttl_seconds = previous["ttl"]
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        ttl_seconds = int(ttl_seconds)
+        if ttl_seconds < 0:
+            raise ValueError("simulator reservation TTL must be nonnegative")
+        temporary = directory / f"{lease.name}-{os.getpid()}"
+        temporary.write_text(json.dumps({"owner": owner, "path": str(owner_path), "inode": inode, "ttl": ttl_seconds}))
+        temporary.replace(lease)
+
+
+def simulator_reserved(udid, directory):
+    try:
+        lease = json.loads((directory / udid).read_text())
+        owner_path = Path(lease["path"])
+        owner = owner_path.read_text().strip()
+        if owner_path.parent.stat().st_ino != lease["inode"]:
+            return False
+        worktree, pid, renewed = owner.split("|")
+        if worktree != lease["owner"].split("|")[0]:
+            return False
+        return bool(worktree) and (process_alive(int(pid)) if pid else time.time() - int(renewed) < int(lease["ttl"]))
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+
+
+def enforce_simulators(directory=None):
+    directory = directory or Path.home() / ".local/state/ios-agent/simulators"
+    with simulator_guard(directory):
+        result = subprocess.run(["/usr/bin/xcrun", "simctl", "list", "devices", "booted", "--json"],
+                                capture_output=True, text=True, timeout=15, check=True)
+        for devices in json.loads(result.stdout)["devices"].values():
+            for device in devices:
+                udid = device["udid"]
+                if device.get("state") == "Booted" and udid in {pair[1] for pair in SIMULATORS[1:]} and not simulator_reserved(udid, directory):
+                    log(f"shutting down {device['name']}; no enabled simulator reservation")
+                    subprocess.run(["/usr/bin/xcrun", "simctl", "shutdown", udid], timeout=15, check=True)
 
 
 def build_arguments(arguments):
@@ -216,7 +284,7 @@ def xcrun(arguments):
             os.execv("/usr/bin/xcrun", ["/usr/bin/xcrun"] + arguments)
         action, target = arguments[index:index + 2]
         if action == "boot" or (action == "bootstatus" and "-b" in arguments):
-            check_simulator(target)
+            grant_simulator(target)
     os.execv("/usr/bin/xcrun", ["/usr/bin/xcrun"] + arguments)
 
 
@@ -297,6 +365,19 @@ def install_user():
         launcher = library / name
         launcher.write_text(f'#!/bin/sh\nexec /usr/bin/python3 "{source}" {name} "$@"\n')
         launcher.chmod(0o755)
+    launch_agent = home / "Library/LaunchAgents/no.hkarlsen.ios-agent.plist"
+    launch_agent.parent.mkdir(parents=True, exist_ok=True)
+    log_path = home / "Library/Logs/ios-agent.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    launch_agent.write_bytes(plistlib.dumps({
+        "Label": "no.hkarlsen.ios-agent",
+        "ProgramArguments": ["/usr/bin/python3", str(source), "enforce-simulators"],
+        "RunAtLoad": True, "StartInterval": 30,
+        "StandardOutPath": str(log_path), "StandardErrorPath": str(log_path),
+    }))
+    domain = f"gui/{os.getuid()}"
+    subprocess.run(["/bin/launchctl", "bootout", domain + "/no.hkarlsen.ios-agent"], capture_output=True)
+    subprocess.run(["/bin/launchctl", "bootstrap", domain, str(launch_agent)], check=True)
     print(library)
 
 
@@ -305,6 +386,14 @@ def main(arguments=None):
     if arguments and arguments[0] in ("xcodebuild", "xcrun"):
         command = arguments.pop(0)
         return xcodebuild(arguments) if command == "xcodebuild" else xcrun(arguments)
+    if arguments and arguments[0] == "simulator-lease":
+        if len(arguments) not in (2, 3):
+            raise ValueError("simulator-lease requires a shared simulator name or ID and optional TTL seconds")
+        grant_simulator(arguments[1], ttl_seconds=int(arguments[2]) if len(arguments) == 3 else None)
+        return 0
+    if arguments == ["enforce-simulators"]:
+        enforce_simulators()
+        return 0
     parser = argparse.ArgumentParser(description="Shared Mac build queue and live iPhone discovery")
     parser.add_argument("command", choices=("devices", "destination", "physical-destination", "install-user"))
     parser.add_argument("--json", action="store_true")
