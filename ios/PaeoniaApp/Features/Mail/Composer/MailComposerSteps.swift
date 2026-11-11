@@ -160,6 +160,7 @@ struct MailDeliveryPicker: View {
     let movedPastTime: Bool
 
     @State private var setTime = Date.now.addingTimeInterval(3_600)
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         let now = Date.now
@@ -168,16 +169,7 @@ struct MailDeliveryPicker: View {
             option(.morning, title: .mailDeliveryMorningTitle, detail: morningDetail(now: now))
             option(.at(setTime), title: .mailDeliveryAtTitle, detail: nil)
             if case let .at(date) = delivery {
-                DatePicker(
-                    selection: Binding(get: { setTime }, set: {
-                        setTime = $0
-                        delivery = .at($0)
-                    }),
-                    in: now.addingTimeInterval(60)...now.addingTimeInterval(365 * 86_400)
-                ) {
-                    Text(.mailDeliveryAtLabel)
-                }
-                .accessibilityIdentifier("mail.delivery.at.picker")
+                timePicker(now: now)
                 if movedPastTime {
                     let when = date.formatted(.dateTime.weekday(.wide).day().month().hour().minute())
                     Text(.mailDeliveryAtMoved(when))
@@ -191,6 +183,39 @@ struct MailDeliveryPicker: View {
         }
         .onChange(of: delivery, initial: true) { _, delivery in
             if case let .at(date) = delivery { setTime = date }
+        }
+    }
+
+    /// The label beside the date and time, or above them at the accessibility text sizes, where
+    /// the date and the time each take a line so no word is broken.
+    @ViewBuilder
+    private func timePicker(now: Date) -> some View {
+        let selection = Binding(get: { setTime }, set: {
+            setTime = $0
+            delivery = .at($0)
+        })
+        let range = now.addingTimeInterval(60)...now.addingTimeInterval(365 * 86_400)
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                Text(.mailDeliveryAtLabel)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                DatePicker(selection: selection, in: range, displayedComponents: .date) {
+                    Text(.mailDeliveryAtLabel)
+                }
+                .labelsHidden()
+                .accessibilityIdentifier("mail.delivery.at.picker")
+                DatePicker(selection: selection, in: range, displayedComponents: .hourAndMinute) {
+                    Text(.mailDeliveryAtLabel)
+                }
+                .labelsHidden()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            DatePicker(selection: selection, in: range) {
+                Text(.mailDeliveryAtLabel)
+            }
+            .accessibilityIdentifier("mail.delivery.at.picker")
         }
     }
 

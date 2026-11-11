@@ -107,7 +107,8 @@ struct MailReaderView: View {
                 Task { await open(letter) }
             } label: {
                 envelope
-                    .padding(.top, PaeoniaSpacing.space40)
+                    // The open flap reaches above the envelope, so it gets room to fold back without covering the name.
+                    .padding(.top, Self.envelopeWidth / PaeoniaEnvelopeLayer.aspect * 0.7)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

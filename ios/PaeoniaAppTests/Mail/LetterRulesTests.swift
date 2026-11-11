@@ -35,7 +35,7 @@ struct LetterDraftTests {
         }
     }
 
-    @Test func aRetryOfAnUnchangedLetterIsTheSameSendAndAChangedOneIsNew() {
+    @Test func aDraftThatStartedASendKeepsItsLetterIDAndRenewsOnlyChangedOperations() {
         let operations = Operations()
         var draft = LetterDraft(content: LetterContent(templateKey: .missYou, body: "I miss you."))
         let first = draft.nextSend(makeOperation: operations.makeOperation)
@@ -44,11 +44,17 @@ struct LetterDraftTests {
 
         draft.content.body = "I miss you so much."
         let edited = draft.nextSend(makeOperation: operations.makeOperation)
-        #expect(edited.id != first.id)
+        #expect(edited.id == first.id)
         #expect(edited.operations.send != first.operations.send)
+        #expect(edited.operations.reserve == first.operations.reserve)
 
-        draft.content.body = "I miss you."
         draft.content.photo = LetterPhoto(id: UUID(), mimeType: "image/jpeg", fileExtension: "jpg", width: 4, height: 3)
+        let withPhoto = draft.nextSend(makeOperation: operations.makeOperation)
+        #expect(withPhoto.id == first.id)
+        #expect(withPhoto.operations.reserve != first.operations.reserve)
+        #expect(withPhoto.operations.finalize != first.operations.finalize)
+
+        draft.pendingSend = nil
         #expect(draft.nextSend(makeOperation: operations.makeOperation).id != first.id)
     }
 }

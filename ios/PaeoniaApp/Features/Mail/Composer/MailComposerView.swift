@@ -5,12 +5,7 @@ import SwiftUI
 /// pick when it arrives. Every change is kept on the phone, so leaving or a failed send loses
 /// nothing. Nothing can change while the letter is sending.
 struct MailComposerView: View {
-    enum Step: Int, CaseIterable {
-        case template
-        case note
-        case photo
-        case delivery
-    }
+    typealias Step = LetterComposerStep
 
     let mail: MailViewModel
     let partnerName: String
@@ -19,13 +14,14 @@ struct MailComposerView: View {
     @State private var step: Step
     @State private var isConfirmingDiscard = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(mail: MailViewModel, partnerName: String, onSent: @escaping () -> Void) {
         self.mail = mail
         self.partnerName = partnerName
         self.onSent = onSent
-        _step = State(initialValue: mail.composer.draft == nil ? .template : .note)
+        _step = State(initialValue: mail.composer.draft?.step ?? .template)
     }
 
     private var composer: LetterComposer { mail.composer }
@@ -78,7 +74,17 @@ struct MailComposerView: View {
             }
         }
         .navigationBarBackButtonHidden(composer.isSending)
+        // The letter reached the server, from this send or one whose answer was lost.
+        .onChange(of: composer.sentLetterID) {
+            if bannerCenter.content?.style == .error { bannerCenter.dismiss() }
+            onSent()
+        }
         .animation(.default, value: step)
+        .onChange(of: step) { composer.updateStep(step) }
+        // The stored draft can arrive after this screen, as when Mail opens while the app starts.
+        .onChange(of: composer.draft == nil) { _, hasNoDraft in
+            if !hasNoDraft, step == .template, let saved = composer.draft?.step { step = saved }
+        }
         .task { await mail.loadPartnerTimeZone() }
     }
 
@@ -152,9 +158,7 @@ struct MailComposerView: View {
     private var forward: some View {
         if step == .delivery {
             Button {
-                Task {
-                    if await mail.send() { onSent() }
-                }
+                Task { await mail.send() }
             } label: {
                 Text(.mailComposerSend)
             }

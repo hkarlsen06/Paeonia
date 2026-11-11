@@ -23937,20 +23937,20 @@
         }
       }
     },
-    "mail.card.emptyMessage" : {
-      "comment" : "Line on the Mail card when no letter waits. %@ is the partner's name",
+    "mail.card.draft" : {
+      "comment" : "Us tab Mail row while the person has a letter they have not sent yet. The argument is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Write something %@ can open later."
+            "value" : "Finish your letter to %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skriv noe %@ kan åpne senere."
+            "value" : "Skriv ferdig brevet til %@"
           }
         }
       }
@@ -24041,6 +24041,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skriv et brev"
+          }
+        }
+      }
+    },
+    "mail.card.writeTo" : {
+      "comment" : "Us tab Mail row when no letter waits. The argument is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write a letter to %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv et brev til %@"
           }
         }
       }

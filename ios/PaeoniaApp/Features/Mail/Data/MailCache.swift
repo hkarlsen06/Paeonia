@@ -25,6 +25,10 @@ protocol MailCaching: Actor {
     /// Keeps the bytes of a picked photo, before the draft that names it. Returns false when it
     /// could not, or when drafts were purged since `generation`.
     func saveDraftPhoto(_ data: Data, id: UUID, ownerUserID: UUID, ifGeneration generation: Int) -> Bool
+    /// Records `shown` as the letter photos this phone may hold, and returns the ones recorded
+    /// before that are not in it. The record outlives the app, so a letter deleted while the
+    /// app was closed still has its photo removed.
+    func trackPhotos(_ shown: Set<UUID>, ownerUserID: UUID) -> Set<UUID>
     /// Removes every stored letter, when the person leaves the paired state.
     func clearAll()
     /// Removes every unsent letter, which only the author has seen.
@@ -35,7 +39,7 @@ actor FileMailCache: MailCaching {
     static let shared = FileMailCache()
 
     /// Bump when a stored type gains a required field. A file with another version reads as empty.
-    private static let schemaVersion = 2
+    private static let schemaVersion = 3
     private static let draftPhotoSuffix = ".draft-photo"
 
     private let directoryURL: URL
@@ -102,14 +106,25 @@ actor FileMailCache: MailCaching {
         }
     }
 
-    func clearAll() {
-        purgeGeneration += 1
-        remove { $0.hasSuffix(".letters.json") }
+    func trackPhotos(_ shown: Set<UUID>, ownerUserID: UUID) -> Set<UUID> {
+        let url = photosURL(ownerUserID)
+        let tracked = read(Envelope<Set<UUID>>.self, from: url, ownerUserID: ownerUserID) ?? []
+        if tracked != shown { write(shown, to: url, ownerUserID: ownerUserID) }
+        return tracked.subtracting(shown)
     }
 
+    /// The purge removes the photos too, so their record goes with the letters.
+    func clearAll() {
+        purgeGeneration += 1
+        remove { $0.hasSuffix(".letters.json") || $0.hasSuffix(".photos.json") }
+        LocalStoreChanges.post(.mail, ownerUserID: nil)
+    }
+
+    /// Tells Mail, so a draft it read just before the purge leaves memory too.
     func clearDrafts() {
         draftGeneration += 1
         remove { $0.hasSuffix(".draft.json") || $0.hasSuffix(Self.draftPhotoSuffix) }
+        LocalStoreChanges.post(.mail, ownerUserID: nil)
     }
 
     private func remove(where matches: (String) -> Bool) {
@@ -144,6 +159,7 @@ actor FileMailCache: MailCaching {
 
     private func lettersURL(_ ownerUserID: UUID) -> URL { fileName(ownerUserID, ".letters.json") }
     private func draftURL(_ ownerUserID: UUID) -> URL { fileName(ownerUserID, ".draft.json") }
+    private func photosURL(_ ownerUserID: UUID) -> URL { fileName(ownerUserID, ".photos.json") }
     private func draftPhotoURL(_ ownerUserID: UUID, _ photoID: UUID) -> URL {
         fileName(ownerUserID, "." + photoID.uuidString.lowercased() + Self.draftPhotoSuffix)
     }

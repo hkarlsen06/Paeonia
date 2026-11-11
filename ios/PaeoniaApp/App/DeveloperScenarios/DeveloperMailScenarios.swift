@@ -36,6 +36,13 @@ nonisolated extension DeveloperScenario {
     ) { _ in
         DeveloperLocalFlowHost(seed: .paired, mail: .empty(showing: MailPresentation(path: [.reader(UUID())])))
     }
+    static let homeMailDraft = DeveloperScenario(
+        "home-mail-draft", "Home · letter being written", "The Mail row for a letter not sent yet", .localFlows
+    ) { _ in
+        DeveloperLocalFlowHost(seed: .paired, mail: DeveloperMailSeed(
+            letters: [], presentation: nil, draft: DeveloperMailFixture.unfinishedDraft
+        ))
+    }
     static let homeMailWaiting = DeveloperScenario(
         "home-mail-waiting", "Home · letter waiting", "The Mail card with a sealed letter from Robin", .localFlows
     ) { _ in DeveloperLocalFlowHost(seed: .paired, mail: .everyKind(showing: nil)) }
@@ -67,7 +74,14 @@ enum DeveloperMailFixture {
     static var pastDraft: LetterDraft {
         var content = LetterContent(templateKey: .goodNight, body: "Sleep well. I'm thinking of you.")
         content.delivery = .at(Date.now.addingTimeInterval(-2 * 3_600))
-        return LetterDraft(content: content)
+        var draft = LetterDraft(content: content)
+        draft.step = .delivery
+        return draft
+    }
+    static var unfinishedDraft: LetterDraft {
+        var draft = LetterDraft(content: LetterContent(templateKey: .missYou, body: "Three more weeks. I"))
+        draft.step = .note
+        return draft
     }
 
     static func viewModel(_ seed: DeveloperMailSeed) -> MailViewModel {
@@ -188,6 +202,7 @@ actor DeveloperMailCache: MailCaching {
         photos[id] = data
         return true
     }
+    func trackPhotos(_ shown: Set<UUID>, ownerUserID: UUID) -> Set<UUID> { [] }
     func clearAll() {
         purgeGeneration += 1
         value = MailSnapshot()

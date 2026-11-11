@@ -49,10 +49,84 @@ struct LetterComposerTests {
         // swiftlint:enable async_without_await
     }
 
-    private func composer(_ cache: FileMailCache, _ server: Server) async -> LetterComposer {
+    /// Keeps each letter once by its id, like `send_letter`, and refuses an operation sent again
+    /// with another request. While `losesAnswers` is set, it keeps the letter and the answer never arrives.
+    private actor Mailroom: MailGateway {
+        private(set) var letterIDs: [UUID] = []
+        private var requests: [UUID: LetterContent] = [:]
+        var losesAnswers = true
+
+        func answerFromNowOn() {
+            losesAnswers = false
+        }
+
+        // The protocol's calls go to a server, so they are async even where this fake answers at once.
+        // swiftlint:disable async_without_await
+        func send(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter? {
+            if let earlier = requests[letter.operations.send.id], earlier != letter.content {
+                throw PaeoniaConvexError.server(code: "23505", message: "client operation replay hash mismatch")
+            }
+            requests[letter.operations.send.id] = letter.content
+            if !letterIDs.contains(letter.id) { letterIDs.append(letter.id) }
+            if losesAnswers { throw URLError(.networkConnectionLost) }
+            return nil
+        }
+
+        func open(id: UUID) async throws -> Letter { throw URLError(.badServerResponse) }
+        func delete(id: UUID, operation: SyncClientOperation) async throws {}
+        func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage { MailPage() }
+        func partnerTimeZoneID() async throws -> String? { nil }
+        // swiftlint:enable async_without_await
+    }
+
+    private func composer(_ cache: FileMailCache, _ server: any MailGateway) async -> LetterComposer {
         let composer = LetterComposer(cache: cache, gateway: server, operationProvider: Operations())
         await composer.load(ownerUserID: owner)
         return composer
+    }
+
+    /// A letter for a set time whose answer was lost, retried after that time passed.
+    private func letterSentForATimeThatPassed(_ server: Mailroom) async -> (LetterComposer, later: Date) {
+        let composer = await composer(FileMailCache(directoryURL: directory), server)
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        composer.choose(LetterTemplate(.goodMorning))
+        composer.updateBody("Coffee at the station?")
+        composer.updateDelivery(.at(now.addingTimeInterval(60)))
+        #expect(await composer.send(coupleID: couple, now: now) == .failed(.sendOffline))
+        return (composer, now.addingTimeInterval(120))
+    }
+
+    @Test func aRetryAfterTheSetTimePassedSendsTheLetterOnce() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let server = Mailroom()
+        let (composer, later) = await letterSentForATimeThatPassed(server)
+        await server.answerFromNowOn()
+
+        // The delivery step shows again and moves the passed time forward.
+        #expect(composer.moveTimeIfPassed(now: later))
+        #expect(await composer.send(coupleID: couple, now: later) == .sent(nil))
+
+        let letterIDs = await server.letterIDs
+        #expect(letterIDs.count == 1)
+        #expect(composer.draft == nil)
+        #expect(composer.sentLetterID == letterIDs.first)
+    }
+
+    @Test func aLetterTheServerAlreadyHasIsForgottenAlsoAfterEdits() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let server = Mailroom()
+        let (composer, later) = await letterSentForATimeThatPassed(server)
+        composer.moveTimeIfPassed(now: later)
+        composer.updateBody("Coffee at the station at nine?")
+
+        // The live feed shows the letter in the sent list.
+        let letterIDs = await server.letterIDs
+        composer.forgetSent(Set(letterIDs))
+
+        #expect(composer.draft == nil)
+        #expect(composer.sentLetterID == letterIDs.first)
+        await composer.load(ownerUserID: owner)
+        #expect(composer.draft == nil)
     }
 
     @Test func aSendCutOffWhenTheAppClosedGoesOutAgainAsTheSameLetter() async throws {

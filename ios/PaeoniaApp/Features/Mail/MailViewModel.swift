@@ -59,7 +59,6 @@ final class MailViewModel {
     @ObservationIgnored private var reloadGeneration = 0
     /// A letter a push or link asked for before this phone had it. It opens when it arrives.
     @ObservationIgnored private var pendingLetterID: UUID?
-    @ObservationIgnored private var shownPhotoIDs: Set<UUID> = []
     #if DEBUG
     @ObservationIgnored private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
@@ -149,7 +148,8 @@ final class MailViewModel {
         }
     }
 
-    /// Reads the cache again. The letter being written is the composer's and never changes here.
+    /// Reads the cache again. The letter being written is the composer's, which reads it again
+    /// only after a purge.
     func reload() async {
         reloadGeneration &+= 1
         let generation = reloadGeneration
@@ -164,6 +164,7 @@ final class MailViewModel {
         for tab in Array(lists.keys) {
             lists[tab] = MailTimeline.merged(stored[tab], keeping: lists[tab] ?? stored[tab], in: tab)
         }
+        await composer.reloadIfPurged()
         composer.forgetSent(Set(stored.sent.letters.map(\.id)))
         if let pendingLetterID, letter(id: pendingLetterID) != nil, presentation != nil {
             presentation?.path.append(.reader(pendingLetterID))
@@ -174,18 +175,20 @@ final class MailViewModel {
 
     /// Loads the page after the last letter of `tab` the mailbox shows.
     func loadOlder(_ tab: MailboxTab) async {
-        let current = list(tab)
-        guard let before = current.nextBefore, let gateway, !loadingOlder.contains(tab) else { return }
+        guard let before = list(tab).nextBefore, let gateway, !loadingOlder.contains(tab) else { return }
         loadingOlder.insert(tab)
         defer { loadingOlder.remove(tab) }
         do {
             let page = try await gateway.olderLetters(in: tab, before: before, limit: Self.olderPageSize)
-            guard list(tab).nextBefore == before else { return }
-            let shown = Set(current.letters.map(\.id))
+            // The list as it is now, since a letter on it may have changed during the request.
+            let latest = list(tab)
+            guard latest.nextBefore == before else { return }
+            let shown = Set(latest.letters.map(\.id))
             lists[tab] = MailPage(
-                letters: current.letters + page.letters.filter { !shown.contains($0.id) },
+                letters: latest.letters + page.letters.filter { !shown.contains($0.id) },
                 nextBefore: page.nextBefore
             )
+            await evictPhotosNoLongerShown()
         } catch {
             post(PaeoniaFailure(error) == .offline ? .loadOffline : .loadFailed)
         }
@@ -199,26 +202,25 @@ final class MailViewModel {
 
     // MARK: Sending
 
-    /// Sends the letter being written. Returns false and posts a notice when it was not sent,
-    /// and the letter stays as it was, so trying again sends the same one.
-    func send() async -> Bool {
+    /// Sends the letter being written. Posts a notice when it was not sent, and the letter
+    /// stays as it was, so trying again sends the same one. The composer's `sentLetterID`
+    /// tells the screen it went.
+    func send() async {
         let stamp = await writeStamp()
         switch await composer.send(coupleID: coupleID) {
         case let .sent(letter):
-            guard let letter else { return true }
+            guard let letter else { return }
             await save(stamp: stamp) { snapshot in
                 snapshot.sent.letters.removeAll { $0.id == letter.id }
                 snapshot.sent.letters.insert(letter, at: 0)
             }
-            return true
         case let .failed(error):
             #if DEBUG
             logger.error("Sending a letter failed: \(String(describing: error))")
             #endif
             post(error)
-            return false
         case .ignored:
-            return false
+            break
         }
     }
 
@@ -335,12 +337,12 @@ final class MailViewModel {
         Task { await evictPhotosNoLongerShown() }
     }
 
-    /// Removes from this phone the photos of letters that left every list.
+    /// Records the photos of every letter on a list, the older pages too, and removes from this
+    /// phone the ones whose letter left every list.
     private func evictPhotosNoLongerShown() async {
+        guard let ownerUserID else { return }
         let lettersShown = snapshot.letters + lists.values.flatMap(\.letters)
-        let shown = Set(lettersShown.compactMap(\.mediaAssetID))
-        let gone = shownPhotoIDs.subtracting(shown)
-        shownPhotoIDs = shown
+        let gone = await cache.trackPhotos(Set(lettersShown.compactMap(\.mediaAssetID)), ownerUserID: ownerUserID)
         if !gone.isEmpty { await evictPhotos(Array(gone)) }
     }
 }

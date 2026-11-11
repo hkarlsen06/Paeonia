@@ -47,22 +47,50 @@ nonisolated struct LetterSend: Codable, Equatable, Sendable {
     let operations: LetterSendOperations
 }
 
+/// The four steps of writing a letter, in order.
+nonisolated enum LetterComposerStep: Int, Codable, CaseIterable, Sendable {
+    case template
+    case note
+    case photo
+    case delivery
+}
+
 /// The letter one person is writing. There is at most one per person on a phone, and only
 /// `LetterComposer` writes it.
 nonisolated struct LetterDraft: Codable, Equatable, Sendable {
     var content: LetterContent
+    /// The step the author was on, where the composer opens again.
+    var step: LetterComposerStep = .note
     /// The last send that started and was not seen to finish. It is saved before the request
-    /// goes out, so a send cut off by a lost answer or by the app closing goes out again with
-    /// the same letter id and operations, and the server stores the letter once.
+    /// goes out and stays until the server is seen to have the letter, so every later send of
+    /// this draft carries the same letter id and the server stores the letter once.
     var pendingSend: LetterSend?
 
-    /// The send to make now. It is the pending one while the letter is unchanged, otherwise a new one.
+    /// The send to make now. A draft that started a send keeps that send's letter id, even when
+    /// the letter changed since, as when a set time that passed was moved. An operation is reused
+    /// while its part of the letter is unchanged and is new otherwise, because the server refuses
+    /// an operation sent again with another request.
     func nextSend(makeOperation: () -> SyncClientOperation) -> LetterSend {
-        if let pendingSend, pendingSend.content == content { return pendingSend }
+        guard let pendingSend else {
+            return LetterSend(
+                id: UUID(),
+                content: content,
+                operations: LetterSendOperations(
+                    reserve: makeOperation(), finalize: makeOperation(), send: makeOperation()
+                )
+            )
+        }
+        if pendingSend.content == content { return pendingSend }
+        let samePhoto = pendingSend.content.photo == content.photo
+        let operations = pendingSend.operations
         return LetterSend(
-            id: UUID(),
+            id: pendingSend.id,
             content: content,
-            operations: LetterSendOperations(reserve: makeOperation(), finalize: makeOperation(), send: makeOperation())
+            operations: LetterSendOperations(
+                reserve: samePhoto ? operations.reserve : makeOperation(),
+                finalize: samePhoto ? operations.finalize : makeOperation(),
+                send: makeOperation()
+            )
         )
     }
 }

@@ -26,6 +26,8 @@ final class LetterComposer {
     private(set) var isPreparingPhoto = false
     /// True after a set time that had passed was moved forward, until the author picks again.
     private(set) var movedPastTime = false
+    /// The letter this composer last saw reach the server, by a send or in the sent list.
+    private(set) var sentLetterID: UUID?
 
     @ObservationIgnored private let cache: any MailCaching
     @ObservationIgnored private let gateway: (any MailGateway)?
@@ -69,6 +71,13 @@ final class LetterComposer {
         photo = stored.photo
     }
 
+    /// Reads the draft again when drafts were purged since it was read, as when the couple
+    /// changed just before a leave purge ran.
+    func reloadIfPurged() async {
+        guard let session, await cache.draftGeneration != session.generation, self.session == session else { return }
+        await load(ownerUserID: session.ownerUserID)
+    }
+
     // MARK: Writing
 
     /// Starts a letter on `template`, or moves the one being written onto it. A note the
@@ -90,6 +99,12 @@ final class LetterComposer {
     func updateBody(_ body: String) {
         guard !isSending, var current = draft else { return }
         current.content.body = LetterBody.limited(body)
+        change(current)
+    }
+
+    func updateStep(_ step: LetterComposerStep) {
+        guard !isSending, var current = draft, current.step != step else { return }
+        current.step = step
         change(current)
     }
 
@@ -152,15 +167,11 @@ final class LetterComposer {
         return true
     }
 
-    /// Forgets a draft whose pending send the server has, unchanged since, as after the app
-    /// closed before the answer came. Edits made since that send stay.
+    /// Forgets a draft whose pending send the server has, as after the answer was lost or the
+    /// app closed before it came. The letter went out, so edits made since go with the draft.
     func forgetSent(_ sentIDs: Set<UUID>) {
-        guard !isSending, let current = draft, let pending = current.pendingSend,
-              pending.content == current.content, sentIDs.contains(pending.id)
-        else { return }
-        draft = nil
-        photo = nil
-        persist(nil)
+        guard !isSending, let pending = draft?.pendingSend, sentIDs.contains(pending.id) else { return }
+        finishSend(pending.id)
     }
 
     // MARK: Sending
@@ -191,15 +202,19 @@ final class LetterComposer {
         guard await persist(current).value, let attempt = current.pendingSend else { return .failed(.sendFailed) }
         do {
             let letter = try await gateway.send(attempt, photo: media, coupleID: coupleID)
-            if self.session == session {
-                draft = nil
-                photo = nil
-                persist(nil)
-            }
+            if self.session == session { finishSend(attempt.id) }
             return .sent(letter)
         } catch {
             return .failed(MailError(sending: error))
         }
+    }
+
+    private func finishSend(_ letterID: UUID) {
+        draft = nil
+        photo = nil
+        movedPastTime = false
+        sentLetterID = letterID
+        persist(nil)
     }
 
     // MARK: Storage
