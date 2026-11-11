@@ -67,12 +67,18 @@ struct DailyChallengeAnswerStep: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { viewModel.flushDraftPersistence() }
         }
+        // A sent answer keeps the layout it was sent from, so the composer does not
+        // jump into the keyboard-hidden layout while the flow closes.
         .onDockedKeyboardChange { docked in
+            guard visualHold == nil else { return }
             isKeyboardPresented = docked
         }
         .onChange(of: isFocused.wrappedValue) { _, focused in
-            if focused { isKeyboardPresented = true }
-            else { isKeyboardPresented = false }
+            guard visualHold == nil else { return }
+            isKeyboardPresented = focused
+        }
+        .onChange(of: visualHold == nil) { _, released in
+            if released { isKeyboardPresented = isFocused.wrappedValue }
         }
     }
 
