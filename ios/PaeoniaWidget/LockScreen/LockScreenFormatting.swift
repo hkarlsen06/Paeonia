@@ -34,7 +34,7 @@ extension LockScreenCountdown.Remaining {
 }
 
 extension LockScreenDateItem {
-    /// "Trip to Bergen", "Your birthday", "Alex's birthday" or "Next visit".
+    /// "Trip to Bergen", "Your birthday", "Alex's birthday" or "Together again".
     func title(partnerName: String) -> String {
         switch kind {
         case let .countdown(title): title

@@ -44007,19 +44007,19 @@
       }
     },
     "visit.error.visitNotSaved" : {
-      "comment" : "Banner when a visit this person planned could not be saved later, because the couple already had the most visits planned. The first %@ is the visit's first and last day, written by the system date formatter. The second %@ is the limit, such as 20",
+      "comment" : "Banner when a visit this person planned or edited could not be saved later, for example because their partner changed it at the same time. %@ is the visit's first and last day, written by the system date formatter.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your visit for %@ wasn't saved. You can have %@ visits planned at a time, so delete one first."
+            "value" : "Your visit for %@ wasn't saved. Try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Besøket for %@ ble ikke lagret. Dere kan ha %@ besøk planlagt om gangen, så slett ett først."
+            "value" : "Besøket for %@ ble ikke lagret. Prøv igjen."
           }
         }
       }

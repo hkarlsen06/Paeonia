@@ -11,8 +11,13 @@ nonisolated struct Visit: Codable, Hashable, Identifiable, Sendable {
     /// When the server last changed it. Nil for a write this phone has not sent yet.
     var updatedAt: String?
 
-    /// The server refuses more visits that are not over, so the phone says so before queueing one.
+    /// The server refuses more visits that may not be over on some phone, so the phone says so
+    /// before queueing one.
     static let maxOpenCount = 20
+    /// The days the server accepts for a visit, and its longest span, both days included.
+    static let earliestDay = LockScreenCalendarDate(year: 2_000, month: 1, day: 1)
+    static let latestDay = LockScreenCalendarDate(year: 2_100, month: 12, day: 31)
+    static let maxDays = 366
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -85,13 +90,16 @@ nonisolated struct CoupleVisits: Codable, Equatable, Sendable {
             .min { $0.startDate < $1.startDate }
     }
 
-    /// Whether saving `visit` would make one more visit that is not over, when
-    /// `Visit.maxOpenCount` already are. The server checks the same on its day.
-    func isFull(saving visit: Visit, on today: LockScreenCalendarDate) -> Bool {
-        let isOpen = { (visit: Visit) in visit.phase(on: today) != .ended }
-        let wasOpen = visits.first { $0.id == visit.id }.map(isOpen) ?? false
-        guard !wasOpen, isOpen(visit) else { return false }
-        return visits.count { $0.id != visit.id && isOpen($0) } >= Visit.maxOpenCount
+    /// Whether saving `visit` would make one more visit that may not be over on some phone,
+    /// when `Visit.maxOpenCount` already are, like `earliestLocalDate` in
+    /// `backend/convex/lib/visits.ts`. No phone's day is before yesterday in UTC.
+    func isFull(saving visit: Visit, at now: Date) -> Bool {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        let earliest = LockScreenCalendarDate(containing: now.addingTimeInterval(-86_400), in: utc)
+        let counts = { (visit: Visit) in LockScreenCalendarDate(visit.endDate).map { $0 >= earliest } ?? false }
+        guard counts(visit) else { return false }
+        return visits.count { $0.id != visit.id && counts($0) } >= Visit.maxOpenCount
     }
 
     /// The server's state with this phone's queued writes laid over it, oldest write first,
@@ -105,12 +113,14 @@ nonisolated struct CoupleVisits: Codable, Equatable, Sendable {
     }
 
     /// What the server stored after a write. A row older than the one already here is left
-    /// out, since the live feed may have brought a partner's newer change first.
-    func confirming(_ confirmation: VisitsConfirmation) -> CoupleVisits {
+    /// out, since the live feed may have brought a partner's newer change first. A row the
+    /// live feed removed (`removedByFeed`) stays out, since a partner deleted it after the write.
+    func confirming(_ confirmation: VisitsConfirmation, removedByFeed: Set<UUID> = []) -> CoupleVisits {
         var state = self
         switch confirmation {
         case let .visit(visit):
             let cached = visits.first { $0.id == visit.id }
+            guard cached != nil || !removedByFeed.contains(visit.id) else { break }
             if !Self.isNewer(cached?.updatedAt, than: visit.updatedAt) { state.upsert(visit) }
         case let .visitGone(id):
             state.visits.removeAll { $0.id == id }
@@ -118,7 +128,7 @@ nonisolated struct CoupleVisits: Codable, Equatable, Sendable {
             let cached = items.firstIndex { $0.id == item.id }
             if let cached, !Self.isNewer(items[cached].updatedAt, than: item.updatedAt) {
                 state.items[cached] = item
-            } else if cached == nil {
+            } else if cached == nil, !removedByFeed.contains(item.id) {
                 state.items.append(item)
             }
         case let .itemGone(id):
@@ -135,8 +145,12 @@ nonisolated struct CoupleVisits: Codable, Equatable, Sendable {
 
     private mutating func apply(_ write: VisitsWrite) {
         switch write {
-        case let .saveVisit(visit):
-            upsert(visit)
+        case let .saveVisit(payload):
+            if let index = visits.firstIndex(where: { $0.id == payload.visit.id }) {
+                upsert(payload.applied(to: visits[index]))
+            } else {
+                upsert(payload.visit)
+            }
         case let .deleteVisit(id):
             visits.removeAll { $0.id == id }
         case let .saveItem(payload):
@@ -177,66 +191,6 @@ nonisolated enum VisitsConfirmation: Equatable, Sendable {
 nonisolated enum VisitsRefusal: Codable, Equatable, Sendable {
     case item(title: String)
     case visit(Visit)
-}
-
-/// One queued write, decoded from its pending operation.
-nonisolated enum VisitsWrite: Equatable, Sendable {
-    case saveVisit(Visit)
-    case deleteVisit(UUID)
-    case saveItem(SaveTogetherItemPayload)
-    case setItemDone(SetTogetherItemDonePayload)
-    case deleteItem(UUID)
-
-    init?(_ operation: PendingSyncOperationSnapshot) {
-        guard let data = operation.requestData, let kind = operation.operationKind else { return nil }
-        let write: Self? = switch kind {
-        case .saveVisit: Self.decode(Visit.self, data).map(Self.saveVisit)
-        case .deleteVisit: Self.decode(VisitIDPayload.self, data).map { .deleteVisit($0.id) }
-        case .saveTogetherItem: Self.decode(SaveTogetherItemPayload.self, data).map(Self.saveItem)
-        case .setTogetherItemDone: Self.decode(SetTogetherItemDonePayload.self, data).map(Self.setItemDone)
-        case .deleteTogetherItem: Self.decode(VisitIDPayload.self, data).map { .deleteItem($0.id) }
-        default: nil
-        }
-        guard let write else { return nil }
-        self = write
-    }
-
-    private static func decode<T: Decodable>(_ type: T.Type, _ data: Data) -> T? {
-        try? JSONDecoder().decode(type, from: data)
-    }
-
-    static let operationKinds: [SyncPendingOperationKind] = [
-        .saveVisit, .deleteVisit, .saveTogetherItem, .setTogetherItemDone, .deleteTogetherItem,
-    ]
-
-    /// What the person loses when the server refuses this write for good. Nil for a delete.
-    var refusal: VisitsRefusal? {
-        switch self {
-        case let .saveVisit(visit): .visit(visit)
-        case let .saveItem(payload): .item(title: payload.title)
-        case let .setItemDone(payload): .item(title: payload.title)
-        case .deleteVisit, .deleteItem: nil
-        }
-    }
-}
-
-/// `visits:delete_visit` and `visits:delete_together_item`.
-nonisolated struct VisitIDPayload: Codable, Equatable, Sendable {
-    let id: UUID
-}
-
-/// `visits:save_together_item`.
-nonisolated struct SaveTogetherItemPayload: Codable, Equatable, Sendable {
-    let id: UUID
-    let title: String
-}
-
-/// `visits:set_together_item_done`. It carries the title, because it adds the item when it
-/// reaches the server before the item's add.
-nonisolated struct SetTogetherItemDonePayload: Codable, Equatable, Sendable {
-    let id: UUID
-    let title: String
-    let isDone: Bool
 }
 
 /// The result of `visits:get_visits`.

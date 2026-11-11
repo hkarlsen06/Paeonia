@@ -3,7 +3,7 @@ import SwiftUI
 extension View {
     /// Puts `visits` in the environment for the Us tab card, the visit screen and the dates
     /// timeline, loads this person's visits, follows the live feed, and shows a failed write
-    /// as a banner.
+    /// as a banner while the app is on screen.
     func visitsLifecycle(
         _ visits: VisitsViewModel,
         ownerUserID: UUID?,
@@ -19,6 +19,7 @@ private struct VisitsLifecycle: ViewModifier {
     let syncAfterLocalChange: @MainActor () async -> Void
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.scenePhase) private var scenePhase
 
     func body(content: Content) -> some View {
         content
@@ -28,10 +29,14 @@ private struct VisitsLifecycle: ViewModifier {
                 await visits.configure(ownerUserID: ownerUserID)
                 await visits.observeStoreChanges()
             }
+            .onChange(of: scenePhase, initial: true) { _, phase in
+                Task { await visits.setActive(phase == .active) }
+            }
             .onChange(of: visits.error) { _, error in
                 guard let error else { return }
                 bannerCenter.show(.error(message: error.message))
                 visits.clearError()
+                Task { await visits.refusalsShown() }
             }
     }
 }

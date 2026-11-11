@@ -8,6 +8,7 @@ struct VisitDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var editor: Editor?
     @FocusState private var isAddFieldFocused: Bool
     /// Refreshed at midnight so the count moves on while the screen stays open.
@@ -50,6 +51,16 @@ struct VisitDetailView: View {
         .presentationDetents([.large])
         .presentationBackground(.paeoniaBackgroundPrimary)
         .onCalendarDayChange { now = Date() }
+        .onAppear { visits.isListShown = true }
+        .onDisappear {
+            visits.isListShown = false
+            visits.clearListError()
+        }
+        .onChange(of: visits.listError) { _, error in
+            guard let error else { return }
+            AccessibilityNotification.Announcement(error.message).post()
+            Task { await visits.refusalsShown() }
+        }
         .sheet(item: $editor) { editor in
             switch editor {
             case .new:
@@ -115,7 +126,12 @@ struct VisitDetailView: View {
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
             if let place = visit.place {
-                Label {
+                // An HStack, so a long city wraps under the place name and not under the pin.
+                HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(PaeoniaTypography.bodyEmphasis)
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                         Text(place.name)
                             .font(PaeoniaTypography.bodyEmphasis)
@@ -126,11 +142,7 @@ struct VisitDetailView: View {
                                 .foregroundStyle(.paeoniaTextSecondary)
                         }
                     }
-                } icon: {
-                    Image(systemName: "mappin.and.ellipse")
-                        .foregroundStyle(.paeoniaAccentPrimary)
                 }
-                .font(PaeoniaTypography.bodyEmphasis)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -154,8 +166,50 @@ struct VisitDetailView: View {
     }
 
     private var addRow: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            TextField(text: $visits.itemDraft, axis: .vertical) {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            addFieldAndButton
+            if let error = visits.listError {
+                Label {
+                    Text(error.message)
+                } icon: {
+                    Image(systemName: "exclamationmark.circle")
+                }
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("visit.list.error")
+            }
+        }
+    }
+
+    /// Side by side, or the button under the field at the largest text sizes, so the field
+    /// keeps room for its hint.
+    private var addFieldAndButton: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space8))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space12))
+        return layout {
+            addField
+            Button(action: addItem) {
+                Text(.visitListAddAction)
+                    .font(PaeoniaTypography.bodyEmphasis)
+            }
+            .buttonStyle(.borderless)
+            .disabled(TogetherListItem.title(visits.itemDraft) == nil)
+            .accessibilityIdentifier("visit.list.add")
+        }
+    }
+
+    /// A field's own hint stays on one line and is cut at the largest text sizes, so the hint
+    /// is a wrapping text behind an empty field, and the field's label for VoiceOver.
+    private var addField: some View {
+        ZStack(alignment: .topLeading) {
+            Text(.visitListAddPlaceholder)
+                .foregroundStyle(Color(uiColor: .placeholderText))
+                .fixedSize(horizontal: false, vertical: true)
+                .opacity(visits.itemDraft.isEmpty ? 1 : 0)
+                .accessibilityHidden(true)
+            TextField(text: draft, prompt: Text(verbatim: ""), axis: .vertical) {
                 Text(.visitListAddPlaceholder)
             }
             .lineLimit(1...3)
@@ -173,14 +227,17 @@ struct VisitDetailView: View {
                 }
             }
             .accessibilityIdentifier("visit.list.add.field")
+        }
+    }
 
-            Button(action: addItem) {
-                Text(.visitListAddAction)
-                    .font(PaeoniaTypography.bodyEmphasis)
-            }
-            .buttonStyle(.borderless)
-            .disabled(TogetherListItem.title(visits.itemDraft) == nil)
-            .accessibilityIdentifier("visit.list.add")
+    /// The add field's text. Typing clears an error about the list.
+    private var draft: Binding<String> {
+        Binding {
+            visits.itemDraft
+        } set: { text in
+            guard text != visits.itemDraft else { return }
+            visits.itemDraft = text
+            visits.clearListError()
         }
     }
 

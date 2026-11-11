@@ -3,7 +3,7 @@ import Foundation
 /// The visit and list backend functions (`backend/convex/visits.ts`). Each write returns the
 /// row as stored, or nil when it is gone.
 nonisolated protocol VisitsGateway: Sendable {
-    func saveVisit(_ visit: Visit, operation: SyncClientOperation) async throws -> Visit?
+    func saveVisit(_ payload: SaveVisitPayload, operation: SyncClientOperation) async throws -> Visit?
     func deleteVisit(id: UUID, operation: SyncClientOperation) async throws
     func saveItem(_ payload: SaveTogetherItemPayload, operation: SyncClientOperation) async throws
         -> RemoteTogetherItem?
@@ -15,8 +15,8 @@ nonisolated protocol VisitsGateway: Sendable {
 nonisolated struct LiveVisitsGateway: VisitsGateway {
     let client: PaeoniaConvexClient
 
-    func saveVisit(_ visit: Visit, operation: SyncClientOperation) async throws -> Visit? {
-        try await client.mutation("visits:save_visit", args: SaveVisitRequest(visit: visit, operation: operation))
+    func saveVisit(_ payload: SaveVisitPayload, operation: SyncClientOperation) async throws -> Visit? {
+        try await client.mutation("visits:save_visit", args: SaveVisitRequest(payload: payload, operation: operation))
     }
 
     func deleteVisit(id: UUID, operation: SyncClientOperation) async throws {
@@ -71,17 +71,25 @@ nonisolated private struct ArgumentKey: CodingKey {
     }
 }
 
+/// Leaves out the fields the save doesn't change, so the server keeps them.
 nonisolated private struct SaveVisitRequest: Encodable {
-    let visit: Visit
+    let payload: SaveVisitPayload
     let operation: SyncClientOperation
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: ArgumentKey.self)
+        let visit = payload.visit
         try container.encode(visit.id, forKey: ArgumentKey("p_visit_id"))
-        try container.encode(visit.startDate, forKey: ArgumentKey("p_start_date"))
-        try container.encode(visit.endDate, forKey: ArgumentKey("p_end_date"))
-        // `null` removes the place, so it is sent rather than left out.
-        try container.encode(visit.place, forKey: ArgumentKey("p_place"))
+        if payload.changes.contains(.startDate) {
+            try container.encode(visit.startDate, forKey: ArgumentKey("p_start_date"))
+        }
+        if payload.changes.contains(.endDate) {
+            try container.encode(visit.endDate, forKey: ArgumentKey("p_end_date"))
+        }
+        if payload.changes.contains(.place) {
+            // `null` removes the place, and a missing key keeps it.
+            try container.encode(visit.place, forKey: ArgumentKey("p_place"))
+        }
         try ClientOperationFields(operation).encode(to: encoder)
     }
 }

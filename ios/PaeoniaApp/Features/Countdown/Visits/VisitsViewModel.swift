@@ -16,6 +16,11 @@ final class VisitsViewModel {
     private(set) var hasLoaded = false
     /// The text in the visit screen's add field. A refused add leaves it there.
     var itemDraft = ""
+    /// An error about the list while the visit screen shows it. The screen draws it under the
+    /// add field, where a banner would cover the text the field keeps.
+    private(set) var listError: VisitsError?
+    /// Set by the visit screen while it shows the list.
+    @ObservationIgnored var isListShown = false
     /// The day the "When do you meet next?" card comes back after the person hid it.
     private(set) var promptReturnDay: LockScreenCalendarDate?
 
@@ -24,6 +29,14 @@ final class VisitsViewModel {
     @ObservationIgnored private let operationProvider: any SyncClientOperationProviding
     @ObservationIgnored private var syncAfterLocalChange: @MainActor () async -> Void = {}
     @ObservationIgnored private var ownerUserID: UUID?
+    /// The server's state and this phone's queued writes, which `state` lays over it.
+    @ObservationIgnored private var server = CoupleVisits()
+    @ObservationIgnored private var pending: [VisitsWrite] = []
+    /// Whether the app is on screen. Refusals wait in the cache until it is, so the banner
+    /// and the refilled add field don't come while nobody can see them.
+    @ObservationIgnored private var isActive = false
+    /// Refusals `error` or `listError` names. They stay in the cache until a screen showed them.
+    @ObservationIgnored private var shownRefusals: [VisitsRefusal] = []
     /// Drops a reload that finished after a newer one started or the account changed.
     @ObservationIgnored private var reloadGeneration = 0
 
@@ -43,6 +56,9 @@ final class VisitsViewModel {
     func configure(ownerUserID: UUID?) async {
         if self.ownerUserID != ownerUserID {
             state = CoupleVisits()
+            server = CoupleVisits()
+            pending = []
+            shownRefusals = []
             hasLoaded = false
             promptReturnDay = nil
             // Text typed by the person who was signed in before.
@@ -50,6 +66,11 @@ final class VisitsViewModel {
         }
         self.ownerUserID = ownerUserID
         await reload()
+    }
+
+    func setActive(_ isActive: Bool) async {
+        self.isActive = isActive
+        if isActive { await reload() }
     }
 
     func setSyncAfterLocalChange(_ handler: @escaping @MainActor () async -> Void) {
@@ -71,10 +92,11 @@ final class VisitsViewModel {
         let generation = reloadGeneration
         guard let ownerUserID else {
             state = CoupleVisits()
+            server = CoupleVisits()
+            pending = []
             return
         }
-        let server = await cache.visits(ownerUserID: ownerUserID)
-        let returnDay = await cache.promptReturnDay(ownerUserID: ownerUserID)
+        let local = await cache.state(ownerUserID: ownerUserID)
         var operations: [PendingSyncOperationSnapshot] = []
         for kind in VisitsWrite.operationKinds {
             let inFlight = try? await pendingOperationStore.inFlightOperations(ownerUserID: ownerUserID, kind: kind)
@@ -84,10 +106,12 @@ final class VisitsViewModel {
         let writes = operations
             .sorted { $0.operation.clientSequence < $1.operation.clientSequence }
             .compactMap(VisitsWrite.init)
+        server = local.visits
+        pending = writes
         state = server.applying(writes)
-        promptReturnDay = returnDay
+        promptReturnDay = local.promptReturnDay
         hasLoaded = true
-        show(await cache.takeRefusals(ownerUserID: ownerUserID))
+        if isActive, shownRefusals.isEmpty { show(local.refusals) }
     }
 
     func homeCard(on today: LockScreenCalendarDate) -> HomeVisitCardState {
@@ -107,8 +131,9 @@ final class VisitsViewModel {
         await cache.setPromptReturnDay(returnDay, ownerUserID: ownerUserID)
     }
 
-    /// Plans a visit with `newID` when `id` is nil, otherwise edits that one. The editor
-    /// refuses a last day before the first, so this never queues one.
+    /// Plans a visit with `newID` when `id` is nil, otherwise edits that one. An edit sends
+    /// only the fields that changed. The editor refuses a last day before the first, so this
+    /// never queues one.
     @discardableResult
     func saveVisit(
         id: UUID?,
@@ -130,11 +155,12 @@ final class VisitsViewModel {
         }
         let visit = Visit(id: id ?? newID, startDate: startDate, endDate: endDate, place: normalizedPlace)
         // A write the server refuses for good would only come back later, after the editor closed.
-        guard !state.isFull(saving: visit, on: LockScreenCalendarDate(containing: Date(), in: calendar)) else {
+        guard !state.isFull(saving: visit, at: Date()) else {
             error = .visitLimit
             return false
         }
-        return await enqueue(.saveVisit(visit), kind: .saveVisit, payload: visit)
+        let payload = SaveVisitPayload(visit, server: server.visits.first { $0.id == visit.id }, pending: pending)
+        return await enqueue(.saveVisit(payload), kind: .saveVisit, payload: payload)
     }
 
     @discardableResult
@@ -148,7 +174,7 @@ final class VisitsViewModel {
         let draft = itemDraft
         guard let title = TogetherListItem.title(draft) else { return false }
         guard state.items.count < TogetherListItem.maxCount else {
-            error = .listFull
+            report(.listFull)
             return false
         }
         let payload = SaveTogetherItemPayload(id: newID, title: title)
@@ -172,9 +198,32 @@ final class VisitsViewModel {
         error = nil
     }
 
+    func clearListError() {
+        listError = nil
+    }
+
+    /// Called once a screen showed `error` or `listError`, so the refusals they name leave the cache.
+    func refusalsShown() async {
+        guard let ownerUserID, !shownRefusals.isEmpty else { return }
+        let shown = shownRefusals
+        shownRefusals = []
+        await cache.removeRefusals(shown, ownerUserID: ownerUserID)
+        // Shows any refusal that came in while these showed.
+        await reload()
+    }
+
+    private func report(_ error: VisitsError) {
+        if isListShown, error.isAboutTheList {
+            listError = error
+        } else {
+            self.error = error
+        }
+    }
+
     /// Tells the person about writes the server refused, and puts a refused item back in the
     /// add field when it is empty. The message names every refused item, so no text is lost.
     private func show(_ refusals: [VisitsRefusal]) {
+        shownRefusals = refusals
         var titles: [String] = []
         var visit: Visit?
         for refusal in refusals {
@@ -187,9 +236,9 @@ final class VisitsViewModel {
             itemDraft = title
         }
         if !titles.isEmpty {
-            error = .itemsNotAdded(titles)
+            report(.itemsNotAdded(titles))
         } else if let visit {
-            error = .visitNotSaved(visit)
+            report(.visitNotSaved(visit))
         }
     }
 
@@ -212,6 +261,7 @@ final class VisitsViewModel {
             self.error = .saveFailed
             return false
         }
+        pending.append(write)
         state = state.applying([write])
         // Its own task, so closing the editor doesn't cancel the send.
         let sync = syncAfterLocalChange
@@ -238,6 +288,13 @@ nonisolated enum VisitsError: Equatable, Sendable {
     /// The server refused this visit for good.
     case visitNotSaved(Visit)
 
+    var isAboutTheList: Bool {
+        switch self {
+        case .listFull, .itemsNotAdded: true
+        case .saveFailed, .visitLimit, .visitNotSaved: false
+        }
+    }
+
     var message: String {
         switch self {
         case .saveFailed:
@@ -249,7 +306,7 @@ nonisolated enum VisitsError: Equatable, Sendable {
         case let .itemsNotAdded(titles):
             String(localized: .visitErrorItemsNotAdded(titles.formatted(.list(type: .and))))
         case let .visitNotSaved(visit):
-            String(localized: .visitErrorVisitNotSaved(visit.dateRangeText(), Visit.maxOpenCount.formatted()))
+            String(localized: .visitErrorVisitNotSaved(visit.dateRangeText()))
         }
     }
 }

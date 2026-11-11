@@ -17,36 +17,43 @@ nonisolated struct VisitsLocalState: Codable, Equatable, Sendable {
     /// Writes the server refused for good that no screen has shown yet.
     var refusals: [VisitsRefusal] = []
     var promptReturnDay: LockScreenCalendarDate?
+    /// Rows the live feed dropped, newest last, so a write confirmed after a partner deleted
+    /// the row doesn't bring it back. Only a write in flight needs them, so few are kept.
+    var removedByFeed: [UUID] = []
+
+    static let removedByFeedLimit = 200
 }
 
 extension VisitsCaching {
-    func visits(ownerUserID: UUID) -> CoupleVisits {
-        state(ownerUserID: ownerUserID).visits
-    }
-
-    /// The live feed's write.
+    /// The live feed's write. It notes the rows it drops.
     func save(_ visits: CoupleVisits, ownerUserID: UUID) {
-        update(ownerUserID) { $0.visits = visits }
+        update(ownerUserID) { state in
+            let kept = Set(visits.visits.map(\.id) + visits.items.map(\.id))
+            let dropped = (state.visits.visits.map(\.id) + state.visits.items.map(\.id)).filter { !kept.contains($0) }
+            let removed = state.removedByFeed.filter { !kept.contains($0) && !dropped.contains($0) } + dropped
+            state.removedByFeed = Array(removed.suffix(VisitsLocalState.removedByFeedLimit))
+            state.visits = visits
+        }
     }
 
     /// A row the server confirmed after a write, applied before the live feed brings the same change.
     func confirm(_ confirmation: VisitsConfirmation, ownerUserID: UUID) {
-        update(ownerUserID) { $0.visits = $0.visits.confirming(confirmation) }
+        update(ownerUserID) { state in
+            state.visits = state.visits.confirming(confirmation, removedByFeed: Set(state.removedByFeed))
+        }
     }
 
     func recordRefusal(_ refusal: VisitsRefusal, ownerUserID: UUID) {
         update(ownerUserID) { $0.refusals.append(refusal) }
     }
 
-    /// The refusals no screen has shown yet. Reading them clears them.
-    func takeRefusals(ownerUserID: UUID) -> [VisitsRefusal] {
-        let refusals = state(ownerUserID: ownerUserID).refusals
-        if !refusals.isEmpty { update(ownerUserID) { $0.refusals = [] } }
-        return refusals
-    }
-
-    func promptReturnDay(ownerUserID: UUID) -> LockScreenCalendarDate? {
-        state(ownerUserID: ownerUserID).promptReturnDay
+    /// Forgets `shown`, once a screen told the person about them.
+    func removeRefusals(_ shown: [VisitsRefusal], ownerUserID: UUID) {
+        update(ownerUserID) { state in
+            for refusal in shown {
+                if let index = state.refusals.firstIndex(of: refusal) { state.refusals.remove(at: index) }
+            }
+        }
     }
 
     func setPromptReturnDay(_ day: LockScreenCalendarDate, ownerUserID: UUID) {
@@ -64,7 +71,7 @@ actor FileVisitsCache: VisitsCaching {
     static let shared = FileVisitsCache()
 
     /// Bump when a stored type gains a required field. A file with another version reads as empty.
-    private static let schemaVersion = 2
+    private static let schemaVersion = 3
 
     private let directoryURL: URL
 

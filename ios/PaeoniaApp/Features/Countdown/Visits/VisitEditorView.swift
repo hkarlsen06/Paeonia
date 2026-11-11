@@ -80,9 +80,22 @@ struct VisitEditorView: View {
         .padding(.bottom, PaeoniaSpacing.space40)
     }
 
+    /// The days the server accepts. The last day may still be before the first, which the
+    /// editor explains, but not further after it than the longest visit.
+    private var startRange: ClosedRange<Date> {
+        let calendar = Calendar.current
+        let earliest = Visit.earliestDay.startOfDay(in: calendar) ?? .distantPast
+        return earliest...(Visit.latestDay.startOfDay(in: calendar) ?? .distantFuture)
+    }
+
+    private var endRange: ClosedRange<Date> {
+        let longest = Calendar.current.date(byAdding: .day, value: Visit.maxDays - 1, to: start) ?? start
+        return startRange.lowerBound...max(startRange.lowerBound, min(longest, startRange.upperBound))
+    }
+
     private var datesSection: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            DatePicker(selection: $start, displayedComponents: .date) {
+            DatePicker(selection: $start, in: startRange, displayedComponents: .date) {
                 Text(.visitEditorStart)
             }
             .accessibilityIdentifier("visit.editor.start")
@@ -90,7 +103,7 @@ struct VisitEditorView: View {
                 end = Visit.end(end, afterStartMovedFrom: old, to: new)
             }
 
-            DatePicker(selection: $end, displayedComponents: .date) {
+            DatePicker(selection: $end, in: endRange, displayedComponents: .date) {
                 Text(.visitEditorEnd)
             }
             .accessibilityIdentifier("visit.editor.end")
