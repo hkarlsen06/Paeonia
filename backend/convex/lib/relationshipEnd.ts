@@ -22,6 +22,16 @@ export async function deleteLatestLocationsForCouple(ctx: WriterCtx, coupleId: s
   }
 }
 
+/** Deletes the couple's together days. They span TOGETHER_DAYS_KEPT days at most. Returns the rows deleted. */
+export async function deleteCoupleTogetherDays(ctx: WriterCtx, coupleId: string): Promise<number> {
+  const days = await ctx.db
+    .query("together_days")
+    .withIndex("by_couple_id_end_date", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  for (const row of days) await ctx.db.delete(row._id);
+  return days.length;
+}
+
 /** Clears both members' nicknames for each other. Returns the rows changed. */
 export async function clearPartnerNicknames(ctx: WriterCtx, coupleId: string): Promise<number> {
   const members = await ctx.db
@@ -38,7 +48,7 @@ export async function clearPartnerNicknames(ctx: WriterCtx, coupleId: string): P
 /**
  * Port of `internal.end_relationship_for_pair`. Ends the pair's active couple,
  * marks the initiator as left and the partner as ended_notice_pending, writes a
- * relationship_ended sync event per member, and removes shared locations and presence.
+ * relationship_ended sync event per member, and removes shared locations, together days and presence.
  * Returns false when the pair has no active couple.
  */
 export async function endRelationshipForPair(
@@ -71,6 +81,8 @@ export async function endRelationshipForPair(
 
   await ctx.db.patch(couple._id, withUpdatedAt({ status: "ended" as const, ended_at: now, delete_after: cleanupDeadline }));
   await deleteLatestLocationsForCouple(ctx, couple.id);
+  // The privacy text promises that the dates noted from location and visits go now, not at cleanup.
+  await deleteCoupleTogetherDays(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
   // A nickname is a private note about one person, so it ends with the relationship.
   await clearPartnerNicknames(ctx, couple.id);

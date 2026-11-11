@@ -19,7 +19,7 @@ The days the partners were together (`together_days`, `backend/convex/lib/togeth
 
 - **From location.** When both share and two recent, precise fixes put the phones less than 1000 m apart, the server stores that one date. The next day counts only if it gets its own match. A later fix, a pause or turning sharing off changes no stored date. The server keeps no other location history.
 - **From visits.** A visit counts on its own dates, from the day they were saved. When a visit's dates change or it is deleted, the server first stores the days it covered that already ended, so a past day stays what it was.
-- **How long.** The retention job (`retention.ts`) deletes each date 45 days after it. The streak reads back at most 32 days. Turning sharing off leaves the stored dates, because a day that ended must not change what the streak already counted. They go with the relationship's data.
+- **How long.** The retention job (`retention.ts`) deletes each date 45 days after it. The streak reads back at most 32 days. Turning sharing off leaves the stored dates, because a day that ended must not change what the streak already counted. They are deleted when the relationship ends or account deletion begins (`endRelationshipForPair`), with the latest locations.
 - **Trust.** The server cannot check that a fix is real. A partner who sends made-up coordinates near the other's last position can make a together day. It rests the couple's streak and some reminders that day and reveals nothing about the other partner.
 
 What the export cannot hold, and the README says so: usage statistics at PostHog (the person writes to contact@paeonia.no), and sign-in details at Apple, Google and Clerk.

@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import { deleteCoupleGameRows } from "./gameRegistry";
 import { deleteHeartsForCouple } from "./hearts";
-import { clearPartnerNicknames, deleteLatestLocationsForCouple } from "./relationshipEnd";
+import { clearPartnerNicknames, deleteCoupleTogetherDays, deleteLatestLocationsForCouple } from "./relationshipEnd";
 import { withTouch, withUpdatedAt, type WriterCtx } from "./db";
 import { deleteCoupleFavorites } from "./favoriteRows";
 import { deleteCoupleReactions } from "./reactions";
@@ -105,16 +105,6 @@ async function deleteCoupleVisits(ctx: WriterCtx, coupleId: string, budget: Chun
     deleted += 1;
   }
   return deleted;
-}
-
-/** Deletes the couple's together days. They span TOGETHER_DAYS_KEPT days at most. Returns the rows deleted. */
-async function deleteCoupleTogetherDays(ctx: WriterCtx, coupleId: string): Promise<number> {
-  const days = await ctx.db
-    .query("together_days")
-    .withIndex("by_couple_id_end_date", (q) => q.eq("couple_id", coupleId))
-    .collect();
-  for (const row of days) await ctx.db.delete(row._id);
-  return days.length;
 }
 
 // Both reads use couple-wide indexes, so a couple with years of daily questions costs a

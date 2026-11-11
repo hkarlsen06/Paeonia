@@ -487,6 +487,21 @@ describe("what together days keep", () => {
   });
 });
 
+describe("what together days keep when the relationship ends", () => {
+  test.each(["leaving", "account deletion"])("the noted dates go at once on %s", async (how) => {
+    const { t, couple } = await sharing();
+    at("2026-10-10T12:00:00.000Z");
+    await send(couple.second, couple.coupleId, oslo, "2026-10-10T11:00:00.000Z");
+    await send(couple.first, couple.coupleId, nearby, "2026-10-10T11:59:00.000Z");
+    expect(await togetherDates(t)).toEqual(["2026-10-10"]);
+
+    if (how === "leaving") await couple.first.as.mutation(api.relationship.leave_relationship, op());
+    else await couple.first.as.mutation(api.identity.request_account_deletion, {});
+
+    expect(await togetherDates(t)).toEqual([]);
+  });
+});
+
 describe("one clock: the streak deadline's zones say which day an instant is on and when it ended (R1)", () => {
   test("a visit deleted an hour after Oslo midnight keeps the together day that just ended", async () => {
     const { t, couple } = await movedEast();
