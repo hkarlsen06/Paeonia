@@ -39,6 +39,18 @@ copy_vars=(INVITE_CODE_PEPPER PAEONIA_MEDIA_URL_SECRET PAEONIA_LIVE_RELAY_URL
   PAEONIA_LIVE_RELAY_SECRET POSTHOG_PERSONAL_API_KEY)
 
 root=$(git rev-parse --show-toplevel)
+# ponytail: ports from a path hash, 300 pairs. Two worktrees can collide, and
+# the second then stops at the check below. Store a chosen port per worktree if
+# that ever happens.
+port=$((3300 + $(printf %s "$root" | cksum | cut -d' ' -f1) % 300 * 2))
+site_port=$((port + 1))
+for p in "$port" "$site_port"; do
+  if pid=$(lsof -ti "tcp:$p" -sTCP:LISTEN | head -1); then
+    echo "Port $p is in use by pid $pid ($(ps -p "$pid" -o comm=)). This worktree needs ports $port and $site_port." >&2
+    echo "If it is a leftover backend of this worktree, stop it with: kill $pid" >&2
+    exit 1
+  fi
+done
 cd "$root/backend"
 # The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
 export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
@@ -52,16 +64,6 @@ hosted() {
   CONVEX_DEPLOYMENT= CONVEX_SELF_HOSTED_URL=https://api.paeonia.no \
     CONVEX_SELF_HOSTED_ADMIN_KEY=$admin_key npx convex "$@"
 }
-
-# ponytail: ports from a path hash, 300 pairs. Two worktrees can collide, and
-# the second then stops at the check below. Store a chosen port per worktree if
-# that ever happens.
-port=$((3300 + $(printf %s "$root" | cksum | cut -d' ' -f1) % 300 * 2))
-site_port=$((port + 1))
-if pid=$(lsof -ti "tcp:$port" -sTCP:LISTEN); then
-  echo "Port $port is in use by pid $pid. If it is a leftover backend of this worktree, stop it with: kill $pid" >&2
-  exit 1
-fi
 
 # Written once the hosted copy is in and the functions are pushed over it.
 copied=.convex/local/default/hosted-copy-done
