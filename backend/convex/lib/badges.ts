@@ -5,6 +5,7 @@ import { isSharedRound, loadQuestionRounds } from "./dailyQuestionRounds";
 import { instancesOfDay, isLive, visibleAnswersOf } from "./dailyQuestions";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { gamesWaitingFor } from "./gameRegistry";
+import { MAX_WAITING_LETTERS } from "./letters";
 import { insertNotificationOutbox, listActiveUserDevices, preferenceAllows } from "./notifications";
 import { addMs, nowIso } from "./time";
 import { topicsWaitingQuestionIds } from "./topics";
@@ -159,15 +160,14 @@ async function unseenStories(ctx: ReaderCtx, coupleId: string, userId: string, n
   ).length;
 }
 
-/** Letters delivered to this person that they have not opened. */
+/** Letters delivered to this person that they have not opened, up to `MAX_WAITING_LETTERS`. */
 async function unopenedLetters(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
   const letters = await ctx.db
     .query("letters")
-    .withIndex("by_recipient_user_id_state", (q) => q.eq("recipient_user_id", userId).eq("state", "delivered"))
-    .collect();
-  return letters.filter(
-    (letter) => letter.couple_id === coupleId && letter.deleted_at === undefined && letter.moderation_status === "visible",
-  ).length;
+    .withIndex("by_couple_id_recipient_user_id_deleted_at_state_delivered_at", (q) =>
+      q.eq("couple_id", coupleId).eq("recipient_user_id", userId).eq("deleted_at", undefined).eq("state", "delivered"))
+    .take(MAX_WAITING_LETTERS);
+  return letters.filter((letter) => letter.moderation_status === "visible").length;
 }
 
 /**

@@ -1,4 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
+import { fail } from "./errors";
+import { charLength } from "./text";
 import { addDaysToDate, localDateOf, zonedLocalToUtcMs } from "./time";
 
 // A letter stays sealed until it is delivered, then the recipient opens it. Only `nextLetterState`
@@ -41,8 +43,32 @@ export function lettersEnabled(preference: Pick<Doc<"notification_preferences">,
   return preference.letters_enabled !== false;
 }
 
-/** Letters count code points, so an emoji is one. */
+/** Letters count code points, so "❤️" is two, the heart and the sign that makes it red. */
 export const MAX_LETTER_BODY_CODE_POINTS = 2000;
+
+/**
+ * The note as it is stored, without the white space JavaScript's `trim` removes at either end.
+ * That includes U+FEFF and leaves U+0085. Fails with `23514` when it is empty and with `22001`
+ * when it is longer than the limit, which the app tells the author in its own words. The app
+ * applies the same rule before it sends (`LetterBody.swift`), so change the two together.
+ */
+export function parseLetterBody(raw: string): string {
+  const body = raw.trim();
+  if (body === "") fail("23514", "letter is empty");
+  if (charLength(body) > MAX_LETTER_BODY_CODE_POINTS) {
+    fail("22001", `letter is longer than ${MAX_LETTER_BODY_CODE_POINTS} characters`);
+  }
+  return body;
+}
+
+/** The most letters waiting to be opened that a read returns or a badge counts. */
+export const MAX_WAITING_LETTERS = 50;
+/** The newest letters of each mailbox list that `get_letters` returns. */
+export const MAILBOX_FIRST_PAGE = 25;
+/** The most letters one page of `get_older_letters` returns. */
+export const MAX_OLDER_PAGE = 50;
+/** The due letters one run of the delivery sweep handles before it schedules the next page. */
+export const DUE_LETTER_PAGE = 50;
 /** How far ahead a letter may be set to arrive. A year, plus a day for a phone clock that runs ahead. */
 export const MAX_LETTER_WAIT_MS = 366 * 86_400_000;
 /** A morning letter arrives at this hour on the recipient's clock. */

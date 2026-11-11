@@ -919,9 +919,11 @@ export default defineSchema({
     .index("by_created_at", ["created_at"]),
 
   // A letter one partner writes to the other (lib/letters.ts). It stays sealed until deliver_at,
-  // when `deliver_letter` delivers it, and the recipient opens it. The recipient never reads a
-  // sealed letter, nor the body or image of one they have not opened (`get_letters`, the image
-  // read check). Only the author deletes, which sets deleted_at.
+  // when `deliver_letter` or the `deliver-due-letters` sweep delivers it, and the recipient opens it.
+  // The recipient never reads a sealed letter, nor the body, card, image or written time of one
+  // they have not opened (`get_letters`, the image read check). Only the author deletes, which sets
+  // deleted_at. Each read range has deleted_at in its key, so deleted letters cost no reads, and
+  // the recipient's ranges need delivered_at, so a sealed letter never re-runs their reads.
   // FK: couple_id -> couples cascade; author_user_id, recipient_user_id -> users cascade;
   // media_asset_id -> media_assets restrict.
   letters: defineTable({
@@ -943,7 +945,28 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_couple_id_created_at", ["couple_id", "created_at"])
-    .index("by_recipient_user_id_state", ["recipient_user_id", "state"])
+    .index("by_couple_id_author_user_id_deleted_at_created_at_id", [
+      "couple_id",
+      "author_user_id",
+      "deleted_at",
+      "created_at",
+      "id",
+    ])
+    .index("by_couple_id_recipient_user_id_deleted_at_delivered_at_id", [
+      "couple_id",
+      "recipient_user_id",
+      "deleted_at",
+      "delivered_at",
+      "id",
+    ])
+    .index("by_couple_id_recipient_user_id_deleted_at_state_delivered_at", [
+      "couple_id",
+      "recipient_user_id",
+      "deleted_at",
+      "state",
+      "delivered_at",
+    ])
+    .index("by_state_deleted_at_deliver_at", ["state", "deleted_at", "deliver_at"])
     .index("by_media_asset_id", ["media_asset_id"]),
 
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.

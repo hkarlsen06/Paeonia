@@ -13,12 +13,12 @@ import { notificationStillWanted } from "./lib/notificationState";
 import { uuidArg } from "./lib/ids";
 import {
   notificationPayloadIsSafe,
+  preferenceAllows,
   reactionPreferenceAllows,
   rescheduleNotification,
   UNSAFE_PAYLOAD_ERROR,
   waitsWhileTogether,
 } from "./lib/notifications";
-import { lettersEnabled } from "./lib/letters";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { addMs, isValidTimeZone, nowIso } from "./lib/time";
 import { pushStatus } from "./lib/pushStatus";
@@ -95,7 +95,7 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
       return preference !== null && reactionPreferenceAllows(row.payload?.target_kind, preference);
     case "letter_arrived":
     case "letter_opened":
-      return preference !== null && lettersEnabled(preference);
+      return preference !== null && preferenceAllows(row.kind, row.apns_push_type, preference, row.payload);
     default:
       return true;
   }
