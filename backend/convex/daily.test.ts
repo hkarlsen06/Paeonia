@@ -140,8 +140,8 @@ describe("start_daily_challenge_snapshot", () => {
       freeze_ready_at: null,
       freeze_saved_streak: false,
       next_activity_deadline_at: null,
-      together_from: null,
-      together_until: null,
+      rest_starts_at: null,
+      rest_ends_at: null,
       current_user_contributed_today: false,
       partner_contributed_today: false,
     });

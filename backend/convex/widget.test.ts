@@ -691,6 +691,9 @@ describe("register_widget_push_device", () => {
 });
 
 describe("get_lock_screen_state", () => {
+  /** The streak fields of a couple that is not together. */
+  const restless = { rest_starts_at: null, rest_ends_at: null };
+
   const stateOf = (user: TestUser) => user.as.query(api.widget.get_lock_screen_state, { p_now: new Date().toISOString() });
   const countdown = (user: TestUser, id: string, title: string, date: string) =>
     user.as.mutation(api.countdowns.save_countdown, { p_countdown_id: id, p_title: title, p_target_date: date, p_repeats_yearly: false, ...op() });
@@ -718,8 +721,8 @@ describe("get_lock_screen_state", () => {
         current_count: 0,
         me_active_today: false,
         partner_active_today: false,
-        together_from: null,
-        together_until: null,
+        rest_starts_at: null,
+        rest_ends_at: null,
       },
       daily_question: null,
       games: { my_turn_count: 0, first_my_turn_kind: null },
@@ -924,12 +927,12 @@ describe("get_lock_screen_state", () => {
     await answer(first);
     expect((await stateOf(first))!.daily_question).toEqual({ me_answered: true, partner_answered: false });
     expect((await stateOf(second))!.daily_question).toEqual({ me_answered: false, partner_answered: true });
-    expect((await stateOf(first))!.streak).toMatchObject({ current_count: 0, me_active_today: true, partner_active_today: false });
-    expect((await stateOf(second))!.streak).toMatchObject({ current_count: 0, me_active_today: false, partner_active_today: true });
+    expect((await stateOf(first))!.streak).toEqual({ ...restless, current_count: 0, me_active_today: true, partner_active_today: false });
+    expect((await stateOf(second))!.streak).toEqual({ ...restless, current_count: 0, me_active_today: false, partner_active_today: true });
 
     await answer(second);
     expect((await stateOf(first))!.daily_question).toEqual({ me_answered: true, partner_answered: true });
-    expect((await stateOf(first))!.streak).toMatchObject({ current_count: 1, me_active_today: true, partner_active_today: true });
+    expect((await stateOf(first))!.streak).toEqual({ ...restless, current_count: 1, me_active_today: true, partner_active_today: true });
     expect(JSON.stringify(await stateOf(first))).not.toMatch(/secret|prompt/);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });

@@ -19,9 +19,9 @@ import {
   getCoupleStreakParticipationForUser,
   isStoredBreak,
   readCoupleStreak,
+  streakReminderDay,
 } from "./lib/streaks";
-import { addDaysToDate, addHours, nowIso } from "./lib/time";
-import { neededDaysAfter, readTogetherDays } from "./lib/together";
+import { addHours, nowIso } from "./lib/time";
 import { pushStatus } from "./lib/pushStatus";
 
 /**
@@ -169,9 +169,9 @@ export const enqueue_evening_streak_reminders = internalMutation({
  * Queues one streak reminder for each active partner of a live streak who is due
  * and has not contributed to today's couple day. Deduped per partner, reminder
  * kind, and streak day. A freeze starts a new streak day without a newly
- * qualified date, so its stamp is part of the key, and so are the needed days
- * when together days moved them (`streakDayKey`). The last-hour reminder goes
- * only to a partner without an evening reminder for the same streak day.
+ * qualified date, so its stamp is part of the key, and so is the day together
+ * days moved it to (`streakReminderDay`). The last-hour reminder goes only to a
+ * partner without an evening reminder for the same streak day.
  */
 async function remindPartners(
   ctx: MutationCtx,
@@ -189,7 +189,8 @@ async function remindPartners(
     .query("couple_members")
     .withIndex("by_couple_id_status", (q) => q.eq("couple_id", state.couple_id).eq("status", "active"))
     .collect();
-  const streakDay = await streakDayKey(ctx, state);
+  const { moved, day: streakDay } = await streakReminderDay(ctx, state);
+  if (moved) return 0;
   let contributed: Set<string> | null = null;
   let queued = 0;
   for (const member of members) {
@@ -227,22 +228,6 @@ async function remindPartners(
     });
   }
   return queued;
-}
-
-/**
- * The streak day a reminder is about. It names the last qualified date, the freeze's stamp, and the
- * days the streak needs (`neededDaysAfter`) when together days moved them off the days right after
- * it. Null without a qualified date. A key without a stamp names only the first needed day, since no freeze
- * can cover it.
- */
-async function streakDayKey(ctx: MutationCtx, state: Doc<"streak_states">): Promise<string | null> {
-  const lastDate = state.last_qualified_date;
-  if (lastDate === undefined) return null;
-  const together = await readTogetherDays(ctx, state.couple_id, addDaysToDate(lastDate, 1));
-  const needed = neededDaysAfter(together, lastDate, state.freeze_used_at === undefined ? 1 : 2);
-  const moved = needed.some((date, index) => date !== addDaysToDate(lastDate, index + 1));
-  const freeze = state.freeze_used_at === undefined ? "" : `:freeze:${state.freeze_used_at}`;
-  return `${lastDate}${freeze}${moved ? `:${needed.join(":")}` : ""}`;
 }
 
 /** The dedupe key of one partner's streak reminder. The outbox adds the device id to it. */

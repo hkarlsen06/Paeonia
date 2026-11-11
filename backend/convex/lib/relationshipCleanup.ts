@@ -107,18 +107,14 @@ async function deleteCoupleVisits(ctx: WriterCtx, coupleId: string, budget: Chun
   return deleted;
 }
 
-/** Deletes the couple's together days and its location run. Returns the rows deleted. */
+/** Deletes the couple's together days, at most TOGETHER_DAYS_KEPT rows. Returns the rows deleted. */
 async function deleteCoupleTogetherDays(ctx: WriterCtx, coupleId: string): Promise<number> {
   const days = await ctx.db
     .query("together_days")
     .withIndex("by_couple_id_local_date", (q) => q.eq("couple_id", coupleId))
     .collect();
-  const runs = await ctx.db
-    .query("together_location_runs")
-    .withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId))
-    .collect();
-  for (const row of [...days, ...runs]) await ctx.db.delete(row._id);
-  return days.length + runs.length;
+  for (const row of days) await ctx.db.delete(row._id);
+  return days.length;
 }
 
 // Both reads use couple-wide indexes, so a couple with years of daily questions costs a

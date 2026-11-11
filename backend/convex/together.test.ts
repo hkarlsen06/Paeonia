@@ -42,9 +42,9 @@ const togetherDates = async (t: TestConvex) =>
 const breakCron = (t: TestConvex) =>
   t.mutation(internal.streaks.detect_streak_breaks, { p_now: new Date().toISOString() });
 
-/** Both partners do something at noon on `date`. */
-async function bothAct(t: TestConvex, couple: TestCouple, date: string) {
-  const noon = `${date}T12:00:00.000Z`;
+/** Both partners do something at noon UTC on `date`, or at `instant` when given. */
+async function bothAct(t: TestConvex, couple: TestCouple, date: string, instant = `${date}T12:00:00.000Z`) {
+  const noon = instant;
   await t.run(async (ctx) => {
     const dayId = await getOrCreateCoupleDayAt(ctx, couple.coupleId, noon);
     for (const user of [couple.first, couple.second]) {
@@ -73,6 +73,58 @@ async function newCouple(timeZones: [string, string] = ["UTC", "UTC"]) {
   const t = newTest();
   return { t, couple: await createCouple(t, { timeZones }) };
 }
+
+/** Profiles in New York and Oslo, which set the couple's date. Both phones in Oslo, which set the streak's deadline. */
+async function movedEast() {
+  const s = await newCouple(["America/New_York", "Europe/Oslo"]);
+  await addDevice(s.t, s.couple.first.userId, { timeZone: "Europe/Oslo" });
+  await addDevice(s.t, s.couple.second.userId, { timeZone: "Europe/Oslo" });
+  return s;
+}
+
+async function shareLocation(couple: TestCouple) {
+  for (const user of [couple.first, couple.second]) {
+    await user.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: couple.coupleId,
+      p_is_enabled: true,
+      p_consent_version: "test-v1",
+      p_source: "settings_toggle",
+      ...op(),
+    });
+  }
+}
+
+async function sharing(timeZones: [string, string] = ["UTC", "UTC"]) {
+  const s = await newCouple(timeZones);
+  await shareLocation(s.couple);
+  return s;
+}
+
+const oslo = { latitude: 59.9139, longitude: 10.7522 };
+/** About 300 m north of `oslo`. */
+const nearby = { latitude: 59.9166, longitude: 10.7522 };
+/** About 5 km north of `oslo`. */
+const away = { latitude: 59.9589, longitude: 10.7522 };
+
+const send = (
+  user: TestUser,
+  coupleId: string,
+  where: { latitude: number; longitude: number },
+  capturedAt: string,
+  accuracy: number | null = 20,
+) =>
+  user.as.mutation(api.location.update_latest_partner_location, {
+    p_couple_id: coupleId,
+    p_latitude: where.latitude,
+    p_longitude: where.longitude,
+    p_accuracy_m: accuracy,
+    p_captured_at: capturedAt,
+    p_source: "foreground_open",
+    ...op(),
+  });
+
+const visitRow = (t: TestConvex, id: string) =>
+  t.run((ctx) => ctx.db.query("visits").withIndex("by_uuid", (q) => q.eq("id", id)).unique());
 
 describe("a day that ended stays what it was (I1)", () => {
   /** A 30-day streak through 2026-10-09, and a visit from 2026-10-10 to 2026-10-13 planned that evening. */
@@ -174,7 +226,7 @@ describe("a together day needs nothing and costs nothing (I3)", () => {
     await saveVisit(couple.first, newUuid(), "2026-10-11", "2026-10-13");
     at("2026-10-11T00:30:00.000Z");
     await breakCron(t);
-    expect(await stored(t, couple.coupleId)).toMatchObject({
+    expect(await streak(couple.first)).toMatchObject({
       restorable_count: 30,
       save_deadline: "2026-10-15T00:00:00.000Z",
       restore_deadline: "2026-10-17T00:00:00.000Z",
@@ -204,8 +256,8 @@ describe("the pause lasts at most 14 days in a row (I4)", () => {
     await saveVisit(couple.first, newUuid(), "2026-10-10", "2026-10-29");
     expect(await streak(couple.first)).toMatchObject({
       next_activity_deadline_at: "2026-10-25T00:00:00.000Z",
-      together_from: "2026-10-10",
-      together_until: "2026-10-23",
+      rest_starts_at: "2026-10-10T00:00:00.000Z",
+      rest_ends_at: "2026-10-24T00:00:00.000Z",
     });
   });
 
@@ -266,74 +318,56 @@ describe("a couple with no together days keeps main's rules (I6)", () => {
   });
 });
 
-describe("location", () => {
-  async function sharing(timeZones: [string, string] = ["UTC", "UTC"]) {
-    const s = await newCouple(timeZones);
-    for (const user of [s.couple.first, s.couple.second]) {
-      await user.as.mutation(api.location.update_location_sharing_preference, {
-        p_couple_id: s.couple.coupleId,
-        p_is_enabled: true,
-        p_consent_version: "test-v1",
-        p_source: "settings_toggle",
-        ...op(),
-      });
-    }
-    return s;
-  }
-  const oslo = { latitude: 59.9139, longitude: 10.7522 };
-  /** About 300 m north of `oslo`. */
-  const nearby = { latitude: 59.9166, longitude: 10.7522 };
-  /** About 5 km north of `oslo`. */
-  const away = { latitude: 59.9589, longitude: 10.7522 };
-  const send = (
-    user: TestUser,
-    coupleId: string,
-    where: { latitude: number; longitude: number },
-    capturedAt: string,
-    accuracy: number | null = 20,
-  ) =>
-    user.as.mutation(api.location.update_latest_partner_location, {
-      p_couple_id: coupleId,
-      p_latitude: where.latitude,
-      p_longitude: where.longitude,
-      p_accuracy_m: accuracy,
-      p_captured_at: capturedAt,
-      p_source: "foreground_open",
-      ...op(),
-    });
-
-  test("a visitor reaching a phone that sat still for hours makes a together day, and the streak rests at once", async () => {
+describe("location (R2)", () => {
+  test("a visitor reaching a phone that sat still for hours rests the streak on that day only", async () => {
     const { t, couple } = await sharing();
+    await addDevice(t, couple.first.userId);
+    await addDevice(t, couple.second.userId);
     await streakThrough(t, couple, "2026-10-09", 10);
     at("2026-10-10T01:00:00.000Z");
     await send(couple.second, couple.coupleId, oslo, "2026-10-10T01:00:00.000Z");
     at("2026-10-10T12:30:00.000Z");
     await send(couple.first, couple.coupleId, nearby, "2026-10-10T12:29:00.000Z");
     expect(await togetherDates(t)).toEqual(["2026-10-10"]);
-    // The stored deadline moved in the same mutation, before anyone read the streak.
-    expect((await stored(t, couple.coupleId))?.next_activity_deadline_at).toBe("2026-10-25T00:00:00.000Z");
-    expect(await streak(couple.first)).toMatchObject({ together_from: "2026-10-10", together_until: "2026-10-23" });
+    expect(await streak(couple.first)).toMatchObject({
+      current_count: 10,
+      next_activity_deadline_at: "2026-10-12T00:00:00.000Z",
+      rest_starts_at: "2026-10-10T00:00:00.000Z",
+      rest_ends_at: "2026-10-11T00:00:00.000Z",
+    });
+    // The match stores only the day. The evening reminder finds the deadline it moved, stores it, and stays quiet.
+    expect(await t.mutation(internal.streaks.enqueue_evening_streak_reminders, { p_now: "2026-10-10T19:05:00.000Z" })).toBe(0);
+    expect((await stored(t, couple.coupleId))?.next_activity_deadline_at).toBe("2026-10-12T00:00:00.000Z");
+    // The next day needs both of them again, with no new match.
+    at("2026-10-11T19:05:00.000Z");
+    expect(await t.mutation(internal.streaks.enqueue_evening_streak_reminders, { p_now: "2026-10-11T19:05:00.000Z" })).toBe(2);
   });
 
-  test("the following days stay together with no new fix, until a fix puts them apart", async () => {
+  test("a fix apart, a pause or turning sharing off changes no stored day", async () => {
     const { t, couple } = await sharing();
     await streakThrough(t, couple, "2026-10-09", 10);
     at("2026-10-10T12:00:00.000Z");
     await send(couple.second, couple.coupleId, oslo, "2026-10-10T11:00:00.000Z");
     await send(couple.first, couple.coupleId, nearby, "2026-10-10T11:59:00.000Z");
-    at("2026-10-12T15:00:00.000Z");
-    expect(await streak(couple.first)).toMatchObject({ current_count: 10, together_from: "2026-10-10" });
-    await breakCron(t);
-    expect(await stored(t, couple.coupleId)).toMatchObject({ current_count: 10, restorable_count: 0 });
-
-    await send(couple.first, couple.coupleId, away, "2026-10-12T14:59:00.000Z");
-    expect(await togetherDates(t)).toEqual(["2026-10-10", "2026-10-11"]);
-    expect(await streak(couple.first)).toMatchObject({
-      current_count: 10,
-      next_activity_deadline_at: "2026-10-13T00:00:00.000Z",
-      together_from: null,
-      together_until: null,
+    at("2026-10-10T15:00:00.000Z");
+    await send(couple.first, couple.coupleId, away, "2026-10-10T14:59:00.000Z");
+    await couple.second.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: couple.coupleId,
+      p_is_enabled: true,
+      p_consent_version: "test-v1",
+      p_source: "settings_toggle",
+      p_paused_until: "2026-10-11T06:00:00.000Z",
+      ...op(),
     });
+    await couple.first.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: couple.coupleId,
+      p_is_enabled: false,
+      p_consent_version: "test-v1",
+      p_source: "settings_toggle",
+      ...op(),
+    });
+    expect(await togetherDates(t)).toEqual(["2026-10-10"]);
+    expect(await streak(couple.first)).toMatchObject({ current_count: 10, next_activity_deadline_at: "2026-10-12T00:00:00.000Z" });
   });
 
   test("a fix captured before midnight and sent after it marks no day", async () => {
@@ -343,36 +377,6 @@ describe("location", () => {
     at("2026-10-11T00:10:00.000Z");
     await send(couple.first, couple.coupleId, nearby, "2026-10-10T23:40:00.000Z");
     expect(await togetherDates(t)).toEqual([]);
-  });
-
-  test("a fix without a known accuracy, or coarser than 500 m, marks no day", async () => {
-    const { t, couple } = await sharing();
-    at("2026-10-10T12:00:00.000Z");
-    await send(couple.second, couple.coupleId, oslo, "2026-10-10T11:58:00.000Z", null);
-    await send(couple.first, couple.coupleId, nearby, "2026-10-10T11:59:00.000Z");
-    expect(await togetherDates(t)).toEqual([]);
-    await send(couple.second, couple.coupleId, oslo, "2026-10-10T11:59:30.000Z", 800);
-    await send(couple.first, couple.coupleId, nearby, "2026-10-10T11:59:40.000Z");
-    expect(await togetherDates(t)).toEqual([]);
-  });
-
-  test("pausing or turning sharing off ends the run from that day and keeps the days before it", async () => {
-    const { t, couple } = await sharing();
-    await streakThrough(t, couple, "2026-10-09", 10);
-    at("2026-10-10T12:00:00.000Z");
-    await send(couple.second, couple.coupleId, oslo, "2026-10-10T11:00:00.000Z");
-    await send(couple.first, couple.coupleId, nearby, "2026-10-10T11:59:00.000Z");
-    at("2026-10-12T15:00:00.000Z");
-    await couple.second.as.mutation(api.location.update_location_sharing_preference, {
-      p_couple_id: couple.coupleId,
-      p_is_enabled: true,
-      p_consent_version: "test-v1",
-      p_source: "settings_toggle",
-      p_paused_until: "2026-10-13T06:00:00.000Z",
-      ...op(),
-    });
-    expect(await togetherDates(t)).toEqual(["2026-10-10", "2026-10-11"]);
-    expect(await streak(couple.first)).toMatchObject({ next_activity_deadline_at: "2026-10-13T00:00:00.000Z" });
   });
 });
 
@@ -395,30 +399,22 @@ describe("reminders while together", () => {
     expect(await lastHour("2026-10-13T23:30:00.000Z")).toBe(0);
   });
 
-  test("a question time reminder is skipped during a visit, and a push about the partner still goes out", async () => {
+  test("new answers in a topic still reach the partner during a visit", async () => {
     const { t, couple } = await newCouple();
     await addDevice(t, couple.first.userId);
-    await t.run(async (ctx) => {
-      const preference = await ctx.db
-        .query("notification_preferences")
-        .withIndex("by_user_id", (q) => q.eq("user_id", couple.first.userId))
-        .unique();
-      await ctx.db.patch(preference!._id, { question_time_enabled: true });
-    });
     at("2026-10-09T20:00:00.000Z");
     await saveVisit(couple.second, newUuid(), "2026-10-10", "2026-10-12");
     at("2026-10-11T09:00:00.000Z");
-    const queue = (kind: "question_time_reminder" | "topics_waiting") =>
-      t.run((ctx) =>
+    expect(
+      await t.run((ctx) =>
         enqueueNotificationForUser(ctx, {
           recipient_user_id: couple.first.userId,
-          kind,
-          payload: { type: kind, couple_id: couple.coupleId },
-          dedupe_key: kind,
+          kind: "topics_waiting",
+          payload: { type: "topics_waiting", couple_id: couple.coupleId },
+          dedupe_key: "topics_waiting",
         }),
-      );
-    expect(await queue("question_time_reminder")).toBe(0);
-    expect(await queue("topics_waiting")).toBe(1);
+      ),
+    ).toBe(1);
   });
 
   test("a game turn reminder that comes due during a visit waits for the first day apart", async () => {
@@ -484,42 +480,6 @@ describe("what together days keep", () => {
   });
 });
 
-// ---- fix round 2: written first, before the fix ----
-
-/** Profiles in New York and Oslo, which set the couple's date. Both phones in Oslo, which set the streak's deadline. */
-async function movedEast() {
-  const s = await newCouple(["America/New_York", "Europe/Oslo"]);
-  await addDevice(s.t, s.couple.first.userId, { timeZone: "Europe/Oslo" });
-  await addDevice(s.t, s.couple.second.userId, { timeZone: "Europe/Oslo" });
-  return s;
-}
-async function shareLocation(couple: TestCouple) {
-  for (const user of [couple.first, couple.second]) {
-    await user.as.mutation(api.location.update_location_sharing_preference, {
-      p_couple_id: couple.coupleId,
-      p_is_enabled: true,
-      p_consent_version: "test-v1",
-      p_source: "settings_toggle",
-      ...op(),
-    });
-  }
-}
-const osloCenter = { latitude: 59.9139, longitude: 10.7522 };
-/** About 300 m north of `osloCenter`. */
-const osloNearby = { latitude: 59.9166, longitude: 10.7522 };
-const sendFix = (user: TestUser, coupleId: string, where: { latitude: number; longitude: number }, capturedAt: string) =>
-  user.as.mutation(api.location.update_latest_partner_location, {
-    p_couple_id: coupleId,
-    p_latitude: where.latitude,
-    p_longitude: where.longitude,
-    p_accuracy_m: 20,
-    p_captured_at: capturedAt,
-    p_source: "foreground_open",
-    ...op(),
-  });
-const visitRow = (t: TestConvex, id: string) =>
-  t.run((ctx) => ctx.db.query("visits").withIndex("by_uuid", (q) => q.eq("id", id)).unique());
-
 describe("one clock: the streak deadline's zones say which day an instant is on and when it ended (R1)", () => {
   test("a visit deleted an hour after Oslo midnight keeps the together day that just ended", async () => {
     const { t, couple } = await movedEast();
@@ -572,8 +532,8 @@ describe("one clock: the streak deadline's zones say which day an instant is on 
     at("2026-10-10T22:30:00.000Z");
     await breakCron(t);
     at("2026-10-10T23:00:00.000Z");
-    await sendFix(couple.second, couple.coupleId, osloCenter, "2026-10-10T20:00:00.000Z");
-    await sendFix(couple.first, couple.coupleId, osloNearby, "2026-10-10T23:00:00.000Z");
+    await send(couple.second, couple.coupleId, oslo, "2026-10-10T20:00:00.000Z");
+    await send(couple.first, couple.coupleId, nearby, "2026-10-10T23:00:00.000Z");
     expect(await togetherDates(t)).toEqual(["2026-10-11"]);
     at("2026-10-24T12:00:00.000Z");
     await bothAct(t, couple, "2026-10-24");
@@ -624,7 +584,7 @@ describe("the rest is two instants on the streak's clock (R4)", () => {
     const { t, couple } = await newCouple(["America/Los_Angeles", "Europe/Oslo"]);
     await addDevice(t, couple.first.userId, { timeZone: "America/Los_Angeles" });
     await addDevice(t, couple.second.userId, { timeZone: "Europe/Oslo" });
-    await bothActAt(t, couple, "2026-10-08T20:00:00.000Z");
+    await bothAct(t, couple, "2026-10-08", "2026-10-08T20:00:00.000Z");
     const state = await stored(t, couple.coupleId);
     await t.run((ctx) => ctx.db.patch(state!._id, { current_count: 20, longest_count: 20 }));
     await saveVisit(couple.second, newUuid(), "2026-10-10", "2026-10-13");
@@ -649,7 +609,7 @@ describe("no input a person can reach makes a streak read or write throw (R7)", 
     await saveVisit(couple.first, newUuid(), "2026-10-02", "2026-11-30");
     // 10:30Z on 2026-10-20 is 00:30 on 2026-10-21 in Kiritimati.
     at("2026-10-20T10:30:00.000Z");
-    await bothActAt(t, couple, "2026-10-20T10:30:00.000Z");
+    await bothAct(t, couple, "2026-10-21", "2026-10-20T10:30:00.000Z");
     at("2026-10-20T10:40:00.000Z");
     await setTimeZone(t, couple.first.userId, "Pacific/Pago_Pago");
     await t.run((ctx) =>
@@ -658,20 +618,3 @@ describe("no input a person can reach makes a streak read or write throw (R7)", 
     expect(await streak(couple.first)).toMatchObject({ current_count: 1 });
   });
 });
-
-/** Both partners do something at `instant`. */
-async function bothActAt(t: TestConvex, couple: TestCouple, instant: string) {
-  await t.run(async (ctx) => {
-    const dayId = await getOrCreateCoupleDayAt(ctx, couple.coupleId, instant);
-    for (const user of [couple.first, couple.second]) {
-      await applyCoupleActivity(ctx, {
-        couple_id: couple.coupleId,
-        user_id: user.userId,
-        couple_day_id: dayId,
-        activity_kind: "memory_created",
-        occurred_at: instant,
-        dedupe_key: `${user.userId}:${instant}`,
-      });
-    }
-  });
-}

@@ -1,6 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
-import { daysBetweenDates } from "./coupleDates";
-import { getByUuid, type ReaderCtx } from "./db";
+import type { ReaderCtx } from "./db";
 import { fail } from "./errors";
 import {
   addDaysToDate,
@@ -12,7 +11,6 @@ import {
   localWallClockMs,
   zonedLocalToUtcMs,
 } from "./time";
-import { neededDaysAfter, readTogetherDays, type TogetherDays } from "./together";
 
 /** Streaks shorter than this restart when they break: no freeze, no free save and no restore offer. */
 export const MIN_PROTECTED_STREAK = 3;
@@ -91,16 +89,6 @@ export async function resolveStreakDeadlineAt(
   if (localDaysAfter < 1 || localDaysAfter > 2) {
     return fail("23514", "local deadline offset must be one or two days");
   }
-  return await latestMidnightAfter(ctx, coupleId, observedAt, localDaysAfter);
-}
-
-/** `resolveStreakDeadlineAt` for any number of days. Together days can put a needed day further away. */
-async function latestMidnightAfter(
-  ctx: ReaderCtx,
-  coupleId: string,
-  observedAt: string,
-  localDaysAfter: number,
-): Promise<string> {
   const members = await ctx.db
     .query("couple_members")
     .withIndex("by_couple_id_status", (q) => q.eq("couple_id", coupleId).eq("status", "active"))
@@ -138,112 +126,24 @@ export function freezeCoversGap(state: Pick<Doc<"streak_states">, "freeze_used_a
   return state.freeze_used_at !== undefined && state.freeze_used_at > qualifiedAt;
 }
 
-/** Needed days `streakTiming` finds: two for the deadline and the freeze, three for a free save and two restore days. */
-const NEEDED_DAYS = 5;
-
-/**
- * When a streak breaks, worked out the same way for every read and write. A day the partners spend
- * together pauses the streak (`lib/together.ts`), so the days that count here are the needed days
- * after the last qualified day, the ones that do not pause it. Without together days they are the
- * days that follow it.
- */
-export type StreakTiming = {
-  /** When the last qualified day counts from: when both partners showed up, or its start for a restored day. */
-  start: string;
-  /** Both partners showed up on the last qualified day. False for a day a restore filled in. */
-  observed: boolean;
-  /** The needed days after the last qualified day, earliest first. */
-  needed: readonly string[];
-  /** The end of the first needed day, local midnight in each partner's zone, the latest of them. */
-  deadline: string;
-  /** A free freeze already covers the first needed day, so the streak lasts to the end of the second. */
-  frozen: boolean;
-};
-
-/**
- * The timing of `state`'s streak, or null when it cannot be worked out, such as for a couple that
- * ended. Pass `together` when the caller already read the couple's together days from the day after
- * the last qualified one, or earlier.
- */
-export async function streakTiming(
-  ctx: ReaderCtx,
-  coupleId: string,
-  state: Pick<Doc<"streak_states">, "last_qualified_date" | "last_qualified_couple_day_id" | "freeze_used_at">,
-  together?: TogetherDays,
-): Promise<StreakTiming | null> {
-  const lastDate = state.last_qualified_date;
-  if (lastDate === undefined) return null;
-  const qualifiedAt = await getCoupleDayStreakQualifiedAt(ctx, coupleId, state.last_qualified_couple_day_id);
-  const start = qualifiedAt ?? (await restoredDayStart(ctx, coupleId, state.last_qualified_couple_day_id));
-  if (start === null) return null;
-  const days = together ?? (await readTogetherDays(ctx, coupleId, addDaysToDate(lastDate, 1)));
-  const needed = neededDaysAfter(days, lastDate, NEEDED_DAYS);
-  return {
-    start,
-    observed: qualifiedAt !== null,
-    needed,
-    deadline: await latestMidnightAfter(ctx, coupleId, start, daysBetweenDates(lastDate, needed[0]) + 1),
-    frozen: freezeCoversGap(state, start),
-  };
-}
-
-/** The start of a last qualified day without both partners' events: a day a paid restore filled in. */
-async function restoredDayStart(
-  ctx: ReaderCtx,
-  coupleId: string,
-  coupleDayId: string | undefined,
-): Promise<string | null> {
-  const couple = await getByUuid(ctx, "couples", coupleId);
-  const day = coupleDayId === undefined ? null : await getByUuid(ctx, "couple_days", coupleDayId);
-  return couple?.status === "active" && day ? day.starts_at : null;
+/** The deadline after a freeze adds one day: the next local midnight in each partner's zone. */
+export function frozenDeadlineAt(ctx: ReaderCtx, coupleId: string, deadline: string): Promise<string> {
+  return resolveStreakDeadlineAt(ctx, coupleId, deadline, 1);
 }
 
 /**
- * The end of needed day `to` when needed day `from` ends at `deadline` (indexes into
- * `timing.needed`). Without a timing, needed days follow each other.
- */
-export function neededDayEnd(
-  ctx: ReaderCtx,
-  coupleId: string,
-  timing: StreakTiming | null,
-  deadline: string,
-  from: number,
-  to: number,
-): Promise<string> {
-  const days = timing === null ? to - from : daysBetweenDates(timing.needed[from], timing.needed[to]);
-  return latestMidnightAfter(ctx, coupleId, deadline, days);
-}
-
-/** When a streak whose last day qualified at `observedAt`, on `date`, breaks: the end of its first needed day. */
-export async function deadlineAfterDay(
-  ctx: ReaderCtx,
-  coupleId: string,
-  date: string,
-  observedAt: string,
-): Promise<string> {
-  const days = await readTogetherDays(ctx, coupleId, addDaysToDate(date, 1));
-  const [first] = neededDaysAfter(days, date, 1);
-  return await latestMidnightAfter(ctx, coupleId, observedAt, daysBetweenDates(date, first) + 1);
-}
-
-/**
- * When a streak that broke at `breakDeadline`, the end of needed day `breakDay`, can come back. It
- * is free until the end of the next needed day (`saveDeadline`), when both partners show up on it,
- * and by purchase until the end of the two needed days after that (`restoreDeadline`). Each end is
- * local midnight in every partner's zone, and the latest one wins, like every other streak deadline.
+ * When a streak that broke at `breakDeadline` can come back. It is free until the end of the next
+ * couple day (`saveDeadline`), when both partners show up on it, and by purchase until the end of
+ * the two days after that (`restoreDeadline`). Each end is local midnight in every partner's zone,
+ * and the latest one wins, like every other streak deadline.
  */
 export async function brokenStreakDeadlines(
   ctx: ReaderCtx,
   coupleId: string,
   breakDeadline: string,
-  timing: StreakTiming | null,
-  breakDay: number,
 ): Promise<{ saveDeadline: string; restoreDeadline: string }> {
-  const saveDeadline = await neededDayEnd(ctx, coupleId, timing, breakDeadline, breakDay, breakDay + 1);
-  return {
-    saveDeadline,
-    restoreDeadline: await neededDayEnd(ctx, coupleId, timing, saveDeadline, breakDay + 1, breakDay + 3),
-  };
+  const saveDeadline = await resolveStreakDeadlineAt(ctx, coupleId, breakDeadline, 1);
+  return { saveDeadline, restoreDeadline: await resolveStreakDeadlineAt(ctx, coupleId, saveDeadline, 2) };
 }
 
 /** Port of `internal.resolve_next_activity_deadline_at`. */

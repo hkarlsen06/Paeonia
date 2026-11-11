@@ -585,13 +585,6 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       nb: "Dagene de siste 45 dagene da du og partneren din var sammen, fra et besøk eller fra posisjonene dere delte. Bare datoen, aldri stedet.",
     },
   }),
-  together_location_runs: shared("by_couple_id", {
-    group: "location",
-    about: {
-      en: "The date your shared locations began to show you together, while they still do. Only the date, never the place.",
-      nb: "Datoen da posisjonene dere delte begynte å vise at dere er sammen, så lenge de fortsatt gjør det. Bare datoen, aldri stedet.",
-    },
-  }),
 
   // ---- activity ----
   couple_activity_events: own("user_id", "by_user_id_created_at", {

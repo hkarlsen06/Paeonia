@@ -14,7 +14,7 @@ import { normalizePlace, placeArg } from "./lib/places";
 import { detectStreakBreak } from "./lib/streaks";
 import { requireTitle } from "./lib/text";
 import { nowIso } from "./lib/time";
-import { coupleDateAt, keepVisitDays } from "./lib/together";
+import { keepVisitDays, todayOnStreakClock } from "./lib/together";
 import {
   earliestLocalDate,
   FIRST_VISIT_DATE,
@@ -175,15 +175,15 @@ export const save_visit = mutation({
       if (existing && existing.start_date === start && existing.end_date === end) {
         await ctx.db.patch(existing._id, withUpdatedAt(fields));
       } else if (existing) {
-        await keepVisitDays(ctx, existing, now);
-        const togetherFrom = await coupleDateAt(ctx, coupleId, now);
-        await ctx.db.patch(existing._id, withUpdatedAt({ ...fields, together_from: togetherFrom }));
+        const today = await todayOnStreakClock(ctx, coupleId, now);
+        await keepVisitDays(ctx, existing, today, now);
+        await ctx.db.patch(existing._id, withUpdatedAt({ ...fields, together_from: today }));
       } else {
         await ctx.db.insert("visits", {
           id: visitId,
           couple_id: coupleId,
           ...fields,
-          together_from: await coupleDateAt(ctx, coupleId, now),
+          together_from: await todayOnStreakClock(ctx, coupleId, now),
           created_by_user_id: userId,
           created_at: now,
           updated_at: now,
@@ -223,7 +223,7 @@ export const delete_visit = mutation({
         return fail("42501", "visit belongs to another couple");
       }
       const now = nowIso();
-      await keepVisitDays(ctx, existing, now);
+      await keepVisitDays(ctx, existing, await todayOnStreakClock(ctx, coupleId, now), now);
       await ctx.db.patch(existing._id, withUpdatedAt({ deleted_at: now, last_edited_by_user_id: userId }));
       await refreshPartnerLockScreen(ctx, coupleId, userId);
       await detectStreakBreak(ctx, coupleId);

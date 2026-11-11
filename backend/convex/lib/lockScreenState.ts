@@ -183,9 +183,9 @@ export async function readLockScreenState(ctx: ReaderCtx, userId: string, now: s
       current_count: streak.current_count,
       me_active_today: participation.current_user_contributed_today,
       partner_active_today: participation.partner_contributed_today,
-      // The days the streak rests because the partners are together, so the widget stops asking for an answer.
-      together_from: streak.together_from,
-      together_until: streak.together_until,
+      // When the streak rests because the partners are together, so the widget stops asking for an answer.
+      rest_starts_at: streak.rest_starts_at,
+      rest_ends_at: streak.rest_ends_at,
     },
     daily_question: existingDay ? await dailyQuestionState(ctx, existingDay.id, userId, partnerId) : null,
     games: { my_turn_count: turns.length, first_my_turn_kind: turns[0]?.kind ?? null },
