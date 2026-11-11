@@ -19,7 +19,8 @@ nonisolated final class PaeoniaLocalStore: Sendable {
 
     let container: ModelContainer
 
-    init(inMemory: Bool = false) throws {
+    /// `url` puts the store somewhere other than the app group, as tests of the files on disk need.
+    init(inMemory: Bool = false, url: URL? = nil) throws {
         let schema = Schema([
             LocalSyncState.self,
             LocalPendingSyncOperation.self,
@@ -28,10 +29,8 @@ nonisolated final class PaeoniaLocalStore: Sendable {
             LocalOwnLocationSnapshot.self,
             LocalMemoryRecord.self
         ])
-        let configuration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: inMemory
-        )
+        let configuration = url.map { ModelConfiguration(schema: schema, url: $0) }
+            ?? ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         if !inMemory {
             try Self.createStoreDirectory(for: configuration.url)
         }

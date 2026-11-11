@@ -46,6 +46,7 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
         try deleteMemoryRecords(ownerUserID: ownerUserID, in: context)
 
         try context.save()
+        try LocalStoreCompaction.compact(container)
         Self.postChanges(Self.purgedDomains, ownerUserID: ownerUserID)
     }
 
@@ -58,6 +59,7 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
         try deleteLocationRecords(ownerUserID: ownerUserID, in: context)
 
         try context.save()
+        try LocalStoreCompaction.compact(container)
         Self.postChanges([.locationVisibility, .ownLocation], ownerUserID: ownerUserID)
     }
 
@@ -82,6 +84,7 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
         }
 
         try context.save()
+        try LocalStoreCompaction.compact(container)
         Self.postChanges(Self.purgedDomains, ownerUserID: ownerUserID)
     }
 
