@@ -44,7 +44,8 @@ nonisolated struct Visit: Codable, Hashable, Identifiable, Sendable {
     }
 
     /// The last day after the editor's first day moved from `oldStart` to `newStart`, so the
-    /// visit keeps its length.
+    /// visit keeps its length, unless that would put the last day outside the days the server
+    /// accepts.
     static func end(
         _ end: Date,
         afterStartMovedFrom oldStart: Date,
@@ -54,7 +55,10 @@ nonisolated struct Visit: Codable, Hashable, Identifiable, Sendable {
         let days = calendar.dateComponents(
             [.day], from: calendar.startOfDay(for: oldStart), to: calendar.startOfDay(for: newStart)
         ).day ?? 0
-        return calendar.date(byAdding: .day, value: days, to: end) ?? end
+        let moved = calendar.date(byAdding: .day, value: days, to: end) ?? end
+        guard let earliest = earliestDay.startOfDay(in: calendar), let latest = latestDay.startOfDay(in: calendar)
+        else { return moved }
+        return min(max(moved, earliest), latest)
     }
 }
 
@@ -186,8 +190,8 @@ nonisolated enum VisitsConfirmation: Equatable, Sendable {
     case itemGone(UUID)
 }
 
-/// A write the server refused for good, kept until a screen shows it, so the person learns
-/// about it and keeps what they typed.
+/// A write the server refused for good, kept until the person dismisses the message about it,
+/// so they learn about it and keep what they typed.
 nonisolated enum VisitsRefusal: Codable, Equatable, Sendable {
     case item(title: String)
     case visit(Visit)

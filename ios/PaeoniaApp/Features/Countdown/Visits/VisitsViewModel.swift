@@ -8,6 +8,7 @@ import Observation
 /// edit shows at once, survives a relaunch while offline, and either partner's change arrives
 /// through the live feed. Every write goes through the pending operations. A write the server
 /// refuses for good comes back as `error`, and a refused list item goes back into `itemDraft`.
+/// The refusal stays in the cache until the person dismisses the message that names it.
 @Observable
 final class VisitsViewModel {
     private(set) var state = CoupleVisits()
@@ -35,8 +36,11 @@ final class VisitsViewModel {
     /// Whether the app is on screen. Refusals wait in the cache until it is, so the banner
     /// and the refilled add field don't come while nobody can see them.
     @ObservationIgnored private var isActive = false
-    /// Refusals `error` or `listError` names. They stay in the cache until a screen showed them.
-    @ObservationIgnored private var shownRefusals: [VisitsRefusal] = []
+    /// The refusals the banner names, and the ones the visit screen's list error names. They
+    /// stay in the cache until the person dismisses that message. A message for a later refusal
+    /// names these again, because a new banner takes the place of the one on screen.
+    @ObservationIgnored private var bannerRefusals: [VisitsRefusal] = []
+    @ObservationIgnored private var listRefusals: [VisitsRefusal] = []
     /// Drops a reload that finished after a newer one started or the account changed.
     @ObservationIgnored private var reloadGeneration = 0
 
@@ -58,7 +62,8 @@ final class VisitsViewModel {
             state = CoupleVisits()
             server = CoupleVisits()
             pending = []
-            shownRefusals = []
+            bannerRefusals = []
+            listRefusals = []
             hasLoaded = false
             promptReturnDay = nil
             // Text typed by the person who was signed in before.
@@ -111,7 +116,7 @@ final class VisitsViewModel {
         state = server.applying(writes)
         promptReturnDay = local.promptReturnDay
         hasLoaded = true
-        if isActive, shownRefusals.isEmpty { show(local.refusals) }
+        if isActive { show(local.refusals) }
     }
 
     func homeCard(on today: LockScreenCalendarDate) -> HomeVisitCardState {
@@ -180,6 +185,8 @@ final class VisitsViewModel {
         let payload = SaveTogetherItemPayload(id: newID, title: title)
         guard await enqueue(.saveItem(payload), kind: .saveTogetherItem, payload: payload) else { return false }
         if itemDraft == draft { itemDraft = "" }
+        // Adding again answers a message about a refused item.
+        await clearListError()
         return true
     }
 
@@ -198,17 +205,33 @@ final class VisitsViewModel {
         error = nil
     }
 
-    func clearListError() {
+    /// Called when the person types in the add field, adds an item or leaves the visit screen.
+    /// The list error goes, and the refusals it named leave the cache.
+    func clearListError() async {
         listError = nil
+        let named = listRefusals
+        listRefusals = []
+        await forget(named)
     }
 
-    /// Called once a screen showed `error` or `listError`, so the refusals they name leave the cache.
-    func refusalsShown() async {
-        guard let ownerUserID, !shownRefusals.isEmpty else { return }
-        let shown = shownRefusals
-        shownRefusals = []
-        await cache.removeRefusals(shown, ownerUserID: ownerUserID)
-        // Shows any refusal that came in while these showed.
+    /// Called when the person dismissed the banner that named refusals, so they leave the cache.
+    func refusalBannerDismissed() async {
+        let named = bannerRefusals
+        bannerRefusals = []
+        await forget(named)
+    }
+
+    /// Called when another banner took the place of the one that named refusals. Nobody
+    /// dismissed it, so they stay in the cache and the next reload shows them again.
+    func refusalBannerReplaced() {
+        bannerRefusals = []
+    }
+
+    private func forget(_ refusals: [VisitsRefusal]) async {
+        guard let ownerUserID, !refusals.isEmpty else { return }
+        // Drops a reload that read the cache before they left it, which would show them again.
+        reloadGeneration &+= 1
+        await cache.removeRefusals(refusals, ownerUserID: ownerUserID)
         await reload()
     }
 
@@ -220,25 +243,34 @@ final class VisitsViewModel {
         }
     }
 
-    /// Tells the person about writes the server refused, and puts a refused item back in the
-    /// add field when it is empty. The message names every refused item, so no text is lost.
+    /// Tells the person about every write the server refused that is still in the cache, and
+    /// puts a refused item back in the add field when it is empty. While the visit screen is
+    /// open, refused items show under its add field and refused visits in the banner. Elsewhere
+    /// one banner names both. Nothing new shows while the same refusals are still on screen.
     private func show(_ refusals: [VisitsRefusal]) {
-        shownRefusals = refusals
         var titles: [String] = []
-        var visit: Visit?
+        var visits: [Visit] = []
         for refusal in refusals {
             switch refusal {
             case let .item(title): titles.append(title)
-            case let .visit(refused): visit = visit ?? refused
+            case let .visit(refused): visits.append(refused)
             }
         }
+        let forList = isListShown ? titles.map { VisitsRefusal.item(title: $0) } : []
+        let forBanner = forList.isEmpty ? refusals : visits.map { VisitsRefusal.visit($0) }
+        let listChanged = forList != listRefusals
+        let bannerChanged = forBanner != bannerRefusals
+        listRefusals = forList
+        bannerRefusals = forBanner
+        guard listChanged || bannerChanged else { return }
         if let title = titles.first, itemDraft.isEmpty {
             itemDraft = title
         }
-        if !titles.isEmpty {
-            report(.itemsNotAdded(titles))
-        } else if let visit {
-            report(.visitNotSaved(visit))
+        if listChanged, !forList.isEmpty {
+            listError = .refused(items: titles, visits: [])
+        }
+        if bannerChanged, !forBanner.isEmpty {
+            error = .refused(items: forList.isEmpty ? titles : [], visits: visits)
         }
     }
 
@@ -283,15 +315,20 @@ nonisolated enum VisitsError: Equatable, Sendable {
     case saveFailed
     case visitLimit
     case listFull
-    /// The server refused these list items for good, so they aren't on the list.
-    case itemsNotAdded([String])
-    /// The server refused this visit for good.
-    case visitNotSaved(Visit)
+    /// The server refused these for good: list items, which aren't on the list, and visits.
+    case refused(items: [String], visits: [Visit])
+
+    /// Whether the message names refused writes, which stay on the phone until the person
+    /// dismisses it.
+    var namesRefusals: Bool {
+        if case .refused = self { true } else { false }
+    }
 
     var isAboutTheList: Bool {
         switch self {
-        case .listFull, .itemsNotAdded: true
-        case .saveFailed, .visitLimit, .visitNotSaved: false
+        case .listFull: true
+        case let .refused(_, visits): visits.isEmpty
+        case .saveFailed, .visitLimit: false
         }
     }
 
@@ -303,10 +340,20 @@ nonisolated enum VisitsError: Equatable, Sendable {
             String(localized: .visitErrorVisitLimit(Visit.maxOpenCount.formatted()))
         case .listFull:
             String(localized: .visitErrorListFull(TogetherListItem.maxCount.formatted()))
-        case let .itemsNotAdded(titles):
-            String(localized: .visitErrorItemsNotAdded(titles.formatted(.list(type: .and))))
-        case let .visitNotSaved(visit):
-            String(localized: .visitErrorVisitNotSaved(visit.dateRangeText()))
+        case let .refused(items, visits):
+            [Self.itemsNotAdded(items), Self.visitsNotSaved(visits)].compactMap(\.self).joined(separator: " ")
         }
+    }
+
+    private static func itemsNotAdded(_ titles: [String]) -> String? {
+        guard !titles.isEmpty else { return nil }
+        return String(localized: .visitErrorItemsNotAdded(titles.formatted(.list(type: .and))))
+    }
+
+    private static func visitsNotSaved(_ visits: [Visit]) -> String? {
+        let ranges = visits.map { $0.dateRangeText() }
+        guard let first = ranges.first else { return nil }
+        guard ranges.count > 1 else { return String(localized: .visitErrorVisitNotSaved(first)) }
+        return String(localized: .visitErrorVisitsNotSaved(ranges.formatted(.list(type: .and))))
     }
 }

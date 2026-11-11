@@ -5,7 +5,7 @@
   /// tab. The others open the visit screen or the editor on their own.
   nonisolated extension DeveloperScenario {
     static let visits: [DeveloperScenario] = [
-      visitNone, visitUpcoming, visitDetail, visitEditor, visitListFull, visitEditorFull,
+      visitNone, visitUpcoming, visitDetail, visitEditor, visitListFull, visitEditorFull, visitRefused,
     ]
 
     static let visitNone = DeveloperScenario(
@@ -26,6 +26,13 @@
     static let visitEditorFull = DeveloperScenario(
       "visit-editor-full", "Visit · 20 planned", "Saving a 21st visit says why it can't", .relationship
     ) { _ in DeveloperVisitScreen(content: .editor, visits: DeveloperVisitsFixture.full()) }
+    static let visitRefused = DeveloperScenario(
+      "visit-refused", "Visit · refused writes", "A list item and two visits the server refused", .relationship
+    ) { _ in
+      DeveloperVisitScreen(
+        content: .detail, visits: DeveloperVisitsFixture.planned(), refusals: DeveloperVisitsFixture.refusals()
+      )
+    }
   }
 
   /// In-memory visits for the scenarios and the local flows. Nothing reaches the server.
@@ -37,9 +44,9 @@
       model(scenario == .visitUpcoming ? planned() : CoupleVisits())
     }
 
-    static func model(_ visits: CoupleVisits) -> VisitsViewModel {
+    static func model(_ visits: CoupleVisits, refusals: [VisitsRefusal] = []) -> VisitsViewModel {
       VisitsViewModel(
-        cache: InMemoryVisitsCache(visits, ownerUserID: ownerUserID),
+        cache: InMemoryVisitsCache(visits, refusals: refusals, ownerUserID: ownerUserID),
         pendingOperationStore: InMemoryPendingSyncOperationRepository(),
         operationProvider: DeveloperScenarioOperationProvider()
       )
@@ -72,6 +79,15 @@
       return visits
     }
 
+    /// A list item and two visits the server refused for good.
+    static func refusals(now: Date = Date(), calendar: Calendar = .current) -> [VisitsRefusal] {
+      [
+        .item(title: "Northern lights"),
+        .visit(visit(from: 40, to: 43, place: nil, now: now, calendar: calendar)),
+        .visit(visit(from: 61, to: 63, place: nil, now: now, calendar: calendar)),
+      ]
+    }
+
     private static func visit(
       from start: Int, to end: Int, place: MemoryPlace?, now: Date, calendar: Calendar
     ) -> Visit {
@@ -94,9 +110,9 @@
     let content: Content
     @State private var visits: VisitsViewModel
 
-    init(content: Content, visits: CoupleVisits, draft: String = "") {
+    init(content: Content, visits: CoupleVisits, draft: String = "", refusals: [VisitsRefusal] = []) {
       self.content = content
-      let model = DeveloperVisitsFixture.model(visits)
+      let model = DeveloperVisitsFixture.model(visits, refusals: refusals)
       model.itemDraft = draft
       _visits = State(initialValue: model)
     }

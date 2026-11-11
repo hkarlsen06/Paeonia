@@ -54,12 +54,11 @@ struct VisitDetailView: View {
         .onAppear { visits.isListShown = true }
         .onDisappear {
             visits.isListShown = false
-            visits.clearListError()
+            Task { await visits.clearListError() }
         }
         .onChange(of: visits.listError) { _, error in
             guard let error else { return }
             AccessibilityNotification.Announcement(error.message).post()
-            Task { await visits.refusalsShown() }
         }
         .sheet(item: $editor) { editor in
             switch editor {
@@ -237,7 +236,7 @@ struct VisitDetailView: View {
         } set: { text in
             guard text != visits.itemDraft else { return }
             visits.itemDraft = text
-            visits.clearListError()
+            Task { await visits.clearListError() }
         }
     }
 

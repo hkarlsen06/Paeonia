@@ -20,6 +20,8 @@ private struct VisitsLifecycle: ViewModifier {
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
+    /// The banner on screen that names refused writes.
+    @State private var refusalBannerID: UUID?
 
     func body(content: Content) -> some View {
         content
@@ -35,8 +37,18 @@ private struct VisitsLifecycle: ViewModifier {
             .onChange(of: visits.error) { _, error in
                 guard let error else { return }
                 bannerCenter.show(.error(message: error.message))
+                if error.namesRefusals { refusalBannerID = bannerCenter.content?.id }
                 visits.clearError()
-                Task { await visits.refusalsShown() }
+            }
+            // An error banner stays until the person dismisses it or another banner takes its place.
+            .onChange(of: bannerCenter.content?.id) { _, shown in
+                guard let refusalBannerID, shown != refusalBannerID else { return }
+                self.refusalBannerID = nil
+                if shown == nil {
+                    Task { await visits.refusalBannerDismissed() }
+                } else {
+                    visits.refusalBannerReplaced()
+                }
             }
     }
 }

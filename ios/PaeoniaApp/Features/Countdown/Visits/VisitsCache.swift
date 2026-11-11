@@ -2,8 +2,8 @@ import Foundation
 
 /// The couple's visits and list as the server last sent them, for one signed-in person, so
 /// the Us tab card and the visit screen show them offline and right after launch. It also
-/// keeps this person's refused writes until a screen shows them, and the day the "When do
-/// you meet next?" card comes back after they hid it.
+/// keeps this person's refused writes until they dismiss the message about them, and the day
+/// the "When do you meet next?" card comes back after they hid it.
 protocol VisitsCaching: Actor {
     func state(ownerUserID: UUID) -> VisitsLocalState
     func store(_ state: VisitsLocalState, ownerUserID: UUID)
@@ -14,7 +14,7 @@ protocol VisitsCaching: Actor {
 /// What one person keeps about visits on this phone.
 nonisolated struct VisitsLocalState: Codable, Equatable, Sendable {
     var visits = CoupleVisits()
-    /// Writes the server refused for good that no screen has shown yet.
+    /// Writes the server refused for good, until the person dismisses the message about them.
     var refusals: [VisitsRefusal] = []
     var promptReturnDay: LockScreenCalendarDate?
     /// Rows the live feed dropped, newest last, so a write confirmed after a partner deleted
@@ -47,7 +47,7 @@ extension VisitsCaching {
         update(ownerUserID) { $0.refusals.append(refusal) }
     }
 
-    /// Forgets `shown`, once a screen told the person about them.
+    /// Forgets `shown`, once the person dismissed the message that named them.
     func removeRefusals(_ shown: [VisitsRefusal], ownerUserID: UUID) {
         update(ownerUserID) { state in
             for refusal in shown {
@@ -123,8 +123,8 @@ actor FileVisitsCache: VisitsCaching {
 actor InMemoryVisitsCache: VisitsCaching {
     private var stored: [UUID: VisitsLocalState]
 
-    init(_ visits: CoupleVisits = CoupleVisits(), ownerUserID: UUID? = nil) {
-        stored = ownerUserID.map { [$0: VisitsLocalState(visits: visits)] } ?? [:]
+    init(_ visits: CoupleVisits = CoupleVisits(), refusals: [VisitsRefusal] = [], ownerUserID: UUID? = nil) {
+        stored = ownerUserID.map { [$0: VisitsLocalState(visits: visits, refusals: refusals)] } ?? [:]
     }
 
     func state(ownerUserID: UUID) -> VisitsLocalState {

@@ -44024,6 +44024,24 @@
         }
       }
     },
+    "visit.error.visitsNotSaved" : {
+      "comment" : "Banner when several visits this person planned or edited could not be saved later. %@ is the list of each visit's first and last day, such as '25–28 Nov and 3–5 Dec', written by the system formatters.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your visits for %@ weren't saved. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besøkene for %@ ble ikke lagret. Prøv igjen."
+          }
+        }
+      }
+    },
     "visit.list.add.action" : {
       "comment" : "Button that adds the typed item to the list of things to do together",
       "extractionState" : "manual",
