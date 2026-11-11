@@ -87,7 +87,7 @@ nonisolated struct LiveGameDrawingTransfer: GameDrawingTransferring {
         ) else {
             throw GameDrawingTransferError.downloadUnavailable
         }
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await URLSession.paeonia.data(from: url)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             throw GameDrawingTransferError.downloadUnavailable
         }

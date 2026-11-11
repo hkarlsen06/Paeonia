@@ -182,7 +182,7 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
         }
 
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await URLSession.paeonia.data(from: url)
             guard !Task.isCancelled, requested == privacyGeneration else {
                 return nil
             }

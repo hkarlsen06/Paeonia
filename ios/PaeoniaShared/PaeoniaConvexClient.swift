@@ -25,7 +25,7 @@ nonisolated final class PaeoniaConvexClient: Sendable {
 
     init(
         deploymentURL: URL,
-        session: URLSession = .shared,
+        session: URLSession = .paeonia,
         tokenProvider: @escaping TokenProvider
     ) {
         self.deploymentURL = deploymentURL

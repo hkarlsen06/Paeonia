@@ -17,7 +17,7 @@ nonisolated struct URLSessionDataExportDownloader: DataExportFileDownloading {
         to directory: URL,
         onBytes: @escaping @Sendable (Int64) -> Void
     ) async throws -> URL {
-        let (temporary, response) = try await URLSession.shared.download(
+        let (temporary, response) = try await URLSession.paeonia.download(
             from: link.url,
             delegate: BytesDelegate(onBytes: onBytes)
         )

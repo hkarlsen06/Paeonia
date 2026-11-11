@@ -115,7 +115,7 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
         }
 
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await URLSession.paeonia.data(from: url)
             guard !Task.isCancelled else {
                 return nil
             }

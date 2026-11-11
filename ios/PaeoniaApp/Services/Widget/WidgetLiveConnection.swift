@@ -41,7 +41,7 @@ class WidgetLiveConnection {
     init(
         coupleID: UUID,
         ticketProvider: @escaping TicketProvider = defaultTicketProvider,
-        session: URLSession = .shared
+        session: URLSession = .paeonia
     ) {
         self.coupleID = coupleID
         self.ticketProvider = ticketProvider

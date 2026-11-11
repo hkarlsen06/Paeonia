@@ -149,7 +149,7 @@ final class HomeMapTileStatus {
 extension HomeMapTileStatus {
     /// Checks a world tile too. The style and its source description can work while
     /// OpenFreeMap's tile server is down.
-    nonisolated static func fetchStyle(_ url: URL, session: URLSession = .shared) async throws {
+    nonisolated static func fetchStyle(_ url: URL, session: URLSession = .paeonia) async throws {
         let style = try await JSONDecoder().decode(Style.self, from: fetch(url, stage: "style", session: session))
         for source in style.sources.values where source.type == "vector" {
             guard let sourceURL = source.url else { throw URLError(.badServerResponse) }

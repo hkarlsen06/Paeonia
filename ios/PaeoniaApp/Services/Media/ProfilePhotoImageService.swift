@@ -31,7 +31,7 @@ nonisolated protocol ProfilePhotoDataDownloading: Sendable {
 
 nonisolated struct URLSessionProfilePhotoDataDownloader: ProfilePhotoDataDownloading {
     func download(from url: URL) async throws -> ProfilePhotoDownload {
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await URLSession.paeonia.data(from: url)
         return ProfilePhotoDownload(
             data: data,
             statusCode: (response as? HTTPURLResponse)?.statusCode

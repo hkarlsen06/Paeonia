@@ -193,6 +193,18 @@ custom_rules:
       partnerDisplayName that already holds the resolved name).
     severity: error
 
+  # URLSession.shared keeps responses in the system web cache on disk, which deleting content and
+  # signing out cannot clear. Backend calls and media downloads hold private content, so every request
+  # goes through URLSession.paeonia (ios/PaeoniaShared/URLSession+Paeonia.swift), which keeps none.
+  no_shared_url_session:
+    name: Shared URL session
+    regex: 'URLSession(\.shared\b|\s*=\s*\.shared\b)'
+    excluded_match_kinds: [comment, doccomment]
+    message: >-
+      URLSession.shared writes responses to the system web cache on disk, where the privacy purge cannot
+      reach them. Use URLSession.paeonia.
+    severity: error
+
   # A server field called display_name holds a person's own name. The server sends the partner's name
   # as partner_account_name next to partner_nickname, and PartnerName joins them. This catches a new
   # response model that decodes a display_name for a partner and shows it as is. Own-profile, admin and
