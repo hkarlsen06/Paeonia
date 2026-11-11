@@ -463,7 +463,7 @@ def report(state, detail):
 
 
 def hold_limit():
-    limit = float(os.environ.get("IOS_AGENT_HOLD_LIMIT_MINUTES", "45"))
+    limit = float(os.environ.get("IOS_AGENT_HOLD_LIMIT_MINUTES", "30"))
     if not (math.isfinite(limit) and limit > 0):
         raise ValueError("IOS_AGENT_HOLD_LIMIT_MINUTES must be a positive number")
     return limit * 60
