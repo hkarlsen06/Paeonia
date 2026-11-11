@@ -1,0 +1,7 @@
+#!/bin/sh
+# Landing a change to scripts/ios-agent on main installs it for every agent on
+# this Mac. install-user does nothing when the installed copy is current.
+[ "$(git branch --show-current)" = main ] && [ -x /usr/bin/python3 ] || exit 0
+scripts/ios-agent install-user >/dev/null ||
+  echo "ios-agent: not installed; run scripts/ios-agent install-user on main" >&2
+exit 0

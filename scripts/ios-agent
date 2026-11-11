@@ -6,14 +6,15 @@ import contextlib
 import dataclasses
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import re
 import plistlib
-import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 
 
@@ -28,10 +29,27 @@ DEVICE_FEATURES = {"com.apple.coredevice.feature." + name
 QUERIES = {"-version", "-help", "--help", "-list", "-showdestinations",
            "-showsdks", "-showBuildSettings", "-showBuildSettingsForIndex"}
 BUILD_ACTIONS = ("build", "clean", "archive", "test", "build-for-testing", "-resolvePackageDependencies")
+ACTIONS = BUILD_ACTIONS + ("test-without-building",)
+# Options whose value is a free name or path, which may spell an action, as in -derivedDataPath build.
+FREE_VALUES = {"-derivedDataPath", "-resultBundlePath", "-resultStreamPath", "-archivePath", "-exportPath",
+               "-exportOptionsPlist", "-project", "-workspace", "-scheme", "-target", "-configuration", "-sdk",
+               "-xctestrun", "-testPlan", "-xcconfig", "-toolchain", "-clonedSourcePackagesDirPath", "-packageCachePath"}
+# Seconds without a heartbeat before a ticket's owner counts as gone.
+STALE = 60
+# Seconds a requester that left the line while waiting keeps its place.
+RESERVED = 900
+STATE = Path.home() / ".local/state/ios-agent"
 
 
 def log(message):
-    print(f"[ios-agent] {message}", file=sys.stderr, flush=True)
+    # A closed stderr must not end the supervisor while Xcode runs.
+    with contextlib.suppress(OSError):
+        print(f"[ios-agent] {message}", file=sys.stderr, flush=True)
+
+
+def actions(arguments):
+    return [arg for index, arg in enumerate(arguments)
+            if arg in ACTIONS and (index == 0 or arguments[index - 1] not in FREE_VALUES)]
 
 
 def simulator_count():
@@ -61,7 +79,7 @@ def grant_simulator(target, directory=None, lock_root=None, ttl_seconds=None):
     slot = next(index for index, pair in enumerate(SIMULATORS) if target in pair)
     if slot == 0:
         return
-    directory = directory or Path.home() / ".local/state/ios-agent/simulators"
+    directory = directory or STATE / "simulators"
     lock_root = lock_root or Path(os.environ.get("AGENT_SIMULATOR_LOCK_ROOT", "/tmp/agent-locks"))
     owner_path = lock_root / f"simulator-{slot + 1}" / "owner"
     with simulator_guard(directory):
@@ -103,7 +121,7 @@ def simulator_reserved(udid, directory):
 
 
 def enforce_simulators(directory=None):
-    directory = directory or Path.home() / ".local/state/ios-agent/simulators"
+    directory = directory or STATE / "simulators"
     with simulator_guard(directory):
         result = subprocess.run(["/usr/bin/xcrun", "simctl", "list", "devices", "booted", "--json"],
                                 capture_output=True, text=True, timeout=15, check=True)
@@ -113,6 +131,26 @@ def enforce_simulators(directory=None):
                 if device.get("state") == "Booted" and udid in {pair[1] for pair in SIMULATORS[1:]} and not simulator_reserved(udid, directory):
                     log(f"shutting down {device['name']}; no enabled simulator reservation")
                     subprocess.run(["/usr/bin/xcrun", "simctl", "shutdown", udid], timeout=15, check=True)
+
+
+def destinations(arguments):
+    for index, arg in enumerate(arguments):
+        raw = None
+        if arg == "-destination" and index + 1 < len(arguments):
+            raw = arguments[index + 1]
+        elif arg.startswith("-destination="):
+            raw = arg.split("=", 1)[1]
+        if raw:
+            yield dict(part.split("=", 1) for part in raw.split(",") if "=" in part)
+
+
+def physical(destination):
+    """Whether a destination is a phone rather than a simulator."""
+    target = destination.get("id") or destination.get("name")
+    if any(target in pair for pair in SIMULATORS) or destination.get("platform") == "iOS Simulator":
+        return False
+    simulator_id = re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", destination.get("id", ""))
+    return destination.get("platform") == "iOS" or not simulator_id
 
 
 def build_arguments(arguments):
@@ -131,24 +169,16 @@ def build_arguments(arguments):
         if arg.startswith(("-jobs=", "-parallel-testing-enabled=", "-maximum-concurrent-test-simulator-destinations=")):
             index += 1
             continue
-        raw_destination = None
-        if arg == "-destination" and index + 1 < len(arguments):
-            raw_destination = arguments[index + 1]
-        elif arg.startswith("-destination="):
-            raw_destination = arg.split("=", 1)[1]
-        if raw_destination:
-            destination = dict(part.split("=", 1) for part in raw_destination.split(",") if "=" in part)
-            target = destination.get("id") or destination.get("name")
-            shared = any(target in pair for pair in SIMULATORS)
-            uuid_id = re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", destination.get("id", ""))
-            if target and (shared or destination.get("platform") == "iOS Simulator" or (uuid_id and destination.get("platform") != "iOS")):
-                check_simulator(target)
-            elif "name" in destination and "platform" not in destination:
-                raise ValueError("named destinations outside the shared pool require an explicit platform")
         result.append(arg)
         index += 1
+    for destination in destinations(arguments):
+        target = destination.get("id") or destination.get("name")
+        if target and not physical(destination):
+            check_simulator(target)
+        elif "name" in destination and "platform" not in destination:
+            raise ValueError("named destinations outside the shared pool require an explicit platform")
     result.extend(("-jobs", jobs))
-    if any(action in arguments for action in ("test", "test-without-building", "build-for-testing")):
+    if {"test", "test-without-building", "build-for-testing"} & set(actions(arguments)):
         result.extend(("-parallel-testing-enabled", "NO", "-maximum-concurrent-test-simulator-destinations", "1"))
     return result
 
@@ -163,68 +193,286 @@ def process_alive(pid):
         return True
 
 
-def ancestors():
-    result = {os.getpid()}
-    current = os.getppid()
-    while current > 1 and current not in result:
-        result.add(current)
-        value = subprocess.check_output(["/bin/ps", "-o", "ppid=", "-p", str(current)], text=True).strip()
-        current = int(value) if value else 0
-    return result
+def duration(seconds):
+    seconds = int(seconds)
+    return f"{seconds // 60}m{seconds % 60:02d}s" if seconds >= 60 else f"{seconds}s"
 
 
-class BuildQueue:
-    def __init__(self, directory=Path("/tmp/xcode-agent.lock")):
-        self.directory = Path(directory)
-        self.owned = False
+def requester():
+    try:
+        root = subprocess.run(["/usr/bin/git", "rev-parse", "--show-toplevel"], capture_output=True,
+                              text=True, check=True, timeout=10).stdout.strip()
+    except (subprocess.SubprocessError, OSError):
+        root = os.getcwd()
+    return "/".join(Path(root).parts[-2:])
+
+
+def locked(path):
+    try:
+        with open(path) as ticket:
+            fcntl.flock(ticket, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return True
+    except FileNotFoundError:
+        pass
+    return False
+
+
+def process_started(pid):
+    """When a process started, as text that reads the same in every caller's locale and time zone."""
+    try:
+        return subprocess.run(["/bin/ps", "-o", "lstart=", "-p", str(pid)], capture_output=True, text=True,
+                              timeout=5, env={"LC_ALL": "C", "TZ": "UTC"}).stdout.strip()
+    except subprocess.SubprocessError:
+        return ""
+
+
+@dataclasses.dataclass
+class Ticket:
+    path: Path
+    pid: int = 0
+    label: str = "?"
+    action: str = "?"
+    queued_at: float = 0
+    started_at: float = 0
+    child: int = 0
+    child_started: str = ""
+
+    def __str__(self):
+        return f"{self.label} {self.action}"
+
+    @classmethod
+    def read(cls, path):
+        try:
+            return cls(path, **json.loads(path.read_text()))
+        except (OSError, ValueError, TypeError):
+            return cls(path)
+
+
+# The queues this process holds, in the order it took them.
+HELD = []
+
+
+class Queue:
+    """First come, first served use of one machine-wide resource.
+
+    Every requester holds flock on a numbered ticket and touches it while it
+    waits or supervises Xcode. The lowest ticket runs once no other is
+    running. Numbers are never reused.
+
+    Whoever reads the line, under the guard lock, also clears it of requesters
+    that cannot take their turn. One that died or stalled while waiting keeps
+    its place as a reservation, so a run that a tool timeout killed rejoins
+    where it stood. A running ticket with no heartbeat has lost its supervisor,
+    so nobody is waiting for its result and its Xcode is stopped.
+    """
+
+    def __init__(self, resource, root=None, label="?", action="?"):
+        self.resource = resource
+        self.directory = Path(root or STATE / "queues") / resource
+        self.label = label
+        self.action = action
+        self.ticket = None
+        self.file = None
+        self.watched = {}
+        self.signalled = {}
+
+    @contextlib.contextmanager
+    def guard(self, patience=None):
+        self.directory.mkdir(parents=True, exist_ok=True)
+        with (self.directory / "guard").open("a+") as guard:
+            # A terminal stop (Ctrl-Z) that landed inside the guard would block every other requester.
+            signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTSTP})
+            try:
+                deadline = time.monotonic() + (patience or 0)
+                while True:
+                    try:
+                        fcntl.flock(guard, fcntl.LOCK_EX | (fcntl.LOCK_NB if patience else 0))
+                        break
+                    except BlockingIOError:
+                        if time.monotonic() > deadline:
+                            raise TimeoutError(f"a suspended ios-agent holds {guard.name}")
+                        time.sleep(0.05)
+                yield guard
+            finally:
+                signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGTSTP})
+
+    def stalled(self, path):
+        """Seconds this process has watched a ticket go without a heartbeat.
+
+        Counted on the monotonic clock from what this process saw, so a Mac
+        that slept does not make every ticket look abandoned on wake.
+        """
+        now = time.monotonic()
+        beat = path.stat().st_mtime_ns
+        if self.watched.get(path, (None, 0))[0] != beat:
+            self.watched[path] = (beat, now)
+        return now - self.watched[path][1]
+
+    def line(self):
+        """The live tickets in order. Call under the guard."""
+        result = []
+        for path in sorted(self.directory.glob("[0-9]*")):
+            try:
+                if path.suffix:
+                    if time.time() - path.stat().st_mtime > RESERVED:
+                        path.unlink()
+                    continue
+                ticket = Ticket.read(path)
+                stalled = self.stalled(path) if locked(path) else None
+                if stalled is None or (stalled > STALE and not ticket.started_at):
+                    self.vacate(ticket)
+                elif stalled > STALE and self.orphaned(ticket, stalled):
+                    path.unlink()
+                else:
+                    result.append(ticket)
+            except FileNotFoundError:
+                continue
+        return result
+
+    def vacate(self, ticket):
+        if ticket.started_at or ticket.label == "?":
+            ticket.path.unlink()
+        else:
+            reserved = ticket.path.with_suffix(".reserved")
+            ticket.path.rename(reserved)
+            os.utime(reserved)
+
+    def orphaned(self, ticket, stalled):
+        """Stops the Xcode of a running ticket nobody supervises. True once the ticket is to be dropped."""
+        now = time.monotonic()
+        if now - self.signalled.get(ticket.path, 0) < 1:
+            return False
+        self.signalled[ticket.path] = now
+        # The pid may belong to another process by now.
+        if ticket.child and ticket.child_started and process_started(ticket.child) == ticket.child_started:
+            with contextlib.suppress(ProcessLookupError, PermissionError):
+                os.killpg(ticket.child, signal.SIGTERM if stalled < STALE * 1.25 else signal.SIGKILL)
+            # Its flock ends with it, and the ticket then leaves the line as a dead one.
+            return False
+        # No Xcode left to stop: a suspended supervisor, or a run that holds this queue while it waits for another.
+        return stalled > STALE * 1.5
+
+    def join(self, guard):
+        if self.file:
+            self.file.close()
+        for path in sorted(self.directory.glob("*.reserved")):
+            reserved = Ticket.read(path)
+            if reserved.label != self.label:
+                continue
+            file = path.open("r+")
+            try:
+                fcntl.flock(file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                file.close()
+                continue
+            path = path.rename(path.with_suffix(""))
+            queued_at = reserved.queued_at
+            break
+        else:
+            guard.seek(0)
+            counter = guard.read()
+            taken = [int(path.stem) for path in self.directory.glob("[0-9]*")]
+            number = max(taken + [int(counter) if counter.isdigit() else 0]) + 1
+            guard.seek(0)
+            guard.truncate()
+            guard.write(str(number))
+            guard.flush()
+            path = self.directory / f"{number:012d}"
+            file = path.open("x")
+            fcntl.flock(file, fcntl.LOCK_EX)
+            queued_at = time.time()
+        self.file = file
+        self.ticket = Ticket(path, os.getpid(), self.label, self.action, queued_at)
+        self.record()
+
+    def record(self):
+        self.file.seek(0)
+        self.file.truncate()
+        json.dump({key: value for key, value in dataclasses.asdict(self.ticket).items() if key != "path"}, self.file)
+        self.file.flush()
+
+    def beat(self):
+        os.utime(self.file.fileno())
+
+    def tickets(self, patience=None):
+        with self.guard(patience):
+            return self.line()
+
+    def owned(self):
+        """Whether this process still has its place. One that stalled may have been dropped from the line."""
+        with self.guard():
+            try:
+                return os.fstat(self.file.fileno()).st_ino == self.ticket.path.stat().st_ino
+            except FileNotFoundError:
+                return False
+
+    def waiters(self):
+        return [ticket for ticket in self.tickets() if ticket.path != self.ticket.path]
+
+    def held_by_parent(self):
+        return any(Path(path).parent == self.directory and locked(path)
+                   for path in os.environ.get("IOS_AGENT_HELD", "").split(os.pathsep) if path)
 
     def __enter__(self):
-        parents = ancestors()
-        announced = False
+        announced = None
         while True:
-            try:
-                self.directory.mkdir()
-                self.owned = True
-                (self.directory / "owner").write_text(f"{os.getpid()} ios-agent xcodebuild since {time.strftime('%H:%M:%S')}\n")
-                break
-            except FileExistsError:
-                try:
-                    owner = (self.directory / "owner").read_text().split()
-                    pid = int(owner[0]) if owner else None
-                except (FileNotFoundError, ValueError):
-                    pid = None
-                if pid in parents:
+            with self.guard() as guard:
+                line = self.line()
+                # Not in the line yet, or dropped from it while this process was stalled.
+                if not self.ticket or all(ticket.path != self.ticket.path for ticket in line):
+                    self.join(guard)
+                    line = self.line()
+                mine = self.ticket.path
+                ahead = [ticket for ticket in line
+                         if ticket.path != mine and (ticket.started_at or ticket.path.name < mine.name)]
+                if not ahead:
+                    self.ticket.started_at = time.time()
+                    self.record()
                     break
-                try:
-                    stale = not process_alive(pid) if pid else time.time() - self.directory.stat().st_mtime > 60
-                    if stale:
-                        shutil.rmtree(self.directory)
-                        continue
-                except FileNotFoundError:
-                    continue
-                if not announced:
-                    log("queued behind another agent's Xcode work")
-                    announced = True
-                time.sleep(0.25)
-        # Older wrappers own the mkdir lock. This inherited descriptor also
-        # keeps the host gate held if the supervisor dies before xcodebuild.
-        self.gate = open(str(self.directory) + ".gate", "a")
-        fcntl.flock(self.gate, fcntl.LOCK_EX)
+            now = time.time()
+            runner = next((ticket for ticket in ahead if ticket.started_at), None)
+            change = (len(ahead), runner and runner.path)
+            if announced is None or change != announced[0] or now - announced[1] >= 30:
+                first = (f"running now: {runner}" + time.strftime(" since %H:%M:%S", time.localtime(runner.started_at))
+                         if runner else f"next: {ahead[0]}")
+                report("queued", f"{self.resource}: position {len(ahead) + 1} of {len(line)}; {first}")
+                announced = (change, now)
+            for queue in HELD + [self]:
+                queue.beat()
+            time.sleep(0.25)
+        HELD.append(self)
         return self
 
     def __exit__(self, *unused):
-        self.gate.close()
-        if self.owned:
-            try:
-                if (self.directory / "owner").read_text().split()[0] == str(os.getpid()):
-                    shutil.rmtree(self.directory)
-            except FileNotFoundError:
-                pass
+        HELD.remove(self)
+        self.ticket.path.unlink(missing_ok=True)
+        self.file.close()
 
 
-def supervise(command, descriptors=()):
+def report(state, detail):
+    """Tells the caller where this run is. The wrappers read the status file."""
+    if state == "queued":
+        log(f"queued for {detail}")
+    path = os.environ.get("IOS_AGENT_STATUS_FILE")
+    if path:
+        with contextlib.suppress(OSError):
+            temporary = Path(f"{path}.{os.getpid()}")
+            temporary.write_text(f"{state}\t{detail}\n")
+            temporary.replace(path)
+
+
+def hold_limit():
+    limit = float(os.environ.get("IOS_AGENT_HOLD_LIMIT_MINUTES", "45"))
+    if not (math.isfinite(limit) and limit > 0):
+        raise ValueError("IOS_AGENT_HOLD_LIMIT_MINUTES must be a positive number")
+    return limit * 60
+
+
+def supervise(command, queues=(), environment=None):
     child = None
     received = []
+    limit = hold_limit()
 
     def forward(signum, frame):
         received.append(signum)
@@ -235,43 +483,109 @@ def supervise(command, descriptors=()):
     watched = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
     previous = {sig: signal.signal(sig, forward) for sig in watched}
     try:
-        child = subprocess.Popen(command, start_new_session=True, pass_fds=descriptors)
+        child = subprocess.Popen(command, start_new_session=True, env=environment,
+                                 pass_fds=[queue.file.fileno() for queue in queues])
         if received:
             forward(received[-1], None)
+        started = beat = time.monotonic()
+        identity = process_started(child.pid)
+        for queue in queues:
+            queue.ticket.child, queue.ticket.child_started = child.pid, identity
+            with queue.guard():
+                queue.record()
+        checked = 0
         deadline = None
+        expired = False
         while child.poll() is None:
+            now = time.monotonic()
+            if now - beat >= min(1, STALE / 4):
+                beat = now
+                for queue in queues:
+                    queue.beat()
             if received:
-                deadline = deadline or time.monotonic() + 10
-                if time.monotonic() > deadline:
+                deadline = deadline or now + 10
+                if now > deadline:
                     with contextlib.suppress(ProcessLookupError):
                         os.killpg(child.pid, signal.SIGKILL)
+            elif now - started > limit and now - checked >= min(5, limit):
+                checked = now
+                if any(queue.waiters() for queue in queues):
+                    log(f"stopped after {duration(now - started)} because other agents are waiting; "
+                        "the user can raise IOS_AGENT_HOLD_LIMIT_MINUTES")
+                    expired = True
+                    forward(signal.SIGTERM, None)
             time.sleep(0.1)
+        if expired:
+            return 124
         return 128 + received[0] if received else (child.returncode if child.returncode >= 0 else 128 - child.returncode)
     finally:
+        # An error above must not give up the queue while Xcode still runs.
+        if child is not None and child.poll() is None:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(child.pid, signal.SIGTERM)
+            try:
+                child.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                with contextlib.suppress(ProcessLookupError):
+                    os.killpg(child.pid, signal.SIGKILL)
         for sig, handler in previous.items():
             signal.signal(sig, handler)
 
 
-def xcodebuild(arguments, executable="/usr/bin/xcodebuild", queue_directory=Path("/tmp/xcode-agent.lock")):
+def resources(arguments):
+    """The queues an invocation holds, in the one order every invocation takes them.
+
+    Phones come before the build queue, so no run keeps compiles waiting while
+    it waits for a phone.
+    """
+    requested = set(actions(arguments))
+    devices = set()
+    if requested & {"test", "test-without-building"}:
+        for destination in destinations(arguments):
+            if physical(destination) and destination.get("platform", "iOS") == "iOS":
+                if "id" not in destination:
+                    raise ValueError("name a phone by id, so test runs on it wait for each other; "
+                                     "ios-agent devices lists the ids")
+                devices.add("device-" + re.sub(r"[^A-Za-z0-9._-]", "_", destination["id"]))
+    return sorted(devices) + ([] if requested == {"test-without-building"} else ["build"])
+
+
+def xcodebuild(arguments, executable="/usr/bin/xcodebuild", queue_root=None):
     command = [executable] if isinstance(executable, str) else list(executable)
-    if any(arg in QUERIES for arg in arguments) and not any(
-        action in arguments for action in BUILD_ACTIONS + ("test-without-building",)
-    ):
+    if any(arg in QUERIES for arg in arguments) and not actions(arguments):
         os.execv(command[0], command + arguments)
     arguments = build_arguments(arguments)
     nice = int(os.environ.get("XCODE_AGENT_NICE", "10"))
     if not 0 <= nice <= 19:
         raise ValueError("XCODE_AGENT_NICE must be from 0 to 19")
-    if "test-without-building" in arguments and not any(action in arguments for action in BUILD_ACTIONS):
-        # Running prebuilt tests compiles nothing, and the simulator lock
-        # already serializes simulator use. Queueing them let a long-lived
-        # runner, such as agent-device's, block every build on the Mac.
-        os.nice(max(0, nice - os.getpriority(os.PRIO_PROCESS, 0)))
-        return supervise(command + arguments)
-    with BuildQueue(queue_directory) as queue:
-        os.nice(max(0, nice - os.getpriority(os.PRIO_PROCESS, 0)))
-        log(f"running Xcode with {arguments[arguments.index('-jobs') + 1]} workers")
-        return supervise(command + arguments, (queue.gate.fileno(),))
+    hold_limit()
+    label = requester()
+    action = (actions(arguments) or ["build"])[0]
+    arrived = time.time()
+    needed = resources(arguments)
+    while True:
+        with contextlib.ExitStack() as stack:
+            queues = []
+            for resource in needed:
+                queue = Queue(resource, queue_root, label, action)
+                # A build script that runs xcodebuild must not wait behind its own build.
+                if not queue.held_by_parent():
+                    queues.append(stack.enter_context(queue))
+            if all(queue.owned() for queue in queues):
+                return run(command + arguments, queues, nice, arrived)
+
+
+def run(command, queues, nice, arrived):
+    os.nice(max(0, nice - os.getpriority(os.PRIO_PROCESS, 0)))
+    waited = time.time() - arrived
+    log(f"running Xcode with {command[command.index('-jobs') + 1]} workers"
+        + (f" after {duration(waited)} queued" if waited >= 1 else ""))
+    report("running", str(int(time.time())))
+    environment = dict(os.environ)
+    environment.pop("IOS_AGENT_STATUS_FILE", None)
+    environment["IOS_AGENT_HELD"] = os.pathsep.join(
+        [environment.get("IOS_AGENT_HELD", "")] + [str(queue.ticket.path) for queue in queues]).strip(os.pathsep)
+    return supervise(command, queues, environment)
 
 
 def xcrun(arguments):
@@ -355,36 +669,166 @@ def discover():
                             lambda udid: device_json(["device", "info", "lockState", "--device", udid]))
 
 
-def install_user():
-    home = Path.home()
+def status(queue_root=None, lock_root=None, library=None):
+    """Who holds and who waits for everything agents share on this Mac."""
+    now = time.time()
+    queue_root = Path(queue_root or STATE / "queues")
+    queues = {"build": []}
+    for directory in [queue_root / "build"] + sorted(queue_root.glob("device-*")):
+        try:
+            queues[directory.name] = Queue(directory.name, queue_root).tickets(patience=2)
+        except TimeoutError:
+            queues[directory.name] = None
+    # A run holds a queue without running while it waits for its other one.
+    queues = {name: tickets and [{"label": ticket.label, "action": ticket.action, "pid": ticket.pid,
+                                  "state": "running" if ticket.child else "holding" if ticket.started_at else "waiting",
+                                  "seconds": int(now - (ticket.started_at or ticket.queued_at))}
+                                 for ticket in tickets]
+              for name, tickets in queues.items() if tickets != [] or name == "build"}
+    lock_root = Path(lock_root or os.environ.get("AGENT_SIMULATOR_LOCK_ROOT", "/tmp/agent-locks"))
+    simulators = []
+    for slot, (name, unused) in enumerate(SIMULATORS):
+        simulator = {"name": name, "holder": None}
+        try:
+            worktree, pid, used = (lock_root / ("simulator" if slot == 0 else f"simulator-{slot + 1}") / "owner").read_text().strip().split("|")
+            simulator.update(holder="/".join(Path(worktree).parts[-2:]), kind="process" if pid else "session",
+                             minutes=int((now - int(used)) / 60))
+        except (OSError, ValueError):
+            pass
+        simulators.append(simulator)
+    library = Path(library or Path.home() / ".local/lib/ios-agent")
+    controller = {"repo": None, "commit": None, "current": False}
+    try:
+        controller.update(json.loads((library / "source.json").read_text()))
+        latest = subprocess.run(["/usr/bin/git", "-C", controller["repo"], "show", "main:scripts/ios-agent"],
+                                capture_output=True, check=True, timeout=10).stdout
+        controller["current"] = latest == (library / "ios-agent").read_bytes()
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+        pass
+    return {"queues": queues, "simulators": simulators, "controller": controller}
+
+
+def print_status(document):
+    for name, tickets in document["queues"].items():
+        if tickets is None:
+            print(f"{name}: cannot read the line, because a suspended ios-agent holds its guard file")
+        elif not tickets:
+            print(f"{name}: idle")
+        for ticket in tickets or []:
+            print(f"{name}: {ticket['label']} {ticket['action']}, {ticket['state']} {duration(ticket['seconds'])}")
+    for simulator in document["simulators"]:
+        if simulator["holder"] is None:
+            print(f"{simulator['name']}: free")
+        elif simulator["kind"] == "session":
+            print(f"{simulator['name']}: {simulator['holder']}, session last used {simulator['minutes']} min ago")
+        else:
+            print(f"{simulator['name']}: {simulator['holder']}, in use for {simulator['minutes']} min")
+    controller = document["controller"]
+    if controller["current"]:
+        print(f"controller: {controller['commit'][:8]} from {controller['repo']}")
+    else:
+        print("controller: differs from scripts/ios-agent on Paeonia main; "
+              "run scripts/ios-agent install-user in that checkout")
+
+
+def clean_environment():
+    """The environment for git and for the tests, without what a git hook or a user override adds."""
+    return {key: value for key, value in os.environ.items() if not key.startswith(("GIT_", "XCODE_", "IOS_AGENT_"))}
+
+
+def converge(path, content, executable=False):
+    if path.exists() and path.read_bytes() == content:
+        return False
+    temporary = path.with_name(f"{path.name}-{os.getpid()}")
+    temporary.write_bytes(content)
+    if executable:
+        temporary.chmod(0o755)
+    temporary.replace(path)
+    return True
+
+
+def install_controller(origin, library, checks, replace):
+    """Installs the controller that HEAD of main commits, after its own tests pass.
+
+    Every agent on this Mac runs the installed copy, so only bytes that are
+    committed, tested and not older than the installed ones get in. Older is
+    judged by content: the installed bytes must appear in this main's history
+    of the file, which an amended or rebased commit still satisfies.
+    """
+    def git(*arguments):
+        return subprocess.run(["/usr/bin/git", "-C", str(origin.parent), *arguments], capture_output=True,
+                              check=True, timeout=30, env=clean_environment()).stdout
+
+    source = library / "ios-agent"
+    # One install at a time, so a slower one cannot finish over a newer one.
+    with (library / "install.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            commit = git("rev-parse", "HEAD").decode().strip()
+            controller = git("show", f"{commit}:./{origin.name}")
+            on_main = git("branch", "--show-current").decode().strip() == "main"
+            record = json.dumps({"repo": git("rev-parse", "--show-toplevel").decode().strip(), "commit": commit}).encode()
+            if source.exists() and source.read_bytes() == controller:
+                if on_main:
+                    converge(library / "source.json", record)
+                return
+            suite = git("show", f"{commit}:./test-ios-agent.py")
+            if source.exists() and not replace:
+                installed = git("hash-object", "--no-filters", str(source)).decode().strip()
+                try:
+                    known = git("log", "-1", "--format=%H", f"--find-object={installed}", commit, "--", origin.name)
+                except subprocess.CalledProcessError:
+                    known = b""
+        except (subprocess.SubprocessError, OSError):
+            raise ValueError("refusing to install: scripts/ios-agent and its tests must be committed in a git checkout")
+        if not on_main:
+            raise ValueError("refusing to install: the controller installs only from a checkout of main")
+        if source.exists() and not replace and not known.strip():
+            raise ValueError("refusing to install: the installed controller is not in this main's history of "
+                             "scripts/ios-agent, so this one may be older. If this main is the right one, run "
+                             "scripts/ios-agent install-user --replace")
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "ios-agent").write_bytes(controller)
+            (Path(directory) / "test-ios-agent.py").write_bytes(suite)
+            try:
+                passed = subprocess.run(checks or ["/usr/bin/python3", "test-ios-agent.py"], cwd=directory,
+                                        capture_output=True, timeout=600, env=clean_environment()).returncode == 0
+            except subprocess.TimeoutExpired:
+                passed = False
+        if not passed:
+            raise ValueError("refusing to install: scripts/test-ios-agent.py fails for the committed controller")
+        converge(source, controller, executable=True)
+        converge(library / "source.json", record)
+
+
+def install_user(home=None, launchd=True, checks=None, replace=False):
+    home = Path(home or Path.home())
     library = home / ".local/lib/ios-agent"
     library.mkdir(parents=True, exist_ok=True)
     source = library / "ios-agent"
-    if source.resolve() != Path(__file__).resolve():
-        temporary = library / f"ios-agent-{os.getpid()}"
-        shutil.copy2(__file__, temporary)
-        temporary.replace(source)
+    origin = Path(__file__).resolve()
+    if origin != source.resolve():
+        install_controller(origin, library, checks, replace)
     binary = home / ".local/bin/ios-agent"
     binary.parent.mkdir(parents=True, exist_ok=True)
-    binary.write_text(f'#!/bin/sh\nexec /usr/bin/python3 "{source}" "$@"\n')
-    binary.chmod(0o755)
+    converge(binary, f'#!/bin/sh\nexec /usr/bin/python3 "{source}" "$@"\n'.encode(), executable=True)
     for name in ("xcodebuild", "xcrun"):
-        launcher = library / name
-        launcher.write_text(f'#!/bin/sh\nexec /usr/bin/python3 "{source}" {name} "$@"\n')
-        launcher.chmod(0o755)
+        converge(library / name, f'#!/bin/sh\nexec /usr/bin/python3 "{source}" {name} "$@"\n'.encode(), executable=True)
     launch_agent = home / "Library/LaunchAgents/no.hkarlsen.ios-agent.plist"
     launch_agent.parent.mkdir(parents=True, exist_ok=True)
     log_path = home / "Library/Logs/ios-agent.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    launch_agent.write_bytes(plistlib.dumps({
+    changed = converge(launch_agent, plistlib.dumps({
         "Label": "no.hkarlsen.ios-agent",
         "ProgramArguments": ["/usr/bin/python3", str(source), "enforce-simulators"],
         "RunAtLoad": True, "StartInterval": 30,
         "StandardOutPath": str(log_path), "StandardErrorPath": str(log_path),
     }))
-    domain = f"gui/{os.getuid()}"
-    subprocess.run(["/bin/launchctl", "bootout", domain + "/no.hkarlsen.ios-agent"], capture_output=True)
-    subprocess.run(["/bin/launchctl", "bootstrap", domain, str(launch_agent)], check=True)
+    if launchd:
+        service = f"gui/{os.getuid()}/no.hkarlsen.ios-agent"
+        if changed or subprocess.run(["/bin/launchctl", "print", service], capture_output=True).returncode != 0:
+            subprocess.run(["/bin/launchctl", "bootout", service], capture_output=True)
+            subprocess.run(["/bin/launchctl", "bootstrap", f"gui/{os.getuid()}", str(launch_agent)], check=True)
     print(library)
 
 
@@ -402,12 +846,21 @@ def main(arguments=None):
         enforce_simulators()
         return 0
     parser = argparse.ArgumentParser(description="Shared Mac build queue and live iPhone discovery")
-    parser.add_argument("command", choices=("devices", "destination", "physical-destination", "install-user"))
+    parser.add_argument("command", choices=("devices", "destination", "physical-destination", "install-user", "status"))
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--simulator", action="store_true")
+    parser.add_argument("--replace", action="store_true",
+                        help="install-user: replace an installed controller that is not in this main's history")
     options = parser.parse_args(arguments)
     if options.command == "install-user":
-        install_user()
+        install_user(replace=options.replace)
+        return 0
+    if options.command == "status":
+        document = status()
+        if options.json:
+            print(json.dumps(document, indent=2))
+        else:
+            print_status(document)
         return 0
     devices = []
     if not options.simulator:
@@ -438,3 +891,5 @@ if __name__ == "__main__":
     except (ValueError, OSError) as error:
         log(str(error))
         sys.exit(2)
+    except KeyboardInterrupt:
+        sys.exit(130)
