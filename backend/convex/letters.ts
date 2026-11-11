@@ -96,25 +96,23 @@ async function letterPage(
       const live = q.eq("couple_id", coupleId).eq("author_user_id", userId).eq("deleted_at", undefined);
       return before === null ? live : live.lte("created_at", before.at);
     });
-  const page: Doc<"letters">[] = [];
-  let hasMore = false;
+  const page: NonNullable<ReturnType<typeof letterForViewer>>[] = [];
+  let next_before: LetterCursor | null = null;
   for await (const row of rows.order("desc")) {
     const at = (list === "received" ? row.delivered_at : row.created_at) ?? "";
     // Letters that share the cursor's millisecond sort by id, so skip the ones already sent.
     if (before !== null && at === before.at && row.id >= before.id) continue;
+    // The cursor names the last letter on the page, so a letter hidden from the reader never reaches it.
+    const letter = letterForViewer(row, userId);
+    if (letter === null) continue;
     if (page.length === limit) {
-      hasMore = true;
+      const last = page[limit - 1];
+      next_before = { at: (list === "received" ? last.delivered_at : last.created_at) ?? "", id: last.id };
       break;
     }
-    page.push(row);
+    page.push(letter);
   }
-  const last = page.at(-1);
-  return {
-    letters: page.flatMap((row) => letterForViewer(row, userId) ?? []),
-    next_before: hasMore && last
-      ? { at: (list === "received" ? last.delivered_at : last.created_at) ?? "", id: last.id }
-      : null,
-  };
+  return { letters: page, next_before };
 }
 
 /**

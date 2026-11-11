@@ -515,7 +515,15 @@ describe("a relationship that ended", () => {
 });
 
 describe("bounded reads", () => {
-  type Row = { id: string; author: TestUser; recipient: TestUser; state: "sealed" | "delivered" | "opened"; at: string; deleted?: boolean };
+  type Row = {
+    id: string;
+    author: TestUser;
+    recipient: TestUser;
+    state: "sealed" | "delivered" | "opened";
+    at: string;
+    deleted?: boolean;
+    hidden?: boolean;
+  };
   async function insertLetters(t: TestConvex, couple: TestCouple, rows: Row[]) {
     await t.run(async (ctx) => {
       for (const row of rows) {
@@ -532,7 +540,7 @@ describe("bounded reads", () => {
           ...(row.state === "sealed" ? {} : { delivered_at: row.at }),
           ...(row.state === "opened" ? { opened_at: row.at } : {}),
           ...(row.deleted ? { deleted_at: row.at } : {}),
-          moderation_status: "visible",
+          moderation_status: row.hidden ? "hidden" : "visible",
           created_at: row.at,
         });
       }
@@ -581,6 +589,40 @@ describe("bounded reads", () => {
       expect(letter).toMatchObject({ body: null, template_key: null, created_at: null, media_asset_id: null });
     }
     expect((await failure(olderLetters(first, "drafts" as "sent", { at: NOW, id: newUuid() }))).code).toBe("23514");
+  });
+
+  test("a page and its cursor hold only letters the reader is shown", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { first, second } = couple;
+    const minute = (i: number) => new Date(Date.parse("2026-11-01T00:00:00.000Z") + i * 60_000).toISOString();
+    const rows: Row[] = Array.from({ length: 60 }, (_, i): Row => ({
+      id: newUuid(),
+      author: second,
+      recipient: first,
+      state: "opened",
+      at: minute(i),
+      // Every third letter was hidden after a report, so pages end on hidden rows.
+      hidden: i % 3 === 0,
+    }));
+    await insertLetters(t, couple, rows);
+    const hidden = rows.filter((row) => row.hidden);
+    const shown = rows.filter((row) => !row.hidden).sort((a, b) => (a.at < b.at ? 1 : -1)).map((row) => row.id);
+
+    let page = (await getLetters(first)).received;
+    const letters = [...page.letters];
+    const cursors = [page.next_before];
+    while (page.next_before) {
+      page = await olderLetters(first, "received", page.next_before, 4);
+      letters.push(...page.letters);
+      cursors.push(page.next_before);
+    }
+    expect(letters.map((letter) => letter.id)).toEqual(shown);
+    const seen = JSON.stringify(cursors);
+    for (const row of hidden) {
+      expect(seen).not.toContain(row.id);
+      expect(seen).not.toContain(row.at);
+    }
   });
 
   test("the waiting letters and the badge stop at 50, and deleted letters are not counted", async () => {
