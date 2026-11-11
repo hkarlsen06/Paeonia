@@ -12,12 +12,20 @@ struct HomeVisitCard: View {
     private static let iconSize: CGFloat = 32
 
     @State private var isDetailPresented = false
-    /// Refreshed at midnight so the count moves on, and a hidden question comes back, while the app stays open.
+    /// Refreshed at midnight so the count moves on, and a hidden question comes back, while the app
+    /// stays open, and when the streak starts or stops resting.
     @State private var now = Date()
 
     var body: some View {
         content
             .onCalendarDayChange { now = Date() }
+            .task(id: streak.changeDates) {
+                for date in streak.changeDates where date > Date() {
+                    try? await Task.sleep(for: .seconds(date.timeIntervalSinceNow))
+                    guard !Task.isCancelled else { return }
+                    now = Date()
+                }
+            }
             .sheet(isPresented: $isDetailPresented) {
                 VisitDetailView(visits: visits)
                     .analyticsScreen("visit_detail")
@@ -28,24 +36,24 @@ struct HomeVisitCard: View {
     @ViewBuilder
     private var content: some View {
         let today = LockScreenCalendarDate(containing: now, in: .current)
-        switch visits.homeCard(on: today, streak: streak) {
+        switch visits.homeCard(at: now, streak: streak) {
         case .hidden:
             EmptyView()
         case let .visit(visit):
             cardButton {
                 visitCard(
                     headline: visit.phase(on: today).headline ?? "",
-                    detail: [visit.place?.nameAndCity, visit.dateRangeText()].compactMap(\.self).joined(separator: " · ")
+                    details: [visit.place?.nameAndCity, visit.dateRangeText()]
                 )
             }
         case let .together(until, place):
             cardButton {
                 visitCard(
                     headline: until.map { Visit.togetherUntilTitle($0) } ?? String(localized: .homeVisitTogetherToday),
-                    detail: [
+                    details: [
                         place?.nameAndCity,
-                        streak.restsWhileTogether(on: today) ? String(localized: .streakTogetherResting) : nil,
-                    ].compactMap(\.self).joined(separator: " · ")
+                        streak.resolved(at: now).restsWhileTogether ? String(localized: .streakTogetherResting) : nil,
+                    ]
                 )
             }
         case .prompt:
@@ -63,8 +71,9 @@ struct HomeVisitCard: View {
 
     /// The headline with one line under it, two lines in all, so the tiles under it stay on the
     /// first screen.
-    private func visitCard(headline: String, detail: String) -> some View {
-        PaeoniaCard(padding: PaeoniaSpacing.space12) {
+    private func visitCard(headline: String, details: [String?]) -> some View {
+        let detail = details.compactMap(\.self).joined(separator: " · ")
+        return PaeoniaCard(padding: PaeoniaSpacing.space12) {
             HStack(spacing: PaeoniaSpacing.space12) {
                 icon
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {

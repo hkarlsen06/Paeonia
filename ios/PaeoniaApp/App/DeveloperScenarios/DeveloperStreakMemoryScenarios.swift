@@ -41,11 +41,9 @@
       }
       if scenario == .visitStreakSheet {
         // Together from yesterday to tomorrow, so the streak needs both partners again the day after.
-        let day = { (offset: Int) in
-          LockScreenCalendarDate(containing: .now.addingTimeInterval(Double(offset) * 86_400), in: .current)
-        }
-        streak.endsAt = .now.addingTimeInterval(3 * 86_400)
-        streak.restDays = day(-1)...day(1)
+        let today = Calendar.current.startOfDay(for: .now)
+        streak.endsAt = today.addingTimeInterval(3 * 86_400)
+        streak.rest = today.addingTimeInterval(-86_400)..<today.addingTimeInterval(2 * 86_400)
       }
       return streak
     }

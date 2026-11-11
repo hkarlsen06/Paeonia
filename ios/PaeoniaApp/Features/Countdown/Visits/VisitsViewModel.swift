@@ -119,12 +119,12 @@ final class VisitsViewModel {
         if isActive { show(local.refusals) }
     }
 
-    func homeCard(on today: LockScreenCalendarDate, streak: StreakPillState) -> HomeVisitCardState {
+    func homeCard(at now: Date, streak: StreakPillState, calendar: Calendar = .current) -> HomeVisitCardState {
         guard hasLoaded else { return .hidden }
         return HomeVisitCardState(
             visits: state,
-            on: today,
-            restsTogether: streak.restsWhileTogether(on: today),
+            on: LockScreenCalendarDate(containing: now, in: calendar),
+            restsTogether: streak.resolved(at: now).restsWhileTogether,
             promptReturnDay: promptReturnDay
         )
     }

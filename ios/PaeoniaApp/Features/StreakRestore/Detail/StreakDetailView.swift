@@ -167,8 +167,7 @@ struct StreakDetailView: View {
             VStack(spacing: PaeoniaSpacing.space16) {
                 if streak.currentCount > 0, let endsAt = streak.endsAt {
                     TimelineView(.periodic(from: .now, by: 60)) { timeline in
-                        let today = LockScreenCalendarDate(containing: timeline.date, in: .current)
-                        if streak.restsWhileTogether(on: today) {
+                        if streak.restsWhileTogether(at: timeline.date) {
                             restingLabel
                         } else if endsAt > timeline.date {
                             Label {

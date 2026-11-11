@@ -199,49 +199,50 @@ struct CoupleStreakTests {
 
     // MARK: - Together days
 
-    @Test func theStreakRestsOnTheServersTogetherDaysByThisPhonesCalendar() throws {
-        let pill = StreakPillState(try Self.decode(count: 5, togetherFrom: "2026-11-07", togetherUntil: "2026-11-09"))
-        let oslo = Self.calendar(try #require(TimeZone(identifier: "Europe/Oslo")))
-        // 22:30Z on 2026-11-09 is 23:30 in Oslo, the last day together.
-        let lastDay = Date(timeIntervalSince1970: 1_794_263_400)
+    /// The server's rest for a Los Angeles and Oslo couple whose visit starts on 2026-10-10: from
+    /// Los Angeles midnight, when the day before the visit has ended for both, to Los Angeles
+    /// midnight after its last day.
+    private static let restJSON =
+        #""rest_starts_at":"2026-10-10T07:00:00.000Z","rest_ends_at":"2026-10-14T07:00:00.000Z""#
 
-        #expect(pill.resolved(at: lastDay, calendar: oslo).restsWhileTogether)
-        // An hour later it is the first day apart in Oslo, from the same cached streak.
-        #expect(!pill.resolved(at: lastDay.addingTimeInterval(3_600), calendar: oslo).restsWhileTogether)
+    @Test func aCachedStreakRestsFromTheServersStartToItsEndWhateverThePhonesDay() throws {
+        let pill = StreakPillState(try Self.decode(count: 20, rest: Self.restJSON))
+        // 06:05Z is 08:05 on the visit's first day in Oslo and still 2026-10-09 in Los Angeles.
+        let osloMorning = try #require(ISO8601DateFormatter().date(from: "2026-10-10T06:05:00Z"))
+        let restStart = try #require(ISO8601DateFormatter().date(from: "2026-10-10T07:00:00Z"))
+        let restEnd = try #require(ISO8601DateFormatter().date(from: "2026-10-14T07:00:00Z"))
+
+        #expect(!pill.resolved(at: osloMorning).restsWhileTogether)
+        #expect(pill.resolved(at: restStart).restsWhileTogether)
+        #expect(pill.resolved(at: restEnd.addingTimeInterval(-1)).restsWhileTogether)
+        #expect(!pill.resolved(at: restEnd).restsWhileTogether)
+        #expect(pill.changeDates.contains(restStart) && pill.changeDates.contains(restEnd))
     }
 
     @Test func aBrokenStreakOnATogetherDayDoesNotRest() throws {
         let streak = try Self.decode(
-            count: 0, togetherFrom: "2026-11-09", togetherUntil: "2026-11-12",
-            restorableCount: 18, saveDeadline: "2026-11-10T23:00:00.000Z"
+            count: 0, rest: Self.restJSON, restorableCount: 18, saveDeadline: "2026-10-12T07:00:00.000Z"
         )
-        let day = LockScreenCalendarDate(year: 2_026, month: 11, day: 10)
+        let during = try #require(ISO8601DateFormatter().date(from: "2026-10-11T12:00:00Z"))
 
-        #expect(!streak.restsWhileTogether(on: day))
-        #expect(!StreakPillState(streak).restsWhileTogether(on: day))
-    }
-
-    private static func calendar(_ timeZone: TimeZone) -> Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
-        return calendar
+        #expect(!streak.restsWhileTogether(at: during))
+        #expect(!StreakPillState(streak).resolved(at: during).restsWhileTogether)
     }
 
     private static func decode(
         count: Int,
-        togetherFrom: String,
-        togetherUntil: String,
+        rest: String,
         restorableCount: Int = 0,
         saveDeadline: String? = nil
     ) throws -> CoupleStreak {
         let data = Data(
             """
-            {"current_count":\(count),"longest_count":18,"last_qualified_date":"2026-11-06",
+            {"current_count":\(count),"longest_count":20,"last_qualified_date":"2026-10-08",
             "restore_available":false,"restorable_count":\(restorableCount),"restore_deadline":null,
             "current_user_contributed_today":false,"partner_contributed_today":false,
             "freeze_available":false,"freeze_ready_at":null,"freeze_saved_streak":false,
             "next_activity_deadline_at":null,"save_deadline":\(saveDeadline.map { "\"\($0)\"" } ?? "null"),
-            "saved_on":null,"together_from":"\(togetherFrom)","together_until":"\(togetherUntil)"}
+            "saved_on":null,\(rest)}
             """.utf8
         )
         return try PaeoniaConvexClient.decoder.decode(CoupleStreakRow.self, from: data).streak

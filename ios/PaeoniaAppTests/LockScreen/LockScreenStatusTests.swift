@@ -21,24 +21,22 @@ struct LockScreenStatusTests {
         #expect(after?.count == 7)
     }
 
-    @Test func streakRestsOnTheTogetherDaysAndNotOnTheFirstDayApart() throws {
-        var oslo = Calendar(identifier: .gregorian)
-        oslo.timeZone = try #require(TimeZone(identifier: "Europe/Oslo"))
+    @Test func streakRestsFromTheServersStartToItsEnd() {
+        let start = Date(timeIntervalSince1970: 1_794_177_000)
+        let end = start.addingTimeInterval(3 * 86_400)
         let snapshot = Support.snapshot(
             streak: .init(
                 currentCount: 7,
                 meActiveToday: false,
                 partnerActiveToday: false,
-                togetherFrom: LockScreenCalendarDate(year: 2_026, month: 11, day: 7),
-                togetherUntil: LockScreenCalendarDate(year: 2_026, month: 11, day: 9)
+                restStartsAt: start,
+                restEndsAt: end
             )
         )
-        // 22:30Z on 2026-11-09 is 23:30 in Oslo.
-        let lastDay = Date(timeIntervalSince1970: 1_794_263_400)
 
-        #expect(LockScreenStreak(snapshot, at: lastDay, calendar: oslo)?.restsWhileTogether == true)
-        let firstDayApart = lastDay.addingTimeInterval(3_600)
-        #expect(LockScreenStreak(snapshot, at: firstDayApart, calendar: oslo)?.restsWhileTogether == false)
+        #expect(LockScreenStreak(snapshot, at: start.addingTimeInterval(-1))?.restsWhileTogether == false)
+        #expect(LockScreenStreak(snapshot, at: start)?.restsWhileTogether == true)
+        #expect(LockScreenStreak(snapshot, at: end)?.restsWhileTogether == false)
     }
 
     @Test func questionAnswersResetWhenTheCoupleDayEnds() {

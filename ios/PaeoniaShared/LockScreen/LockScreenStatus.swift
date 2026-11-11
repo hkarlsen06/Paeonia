@@ -38,11 +38,11 @@ nonisolated struct LockScreenStreak: Equatable, Sendable {
 
     let count: Int
     let ring: Ring
-    /// The streak needs nothing on this phone's day because the partners are together.
+    /// The streak needs nothing at this time because the partners are together.
     let restsWhileTogether: Bool
 
     /// After the couple's day ends, nobody has been active yet in the new day.
-    init?(_ snapshot: LockScreenSnapshot, at date: Date, calendar: Calendar = .current) {
+    init?(_ snapshot: LockScreenSnapshot, at date: Date) {
         guard let streak = snapshot.streak else { return nil }
         let isToday = snapshot.isInCoupleDay(at: date)
         count = streak.currentCount
@@ -50,9 +50,8 @@ nonisolated struct LockScreenStreak: Equatable, Sendable {
             meActive: isToday && streak.meActiveToday,
             partnerActive: isToday && streak.partnerActiveToday
         )
-        let today = LockScreenCalendarDate(containing: date, in: calendar)
-        restsWhileTogether = count >= 1 && (streak.togetherFrom.map { $0 <= today } ?? false)
-            && (streak.togetherUntil.map { today <= $0 } ?? false)
+        restsWhileTogether = count >= 1 && (streak.restStartsAt.map { $0 <= date } ?? false)
+            && (streak.restEndsAt.map { date < $0 } ?? false)
     }
 }
 

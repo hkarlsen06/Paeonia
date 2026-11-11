@@ -46,11 +46,10 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     /// The couple's local date (`yyyy-MM-dd`) on which both partners last brought
     /// a broken streak back for free, or `nil` if they never have.
     var savedOn: String?
-    /// The days in a row the streak rests because the partners are together, as the
-    /// server counts them. They are the run that holds today, or else the next planned one.
-    /// The phone checks its own day against them, so a cached streak still tells a
-    /// resting day from the first day apart.
-    var restDays: ClosedRange<LockScreenCalendarDate>?
+    /// When the streak rests because the partners are together, from the server: the
+    /// resting days that hold now, or else the next ones. The phone compares the time with
+    /// it, so a cached streak still tells a resting day from the first day apart.
+    var rest: Range<Date>?
 
     /// True while both partners can still bring a broken streak back for free by
     /// doing one small thing today. Recomputed from the deadline, so it ends the
@@ -66,10 +65,10 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
         restorableCount > 0 && !isSavable && (restoreDeadline.map { $0 > .now } ?? false)
     }
 
-    /// True when a live streak needs nothing on `today` because the partners are together.
+    /// True when a live streak needs nothing at `now` because the partners are together.
     /// A broken streak never rests.
-    func restsWhileTogether(on today: LockScreenCalendarDate) -> Bool {
-        currentCount > 0 && restDays?.contains(today) == true
+    func restsWhileTogether(at now: Date) -> Bool {
+        currentCount > 0 && rest?.contains(now) == true
     }
 
     /// The save day to celebrate: the day both partners brought the streak back

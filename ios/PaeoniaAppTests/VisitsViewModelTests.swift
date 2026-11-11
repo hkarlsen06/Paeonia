@@ -167,8 +167,10 @@ struct VisitsViewModelTests {
 
         await visits.hidePrompt(now: lateEvening, calendar: oslo)
 
-        #expect(visits.homeCard(on: LockScreenCalendarDate(year: 2_026, month: 11, day: 8)) == .hidden)
-        #expect(visits.homeCard(on: LockScreenCalendarDate(year: 2_026, month: 11, day: 9)) == .prompt)
+        let lastHiddenNoon = try #require(ISO8601DateFormatter().date(from: "2026-11-08T11:00:00Z"))
+        let returnNoon = try #require(ISO8601DateFormatter().date(from: "2026-11-09T11:00:00Z"))
+        #expect(visits.homeCard(at: lastHiddenNoon, streak: .hidden, calendar: oslo) == .hidden)
+        #expect(visits.homeCard(at: returnNoon, streak: .hidden, calendar: oslo) == .prompt)
         let returnDay = await cache.state(ownerUserID: owner).promptReturnDay
         #expect(returnDay == LockScreenCalendarDate(year: 2_026, month: 11, day: 9))
     }

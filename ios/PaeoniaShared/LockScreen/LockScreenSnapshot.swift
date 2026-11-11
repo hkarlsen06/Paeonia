@@ -207,16 +207,16 @@ nonisolated struct LockScreenSnapshot: Codable, Equatable, Sendable {
         var currentCount: Int
         var meActiveToday: Bool
         var partnerActiveToday: Bool
-        /// The days in a row the streak rests because the partners are together, or nil.
-        var togetherFrom: LockScreenCalendarDate?
-        var togetherUntil: LockScreenCalendarDate?
+        /// When the streak rests because the partners are together, or nil.
+        var restStartsAt: Date?
+        var restEndsAt: Date?
 
         enum CodingKeys: String, CodingKey {
             case currentCount = "current_count"
             case meActiveToday = "me_active_today"
             case partnerActiveToday = "partner_active_today"
-            case togetherFrom = "together_from"
-            case togetherUntil = "together_until"
+            case restStartsAt = "rest_starts_at"
+            case restEndsAt = "rest_ends_at"
         }
     }
 

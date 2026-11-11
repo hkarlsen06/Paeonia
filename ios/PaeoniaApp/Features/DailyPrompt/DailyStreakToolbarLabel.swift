@@ -20,8 +20,8 @@ struct StreakPillState: Equatable {
     /// The live streak ends within `atRiskLeadTime`. Set by `resolved(at:)`.
     private(set) var isAtRisk = false
     var isFrozen = false
-    /// The days the streak rests because the partners are together (`CoupleStreak.restDays`).
-    var restDays: ClosedRange<LockScreenCalendarDate>?
+    /// When the streak rests because the partners are together (`CoupleStreak.rest`).
+    var rest: Range<Date>?
     /// A live streak that rests today because the partners are together. Set by `resolved(at:)`.
     private(set) var restsWhileTogether = false
     private var isAvailable: Bool
@@ -45,7 +45,7 @@ struct StreakPillState: Equatable {
         restoreDeadline: Date? = nil,
         endsAt: Date? = nil,
         isFrozen: Bool = false,
-        restDays: ClosedRange<LockScreenCalendarDate>? = nil,
+        rest: Range<Date>? = nil,
         isAvailable: Bool = true
     ) {
         self.count = count
@@ -56,7 +56,7 @@ struct StreakPillState: Equatable {
         self.restoreDeadline = restoreDeadline
         self.endsAt = endsAt
         self.isFrozen = isFrozen
-        self.restDays = restDays
+        self.rest = rest
         self.isAvailable = isAvailable
     }
 
@@ -69,7 +69,7 @@ struct StreakPillState: Equatable {
         restoreDeadline = streak.restoreDeadline
         endsAt = streak.endsAt
         isFrozen = streak.freezeSavedStreak && streak.currentCount > 0
-        restDays = streak.restDays
+        rest = streak.rest
         isAvailable = true
     }
 
@@ -77,7 +77,7 @@ struct StreakPillState: Equatable {
     /// only be bought back, an offer whose deadline has been reached (or passed) is no
     /// longer restorable and falls back to the live count, a live streak close to its
     /// end shows the hourglass, and one on a day together rests.
-    func resolved(at now: Date, calendar: Calendar = .current) -> StreakPillState {
+    func resolved(at now: Date) -> StreakPillState {
         var resolved = self
         if isSavable, let saveDeadline, saveDeadline <= now {
             resolved.isSavable = false
@@ -87,14 +87,8 @@ struct StreakPillState: Equatable {
             resolved.isRestorable = false
         }
         resolved.isAtRisk = resolved.atRiskFrom.map { $0 <= now } ?? false
-        let today = LockScreenCalendarDate(containing: now, in: calendar)
-        resolved.restsWhileTogether = resolved.restsWhileTogether(on: today)
+        resolved.restsWhileTogether = count >= 1 && !resolved.isPaused && rest?.contains(now) == true
         return resolved
-    }
-
-    /// True when a live streak rests on `today` because the partners are together.
-    func restsWhileTogether(on today: LockScreenCalendarDate) -> Bool {
-        count >= 1 && !isPaused && restDays?.contains(today) == true
     }
 
     /// A broken streak that can still come back, free today or by purchase.
@@ -107,14 +101,9 @@ struct StreakPillState: Equatable {
         return endsAt.addingTimeInterval(-Self.atRiskLeadTime)
     }
 
-    /// The moments the pill looks different without new data, among them the midnights a
-    /// rest starts and ends on this phone's calendar.
+    /// The moments the pill looks different without new data, among them when a rest starts and ends.
     var changeDates: [Date] {
-        let calendar = Calendar.current
-        let restStart = restDays?.lowerBound.startOfDay(in: calendar)
-        let restEnd = restDays?.upperBound.startOfDay(in: calendar)
-            .flatMap { calendar.date(byAdding: .day, value: 1, to: $0) }
-        return [isSavable ? saveDeadline : nil, restoreDeadline, atRiskFrom, restStart, restEnd]
+        [isSavable ? saveDeadline : nil, restoreDeadline, atRiskFrom, rest?.lowerBound, rest?.upperBound]
             .compactMap(\.self).sorted()
     }
 
@@ -310,9 +299,10 @@ struct DailyStreakToolbarLabel: View {
 }
 
 #Preview("Together") {
-    let today = LockScreenCalendarDate(containing: .now, in: .current)
     DailyStreakToolbarLabel(
-        state: StreakPillState(count: 12, isRestorable: false, restorableCount: 0, restDays: today...today),
+        state: StreakPillState(
+            count: 12, isRestorable: false, restorableCount: 0, rest: Date.now..<Date.now.addingTimeInterval(86_400)
+        ).resolved(at: .now),
         onTap: {}
     )
     .padding()

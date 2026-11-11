@@ -12,9 +12,10 @@ nonisolated enum LockScreenTimeline {
     /// of time would otherwise leave a new widget empty for a week.
     static let emptyReloadInterval: TimeInterval = 15 * 60
 
-    /// Now, the next `daysAhead` local midnights, and the end of the couple's
-    /// day. Days together and countdowns change at midnight. Streak and
-    /// question flags reset when the couple's day ends.
+    /// Now, the next `daysAhead` local midnights, the end of the couple's day,
+    /// and when the streak starts and stops resting. Days together and
+    /// countdowns change at midnight. Streak and question flags reset when the
+    /// couple's day ends.
     static func entryDates(for snapshot: LockScreenSnapshot?, now: Date, calendar: Calendar) -> [Date] {
         var dates = [now]
         var day = calendar.startOfDay(for: now)
@@ -26,6 +27,8 @@ nonisolated enum LockScreenTimeline {
         if let endsAt = snapshot?.coupleDay?.endsAt, endsAt > now {
             dates.append(endsAt)
         }
+        let rest = [snapshot?.streak?.restStartsAt, snapshot?.streak?.restEndsAt].compactMap(\.self)
+        dates += rest.filter { now < $0 && $0 <= day }
         return Array(Set(dates)).sorted()
     }
 

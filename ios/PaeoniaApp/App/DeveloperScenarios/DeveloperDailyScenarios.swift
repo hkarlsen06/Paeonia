@@ -395,12 +395,9 @@
       var streak = healthyStreak
       let calendar = Calendar.current
       let today = calendar.startOfDay(for: Date())
-      let day = { (offset: Int) in
-        let date = calendar.date(byAdding: .day, value: offset, to: today) ?? today
-        return LockScreenCalendarDate(containing: date, in: calendar)
-      }
-      streak.endsAt = calendar.date(byAdding: .day, value: 4, to: today)
-      streak.restDays = day(-1)...day(2)
+      let day = { (offset: Int) in calendar.date(byAdding: .day, value: offset, to: today) ?? today }
+      streak.endsAt = day(4)
+      streak.rest = day(-1)..<day(3)
       return streak
     }
   }
