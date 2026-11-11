@@ -12,9 +12,14 @@ fi
 # shellcheck source=lib/paeonia-xcode.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/paeonia-xcode.sh"
 
-# The host shim queues both invocations. Audited suites prefer the approved
-# spare returned by ios-agent; full suites and UI tests use the simulator.
-# An explicit destination is preserved. Physical app data is never reset.
+# A run has two phases, so one agent's tests and another agent's compile run
+# at the same time:
+#   1. build-for-testing in the host build queue
+#   2. test-without-building on the destination, under its simulator lock from
+#      scripts/lock, or in ios-agent's queue for a phone
+# Audited suites prefer the approved spare returned by ios-agent; full suites
+# and UI tests use the simulator. An explicit destination is preserved.
+# Physical app data is never reset.
 
 MODE="text"
 INCLUDE_UI=0
@@ -58,7 +63,6 @@ JSON_FILE="$(mktemp "${TMPDIR:-/tmp}/Paeonia-test-json.XXXXXX")"
 PARSED_FILE="$(mktemp "${TMPDIR:-/tmp}/Paeonia-test-parsed.XXXXXX")"
 SIMULATOR_FILE="$(mktemp "${TMPDIR:-/tmp}/Paeonia-test-simulator.XXXXXX")"
 XCODEBUILD_PID=""
-HEARTBEAT_PID=""
 KEEP_ARTIFACTS="${XCODE_TEST_AGENT_KEEP_ARTIFACTS:-0}"
 
 if ! [[ "$HEARTBEAT_INTERVAL" =~ ^[0-9]+$ ]]; then
@@ -77,12 +81,8 @@ stop_xcodebuild() {
 
 cleanup() {
   stop_xcodebuild
-  xa_release_lock
-  if [ -n "${HEARTBEAT_PID:-}" ]; then
-    kill "$HEARTBEAT_PID" 2>/dev/null || true
-    wait "$HEARTBEAT_PID" 2>/dev/null || true
-  fi
-  rm -f "$SIMULATOR_FILE"
+  xa_stop_heartbeat
+  rm -f "$SIMULATOR_FILE" "${XA_STATUS_FILE:-}"
   if [ "$KEEP_ARTIFACTS" = "1" ]; then
     return
   fi
@@ -93,33 +93,6 @@ trap cleanup EXIT
 # shellcheck source=lib/xcode-agent-throttle.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/xcode-agent-throttle.sh"
 xa_install_signal_traps
-
-start_heartbeat() {
-  local start_time
-  start_time="$(date +%s)"
-  echo "[xcode-test-agent] $1 started; heartbeat every ${HEARTBEAT_INTERVAL}s" >&2
-
-  (
-    while kill -0 "$XCODEBUILD_PID" 2>/dev/null; do
-      sleep "$HEARTBEAT_INTERVAL"
-      kill -0 "$XCODEBUILD_PID" 2>/dev/null || exit 0
-
-      local now elapsed
-      now="$(date +%s)"
-      elapsed=$((now - start_time))
-      echo "[xcode-test-agent] alive: $1 still running (${elapsed}s elapsed)" >&2
-    done
-  ) &
-  HEARTBEAT_PID=$!
-}
-
-stop_heartbeat() {
-  if [ -n "${HEARTBEAT_PID:-}" ]; then
-    kill "$HEARTBEAT_PID" 2>/dev/null || true
-    wait "$HEARTBEAT_PID" 2>/dev/null || true
-    HEARTBEAT_PID=""
-  fi
-}
 
 # Prints the name of the simulator that an xcodebuild destination names by id
 # or name, and nothing for any other destination.
@@ -231,22 +204,20 @@ SIMULATOR=""
 
 set +e
 QUEUE_START="$(date +%s)"
-xa_acquire_lock
-COMPILE_START="$(date +%s)"
-QUEUED=$((COMPILE_START - QUEUE_START))
-${XA_PREFIX[@]+"${XA_PREFIX[@]}"} xcodebuild ${XA_ARGS[@]+"${XA_ARGS[@]}"} \
+"${XA_XCODEBUILD[@]}" \
   "${COMMON_ARGS[@]}" \
   -resultBundlePath "$BUILD_BUNDLE" \
   -destination "$BUILD_DESTINATION" \
   build-for-testing \
   ${BUILD_EXTRA_ARGS[@]+"${BUILD_EXTRA_ARGS[@]}"} >"$LOG_FILE" 2>&1 &
 XCODEBUILD_PID=$!
-start_heartbeat build
+xa_start_heartbeat build
 wait "$XCODEBUILD_PID"
 EXIT_CODE=$?
 XCODEBUILD_PID=""
-stop_heartbeat
-xa_release_lock
+xa_stop_heartbeat
+COMPILE_START="$(xa_started "$QUEUE_START")"
+QUEUED=$((COMPILE_START - QUEUE_START))
 COMPILED=$(($(date +%s) - COMPILE_START))
 
 PARSED_BUNDLE="$BUILD_BUNDLE"
@@ -266,6 +237,7 @@ if [ "$EXIT_CODE" -eq 0 ]; then
     ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}
   )
   TEST_QUEUE_START="$(date +%s)"
+  : >"$XA_STATUS_FILE"
   if [ -n "$SIMULATOR_LOCK" ]; then
     # Under the simulator's lock: note when it was taken and which simulator
     # it is, then test on it.
@@ -275,20 +247,20 @@ if [ "$EXIT_CODE" -eq 0 ]; then
       printf "%s|%s\n" "$(date +%s)" "$AGENT_SIMULATOR_NAME" >"$0"
       exec "$@" -destination "platform=iOS Simulator,id=$AGENT_SIMULATOR_UDID" >>"$log" 2>&1
     ' "$SIMULATOR_FILE" "$LOG_FILE" \
-      ${XA_PREFIX[@]+"${XA_PREFIX[@]}"} xcodebuild "${TEST_ARGS[@]}" &
+      "${XA_XCODEBUILD[@]}" "${TEST_ARGS[@]}" &
   else
     printf "%s|\n" "$TEST_QUEUE_START" >"$SIMULATOR_FILE"
-    ${XA_PREFIX[@]+"${XA_PREFIX[@]}"} xcodebuild "${TEST_ARGS[@]}" \
+    "${XA_XCODEBUILD[@]}" "${TEST_ARGS[@]}" \
       -destination "$DESTINATION" >>"$LOG_FILE" 2>&1 &
   fi
   XCODEBUILD_PID=$!
-  start_heartbeat tests
+  xa_start_heartbeat tests
   wait "$XCODEBUILD_PID"
   EXIT_CODE=$?
   XCODEBUILD_PID=""
-  stop_heartbeat
+  xa_stop_heartbeat
   IFS='|' read -r TEST_START SIMULATOR <"$SIMULATOR_FILE" || true
-  TEST_START="${TEST_START:-$(date +%s)}"
+  TEST_START="$(xa_started "${TEST_START:-$(date +%s)}")"
   QUEUED=$((QUEUED + TEST_START - TEST_QUEUE_START))
   TESTED=$(($(date +%s) - TEST_START))
   if [ -n "$SIMULATOR" ]; then
@@ -300,6 +272,7 @@ set -e
 STATUS="SUCCESS"
 if [ "$EXIT_CODE" -ne 0 ]; then
   STATUS="FAILURE"
+  xa_controller_messages "$LOG_FILE"
 fi
 
 XCRESULT_OK=0
@@ -530,7 +503,7 @@ else:
         for warning in warnings:
             print(warning)
     # The last line, so `| tail -1` keeps it. queued is the time spent waiting
-    # for the xcodebuild lock and the simulator lock.
+    # in the build queue and for a simulator or phone.
     print()
     summary = f"SUMMARY: {status} queued={queued}s compiled={compiled}s tested={tested}s"
     print(summary + (f' simulator="{simulator}"' if simulator else ""))

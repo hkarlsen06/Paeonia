@@ -5,7 +5,7 @@
 #   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--no-build]
 #
 # It builds the App scheme into a scratch derived data folder for this worktree
-# under the machine-wide compile lock, then takes a
+# through the machine-wide build queue, then takes a
 # simulator with scripts/lock, installs the app, launches the scenario with its
 # debug controls hidden, waits (default 8 s, for map tiles and fade-ins), saves
 # the screenshot, uninstalls the app and releases the simulator. It prints the
@@ -36,11 +36,13 @@ wait_seconds=8
 build=1
 sim=""
 XCODEBUILD_PID=""
+HEARTBEAT_INTERVAL=20
 # shellcheck source=lib/xcode-agent-throttle.sh
 source "$root/scripts/lib/xcode-agent-throttle.sh"
 cleanup() {
   xa_stop_xcodebuild "${XCODEBUILD_PID:-}"
-  xa_release_lock
+  xa_stop_heartbeat
+  rm -f "${XA_STATUS_FILE:-}"
   if [ -n "$sim" ]; then
     xcrun simctl uninstall "$sim" no.paeonia.app 2>/dev/null || true
     "$root/scripts/lock" release simulator >/dev/null 2>&1 || true
@@ -68,16 +70,17 @@ if [[ $build == 1 ]]; then
   log=$scratch/build.log
   "$root/scripts/generate-ios-build-number.sh" >/dev/null
   echo "Building into $derived_data" >&2
-  xa_acquire_lock
-  ${XA_PREFIX[@]+"${XA_PREFIX[@]}"} xcodebuild ${XA_ARGS[@]+"${XA_ARGS[@]}"} \
+  "${XA_XCODEBUILD[@]}" \
     -quiet -project "$root/ios/Paeonia.xcodeproj" -scheme App -configuration Debug \
     -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived_data" build >"$log" 2>&1 &
   XCODEBUILD_PID=$!
+  xa_start_heartbeat build
   status=0
   wait "$XCODEBUILD_PID" || status=$?
   XCODEBUILD_PID=""
-  xa_release_lock
+  xa_stop_heartbeat
   if [ "$status" -ne 0 ]; then
+    xa_controller_messages "$log"
     grep -E "error:" "$log" >&2 || tail -20 "$log" >&2
     echo "Build failed. Full log: $log" >&2
     exit 1
