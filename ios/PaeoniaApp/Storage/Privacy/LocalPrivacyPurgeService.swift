@@ -403,6 +403,9 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     }
 
     func removePrivateFiles() async throws {
+        // Earlier builds sent backend calls and media downloads through URLSession.shared,
+        // which kept the responses here on disk.
+        URLCache.shared.removeAllCachedResponses()
         var urls = [DailyAnswerMediaImageService.defaultDirectoryURL(), MemoryMediaImageService.defaultDirectoryURL()]
         if let containerURL = PaeoniaAppGroup.containerURL {
             urls.append(containerURL.appendingPathComponent(PaeoniaAppGroup.communicationPartnerAvatarPath))

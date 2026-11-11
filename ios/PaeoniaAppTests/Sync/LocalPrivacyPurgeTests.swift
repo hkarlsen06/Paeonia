@@ -315,6 +315,52 @@ struct LocalPrivacyPurgeTests {
         #expect(widgets.reloader.reloadCount > reloadsBeforePurge)
     }
 
+    // The cases share the system web cache, so they run one at a time.
+    @Test(.serialized, arguments: everyPurgeScope)
+    func everyPurgeRemovesPrivateResponsesFromTheSystemWebCache(scope: LocalPrivacyPurgeScope) async throws {
+        let marker = "memory-note-\(UUID().uuidString)"
+        let url = try #require(URL(string: "https://privacy-purge.invalid/api/mutation/\(marker)"))
+        let response = try #require(HTTPURLResponse(
+            url: url, statusCode: 200, httpVersion: "HTTP/1.1",
+            headerFields: ["Content-Type": "application/json", "Cache-Control": "max-age=3600"]
+        ))
+        URLCache.shared.storeCachedResponse(
+            CachedURLResponse(response: response, data: Data(#"{"note":"\#(marker)"}"#.utf8)),
+            for: URLRequest(url: url)
+        )
+        try #require(await Self.waitUntil { Self.cachesDirectoryContains(marker) })
+        let fixture = try LivePurgeFixture(
+            widgetCanvas: WidgetCanvasTestEnvironment().makeService(),
+            memoryMediaURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("LocalPrivacyPurgeTests-\(UUID().uuidString)", isDirectory: true)
+        )
+
+        #expect(await fixture.purger.purge(ownerUserID: UUID(), scope: scope) == .completed)
+
+        #expect(await Self.waitUntil { !Self.cachesDirectoryContains(marker) })
+    }
+
+    private static func cachesDirectoryContains(_ marker: String) -> Bool {
+        let needle = Data(marker.utf8)
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let files = FileManager.default.enumerator(at: caches, includingPropertiesForKeys: nil)
+        while let file = files?.nextObject() as? URL {
+            if let data = try? Data(contentsOf: file, options: .mappedIfSafe), data.contains(needle) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// The system web cache writes to disk on its own queue.
+    private static func waitUntil(_ condition: () -> Bool) async -> Bool {
+        for _ in 0..<50 {
+            if condition() { return true }
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+        return condition()
+    }
+
     @Test func signOutPurgeForgetsTheSavedConvexToken() async throws {
         let payload = Data(#"{"exp":\#(Int(Date().timeIntervalSince1970) + 900)}"#.utf8)
             .base64EncodedString()
