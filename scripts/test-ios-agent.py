@@ -112,14 +112,14 @@ with p.open("a") as f: f.write(f"end {{os.getpid()}} {{time.monotonic()}}\\n")
 ''')
         self.fake.chmod(0o755)
         self.runner = self.root / "run.py"
-        self.runner.write_text(f'''import runpy
+        self.runner.write_text(f'''import runpy, sys
 from pathlib import Path
 m = runpy.run_path({str(SOURCE)!r}, run_name="ios_agent_test")
-raise SystemExit(m["xcodebuild"](["build"], {str(self.fake)!r}, Path({str(self.root / "queue")!r})))
+raise SystemExit(m["xcodebuild"](sys.argv[1:] or ["build"], {str(self.fake)!r}, Path({str(self.root / "queue")!r})))
 ''')
 
-    def start(self):
-        child = subprocess.Popen([sys.executable, str(self.runner)], stdout=subprocess.DEVNULL)
+    def start(self, *arguments):
+        child = subprocess.Popen([sys.executable, str(self.runner), *arguments], stdout=subprocess.DEVNULL)
         def stop():
             if child.poll() is None:
                 child.terminate()
@@ -150,6 +150,17 @@ raise SystemExit(m["xcodebuild"](["build"], {str(self.fake)!r}, Path({str(self.r
         (directory / "owner").write_text(f"{os.getpid()} legacy-wrapper\n")
         self.assertEqual(self.start().wait(timeout=5), 0)
         self.assertTrue(directory.exists())
+
+    def test_prebuilt_tests_skip_a_held_queue(self):
+        holder = subprocess.Popen(["/bin/sleep", "60"])
+        self.addCleanup(holder.kill)
+        directory = self.root / "queue"
+        directory.mkdir()
+        (directory / "owner").write_text(f"{holder.pid} long-lived-runner\n")
+        self.assertEqual(self.start("test-without-building").wait(timeout=5), 0)
+        build = self.start("build-for-testing")
+        with self.assertRaises(subprocess.TimeoutExpired):
+            build.wait(timeout=1)
 
     def test_dead_owner_is_reaped(self):
         directory = self.root / "queue"

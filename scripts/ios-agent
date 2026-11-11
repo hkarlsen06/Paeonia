@@ -27,6 +27,7 @@ DEVICE_FEATURES = {"com.apple.coredevice.feature." + name
                    for name in ("installapp", "launchapplication", "processcontrol")}
 QUERIES = {"-version", "-help", "--help", "-list", "-showdestinations",
            "-showsdks", "-showBuildSettings", "-showBuildSettingsForIndex"}
+BUILD_ACTIONS = ("build", "clean", "archive", "test", "build-for-testing", "-resolvePackageDependencies")
 
 
 def log(message):
@@ -221,7 +222,7 @@ class BuildQueue:
                 pass
 
 
-def supervise(command, descriptor):
+def supervise(command, descriptors=()):
     child = None
     received = []
 
@@ -234,7 +235,7 @@ def supervise(command, descriptor):
     watched = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
     previous = {sig: signal.signal(sig, forward) for sig in watched}
     try:
-        child = subprocess.Popen(command, start_new_session=True, pass_fds=(descriptor,))
+        child = subprocess.Popen(command, start_new_session=True, pass_fds=descriptors)
         if received:
             forward(received[-1], None)
         deadline = None
@@ -254,17 +255,23 @@ def supervise(command, descriptor):
 def xcodebuild(arguments, executable="/usr/bin/xcodebuild", queue_directory=Path("/tmp/xcode-agent.lock")):
     command = [executable] if isinstance(executable, str) else list(executable)
     if any(arg in QUERIES for arg in arguments) and not any(
-        action in arguments for action in ("build", "clean", "archive", "test", "build-for-testing", "test-without-building", "-resolvePackageDependencies")
+        action in arguments for action in BUILD_ACTIONS + ("test-without-building",)
     ):
         os.execv(command[0], command + arguments)
     arguments = build_arguments(arguments)
     nice = int(os.environ.get("XCODE_AGENT_NICE", "10"))
     if not 0 <= nice <= 19:
         raise ValueError("XCODE_AGENT_NICE must be from 0 to 19")
+    if "test-without-building" in arguments and not any(action in arguments for action in BUILD_ACTIONS):
+        # Running prebuilt tests compiles nothing, and the simulator lock
+        # already serializes simulator use. Queueing them let a long-lived
+        # runner, such as agent-device's, block every build on the Mac.
+        os.nice(max(0, nice - os.getpriority(os.PRIO_PROCESS, 0)))
+        return supervise(command + arguments)
     with BuildQueue(queue_directory) as queue:
         os.nice(max(0, nice - os.getpriority(os.PRIO_PROCESS, 0)))
         log(f"running Xcode with {arguments[arguments.index('-jobs') + 1]} workers")
-        return supervise(command + arguments, queue.gate.fileno())
+        return supervise(command + arguments, (queue.gate.fileno(),))
 
 
 def xcrun(arguments):
