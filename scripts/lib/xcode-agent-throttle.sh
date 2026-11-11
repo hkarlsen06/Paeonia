@@ -17,17 +17,16 @@
 #   XCODE_AGENT_LOCK_DIR               lock path (default /tmp/xcode-agent.lock)
 #   XCODE_AGENT_NO_LOCK=1              skip the machine-wide lock
 #   XCODE_AGENT_NICE=N                 nice level, 0 disables (default 10)
-#   XCODE_AGENT_JOBS=N                 xcodebuild -jobs (default: xcodebuild's own)
+#   XCODE_AGENT_JOBS=N                 xcodebuild -jobs (default 2)
 
 XA_LOCK_DIR="${XCODE_AGENT_LOCK_DIR:-/tmp/xcode-agent.lock}"
 XA_LOCK_HELD=0
 XA_NICE="${XCODE_AGENT_NICE:-10}"
+XA_JOBS="${XCODE_AGENT_JOBS:-2}"
 XA_PREFIX=()
 XA_ARGS=()
 
-if [ -n "${XCODE_AGENT_JOBS:-}" ]; then
-  XA_ARGS=(-jobs "$XCODE_AGENT_JOBS")
-fi
+XA_ARGS=(-jobs "$XA_JOBS")
 
 if [ "$XA_NICE" != "0" ]; then
   XA_PREFIX=(nice -n "$XA_NICE")
@@ -105,3 +104,21 @@ xa_stop_xcodebuild() {
     wait "$pid" 2>/dev/null || true
   fi
 }
+
+xa_physical_destination() {
+  if ! command -v ios-agent >/dev/null 2>&1; then
+    xa_log "ios-agent is unavailable; using a shared simulator (set XCODE_TEST_AGENT_DESTINATION for an explicit destination)"
+    return 0
+  fi
+  local destination
+  if destination="$(ios-agent physical-destination)"; then
+    printf '%s\n' "$destination"
+  else
+    xa_log "device discovery failed; using a shared simulator"
+  fi
+}
+
+if ! [[ "$XA_JOBS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "XCODE_AGENT_JOBS must be a positive integer" >&2
+  exit 2
+fi

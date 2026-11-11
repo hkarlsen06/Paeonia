@@ -5,7 +5,7 @@
 #   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--no-build]
 #
 # It builds the App scheme into a scratch derived data folder for this worktree
-# (no xcodebuild lock, see docs/agent-guides/ios-verification.md), then takes a
+# under the machine-wide compile lock, then takes a
 # simulator with scripts/lock, installs the app, launches the scenario with its
 # debug controls hidden, waits (default 8 s, for map tiles and fade-ins), saves
 # the screenshot, uninstalls the app and releases the simulator. It prints the
@@ -32,6 +32,20 @@ scratch=/tmp/paeonia-scenario-$worktree_key
 out=$scratch/$scenario.png
 wait_seconds=8
 build=1
+sim=""
+XCODEBUILD_PID=""
+# shellcheck source=lib/xcode-agent-throttle.sh
+source "$root/scripts/lib/xcode-agent-throttle.sh"
+cleanup() {
+  xa_stop_xcodebuild "${XCODEBUILD_PID:-}"
+  xa_release_lock
+  if [ -n "$sim" ]; then
+    xcrun simctl uninstall "$sim" no.paeonia.app 2>/dev/null || true
+    "$root/scripts/lock" release simulator >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+xa_install_signal_traps
 while [[ $# -gt 0 ]]; do
   case $1 in
     --out) [[ $# -ge 2 ]] || usage; out=$2; shift 2 ;;
@@ -50,8 +64,16 @@ if [[ $build == 1 ]]; then
   log=$scratch/build.log
   "$root/scripts/generate-ios-build-number.sh" >/dev/null
   echo "Building into $derived_data" >&2
-  if ! xcodebuild -quiet -project "$root/ios/Paeonia.xcodeproj" -scheme App -configuration Debug \
-    -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived_data" build >"$log" 2>&1; then
+  xa_acquire_lock
+  ${XA_PREFIX[@]+"${XA_PREFIX[@]}"} xcodebuild ${XA_ARGS[@]+"${XA_ARGS[@]}"} \
+    -quiet -project "$root/ios/Paeonia.xcodeproj" -scheme App -configuration Debug \
+    -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived_data" build >"$log" 2>&1 &
+  XCODEBUILD_PID=$!
+  status=0
+  wait "$XCODEBUILD_PID" || status=$?
+  XCODEBUILD_PID=""
+  xa_release_lock
+  if [ "$status" -ne 0 ]; then
     grep -E "error:" "$log" >&2 || tail -20 "$log" >&2
     echo "Build failed. Full log: $log" >&2
     exit 1
@@ -61,11 +83,6 @@ fi
 
 cd "$root"
 sim=$(scripts/lock acquire simulator)
-release() {
-  xcrun simctl uninstall "$sim" "$bundle_id" 2>/dev/null || true
-  scripts/lock release simulator >/dev/null 2>&1 || true
-}
-trap release EXIT
 
 xcrun simctl install "$sim" "$app"
 xcrun simctl launch --terminate-running-process "$sim" "$bundle_id" \

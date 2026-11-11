@@ -1,0 +1,344 @@
+#!/usr/bin/python3
+from __future__ import annotations
+
+import argparse
+import contextlib
+import dataclasses
+import fcntl
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+
+
+SIMULATORS = (
+    ("Shared iPhone", "8E84ADB0-9092-4EB4-839E-71D62A350146"),
+    ("Shared iPhone 2", "79EBB58E-1108-4EEE-987D-E193CEA9EA2A"),
+    ("Shared iPhone 3", "4C6FDCA3-E72C-4FA1-B516-4E2CF7A3475C"),
+)
+APPROVED_DEVICES = {"00008150-000230D82E40401C"}
+DEVICE_FEATURES = {"com.apple.coredevice.feature." + name
+                   for name in ("installapp", "launchapplication", "processcontrol")}
+QUERIES = {"-version", "-help", "--help", "-list", "-showdestinations",
+           "-showsdks", "-showBuildSettings", "-showBuildSettingsForIndex"}
+
+
+def log(message):
+    print(f"[ios-agent] {message}", file=sys.stderr, flush=True)
+
+
+def simulator_count():
+    value = os.environ.get("IOS_AGENT_SIMULATORS", "1")
+    if value not in ("1", "2", "3"):
+        raise ValueError("IOS_AGENT_SIMULATORS must be 1, 2 or 3")
+    return int(value)
+
+
+def check_simulator(target):
+    allowed = SIMULATORS[:simulator_count()]
+    if not any(target in pair for pair in allowed):
+        raise ValueError(f"{target} is outside the shared simulator pool; "
+                         "use Shared iPhone or explicitly set IOS_AGENT_SIMULATORS=2 or 3")
+
+
+def build_arguments(arguments):
+    jobs = os.environ.get("XCODE_AGENT_JOBS", "2")
+    if not re.fullmatch(r"[1-9][0-9]*", jobs):
+        raise ValueError("XCODE_AGENT_JOBS must be a positive integer")
+    result = []
+    index = 0
+    while index < len(arguments):
+        arg = arguments[index]
+        if arg in ("-jobs", "-parallel-testing-enabled", "-maximum-concurrent-test-simulator-destinations"):
+            if index + 1 >= len(arguments):
+                raise ValueError(f"{arg} requires a value")
+            index += 2
+            continue
+        if arg.startswith(("-jobs=", "-parallel-testing-enabled=", "-maximum-concurrent-test-simulator-destinations=")):
+            index += 1
+            continue
+        raw_destination = None
+        if arg == "-destination" and index + 1 < len(arguments):
+            raw_destination = arguments[index + 1]
+        elif arg.startswith("-destination="):
+            raw_destination = arg.split("=", 1)[1]
+        if raw_destination:
+            destination = dict(part.split("=", 1) for part in raw_destination.split(",") if "=" in part)
+            target = destination.get("id") or destination.get("name")
+            shared = any(target in pair for pair in SIMULATORS)
+            uuid_id = re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", destination.get("id", ""))
+            if target and (shared or destination.get("platform") == "iOS Simulator" or (uuid_id and destination.get("platform") != "iOS")):
+                check_simulator(target)
+            elif "name" in destination and "platform" not in destination:
+                raise ValueError("named destinations outside the shared pool require an explicit platform")
+        result.append(arg)
+        index += 1
+    result.extend(("-jobs", jobs))
+    if any(action in arguments for action in ("test", "test-without-building", "build-for-testing")):
+        result.extend(("-parallel-testing-enabled", "NO", "-maximum-concurrent-test-simulator-destinations", "1"))
+    return result
+
+
+def process_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def ancestors():
+    result = {os.getpid()}
+    current = os.getppid()
+    while current > 1 and current not in result:
+        result.add(current)
+        value = subprocess.check_output(["/bin/ps", "-o", "ppid=", "-p", str(current)], text=True).strip()
+        current = int(value) if value else 0
+    return result
+
+
+class BuildQueue:
+    def __init__(self, directory=Path("/tmp/xcode-agent.lock")):
+        self.directory = Path(directory)
+        self.owned = False
+
+    def __enter__(self):
+        parents = ancestors()
+        announced = False
+        while True:
+            try:
+                self.directory.mkdir()
+                self.owned = True
+                (self.directory / "owner").write_text(f"{os.getpid()} ios-agent xcodebuild since {time.strftime('%H:%M:%S')}\n")
+                break
+            except FileExistsError:
+                try:
+                    owner = (self.directory / "owner").read_text().split()
+                    pid = int(owner[0]) if owner else None
+                except (FileNotFoundError, ValueError):
+                    pid = None
+                if pid in parents:
+                    break
+                try:
+                    stale = not process_alive(pid) if pid else time.time() - self.directory.stat().st_mtime > 60
+                    if stale:
+                        shutil.rmtree(self.directory)
+                        continue
+                except FileNotFoundError:
+                    continue
+                if not announced:
+                    log("queued behind another agent's Xcode work")
+                    announced = True
+                time.sleep(0.25)
+        # Older wrappers own the mkdir lock. This inherited descriptor also
+        # keeps the host gate held if the supervisor dies before xcodebuild.
+        self.gate = open(str(self.directory) + ".gate", "a")
+        fcntl.flock(self.gate, fcntl.LOCK_EX)
+        return self
+
+    def __exit__(self, *unused):
+        self.gate.close()
+        if self.owned:
+            try:
+                if (self.directory / "owner").read_text().split()[0] == str(os.getpid()):
+                    shutil.rmtree(self.directory)
+            except FileNotFoundError:
+                pass
+
+
+def supervise(command, descriptor):
+    child = None
+    received = []
+
+    def forward(signum, frame):
+        received.append(signum)
+        if child is not None:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(child.pid, signum)
+
+    watched = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
+    previous = {sig: signal.signal(sig, forward) for sig in watched}
+    try:
+        child = subprocess.Popen(command, start_new_session=True, pass_fds=(descriptor,))
+        if received:
+            forward(received[-1], None)
+        deadline = None
+        while child.poll() is None:
+            if received:
+                deadline = deadline or time.monotonic() + 10
+                if time.monotonic() > deadline:
+                    with contextlib.suppress(ProcessLookupError):
+                        os.killpg(child.pid, signal.SIGKILL)
+            time.sleep(0.1)
+        return 128 + received[0] if received else (child.returncode if child.returncode >= 0 else 128 - child.returncode)
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+
+
+def xcodebuild(arguments, executable="/usr/bin/xcodebuild", queue_directory=Path("/tmp/xcode-agent.lock")):
+    command = [executable] if isinstance(executable, str) else list(executable)
+    if any(arg in QUERIES for arg in arguments) and not any(
+        action in arguments for action in ("build", "clean", "archive", "test", "build-for-testing", "test-without-building", "-resolvePackageDependencies")
+    ):
+        os.execv(command[0], command + arguments)
+    arguments = build_arguments(arguments)
+    nice = int(os.environ.get("XCODE_AGENT_NICE", "10"))
+    if not 0 <= nice <= 19:
+        raise ValueError("XCODE_AGENT_NICE must be from 0 to 19")
+    with BuildQueue(queue_directory) as queue:
+        os.nice(max(0, nice - os.getpriority(os.PRIO_PROCESS, 0)))
+        log(f"running Xcode with {arguments[arguments.index('-jobs') + 1]} workers")
+        return supervise(command + arguments, queue.gate.fileno())
+
+
+def xcrun(arguments):
+    index = 0
+    while index < len(arguments) and arguments[index].startswith("-"):
+        option = arguments[index]
+        if option in ("-f", "--find"):
+            os.execv("/usr/bin/xcrun", ["/usr/bin/xcrun"] + arguments)
+        index += 2 if option in ("--sdk", "-sdk", "--toolchain", "-toolchain") else 1
+    if index < len(arguments) and arguments[index] == "xcodebuild":
+        return xcodebuild(arguments[index + 1:], ["/usr/bin/xcrun"] + arguments[:index + 1])
+    if index < len(arguments) and arguments[index] == "simctl":
+        index += 1
+        while index < len(arguments) and arguments[index].startswith("-"):
+            index += 2 if arguments[index] in ("--set", "--profiles") else 1
+        if len(arguments) < index + 2:
+            os.execv("/usr/bin/xcrun", ["/usr/bin/xcrun"] + arguments)
+        action, target = arguments[index:index + 2]
+        if action == "boot" or (action == "bootstatus" and "-b" in arguments):
+            check_simulator(target)
+    os.execv("/usr/bin/xcrun", ["/usr/bin/xcrun"] + arguments)
+
+
+def device_json(arguments):
+    result = subprocess.run(["/usr/bin/xcrun", "devicectl"] + arguments + [
+        "--quiet", "--timeout", "5", "--json-output", "-", "--omit-deprecated-fields-in-json"
+    ], capture_output=True, text=True, timeout=8, check=True)
+    return json.loads(result.stdout)["result"]
+
+
+@dataclasses.dataclass
+class Device:
+    name: str
+    udid: str
+    connected: bool
+    allowed: bool
+    eligible: bool
+    reason: str
+
+
+def physical_devices(document, lock_state):
+    devices = []
+    for item in document.get("devices", []):
+        properties = item.get("properties", {})
+        hardware = properties.get("hardware", {})
+        if hardware.get("fidelity") != "physical":
+            continue
+        state = properties.get("state", {})
+        connection = properties.get("connection", {})
+        udid = hardware.get("udid", "")
+        allowed = udid in APPROVED_DEVICES
+        connected = connection.get("state") == "connected"
+        reason = "ready"
+        if not allowed:
+            reason = "not approved for automatic agent runs"
+        elif not connected:
+            reason = "offline"
+        elif connection.get("pairingState") != "paired":
+            reason = "not paired"
+        elif "enabled" not in state.get("developerModeStatus", {}):
+            reason = "developer mode unavailable"
+        elif hardware.get("productFamily") != "iPhone":
+            reason = "not an iPhone"
+        elif not DEVICE_FEATURES.issubset(
+            capability.get("featureIdentifier") for capability in item.get("capabilities", [])
+        ):
+            reason = "Xcode device services unavailable"
+        else:
+            try:
+                status = lock_state(udid)
+                if status.get("passcodeRequired") is not False or status.get("unlockedSinceBoot") is not True:
+                    reason = "locked or not unlocked since boot"
+            except (subprocess.SubprocessError, OSError, ValueError, KeyError):
+                reason = "lock state unavailable"
+        devices.append(Device(state.get("name", udid), udid, connected, allowed, reason == "ready", reason))
+    return devices
+
+
+def discover():
+    return physical_devices(device_json(["list", "devices"]),
+                            lambda udid: device_json(["device", "info", "lockState", "--device", udid]))
+
+
+def install_user():
+    home = Path.home()
+    library = home / ".local/lib/ios-agent"
+    library.mkdir(parents=True, exist_ok=True)
+    source = library / "ios-agent"
+    if source.resolve() != Path(__file__).resolve():
+        temporary = library / f"ios-agent-{os.getpid()}"
+        shutil.copy2(__file__, temporary)
+        temporary.replace(source)
+    binary = home / ".local/bin/ios-agent"
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    binary.write_text(f'#!/bin/sh\nexec /usr/bin/python3 "{source}" "$@"\n')
+    binary.chmod(0o755)
+    for name in ("xcodebuild", "xcrun"):
+        launcher = library / name
+        launcher.write_text(f'#!/bin/sh\nexec /usr/bin/python3 "{source}" {name} "$@"\n')
+        launcher.chmod(0o755)
+    print(library)
+
+
+def main(arguments=None):
+    arguments = list(sys.argv[1:] if arguments is None else arguments)
+    if arguments and arguments[0] in ("xcodebuild", "xcrun"):
+        command = arguments.pop(0)
+        return xcodebuild(arguments) if command == "xcodebuild" else xcrun(arguments)
+    parser = argparse.ArgumentParser(description="Shared Mac build queue and live iPhone discovery")
+    parser.add_argument("command", choices=("devices", "destination", "physical-destination", "install-user"))
+    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--simulator", action="store_true")
+    options = parser.parse_args(arguments)
+    if options.command == "install-user":
+        install_user()
+        return 0
+    devices = []
+    if not options.simulator:
+        try:
+            devices = discover()
+        except (subprocess.SubprocessError, OSError, ValueError, KeyError) as error:
+            log(f"device discovery unavailable ({error}); using Shared iPhone")
+            if options.command == "devices":
+                return 1
+    if options.command == "devices":
+        if options.json:
+            print(json.dumps([dataclasses.asdict(device) for device in devices], indent=2))
+        else:
+            for device in devices:
+                print(f"{device.name}\t{device.udid}\t{'connected' if device.connected else 'offline'}\t{device.reason}")
+        return 0
+    eligible = next((device for device in devices if device.eligible), None)
+    if eligible:
+        print(f"platform=iOS,id={eligible.udid}")
+    elif options.command == "destination":
+        print("platform=iOS Simulator,name=Shared iPhone")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (ValueError, OSError) as error:
+        log(str(error))
+        sys.exit(2)

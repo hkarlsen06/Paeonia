@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "${1:-}" = "--devices" ]; then
+  if command -v ios-agent >/dev/null 2>&1; then
+    exec ios-agent devices --json
+  fi
+  echo "ios-agent is unavailable; use XCODE_TEST_AGENT_DESTINATION for an explicit destination" >&2
+  exit 2
+fi
+
 # shellcheck source=lib/paeonia-xcode.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/paeonia-xcode.sh"
 
-# A run has two phases, so one agent's tests and another agent's build run at
-# the same time:
-#   1. build-for-testing for the generic simulator under the machine-wide
-#      xcodebuild lock (scripts/lib/xcode-agent-throttle.sh), then release it
-#   2. test-without-building on one of the shared simulators, under that
-#      simulator's lock from scripts/lock
-# A run never holds both locks, nor waits for one while it holds the other.
-# Without XCODE_TEST_AGENT_DESTINATION it tests on any free shared simulator, or
-# on the one this worktree took with `scripts/lock acquire simulator`. A
-# destination that names a shared simulator waits for that one. Any other
-# destination takes no simulator lock.
+# The host shim queues both invocations. Audited suites prefer the approved
+# spare returned by ios-agent; full suites and UI tests use the simulator.
+# An explicit destination is preserved. Physical app data is never reset.
 
 MODE="text"
 INCLUDE_UI=0
@@ -147,12 +147,47 @@ for devices in runtimes.values():
 # shared simulator's name, or nothing.
 SIMULATOR_LOCK=simulator
 DESTINATION="${XCODE_TEST_AGENT_DESTINATION:-}"
+AUTO_DEVICE=1
+SAFE_SELECTION=0
+UNSAFE_SELECTION=0
+EXPECT_DESTINATION=0
+for arg in ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}; do
+  if [ "$EXPECT_DESTINATION" = "1" ]; then
+    [ -n "$DESTINATION" ] || DESTINATION="$arg"
+    EXPECT_DESTINATION=0
+    continue
+  fi
+  case "$arg" in
+    -destination) AUTO_DEVICE=0; EXPECT_DESTINATION=1 ;;
+    -only-testing:PaeoniaAppTests/ProfilePhotoFramingTests|-only-testing:PaeoniaAppTests/ProfilePhotoFramingTests/*|-only-testing:PaeoniaAppTests/WidgetLiveConnectionParseTests|-only-testing:PaeoniaAppTests/WidgetLiveConnectionParseTests/*) SAFE_SELECTION=1 ;;
+    -only-testing*|-skip-testing*|-testPlan*|-xctestrun*) AUTO_DEVICE=0; UNSAFE_SELECTION=1 ;;
+  esac
+done
+if [ "$SAFE_SELECTION" = "0" ]; then
+  AUTO_DEVICE=0
+fi
+if [ "${INCLUDE_UI:-0}" = "1" ] || [ "${XCODE_TEST_AGENT_INCLUDE_UI_TESTS:-0}" = "1" ]; then
+  AUTO_DEVICE=0
+  UNSAFE_SELECTION=1
+fi
+if [ -z "$DESTINATION" ] && [ "$AUTO_DEVICE" = "1" ]; then
+  DESTINATION="$(xa_physical_destination)"
+fi
+BUILD_DESTINATION='generic/platform=iOS Simulator'
+case "$DESTINATION" in
+  platform=iOS,*|platform=iOS)
+    if [ "$SAFE_SELECTION" != "1" ] || [ "$UNSAFE_SELECTION" = "1" ]; then
+      echo "Physical tests require audited device-safe -only-testing selections; use a simulator for other suites" >&2
+      exit 2
+    fi
+    BUILD_DESTINATION='generic/platform=iOS' ;;
+esac
 if [ -n "$DESTINATION" ]; then
   SIMULATOR_LOCK=""
   DESTINATION_SIMULATOR="$(destination_simulator_name "$DESTINATION" || true)"
-  if [ -n "$DESTINATION_SIMULATOR" ] && grep -qxF "$DESTINATION_SIMULATOR" <<<"$(./scripts/lock pool)"; then
-    SIMULATOR_LOCK="$DESTINATION_SIMULATOR"
-  fi
+  case "$DESTINATION_SIMULATOR" in
+    'Shared iPhone'|'Shared iPhone 2'|'Shared iPhone 3') SIMULATOR_LOCK="$DESTINATION_SIMULATOR" ;;
+  esac
 fi
 
 ./scripts/generate-ios-build-number.sh >&2
@@ -202,7 +237,7 @@ QUEUED=$((COMPILE_START - QUEUE_START))
 ${XA_PREFIX[@]+"${XA_PREFIX[@]}"} xcodebuild ${XA_ARGS[@]+"${XA_ARGS[@]}"} \
   "${COMMON_ARGS[@]}" \
   -resultBundlePath "$BUILD_BUNDLE" \
-  -destination 'generic/platform=iOS Simulator' \
+  -destination "$BUILD_DESTINATION" \
   build-for-testing \
   ${BUILD_EXTRA_ARGS[@]+"${BUILD_EXTRA_ARGS[@]}"} >"$LOG_FILE" 2>&1 &
 XCODEBUILD_PID=$!
