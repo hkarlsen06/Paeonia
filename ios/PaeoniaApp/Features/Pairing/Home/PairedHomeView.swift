@@ -298,7 +298,7 @@ extension PairedHomeView {
                         id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: usesMapHeader
                     )
                 unreadChatsCard
-                mailCard
+                waitingMailCard
                 firstStepsCard
                 visitCard
                 milestoneAndWidget
@@ -309,9 +309,12 @@ extension PairedHomeView {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.bottom, PaeoniaSpacing.space16)
         } footer: {
-            lookBackCard
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.bottom, PaeoniaSpacing.space16)
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                writeMailRow
+                lookBackCard
+            }
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.bottom, PaeoniaSpacing.space16)
         }
         // On the whole page, so the map and the avatars move with a card that changes height.
         .modifier(cardChangeAnimations)
@@ -343,7 +346,7 @@ extension PairedHomeView {
                         id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: !usesMapHeader
                     )
                 unreadChatsCard
-                mailCard
+                waitingMailCard
                 firstStepsCard
                 visitCard
                 milestoneAndWidget
@@ -352,6 +355,7 @@ extension PairedHomeView {
                     )
                     .layoutValue(key: HomeWideRole.self, value: .tiles)
                 mapCard
+                writeMailRow
                 lookBackCard
             }
         }

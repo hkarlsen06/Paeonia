@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The Mail card on the Us tab. A letter that waits for this person shows as a sealed
-/// envelope that opens it. Otherwise one short row offers to write a letter, or to finish the
-/// one being written where the person left it, so the cards under it stay on the first screen.
+/// envelope that opens it, among the cards on the first screen. Otherwise one short row offers
+/// to write a letter, or to finish the one being written where the person left it. That row
+/// sits under the tiles, so it takes no height from the map.
 /// The mailbox is a tap away in every case. A problem that came up after the Mail sheet closed
 /// shows here.
 struct HomeMailCard: View {

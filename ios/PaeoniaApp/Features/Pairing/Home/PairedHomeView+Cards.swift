@@ -32,9 +32,19 @@ extension PairedHomeView {
         }
     }
 
+    /// A letter that waits is for this person to open, so it sits with the cards on the first screen.
     @ViewBuilder
-    var mailCard: some View {
-        if let mail {
+    var waitingMailCard: some View {
+        if let mail, !mail.waiting.isEmpty {
+            HomeMailCard(mail: mail, partnerName: partnerName)
+        }
+    }
+
+    /// The row that offers to write a letter, or to finish one. Nothing waits for the person
+    /// here, so it goes under the tiles, where it takes no height from the map.
+    @ViewBuilder
+    var writeMailRow: some View {
+        if let mail, mail.waiting.isEmpty {
             HomeMailCard(mail: mail, partnerName: partnerName)
         }
     }
