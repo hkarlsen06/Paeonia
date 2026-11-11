@@ -59,14 +59,23 @@ extension AccessSyncSnapshotPersisting {
 
 actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
     private let container: ModelContainer
+    private let profilePhotoCache: (any MediaCacheEvicting)?
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init(container: ModelContainer) {
+    init(
+        container: ModelContainer,
+        profilePhotoCache: (any MediaCacheEvicting)? = ProfilePhotoImageService.shared
+    ) {
         self.container = container
+        self.profilePhotoCache = profilePhotoCache
     }
 
-    func save(_ snapshot: AccessSyncSnapshot) throws {
+    func save(_ snapshot: AccessSyncSnapshot) async throws {
+        // Before the save, so if the app ends in between, the next save still sees the old photo.
+        if let replacedPartnerPhoto = try replacedPartnerPhotoID(by: snapshot) {
+            await profilePhotoCache?.evict(mediaAssetIDs: [replacedPartnerPhoto])
+        }
         let context = ModelContext(container)
         let localSnapshot: LocalAccessSyncSnapshot
 
@@ -85,6 +94,21 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
 
         try context.save()
         LocalStoreChanges.post(.access, ownerUserID: snapshot.ownerUserID)
+    }
+
+    /// The partner's photo that `snapshot` replaces or removes. Its cached copy leaves this
+    /// phone when the change arrives. Losing the relationship is left to the privacy purge.
+    /// Another repository on the same store may have saved a newer photo since `snapshot`
+    /// was read, so this is a guess, and an evicted photo still shown downloads again.
+    private func replacedPartnerPhotoID(by snapshot: AccessSyncSnapshot) throws -> UUID? {
+        guard let relationshipState = snapshot.relationshipState,
+              let previous = try load(ownerUserID: snapshot.ownerUserID)?.relationshipState?
+                  .partnerProfilePhotoAssetID,
+              previous != relationshipState.partnerProfilePhotoAssetID
+        else {
+            return nil
+        }
+        return previous
     }
 
     func load(ownerUserID: UUID) throws -> AccessSyncSnapshot? {

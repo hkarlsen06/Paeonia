@@ -8,12 +8,12 @@ struct DeleteChatMessageOperationHandler: PendingSyncOperationHandling {
 
     private let gateway: any ThreadChatGateway
     private let cache: any ThreadChatCaching
-    private let mediaCache: (any DailyAnswerMediaCacheEvicting)?
+    private let mediaCache: (any MediaCacheEvicting)?
 
     init(
         gateway: any ThreadChatGateway,
         cache: any ThreadChatCaching,
-        mediaCache: (any DailyAnswerMediaCacheEvicting)? = nil
+        mediaCache: (any MediaCacheEvicting)? = nil
     ) {
         self.gateway = gateway
         self.cache = cache

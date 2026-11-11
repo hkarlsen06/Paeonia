@@ -228,6 +228,12 @@ nonisolated struct MemorySnapshot: Codable, Equatable, Sendable {
     var isVisible: Bool {
         deletedAt == nil && moderationStatus == .visible
     }
+
+    /// The photos this memory shows. A deleted or hidden memory shows none.
+    var shownMediaAssetIDs: Set<UUID> {
+        guard isVisible else { return [] }
+        return Set(visibleMediaAssetIDs).union(media.filter(\.isVisible).map(\.mediaAssetID))
+    }
 }
 
 nonisolated struct MemoryRecord: Codable, Equatable, Sendable {

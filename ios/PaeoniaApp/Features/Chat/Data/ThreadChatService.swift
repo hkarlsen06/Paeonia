@@ -224,7 +224,7 @@ actor ThreadChatService: ThreadChatServicing {
     let cache: any ThreadChatCaching
     let pendingOperationStore: any PendingSyncOperationPersisting
     /// Removes the files of deleted photos and voice messages from this phone.
-    let mediaCache: (any DailyAnswerMediaCacheEvicting)?
+    let mediaCache: (any MediaCacheEvicting)?
     let encoder = JSONEncoder()
     var gameTimelineVersions: [GameChatSubject: Int] = [:]
 
@@ -232,7 +232,7 @@ actor ThreadChatService: ThreadChatServicing {
         gateway: any ThreadChatGateway,
         cache: any ThreadChatCaching,
         pendingOperationStore: any PendingSyncOperationPersisting,
-        mediaCache: (any DailyAnswerMediaCacheEvicting)? = nil
+        mediaCache: (any MediaCacheEvicting)? = nil
     ) {
         self.gateway = gateway
         self.cache = cache

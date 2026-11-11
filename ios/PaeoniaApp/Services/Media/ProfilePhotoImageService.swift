@@ -121,7 +121,8 @@ extension FileProfilePhotoImageCache: ProfilePhotoImageProviding {
 actor ProfilePhotoImageService:
     ProfilePhotoImageProviding,
     ProfilePhotoImageCacheClearing,
-    ProfilePhotoImageInvalidating
+    ProfilePhotoImageInvalidating,
+    MediaCacheEvicting
 {
     nonisolated static let shared: ProfilePhotoImageService? = try? live()
 
@@ -204,6 +205,19 @@ actor ProfilePhotoImageService:
             _ = await download.value
         }
         try? await cache.removeProfilePhotoData(for: mediaAssetID)
+    }
+
+    /// Unlike `invalidate`, a later request downloads the photo again, so a photo removed
+    /// on a guess comes back if something still shows it.
+    func evict(mediaAssetIDs: [UUID]) async {
+        for mediaAssetID in mediaAssetIDs {
+            PaeoniaImageMemoryCache.remove(mediaAssetID: mediaAssetID)
+            if let download = inFlightDownloads.removeValue(forKey: mediaAssetID) {
+                download.cancel()
+                _ = await download.value
+            }
+            try? await cache.removeProfilePhotoData(for: mediaAssetID)
+        }
     }
 
     /// Reads only the image header, so it does not decode pixels.

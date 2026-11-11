@@ -69,7 +69,7 @@ actor MemoryMediaImageDiskCache: MemoryMediaImageCacheWriting {
 /// the on-disk cache first, otherwise resolve a signed URL through
 /// `get_media_signed_url`, download, and cache by media asset id. A separate cache
 /// directory keeps memory photos isolated from daily-answer media.
-actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheClearing {
+actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheClearing, MediaCacheEvicting {
     nonisolated static let shared: MemoryMediaImageService? = try? live()
 
     private let client: PaeoniaConvexClient
@@ -93,9 +93,10 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
         MemoryMediaImageService(client: try PaeoniaConvexClientProvider.shared.client())
     }
 
+    /// Cancelling the photo's download keeps it from saving the photo again, because the
+    /// download checks for cancellation after the network call and after it saves. Only
+    /// `clearAll` bumps the shared generation, so other photos keep loading.
     func evict(mediaAssetIDs: [UUID]) async {
-        // A suspended download must not put a removed photo back after this returns.
-        privacyGeneration &+= 1
         for mediaAssetID in mediaAssetIDs {
             inFlightDownloads.removeValue(forKey: mediaAssetID)?.cancel()
             PaeoniaImageMemoryCache.remove(mediaAssetID: mediaAssetID)

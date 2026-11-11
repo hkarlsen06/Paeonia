@@ -30,20 +30,47 @@ nonisolated enum MemoryRemoteMergePolicy: Equatable, Sendable {
 
 actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
     private let container: ModelContainer
+    private let mediaCache: (any MediaCacheEvicting)?
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init(container: ModelContainer) {
+    init(container: ModelContainer, mediaCache: (any MediaCacheEvicting)? = MemoryMediaImageService.shared) {
         self.container = container
+        self.mediaCache = mediaCache
     }
 
     func saveRemote(
         _ rows: [MemoryRemoteRow],
         ownerUserID: UUID,
         mergePolicy: MemoryRemoteMergePolicy = .preserveLocalChanges
-    ) throws {
+    ) async throws {
+        try await evictPhotos(ownerUserID: ownerUserID) { context in
+            try self.apply(rows, ownerUserID: ownerUserID, mergePolicy: mergePolicy, in: context)
+        }
         let context = ModelContext(container)
+        _ = try apply(rows, ownerUserID: ownerUserID, mergePolicy: mergePolicy, in: context)
+        try context.save()
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
+    }
 
+    func saveLocal(_ record: MemoryRecord) async throws {
+        try await evictPhotos(ownerUserID: record.snapshot.ownerUserID) { context in
+            try self.apply(record, in: context)
+        }
+        let context = ModelContext(container)
+        _ = try apply(record, in: context)
+        try context.save()
+        LocalStoreChanges.post(.memories, ownerUserID: record.snapshot.ownerUserID)
+    }
+
+    /// Applies remote rows to `context` and returns the photos the memories they change stop showing.
+    private func apply(
+        _ rows: [MemoryRemoteRow],
+        ownerUserID: UUID,
+        mergePolicy: MemoryRemoteMergePolicy,
+        in context: ModelContext
+    ) throws -> Set<UUID> {
+        var unshownPhotos = Set<UUID>()
         for row in rows {
             let remoteRecord = MemoryRecord(
                 snapshot: row.snapshot(ownerUserID: ownerUserID),
@@ -57,56 +84,52 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
                 if shouldPreserveLocalRecord(existing, mergePolicy: mergePolicy) {
                     continue
                 }
-                existing.update(
-                    from: remoteRecord,
-                    ownNoteData: try encode(remoteRecord.snapshot.ownNote),
-                    partnerNoteData: try encode(remoteRecord.snapshot.partnerNote),
-                    visibleMemoryMediaIDsData: try encode(remoteRecord.snapshot.visibleMemoryMediaIDs),
-                    visibleMediaAssetIDsData: try encode(remoteRecord.snapshot.visibleMediaAssetIDs),
-                    mediaData: try encode(remoteRecord.snapshot.media),
-                    placeData: try encode(remoteRecord.snapshot.place)
-                )
+                unshownPhotos.formUnion(try photosNoLongerShown(by: existing, after: remoteRecord))
+                try update(existing, from: remoteRecord)
             } else {
-                context.insert(
-                    try localRecord(from: remoteRecord)
-                )
+                context.insert(try localRecord(from: remoteRecord))
             }
         }
-
-        try context.save()
-        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
+        return unshownPhotos
     }
 
-    func saveLocal(_ record: MemoryRecord) throws {
-        let context = ModelContext(container)
-
-        if let existing = try fetch(
+    /// Applies a local change to `context` and returns the photos the memory stops showing.
+    private func apply(_ record: MemoryRecord, in context: ModelContext) throws -> Set<UUID> {
+        guard let existing = try fetch(
             ownerUserID: record.snapshot.ownerUserID,
             memoryID: record.snapshot.memoryID,
             in: context
-        ) {
-            existing.update(
-                from: record,
-                ownNoteData: try encode(record.snapshot.ownNote),
-                partnerNoteData: try encode(record.snapshot.partnerNote),
-                visibleMemoryMediaIDsData: try encode(record.snapshot.visibleMemoryMediaIDs),
-                visibleMediaAssetIDsData: try encode(record.snapshot.visibleMediaAssetIDs),
-                mediaData: try encode(record.snapshot.media),
-                placeData: try encode(record.snapshot.place)
-            )
-        } else {
+        ) else {
             context.insert(try localRecord(from: record))
+            return []
         }
+        let unshownPhotos = try photosNoLongerShown(by: existing, after: record)
+        try update(existing, from: record)
+        return unshownPhotos
+    }
 
-        try context.save()
-        LocalStoreChanges.post(.memories, ownerUserID: record.snapshot.ownerUserID)
+    private func update(_ existing: LocalMemoryRecord, from record: MemoryRecord) throws {
+        existing.update(
+            from: record,
+            ownNoteData: try encode(record.snapshot.ownNote),
+            partnerNoteData: try encode(record.snapshot.partnerNote),
+            visibleMemoryMediaIDsData: try encode(record.snapshot.visibleMemoryMediaIDs),
+            visibleMediaAssetIDsData: try encode(record.snapshot.visibleMediaAssetIDs),
+            mediaData: try encode(record.snapshot.media),
+            placeData: try encode(record.snapshot.place)
+        )
     }
 
     func load(
         ownerUserID: UUID,
         includeHidden: Bool = false
     ) throws -> [MemoryRecord] {
-        let context = ModelContext(container)
+        try records(ownerUserID: ownerUserID, in: ModelContext(container))
+            .filter { includeHidden || $0.snapshot.isVisible }
+    }
+
+    /// Includes the changes `context` has not saved yet.
+    private func records(ownerUserID: UUID, in context: ModelContext) throws -> [MemoryRecord] {
         let descriptor = FetchDescriptor<LocalMemoryRecord>(
             predicate: #Predicate { record in
                 record.ownerUserID == ownerUserID
@@ -117,10 +140,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
                 SortDescriptor(\.memoryID)
             ]
         )
-
-        return try context.fetch(descriptor)
-            .map(record(from:))
-            .filter { includeHidden || $0.snapshot.isVisible }
+        return try context.fetch(descriptor).map(record(from:))
     }
 
     func load(
@@ -133,6 +153,31 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         }
 
         return try record(from: localRecord)
+    }
+
+    private func photosNoLongerShown(by existing: LocalMemoryRecord, after update: MemoryRecord) throws -> Set<UUID> {
+        try record(from: existing).snapshot.shownMediaAssetIDs.subtracting(update.snapshot.shownMediaAssetIDs)
+    }
+
+    /// A delete by either partner reaches this phone as a changed memory. The photos the
+    /// change stops showing leave the photo cache before the change is saved, so if the app
+    /// ends in between, the change arrives again and evicts them again. `change` runs in a
+    /// context that is never saved. A photo another memory still shows stays.
+    private func evictPhotos(
+        ownerUserID: UUID,
+        unshownBy change: (ModelContext) throws -> Set<UUID>
+    ) async throws {
+        guard let mediaCache else { return }
+        let context = ModelContext(container)
+        context.autosaveEnabled = false
+        let candidates = try change(context)
+        guard !candidates.isEmpty else { return }
+        let stillShown = try records(ownerUserID: ownerUserID, in: context)
+            .reduce(into: Set<UUID>()) { $0.formUnion($1.snapshot.shownMediaAssetIDs) }
+        let unshown = candidates.subtracting(stillShown)
+        if !unshown.isEmpty {
+            await mediaCache.evict(mediaAssetIDs: Array(unshown))
+        }
     }
 
     private func localRecord(from record: MemoryRecord) throws -> LocalMemoryRecord {

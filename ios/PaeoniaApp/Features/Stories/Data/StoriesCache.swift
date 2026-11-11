@@ -5,7 +5,7 @@ import Foundation
 protocol StoriesCaching: Actor {
     func snapshot(ownerUserID: UUID) -> StoriesSnapshot
     /// The live feed's write.
-    func save(_ snapshot: StoriesSnapshot, ownerUserID: UUID)
+    func save(_ snapshot: StoriesSnapshot, ownerUserID: UUID) async
     /// Counts the privacy purges. A change this phone started reads it first.
     var purgeGeneration: Int { get }
     /// Applies a change this phone made and the server accepted, in one step, so a live
@@ -16,7 +16,7 @@ protocol StoriesCaching: Actor {
         ownerUserID: UUID,
         ifGeneration generation: Int,
         _ change: @Sendable (inout StoriesSnapshot) -> Void
-    ) -> Bool
+    ) async -> Bool
     /// Called when the person leaves the paired state, so nothing stays on the phone.
     func clearAll()
 }
@@ -29,10 +29,15 @@ actor FileStoriesCache: StoriesCaching {
     private static let schemaVersion = 2
 
     private let directoryURL: URL
+    private let mediaCache: (any MediaCacheEvicting)?
     private(set) var purgeGeneration = 0
 
-    init(directoryURL: URL = FileStoriesCache.defaultDirectoryURL()) {
+    init(
+        directoryURL: URL = FileStoriesCache.defaultDirectoryURL(),
+        mediaCache: (any MediaCacheEvicting)? = MemoryMediaImageService.shared
+    ) {
         self.directoryURL = directoryURL
+        self.mediaCache = mediaCache
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
@@ -52,7 +57,15 @@ actor FileStoriesCache: StoriesCaching {
         return envelope.snapshot
     }
 
-    func save(_ snapshot: StoriesSnapshot, ownerUserID: UUID) {
+    func save(_ snapshot: StoriesSnapshot, ownerUserID: UUID) async {
+        let generation = purgeGeneration
+        await evictPhotos(shownIn: self.snapshot(ownerUserID: ownerUserID), notIn: snapshot)
+        // A purge that ran during the eviction must not get the couple's stories back.
+        guard generation == purgeGeneration else { return }
+        write(snapshot, ownerUserID: ownerUserID)
+    }
+
+    private func write(_ snapshot: StoriesSnapshot, ownerUserID: UUID) {
         let envelope = Envelope(schemaVersion: Self.schemaVersion, ownerUserID: ownerUserID, snapshot: snapshot)
         guard let data = try? JSONEncoder().encode(envelope) else { return }
         try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
@@ -63,12 +76,28 @@ actor FileStoriesCache: StoriesCaching {
         ownerUserID: UUID,
         ifGeneration generation: Int,
         _ change: @Sendable (inout StoriesSnapshot) -> Void
-    ) -> Bool {
+    ) async -> Bool {
+        guard generation == purgeGeneration else { return false }
+        let current = snapshot(ownerUserID: ownerUserID)
+        var preview = current
+        change(&preview)
+        await evictPhotos(shownIn: current, notIn: preview)
+        // The eviction let other writes in, so read and apply the change again in one step.
         guard generation == purgeGeneration else { return false }
         var updated = snapshot(ownerUserID: ownerUserID)
         change(&updated)
-        save(updated, ownerUserID: ownerUserID)
+        write(updated, ownerUserID: ownerUserID)
         return true
+    }
+
+    /// The server sends every story that is not deleted, so a story missing from the new
+    /// snapshot was deleted by one of the partners. Its photo leaves the cache before the
+    /// snapshot is written, so if the app ends in between, the next save sees it again.
+    private func evictPhotos(shownIn previous: StoriesSnapshot, notIn current: StoriesSnapshot) async {
+        let unshown = Set(previous.stories.map(\.mediaAssetID)).subtracting(current.stories.map(\.mediaAssetID))
+        if let mediaCache, !unshown.isEmpty {
+            await mediaCache.evict(mediaAssetIDs: Array(unshown))
+        }
     }
 
     func clearAll() {

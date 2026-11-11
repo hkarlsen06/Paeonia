@@ -7,7 +7,7 @@ import Testing
 struct ThreadChatTakeBackTests {
     private func makeService(
         _ fixture: ChatTestFixture,
-        mediaCache: (any DailyAnswerMediaCacheEvicting)? = nil
+        mediaCache: (any MediaCacheEvicting)? = nil
     ) -> ThreadChatService {
         ThreadChatService(
             gateway: fixture.gateway,

@@ -3,7 +3,7 @@ import Testing
 @testable import PaeoniaApp
 
 /// Records which cached media files the chat asked to remove.
-actor EvictionRecorder: DailyAnswerMediaCacheEvicting {
+actor EvictionRecorder: MediaCacheEvicting {
     private(set) var evicted: [UUID] = []
 
     func evict(mediaAssetIDs: [UUID]) {
@@ -21,7 +21,7 @@ struct ThreadChatDeleteTests {
 
     private func makeService(
         _ fixture: ChatTestFixture,
-        mediaCache: (any DailyAnswerMediaCacheEvicting)? = nil
+        mediaCache: (any MediaCacheEvicting)? = nil
     ) -> ThreadChatService {
         ThreadChatService(
             gateway: fixture.gateway,
