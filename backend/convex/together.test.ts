@@ -4,10 +4,10 @@ import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import { newUuid } from "./lib/ids";
 import { enqueueNotificationForUser, insertNotificationOutbox } from "./lib/notifications";
 import { cleanupCoupleContent } from "./lib/relationshipCleanup";
-import { applyCoupleActivity, applyStreakRestore } from "./lib/streaks";
+import { applyCoupleActivity, applyStreakRestore, refreshStreakAfterProfileTimeZoneChange } from "./lib/streaks";
 import { endCouple } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
-import { addDevice, createCouple, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, newTest, setTimeZone, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 // Together days through the public functions: visits, location updates, the streak read, the
 // streak crons and the push queue. The couple lives in UTC, so a couple day is a UTC date.
@@ -483,3 +483,195 @@ describe("what together days keep", () => {
     expect(await togetherDates(t)).toEqual([]);
   });
 });
+
+// ---- fix round 2: written first, before the fix ----
+
+/** Profiles in New York and Oslo, which set the couple's date. Both phones in Oslo, which set the streak's deadline. */
+async function movedEast() {
+  const s = await newCouple(["America/New_York", "Europe/Oslo"]);
+  await addDevice(s.t, s.couple.first.userId, { timeZone: "Europe/Oslo" });
+  await addDevice(s.t, s.couple.second.userId, { timeZone: "Europe/Oslo" });
+  return s;
+}
+async function shareLocation(couple: TestCouple) {
+  for (const user of [couple.first, couple.second]) {
+    await user.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: couple.coupleId,
+      p_is_enabled: true,
+      p_consent_version: "test-v1",
+      p_source: "settings_toggle",
+      ...op(),
+    });
+  }
+}
+const osloCenter = { latitude: 59.9139, longitude: 10.7522 };
+/** About 300 m north of `osloCenter`. */
+const osloNearby = { latitude: 59.9166, longitude: 10.7522 };
+const sendFix = (user: TestUser, coupleId: string, where: { latitude: number; longitude: number }, capturedAt: string) =>
+  user.as.mutation(api.location.update_latest_partner_location, {
+    p_couple_id: coupleId,
+    p_latitude: where.latitude,
+    p_longitude: where.longitude,
+    p_accuracy_m: 20,
+    p_captured_at: capturedAt,
+    p_source: "foreground_open",
+    ...op(),
+  });
+const visitRow = (t: TestConvex, id: string) =>
+  t.run((ctx) => ctx.db.query("visits").withIndex("by_uuid", (q) => q.eq("id", id)).unique());
+
+describe("one clock: the streak deadline's zones say which day an instant is on and when it ended (R1)", () => {
+  test("a visit deleted an hour after Oslo midnight keeps the together day that just ended", async () => {
+    const { t, couple } = await movedEast();
+    await streakThrough(t, couple, "2026-10-09", 30);
+    at("2026-10-09T20:00:00.000Z");
+    const visitId = newUuid();
+    await saveVisit(couple.first, visitId, "2026-10-10", "2026-10-12");
+    expect(await streak(couple.first)).toMatchObject({ next_activity_deadline_at: "2026-10-13T22:00:00.000Z" });
+    // 01:00 on 2026-10-11 in Oslo, where both phones are, and still 2026-10-10 in New York.
+    at("2026-10-10T23:00:00.000Z");
+    await deleteVisit(couple.second, visitId);
+    expect(await togetherDates(t)).toEqual(["2026-10-10"]);
+    expect(await streak(couple.first)).toMatchObject({
+      current_count: 30,
+      next_activity_deadline_at: "2026-10-11T22:00:00.000Z",
+    });
+    expect((await stored(t, couple.coupleId))?.freeze_used_at).toBeUndefined();
+  });
+
+  test("a visit saved an hour after the break cannot reach the day that broke it, and only gives time to save it", async () => {
+    const { t, couple } = await movedEast();
+    await streakThrough(t, couple, "2026-10-09", 30, "2026-10-01T00:00:00.000Z");
+    at("2026-10-10T22:30:00.000Z");
+    await breakCron(t);
+    expect(await stored(t, couple.coupleId)).toMatchObject({
+      restorable_count: 30,
+      save_deadline: "2026-10-11T22:00:00.000Z",
+      restore_deadline: "2026-10-13T22:00:00.000Z",
+    });
+    at("2026-10-10T23:00:00.000Z");
+    const visitId = newUuid();
+    await saveVisit(couple.first, visitId, "2026-10-10", "2026-10-23");
+    expect((await visitRow(t, visitId))?.together_from).toBe("2026-10-11");
+    // The break stays. The free save day moves to the first day apart.
+    expect(await streak(couple.first)).toMatchObject({
+      current_count: 0,
+      restorable_count: 30,
+      save_available: true,
+      save_deadline: "2026-10-24T22:00:00.000Z",
+    });
+    at("2026-10-24T12:00:00.000Z");
+    await bothAct(t, couple, "2026-10-24");
+    expect(await stored(t, couple.coupleId)).toMatchObject({ current_count: 31, saved_on: "2026-10-24" });
+  });
+
+  test("location fixes an hour after Oslo midnight mark the Oslo date, and the stored break stays", async () => {
+    const { t, couple } = await movedEast();
+    await shareLocation(couple);
+    await streakThrough(t, couple, "2026-10-09", 30, "2026-10-01T00:00:00.000Z");
+    at("2026-10-10T22:30:00.000Z");
+    await breakCron(t);
+    at("2026-10-10T23:00:00.000Z");
+    await sendFix(couple.second, couple.coupleId, osloCenter, "2026-10-10T20:00:00.000Z");
+    await sendFix(couple.first, couple.coupleId, osloNearby, "2026-10-10T23:00:00.000Z");
+    expect(await togetherDates(t)).toEqual(["2026-10-11"]);
+    at("2026-10-24T12:00:00.000Z");
+    await bothAct(t, couple, "2026-10-24");
+    expect(await stored(t, couple.coupleId)).toMatchObject({ current_count: 1, restorable_count: 0 });
+  });
+});
+
+describe("the save day and the restore days are worked out when read (R3)", () => {
+  test("a visit saved on the save day moves it to the first day apart, and the break stays until both act", async () => {
+    const { t, couple } = await newCouple();
+    await streakThrough(t, couple, "2026-10-09", 30, "2026-10-01T00:00:00.000Z");
+    at("2026-10-11T00:30:00.000Z");
+    await breakCron(t);
+    at("2026-10-11T08:00:00.000Z");
+    await saveVisit(couple.first, newUuid(), "2026-10-11", "2026-10-15");
+    expect(await streak(couple.first)).toMatchObject({
+      current_count: 0,
+      save_available: true,
+      save_deadline: "2026-10-17T00:00:00.000Z",
+      restore_deadline: "2026-10-19T00:00:00.000Z",
+      rest_starts_at: null,
+      rest_ends_at: null,
+    });
+    at("2026-10-16T12:00:00.000Z");
+    expect(await streak(couple.first)).toMatchObject({ current_count: 0, save_available: true });
+    await bothAct(t, couple, "2026-10-16");
+    expect(await stored(t, couple.coupleId)).toMatchObject({ current_count: 31, saved_on: "2026-10-16", restorable_count: 0 });
+  });
+
+  test("a visit saved after the save day ended moves the restore days past it", async () => {
+    const { t, couple } = await newCouple();
+    await streakThrough(t, couple, "2026-10-09", 30, "2026-10-01T00:00:00.000Z");
+    at("2026-10-11T00:30:00.000Z");
+    await breakCron(t);
+    at("2026-10-12T08:00:00.000Z");
+    await saveVisit(couple.first, newUuid(), "2026-10-11", "2026-10-15");
+    expect(await streak(couple.first)).toMatchObject({
+      save_available: false,
+      restore_available: true,
+      restore_deadline: "2026-10-18T00:00:00.000Z",
+    });
+  });
+});
+
+describe("the rest is two instants on the streak's clock (R4)", () => {
+  test("Los Angeles and Oslo: on the first visit day in Oslo the streak needs both until Los Angeles midnight, and the rest starts then", async () => {
+    at("2026-10-08T20:00:00.000Z");
+    const { t, couple } = await newCouple(["America/Los_Angeles", "Europe/Oslo"]);
+    await addDevice(t, couple.first.userId, { timeZone: "America/Los_Angeles" });
+    await addDevice(t, couple.second.userId, { timeZone: "Europe/Oslo" });
+    await bothActAt(t, couple, "2026-10-08T20:00:00.000Z");
+    const state = await stored(t, couple.coupleId);
+    await t.run((ctx) => ctx.db.patch(state!._id, { current_count: 20, longest_count: 20 }));
+    await saveVisit(couple.second, newUuid(), "2026-10-10", "2026-10-13");
+    // 08:05 on 2026-10-10 in Oslo, the visit's first day there. 23:05 on 2026-10-09 in Los Angeles.
+    at("2026-10-10T06:05:00.000Z");
+    expect(
+      await t.mutation(internal.streaks.enqueue_due_streak_reminders, { p_now: "2026-10-10T06:05:00.000Z" }),
+    ).toBe(2);
+    expect(await streak(couple.second)).toMatchObject({
+      current_count: 20,
+      next_activity_deadline_at: "2026-10-10T07:00:00.000Z",
+      rest_starts_at: "2026-10-10T07:00:00.000Z",
+      rest_ends_at: "2026-10-14T07:00:00.000Z",
+    });
+  });
+});
+
+describe("no input a person can reach makes a streak read or write throw (R7)", () => {
+  test("a profile zone moves from +14 to -11 an hour after a day of a long visit qualified", async () => {
+    at("2026-10-01T10:00:00.000Z");
+    const { t, couple } = await newCouple(["Pacific/Kiritimati", "Pacific/Kiritimati"]);
+    await saveVisit(couple.first, newUuid(), "2026-10-02", "2026-11-30");
+    // 10:30Z on 2026-10-20 is 00:30 on 2026-10-21 in Kiritimati.
+    at("2026-10-20T10:30:00.000Z");
+    await bothActAt(t, couple, "2026-10-20T10:30:00.000Z");
+    at("2026-10-20T10:40:00.000Z");
+    await setTimeZone(t, couple.first.userId, "Pacific/Pago_Pago");
+    await t.run((ctx) =>
+      refreshStreakAfterProfileTimeZoneChange(ctx, couple.first.userId, "Pacific/Kiritimati", "Pacific/Pago_Pago"),
+    );
+    expect(await streak(couple.first)).toMatchObject({ current_count: 1 });
+  });
+});
+
+/** Both partners do something at `instant`. */
+async function bothActAt(t: TestConvex, couple: TestCouple, instant: string) {
+  await t.run(async (ctx) => {
+    const dayId = await getOrCreateCoupleDayAt(ctx, couple.coupleId, instant);
+    for (const user of [couple.first, couple.second]) {
+      await applyCoupleActivity(ctx, {
+        couple_id: couple.coupleId,
+        user_id: user.userId,
+        couple_day_id: dayId,
+        activity_kind: "memory_created",
+        occurred_at: instant,
+        dedupe_key: `${user.userId}:${instant}`,
+      });
+    }
+  });
+}
