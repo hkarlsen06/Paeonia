@@ -16,9 +16,18 @@
       case partnerAnswersMeanwhile
       /// Like `unanswered`, but the streak broke yesterday and today is its free save day.
       case streakSaveDay
+      /// Like `unanswered`, but the partners are together today, so the streak rests.
+      case together
+      /// Like `unanswered`, but a visit ended yesterday, so the streak needs both partners by tonight.
+      case dayAfterVisit
 
       static func mode(for scenario: DeveloperScenario) -> Mode {
-        scenario == .streakSaveHome ? .streakSaveDay : questionsMode(for: scenario)
+        switch scenario {
+        case .streakSaveHome: .streakSaveDay
+        case .visitTogether: .together
+        case .visitEndedYesterday: .dayAfterVisit
+        default: questionsMode(for: scenario)
+        }
       }
 
       private static func questionsMode(for scenario: DeveloperScenario) -> Mode {
@@ -65,7 +74,7 @@
         )
       case .unanswered, .homeLaunch, .partnerAnswersMeanwhile:
         return try await todayLandingQueuedAnswers(currentUserID: currentUserID)
-      case .streakSaveDay:
+      case .streakSaveDay, .together, .dayAfterVisit:
         let loaded = try await todayLandingQueuedAnswers(currentUserID: currentUserID)
         return DailyChallengeLoadResult(snapshot: loaded.snapshot, streak: loadStreak())
       case .offline:
@@ -203,7 +212,12 @@
     }
 
     func loadStreak() -> CoupleStreak {
-      mode == .streakSaveDay ? DeveloperStreakScenarioView.brokenStreak(saveEndsIn: 6 * 3_600) : healthyStreak
+      switch mode {
+      case .streakSaveDay: DeveloperStreakScenarioView.brokenStreak(saveEndsIn: 6 * 3_600)
+      case .together: togetherStreak
+      case .dayAfterVisit: endsTonightStreak
+      default: healthyStreak
+      }
     }
 
     private var healthyStreak: CoupleStreak {
@@ -365,6 +379,29 @@
         isCurrentDay: isCurrentDay,
         hasSharedRound: partnerDetail != nil
       )
+    }
+  }
+
+  extension DeveloperDailyChallengeService {
+    fileprivate var endsTonightStreak: CoupleStreak {
+      var streak = healthyStreak
+      streak.endsAt = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: Date()))
+      return streak
+    }
+
+    /// The streak during `visit-together`'s visit, from yesterday to two days from now, which it
+    /// rests through. It needs both partners again the day after.
+    fileprivate var togetherStreak: CoupleStreak {
+      var streak = healthyStreak
+      let calendar = Calendar.current
+      let today = calendar.startOfDay(for: Date())
+      let day = { (offset: Int) in
+        let date = calendar.date(byAdding: .day, value: offset, to: today) ?? today
+        return LockScreenCalendarDate(containing: date, in: calendar)
+      }
+      streak.endsAt = calendar.date(byAdding: .day, value: 4, to: today)
+      streak.restDays = day(-1)...day(2)
+      return streak
     }
   }
 #endif

@@ -61,9 +61,12 @@ struct StreakHomeView: View {
         }
     }
 
-    /// Says who still has to take part today.
+    /// Says who still has to take part today, or that nobody has to while the partners are together.
     private func caption(_ streak: LockScreenStreak) -> String {
         let partner = entry.snapshot?.partnerFirstName ?? ""
+        if streak.restsWhileTogether, streak.ring != .both {
+            return String(localized: .widgetHomeStreakResting)
+        }
         return switch streak.ring {
         case .both: String(localized: .widgetHomeStreakBoth)
         case .me: String(localized: .widgetHomeStreakWaitingForPartner(partner))

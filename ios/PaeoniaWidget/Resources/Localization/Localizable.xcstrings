@@ -490,6 +490,24 @@
         }
       }
     },
+    "widget.home.streak.resting" : {
+      "comment" : "Home Screen streak widget caption on a day the streak needs nothing because the partners are together. Avoid the word for paused.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your streak rests while you're together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken hviler mens dere er sammen"
+          }
+        }
+      }
+    },
     "widget.home.streak.start" : {
       "comment" : "Caption under the streak ring when the couple has no streak yet.",
       "extractionState" : "manual",

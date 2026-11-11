@@ -373,7 +373,10 @@ extension PairedHomeView {
             dailyCard: dailyChallengeCardState.kind,
             milestoneIsLoading: milestoneIsLoading,
             relationshipStartedOn: relationshipStartedOn,
-            visitCard: visits?.homeCard(on: LockScreenCalendarDate(containing: Date(), in: .current))
+            visitCard: visits?.homeCard(
+                on: LockScreenCalendarDate(containing: Date(), in: .current),
+                streak: dailyChallengeStreak
+            )
         )
     }
 

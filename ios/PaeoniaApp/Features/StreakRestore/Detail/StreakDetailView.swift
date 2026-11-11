@@ -167,7 +167,10 @@ struct StreakDetailView: View {
             VStack(spacing: PaeoniaSpacing.space16) {
                 if streak.currentCount > 0, let endsAt = streak.endsAt {
                     TimelineView(.periodic(from: .now, by: 60)) { timeline in
-                        if endsAt > timeline.date {
+                        let today = LockScreenCalendarDate(containing: timeline.date, in: .current)
+                        if streak.restsWhileTogether(on: today) {
+                            restingLabel
+                        } else if endsAt > timeline.date {
                             Label {
                                 HStack {
                                     Text(.streakDetailTimeLeft)
@@ -189,6 +192,18 @@ struct StreakDetailView: View {
                 }
             }
         }
+    }
+
+    /// On a day together the streak needs nothing, so there is no time left to count down.
+    private var restingLabel: some View {
+        Label {
+            Text(.streakTogetherResting)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: "moon.zzz.fill")
+        }
+        .font(PaeoniaTypography.bodyEmphasis)
+        .foregroundStyle(.paeoniaTextPrimary)
     }
 
     private func freezeNote(_ text: LocalizedStringResource) -> some View {

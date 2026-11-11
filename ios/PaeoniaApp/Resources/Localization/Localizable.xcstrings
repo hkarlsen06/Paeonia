@@ -22599,6 +22599,24 @@
         }
       }
     },
+    "home.visit.togetherToday" : {
+      "comment" : "Title of the Us tab visit card on a day both partners' shared locations showed them together, with no visit planned for the day.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen i dag"
+          }
+        }
+      }
+    },
     "home.widget.card.hint" : {
       "comment" : "Accessibility hint for the tappable widget preview on the home screen",
       "extractionState" : "manual",
@@ -42620,6 +42638,42 @@
         }
       }
     },
+    "streakTogether.pillAccessibility" : {
+      "comment" : "VoiceOver label of the streak pill on a day the streak rests because the partners are together. %@ is the streak count, such as 12 days in a row. Avoid the word for paused.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, resting while you're together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, hviler mens dere er sammen"
+          }
+        }
+      }
+    },
+    "streakTogether.resting" : {
+      "comment" : "On the Us tab visit card and the streak sheet, on a day the streak needs nothing because the partners are together. Avoid the word for paused, which means a broken streak.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your streak rests while you're together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken hviler mens dere er sammen."
+          }
+        }
+      }
+    },
     "topics.answerNext" : {
       "comment" : "Button at the bottom of a topic screen that opens the next question to answer",
       "extractionState" : "manual",
@@ -43732,6 +43786,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dere er sammen"
+          }
+        }
+      }
+    },
+    "visit.countdown.togetherUntil" : {
+      "comment" : "Title of the Us tab visit card while the visit is happening. %@ is the visit's last day, such as Thu 12 Nov",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together until %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen til %@"
           }
         }
       }

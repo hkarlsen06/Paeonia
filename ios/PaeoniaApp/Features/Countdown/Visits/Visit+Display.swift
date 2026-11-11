@@ -23,6 +23,14 @@ nonisolated extension Visit {
         return (start..<end).formatted(style)
     }
 
+    /// "Together until Thu 12 Nov", the Us tab card's title while the partners are together
+    /// until `lastDay`.
+    static func togetherUntilTitle(_ lastDay: LockScreenCalendarDate, calendar: Calendar = .current) -> String {
+        guard let end = lastDay.startOfDay(in: calendar) else { return String(localized: .visitCountdownOngoing) }
+        let style = Date.FormatStyle.dateTime.weekday(.abbreviated).day().month(.abbreviated)
+        return String(localized: .visitCountdownTogetherUntil(end.formatted(style)))
+    }
+
     /// The dates timeline row: "Together in Bergen", or "Together again" without a place.
     var timelineTitle: String {
         guard let place else { return String(localized: .visitTimelineTitle) }

@@ -130,6 +130,8 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
     let nextActivityDeadlineAt: Date?
     let saveDeadline: Date?
     let savedOn: String?
+    let togetherFrom: String?
+    let togetherUntil: String?
 
     init(
         currentCount: Int,
@@ -145,7 +147,9 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         freezeSavedStreak: Bool = false,
         nextActivityDeadlineAt: Date? = nil,
         saveDeadline: Date? = nil,
-        savedOn: String? = nil
+        savedOn: String? = nil,
+        togetherFrom: String? = nil,
+        togetherUntil: String? = nil
     ) {
         self.currentCount = currentCount
         self.longestCount = longestCount
@@ -161,6 +165,8 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         self.nextActivityDeadlineAt = nextActivityDeadlineAt
         self.saveDeadline = saveDeadline
         self.savedOn = savedOn
+        self.togetherFrom = togetherFrom
+        self.togetherUntil = togetherUntil
     }
 
     enum CodingKeys: String, CodingKey {
@@ -178,6 +184,16 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         case nextActivityDeadlineAt = "next_activity_deadline_at"
         case saveDeadline = "save_deadline"
         case savedOn = "saved_on"
+        case togetherFrom = "together_from"
+        case togetherUntil = "together_until"
+    }
+
+    private var restDays: ClosedRange<LockScreenCalendarDate>? {
+        guard let from = togetherFrom.flatMap({ LockScreenCalendarDate($0) }),
+              let until = togetherUntil.flatMap({ LockScreenCalendarDate($0) }),
+              from <= until
+        else { return nil }
+        return from...until
     }
 
     var streak: CoupleStreak {
@@ -195,7 +211,8 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
             freezeSavedStreak: freezeSavedStreak,
             endsAt: nextActivityDeadlineAt,
             saveDeadline: saveDeadline,
-            savedOn: savedOn
+            savedOn: savedOn,
+            restDays: restDays
         )
     }
 }

@@ -1,10 +1,13 @@
 import SwiftUI
 
-/// The Us tab card about the next time the partners meet. With a visit planned it counts the
-/// days and names the place and dates. Without one it asks when they meet next, and the person
-/// can hide it for 30 days. Both are short rows that open the visit screen with the shared list.
+/// The Us tab card about the next time the partners meet. While they are together it says until
+/// when, or that they are together today when only their phones showed it, and that the streak
+/// rests on the days it does. With a visit planned it counts the days and names the place and
+/// dates. Without one it asks when they meet next, and the person can hide it for 30 days. Each
+/// is a short row that opens the visit screen with the shared list.
 struct HomeVisitCard: View {
     let visits: VisitsViewModel
+    let streak: StreakPillState
 
     private static let iconSize: CGFloat = 32
 
@@ -25,25 +28,42 @@ struct HomeVisitCard: View {
     @ViewBuilder
     private var content: some View {
         let today = LockScreenCalendarDate(containing: now, in: .current)
-        switch visits.homeCard(on: today) {
+        switch visits.homeCard(on: today, streak: streak) {
         case .hidden:
             EmptyView()
         case let .visit(visit):
-            Button { isDetailPresented = true } label: {
-                visitCard(visit, headline: visit.phase(on: today).headline ?? "")
+            cardButton {
+                visitCard(
+                    headline: visit.phase(on: today).headline ?? "",
+                    detail: [visit.place?.nameAndCity, visit.dateRangeText()].compactMap(\.self).joined(separator: " · ")
+                )
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("home.visit.card")
-            .transition(.opacity)
+        case let .together(until, place):
+            cardButton {
+                visitCard(
+                    headline: until.map { Visit.togetherUntilTitle($0) } ?? String(localized: .homeVisitTogetherToday),
+                    detail: [
+                        place?.nameAndCity,
+                        streak.restsWhileTogether(on: today) ? String(localized: .streakTogetherResting) : nil,
+                    ].compactMap(\.self).joined(separator: " · ")
+                )
+            }
         case .prompt:
             promptRow
                 .transition(.opacity)
         }
     }
 
-    /// The day count with the place and dates on one line under it, two lines in all, so the
-    /// tiles under it stay on the first screen.
-    private func visitCard(_ visit: Visit, headline: String) -> some View {
+    private func cardButton(@ViewBuilder _ card: () -> some View) -> some View {
+        Button { isDetailPresented = true } label: { card() }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("home.visit.card")
+            .transition(.opacity)
+    }
+
+    /// The headline with one line under it, two lines in all, so the tiles under it stay on the
+    /// first screen.
+    private func visitCard(headline: String, detail: String) -> some View {
         PaeoniaCard(padding: PaeoniaSpacing.space12) {
             HStack(spacing: PaeoniaSpacing.space12) {
                 icon
@@ -51,9 +71,11 @@ struct HomeVisitCard: View {
                     Text(headline)
                         .font(PaeoniaTypography.title)
                         .foregroundStyle(.paeoniaTextPrimary)
-                    Text([visit.place?.nameAndCity, visit.dateRangeText()].compactMap(\.self).joined(separator: " · "))
-                        .font(.subheadline)
-                        .foregroundStyle(.paeoniaTextSecondary)
+                    if !detail.isEmpty {
+                        Text(detail)
+                            .font(.subheadline)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                    }
                 }
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -119,12 +119,14 @@ final class VisitsViewModel {
         if isActive { show(local.refusals) }
     }
 
-    func homeCard(on today: LockScreenCalendarDate) -> HomeVisitCardState {
+    func homeCard(on today: LockScreenCalendarDate, streak: StreakPillState) -> HomeVisitCardState {
         guard hasLoaded else { return .hidden }
-        if let visit = state.currentOrNext(on: today) {
-            return .visit(visit)
-        }
-        return promptReturnDay.map { today < $0 } == true ? .hidden : .prompt
+        return HomeVisitCardState(
+            visits: state,
+            on: today,
+            restsTogether: streak.restsWhileTogether(on: today),
+            promptReturnDay: promptReturnDay
+        )
     }
 
     func hidePrompt(now: Date = Date(), calendar: Calendar = .current) async {
@@ -300,15 +302,6 @@ final class VisitsViewModel {
         Task { await sync() }
         return true
     }
-}
-
-nonisolated enum HomeVisitCardState: Equatable, Sendable {
-    /// Nothing: the cache isn't read yet, or the person hid the question.
-    case hidden
-    /// "When do you meet next?"
-    case prompt
-    /// The visit that is ongoing, or else the next one.
-    case visit(Visit)
 }
 
 nonisolated enum VisitsError: Equatable, Sendable {

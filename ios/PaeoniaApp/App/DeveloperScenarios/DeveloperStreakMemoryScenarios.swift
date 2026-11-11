@@ -39,6 +39,14 @@
         streak.currentCount = 1
         streak.endsAt = nil
       }
+      if scenario == .visitStreakSheet {
+        // Together from yesterday to tomorrow, so the streak needs both partners again the day after.
+        let day = { (offset: Int) in
+          LockScreenCalendarDate(containing: .now.addingTimeInterval(Double(offset) * 86_400), in: .current)
+        }
+        streak.endsAt = .now.addingTimeInterval(3 * 86_400)
+        streak.restDays = day(-1)...day(1)
+      }
       return streak
     }
 
@@ -71,7 +79,7 @@
           playsCelebration: true,
           ambientMotion: false
         )
-      case .streakOneDay, .streakAtRisk, .streakFrozen:
+      case .streakOneDay, .streakAtRisk, .streakFrozen, .visitStreakSheet:
         let streak = statusStreak
         Color.paeoniaBackgroundPrimary
           .overlay(alignment: .topTrailing) {

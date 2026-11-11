@@ -2,10 +2,12 @@ import Foundation
 
 /// The couple's shared connection streak, as stored on the server.
 ///
-/// The backend owns this value. Each partner must do at least one meaningful
-/// activity during the couple day before it counts: completing the daily
-/// challenge, sharing a drawing, adding a memory, or sending a message. The app
-/// reads the shared count and each person's current-day participation state.
+/// The backend owns this value and every rule behind it (`backend/convex/lib/streaks.ts`).
+/// Each partner must do at least one meaningful activity during the couple day
+/// before it counts: completing the daily challenge, sharing a drawing, adding a
+/// memory, or sending a message. Up to 14 days in a row the partners spend together
+/// need nothing. The app reads the shared count and each person's current-day
+/// participation state.
 nonisolated struct CoupleStreak: Equatable, Sendable {
     var currentCount: Int
     var longestCount: Int
@@ -44,6 +46,11 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     /// The couple's local date (`yyyy-MM-dd`) on which both partners last brought
     /// a broken streak back for free, or `nil` if they never have.
     var savedOn: String?
+    /// The days in a row the streak rests because the partners are together, as the
+    /// server counts them. They are the run that holds today, or else the next planned one.
+    /// The phone checks its own day against them, so a cached streak still tells a
+    /// resting day from the first day apart.
+    var restDays: ClosedRange<LockScreenCalendarDate>?
 
     /// True while both partners can still bring a broken streak back for free by
     /// doing one small thing today. Recomputed from the deadline, so it ends the
@@ -57,6 +64,12 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     /// server flag) so the offer opens and closes on time while the app stays open.
     var isRestorable: Bool {
         restorableCount > 0 && !isSavable && (restoreDeadline.map { $0 > .now } ?? false)
+    }
+
+    /// True when a live streak needs nothing on `today` because the partners are together.
+    /// A broken streak never rests.
+    func restsWhileTogether(on today: LockScreenCalendarDate) -> Bool {
+        currentCount > 0 && restDays?.contains(today) == true
     }
 
     /// The save day to celebrate: the day both partners brought the streak back

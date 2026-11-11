@@ -1,11 +1,13 @@
 #if DEBUG
   import SwiftUI
 
-  /// The visit scenarios. `visit-none` and `visit-upcoming` open the real paired tabs on the Us
-  /// tab. The others open the visit screen or the editor on their own.
+  /// The visit scenarios. `visit-none`, `visit-upcoming`, `visit-together` and
+  /// `visit-ended-yesterday` open the real paired tabs on the Us tab. `visit-streak-sheet` opens
+  /// the streak sheet on a day together. The others open the visit screen or the editor on their own.
   nonisolated extension DeveloperScenario {
     static let visits: [DeveloperScenario] = [
-      visitNone, visitUpcoming, visitDetail, visitEditor, visitListFull, visitEditorFull, visitRefused,
+      visitNone, visitUpcoming, visitTogether, visitEndedYesterday, visitStreakSheet, visitDetail, visitEditor,
+      visitListFull, visitEditorFull, visitRefused,
     ]
 
     static let visitNone = DeveloperScenario(
@@ -14,6 +16,18 @@
     static let visitUpcoming = DeveloperScenario(
       "visit-upcoming", "Visit · upcoming", "The Us tab counts down to a visit in Bergen", .relationship
     ) { DeveloperPairedScenarioHost(scenario: $0) }
+    static let visitTogether = DeveloperScenario(
+      "visit-together", "Visit · together", "The partners are together in Bergen and the streak rests",
+      .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
+    static let visitEndedYesterday = DeveloperScenario(
+      "visit-ended-yesterday", "Visit · ended yesterday", "The first day apart again, so the streak needs both",
+      .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
+    static let visitStreakSheet = DeveloperScenario(
+      "visit-streak-sheet", "Visit · streak sheet", "The streak pill and sheet on a day the partners are together",
+      .streak
+    ) { DeveloperStreakScenarioView(scenario: $0) }
     static let visitDetail = DeveloperScenario(
       "visit-detail", "Visit · detail", "The next visit with three things to do, one ticked", .relationship
     ) { _ in DeveloperVisitScreen(content: .detail, visits: DeveloperVisitsFixture.planned()) }
@@ -41,7 +55,12 @@
     static let ownerUserID = DeveloperScenarioFixture.currentUserID
 
     static func model(for scenario: DeveloperScenario) -> VisitsViewModel {
-      model(scenario == .visitUpcoming ? planned() : CoupleVisits())
+      switch scenario {
+      case .visitUpcoming: model(planned())
+      case .visitTogether: model(planned(from: -1, through: 2))
+      case .visitEndedYesterday: model(planned(from: -4, through: -1))
+      default: model(CoupleVisits())
+      }
     }
 
     static func model(_ visits: CoupleVisits, refusals: [VisitsRefusal] = []) -> VisitsViewModel {
@@ -52,13 +71,16 @@
       )
     }
 
-    /// A visit in Bergen 12 days from today, and three things to do, the second one ticked.
-    static func planned(now: Date = Date(), calendar: Calendar = .current) -> CoupleVisits {
+    /// A visit in Bergen, by default 12 to 16 days from today, and three things to do, the second
+    /// one ticked.
+    static func planned(
+      from startOffset: Int = 12, through endOffset: Int = 16, now: Date = Date(), calendar: Calendar = .current
+    ) -> CoupleVisits {
       let bergen = MemoryPlace(
         name: "Bryggen", latitude: 60.397, longitude: 5.324, city: "Bergen", countryCode: "NO"
       )
       return CoupleVisits(
-        visits: [visit(from: 12, to: 16, place: bergen, now: now, calendar: calendar)],
+        visits: [visit(from: startOffset, to: endOffset, place: bergen, now: now, calendar: calendar)],
         items: [
           TogetherListItem(id: UUID(), title: "Ice skating at Frogner", isDone: false),
           TogetherListItem(id: UUID(), title: "Cook ramen together", isDone: true),

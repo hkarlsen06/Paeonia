@@ -20,6 +20,10 @@ struct StreakPillState: Equatable {
     /// The live streak ends within `atRiskLeadTime`. Set by `resolved(at:)`.
     private(set) var isAtRisk = false
     var isFrozen = false
+    /// The days the streak rests because the partners are together (`CoupleStreak.restDays`).
+    var restDays: ClosedRange<LockScreenCalendarDate>?
+    /// A live streak that rests today because the partners are together. Set by `resolved(at:)`.
+    private(set) var restsWhileTogether = false
     private var isAvailable: Bool
 
     /// How long before the streak ends the pill starts showing the hourglass.
@@ -41,6 +45,7 @@ struct StreakPillState: Equatable {
         restoreDeadline: Date? = nil,
         endsAt: Date? = nil,
         isFrozen: Bool = false,
+        restDays: ClosedRange<LockScreenCalendarDate>? = nil,
         isAvailable: Bool = true
     ) {
         self.count = count
@@ -51,6 +56,7 @@ struct StreakPillState: Equatable {
         self.restoreDeadline = restoreDeadline
         self.endsAt = endsAt
         self.isFrozen = isFrozen
+        self.restDays = restDays
         self.isAvailable = isAvailable
     }
 
@@ -63,14 +69,15 @@ struct StreakPillState: Equatable {
         restoreDeadline = streak.restoreDeadline
         endsAt = streak.endsAt
         isFrozen = streak.freezeSavedStreak && streak.currentCount > 0
+        restDays = streak.restDays
         isAvailable = true
     }
 
     /// The pill as it should look at `now`: at the end of the save day the streak can
     /// only be bought back, an offer whose deadline has been reached (or passed) is no
-    /// longer restorable and falls back to the live count, and a live streak close to
-    /// its end shows the hourglass.
-    func resolved(at now: Date) -> StreakPillState {
+    /// longer restorable and falls back to the live count, a live streak close to its
+    /// end shows the hourglass, and one on a day together rests.
+    func resolved(at now: Date, calendar: Calendar = .current) -> StreakPillState {
         var resolved = self
         if isSavable, let saveDeadline, saveDeadline <= now {
             resolved.isSavable = false
@@ -80,7 +87,14 @@ struct StreakPillState: Equatable {
             resolved.isRestorable = false
         }
         resolved.isAtRisk = resolved.atRiskFrom.map { $0 <= now } ?? false
+        let today = LockScreenCalendarDate(containing: now, in: calendar)
+        resolved.restsWhileTogether = resolved.restsWhileTogether(on: today)
         return resolved
+    }
+
+    /// True when a live streak rests on `today` because the partners are together.
+    func restsWhileTogether(on today: LockScreenCalendarDate) -> Bool {
+        count >= 1 && !isPaused && restDays?.contains(today) == true
     }
 
     /// A broken streak that can still come back, free today or by purchase.
@@ -93,9 +107,15 @@ struct StreakPillState: Equatable {
         return endsAt.addingTimeInterval(-Self.atRiskLeadTime)
     }
 
-    /// The moments the pill looks different without new data.
+    /// The moments the pill looks different without new data, among them the midnights a
+    /// rest starts and ends on this phone's calendar.
     var changeDates: [Date] {
-        [isSavable ? saveDeadline : nil, restoreDeadline, atRiskFrom].compactMap(\.self).sorted()
+        let calendar = Calendar.current
+        let restStart = restDays?.lowerBound.startOfDay(in: calendar)
+        let restEnd = restDays?.upperBound.startOfDay(in: calendar)
+            .flatMap { calendar.date(byAdding: .day, value: 1, to: $0) }
+        return [isSavable ? saveDeadline : nil, restoreDeadline, atRiskFrom, restStart, restEnd]
+            .compactMap(\.self).sorted()
     }
 
     /// The number shown: the broken streak while it can still come back (so it shows
@@ -174,6 +194,11 @@ struct DailyStreakToolbarLabel: View {
                 Image(systemName: "hourglass")
                     .font(.system(size: flameHeight * 0.65, weight: .semibold))
                     .accessibilityHidden(true)
+            } else if state.restsWhileTogether {
+                Image(systemName: "moon.zzz.fill")
+                    .font(.system(size: flameHeight * 0.55, weight: .semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .accessibilityHidden(true)
             }
         }
         .font(.system(.subheadline, design: .rounded).weight(.bold))
@@ -236,6 +261,7 @@ struct DailyStreakToolbarLabel: View {
         let streakText = state.isFrozen && !state.usesMutedFlame
             ? String(localized: .streakFrozenAccessibility(countText)) : countText
         if state.isAtRisk { return String(localized: .streakAtRiskPillAccessibility(streakText)) }
+        if state.restsWhileTogether { return String(localized: .streakTogetherPillAccessibility(streakText)) }
         if state.isMilestone { return String(localized: .streakMilestonePillAccessibility(streakText)) }
         if state.isSavable { return String(localized: .streakSavePillAccessibilityLabel(streakText)) }
         guard state.isRestorable else { return streakText }
@@ -276,6 +302,17 @@ struct DailyStreakToolbarLabel: View {
             restorableCount: 0,
             endsAt: .now.addingTimeInterval(60 * 60)
         ),
+        onTap: {}
+    )
+    .padding()
+    .background(.paeoniaBackgroundPrimary)
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Together") {
+    let today = LockScreenCalendarDate(containing: .now, in: .current)
+    DailyStreakToolbarLabel(
+        state: StreakPillState(count: 12, isRestorable: false, restorableCount: 0, restDays: today...today),
         onTap: {}
     )
     .padding()

@@ -76,7 +76,7 @@ extension PairedHomeView {
     @ViewBuilder
     var visitCard: some View {
         if let visits {
-            HomeVisitCard(visits: visits)
+            HomeVisitCard(visits: visits, streak: dailyChallengeStreak)
         }
     }
 
