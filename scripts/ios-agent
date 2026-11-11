@@ -53,7 +53,7 @@ def actions(arguments):
 
 
 def simulator_count():
-    value = os.environ.get("IOS_AGENT_SIMULATORS", "1")
+    value = os.environ.get("IOS_AGENT_SIMULATORS", "3")
     if value not in ("1", "2", "3"):
         raise ValueError("IOS_AGENT_SIMULATORS must be 1, 2 or 3")
     return int(value)
@@ -63,7 +63,7 @@ def check_simulator(target):
     allowed = SIMULATORS[:simulator_count()]
     if not any(target in pair for pair in allowed):
         raise ValueError(f"{target} is outside the shared simulator pool; "
-                         "use Shared iPhone or explicitly set IOS_AGENT_SIMULATORS=2 or 3")
+                         "take a simulator through scripts/lock and use the one it names")
 
 
 @contextlib.contextmanager

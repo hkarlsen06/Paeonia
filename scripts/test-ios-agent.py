@@ -43,7 +43,12 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(args[args.index("-jobs") + 1], "2")
         self.assertEqual(args[args.index("-parallel-testing-enabled") + 1], "NO")
 
-    def test_extra_simulators_require_opt_in(self):
+    def test_pool_is_three_simulators_unless_made_smaller(self):
+        with mock.patch.dict(os.environ):
+            os.environ.pop("IOS_AGENT_SIMULATORS", None)
+            agent.build_arguments(["test", "-destination", "platform=iOS Simulator,name=Shared iPhone 3"])
+            with self.assertRaises(ValueError):
+                agent.build_arguments(["test", "-destination", "platform=iOS Simulator,name=iPhone 17 Pro"])
         with mock.patch.dict(os.environ, {"IOS_AGENT_SIMULATORS": "1"}):
             with self.assertRaises(ValueError):
                 agent.build_arguments(["test", "-destination", "platform=iOS Simulator,name=Shared iPhone 2"])
