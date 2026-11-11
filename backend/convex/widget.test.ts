@@ -714,7 +714,13 @@ describe("get_lock_screen_state", () => {
       distance: null,
       // The westmost partner sets the couple day: New York is still on 2026-10-10 until 04:00 UTC the next day.
       couple_day: { local_date: "2026-10-10", starts_at: "2026-10-10T04:00:00.000Z", ends_at: "2026-10-11T04:00:00.000Z" },
-      streak: { current_count: 0, me_active_today: false, partner_active_today: false },
+      streak: {
+        current_count: 0,
+        me_active_today: false,
+        partner_active_today: false,
+        together_from: null,
+        together_until: null,
+      },
       daily_question: null,
       games: { my_turn_count: 0, first_my_turn_kind: null },
     });
@@ -918,12 +924,12 @@ describe("get_lock_screen_state", () => {
     await answer(first);
     expect((await stateOf(first))!.daily_question).toEqual({ me_answered: true, partner_answered: false });
     expect((await stateOf(second))!.daily_question).toEqual({ me_answered: false, partner_answered: true });
-    expect((await stateOf(first))!.streak).toEqual({ current_count: 0, me_active_today: true, partner_active_today: false });
-    expect((await stateOf(second))!.streak).toEqual({ current_count: 0, me_active_today: false, partner_active_today: true });
+    expect((await stateOf(first))!.streak).toMatchObject({ current_count: 0, me_active_today: true, partner_active_today: false });
+    expect((await stateOf(second))!.streak).toMatchObject({ current_count: 0, me_active_today: false, partner_active_today: true });
 
     await answer(second);
     expect((await stateOf(first))!.daily_question).toEqual({ me_answered: true, partner_answered: true });
-    expect((await stateOf(first))!.streak).toEqual({ current_count: 1, me_active_today: true, partner_active_today: true });
+    expect((await stateOf(first))!.streak).toMatchObject({ current_count: 1, me_active_today: true, partner_active_today: true });
     expect(JSON.stringify(await stateOf(first))).not.toMatch(/secret|prompt/);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });

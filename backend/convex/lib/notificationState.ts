@@ -6,6 +6,7 @@ import { getByUuid } from "./db";
 import { gamePushStillWanted } from "./gameRegistry";
 import type { GamePushKind } from "./games";
 import { pairingInviteStillWaiting } from "./pairingInviteReminder";
+import { waitsWhileTogether } from "./notifications";
 import { hasStartedToday } from "./questionTimeStatus";
 import { accessEndingPushStillWanted, paymentProblemPushWanted, subscriptionPushAllowed } from "./subscriptionNotices";
 import { addMs } from "./time";
@@ -30,6 +31,10 @@ export async function notificationStillWanted(
   }
   if (typeof payload.couple_id === "string" && !(await isActiveCoupleMember(ctx, recipientUserId, payload.couple_id))) {
     return { wanted: false, reason: "ineligible" };
+  }
+  // The couple may have met since the reminder was queued.
+  if (await waitsWhileTogether(ctx, row.kind, payload, now, "skipped")) {
+    return { wanted: false, reason: "out_of_date" };
   }
   // A message its sender took back before the alert went out needs no alert.
   if (row.kind === "thread_message_sent" && typeof payload.message_id === "string") {

@@ -60,6 +60,8 @@ describe("get_couple_streak", () => {
         freeze_ready_at: null,
         freeze_saved_streak: false,
         next_activity_deadline_at: null,
+        together_from: null,
+        together_until: null,
         current_user_contributed_today: false,
         partner_contributed_today: false,
       },

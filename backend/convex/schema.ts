@@ -827,12 +827,16 @@ export default defineSchema({
   // A time the partners meet in person, from start_date to end_date, both calendar days. Either
   // partner can plan, edit, or delete one, and a visit in the past is fine. `lib/visits.ts` decides
   // whether a visit is upcoming, ongoing or over. Delete sets deleted_at, like countdowns.
+  // together_from is the couple's local date when the dates were last saved. The visit makes
+  // together days only from then on (`lib/together.ts`), and `keepVisitDays` runs before every
+  // change to the dates.
   // FK: couple_id -> couples cascade.
   visits: defineTable({
     id: uuid,
     couple_id: uuid,
     start_date: date,
     end_date: date,
+    together_from: date,
     place: v.optional(placeField),
     created_by_user_id: uuid,
     last_edited_by_user_id: uuid,
@@ -842,6 +846,31 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_couple_id_deleted_at_end_date", ["couple_id", "deleted_at", "end_date"]),
+
+  // A couple-local day the partners were together (`lib/together.ts`): location showed it, or a
+  // visit or location run covered it and then changed after the day ended. It holds the date only,
+  // never a place. One row per day, deleted TOGETHER_DAYS_KEPT days later.
+  // FK: couple_id -> couples cascade.
+  together_days: defineTable({
+    couple_id: uuid,
+    local_date: date,
+    source: v.union(v.literal("visit"), v.literal("location")),
+    created_at: ts,
+  })
+    .index("by_couple_id_local_date", ["couple_id", "local_date"])
+    .index("by_local_date", ["local_date"]),
+
+  // Location showed the partners together on `since`, and every day after it is a together day
+  // until a fix shows them apart or a partner pauses or stops sharing. Then the row goes. At most one
+  // per couple. `since` holds a date only and moves up to TOGETHER_DAYS_KEPT days ago.
+  // FK: couple_id -> couples cascade.
+  together_location_runs: defineTable({
+    couple_id: uuid,
+    since: date,
+    created_at: ts,
+  })
+    .index("by_couple_id", ["couple_id"])
+    .index("by_since", ["since"]),
 
   // The couple's one list of things to do together. It belongs to the couple, not to a visit, so
   // it survives a moved or deleted visit. Either partner adds, ticks, or deletes an item. Delete

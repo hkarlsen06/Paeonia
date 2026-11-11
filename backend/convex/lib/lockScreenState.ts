@@ -10,23 +10,11 @@ import { isSharingNow } from "./locationPause";
 import { findProfile } from "./profiles";
 import { getCoupleStreakParticipationForDay, readCoupleStreak } from "./streaks";
 import { addDaysToDate } from "./time";
+import { distanceMeters } from "./together";
 import { openVisits } from "./visits";
 
 // Everything the Lock Screen widgets show, in one read. It carries no question text, answer text,
 // message text, or coordinates, because a widget can sit on a locked phone.
-
-const EARTH_RADIUS_METERS = 6_371_000;
-
-type Coordinates = { latitude: number; longitude: number };
-
-/** Great-circle distance between two coordinates in whole meters (haversine). */
-export function distanceMeters(a: Coordinates, b: Coordinates): number {
-  const rad = Math.PI / 180;
-  const dLat = (b.latitude - a.latitude) * rad;
-  const dLon = (b.longitude - a.longitude) * rad;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad) * Math.sin(dLon / 2) ** 2;
-  return Math.round(2 * EARTH_RADIUS_METERS * Math.asin(Math.min(1, Math.sqrt(h))));
-}
 
 /**
  * Every countdown still worth showing, both birthdays, and the visits that are not over, as stored, for
@@ -195,6 +183,9 @@ export async function readLockScreenState(ctx: ReaderCtx, userId: string, now: s
       current_count: streak.current_count,
       me_active_today: participation.current_user_contributed_today,
       partner_active_today: participation.partner_contributed_today,
+      // The days the streak rests because the partners are together, so the widget stops asking for an answer.
+      together_from: streak.together_from,
+      together_until: streak.together_until,
     },
     daily_question: existingDay ? await dailyQuestionState(ctx, existingDay.id, userId, partnerId) : null,
     games: { my_turn_count: turns.length, first_my_turn_kind: turns[0]?.kind ?? null },

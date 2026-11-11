@@ -578,6 +578,20 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       nb: "Den siste posisjonen du delte med partneren din. Vi lagrer ingen historikk.",
     },
   }),
+  together_days: shared("by_couple_id_local_date", {
+    group: "location",
+    about: {
+      en: "The days in the last 45 days that you and your partner were together, from a visit or from your shared locations. Only the date, never the place.",
+      nb: "Dagene de siste 45 dagene da du og partneren din var sammen, fra et besøk eller fra posisjonene dere delte. Bare datoen, aldri stedet.",
+    },
+  }),
+  together_location_runs: shared("by_couple_id", {
+    group: "location",
+    about: {
+      en: "The date your shared locations began to show you together, while they still do. Only the date, never the place.",
+      nb: "Datoen da posisjonene dere delte begynte å vise at dere er sammen, så lenge de fortsatt gjør det. Bare datoen, aldri stedet.",
+    },
+  }),
 
   // ---- activity ----
   couple_activity_events: own("user_id", "by_user_id_created_at", {

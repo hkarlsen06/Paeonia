@@ -17,7 +17,9 @@ import {
   LOCK_SCREEN_LOCATION_DELAY_SECONDS,
   LOCK_SCREEN_REFRESH_DELAY_SECONDS,
 } from "./lib/notifications";
+import { detectStreakBreak } from "./lib/streaks";
 import { addMs, nowIso } from "./lib/time";
+import { endLocationRun, noteLocationFix } from "./lib/together";
 import { locationPermission } from "./lib/validators";
 import type { WriterCtx } from "./lib/db";
 
@@ -218,6 +220,17 @@ export const update_latest_partner_location = mutation({
             .unique();
           if (isSharingNow(partnerPreference)) partnerShares = true;
         }
+        const partner = members.find((member) => member.user_id !== userId);
+        const partnerFix =
+          partnerShares && partner
+            ? await ctx.db
+                .query("latest_partner_locations")
+                .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", partner.user_id))
+                .unique()
+            : null;
+        if (await noteLocationFix(ctx, coupleId, row, partnerFix, now)) {
+          await detectStreakBreak(ctx, coupleId);
+        }
         if (partnerShares) {
           // The distance on the partner's Lock Screen changes with every fix. Updates come often, so this lane sends at most one push per half hour.
           await enqueueLockScreenRefreshForPartner(ctx, {
@@ -357,6 +370,10 @@ export const update_location_sharing_preference = mutation({
         // where the person last was and when, and nothing tells them about the pause.
         if (!isEnabled) {
           await deleteLatestLocationForUser(ctx, coupleId, userId);
+        }
+        // Either one ends the days location shows the partners together. The days before today stay.
+        if (!isSharingNow(row) && (await endLocationRun(ctx, coupleId, now))) {
+          await detectStreakBreak(ctx, coupleId);
         }
         // Turning sharing on or off shows or hides the distance on the partner's Lock Screen. A pause
         // only hides it on the person's own Lock Screen.

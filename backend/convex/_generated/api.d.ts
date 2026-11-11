@@ -134,6 +134,7 @@ import type * as lib_text from "../lib/text.js";
 import type * as lib_threadMessageProjection from "../lib/threadMessageProjection.js";
 import type * as lib_threadSubjects from "../lib/threadSubjects.js";
 import type * as lib_time from "../lib/time.js";
+import type * as lib_together from "../lib/together.js";
 import type * as lib_topicCatalog from "../lib/topicCatalog.js";
 import type * as lib_topics from "../lib/topics.js";
 import type * as lib_ultimateTicTacToe from "../lib/ultimateTicTacToe.js";
@@ -306,6 +307,7 @@ declare const fullApi: ApiFromModules<{
   "lib/threadMessageProjection": typeof lib_threadMessageProjection;
   "lib/threadSubjects": typeof lib_threadSubjects;
   "lib/time": typeof lib_time;
+  "lib/together": typeof lib_together;
   "lib/topicCatalog": typeof lib_topicCatalog;
   "lib/topics": typeof lib_topics;
   "lib/ultimateTicTacToe": typeof lib_ultimateTicTacToe;

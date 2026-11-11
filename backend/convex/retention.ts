@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
-import { addDaysToInstant, nowIso } from "./lib/time";
+import { addDaysToDate, addDaysToInstant, nowIso } from "./lib/time";
+import { TOGETHER_DAYS_KEPT } from "./lib/together";
 
 // Rows that only matter for a short while after they are written. Without this job they grow with
 // every write and push for as long as the account exists.
@@ -10,6 +11,8 @@ import { addDaysToInstant, nowIso } from "./lib/time";
 // this window runs again instead of returning the stored response.
 // notification_outbox, widget_push_outbox: a row is sent or failed within hours, so an old row
 // protects nothing. The Lock Screen push key repeats, and only its newest row is ever checked.
+// together_days, together_location_runs: dates derived from location, kept TOGETHER_DAYS_KEPT days
+// by date. A run that is still open keeps a date no older than that.
 const RETENTION_DAYS = 30;
 const BATCH = 1000;
 
@@ -17,7 +20,9 @@ const BATCH = 1000;
 export const prune_expired_rows = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const cutoff = addDaysToInstant(nowIso(), -RETENTION_DAYS);
+    const now = nowIso();
+    const cutoff = addDaysToInstant(now, -RETENTION_DAYS);
+    const oldestTogetherDay = addDaysToDate(now.slice(0, 10), -TOGETHER_DAYS_KEPT);
     const batches = [
       await ctx.db
         .query("client_operations")
@@ -31,9 +36,18 @@ export const prune_expired_rows = internalMutation({
         .query("widget_push_outbox")
         .withIndex("by_created_at", (q) => q.lt("created_at", cutoff))
         .take(BATCH),
+      await ctx.db
+        .query("together_days")
+        .withIndex("by_local_date", (q) => q.lt("local_date", oldestTogetherDay))
+        .take(BATCH),
     ];
     for (const row of batches.flat()) await ctx.db.delete(row._id);
-    if (batches.some((rows) => rows.length === BATCH)) {
+    const runs = await ctx.db
+      .query("together_location_runs")
+      .withIndex("by_since", (q) => q.lt("since", oldestTogetherDay))
+      .take(BATCH);
+    for (const run of runs) await ctx.db.patch(run._id, { since: oldestTogetherDay });
+    if ([...batches, runs].some((rows) => rows.length === BATCH)) {
       await ctx.scheduler.runAfter(0, internal.retention.prune_expired_rows, {});
     }
   },

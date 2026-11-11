@@ -11,9 +11,15 @@ import { isDailyPartnerPushKind, resolveDailyPartnerPush } from "./lib/dailyPart
 import { notificationAlertTitle, subscriptionTrialReminderBody } from "./lib/notificationCopy";
 import { notificationStillWanted } from "./lib/notificationState";
 import { uuidArg } from "./lib/ids";
-import { notificationPayloadIsSafe, reactionPreferenceAllows, UNSAFE_PAYLOAD_ERROR } from "./lib/notifications";
+import {
+  notificationPayloadIsSafe,
+  reactionPreferenceAllows,
+  rescheduleNotification,
+  UNSAFE_PAYLOAD_ERROR,
+  waitsWhileTogether,
+} from "./lib/notifications";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
-import { isValidTimeZone, nowIso } from "./lib/time";
+import { addMs, isValidTimeZone, nowIso } from "./lib/time";
 import { pushStatus } from "./lib/pushStatus";
 
 // The database side of one APNs send. Each outbox row is one pushWorkpool work item
@@ -199,8 +205,14 @@ export const prepare_notification = internalMutation({
     // The payload goes to APNs whole, and the daily lane rewrites it after the insert checked it.
     if (!notificationPayloadIsSafe(sendable.kind, sendable.payload)) return await drop(ctx, row, UNSAFE_PAYLOAD_ERROR);
     if (!kindAllowed(sendable, preference)) return await drop(ctx, row, TARGET_INELIGIBLE);
-    const still = await notificationStillWanted(ctx, sendable, device.user_id, nowIso());
+    const now = nowIso();
+    const still = await notificationStillWanted(ctx, sendable, device.user_id, now);
     if (!still.wanted) return await drop(ctx, row, still.reason === "ineligible" ? TARGET_INELIGIBLE : OUT_OF_DATE);
+    // A reminder held while the partners are together asks again a day later, at the same time of day.
+    if (await waitsWhileTogether(ctx, sendable.kind, sendable.payload ?? {}, now, "held")) {
+      await rescheduleNotification(ctx, row, addMs(now, 86_400_000));
+      return null;
+    }
     const staleAt = notificationStaleAt(sendable.payload);
     if (staleAt !== null && Date.parse(staleAt) <= Date.now()) return await drop(ctx, row, OUT_OF_DATE);
     return {

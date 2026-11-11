@@ -11,8 +11,10 @@ import { fail } from "./lib/errors";
 import { dateArg, uuidArg } from "./lib/ids";
 import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./lib/notifications";
 import { normalizePlace, placeArg } from "./lib/places";
+import { detectStreakBreak } from "./lib/streaks";
 import { requireTitle } from "./lib/text";
 import { nowIso } from "./lib/time";
+import { coupleDateAt, keepVisitDays } from "./lib/together";
 import {
   earliestLocalDate,
   FIRST_VISIT_DATE,
@@ -114,7 +116,7 @@ function checkVisitDates(startDate: string, endDate: string) {
  * visit keeps the others, so partners who edit different fields at once both keep their change.
  * `p_place: null` removes the place. The last day may equal the first and may not be before it,
  * both fall from `FIRST_VISIT_DATE` to `LAST_VISIT_DATE`, and a visit spans at most `MAX_VISIT_DAYS`
- * days, or this fails with `23514`. A visit in the past is fine. At most
+ * days, or this fails with `23514`. A visit in the past is fine, and it rests the streak only from today on. At most
  * `MAX_OPEN_VISITS_PER_COUPLE` visits end on or after `earliestLocalDate`, so a save that adds one
  * fails with `23514` when that many do. A deleted visit stays deleted, and a write that a newer one
  * from the same phone already replaced changes nothing. Returns the visit as stored now, also on a
@@ -169,20 +171,27 @@ export const save_visit = mutation({
         place: place === undefined ? existing?.place : (place ?? undefined),
         last_edited_by_user_id: userId,
       };
-      if (existing) {
+      const now = nowIso();
+      if (existing && existing.start_date === start && existing.end_date === end) {
         await ctx.db.patch(existing._id, withUpdatedAt(fields));
+      } else if (existing) {
+        await keepVisitDays(ctx, existing, now);
+        const togetherFrom = await coupleDateAt(ctx, coupleId, now);
+        await ctx.db.patch(existing._id, withUpdatedAt({ ...fields, together_from: togetherFrom }));
       } else {
-        const now = nowIso();
         await ctx.db.insert("visits", {
           id: visitId,
           couple_id: coupleId,
           ...fields,
+          together_from: await coupleDateAt(ctx, coupleId, now),
           created_by_user_id: userId,
           created_at: now,
           updated_at: now,
         });
       }
       await refreshPartnerLockScreen(ctx, coupleId, userId);
+      // A visit moves the days the streak needs, so its deadline and reminders follow at once.
+      await detectStreakBreak(ctx, coupleId);
       return null;
     });
     // Read after the operation, so a replay returns today's row and not the answer it stored back
@@ -213,8 +222,11 @@ export const delete_visit = mutation({
       if (existing.couple_id !== coupleId) {
         return fail("42501", "visit belongs to another couple");
       }
-      await ctx.db.patch(existing._id, withUpdatedAt({ deleted_at: nowIso(), last_edited_by_user_id: userId }));
+      const now = nowIso();
+      await keepVisitDays(ctx, existing, now);
+      await ctx.db.patch(existing._id, withUpdatedAt({ deleted_at: now, last_edited_by_user_id: userId }));
       await refreshPartnerLockScreen(ctx, coupleId, userId);
+      await detectStreakBreak(ctx, coupleId);
       return null;
     });
     return null;

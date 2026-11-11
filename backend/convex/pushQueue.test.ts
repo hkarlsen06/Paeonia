@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { ApnsSendRequest, ApnsSendResult } from "./lib/apns";
 import { newUuid } from "./lib/ids";
 import { insertNotificationOutbox, insertWidgetPushOutbox } from "./lib/notifications";
 import { finishPush } from "./push.testing";
-import { addDevice, createSignedInUser, newTest, transactionClock, type TestConvex } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex } from "./test.setup";
 
 // Stands in for APNs. `push:send_push` imports `sendWithEnvironmentFallback` from lib/apns.
 const send = vi.hoisted(() => vi.fn<(request: ApnsSendRequest) => Promise<ApnsSendResult>>());
@@ -163,6 +163,45 @@ describe("prepare_notification", () => {
     const timestamp = await transactionClock(t);
     expect(await rowByDedupe(t, "passed")).toMatchObject({ failed_at: timestamp(NOW), last_error: "notification is out of date" });
     expect(await prepare(t, "upcoming")).not.toBeNull();
+  });
+
+  test("drops a queued question time reminder when the partners are together by the time it is due", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["UTC", "UTC"] });
+    const device = await addDevice(t, couple.first.userId);
+    await t.run(async (ctx) => {
+      const preference = await ctx.db
+        .query("notification_preferences")
+        .withIndex("by_user_id", (q) => q.eq("user_id", couple.first.userId))
+        .unique();
+      await ctx.db.patch(preference!._id, { question_time_enabled: true });
+      await insertNotificationOutbox(ctx, {
+        recipient_user_id: couple.first.userId,
+        target_device_id: device.id,
+        push_token_hash: device.push_token_hash,
+        apns_environment: "sandbox",
+        kind: "question_time_reminder",
+        payload: { type: "question_time_reminder", couple_id: couple.coupleId, expires_at: LATER },
+        dedupe_key: "question-time",
+        title: "Time for today's question",
+        body: "Your question is ready.",
+        scheduled_for: EARLIER,
+      });
+    });
+    expect(await prepare(t, "question-time")).not.toBeNull();
+
+    await couple.second.as.mutation(api.visits.save_visit, {
+      p_visit_id: newUuid(),
+      p_start_date: EARLIER.slice(0, 10),
+      p_end_date: LATER.slice(0, 10),
+      p_place: null,
+      p_client_operation_id: newUuid(),
+      p_client_id: newUuid(),
+      p_client_sequence: 1,
+      p_local_created_at: EARLIER,
+    });
+    expect(await prepare(t, "question-time")).toBeNull();
+    expect(await rowByDedupe(t, "question-time")).toMatchObject({ last_error: "notification is out of date" });
   });
 
   test("silent widget updates do not need the widget alert preference", async () => {

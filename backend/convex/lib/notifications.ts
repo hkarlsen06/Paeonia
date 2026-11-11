@@ -2,7 +2,7 @@ import { Workpool } from "@convex-dev/workpool";
 import { components, internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { listActiveMembers } from "./access";
-import type { WriterCtx } from "./db";
+import type { ReaderCtx, WriterCtx } from "./db";
 import { checkViolation, fail } from "./errors";
 import { memoryDeepLink, storyDeepLink } from "./deepLinks";
 import { isJsonObject, jsonbByteLength } from "./json";
@@ -11,6 +11,7 @@ import { nameForViewer } from "./partnerNames";
 import { notificationAlertBody, notificationAlertTitle, notificationLocaleLanguage } from "./notificationCopy";
 import { addMs, nowIso } from "./time";
 import { pushStatus } from "./pushStatus";
+import { pausedTogetherAt } from "./together";
 
 export * from "./notificationCopy";
 
@@ -72,6 +73,36 @@ export const NOTIFICATION_KINDS = Object.keys(NOTIFICATION_PAYLOAD_FIELDS) as No
 
 export function isNotificationKind(kind: string): kind is NotificationKind {
   return Object.hasOwn(NOTIFICATION_PAYLOAD_FIELDS, kind);
+}
+
+/**
+ * Reminders that wait while a day the partners spend together pauses the streak (`lib/together.ts`).
+ * A skipped one comes back the next day on its own. A held one goes out on the first day apart
+ * (`pushQueue.ts`). The streak reminder needs neither, since its deadline already skips those days.
+ * Pushes about something the partner did, date reminders and subscription notices still go out.
+ */
+const SKIPPED_WHILE_TOGETHER: ReadonlySet<string> = new Set<NotificationKind>(["question_time_reminder"]);
+const HELD_WHILE_TOGETHER: ReadonlySet<string> = new Set<NotificationKind>(["game_turn_reminder"]);
+
+/** True when a reminder of `kind` for the couple in `payload` waits at `at`, skipped or held. */
+export async function waitsWhileTogether(
+  ctx: ReaderCtx,
+  kind: string,
+  payload: Record<string, unknown>,
+  at: string,
+  wait: "skipped" | "held",
+): Promise<boolean> {
+  return (
+    (wait === "skipped" ? SKIPPED_WHILE_TOGETHER : HELD_WHILE_TOGETHER).has(kind) &&
+    typeof payload.couple_id === "string" &&
+    (await pausedTogetherAt(ctx, payload.couple_id, at))
+  );
+}
+
+/** Sends the pending `row` at `at` instead of when it was due. */
+export async function rescheduleNotification(ctx: WriterCtx, row: Doc<"notification_outbox">, at: string): Promise<void> {
+  await ctx.db.patch(row._id, { scheduled_for: at });
+  await enqueuePush(ctx, "app", row.id, at);
 }
 
 const isPayloadValue = (value: unknown) =>
@@ -305,6 +336,9 @@ export async function enqueueNotificationForUser(
   }
   assertNotificationPayloadSafe(kind, args.payload);
   const pushType = args.apns_push_type ?? "alert";
+  if (await waitsWhileTogether(ctx, kind, args.payload, args.scheduled_for ?? nowIso(), "skipped")) {
+    return 0;
+  }
 
   const preference = await ctx.db
     .query("notification_preferences")

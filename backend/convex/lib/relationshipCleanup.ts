@@ -107,6 +107,20 @@ async function deleteCoupleVisits(ctx: WriterCtx, coupleId: string, budget: Chun
   return deleted;
 }
 
+/** Deletes the couple's together days and its location run. Returns the rows deleted. */
+async function deleteCoupleTogetherDays(ctx: WriterCtx, coupleId: string): Promise<number> {
+  const days = await ctx.db
+    .query("together_days")
+    .withIndex("by_couple_id_local_date", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  const runs = await ctx.db
+    .query("together_location_runs")
+    .withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  for (const row of [...days, ...runs]) await ctx.db.delete(row._id);
+  return days.length + runs.length;
+}
+
 // Both reads use couple-wide indexes, so a couple with years of daily questions costs a
 // handful of database calls instead of a few per day.
 async function coupleInstances(ctx: WriterCtx, coupleId: string) {
@@ -293,6 +307,7 @@ export async function cleanupCoupleContent(
   await deleteCoupleDates(ctx, couple.id);
   await deleteCoupleVisits(ctx, couple.id, budget);
   if (budget.left <= 0) return unfinished();
+  await deleteCoupleTogetherDays(ctx, couple.id);
   await clearPartnerNicknames(ctx, couple.id);
   await deleteCoupleNotes(ctx, couple.id);
   const current = (await ctx.db.get(couple._id))!;
@@ -516,6 +531,7 @@ export async function purgeCoupleContent(
   for (const deleted of [
     await deleteHeartsForCouple(ctx, couple.id),
     await deleteCoupleDates(ctx, couple.id),
+    await deleteCoupleTogetherDays(ctx, couple.id),
     await clearPartnerNicknames(ctx, couple.id),
     await deleteCoupleNotes(ctx, couple.id),
   ]) {

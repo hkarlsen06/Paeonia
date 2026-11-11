@@ -15,15 +15,18 @@ import {
 } from "./notifications";
 import {
   brokenStreakDeadlines,
-  freezeCoversGap,
+  deadlineAfterDay,
   freezeReadyAt,
   freezeReadyBy,
-  frozenDeadlineAt,
   getCoupleDayStreakQualifiedAt,
   MIN_PROTECTED_STREAK,
-  resolveNextActivityDeadlineAt,
+  neededDayEnd,
+  streakTiming,
+  type StreakTiming,
 } from "./streakDeadlines";
 import { addDaysToDate, nowIso, zonedLocalToUtcMs } from "./time";
+import { pauseAroundAt, readTogetherDays, type TogetherDays } from "./together";
+import { FIRST_VISIT_DATE } from "./visits";
 
 export {
   FREEZE_COOLDOWN_DAYS,
@@ -76,15 +79,20 @@ function offerOf(state: StreakOffer): StreakOffer {
   };
 }
 
-/** The offer of a streak of `count` days through `lastQualifiedDate` that broke at `breakDeadline`. */
+/**
+ * The offer of a streak of `count` days through `lastQualifiedDate` that broke at `breakDeadline`,
+ * the end of needed day `breakDay` of `timing`.
+ */
 async function offerFor(
   ctx: ReaderCtx,
   coupleId: string,
   count: number,
   lastQualifiedDate: string | undefined,
   breakDeadline: string,
+  timing: StreakTiming | null,
+  breakDay: number,
 ): Promise<StreakOffer> {
-  const { saveDeadline, restoreDeadline } = await brokenStreakDeadlines(ctx, coupleId, breakDeadline);
+  const { saveDeadline, restoreDeadline } = await brokenStreakDeadlines(ctx, coupleId, breakDeadline, timing, breakDay);
   return {
     restorable_count: count,
     restorable_through_date: lastQualifiedDate,
@@ -206,7 +214,7 @@ export async function applyCoupleActivity(
   }
 
   const existing = await getStreakState(ctx, coupleId);
-  const resolvedDeadline = await resolveNextActivityDeadlineAt(ctx, coupleId, qualifiedAt);
+  const resolvedDeadline = await deadlineAfterDay(ctx, coupleId, coupleDay.local_date, qualifiedAt);
 
   if (!existing) {
     await ctx.db.insert("streak_states", {
@@ -222,20 +230,22 @@ export async function applyCoupleActivity(
     return eventId;
   }
 
-  const previousObservedAt = await getCoupleDayStreakQualifiedAt(
-    ctx,
-    coupleId,
-    existing.last_qualified_couple_day_id,
-  );
-  const previousDeadline =
-    previousObservedAt !== null
-      ? await resolveNextActivityDeadlineAt(ctx, coupleId, previousObservedAt)
-      : (existing.next_activity_deadline_at ?? null);
-
   if (coupleDay.id === existing.last_qualified_couple_day_id) {
     await ctx.db.patch(existing._id, withUpdatedAt({ next_activity_deadline_at: resolvedDeadline }));
     return eventId;
   }
+
+  const previous = await streakTiming(ctx, coupleId, existing);
+  const previousObservedAt = previous?.observed ? previous.start : null;
+  // A day a restore filled in has no time both partners showed up, so its deadline is the live one,
+  // with a freeze the cron spent on it. `previousDay` is the needed day that deadline ends.
+  const previousDay = previous !== null && !previous.observed && previous.frozen ? 1 : 0;
+  const previousDeadline =
+    previous === null
+      ? (existing.next_activity_deadline_at ?? null)
+      : previousDay === 1
+        ? await neededDayEnd(ctx, coupleId, previous, previous.deadline, 0, 1)
+        : previous.deadline;
 
   // A late-arriving historical day stays in the audit trail but cannot reorder the streak.
   if (previousObservedAt !== null && qualifiedAt <= previousObservedAt) {
@@ -243,7 +253,7 @@ export async function applyCoupleActivity(
   }
 
   // A freeze the cron already spent on this gap, or one that is ready now, covers one missed day.
-  const freezeOnGap = previousObservedAt !== null && freezeCoversGap(existing, previousObservedAt);
+  const freezeOnGap = previous !== null && previous.observed && previous.frozen;
   let freezeUsedAt = existing.freeze_used_at;
   let continues = previousDeadline !== null && qualifiedAt < previousDeadline;
   if (continues && freezeOnGap) {
@@ -255,7 +265,8 @@ export async function applyCoupleActivity(
     existing.current_count >= MIN_PROTECTED_STREAK &&
     (freezeOnGap || freezeReadyBy(existing, previousDeadline))
   ) {
-    continues = qualifiedAt < (await frozenDeadlineAt(ctx, coupleId, previousDeadline));
+    continues =
+      qualifiedAt < (await neededDayEnd(ctx, coupleId, previous, previousDeadline, previousDay, previousDay + 1));
     if (continues) {
       freezeUsedAt = previousDeadline;
     }
@@ -272,9 +283,21 @@ export async function applyCoupleActivity(
   } else {
     let offer = offerOf(existing);
     if (!isStoredBreak(existing) && existing.current_count >= MIN_PROTECTED_STREAK && previousDeadline !== null) {
-      // The break is not stored yet. It came at the deadline, or a day later when a freeze covered the missed day.
-      const breakDeadline = freezeOnGap ? await frozenDeadlineAt(ctx, coupleId, previousDeadline) : previousDeadline;
-      offer = await offerFor(ctx, coupleId, existing.current_count, existing.last_qualified_date, breakDeadline);
+      // The break is not stored yet. It came at the deadline, or a needed day later when a freeze
+      // covered the missed one.
+      const breakDay = freezeOnGap ? 1 : previousDay;
+      const breakDeadline = freezeOnGap
+        ? await neededDayEnd(ctx, coupleId, previous, previousDeadline, 0, 1)
+        : previousDeadline;
+      offer = await offerFor(
+        ctx,
+        coupleId,
+        existing.current_count,
+        existing.last_qualified_date,
+        breakDeadline,
+        previous,
+        breakDay,
+      );
     }
     if (!offerOpenAt(offer, qualifiedAt)) {
       offer = NO_OFFER;
@@ -363,29 +386,46 @@ export async function recordCoupleActivity(
   return stored.activity_event_id;
 }
 
+/** The deadline `refreshStreakDeadline` would store, and how it was worked out. */
+type LiveDeadline = {
+  deadline: string | null;
+  /** A freeze moved the deadline to the end of the second needed day. */
+  frozen: boolean;
+  timing: StreakTiming | null;
+  /** The needed day of `timing` that `deadline` ends. */
+  day: number;
+};
+
 /**
- * The deadline `refreshStreakDeadline` would store: the live deadline from the
- * last qualified day and the current partner zones, one day later when a freeze
- * covers the missed day, or the stored one when it cannot be recomputed. Reads only.
- * `frozen` is true when a freeze moved the deadline.
+ * The deadline `refreshStreakDeadline` would store: the end of the first needed day after the last
+ * qualified day in the current partner zones, or of the second when a freeze covers the first, or
+ * the stored one when it cannot be recomputed. Reads only. Pass `together` when the caller already
+ * read the couple's together days from the day after the last qualified one, or earlier.
  */
 async function liveStreakDeadline(
   ctx: ReaderCtx,
   coupleId: string,
   state: Doc<"streak_states"> | null,
-): Promise<{ deadline: string | null; frozen: boolean }> {
-  if (!state || state.current_count <= 0 || isStoredBreak(state)) {
-    return { deadline: state?.next_activity_deadline_at ?? null, frozen: false };
+  together?: TogetherDays,
+): Promise<LiveDeadline> {
+  const stored = { deadline: state?.next_activity_deadline_at ?? null, frozen: false, timing: null, day: 0 };
+  if (!state || state.current_count <= 0 || isStoredBreak(state)) return stored;
+  const timing = await streakTiming(ctx, coupleId, state, together);
+  if (timing === null) return stored;
+  if (!timing.frozen) return { deadline: timing.deadline, frozen: false, timing, day: 0 };
+  // Like the stored deadline it stands for, a day a restore filled in reports no freeze.
+  const deadline = await neededDayEnd(ctx, coupleId, timing, timing.deadline, 0, 1);
+  return { deadline, frozen: timing.observed, timing, day: 1 };
+}
+
+/** Stores the live deadline when it moved. Returns the streak state as read and the live deadline. */
+async function refreshLiveDeadline(ctx: WriterCtx, coupleId: string) {
+  const state = await getStreakState(ctx, coupleId);
+  const live = await liveStreakDeadline(ctx, coupleId, state);
+  if (state && live.deadline !== null && state.next_activity_deadline_at !== live.deadline) {
+    await ctx.db.patch(state._id, withUpdatedAt({ next_activity_deadline_at: live.deadline }));
   }
-  const qualifiedAt = await getCoupleDayStreakQualifiedAt(ctx, coupleId, state.last_qualified_couple_day_id);
-  if (qualifiedAt === null) {
-    return { deadline: state.next_activity_deadline_at ?? null, frozen: false };
-  }
-  const deadline = await resolveNextActivityDeadlineAt(ctx, coupleId, qualifiedAt);
-  if (freezeCoversGap(state, qualifiedAt)) {
-    return { deadline: await frozenDeadlineAt(ctx, coupleId, deadline), frozen: true };
-  }
-  return { deadline, frozen: false };
+  return { state, live };
 }
 
 /**
@@ -393,12 +433,7 @@ async function liveStreakDeadline(
  * the last qualified day and current partner zones. Returns the deadline or null.
  */
 export async function refreshStreakDeadline(ctx: WriterCtx, coupleId: string): Promise<string | null> {
-  const state = await getStreakState(ctx, coupleId);
-  const { deadline } = await liveStreakDeadline(ctx, coupleId, state);
-  if (state && deadline !== null && state.next_activity_deadline_at !== deadline) {
-    await ctx.db.patch(state._id, withUpdatedAt({ next_activity_deadline_at: deadline }));
-  }
-  return deadline;
+  return (await refreshLiveDeadline(ctx, coupleId)).live.deadline;
 }
 
 type StreakBreakChange = Partial<
@@ -409,7 +444,7 @@ type StreakBreakChange = Partial<
  * What a passed deadline does to the streak, or null when nothing changes yet.
  * In order: a ready freeze covers one missed day, a streak shorter than
  * MIN_PROTECTED_STREAK restarts at zero, and a longer one opens its offer: a free
- * save on the next couple day, then a paid restore on the two days after it.
+ * save on the next needed day, then a paid restore on the two needed days after it.
  * A new streak that breaks while an older streak's offer is open is always short,
  * so it restarts at zero and leaves that offer alone.
  */
@@ -417,9 +452,10 @@ async function streakBreakChange(
   ctx: ReaderCtx,
   coupleId: string,
   state: Doc<"streak_states"> | null,
-  deadline: string | null,
+  live: LiveDeadline,
   now: string,
 ): Promise<StreakBreakChange | null> {
+  const { deadline } = live;
   if (!state || state.current_count <= 0 || isStoredBreak(state) || deadline === null || now < deadline) {
     return null;
   }
@@ -427,13 +463,13 @@ async function streakBreakChange(
     return { current_count: 0 };
   }
   if (freezeReadyBy(state, deadline)) {
-    // A freeze covers one day only. When the day after is also gone, the streak breaks.
-    const frozenDeadline = await frozenDeadlineAt(ctx, coupleId, deadline);
+    // A freeze covers one needed day only. When the next one is also gone, the streak breaks.
+    const frozenDeadline = await neededDayEnd(ctx, coupleId, live.timing, deadline, live.day, live.day + 1);
     if (now < frozenDeadline) {
       return { freeze_used_at: deadline, next_activity_deadline_at: frozenDeadline };
     }
   }
-  return await offerFor(ctx, coupleId, state.current_count, state.last_qualified_date, deadline);
+  return await offerFor(ctx, coupleId, state.current_count, state.last_qualified_date, deadline, live.timing, live.day);
 }
 
 /**
@@ -441,9 +477,8 @@ async function streakBreakChange(
  * uses a free freeze, restarts a short streak, or opens the save and restore offer.
  */
 export async function detectStreakBreak(ctx: WriterCtx, coupleId: string): Promise<void> {
-  const resolvedDeadline = await refreshStreakDeadline(ctx, coupleId);
-  const state = await getStreakState(ctx, coupleId);
-  const change = await streakBreakChange(ctx, coupleId, state, resolvedDeadline, nowIso());
+  const { state, live } = await refreshLiveDeadline(ctx, coupleId);
+  const change = await streakBreakChange(ctx, coupleId, state, live, nowIso());
   if (state && change) {
     await ctx.db.patch(state._id, withUpdatedAt(change));
     // A freeze keeps the count. A break shows 0 on both Lock Screens, and no one acted to cause it.
@@ -482,6 +517,13 @@ export type CoupleStreak = {
   freeze_saved_streak: boolean;
   /** When a live streak breaks unless both partners show up first, or null when there is no live streak. */
   next_activity_deadline_at: string | null;
+  /**
+   * The couple-local dates of the days in a row that pause the streak, the run that holds today
+   * or else the next one a planned visit makes, or null for both. A run location keeps open is
+   * shown as going on to its last paused day.
+   */
+  together_from: string | null;
+  together_until: string | null;
 };
 
 /**
@@ -502,8 +544,13 @@ export async function readCoupleStreak(
     return fail("42501", "active entitled couple access is required");
   }
   const stored = await getStreakState(ctx, coupleId);
-  const live = await liveStreakDeadline(ctx, coupleId, stored);
-  const change = await streakBreakChange(ctx, coupleId, stored, live.deadline, now);
+  // One read of the together days serves the deadline and the paused days around today. It starts
+  // from the last qualified day, so the rows it picks follow the data and not the clock, and a day
+  // before it, since a partner's zone change can put today's date a day behind that day.
+  const readFrom = addDaysToDate(stored?.last_qualified_date ?? FIRST_VISIT_DATE, -1);
+  const together = await readTogetherDays(ctx, coupleId, readFrom);
+  const live = await liveStreakDeadline(ctx, coupleId, stored, together);
+  const change = await streakBreakChange(ctx, coupleId, stored, live, now);
   const state = stored && change ? { ...stored, ...change } : stored;
   const deadline = change?.next_activity_deadline_at ?? live.deadline;
   const broken = deadline !== null && now >= deadline;
@@ -511,6 +558,7 @@ export async function readCoupleStreak(
   const offerOpen = state !== null && offerOpenAt(state, now);
   const saveOpen = offerOpen && state.save_deadline !== undefined && now < state.save_deadline;
   const readyAt = state ? freezeReadyAt(state) : null;
+  const pause = await pauseAroundAt(ctx, coupleId, now, together);
   return {
     current_count: currentCount,
     longest_count: state?.longest_count ?? 0,
@@ -525,6 +573,8 @@ export async function readCoupleStreak(
     freeze_ready_at: readyAt !== null && readyAt > now ? readyAt : null,
     freeze_saved_streak: currentCount > 0 && (live.frozen || change?.freeze_used_at !== undefined),
     next_activity_deadline_at: currentCount > 0 ? deadline : null,
+    together_from: pause?.from ?? null,
+    together_until: pause?.until ?? null,
   };
 }
 
@@ -709,7 +759,7 @@ export async function applyStreakRestore(
     resolvedDay = {
       last_qualified_date: yesterday.local_date,
       last_qualified_couple_day_id: yesterdayId,
-      next_activity_deadline_at: await resolveNextActivityDeadlineAt(ctx, args.couple_id, yesterday.starts_at),
+      next_activity_deadline_at: await deadlineAfterDay(ctx, args.couple_id, yesterday.local_date, yesterday.starts_at),
     };
   }
 

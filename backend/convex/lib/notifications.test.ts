@@ -328,6 +328,82 @@ describe("enqueueNotificationForUser", () => {
   });
 });
 
+describe("while the partners are together", () => {
+  async function togetherCouple() {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["UTC", "UTC"] });
+    await addDevice(t, couple.first.userId, { locale: "en" });
+    await addDevice(t, couple.second.userId, { locale: "en" });
+    await t.run((ctx) =>
+      ctx.db.insert("together_days", {
+        couple_id: couple.coupleId,
+        local_date: "2026-10-10",
+        source: "location",
+        created_at: "2026-10-10T09:00:00.000Z",
+      }),
+    );
+    return { t, couple };
+  }
+
+  test("a question time reminder is not queued", async () => {
+    const { t, couple } = await togetherCouple();
+    await t.run(async (ctx) => {
+      const preference = await ctx.db
+        .query("notification_preferences")
+        .withIndex("by_user_id", (q) => q.eq("user_id", couple.second.userId))
+        .unique();
+      await ctx.db.patch(preference!._id, { question_time_enabled: true });
+    });
+    const remind = () =>
+      t.run((ctx) =>
+        enqueueNotificationForUser(ctx, {
+          recipient_user_id: couple.second.userId,
+          kind: "question_time_reminder",
+          payload: { type: "question_time_reminder", couple_id: couple.coupleId },
+          dedupe_key: `question_time_reminder:${newUuid()}`,
+        }),
+      );
+    expect(await remind()).toBe(0);
+    vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
+    expect(await remind()).toBe(1);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a push about the partner's answer still goes out", async () => {
+    const { t, couple } = await togetherCouple();
+    const dayId = newUuid();
+    const instanceId = newUuid();
+    await t.run(async (ctx) => {
+      const now = new Date().toISOString();
+      await ctx.db.insert("couple_days", {
+        id: dayId, couple_id: couple.coupleId, local_date: "2026-10-10", anchor_time_zone_id: "UTC",
+        starts_at: "2026-10-10T00:00:00.000Z", ends_at: "2026-10-11T00:00:00.000Z", created_at: now,
+      });
+      await ctx.db.insert("daily_question_instances", {
+        id: instanceId, couple_day_id: dayId, couple_id: couple.coupleId, question_id: newUuid(), question_version_id: newUuid(),
+        status: "active", created_at: now,
+      });
+    });
+    const answer = (userId: string) =>
+      t.run(async (ctx) => {
+        const now = new Date().toISOString();
+        const id = await ctx.db.insert("daily_question_answers", {
+          id: newUuid(), instance_id: instanceId, user_id: userId, created_at: now, updated_at: now, moderation_status: "visible",
+        });
+        const instance = await ctx.db.query("daily_question_instances").withIndex("by_uuid", (q) => q.eq("id", instanceId)).unique();
+        await enqueueDailyPartnerPush(ctx, (await ctx.db.get(id))!, instance!);
+      });
+    await answer(couple.second.userId);
+    await answer(couple.first.userId);
+    vi.setSystemTime(new Date("2026-10-10T12:05:00.000Z"));
+    const delivered = await deliverDuePushes(t);
+    expect(delivered.map((push) => [push.payload.type, push.title])).toEqual(
+      expect.arrayContaining([["partner_answered", "First Partner answered too"]]),
+    );
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
 describe("trigger helpers", () => {
   test("memory created notifies the partner once and skips hidden memories", async () => {
     const t = newTest();
