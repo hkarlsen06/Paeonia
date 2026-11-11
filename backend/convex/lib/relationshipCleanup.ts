@@ -107,11 +107,11 @@ async function deleteCoupleVisits(ctx: WriterCtx, coupleId: string, budget: Chun
   return deleted;
 }
 
-/** Deletes the couple's together days, at most TOGETHER_DAYS_KEPT rows. Returns the rows deleted. */
+/** Deletes the couple's together days. They span TOGETHER_DAYS_KEPT days at most. Returns the rows deleted. */
 async function deleteCoupleTogetherDays(ctx: WriterCtx, coupleId: string): Promise<number> {
   const days = await ctx.db
     .query("together_days")
-    .withIndex("by_couple_id_local_date", (q) => q.eq("couple_id", coupleId))
+    .withIndex("by_couple_id_end_date", (q) => q.eq("couple_id", coupleId))
     .collect();
   for (const row of days) await ctx.db.delete(row._id);
   return days.length;

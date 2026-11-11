@@ -578,7 +578,7 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       nb: "Den siste posisjonen du delte med partneren din. Vi lagrer ingen historikk.",
     },
   }),
-  together_days: shared("by_couple_id_local_date", {
+  together_days: shared("by_couple_id_end_date", {
     group: "location",
     about: {
       en: "The days in the last 45 days that you and your partner were together, from a visit or from your shared locations. Only the date, never the place.",

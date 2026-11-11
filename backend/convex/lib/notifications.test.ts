@@ -337,9 +337,11 @@ describe("while the partners are together", () => {
     await t.run((ctx) =>
       ctx.db.insert("together_days", {
         couple_id: couple.coupleId,
-        local_date: "2026-10-10",
+        start_date: "2026-10-10",
+        end_date: "2026-10-10",
         source: "location",
         created_at: "2026-10-10T09:00:00.000Z",
+        updated_at: "2026-10-10T09:00:00.000Z",
       }),
     );
     return { t, couple };

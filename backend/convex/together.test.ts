@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import { newUuid } from "./lib/ids";
+import { addDaysToDate } from "./lib/time";
 import { enqueueNotificationForUser, insertNotificationOutbox } from "./lib/notifications";
 import { cleanupCoupleContent } from "./lib/relationshipCleanup";
 import { applyCoupleActivity, applyStreakRestore, refreshStreakAfterProfileTimeZoneChange } from "./lib/streaks";
@@ -37,8 +38,14 @@ const streak = async (user: TestUser) =>
   (await user.as.query(api.streaks.get_couple_streak, { p_day_key: new Date().toISOString() }))[0];
 const stored = (t: TestConvex, coupleId: string) =>
   t.run((ctx) => ctx.db.query("streak_states").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).unique());
-const togetherDates = async (t: TestConvex) =>
-  (await t.run((ctx) => ctx.db.query("together_days").collect())).map((row) => row.local_date).sort();
+/** Every date the couple's together_days rows hold. */
+const togetherDates = async (t: TestConvex) => {
+  const dates = new Set<string>();
+  for (const row of await t.run((ctx) => ctx.db.query("together_days").collect())) {
+    for (let date = row.start_date; date <= row.end_date; date = addDaysToDate(date, 1)) dates.add(date);
+  }
+  return [...dates].sort();
+};
 const breakCron = (t: TestConvex) =>
   t.mutation(internal.streaks.detect_streak_breaks, { p_now: new Date().toISOString() });
 

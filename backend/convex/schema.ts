@@ -847,18 +847,21 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_couple_id_deleted_at_end_date", ["couple_id", "deleted_at", "end_date"]),
 
-  // A date the partners were together, on the streak's clock (`lib/together.ts`): location showed
-  // them less than 1000 m apart that day, or a visit covered it and then changed after the day
-  // ended. It holds the date only, never a place. One row per day, deleted TOGETHER_DAYS_KEPT days later.
+  // Days the partners were together, start_date to end_date on the streak's clock
+  // (`lib/together.ts`): location showed them less than 1000 m apart on each, or a visit covered
+  // them and then changed after they ended. Dates only, never a place. A location match on the day
+  // after end_date moves end_date on. Dates older than TOGETHER_DAYS_KEPT days are deleted.
   // FK: couple_id -> couples cascade.
   together_days: defineTable({
     couple_id: uuid,
-    local_date: date,
+    start_date: date,
+    end_date: date,
     source: v.union(v.literal("visit"), v.literal("location")),
     created_at: ts,
+    updated_at: ts,
   })
-    .index("by_couple_id_local_date", ["couple_id", "local_date"])
-    .index("by_local_date", ["local_date"]),
+    .index("by_couple_id_end_date", ["couple_id", "end_date"])
+    .index("by_start_date", ["start_date"]),
 
   // The couple's one list of things to do together. It belongs to the couple, not to a visit, so
   // it survives a moved or deleted visit. Either partner adds, ticks, or deletes an item. Delete

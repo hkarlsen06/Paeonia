@@ -168,7 +168,11 @@ function offerNow(offer: StreakOffer, rests: Rests | null, frozen: boolean): Str
  * The offer `state` holds, as it stands now (`offerNow`). An offer kept for an older streak, after
  * a new one began, stays as stored.
  */
-async function currentOffer(ctx: ReaderCtx, state: Doc<"streak_states">, days: TogetherDays | null): Promise<StreakOffer> {
+async function currentOffer(
+  ctx: ReaderCtx,
+  state: Doc<"streak_states">,
+  days: TogetherDays | null,
+): Promise<StreakOffer> {
   const offer = offerOf(state);
   if (days === null || state.restorable_through_date !== state.last_qualified_date) return offer;
   const qualifiedAt = await getCoupleDayStreakQualifiedAt(ctx, state.couple_id, state.last_qualified_couple_day_id);
@@ -320,7 +324,8 @@ export async function applyCoupleActivity(
     coupleId,
     existing.last_qualified_couple_day_id,
   );
-  // The streak's own days. A stored break keeps the deadline it broke at, so they never move it.
+  // Together days after the existing streak's last day move its deadline, unless its break is
+  // stored, which stays final. They move a break's save and restore days either way.
   const brokeRests = previousObservedAt === null ? null : restsAfter(days, previousObservedAt);
   const previousRests = isStoredBreak(existing) ? null : brokeRests;
   const previousDeadline =
@@ -504,7 +509,8 @@ async function liveStreakDeadline(
 /** Stores the live deadline when it moved. Returns the streak as stored now and its live deadline. */
 async function refreshLiveDeadline(ctx: WriterCtx, coupleId: string) {
   const state = await getStreakState(ctx, coupleId);
-  const live = await liveStreakDeadline(ctx, coupleId, state, await togetherDaysAfter(ctx, coupleId, state?.last_qualified_date));
+  const days = await togetherDaysAfter(ctx, coupleId, state?.last_qualified_date);
+  const live = await liveStreakDeadline(ctx, coupleId, state, days);
   if (state && live.deadline !== null && state.next_activity_deadline_at !== live.deadline) {
     await ctx.db.patch(state._id, withUpdatedAt({ next_activity_deadline_at: live.deadline }));
     return { state: { ...state, next_activity_deadline_at: live.deadline }, live };
@@ -523,7 +529,8 @@ export async function streakReminderDay(
   state: Doc<"streak_states">,
 ): Promise<{ moved: boolean; day: string | null }> {
   if (state.last_qualified_date === undefined) return { moved: false, day: null };
-  const day = `${state.last_qualified_date}${state.freeze_used_at === undefined ? "" : `:freeze:${state.freeze_used_at}`}`;
+  const freeze = state.freeze_used_at === undefined ? "" : `:freeze:${state.freeze_used_at}`;
+  const day = `${state.last_qualified_date}${freeze}`;
   const days = await togetherDaysAfter(ctx, state.couple_id, state.last_qualified_date);
   if (days === null) return { moved: false, day };
   const live = await liveStreakDeadline(ctx, state.couple_id, state, days);
@@ -860,7 +867,8 @@ export async function applyStreakRestore(
   await detectStreakBreak(ctx, args.couple_id);
   const state = await getStreakState(ctx, args.couple_id);
   const now = nowIso();
-  const offer = state ? await currentOffer(ctx, state, await togetherDaysAfter(ctx, args.couple_id, state.last_qualified_date)) : NO_OFFER;
+  const days = state ? await togetherDaysAfter(ctx, args.couple_id, state.last_qualified_date) : null;
+  const offer = state ? await currentOffer(ctx, state, days) : NO_OFFER;
   // The first day after the missed one is the free save, so a purchase counts only on the two days after it.
   if (!state || !offerOpenAt(offer, now) || offer.save_deadline === undefined || now < offer.save_deadline) {
     return { ok: false, error: "No streak is available to restore", status: 409 };

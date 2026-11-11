@@ -4,7 +4,7 @@ import { resolveMemberStreakTimeZone } from "./streakDeadlines";
 import { addDaysToDate, addMs, localDateOf, startOfLocalDay } from "./time";
 
 // A together day is a date on the streak's clock (`StreakClock`) on which the partners are
-// together: a `together_days` row holds it, or a visit covers it from the visit's `together_from`.
+// together: a `together_days` row spans it, or a visit covers it from the visit's `together_from`.
 //
 // A day that ended on that clock keeps what it was. Writes reach only today and later: a location
 // match stores today, a visit counts from the day its dates were saved, and `keepVisitDays` stores
@@ -18,12 +18,14 @@ export const TOGETHER_RADIUS_METERS = 1000;
 /** Together days in a row that rest the streak and the reminders. */
 export const MAX_TOGETHER_PAUSE_DAYS = 14;
 /**
- * How long a `together_days` row is kept. The streak reads back to 16 days before its last
+ * How long a date in `together_days` is kept. The streak reads back to 16 days before its last
  * qualified day, which a live streak reached at most 16 days ago.
  */
 export const TOGETHER_DAYS_KEPT = 45;
 /** Days before a streak's last qualified date that its read covers: the pause before it, and the clock's slack. */
 export const TOGETHER_LOOKBACK_DAYS = MAX_TOGETHER_PAUSE_DAYS + 2;
+
+const later = (a: string, b: string) => (b > a ? b : a);
 
 /** A fix this old or newer can start a together day. */
 const FIX_MAX_AGE_MS = 60 * 60_000;
@@ -87,26 +89,29 @@ export function dayOf(clock: StreakClock, at: string): string {
 
 /** When `date` ends: its latest local midnight among the clock's zones. `date` has ended once `dayOf` is past it. */
 export function dayEnd(clock: StreakClock, date: string): string {
-  return clock.map((zone) => startOfLocalDay(addDaysToDate(date, 1), zone)).reduce((a, b) => (b > a ? b : a));
+  return clock.map((zone) => startOfLocalDay(addDaysToDate(date, 1), zone)).reduce(later);
 }
+
+/** Together days in a row, `start_date` to `end_date`, both dates on the streak's clock. */
+type Span = { start_date: string; end_date: string };
 
 /** The couple's together days from `from` on, read once, with the clock their dates are on. */
 export type TogetherDays = {
   clock: StreakClock;
   /** A date before this was not read and counts as a day apart. */
   from: string;
-  rows: ReadonlySet<string>;
-  visits: readonly Pick<Doc<"visits">, "start_date" | "end_date" | "together_from">[];
+  spans: readonly Span[];
 };
 
 /**
- * The couple's together days from `from` on, or null when it has none. Null costs two empty
- * index reads and no document, so a couple that is never together reads what it did before.
+ * The couple's together days from `from` on: its `together_days` rows, and its visits from each
+ * one's `together_from`. Null when it has none, which costs two empty index reads and no document,
+ * so a couple that is never together reads what it did before.
  */
 export async function readTogetherDays(ctx: ReaderCtx, coupleId: string, from: string): Promise<TogetherDays | null> {
   const rows = await ctx.db
     .query("together_days")
-    .withIndex("by_couple_id_local_date", (q) => q.eq("couple_id", coupleId).gte("local_date", from))
+    .withIndex("by_couple_id_end_date", (q) => q.eq("couple_id", coupleId).gte("end_date", from))
     .collect();
   const visits = await ctx.db
     .query("visits")
@@ -115,15 +120,15 @@ export async function readTogetherDays(ctx: ReaderCtx, coupleId: string, from: s
     )
     .collect();
   if (rows.length === 0 && visits.length === 0) return null;
-  return { clock: await streakClock(ctx, coupleId), from, rows: new Set(rows.map((row) => row.local_date)), visits };
+  const spans = [
+    ...rows,
+    ...visits.map((visit) => ({ ...visit, start_date: later(visit.start_date, visit.together_from) })),
+  ];
+  return { clock: await streakClock(ctx, coupleId), from, spans };
 }
 
 export function isTogether(days: TogetherDays, date: string): boolean {
-  return (
-    date >= days.from &&
-    (days.rows.has(date) ||
-      days.visits.some((visit) => visit.start_date <= date && date <= visit.end_date && date >= visit.together_from))
-  );
+  return date >= days.from && days.spans.some((span) => span.start_date <= date && date <= span.end_date);
 }
 
 /** True when `date` rests the streak: a together day among the first MAX_TOGETHER_PAUSE_DAYS of its run. */
@@ -156,8 +161,8 @@ export function restSpan(days: TogetherDays, after: string, today: string): Rest
     from = first;
     while (from > addDaysToDate(after, 1) && pausesOn(days, addDaysToDate(from, -1))) from = addDaysToDate(from, -1);
   } else {
-    from = days.visits
-      .map((visit) => [visit.start_date, visit.together_from, addDaysToDate(first, 1)].reduce((a, b) => (b > a ? b : a)))
+    from = days.spans
+      .map((span) => later(span.start_date, addDaysToDate(first, 1)))
       .filter((start) => pausesOn(days, start))
       .sort()[0];
   }
@@ -190,34 +195,52 @@ export async function todayOnStreakClock(ctx: ReaderCtx, coupleId: string, now: 
   return dayOf(await streakClock(ctx, coupleId), now);
 }
 
-const storedTogetherDay = (ctx: ReaderCtx, coupleId: string, date: string) =>
+/** The couple's `together_days` rows that end on `date` or later, latest end first. */
+const rowsEndingFrom = (ctx: ReaderCtx, coupleId: string, date: string) =>
   ctx.db
     .query("together_days")
-    .withIndex("by_couple_id_local_date", (q) => q.eq("couple_id", coupleId).eq("local_date", date))
-    .first();
+    .withIndex("by_couple_id_end_date", (q) => q.eq("couple_id", coupleId).gte("end_date", date))
+    .order("desc");
 
 /**
  * Keeps the together days that `visit` made of days that ended before `today`, so changing its
- * dates or deleting it changes only today and later. Call before every such change.
+ * dates or deleting it changes only today and later. Call before every such change. The days join
+ * a row the visit's earlier change kept when they follow it.
  */
 export async function keepVisitDays(ctx: WriterCtx, visit: Doc<"visits">, today: string, now: string): Promise<void> {
-  const oldestKept = addDaysToDate(today, -TOGETHER_DAYS_KEPT);
-  const firstDay = [visit.start_date, visit.together_from, oldestKept].reduce((a, b) => (b > a ? b : a));
+  const firstDay = [visit.start_date, visit.together_from, addDaysToDate(today, -TOGETHER_DAYS_KEPT)].reduce(later);
   const yesterday = addDaysToDate(today, -1);
   const lastDay = visit.end_date < yesterday ? visit.end_date : yesterday;
-  for (let date = firstDay; date <= lastDay; date = addDaysToDate(date, 1)) {
-    if ((await storedTogetherDay(ctx, visit.couple_id, date)) === null) {
-      await ctx.db.insert("together_days", { couple_id: visit.couple_id, local_date: date, source: "visit", created_at: now });
-    }
+  if (lastDay < firstDay) return;
+  const kept = (await rowsEndingFrom(ctx, visit.couple_id, addDaysToDate(firstDay, -1)).collect()).find(
+    (row) => row.source === "visit" && row.start_date <= firstDay,
+  );
+  if (kept === undefined) {
+    const row = { couple_id: visit.couple_id, start_date: firstDay, end_date: lastDay, source: "visit" as const };
+    await ctx.db.insert("together_days", { ...row, created_at: now, updated_at: now });
+  } else if (kept.end_date < lastDay) {
+    await ctx.db.patch(kept._id, { end_date: lastDay, updated_at: now });
   }
 }
 
 /**
- * Stores `date` as a day location showed the partners together. It runs at most once per couple
- * and date: the first match of the day, and never for a date already stored.
+ * Stores `date` as a day location showed the partners together, after `latest`, the couple's row
+ * that ends last. It runs at most once per couple and date: the first match of the day, and never
+ * for a date already stored.
  */
-async function recordLocationTogetherDay(ctx: WriterCtx, coupleId: string, date: string, now: string): Promise<void> {
-  await ctx.db.insert("together_days", { couple_id: coupleId, local_date: date, source: "location", created_at: now });
+async function recordLocationTogetherDay(
+  ctx: WriterCtx,
+  coupleId: string,
+  date: string,
+  latest: Doc<"together_days"> | null,
+  now: string,
+): Promise<void> {
+  if (latest?.source === "location" && latest.end_date === addDaysToDate(date, -1)) {
+    await ctx.db.patch(latest._id, { end_date: date, updated_at: now });
+  } else {
+    const row = { couple_id: coupleId, start_date: date, end_date: date, source: "location" as const };
+    await ctx.db.insert("together_days", { ...row, created_at: now, updated_at: now });
+  }
 }
 
 /**
@@ -238,6 +261,9 @@ export async function noteLocationFix(
   if (capturedAt === null) return;
   const clock = await streakClock(ctx, coupleId);
   const date = dayOf(clock, capturedAt);
-  if (date !== dayOf(clock, now) || (await storedTogetherDay(ctx, coupleId, date)) !== null) return;
-  await recordLocationTogetherDay(ctx, coupleId, date, now);
+  if (date !== dayOf(clock, now)) return;
+  // Only location stores today, so a row that reaches today is a match from earlier today.
+  const latest = await rowsEndingFrom(ctx, coupleId, addDaysToDate(date, -1)).first();
+  if (latest !== null && latest.end_date >= date) return;
+  await recordLocationTogetherDay(ctx, coupleId, date, latest, now);
 }

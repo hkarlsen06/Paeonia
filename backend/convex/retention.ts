@@ -12,7 +12,7 @@ import { TOGETHER_DAYS_KEPT } from "./lib/together";
 // notification_outbox, widget_push_outbox: a row is sent or failed within hours, so an old row
 // protects nothing. The Lock Screen push key repeats, and only its newest row is ever checked.
 // together_days: dates the partners were together, from location or a visit that changed after
-// them, kept TOGETHER_DAYS_KEPT days by date.
+// them, kept TOGETHER_DAYS_KEPT days by date. A row that starts earlier keeps its later dates.
 const RETENTION_DAYS = 30;
 const BATCH = 1000;
 
@@ -36,13 +36,17 @@ export const prune_expired_rows = internalMutation({
         .query("widget_push_outbox")
         .withIndex("by_created_at", (q) => q.lt("created_at", cutoff))
         .take(BATCH),
-      await ctx.db
-        .query("together_days")
-        .withIndex("by_local_date", (q) => q.lt("local_date", oldestTogetherDay))
-        .take(BATCH),
     ];
     for (const row of batches.flat()) await ctx.db.delete(row._id);
-    if (batches.some((rows) => rows.length === BATCH)) {
+    const togetherDays = await ctx.db
+      .query("together_days")
+      .withIndex("by_start_date", (q) => q.lt("start_date", oldestTogetherDay))
+      .take(BATCH);
+    for (const row of togetherDays) {
+      if (row.end_date < oldestTogetherDay) await ctx.db.delete(row._id);
+      else await ctx.db.patch(row._id, { start_date: oldestTogetherDay });
+    }
+    if ([...batches, togetherDays].some((rows) => rows.length === BATCH)) {
       await ctx.scheduler.runAfter(0, internal.retention.prune_expired_rows, {});
     }
   },

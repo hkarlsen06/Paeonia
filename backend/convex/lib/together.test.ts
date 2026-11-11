@@ -68,9 +68,9 @@ const togetherDays = (t: TestConvex, couple: TestCouple) =>
     (
       await ctx.db
         .query("together_days")
-        .withIndex("by_couple_id_local_date", (q) => q.eq("couple_id", couple.coupleId))
+        .withIndex("by_couple_id_end_date", (q) => q.eq("couple_id", couple.coupleId))
         .collect()
-    ).map((day) => day.local_date),
+    ).map((row) => `${row.start_date}..${row.end_date}`),
   );
 
 async function sharingCouple() {
@@ -90,7 +90,7 @@ describe("location together days", () => {
 
     await moveTo(couple.second, couple.coupleId, JUST_INSIDE);
     await moveTo(couple.first, couple.coupleId, HOME);
-    expect(await togetherDays(t, couple)).toEqual(["2026-06-28"]);
+    expect(await togetherDays(t, couple)).toEqual(["2026-06-28..2026-06-28"]);
   });
 
   test("the partner's position may be up to 12 hours old, since a phone at rest sends nothing", async () => {
@@ -101,7 +101,7 @@ describe("location together days", () => {
     expect(await togetherDays(t, couple)).toEqual([]);
     vi.setSystemTime(new Date("2026-06-29T12:20:00.000Z"));
     await moveTo(couple.first, couple.coupleId, HOME);
-    expect(await togetherDays(t, couple)).toEqual(["2026-06-29"]);
+    expect(await togetherDays(t, couple)).toEqual(["2026-06-29..2026-06-29"]);
   });
 
   test("a partner who paused sharing does not count", async () => {
@@ -164,21 +164,17 @@ describe("the streak's clock", () => {
 });
 
 describe("the 14-day pause", () => {
-  const days = (from: string, overrides: Partial<TogetherDays> = {}): TogetherDays => ({
+  const days = (from: string, spans: [string, string][]): TogetherDays => ({
     clock: ["UTC"],
     from,
-    rows: new Set(),
-    visits: [],
-    ...overrides,
-  });
-  const visit = (start_date: string, end_date: string, together_from = "2026-01-01") => ({
-    start_date,
-    end_date,
-    together_from,
+    spans: spans.map(([start_date, end_date]) => ({ start_date, end_date })),
   });
 
   test("the first 14 together days in a row rest the streak, and a day apart starts the count again", () => {
-    const long = days("2026-09-01", { visits: [visit("2026-10-01", "2026-10-20"), visit("2026-10-22", "2026-10-25")] });
+    const long = days("2026-09-01", [
+      ["2026-10-01", "2026-10-20"],
+      ["2026-10-22", "2026-10-25"],
+    ]);
     expect(pausesOn(long, "2026-09-30")).toBe(false);
     expect(pausesOn(long, "2026-10-01")).toBe(true);
     expect(pausesOn(long, "2026-10-14")).toBe(true);
@@ -188,25 +184,26 @@ describe("the 14-day pause", () => {
     expect(nextNeededDay(long, "2026-09-30")).toBe("2026-10-15");
   });
 
-  test("a visit reaches only the days from when its dates were saved, and a stored day counts on its own", () => {
-    const backdated = days("2026-09-20", {
-      visits: [visit("2026-10-01", "2026-10-05", "2026-10-03")],
-      rows: new Set(["2026-10-01"]),
-    });
-    expect(pausesOn(backdated, "2026-10-01")).toBe(true);
-    expect(pausesOn(backdated, "2026-10-02")).toBe(false);
-    expect(nextNeededDay(backdated, "2026-10-02")).toBe("2026-10-06");
+  test("days apart between stored days and visits end a run, and overlapping ones join it", () => {
+    const mixed = days("2026-09-20", [
+      ["2026-10-01", "2026-10-01"],
+      ["2026-10-03", "2026-10-05"],
+      ["2026-10-04", "2026-10-07"],
+    ]);
+    expect(pausesOn(mixed, "2026-10-01")).toBe(true);
+    expect(pausesOn(mixed, "2026-10-02")).toBe(false);
+    expect(nextNeededDay(mixed, "2026-10-02")).toBe("2026-10-08");
   });
 
   test("a date before the days read counts as a day apart", () => {
-    const late = days("2026-10-05", { visits: [visit("2026-09-01", "2026-10-30")] });
+    const late = days("2026-10-05", [["2026-09-01", "2026-10-30"]]);
     expect(pausesOn(late, "2026-10-04")).toBe(false);
     expect(pausesOn(late, "2026-10-18")).toBe(true);
     expect(pausesOn(late, "2026-10-19")).toBe(false);
   });
 
   test("the resting days hold today, or are the next a visit makes, and start after the streak's last day", () => {
-    const planned = days("2026-09-20", { visits: [visit("2026-10-10", "2026-10-12")] });
+    const planned = days("2026-09-20", [["2026-10-10", "2026-10-12"]]);
     expect(restSpan(planned, "2026-10-04", "2026-10-05")).toEqual({ from: "2026-10-10", until: "2026-10-12" });
     expect(restSpan(planned, "2026-10-09", "2026-10-11")).toEqual({ from: "2026-10-10", until: "2026-10-12" });
     expect(restSpan(planned, "2026-10-10", "2026-10-11")).toEqual({ from: "2026-10-11", until: "2026-10-12" });
