@@ -365,11 +365,16 @@ raise SystemExit(m["xcodebuild"](sys.argv[1:] or ["build"], {str(self.fake)!r}, 
         owner = self.root / "locks/simulator/owner"
         owner.parent.mkdir(parents=True)
         owner.write_text(f"/Users/someone/worktrees/Tidex/feature||{int(time.time()) - 120}")
+        (self.root / "locks/.waiting").mkdir()
+        (self.root / f"locks/.waiting/{int(time.time()) - 185}-1").write_text("/Users/someone/worktrees/Paeonia/fix|simulator simulator-2")
+        (self.root / f"locks/.waiting/{int(time.time()) - 400}-2.reserved").write_text("/Users/someone/worktrees/Paeonia/gone|simulator")
         document = agent.status(self.queues, self.root / "locks", self.root / "library")
         self.assertEqual([(ticket["action"], ticket["state"]) for ticket in document["queues"]["build"]],
                          [("archive", "running"), ("build-for-testing", "waiting"), ("clean", "waiting")])
         self.assertEqual(document["simulators"][0], {"name": "Shared iPhone", "holder": "Tidex/feature", "kind": "session", "minutes": 2})
         self.assertEqual(document["simulators"][1], {"name": "Shared iPhone 2", "holder": None})
+        self.assertEqual(document["simulator_waiters"],
+                         [{"label": "Paeonia/fix", "wants": ["Shared iPhone", "Shared iPhone 2"], "minutes": 3}])
         self.assertFalse(document["controller"]["current"])
 
     def test_status_answers_while_a_stuck_process_holds_the_line(self):

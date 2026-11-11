@@ -696,6 +696,17 @@ def status(queue_root=None, lock_root=None, library=None):
         except (OSError, ValueError):
             pass
         simulators.append(simulator)
+    # scripts/lock keeps one file per process waiting for a simulator: "owner|locks", named by arrival time.
+    waiting = []
+    for place in sorted((lock_root / ".waiting").glob("[0-9]*-[0-9]*")):
+        try:
+            worktree, wanted = place.read_text().strip().split("|")
+            if not place.suffix and time.time() - place.stat().st_mtime <= 30:
+                waiting.append({"label": "/".join(Path(worktree).parts[-2:]),
+                                "wants": [SIMULATORS[int(lock[10:] or 1) - 1][0] for lock in wanted.split()],
+                                "minutes": int((now - int(place.name.split("-")[0])) / 60)})
+        except (OSError, ValueError, IndexError):
+            pass
     library = Path(library or Path.home() / ".local/lib/ios-agent")
     controller = {"repo": None, "commit": None, "current": False}
     try:
@@ -705,7 +716,7 @@ def status(queue_root=None, lock_root=None, library=None):
         controller["current"] = latest == (library / "ios-agent").read_bytes()
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
         pass
-    return {"queues": queues, "simulators": simulators, "controller": controller}
+    return {"queues": queues, "simulators": simulators, "simulator_waiters": waiting, "controller": controller}
 
 
 def print_status(document):
@@ -723,6 +734,8 @@ def print_status(document):
             print(f"{simulator['name']}: {simulator['holder']}, session last used {simulator['minutes']} min ago")
         else:
             print(f"{simulator['name']}: {simulator['holder']}, in use for {simulator['minutes']} min")
+    for waiter in document["simulator_waiters"]:
+        print(f"{' or '.join(waiter['wants'])}: {waiter['label']}, waiting {waiter['minutes']} min")
     controller = document["controller"]
     if controller["current"]:
         print(f"controller: {controller['commit'][:8]} from {controller['repo']}")
