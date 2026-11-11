@@ -5,6 +5,10 @@ import Observation
 enum LetterSendOutcome: Equatable {
     /// The server has the letter. Nil when its author deleted it before a retry arrived.
     case sent(Letter?)
+    /// The server has the letter from an earlier try whose answer was lost, so it lacks what
+    /// the author changed since. The draft stays as a new letter with those changes, and the
+    /// author is told.
+    case sentWithoutLastChanges(Letter)
     case failed(MailError)
     /// Nothing to send, or a send is already running.
     case ignored
@@ -167,11 +171,18 @@ final class LetterComposer {
         return true
     }
 
-    /// Forgets a draft whose pending send the server has, as after the answer was lost or the
-    /// app closed before it came. The letter went out, so edits made since go with the draft.
-    func forgetSent(_ sentIDs: Set<UUID>) {
-        guard !isSending, let pending = draft?.pendingSend, sentIDs.contains(pending.id) else { return }
-        finishSend(pending.id)
+    /// Settles a draft whose pending send is one of `sent`, the letters the server has, as after
+    /// the answer was lost or the app closed before it came. The draft is forgotten when that
+    /// letter says what the draft says. Otherwise it stays as a new letter. `.ignored` when no
+    /// pending send is in `sent`, and while a picked photo is still being prepared, so the
+    /// draft is not forgotten just before the photo joins it.
+    @discardableResult
+    func forgetSent(_ sent: [Letter]) -> LetterSendOutcome {
+        guard !isSending, !isPreparingPhoto, let current = draft, let pending = current.pendingSend,
+              let letter = sent.first(where: { $0.id == pending.id })
+        else { return .ignored }
+        let asItIsNow = LetterSend(id: pending.id, content: current.content, operations: pending.operations)
+        return settle(asItIsNow, with: letter)
     }
 
     // MARK: Sending
@@ -197,16 +208,34 @@ final class LetterComposer {
         }
         isSending = true
         defer { isSending = false }
+        let isRetry = current.pendingSend != nil
         current.pendingSend = current.nextSend(makeOperation: operationProvider.makeOperation)
         draft = current
         guard await persist(current).value, let attempt = current.pendingSend else { return .failed(.sendFailed) }
         do {
             let letter = try await gateway.send(attempt, photo: media, coupleID: coupleID)
-            if self.session == session { finishSend(attempt.id) }
-            return .sent(letter)
+            guard self.session == session else { return .sent(letter) }
+            return settle(attempt, isRetry: isRetry, with: letter)
         } catch {
             return .failed(MailError(sending: error))
         }
+    }
+
+    /// Ends the send `attempt` now that the server has `letter` under its id. When the letter
+    /// says what the draft says, the draft is forgotten. When an earlier try stored it without
+    /// the author's later changes, the draft stays without its pending send, so the next Send
+    /// makes a new letter and nothing the author wrote is lost. Only a retry can meet a letter
+    /// an earlier try stored.
+    private func settle(_ attempt: LetterSend, isRetry: Bool = true, with letter: Letter?) -> LetterSendOutcome {
+        guard isRetry, let letter, !attempt.content.matches(letter) else {
+            finishSend(attempt.id)
+            return .sent(letter)
+        }
+        if var current = draft {
+            current.pendingSend = nil
+            change(current)
+        }
+        return .sentWithoutLastChanges(letter)
     }
 
     private func finishSend(_ letterID: UUID) {

@@ -112,19 +112,56 @@ struct LetterComposerTests {
         #expect(composer.sentLetterID == letterIDs.first)
     }
 
-    @Test func aLetterTheServerAlreadyHasIsForgottenAlsoAfterEdits() async throws {
+    /// The letter as the first try of `letterSentForATimeThatPassed` stored it.
+    private func storedByTheFirstTry(_ id: UUID, setFor time: Date) -> Letter {
+        Letter(
+            id: id, authorUserID: owner, recipientUserID: UUID(), templateKey: .goodMorning,
+            body: "Coffee at the station?", mediaAssetID: nil, deliveryKind: .at, deliverAt: time,
+            state: .delivered, deliveredAt: time, openedAt: nil, createdAt: time.addingTimeInterval(-60)
+        )
+    }
+
+    @Test func aLetterTheServerAlreadyHasIsForgottenThoughTheAppMovedItsTime() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let server = Mailroom()
+        let (first, later) = await letterSentForATimeThatPassed(server)
+        first.moveTimeIfPassed(now: later)
+        // The moved time reaches the phone's storage. Then the app closes and opens again, so
+        // nothing in memory says the app moved it.
+        await first.load(ownerUserID: owner)
+        let composer = await composer(FileMailCache(directoryURL: directory), server)
+        #expect(composer.draft?.content.delivery == .at(later.addingTimeInterval(3_600)))
+
+        // The live feed shows the letter in the sent list.
+        let letterID = try #require(await server.letterIDs.first)
+        let stored = storedByTheFirstTry(letterID, setFor: later.addingTimeInterval(-60))
+        #expect(composer.forgetSent([stored]) == .sent(stored))
+
+        #expect(composer.draft == nil)
+        #expect(composer.sentLetterID == stored.id)
+        await composer.load(ownerUserID: owner)
+        #expect(composer.draft == nil)
+    }
+
+    @Test func changesMadeAfterTheLetterWentStayAsANewLetter() async throws {
         defer { try? FileManager.default.removeItem(at: directory) }
         let server = Mailroom()
         let (composer, later) = await letterSentForATimeThatPassed(server)
         composer.moveTimeIfPassed(now: later)
         composer.updateBody("Coffee at the station at nine?")
 
-        // The live feed shows the letter in the sent list.
-        let letterIDs = await server.letterIDs
-        composer.forgetSent(Set(letterIDs))
+        // The live feed shows the letter in the sent list, as the first try stored it.
+        let letterID = try #require(await server.letterIDs.first)
+        let stored = storedByTheFirstTry(letterID, setFor: later.addingTimeInterval(-60))
+        #expect(composer.forgetSent([stored]) == .sentWithoutLastChanges(stored))
 
-        #expect(composer.draft == nil)
-        #expect(composer.sentLetterID == letterIDs.first)
+        #expect(composer.draft?.content.trimmedBody == "Coffee at the station at nine?")
+        #expect(composer.draft?.pendingSend == nil)
+        #expect(composer.sentLetterID == nil)
+        // The next Send is a new letter.
+        await server.answerFromNowOn()
+        #expect(await composer.send(coupleID: couple, now: later) == .sent(nil))
+        #expect(await server.letterIDs.count == 2)
         await composer.load(ownerUserID: owner)
         #expect(composer.draft == nil)
     }

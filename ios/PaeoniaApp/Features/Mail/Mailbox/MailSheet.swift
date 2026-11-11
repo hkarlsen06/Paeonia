@@ -80,7 +80,13 @@ extension View {
     ) -> some View {
         onChange(of: isShowing ? mail.notice?.id : nil, initial: true) { _, id in
             guard let id, let error = mail.takeNotice(id) else { return }
-            bannerCenter.show(.error(message: error.message))
+            // The letter went, and the composer clears error banners when one goes, so this
+            // one is not an error. It stays until the person has read it.
+            if error == .changesNotAdded {
+                bannerCenter.show(.info(message: error.message, timing: .untilDismissed))
+            } else {
+                bannerCenter.show(.error(message: error.message))
+            }
         }
     }
 }

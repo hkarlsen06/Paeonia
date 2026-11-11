@@ -35,6 +35,25 @@ struct LetterDraftTests {
         }
     }
 
+    @Test func theServersLetterIsComparedWithWhatTheAuthorWroteNotWithWhenItArrives() {
+        let setTime = Date(timeIntervalSince1970: 1_800_000_000)
+        var content = LetterContent(templateKey: .missYou, body: " See you. ")
+        content.delivery = .at(setTime)
+        func stored(_ card: LetterTemplate.Key = .missYou, _ body: String = "See you.", photo: UUID? = nil) -> Letter {
+            Letter(
+                id: UUID(), authorUserID: UUID(), recipientUserID: UUID(), templateKey: card, body: body,
+                mediaAssetID: photo, deliveryKind: .now, deliverAt: setTime.addingTimeInterval(-3_600),
+                state: .delivered, deliveredAt: setTime, openedAt: nil, createdAt: setTime
+            )
+        }
+
+        // The first try went at once, an hour before the time the draft now holds.
+        #expect(content.matches(stored()))
+        #expect(!content.matches(stored(.goodMorning)))
+        #expect(!content.matches(stored(.missYou, "See you soon.")))
+        #expect(!content.matches(stored(photo: UUID())))
+    }
+
     @Test func aDraftThatStartedASendKeepsItsLetterIDAndRenewsOnlyChangedOperations() {
         let operations = Operations()
         var draft = LetterDraft(content: LetterContent(templateKey: .missYou, body: "I miss you."))

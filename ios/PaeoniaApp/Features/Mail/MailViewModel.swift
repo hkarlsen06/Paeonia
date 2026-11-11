@@ -165,7 +165,7 @@ final class MailViewModel {
             lists[tab] = MailTimeline.merged(stored[tab], keeping: lists[tab] ?? stored[tab], in: tab)
         }
         await composer.reloadIfPurged()
-        composer.forgetSent(Set(stored.sent.letters.map(\.id)))
+        if case .sentWithoutLastChanges = composer.forgetSent(stored.sent.letters) { post(.changesNotAdded) }
         if let pendingLetterID, letter(id: pendingLetterID) != nil, presentation != nil {
             presentation?.path.append(.reader(pendingLetterID))
             self.pendingLetterID = nil
@@ -198,38 +198,6 @@ final class MailViewModel {
     func loadPartnerTimeZone() async {
         guard let gateway, let id = try? await gateway.partnerTimeZoneID() else { return }
         partnerTimeZone = TimeZone(identifier: id)
-    }
-
-    // MARK: Sending
-
-    /// Sends the letter being written. Posts a notice when it was not sent, and the letter
-    /// stays as it was, so trying again sends the same one. The composer's `sentLetterID`
-    /// tells the screen it went.
-    func send() async {
-        let stamp = await writeStamp()
-        switch await composer.send(coupleID: coupleID) {
-        case let .sent(letter):
-            guard let letter else { return }
-            await save(stamp: stamp) { snapshot in
-                snapshot.sent.letters.removeAll { $0.id == letter.id }
-                snapshot.sent.letters.insert(letter, at: 0)
-            }
-        case let .failed(error):
-            #if DEBUG
-            logger.error("Sending a letter failed: \(String(describing: error))")
-            #endif
-            post(error)
-        case .ignored:
-            break
-        }
-    }
-
-    /// Attaches a photo the picker loaded, or tells the person it could not be read.
-    func pickPhoto(_ data: Data?) async {
-        guard let data, await composer.pickPhoto(data) else {
-            post(.photoUnreadable)
-            return
-        }
     }
 
     // MARK: Reading
@@ -344,5 +312,53 @@ final class MailViewModel {
         let lettersShown = snapshot.letters + lists.values.flatMap(\.letters)
         let gone = await cache.trackPhotos(Set(lettersShown.compactMap(\.mediaAssetID)), ownerUserID: ownerUserID)
         if !gone.isEmpty { await evictPhotos(Array(gone)) }
+    }
+}
+
+// MARK: Sending
+
+extension MailViewModel {
+    /// Sends the letter being written. Posts a notice when it was not sent, and the letter
+    /// stays as it was, so trying again sends the same one. The composer's `sentLetterID`
+    /// tells the screen it went. Also posts a notice when the letter had already gone without
+    /// the author's last changes, which stay in the composer as a new letter.
+    func send() async {
+        let stamp = await writeStamp()
+        var outcome = await composer.send(coupleID: coupleID)
+        if case .failed = outcome {
+            // A lost answer is not a lost letter. The live feed may have shown it while the send ran.
+            let seen = composer.forgetSent(snapshot.sent.letters)
+            if seen != .ignored { outcome = seen }
+        }
+        switch outcome {
+        case let .sent(letter):
+            guard let letter else { return }
+            await storeSent(letter, stamp: stamp)
+        case let .sentWithoutLastChanges(letter):
+            await storeSent(letter, stamp: stamp)
+            post(.changesNotAdded)
+        case let .failed(error):
+            #if DEBUG
+            logger.error("Sending a letter failed: \(String(describing: error))")
+            #endif
+            post(error)
+        case .ignored:
+            break
+        }
+    }
+
+    private func storeSent(_ letter: Letter, stamp: WriteStamp) async {
+        await save(stamp: stamp) { snapshot in
+            snapshot.sent.letters.removeAll { $0.id == letter.id }
+            snapshot.sent.letters.insert(letter, at: 0)
+        }
+    }
+
+    /// Attaches a photo the picker loaded, or tells the person it could not be read.
+    func pickPhoto(_ data: Data?) async {
+        guard let data, await composer.pickPhoto(data) else {
+            post(.photoUnreadable)
+            return
+        }
     }
 }

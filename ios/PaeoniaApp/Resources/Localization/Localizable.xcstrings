@@ -24675,6 +24675,24 @@
         }
       }
     },
+    "mail.error.changesNotAdded" : {
+      "comment" : "Notice when a letter turned out to be sent already, from an earlier try that seemed to fail, so what the person changed before sending again is not in it. The changed letter is still open as a new letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your letter was already sent before your last changes. They're still here, so you can send this as a new letter."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brevet ble sendt før de siste endringene dine. De er fortsatt her, så du kan sende dette som et nytt brev."
+          }
+        }
+      }
+    },
     "mail.error.deleteFailed" : {
       "comment" : "Error when a letter could not be deleted for another reason",
       "extractionState" : "manual",

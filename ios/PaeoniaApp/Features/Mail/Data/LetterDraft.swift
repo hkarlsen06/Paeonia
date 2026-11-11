@@ -31,6 +31,16 @@ nonisolated struct LetterContent: Codable, Equatable, Sendable {
     var canSend: Bool {
         LetterBody.canSend(body)
     }
+
+    /// Whether `letter`, as its author reads it from the server, holds what the author made
+    /// here: the card, the note, and a photo or none. A letter an earlier try already stored
+    /// keeps what that try sent. When it arrives is left out on purpose. The server and the app
+    /// both move a set time that has passed, and a letter that went at another time lost
+    /// nothing the author wrote.
+    func matches(_ letter: Letter) -> Bool {
+        letter.templateKey == templateKey && letter.body == trimmedBody
+            && (letter.mediaAssetID != nil) == (photo != nil)
+    }
 }
 
 /// The client operations of one send. A retry reuses them, so the server sees the same
