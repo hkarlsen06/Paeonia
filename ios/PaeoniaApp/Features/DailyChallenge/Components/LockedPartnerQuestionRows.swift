@@ -134,7 +134,7 @@ struct LockedPartnerQuestionRows: View {
         .accessibilityHidden(true)
     }
 
-    private static let rowShape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+    private static let rowShape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
     private static let tone = PaeoniaTileTone.partnerWaiting
     private static let avatarSize: CGFloat = 32
     private static let lockSize: CGFloat = 16
