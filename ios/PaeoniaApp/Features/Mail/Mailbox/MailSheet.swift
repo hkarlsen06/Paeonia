@@ -58,7 +58,8 @@ private struct MailNavigation: View {
                         mail: mail,
                         people: people,
                         letterID: letterID,
-                        onWriteBack: { mail.presentation?.path.append(.composer) }
+                        onWriteBack: { mail.presentation?.path.append(.composer) },
+                        onEdit: { mail.presentation?.path.append(.composer) }
                     )
                 case .composer:
                     MailComposerView(mail: mail, partnerName: people.partnerName) {
@@ -82,7 +83,7 @@ extension View {
             guard let id, let error = mail.takeNotice(id) else { return }
             // The letter went, and the composer clears error banners when one goes, so this
             // one is not an error. It stays until the person has read it.
-            if error == .changesNotAdded {
+            if error.isNews {
                 bannerCenter.show(.info(message: error.message, timing: .untilDismissed))
             } else {
                 bannerCenter.show(.error(message: error.message))

@@ -7,6 +7,7 @@ struct MailReaderView: View {
     let people: MailPeople
     let letterID: UUID
     let onWriteBack: () -> Void
+    let onEdit: () -> Void
 
     private static let envelopeWidth: CGFloat = 260
 
@@ -14,6 +15,7 @@ struct MailReaderView: View {
     /// The envelope stays up while it opens, so the letter rises out of it before the page shows.
     @State private var isOpeningEnvelope = false
     @State private var reportTarget: PrivacyReportTarget?
+    @State private var isConfirmingUnsend = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
 
@@ -47,6 +49,17 @@ struct MailReaderView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.paeoniaBackgroundPrimary)
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            Text(.mailDeleteSealedTitle), isPresented: $isConfirmingUnsend, titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                Task { await unsend() }
+            } label: {
+                Text(.mailDeleteSealedAction)
+            }
+        } message: {
+            Text(.mailDeleteSealedMessage(people.partnerName))
+        }
         .navigationDestination(item: $reportTarget) { target in
             if let partnerUserID = people.partnerUserID {
                 ReportAndLeaveView(
@@ -72,9 +85,35 @@ struct MailReaderView: View {
                     }
                     .buttonStyle(PaeoniaPrimaryButtonStyle())
                     .accessibilityIdentifier("mail.reader.writeBack")
+                } else if letter.state == .sealed {
+                    sealedActions(letter)
                 }
             }
         }
+    }
+
+    private func sealedActions(_ letter: Letter) -> some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            Button {
+                if mail.change(letter) { onEdit() }
+            } label: {
+                Text(.mailChangeTitle)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .accessibilityIdentifier("mail.reader.change")
+            Button(role: .destructive) {
+                isConfirmingUnsend = true
+            } label: {
+                Text(.mailDeleteSealedAction)
+            }
+            .buttonStyle(PaeoniaSecondaryButtonStyle())
+            .accessibilityIdentifier("mail.reader.unsend")
+        }
+    }
+
+    private func unsend() async {
+        guard let letter = mail.letter(id: letterID), await mail.delete(letter) else { return }
+        dismiss()
     }
 
     private func reportMenu(_ letter: Letter) -> some View {
@@ -251,7 +290,7 @@ nonisolated enum MailLetterPhotoCache {
 }
 
 /// The photo in a letter. A failed photo retries on tap.
-private struct MailLetterPhoto: View {
+struct MailLetterPhoto: View {
     let mediaAssetID: UUID
     @State private var load = ImageLoad<UUID>.loading
 

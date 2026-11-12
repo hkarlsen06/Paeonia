@@ -6,6 +6,9 @@ nonisolated protocol MailGateway: Sendable {
     /// Uploads the photo, if any, and sends the letter. Returns it as stored, or nil when it
     /// was deleted before a retry of the same send arrived.
     func send(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter?
+    /// Uploads a new photo, if any, and changes the sealed letter `letter.id` to what `letter`
+    /// says. Returns it as stored, or nil when it was deleted after this change landed.
+    func change(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter?
     /// Opens a letter this person received. Returns it with its note and photo.
     func open(id: UUID) async throws -> Letter
     /// Deletes one of this person's letters for both partners. A sealed one never arrives.
@@ -26,7 +29,18 @@ nonisolated struct LiveMailGateway: MailGateway {
     }
 
     func send(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter? {
-        var mediaAssetID: UUID?
+        try await write("letters:send_letter", letter, photo: photo, coupleID: coupleID)
+    }
+
+    func change(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter? {
+        try await write("letters:edit_letter", letter, photo: photo, coupleID: coupleID)
+    }
+
+    /// Uploads `photo` for the letter, or keeps the photo it has on the server, then calls `name`.
+    private func write(
+        _ name: String, _ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID
+    ) async throws -> Letter? {
+        var mediaAssetID = letter.content.storedPhotoID
         if let photo {
             mediaAssetID = try await uploader.uploadMedia(
                 photo,
@@ -36,10 +50,7 @@ nonisolated struct LiveMailGateway: MailGateway {
                 finalizeOperation: letter.operations.finalize
             ).mediaAssetID
         }
-        return try await client.mutation(
-            "letters:send_letter",
-            args: SendLetterRequest(letter: letter, mediaAssetID: mediaAssetID)
-        )
+        return try await client.mutation(name, args: SendLetterRequest(letter: letter, mediaAssetID: mediaAssetID))
     }
 
     func open(id: UUID) async throws -> Letter {

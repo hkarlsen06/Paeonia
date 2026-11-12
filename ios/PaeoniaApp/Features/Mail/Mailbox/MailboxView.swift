@@ -98,6 +98,14 @@ struct MailboxView: View {
                 } label: {
                     Label(deleteTitle(for: letter), systemImage: "trash")
                 }
+                if letter.state == .sealed {
+                    Button {
+                        if mail.change(letter) { onOpen(.composer) }
+                    } label: {
+                        Label(.mailChangeAction, systemImage: "pencil")
+                    }
+                    .tint(.paeoniaAccentPrimary)
+                }
             }
         }
     }

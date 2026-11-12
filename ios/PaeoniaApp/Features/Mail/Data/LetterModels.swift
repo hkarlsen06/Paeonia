@@ -156,6 +156,21 @@ nonisolated enum LetterDelivery: Codable, Equatable, Sendable {
         if today > now { return today }
         return calendar.date(byAdding: .day, value: 1, to: today) ?? today
     }
+
+    /// When a birthday card arrives unless its author picks a time: 08:00 in `timeZone` on the
+    /// next `birthday` (`yyyy-MM-dd`), the day itself included, and now once 08:00 on the day
+    /// has passed. A 29 February birthday falls on 28 February in other years, as everywhere in
+    /// the app. Nil for a date it cannot read.
+    static func birthdayMorning(_ birthday: String, in timeZone: TimeZone, after now: Date) -> LetterDelivery? {
+        guard let date = LockScreenCalendarDate(birthday) else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let next = date.nextYearlyOccurrence(onOrAfter: LockScreenCalendarDate(containing: now, in: calendar))
+        guard let day = next.startOfDay(in: calendar),
+              let morning = calendar.date(bySettingHour: 8, minute: 0, second: 0, of: day)
+        else { return nil }
+        return morning > now ? .at(morning) : .now
+    }
 }
 
 /// What the composer's delivery step offers, as `letters:get_letter_delivery_options` read it
@@ -170,9 +185,12 @@ nonisolated struct MailDeliveryOptions: Decodable, Equatable, Sendable {
     /// The next visit starts too soon for a letter written now to arrive on its evening.
     var nextVisitTooSoon = false
     var bothShareLocation = false
+    /// The partner's birthday (`yyyy-MM-dd`) as saved in Settings. Nil when nobody saved it.
+    var partnerBirthday: String?
 
     enum CodingKeys: String, CodingKey {
         case partnerTimeZoneID = "partner_time_zone_id"
+        case partnerBirthday = "partner_birthday"
         case togetherNow = "together_now"
         case nextVisitStartDate = "next_visit_start_date"
         case nextVisitTooSoon = "next_visit_too_soon"

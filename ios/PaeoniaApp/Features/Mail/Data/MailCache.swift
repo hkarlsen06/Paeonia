@@ -39,7 +39,7 @@ actor FileMailCache: MailCaching {
     static let shared = FileMailCache()
 
     /// Bump when a stored type gains a required field. A file with another version reads as empty.
-    private static let schemaVersion = 3
+    private static let schemaVersion = 5
     private static let draftPhotoSuffix = ".draft-photo"
 
     private let directoryURL: URL

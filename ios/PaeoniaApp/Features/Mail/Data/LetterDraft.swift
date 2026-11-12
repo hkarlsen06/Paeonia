@@ -17,6 +17,9 @@ nonisolated struct LetterContent: Codable, Equatable, Sendable {
     var body: String
     var delivery: LetterDelivery = .now
     var photo: LetterPhoto?
+    /// The photo a sent letter already has on the server, kept as it is while the letter is
+    /// changed. Never set together with `photo`, which replaces it.
+    var storedPhotoID: UUID?
 
     init(templateKey: LetterTemplate.Key, body: String) {
         self.templateKey = templateKey
@@ -75,6 +78,14 @@ nonisolated struct LetterDraft: Codable, Equatable, Sendable {
     /// goes out and stays until the server is seen to have the letter, so every later send of
     /// this draft carries the same letter id and the server stores the letter once.
     var pendingSend: LetterSend?
+    var changing: UUID?
+    /// True once the author picked when the letter arrives, so a default never moves it again.
+    var deliveryIsChosen = false
+    /// The letter being changed waits for the next meeting, so keeping that needs no new check.
+    var keepsMeeting = false
+    /// A save of this change may have reached the server, but no answer said so. The letter may
+    /// already hold it, so discarding the change cannot promise the letter stays as it was.
+    var unconfirmed = false
 
     /// The send to make now. A draft that started a send keeps that send's letter id, even when
     /// the letter changed since, as when a set time that passed was moved. An operation is reused
@@ -83,7 +94,7 @@ nonisolated struct LetterDraft: Codable, Equatable, Sendable {
     func nextSend(makeOperation: () -> SyncClientOperation) -> LetterSend {
         guard let pendingSend else {
             return LetterSend(
-                id: UUID(),
+                id: changing ?? UUID(),
                 content: content,
                 operations: LetterSendOperations(
                     reserve: makeOperation(), finalize: makeOperation(), send: makeOperation()
@@ -102,6 +113,51 @@ nonisolated struct LetterDraft: Codable, Equatable, Sendable {
                 send: makeOperation()
             )
         )
+    }
+}
+
+nonisolated extension LetterDraft {
+    /// A change to `letter`, which this person sent and which has not arrived, starting from
+    /// what it says now. Nil for a letter that arrived or that this phone cannot read.
+    init?(changing letter: Letter) {
+        guard letter.state == .sealed, let templateKey = letter.templateKey, let body = letter.body,
+              let kind = letter.deliveryKind
+        else { return nil }
+        var content = LetterContent(templateKey: templateKey, body: body)
+        content.storedPhotoID = letter.mediaAssetID
+        switch kind {
+        case .now:
+            content.delivery = .now
+        case .morning:
+            content.delivery = .morning
+        case .together:
+            content.delivery = .together
+        case .at:
+            guard let deliverAt = letter.deliverAt else { return nil }
+            content.delivery = .at(deliverAt)
+        }
+        self.init(content: content)
+        changing = letter.id
+        deliveryIsChosen = true
+        keepsMeeting = kind == .together
+    }
+
+    /// Whether `letter`, the letter being changed as the server has it, already holds this change:
+    /// the card, the note, and the kept photo or none. Only a change that was sent can have
+    /// landed. A change with a newly picked photo is left to its next save, since a letter that
+    /// still has the old photo looks the same.
+    func landed(in letter: Letter) -> Bool {
+        letter.id == changing && pendingSend != nil && content.photo == nil && content.matches(letter)
+            && letter.mediaAssetID == content.storedPhotoID
+    }
+
+    /// When a birthday card arrives because its author has not picked a time, so the delivery
+    /// step can name the day. Nil otherwise.
+    var birthdayArrival: Date? {
+        guard !deliveryIsChosen, content.templateKey == .birthday, case let .at(date) = content.delivery else {
+            return nil
+        }
+        return date
     }
 }
 

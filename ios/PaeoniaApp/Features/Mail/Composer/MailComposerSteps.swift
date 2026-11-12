@@ -92,6 +92,8 @@ struct MailNoteEditor: View {
 /// `photo` is already compressed, and decodes again only when it changes.
 struct MailPhotoStep: View {
     let photo: Data?
+    /// The photo a sent letter being changed already has, shown until it is replaced or removed.
+    let storedPhotoID: UUID?
     let isMissing: Bool
     let isPreparing: Bool
     let onPick: (Data?) async -> Void
@@ -106,7 +108,7 @@ struct MailPhotoStep: View {
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
             preview
-            if photo != nil || isMissing {
+            if photo != nil || storedPhotoID != nil || isMissing {
                 Button(role: .destructive) {
                     item = nil
                     onRemove()
@@ -116,7 +118,7 @@ struct MailPhotoStep: View {
                 .buttonStyle(PaeoniaSecondaryButtonStyle())
             }
             PhotosPicker(selection: $item, matching: .images) {
-                Text(photo == nil ? .mailComposerPhotoChoose : .mailComposerPhotoChange)
+                Text(photo == nil && storedPhotoID == nil ? .mailComposerPhotoChoose : .mailComposerPhotoChange)
             }
             .buttonStyle(PaeoniaSecondaryButtonStyle())
             .disabled(isPreparing)
@@ -142,6 +144,8 @@ struct MailPhotoStep: View {
                 .scaledToFit()
                 .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous))
                 .accessibilityLabel(Text(.mailReaderPhoto))
+        } else if let storedPhotoID {
+            MailLetterPhoto(mediaAssetID: storedPhotoID)
         } else if isMissing {
             Text(.mailErrorPhotoMissing)
                 .font(PaeoniaTypography.body)
@@ -163,6 +167,12 @@ struct MailDeliveryPicker: View {
     let retryOptions: () -> Void
     /// The saved time had passed and the composer moved it, so the picker says so.
     let movedPastTime: Bool
+    /// The partner's birthday morning a birthday card is set for until the author picks, which
+    /// the picker names. Nil otherwise.
+    let birthdayArrival: Date?
+    /// The letter being changed already waits for the next meeting, so that choice stays offered
+    /// whatever the options say, since keeping it needs no new check.
+    let keepsMeeting: Bool
 
     @State private var setTime = Date.now.addingTimeInterval(3_600)
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -176,6 +186,9 @@ struct MailDeliveryPicker: View {
             option(.at(setTime), title: .mailDeliveryAtTitle, detail: nil)
             if case let .at(date) = delivery {
                 timePicker(now: now)
+                if let birthdayArrival {
+                    birthdayNote(birthdayArrival)
+                }
                 if movedPastTime {
                     let when = date.formatted(.dateTime.weekday(.wide).day().month().hour().minute())
                     Text(.mailDeliveryAtMoved(when))
@@ -200,7 +213,7 @@ struct MailDeliveryPicker: View {
             setTime = $0
             delivery = .at($0)
         })
-        let range = now.addingTimeInterval(60)...now.addingTimeInterval(365 * 86_400)
+        let range = now.addingTimeInterval(60)...max(now.addingTimeInterval(365 * 86_400), setTime)
         if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
                 Text(.mailDeliveryAtLabel)
@@ -229,7 +242,11 @@ struct MailDeliveryPicker: View {
     @ViewBuilder
     private var nextMeeting: some View {
         let meeting = options?.nextMeeting()
-        if meeting?.offersLetter == true || (meeting == nil && delivery == .together) {
+        if keepsMeeting {
+            let detail = meeting.flatMap { $0.offersLetter ? meetingLine($0) : nil }
+                ?? String(localized: .mailStatusWaitsForMeeting)
+            option(.together, title: .mailDeliveryTogetherTitle, detail: detail)
+        } else if meeting?.offersLetter == true || (meeting == nil && delivery == .together) {
             option(.together, title: .mailDeliveryTogetherTitle, detail: meeting.map(meetingLine) ?? uncheckedLine)
             if meeting == nil, optionsFailure != nil {
                 Button(action: retryOptions) {
@@ -277,6 +294,23 @@ struct MailDeliveryPicker: View {
         case .unplanned:
             return String(localized: .mailDeliveryTogetherUnplanned)
         }
+    }
+
+    private func birthdayNote(_ arrival: Date) -> some View {
+        let zone = options?.partnerTimeZoneID.flatMap(TimeZone.init(identifier:)) ?? .current
+        var style = Date.FormatStyle(date: .complete, time: .shortened)
+        style.timeZone = zone
+        var line = String(localized: .mailDeliveryBirthday(partnerName, arrival.formatted(style)))
+        if zone.secondsFromGMT(for: arrival) != TimeZone.current.secondsFromGMT(for: arrival) {
+            let yours = arrival.formatted(.dateTime.weekday(.wide).hour().minute())
+            line += "\n" + String(localized: .mailDeliveryMorningYourTime(yours))
+        }
+        return Text(verbatim: line)
+            .font(PaeoniaTypography.body)
+            .foregroundStyle(.paeoniaAccentPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("mail.delivery.birthday")
     }
 
     private func morningDetail(now: Date) -> String {

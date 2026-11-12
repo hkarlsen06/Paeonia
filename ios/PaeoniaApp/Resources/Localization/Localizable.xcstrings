@@ -24153,6 +24153,42 @@
         }
       }
     },
+    "mail.change.action" : {
+      "comment" : "Swipe action in the Sent list that opens a letter on its way so you can change it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre"
+          }
+        }
+      }
+    },
+    "mail.change.title" : {
+      "comment" : "Composer title and reader button for changing a letter you sent that has not arrived yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change letter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre brevet"
+          }
+        }
+      }
+    },
     "mail.composer.back" : {
       "comment" : "Button that goes back one step",
       "extractionState" : "manual",
@@ -24203,6 +24239,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Forkast"
+          }
+        }
+      }
+    },
+    "mail.composer.discardChanges" : {
+      "comment" : "Button that throws away changes to a letter you sent. The letter stays as it was",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard changes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forkast endringene"
+          }
+        }
+      }
+    },
+    "mail.composer.discardChangesMaybeSavedTitle" : {
+      "comment" : "Question before throwing away changes to a sent letter whose last save got no answer, so they may already be in the letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard your changes? They may already be saved to the letter, so check it in Sent afterwards."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du forkaste endringene? De kan allerede være lagret i brevet, så sjekk det under Sendt etterpå."
+          }
+        }
+      }
+    },
+    "mail.composer.discardChangesTitle" : {
+      "comment" : "Question before throwing away changes to a letter you sent",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard your changes? The letter stays as it was."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du forkaste endringene? Brevet blir som det var."
           }
         }
       }
@@ -24383,6 +24473,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fjern bildet"
+          }
+        }
+      }
+    },
+    "mail.composer.saveChanges" : {
+      "comment" : "Last button of the composer when changing a letter you already sent",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save changes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre endringene"
           }
         }
       }
@@ -24635,6 +24743,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tidspunktet du valgte hadde passert, så vi flyttet det til %@. Endre det hvis du vil."
+          }
+        }
+      }
+    },
+    "mail.delivery.birthday" : {
+      "comment" : "Under the time picker when a birthday card is set for the partner's birthday. 1: partner's name. 2: the day and time on the partner's clock",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It arrives on %1$@'s birthday, %2$@. Pick another time if you like."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det kommer fram på bursdagen til %1$@, %2$@. Velg et annet tidspunkt hvis du vil."
           }
         }
       }
@@ -24945,6 +25071,132 @@
         }
       }
     },
+    "mail.error.birthdayPassed" : {
+      "comment" : "Shown when a birthday card's birthday morning passed while the author was writing. It is now set to arrive right away",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The birthday morning has passed, so your letter is now set to arrive right away. Check it, then send again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bursdagsmorgenen har passert, så brevet er nå satt til å komme fram med en gang. Sjekk det, og send igjen."
+          }
+        }
+      }
+    },
+    "mail.error.changeFailed" : {
+      "comment" : "Shown when changes to a sent letter could not be saved for another reason",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong, so your changes weren't saved. They're still here, so try again later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt, så endringene ble ikke lagret. De er fortsatt her, så prøv igjen senere."
+          }
+        }
+      }
+    },
+    "mail.error.changeLetterGone" : {
+      "comment" : "Shown when the author unsent a letter, maybe on another phone, before their changes to it were saved. Uses the same verb as the Unsend button",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You unsent this letter, so your changes weren't saved. What you wrote is still here, so you can send it as a new letter."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du angret sendingen av dette brevet, så endringene ble ikke lagret. Det du skrev er fortsatt her, så du kan sende det som et nytt brev."
+          }
+        }
+      }
+    },
+    "mail.error.changeLetterGonePhotoStays" : {
+      "comment" : "As mail.error.changeLetterGone, for a change that kept the letter's photo, which went with the unsent letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You unsent this letter, so your changes weren't saved. What you wrote is still here, so you can send it as a new letter. Its photo went with it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du angret sendingen av dette brevet, så endringene ble ikke lagret. Det du skrev er fortsatt her, så du kan sende det som et nytt brev. Bildet forsvant sammen med brevet."
+          }
+        }
+      }
+    },
+    "mail.error.changeMeetingUnavailable" : {
+      "comment" : "Shown when a change that moves a sent letter to the next meeting is refused, as when the visit was deleted. The changes stay in the composer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This letter can't wait for your next meeting right now. Your changes are still here, so pick another time and save again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette brevet kan ikke vente til dere møtes neste gang akkurat nå. Endringene er fortsatt her, så velg et annet tidspunkt og lagre igjen."
+          }
+        }
+      }
+    },
+    "mail.error.changeOffline" : {
+      "comment" : "Shown when changes to a sent letter could not be saved because the phone is offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline, so your changes weren't saved. They're still here, so save them when you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet, så endringene ble ikke lagret. De er fortsatt her, så lagre dem når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "mail.error.changePhotoChanged" : {
+      "comment" : "Shown when a change kept a photo that another phone replaced or removed. The change now has the letter's photo as it is",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This letter's photo was changed on another phone, so your change now has the photo the letter has. Check it, then save again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet i dette brevet ble endret på en annen telefon, så endringen din har nå bildet brevet har. Sjekk det, og lagre igjen."
+          }
+        }
+      }
+    },
     "mail.error.changesNotAdded" : {
       "comment" : "Notice when a letter turned out to be sent already, from an earlier try that seemed to fail, so what the person changed before sending again is not in it. The changed letter is still open as a new letter",
       "extractionState" : "manual",
@@ -24959,6 +25211,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Brevet ble sendt før de siste endringene dine. De er fortsatt her, så du kan sende dette som et nytt brev."
+          }
+        }
+      }
+    },
+    "mail.error.changeTooLate" : {
+      "comment" : "Shown when a letter arrived before the author's latest changes to it were saved. The changes stay in the composer as a new letter",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your letter arrived before your latest changes were saved. What you wrote is still here, so you can send it as a new letter."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brevet kom fram før de siste endringene ble lagret. Det du skrev er fortsatt her, så du kan sende det som et nytt brev."
+          }
+        }
+      }
+    },
+    "mail.error.changeTooLatePhotoStays" : {
+      "comment" : "As mail.error.changeTooLate, for a change that kept the letter's photo. The photo stays with the letter that arrived",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your letter arrived before your latest changes were saved. What you wrote is still here, so you can send it as a new letter. The photo stayed with the letter that arrived."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brevet kom fram før de siste endringene ble lagret. Det du skrev er fortsatt her, så du kan sende det som et nytt brev. Bildet ble med brevet som kom fram."
+          }
+        }
+      }
+    },
+    "mail.error.changeUnconfirmed" : {
+      "comment" : "Shown when a save of changes to a sent letter got no answer, so the phone can't tell whether it was saved. Saving again is safe",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't check whether your changes were saved. They're still here, so tap Save changes to make sure."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke sjekket om endringene ble lagret. De er fortsatt her, så trykk på Lagre endringene for å være sikker."
+          }
+        }
+      }
+    },
+    "mail.error.changeUnconfirmedOffline" : {
+      "comment" : "Shown when the connection dropped while changes to a sent letter were being saved, so the phone can't tell whether they were saved",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You lost your connection, so we couldn't check whether your changes were saved. They're still here, so save them again when you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du mistet nettet, så vi fikk ikke sjekket om endringene ble lagret. De er fortsatt her, så lagre dem igjen når du er på nett."
           }
         }
       }
@@ -24995,6 +25319,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du er frakoblet. Prøv igjen når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "mail.error.finishOtherLetter" : {
+      "comment" : "Shown when the author tries to change a sent letter while another letter is half written",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're in the middle of another letter. Send it or discard it first, then you can change this one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du holder på med et annet brev. Send eller forkast det først, så kan du endre dette."
           }
         }
       }

@@ -39,6 +39,9 @@ struct MailViewModelTests {
         func open(id: UUID) async throws -> Letter { throw URLError(.badServerResponse) }
         func delete(id: UUID, operation: SyncClientOperation) async throws {}
         func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions { MailDeliveryOptions() }
+        func change(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter? {
+            nil
+        }
         // swiftlint:enable async_without_await
     }
 
@@ -84,6 +87,9 @@ struct MailViewModelTests {
         func delete(id: UUID, operation: SyncClientOperation) async throws {}
         func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage { MailPage() }
         func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions { MailDeliveryOptions() }
+        func change(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter? {
+            nil
+        }
         // swiftlint:enable async_without_await
     }
 
@@ -106,6 +112,9 @@ struct MailViewModelTests {
         func open(id: UUID) async throws -> Letter { throw URLError(.badServerResponse) }
         func delete(id: UUID, operation: SyncClientOperation) async throws {}
         func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage { MailPage() }
+        func change(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter? {
+            nil
+        }
         // swiftlint:enable async_without_await
     }
 

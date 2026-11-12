@@ -49,7 +49,7 @@ struct MailComposerView: View {
             }
         }
         .background(Color.paeoniaBackgroundPrimary)
-        .navigationTitle(Text(.mailComposerTitle))
+        .navigationTitle(Text(isChange ? .mailChangeTitle : .mailComposerTitle))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if composer.draft != nil {
@@ -57,25 +57,27 @@ struct MailComposerView: View {
                     Button(role: .destructive) {
                         isConfirmingDiscard = true
                     } label: {
-                        Text(.mailComposerDiscard)
+                        Text(isChange ? .mailComposerDiscardChanges : .mailComposerDiscard)
                     }
                     .disabled(composer.isSending)
                 }
             }
         }
         .confirmationDialog(
-            Text(.mailComposerDiscardTitle), isPresented: $isConfirmingDiscard, titleVisibility: .visible
+            Text(discardTitle),
+            isPresented: $isConfirmingDiscard, titleVisibility: .visible
         ) {
             Button(role: .destructive) {
                 composer.discard()
                 dismiss()
             } label: {
-                Text(.mailComposerDiscard)
+                Text(isChange ? .mailComposerDiscardChanges : .mailComposerDiscard)
             }
         }
         .navigationBarBackButtonHidden(composer.isSending)
         // The letter reached the server, from this send or one whose answer was lost.
-        .onChange(of: composer.sentLetterID) {
+        .onChange(of: composer.sentLetterID) { _, sent in
+            guard sent != nil else { return }
             if bannerCenter.content?.style == .error { bannerCenter.dismiss() }
             onSent()
         }
@@ -86,6 +88,22 @@ struct MailComposerView: View {
             if !hasNoDraft, step == .template, let saved = composer.draft?.step { step = saved }
         }
         .task { await mail.loadDeliveryOptions() }
+    }
+
+    private var isChange: Bool {
+        composer.draft?.changing != nil
+    }
+
+    /// A change whose save may have landed can't promise that the letter stays as it was.
+    private var discardTitle: LocalizedStringResource {
+        guard isChange else { return .mailComposerDiscardTitle }
+        return composer.draft?.unconfirmed == true
+            ? .mailComposerDiscardChangesMaybeSavedTitle
+            : .mailComposerDiscardChangesTitle
+    }
+
+    private var hasPhoto: Bool {
+        composer.draft?.content.photo != nil || composer.draft?.content.storedPhotoID != nil
     }
 
     private var title: LocalizedStringResource {
@@ -113,6 +131,7 @@ struct MailComposerView: View {
         case .photo:
             MailPhotoStep(
                 photo: composer.photo,
+                storedPhotoID: composer.draft?.content.storedPhotoID,
                 isMissing: composer.isPhotoMissing,
                 isPreparing: composer.isPreparingPhoto,
                 onPick: { await mail.pickPhoto($0) },
@@ -128,9 +147,14 @@ struct MailComposerView: View {
                 options: mail.deliveryOptions,
                 optionsFailure: mail.deliveryOptionsFailure,
                 retryOptions: { Task { await mail.loadDeliveryOptions() } },
-                movedPastTime: composer.movedPastTime
+                movedPastTime: composer.movedPastTime,
+                birthdayArrival: composer.draft?.birthdayArrival,
+                keepsMeeting: mail.keepsMeeting
             )
-            .onAppear { composer.moveTimeIfPassed() }
+            .onAppear {
+                mail.suggestDelivery()
+                composer.moveTimeIfPassed()
+            }
         }
     }
 
@@ -159,6 +183,7 @@ struct MailComposerView: View {
     /// needs the options, since only they say whether it can be picked.
     private var canSend: Bool {
         guard let content = composer.draft?.content, content.canSend, !composer.isSending else { return false }
+        if content.delivery == .together, mail.keepsMeeting { return true }
         return mail.deliveryOptions?.allows(content.delivery) ?? (content.delivery != .together)
     }
 
@@ -169,7 +194,7 @@ struct MailComposerView: View {
             Button {
                 Task { await mail.send() }
             } label: {
-                Text(.mailComposerSend)
+                Text(isChange ? .mailComposerSaveChanges : .mailComposerSend)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: composer.isSending))
             .disabled(!canSend)
@@ -178,7 +203,7 @@ struct MailComposerView: View {
             Button {
                 step = Step(rawValue: step.rawValue + 1) ?? .delivery
             } label: {
-                Text(step == .photo && composer.draft?.content.photo == nil ? .mailComposerSkip : .mailComposerNext)
+                Text(step == .photo && !hasPhoto ? .mailComposerSkip : .mailComposerNext)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(

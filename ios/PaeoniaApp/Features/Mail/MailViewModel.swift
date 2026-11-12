@@ -170,6 +170,7 @@ final class MailViewModel {
         }
         await composer.reloadIfPurged()
         if case .sentWithoutLastChanges = composer.forgetSent(stored.sent.letters) { post(.changesNotAdded) }
+        if case let .notChanged(error) = composer.settleChange(stored.sent.letters) { post(error) }
         if let pendingLetterID, letter(id: pendingLetterID) != nil, presentation != nil {
             presentation?.path.append(.reader(pendingLetterID))
             self.pendingLetterID = nil
@@ -198,10 +199,11 @@ final class MailViewModel {
         }
     }
 
-    /// Reads what the delivery step offers. Without it the morning option shows no time, and the
+    /// Reads what the delivery step offers. Without it the morning option shows no time, the
     /// option for the next meeting shows only on a draft that already chose it, which can't be
-    /// sent until a read succeeds. A failed read drops the options read before, since the server
-    /// may have just refused them.
+    /// sent until a read succeeds, and a birthday card keeps the time it has until a read says
+    /// when the birthday is. A failed read drops the options read before, since the server may
+    /// have just refused them.
     func loadDeliveryOptions() async {
         guard let gateway else { return }
         do {
@@ -211,6 +213,18 @@ final class MailViewModel {
             deliveryOptions = nil
             deliveryOptionsFailure = PaeoniaFailure(error)
         }
+        if composer.draft?.step == .delivery { suggestDelivery() }
+    }
+
+    /// Starts a birthday card on the partner's next birthday morning until the author picks a
+    /// time. Without the options nothing is known about the birthday, so the time stays.
+    func suggestDelivery(now: Date = .now) {
+        guard let deliveryOptions else { return }
+        composer.suggestDelivery(
+            partnerBirthday: deliveryOptions.partnerBirthday,
+            timeZone: deliveryOptions.partnerTimeZoneID.flatMap(TimeZone.init(identifier:)),
+            now: now
+        )
     }
 
     // MARK: Reading
@@ -252,6 +266,7 @@ final class MailViewModel {
         let stamp = await writeStamp()
         do {
             try await gateway.delete(id: letter.id, operation: operationProvider.makeOperation())
+            composer.endChange(of: letter)
             await forget(letter.id, stamp: stamp)
             return true
         } catch {
@@ -336,37 +351,83 @@ extension MailViewModel {
     /// tells the screen it went. Also posts a notice when the letter had already gone without
     /// the author's last changes, which stay in the composer as a new letter.
     func send() async {
+        let changing = composer.draft?.changing
         let stamp = await writeStamp()
+        // The live feed may have turned the change into a new letter meanwhile, and said so.
+        guard composer.draft?.changing == changing else { return }
         var outcome = await composer.send(coupleID: coupleID)
         if case .failed = outcome {
             // A lost answer is not a lost letter. The live feed may have shown it while the send ran.
-            let seen = composer.forgetSent(snapshot.sent.letters)
+            let sent = snapshot.sent.letters
+            let seen = changing == nil ? composer.forgetSent(sent) : composer.settleChange(sent)
             if seen != .ignored { outcome = seen }
         }
+        await finish(outcome, stamp: stamp, isChange: changing != nil)
+    }
+
+    private func finish(_ outcome: LetterSendOutcome, stamp: WriteStamp, isChange: Bool) async {
         switch outcome {
         case let .sent(letter):
             guard let letter else { return }
-            await storeSent(letter, stamp: stamp)
+            await storeSent(letter, stamp: stamp, isChange: isChange)
         case let .sentWithoutLastChanges(letter):
             await storeSent(letter, stamp: stamp)
             post(.changesNotAdded)
-        case let .failed(error):
-            #if DEBUG
-            logger.error("Sending a letter failed: \(String(describing: error))")
-            #endif
+        case let .notChanged(error):
             post(error)
-            // The delivery step then says why the next meeting can't be picked now.
-            if error == .meetingUnavailable { await loadDeliveryOptions() }
+        case let .failed(error):
+            await report(error)
         case .ignored:
             break
         }
     }
 
-    private func storeSent(_ letter: Letter, stamp: WriteStamp) async {
+    private func report(_ error: MailError) async {
+        #if DEBUG
+        logger.error("Sending a letter failed: \(String(describing: error))")
+        #endif
+        post(error)
+        switch error {
+        case .meetingUnavailable, .changeMeetingUnavailable:
+            // The delivery step then says why the next meeting can't be picked now.
+            await loadDeliveryOptions()
+        case .changePhotoChanged:
+            composer.keepLetterPhoto(composer.draft?.changing.flatMap(letter(id:))?.mediaAssetID)
+        default:
+            break
+        }
+    }
+
+    /// A new letter goes to the top of the Sent list. A change keeps the letter's place, and a
+    /// photo it replaced leaves this phone once no list shows it.
+    private func storeSent(_ letter: Letter, stamp: WriteStamp, isChange: Bool = false) async {
+        if isChange { replaceShown(letter) }
         await save(stamp: stamp) { snapshot in
-            snapshot.sent.letters.removeAll { $0.id == letter.id }
+            let index = snapshot.sent.letters.firstIndex { $0.id == letter.id }
+            if isChange {
+                if let index { snapshot.sent.letters[index] = letter }
+                return
+            }
+            if let index { snapshot.sent.letters.remove(at: index) }
             snapshot.sent.letters.insert(letter, at: 0)
         }
+    }
+
+    /// True while the composer changes a letter that waits for the next meeting. Keeping that
+    /// choice needs no new check, since only a move to the next meeting is checked (`edit_letter`).
+    var keepsMeeting: Bool {
+        guard let draft = composer.draft else { return false }
+        return draft.changing != nil && draft.keepsMeeting
+    }
+
+    /// Opens the composer on a change to `letter`, which this person sent and which has not
+    /// arrived. False while another letter is being written, which stays as it is, and the
+    /// person is told.
+    func change(_ letter: Letter) -> Bool {
+        guard letter.authorUserID == ownerUserID, letter.state == .sealed else { return false }
+        if composer.startChange(of: letter) { return true }
+        if composer.draft != nil { post(.finishOtherLetterFirst) }
+        return false
     }
 
     /// Attaches a photo the picker loaded, or tells the person it could not be read.
