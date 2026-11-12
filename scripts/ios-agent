@@ -125,21 +125,23 @@ def simulator_reserved(udid, directory):
         return False
 
 
-def memory_tight():
-    """Whether the kernel reports memory pressure, or under 30% of memory is available."""
+def memory_critical():
+    """Whether the kernel reports critical memory pressure, the red level in Activity Monitor.
+
+    The warning level does not count. A second booted simulator alone puts this Mac there.
+    """
     try:
-        pressure, available = subprocess.run(
-            ["/usr/sbin/sysctl", "-n", "kern.memorystatus_vm_pressure_level", "kern.memorystatus_level"],
-            capture_output=True, text=True, timeout=5, check=True).stdout.split()
-        return pressure != "1" or int(available) < 30
-    except (subprocess.SubprocessError, OSError, ValueError):
+        level = subprocess.run(["/usr/sbin/sysctl", "-n", "kern.memorystatus_vm_pressure_level"],
+                               capture_output=True, text=True, timeout=5, check=True).stdout.strip()
+        return level not in ("1", "2")
+    except (subprocess.SubprocessError, OSError):
         return True
 
 
 def enforce_simulators(directory=None):
     """Shuts down each extra simulator that nobody has reserved for WARM seconds.
 
-    A booted simulator holds about 5 GB, so it goes at once while memory is tight.
+    A booted simulator holds about 5 GB, so it goes at once while memory pressure is critical.
     """
     directory = directory or STATE / "simulators"
     with simulator_guard(directory):
@@ -158,8 +160,8 @@ def enforce_simulators(directory=None):
             unreserved = time.time() - idle.stat().st_mtime
             if unreserved >= WARM:
                 log(f"shutting down {name}; no reservation for {duration(unreserved)}")
-            elif memory_tight():
-                log(f"shutting down {name}; no reservation, and memory is tight")
+            elif memory_critical():
+                log(f"shutting down {name}; no reservation, and memory pressure is critical")
             else:
                 continue
             subprocess.run(["/usr/bin/xcrun", "simctl", "shutdown", udid], timeout=15, check=True)

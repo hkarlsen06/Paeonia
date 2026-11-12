@@ -533,7 +533,7 @@ class SimulatorLeaseTests(unittest.TestCase):
                 {"name": name, "udid": udid, "state": "Booted"}
                 for name, udid in agent.SIMULATORS
             ]}}
-            with mock.patch.object(agent, "memory_tight", return_value=True):
+            with mock.patch.object(agent, "memory_critical", return_value=True):
                 self.assertEqual(self.shutdowns(lease_root, devices), [agent.SIMULATORS[1][1], agent.SIMULATORS[2][1]])
                 owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
                 self.assertEqual(self.shutdowns(lease_root, devices), [agent.SIMULATORS[2][1]])
@@ -563,7 +563,7 @@ class SimulatorLeaseTests(unittest.TestCase):
             def age(seconds):
                 os.utime(idle, (time.time() - seconds,) * 2)
 
-            with mock.patch.object(agent, "memory_tight", return_value=False):
+            with mock.patch.object(agent, "memory_critical", return_value=False):
                 owner.unlink()
                 self.assertEqual(self.shutdowns(lease_root, devices), [])
                 age(agent.WARM - 30)
@@ -588,7 +588,7 @@ class SimulatorLeaseTests(unittest.TestCase):
                 age(agent.WARM)
                 self.assertEqual(self.shutdowns(lease_root, {"devices": {}}), [])
                 self.assertEqual(self.shutdowns(lease_root, devices), [])
-            with mock.patch.object(agent, "memory_tight", return_value=True):
+            with mock.patch.object(agent, "memory_critical", return_value=True):
                 self.assertEqual(self.shutdowns(lease_root, devices), [udid])
 
 
