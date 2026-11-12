@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Screenshots one developer scenario of this worktree's Debug build on a shared
-# simulator, to check how a change looks.
+# simulator, to check how a change looks. scripts/scenario-record records it
+# instead, to check how a change moves.
 #
 #   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--no-build]
+#   scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--no-build]
 #
 # It builds the App scheme into a scratch derived data folder for this worktree
 # through the machine-wide build queue, then takes a
@@ -16,12 +18,33 @@
 # For a before and after, run it once with your change stashed and once without,
 # with a different --out each time. Scenario ids are in
 # ios/PaeoniaApp/App/DeveloperScenarios/DeveloperScenario+App.swift.
+#
+# scenario-record records the screen instead. Without --then it records the
+# launch for 20 s, so an animation that plays when the scenario opens is in the
+# recording. With --then it launches the scenario, waits (--wait, and longer
+# while the app is still on its launch screen), then records while it runs the
+# command, with SCENARIO_SIMULATOR set to the simulator's name, for example to
+# tap with agent-device, and for 6 s more. --then needs a simulator this
+# worktree already holds (scripts/lock acquire simulator), which is the one the
+# tap tool is open on, and leaves it held. --seconds changes either length. It
+# then prints scripts/lib/motion-report.py's lines about what moved, cut or
+# flashed, and the output folder last. The folder holds recording.mp4, a
+# contact sheet and slit-scan per change, and report.txt.
 set -euo pipefail
 # shellcheck source=lib/paeonia-xcode.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/paeonia-xcode.sh"
 
+record=0
+if [[ ${1:-} == --record ]]; then
+  record=1
+  shift
+fi
 usage() {
-  echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--no-build]" >&2
+  if [[ $record == 1 ]]; then
+    echo "usage: scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--no-build]" >&2
+  else
+    echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--no-build]" >&2
+  fi
   exit 64
 }
 
@@ -32,20 +55,34 @@ root=$(git rev-parse --show-toplevel)
 worktree_key=$(printf '%s' "$root" | shasum | cut -c1-10)
 scratch=/tmp/paeonia-scenario-$worktree_key
 out=$scratch/$scenario.png
+[[ $record == 0 ]] || out=$scratch/$scenario-motion
 wait_seconds=8
+record_seconds=""
+then_command=""
 build=1
 sim=""
+held_before=""
+RECORDER_PID=""
 XCODEBUILD_PID=""
 HEARTBEAT_INTERVAL=20
 # shellcheck source=lib/xcode-agent-throttle.sh
 source "$root/scripts/lib/xcode-agent-throttle.sh"
+# SIGINT makes simctl finish writing the video.
+stop_recorder() {
+  if [ -n "$RECORDER_PID" ]; then
+    kill -INT "$RECORDER_PID" 2>/dev/null || true
+    wait "$RECORDER_PID" 2>/dev/null || true
+    RECORDER_PID=""
+  fi
+}
 cleanup() {
+  stop_recorder
   xa_stop_xcodebuild "${XCODEBUILD_PID:-}"
   xa_stop_heartbeat
   rm -f "${XA_STATUS_FILE:-}"
   if [ -n "$sim" ]; then
     xcrun simctl uninstall "$sim" no.paeonia.app 2>/dev/null || true
-    "$root/scripts/lock" release simulator >/dev/null 2>&1 || true
+    [ -n "$held_before" ] || "$root/scripts/lock" release simulator >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
@@ -55,16 +92,35 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     --out) [[ $# -ge 2 ]] || usage; out=$2; shift 2 ;;
     --wait) [[ $# -ge 2 ]] || usage; wait_seconds=$2; shift 2 ;;
+    --seconds) [[ $record == 1 && $# -ge 2 ]] || usage; record_seconds=$2; shift 2 ;;
+    --then) [[ $record == 1 && $# -ge 2 ]] || usage; then_command=$2; shift 2 ;;
     --language) [[ $# -ge 2 ]] || usage; language_args=(-AppleLanguages "($2)" -AppleLocale "$2"); shift 2 ;;
     --no-build) build=0; shift ;;
     *) usage ;;
   esac
 done
 
+# A tap tool is bound to one simulator, and a lock this script takes could be
+# another one. So --then records on the simulator the caller already holds, and
+# the caller keeps it afterwards.
+if [[ $record == 1 ]]; then
+  held_before=$("$root/scripts/lock" status | grep -F ": held by $root (" | grep -v '(stale)$' |
+    sed -e 's/^[^(]*(//' -e 's/):.*//' | head -1 || true)
+  if [ -n "$then_command" ] && [ -z "$held_before" ]; then
+    echo "--then needs a simulator this worktree holds, so that the command acts on the one being recorded." >&2
+    echo "Take one with: SIM=\"\$(scripts/lock acquire simulator)\", open that simulator for your tap tool, then run this again." >&2
+    exit 64
+  fi
+fi
+
 bundle_id=no.paeonia.app
 derived_data=$scratch/DerivedData
 app=$derived_data/Build/Products/Debug-iphonesimulator/PaeoniaApp.app
-mkdir -p "$scratch" "$(dirname "$out")"
+if [[ $record == 1 ]]; then
+  mkdir -p "$scratch" "$out"
+else
+  mkdir -p "$scratch" "$(dirname "$out")"
+fi
 
 if [[ $build == 1 ]]; then
   log=$scratch/build.log
@@ -90,10 +146,109 @@ fi
 
 cd "$root"
 sim=$(scripts/lock acquire simulator)
+if [ -n "$held_before" ] && [ "$sim" != "$held_before" ]; then
+  echo "This worktree held $held_before when the build started and now holds $sim, so a tap tool opened on $held_before would act on the wrong simulator. Take a simulator again, open it, and run this again with --no-build." >&2
+  held_before=""
+  exit 1
+fi
+
+# A tool that taps is an accessibility client, and the app shows extra controls
+# to one, so a recording asks for the screen people without one see.
+launch_args=(-paeonia-scenario "$scenario" -paeonia-scenario-hide-controls YES)
+[[ $record == 0 ]] || launch_args+=(-paeonia-scenario-assistive-technology none)
+launch() {
+  xcrun simctl launch --terminate-running-process "$sim" "$bundle_id" \
+    "${launch_args[@]}" ${language_args[@]+"${language_args[@]}"} >/dev/null
+}
 
 xcrun simctl install "$sim" "$app"
-xcrun simctl launch --terminate-running-process "$sim" "$bundle_id" \
-  -paeonia-scenario "$scenario" -paeonia-scenario-hide-controls YES ${language_args[@]+"${language_args[@]}"} >/dev/null
-sleep "$wait_seconds"
-xcrun simctl io "$sim" screenshot "$out" >/dev/null 2>&1
+if [[ $record == 0 ]]; then
+  launch
+  sleep "$wait_seconds"
+  xcrun simctl io "$sim" screenshot "$out" >/dev/null 2>&1
+  echo "$out"
+  exit 0
+fi
+
+now() {
+  python3 -c 'import time; print("%.3f" % time.time())'
+}
+since() {
+  awk -v a="$1" -v b="$2" 'BEGIN { printf "%.3f", a - b }'
+}
+# Bash runs a trap only once the foreground command ends, but it interrupts
+# wait, so a stopped run stops the recorder at once.
+pause() {
+  sleep "$1" >/dev/null 2>&1 &
+  wait $!
+}
+
+# A loaded Mac can hold the app on its launch screen for longer than --wait,
+# and a tap would then land on that screen or on the scenario while it loads.
+# The launch screen is still, so the scenario is up once a screenshot differs
+# from one taken early in the launch, and has loaded once two in a row match.
+# A scenario that never stops moving gets 5 s to load.
+wait_for_scenario() {
+  local early=$scratch/launch-screen.png current=$scratch/current-screen.png previous=$scratch/previous-screen.png
+  local polls=0 shown=0
+  rm -f "$previous"
+  pause 3
+  xcrun simctl io "$sim" screenshot "$early" >/dev/null 2>&1
+  pause "$(awk -v w="$wait_seconds" 'BEGIN { print (w > 3 ? w - 3 : 0) }')"
+  while [ "$polls" -lt 30 ] && [ "$shown" -lt 5 ]; do
+    xcrun simctl io "$sim" screenshot "$current" >/dev/null 2>&1
+    if ! cmp -s "$early" "$current"; then
+      cmp -s "$previous" "$current" && return
+      shown=$((shown + 1))
+    fi
+    cp "$current" "$previous"
+    pause 1
+    polls=$((polls + 1))
+  done
+}
+
+video=$out/recording.mp4
+recorder_log=$scratch/recorder.log
+start_recorder() {
+  # A job started with & in a script ignores SIGINT, and stop_recorder needs it,
+  # so perl restores it before it runs simctl.
+  perl -e '$SIG{INT} = "DEFAULT"; exec @ARGV or die' \
+    xcrun simctl io "$sim" recordVideo --codec=h264 --force "$video" >"$recorder_log" 2>&1 &
+  RECORDER_PID=$!
+  # simctl prints this once it has the first frame, which is time 0 in the video.
+  for _ in $(seq 200); do
+    grep -q "Recording started" "$recorder_log" && break
+    kill -0 "$RECORDER_PID" 2>/dev/null || break
+    sleep 0.05
+  done
+  if ! grep -q "Recording started" "$recorder_log"; then
+    cat "$recorder_log" >&2
+    echo "The simulator did not start recording within 10 s." >&2
+    exit 1
+  fi
+  recording_started=$(now)
+}
+
+action_args=()
+then_status=0
+if [ -n "$then_command" ]; then
+  launch
+  wait_for_scenario
+  start_recorder
+  action_start=$(since "$(now)" "$recording_started")
+  SCENARIO_SIMULATOR=$sim bash -c "$then_command" || then_status=$?
+  action_args=(--action "$action_start" "$(since "$(now)" "$recording_started")")
+  pause "${record_seconds:-6}"
+else
+  start_recorder
+  launch
+  pause "${record_seconds:-20}"
+fi
+stop_recorder
+[[ -s $video ]] || { cat "$recorder_log" >&2; echo "The simulator wrote no video to $video." >&2; exit 1; }
+
+python3 "$root/scripts/lib/motion-report.py" "$video" --out "$out" ${action_args[@]+"${action_args[@]}"}
+[ "$then_status" -eq 0 ] ||
+  echo "The --then command failed with exit status $then_status, so the recording may not show the action." >&2
 echo "$out"
+[ "$then_status" -eq 0 ] || exit 1

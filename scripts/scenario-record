@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Records one developer scenario on a shared simulator and reports what moved,
+# cut or flashed. See scripts/scenario-screenshot for the options.
+exec "$(dirname "${BASH_SOURCE[0]}")/scenario-screenshot" --record "$@"
