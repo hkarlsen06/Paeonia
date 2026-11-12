@@ -14,6 +14,12 @@
 // each with a -preview.png (rendered like `WidgetDrawingRasterizer`, over the
 // widget's plum), and prints the inks and widths in each payload, the counts,
 // and the bounds JSON the app sends with it.
+//
+//   swift scripts/app-store-drawing.swift --strokes scripts/assets/app-store/*.pkdrawing
+//
+// Writes <name>.strokes.json beside each payload for the promotional film in
+// video/blender, which replays the strokes. It reads the committed payloads
+// rather than building new ones, because the captures show those.
 
 import AppKit
 import PencilKit
@@ -916,11 +922,61 @@ func publish(_ marks: [Mark], name: String, isWidget: Bool, to directory: URL) t
     describeInks(drawing)
 }
 
+/// The payload's strokes in drawing order, as JSON that the film replays with
+/// Skia. A pen stroke is its path sampled every half point, each sample with
+/// its seconds since the drawing began and the size PencilKit draws there. A
+/// bucket fill is the polygons of its mask as flat x, y lists, filled with the
+/// nonzero rule, which the fill covers whole. Canvas points, y down.
+func strokesJSON(_ drawing: PKDrawing) throws -> Data {
+    func rounded(_ value: CGFloat) -> Double { (Double(value) * 100).rounded() / 100 }
+    let start = drawing.strokes.map(\.path.creationDate).min() ?? creationDate
+    let strokes = drawing.strokes.map { stroke -> [String: Any] in
+        guard let ink = Ink(stroke.ink.color) else { fail("an ink outside the palette") }
+        var json: [String: Any] = [
+            "ink": String(format: "#%06X", ink.rawValue),
+            "start": rounded(stroke.path.creationDate.timeIntervalSince(start)),
+        ]
+        if let mask = stroke.mask {
+            guard mask.windingRule == .nonZero else { fail("an even-odd bucket mask") }
+            var polygons: [[Double]] = []
+            var points = [CGPoint](repeating: .zero, count: 3)
+            for index in 0..<mask.elementCount {
+                switch mask.element(at: index, associatedPoints: &points) {
+                case .moveTo: polygons.append([rounded(points[0].x), rounded(points[0].y)])
+                case .lineTo: polygons[polygons.count - 1] += [rounded(points[0].x), rounded(points[0].y)]
+                case .closePath: break
+                default: fail("a curve in a bucket mask")
+                }
+            }
+            json["fill"] = polygons.filter { $0.count >= 6 }
+        } else {
+            json["points"] = stroke.path.interpolatedPoints(by: .distance(0.5)).map { point in
+                [rounded(point.location.x), rounded(point.location.y), rounded(point.timeOffset),
+                 rounded(point.size.width)]
+            }
+        }
+        return json
+    }
+    let document: [String: Any] = ["canvasSide": canvasSide, "strokes": strokes]
+    return try JSONSerialization.data(withJSONObject: document, options: [.sortedKeys])
+}
+
 if Bundle.main.bundleIdentifier == nil {
     try runWithBundleIdentifier()
 }
+if CommandLine.arguments.count > 2, CommandLine.arguments[1] == "--strokes" {
+    for path in CommandLine.arguments.dropFirst(2) {
+        let url = URL(fileURLWithPath: path)
+        let drawing = try PKDrawing(data: Data(contentsOf: url))
+        guard drawing.strokes.allSatisfy({ $0.transform == .identity }) else { fail("a moved stroke in \(path)") }
+        let out = url.deletingPathExtension().appendingPathExtension("strokes.json")
+        try strokesJSON(drawing).write(to: out)
+        say("\(out.lastPathComponent): \(drawing.strokes.count) strokes")
+    }
+    exit(0)
+}
 guard CommandLine.arguments.count == 2 else {
-    fail("usage: swift scripts/app-store-drawing.swift <out-dir>")
+    fail("usage: swift scripts/app-store-drawing.swift <out-dir> | --strokes <payload>...")
 }
 let outDirectory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 try FileManager.default.createDirectory(at: outDirectory, withIntermediateDirectories: true)
