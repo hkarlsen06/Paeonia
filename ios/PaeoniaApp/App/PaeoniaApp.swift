@@ -116,20 +116,25 @@ struct PaeoniaApp: App {
     @ViewBuilder
     private var launchedContent: some View {
         #if DEBUG
-        switch developerDestination {
-        case .production:
-            productionRoot
-        case .menu:
-            DeveloperScenarioMenu {
-                developerDestination = .production
+        Group {
+            switch developerDestination {
+            case .production:
+                productionRoot
+            case .menu:
+                DeveloperScenarioMenu {
+                    developerDestination = .production
+                }
+            case .scenario(let scenario):
+                DeveloperScenarioHost(scenario: scenario) {
+                    developerDestination = .menu
+                }
+            case .tour:
+                DeveloperScenarioTour()
             }
-        case .scenario(let scenario):
-            DeveloperScenarioHost(scenario: scenario) {
-                developerDestination = .menu
-            }
-        case .tour:
-            DeveloperScenarioTour()
         }
+        // The production root too, so the App Store captures, which drive the app through
+        // an XCTest runner that counts as assistive technology, can hide the optional tools.
+        .modifier(DeveloperAssistiveTechnologyEnvironment())
         #else
         productionRoot
         #endif

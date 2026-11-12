@@ -21,9 +21,12 @@ large drawing widget on top, the other widgets of the family's home_screen
 beside and below it, and the Paeonia app alone in the dock. Every other app
 moves to the App Library. It
 writes SpringBoard's IconState.plist while the simulator is shut down, so the
-first run reboots the simulator. Set the dark plum Home Screen wallpaper by hand
-once per simulator: add the image from scripts/app-store-wallpaper.mjs with
-`xcrun simctl addmedia`, then in Photos use Share > Use as Wallpaper > Customize
+first run reboots the simulator. agent-device may install its runner again after
+that reboot, and the runner then takes a second page, which shows page dots on
+01-widget. Remove the runner from the Home Screen (long press, Remove App,
+Remove from Home Screen) and capture 01-widget again. Set the dark plum Home
+Screen wallpaper by hand once per simulator: add the image from
+scripts/app-store-wallpaper.mjs with `xcrun simctl addmedia`, then in Photos use Share > Use as Wallpaper > Customize
 Home Screen > Gradient. A photo wallpaper renders black on the simulator, so the
 gradient picks up its plum colour instead. Before the capture, the script turns
 on large app icons, which hide the labels under the widgets. On an iPhone it goes
@@ -34,15 +37,23 @@ turns off the App Library and the recent apps in the dock the same way. It also
 turns off the Search button above the dock, which is Settings > Home Screen & App
 Library > Search > Show on Home Screen.
 
+The simulator is outside the shared pool that the ios-agent xcrun and xcodebuild
+wrappers on this Mac allow, and agent-device's runner builds through them, so a
+run needs the explicitly authorized, temporary exception that root AGENTS.md
+describes. After each reboot the runner builds again in the shared Xcode queue,
+so the first agent-device command can time out while other builds run.
+
 The screens are captured in the order of SCREENS, all from one seeding, so the
 drawing's time and the streak match everywhere. Each locale needs a fresh local
 backend (`scripts/local-backend --reseed`), since today's answers can't change.
 Seed with `scripts/app-store-content --partner-answer-only`, so only Elena has
 answered today's question, and sign in after seeding: an app that saw the
 drawing before the seeding moved its time keeps the old time. On the first
-launch, open Elena's gift and tap Later and Not now through the welcome. Leave
-notifications off, because an app allowed to show badges puts a number on its
-Home Screen icon. Home is captured while today's question still waits for
+launch, deny location, open Elena's gift and tap Later and Not now through the
+welcome. Then clear Home the way a person would: Not now on the location card,
+the close button on Things to try together and on When will you meet next.
+Leave notifications off, because an app allowed to show badges puts a number on
+its Home Screen icon. Home is captured while today's question still waits for
 Hjalmar. Then add Hjalmar's answer and the chat with `scripts/app-store-content
 --chat-only` and capture the rest:
 
@@ -235,6 +246,9 @@ def prepare(udid, locale, family):
     # Draw & Guess replay shows how to speed it up.
     simctl("spawn", udid, "defaults", "write", BUNDLE_ID, "paeonia.games.ludo.hasZoomedBoard.v2", "-bool", "YES")
     simctl("spawn", udid, "defaults", "write", BUNDLE_ID, "games.drawAndGuess.holdHintShown", "-bool", "YES")
+    # agent-device drives the app through XCTest, which iOS counts as assistive technology, so the
+    # Debug app would show its optional tools, such as Board controls and drawing descriptions.
+    simctl("spawn", udid, "defaults", "write", BUNDLE_ID, "paeonia-scenario-assistive-technology", "none")
 
 
 def use_large_icons(agent_device, locale, edit_mode):
