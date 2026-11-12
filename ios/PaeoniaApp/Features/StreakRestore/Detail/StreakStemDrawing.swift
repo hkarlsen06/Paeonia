@@ -26,8 +26,8 @@ private nonisolated struct StemPainter {
     let tip: Double
     let size: CGSize
 
-    private static let amplitude: CGFloat = 3
-    private static let line = StrokeStyle(lineWidth: 2.5, lineCap: .round)
+    private static let amplitude: CGFloat = 4
+    private static let line = StrokeStyle(lineWidth: 3, lineCap: .round)
     /// How far before a flower, as a share of the stem, the tip starts opening it.
     private static let openingRamp = 0.06
     private static let leafCount = 3
@@ -73,7 +73,7 @@ private nonisolated struct StemPainter {
             let grownIn = min(max((tip - position) * size.width / 12, 0), 1)
             let side: Double = boundary.isMultiple(of: 2) ? 1 : -1
             let leaf = StreakPeony.leaf(
-                from: point(position), length: 8 * grownIn, width: 3.5 * grownIn, angle: .degrees(50 * side)
+                from: point(position), length: 11 * grownIn, width: 5 * grownIn, angle: .degrees(50 * side)
             )
             context.fill(leaf, with: .color(.paeoniaStem))
         }

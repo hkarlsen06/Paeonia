@@ -14,13 +14,12 @@ struct StreakMilestoneStem: View {
     /// How far the stem has grown toward the current streak since the sheet appeared, 0 to 1.
     @State private var grown: Double = 0
 
+    private static let glowRoom: CGFloat = 10
+
     var body: some View {
         let stem = StreakMilestones.stem(currentCount: currentCount, longestCount: longestCount)
         VStack(spacing: PaeoniaSpacing.space8) {
-            Text(.streakDetailDaysToMilestone(
-                days: stem.daysToNext,
-                String(localized: StreakMilestones.name(for: stem.next).label)
-            ))
+            Text(.streakDetailNextFlower(stem.daysToNext))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
                 .multilineTextAlignment(.center)
@@ -44,6 +43,8 @@ struct StreakMilestoneStem: View {
                 }
                 .background(alignment: .top) {
                     StreakStemDrawing(stem: stem, grown: grown)
+                        // The canvas reaches past the flowers' row so their glow is not cut off.
+                        .padding(.vertical, -Self.glowRoom)
                         .frame(height: StreakPeony.size)
                         .accessibilityHidden(true)
                 }

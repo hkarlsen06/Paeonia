@@ -43,6 +43,9 @@
       if scenario == .streakAtRisk {
         streak.partnerContributedToday = false
       }
+      if scenario == .streakFrozen {
+        streak.currentUserContributedToday = false
+      }
       if scenario == .streakOneDay {
         // Far enough from the end that the pill shows no hourglass yet.
         streak.currentCount = 1

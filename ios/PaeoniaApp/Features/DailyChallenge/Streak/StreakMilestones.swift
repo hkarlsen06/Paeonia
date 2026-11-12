@@ -74,7 +74,6 @@ nonisolated enum StreakMilestones {
         }
         return StreakStem(
             nodes: nodes,
-            next: upcoming,
             daysToNext: upcoming - currentCount,
             growth: line.position(of: currentCount),
             record: longestCount > currentCount
@@ -136,7 +135,6 @@ nonisolated struct StreakStem: Equatable, Sendable {
     }
 
     let nodes: [Node]
-    let next: Int
     let daysToNext: Int
     /// Where the current streak sits along the stem.
     let growth: Double

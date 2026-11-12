@@ -11,9 +11,10 @@ struct StreakTodayRow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    private static let avatarSize: CGFloat = 36
+    private static let avatarSize: CGFloat = 40
     private static let ringGap: CGFloat = 3
     private static let ringWidth: CGFloat = 2.5
+    private static let sparkWidth: CGFloat = 6
     /// A full fuse is a whole day.
     private static let fuseLength: TimeInterval = 86_400
 
@@ -62,7 +63,11 @@ struct StreakTodayRow: View {
                 half.stroke(.paeoniaBorder, lineWidth: Self.ringWidth)
                 if fuse > 0 {
                     half.trim(from: 0, to: fuse)
-                        .stroke(.paeoniaAccentPrimary, style: StrokeStyle(lineWidth: Self.ringWidth, lineCap: .round))
+                        .stroke(tint.opacity(0.7), style: StrokeStyle(lineWidth: Self.ringWidth, lineCap: .round))
+                    // A dot of round cap at the burning end.
+                    half.trim(from: max(fuse - 0.001, 0), to: fuse)
+                        .stroke(.paeoniaAccentPrimary, style: StrokeStyle(lineWidth: Self.sparkWidth, lineCap: .round))
+                        .shadow(color: .paeoniaAccentPrimary.opacity(0.8), radius: 4)
                 }
             }
         }

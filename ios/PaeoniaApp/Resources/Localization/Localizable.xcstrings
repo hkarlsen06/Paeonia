@@ -44576,68 +44576,6 @@
         }
       }
     },
-    "streakDetail.daysToMilestone" : {
-      "comment" : "Heading over the milestone flowers on the streak sheet, such as \"12 days to 1 month\". The first argument is how many days are left, the second the next milestone's name, such as \"1 month\" or \"100 days\".",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$#@days@ to %2$@"
-          },
-          "substitutions" : {
-            "days" : {
-              "argNum" : 1,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg day"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg days"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$#@days@ til %2$@"
-          },
-          "substitutions" : {
-            "days" : {
-              "argNum" : 1,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg dag"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg dager"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "streakDetail.done" : {
       "comment" : "Button that closes the informative streak sheet",
       "extractionState" : "manual",
@@ -44925,6 +44863,48 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld år"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "streakDetail.nextFlower" : {
+      "comment" : "Heading over the row of milestone flowers on the streak sheet. Each milestone the couple reaches opens a flower. %lld is how many days are left until the next one opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Next flower in %lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Next flower in %lld days"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Neste blomst om %lld dag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Neste blomst om %lld dager"
                 }
               }
             }
