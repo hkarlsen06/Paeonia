@@ -122,6 +122,31 @@ extension CoupleStreak {
     }
 }
 
+/// Who has done something for the streak today, and how long the day still runs.
+nonisolated struct StreakToday: Equatable, Sendable {
+    var ownDone: Bool
+    var partnerDone: Bool
+    /// When today's chance ends, or nil when nothing is at stake (both done, resting, no live streak and no save day).
+    var deadline: Date?
+    var isResting: Bool
+}
+
+extension CoupleStreak {
+    /// Today on the streak sheet. A save day counts down to its own end. While the
+    /// partners are together the streak needs nothing, so both count as done.
+    func today(at now: Date) -> StreakToday {
+        if restsWhileTogether(at: now) {
+            return StreakToday(ownDone: true, partnerDone: true, deadline: nil, isResting: true)
+        }
+        let ownDone = currentUserContributedToday
+        let partnerDone = partnerContributedToday
+        let isSaveDay = restorableCount > 0 && (saveDeadline.map { $0 > now } ?? false)
+        let end = isSaveDay ? saveDeadline : (currentCount > 0 ? endsAt : nil)
+        let deadline = ownDone && partnerDone ? nil : end.flatMap { $0 > now ? $0 : nil }
+        return StreakToday(ownDone: ownDone, partnerDone: partnerDone, deadline: deadline, isResting: false)
+    }
+}
+
 nonisolated enum StreakEntryDestination: Equatable, Sendable {
     case detail
     case restore

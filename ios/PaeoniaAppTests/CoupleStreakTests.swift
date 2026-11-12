@@ -286,6 +286,44 @@ struct StreakFreezeNoteTests {
         )
     }
 
+    // MARK: - Today on the streak sheet
+
+    @Test func todayCountsDownToTheEndOfTheSaveDay() {
+        let saveDeadline = Date.now.addingTimeInterval(6 * 3_600)
+        var streak = CoupleStreak.none
+        streak.restorableCount = 18
+        streak.saveDeadline = saveDeadline
+        streak.currentUserContributedToday = true
+
+        let today = streak.today(at: .now)
+        #expect(today.deadline == saveDeadline)
+        #expect(today.ownDone && !today.partnerDone)
+    }
+
+    @Test func todayHasNoDeadlineOnceBothAreDoneOrTheDayIsOver() {
+        let now = Date.now
+        var streak = CoupleStreak.none
+        streak.currentCount = 5
+        streak.endsAt = now.addingTimeInterval(3_600)
+
+        #expect(streak.today(at: now).deadline == streak.endsAt)
+        // The sheet counts down from now to the deadline, so a deadline at or before now would be an empty range.
+        #expect(streak.today(at: now.addingTimeInterval(3_600)).deadline == nil)
+        streak.currentUserContributedToday = true
+        streak.partnerContributedToday = true
+        #expect(streak.today(at: now).deadline == nil)
+    }
+
+    @Test func aRestingStreakCountsBothPartnersAsDone() {
+        let now = Date.now
+        var streak = CoupleStreak.none
+        streak.currentCount = 5
+        streak.endsAt = now.addingTimeInterval(3_600)
+        streak.rest = now.addingTimeInterval(-3_600)..<now.addingTimeInterval(3_600)
+
+        #expect(streak.today(at: now) == StreakToday(ownDone: true, partnerDone: true, deadline: nil, isResting: true))
+    }
+
     @Test func freezeNoteSaysWhenAFreezeSavedTheStreak() {
         let readyAt = Date.now.addingTimeInterval(30 * 86_400)
         let streak = freezeStreak(freezeReadyAt: readyAt, freezeSavedStreak: true)
