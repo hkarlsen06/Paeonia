@@ -28,6 +28,16 @@ extension EnvironmentValues {
     @Entry var dailyAnswerComposerColors = DailyAnswerComposerColors.standard
 }
 
+extension AnyTransition {
+    /// For the parts of the answer composer that fold away while the keyboard is up. A
+    /// removed view stays where it was while the composer moves, so they fade out fast
+    /// and fade back in only once the content moving with the keyboard has passed them.
+    static let dailyComposerFold = AnyTransition.asymmetric(
+        insertion: .opacity.animation(PaeoniaMotion.stateChange.delay(PaeoniaMotion.motionFast)),
+        removal: .opacity.animation(PaeoniaMotion.buttonPress)
+    )
+}
+
 struct DailyAnswerFlowHeader: View {
     let question: DailyChallengeQuestion?
     let participants: DailyChallengeParticipants

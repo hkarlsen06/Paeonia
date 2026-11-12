@@ -21,6 +21,10 @@ enum PaeoniaMotion {
 
     static let buttonPress = standardCurve(duration: motionFast)
     static let stateChange = standardCurve(duration: motionDefault)
+    /// Follows the keyboard's own slide, for layout that changes as it opens or closes.
+    /// Its notification says 0.38 s, but measured frame by frame on iOS 27 it moves
+    /// like this spring.
+    static let keyboard = Animation.spring(duration: 0.25, bounce: 0)
     /// Home's cards and map camera share this timing when the page changes height.
     static let homeLayoutChange = standardCurve(duration: homeLayoutDuration)
     static let cardReveal = Animation.spring(duration: motionDefault, bounce: 0.18)

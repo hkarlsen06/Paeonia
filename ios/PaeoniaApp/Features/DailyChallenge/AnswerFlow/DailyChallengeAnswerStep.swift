@@ -68,14 +68,18 @@ struct DailyChallengeAnswerStep: View {
             if phase != .active { viewModel.flushDraftPersistence() }
         }
         // A sent answer keeps the layout it was sent from, so the composer does not
-        // jump into the keyboard-hidden layout while the flow closes.
+        // jump into the keyboard-hidden layout while the flow closes. The keyboard
+        // compacts the layout, not focus, which changes before the keyboard starts
+        // to move.
         .onDockedKeyboardChange { docked in
             guard visualHold == nil else { return }
-            isKeyboardPresented = docked
+            withAnimation(PaeoniaMotion.keyboard) { isKeyboardPresented = docked }
         }
+        // Leaving the field restores the layout even when no keyboard notification
+        // says so.
         .onChange(of: isFocused.wrappedValue) { _, focused in
-            guard visualHold == nil else { return }
-            isKeyboardPresented = focused
+            guard visualHold == nil, !focused else { return }
+            withAnimation(PaeoniaMotion.keyboard) { isKeyboardPresented = false }
         }
         .onChange(of: visualHold == nil) { _, released in
             if released { isKeyboardPresented = isFocused.wrappedValue }
@@ -116,7 +120,7 @@ struct DailyChallengeAnswerStep: View {
             }
             .paeoniaEyebrowStyle()
             Text(verbatim: question.prompt)
-                .font(.system(size: size, weight: .medium, design: .serif))
+                .modifier(DailyQuestionPromptFont(size: size))
                 .foregroundStyle(.paeoniaTextPrimary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("daily.answer.question")
@@ -141,6 +145,7 @@ struct DailyChallengeAnswerStep: View {
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .frame(maxWidth: .infinity)
+                    .transition(.dailyComposerFold)
             }
         }
     }
@@ -151,6 +156,7 @@ struct DailyChallengeAnswerStep: View {
                 Text(.dailyChallengeTextAnswerLabel)
                     .font(PaeoniaTypography.caption.weight(.semibold))
                     .foregroundStyle(DailyAnswerComposerColors.composer.secondary)
+                    .transition(.dailyComposerFold)
             }
             if !question.usesCombinedCompose && question.composableAnswerKinds.count > 1 {
                 DailyAnswerKindPicker(
@@ -180,6 +186,7 @@ struct DailyChallengeAnswerStep: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(DailyAnswerComposerColors.composer.secondary)
                 .accessibilityLabel(Text(.dailyChallengeFlowDoneButton))
+                .transition(.dailyComposerFold)
             }
             Spacer(minLength: PaeoniaSpacing.space8)
             DailyAnswerComposerSendButton(
@@ -250,5 +257,20 @@ struct DailyChallengeAnswerStep: View {
                 viewModel.setDraftText($0, for: question.id)
             }
         )
+    }
+}
+
+/// Sets the prompt's font through its animatable size, so the text resizes with the
+/// keyboard frame by frame.
+private struct DailyQuestionPromptFont: ViewModifier, Animatable {
+    var size: CGFloat
+
+    var animatableData: CGFloat {
+        get { size }
+        set { size = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: size, weight: .medium, design: .serif))
     }
 }

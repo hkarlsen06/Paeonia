@@ -13,6 +13,7 @@ struct DailyPhotoAnswerComposer: View {
     let onRemove: () -> Void
 
     @Environment(\.dailyAnswerComposerColors) private var colors
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: PhotosPickerItem?
     @State private var isLoading = false
     @State private var isCameraPresented = false
@@ -24,11 +25,8 @@ struct DailyPhotoAnswerComposer: View {
         Group {
             if let imageData {
                 DailyDecodedPhoto(data: imageData, reservedHeight: isCompact ? 44 : previewHeight) { image in
-                    if isCompact {
-                        compactPhoto(image)
-                    } else {
-                        fullPhoto(image)
-                    }
+                    // With Reduce Motion the two sizes crossfade instead of resizing.
+                    stagedPhoto(image).id(reduceMotion && isCompact)
                 } failure: {
                     picker
                 }
@@ -43,51 +41,49 @@ struct DailyPhotoAnswerComposer: View {
         .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
-    private func compactPhoto(_ image: UIImage) -> some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            Button { show(image) } label: {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius8))
+    /// One layout for both sizes, so the photo keeps its identity and resizes with the
+    /// keyboard instead of being swapped for a thumbnail.
+    private func stagedPhoto(_ image: UIImage) -> some View {
+        let layout = isCompact
+            ? AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
+            : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space8))
+        return layout {
+            photo(image)
+            HStack(spacing: PaeoniaSpacing.space8) {
+                libraryButton
+                if isCompact {
+                    removeButton.transition(.dailyComposerFold)
+                } else {
+                    Spacer(minLength: 0)
+                    cameraButton.transition(.dailyComposerFold)
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
-
-            Spacer(minLength: 0)
-            libraryButton
-            removeButton
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .overlay { busyOverlay }
     }
 
-    private func fullPhoto(_ image: UIImage) -> some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
+    private func photo(_ image: UIImage) -> some View {
+        Button { show(image) } label: {
             Rectangle()
                 .fill(colors.control)
-                .frame(height: previewHeight)
+                .frame(width: isCompact ? 44 : nil, height: isCompact ? 44 : previewHeight)
                 .overlay {
                     Image(uiImage: image).resizable().scaledToFill()
                 }
-                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12))
-                .contentShape(Rectangle())
-                .onTapGesture { show(image) }
-                .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
-                .accessibilityAddTraits(.isButton)
-                .overlay(alignment: .topTrailing) {
-                    removeButton
-                        .background(.paeoniaBackgroundSecondary.opacity(0.92), in: Circle())
-                        .padding(PaeoniaSpacing.space8)
-                }
-                .overlay { busyOverlay }
-
-            HStack {
-                libraryButton
-                Spacer(minLength: 0)
-                cameraButton
-            }
+                .clipShape(RoundedRectangle(cornerRadius: isCompact ? PaeoniaRadius.radius8 : PaeoniaRadius.radius12))
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
+        // Faded rather than removed, so it stays on the corner of the shrinking photo.
+        .overlay(alignment: .topTrailing) {
+            removeButton
+                .background(.paeoniaBackgroundSecondary.opacity(0.92), in: Circle())
+                .padding(PaeoniaSpacing.space8)
+                .opacity(isCompact ? 0 : 1)
+                .allowsHitTesting(!isCompact)
+                .accessibilityHidden(isCompact)
+        }
+        .overlay { busyOverlay }
     }
 
     private var libraryButton: some View {
