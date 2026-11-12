@@ -22563,20 +22563,20 @@
         }
       }
     },
-    "home.visit.prompt.hide" : {
-      "comment" : "Accessibility label of the close button that hides the 'When do you meet next?' card for 30 days",
+    "home.visit.prompt.moveDown" : {
+      "comment" : "Accessibility label of the close button that moves the 'When do you meet next?' card under the other cards on the Us tab for 30 days",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hide for 30 days"
+            "value" : "Move to the bottom"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skjul i 30 dager"
+            "value" : "Flytt nederst"
           }
         }
       }

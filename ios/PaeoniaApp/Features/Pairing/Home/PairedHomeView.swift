@@ -327,6 +327,7 @@ extension PairedHomeView {
                 laterRecapCard
                 writeMailRow
                 lookBackCard
+                movedVisitPrompt
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.bottom, PaeoniaSpacing.space16)
@@ -376,6 +377,7 @@ extension PairedHomeView {
                 laterRecapCard
                 writeMailRow
                 lookBackCard
+                movedVisitPrompt
             }
         }
         .frame(maxWidth: .infinity)
@@ -434,7 +436,8 @@ private struct HomeCardChangeAnimations: ViewModifier {
     let dailyCard: DailyChallengeCardState.Kind
     let milestoneIsLoading: Bool
     let relationshipStartedOn: String?
-    /// The visit card shows nothing until the cache is read, then a short question or a tall countdown.
+    /// The visit card shows nothing until the cache is read, then a short question or a tall
+    /// countdown. The question moves to the bottom when the person taps its X.
     let visitCard: HomeVisitCardState?
     let waitingLetters: Int
     let visitMemoryCard: [VisitMemoryPrompt]

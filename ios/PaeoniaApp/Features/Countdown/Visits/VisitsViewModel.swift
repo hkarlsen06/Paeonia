@@ -22,7 +22,8 @@ final class VisitsViewModel {
     private(set) var listError: VisitsError?
     /// Set by the visit screen while it shows the list.
     @ObservationIgnored var isListShown = false
-    /// The day the "When do you meet next?" card comes back after the person hid it.
+    /// The day the "When do you meet next?" card goes back to the top after the person moved it
+    /// under the other cards.
     private(set) var promptReturnDay: LockScreenCalendarDate?
 
     @ObservationIgnored private let cache: any VisitsCaching
@@ -44,7 +45,7 @@ final class VisitsViewModel {
     /// Drops a reload that finished after a newer one started or the account changed.
     @ObservationIgnored private var reloadGeneration = 0
 
-    static let promptHiddenDays = 30
+    static let promptMovedDays = 30
 
     init(
         cache: (any VisitsCaching)? = nil,
@@ -129,9 +130,9 @@ final class VisitsViewModel {
         )
     }
 
-    func hidePrompt(now: Date = Date(), calendar: Calendar = .current) async {
+    func movePromptDown(now: Date = Date(), calendar: Calendar = .current) async {
         guard let ownerUserID,
-              let returnDate = calendar.date(byAdding: .day, value: Self.promptHiddenDays, to: now)
+              let returnDate = calendar.date(byAdding: .day, value: Self.promptMovedDays, to: now)
         else { return }
         let returnDay = LockScreenCalendarDate(containing: returnDate, in: calendar)
         promptReturnDay = returnDay

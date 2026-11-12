@@ -116,7 +116,15 @@ extension PairedHomeView {
     @ViewBuilder
     var visitCard: some View {
         if let visits {
-            HomeVisitCard(visits: visits, streak: dailyChallengeStreak)
+            HomeVisitCard(visits: visits, streak: dailyChallengeStreak, isBelow: false)
+        }
+    }
+
+    /// The question of when the partners meet next, after the person moved it to the bottom.
+    @ViewBuilder
+    var movedVisitPrompt: some View {
+        if let visits {
+            HomeVisitCard(visits: visits, streak: dailyChallengeStreak, isBelow: true)
         }
     }
 

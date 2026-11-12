@@ -3,11 +3,13 @@ import SwiftUI
 /// The Us tab card about the next time the partners meet. While they are together it says until
 /// when, or that they are together today when only their phones showed it, and that the streak
 /// rests on the days it does. With a visit planned it counts the days and names the place and
-/// dates. Without one it asks when they meet next, and the person can hide it for 30 days. Each
-/// is a short row that opens the visit screen with the shared list.
+/// dates. Without one it asks when they meet next, and the person can move the question under
+/// the other cards for 30 days. Each is a short row that opens the visit screen with the shared list.
 struct HomeVisitCard: View {
     let visits: VisitsViewModel
     let streak: StreakPillState
+    /// The card under the other cards, which shows only the question the person moved there.
+    let isBelow: Bool
 
     private static let iconSize: CGFloat = 32
 
@@ -35,9 +37,22 @@ struct HomeVisitCard: View {
 
     @ViewBuilder
     private var content: some View {
+        let card = visits.homeCard(at: now, streak: streak)
+        if isBelow {
+            if card == .movedPrompt {
+                promptRow(canMoveDown: false)
+                    .transition(.opacity)
+            }
+        } else {
+            topCard(card)
+        }
+    }
+
+    @ViewBuilder
+    private func topCard(_ card: HomeVisitCardState) -> some View {
         let today = LockScreenCalendarDate(containing: now, in: .current)
-        switch visits.homeCard(at: now, streak: streak) {
-        case .hidden:
+        switch card {
+        case .hidden, .movedPrompt:
             EmptyView()
         case let .visit(visit):
             cardButton {
@@ -57,7 +72,7 @@ struct HomeVisitCard: View {
                 )
             }
         case .prompt:
-            promptRow
+            promptRow(canMoveDown: true)
                 .transition(.opacity)
         }
     }
@@ -113,7 +128,7 @@ struct HomeVisitCard: View {
     }
 
     /// As tall as a locked answer row, so the cards under it stay on the first screen.
-    private var promptRow: some View {
+    private func promptRow(canMoveDown: Bool) -> some View {
         PaeoniaCard(padding: PaeoniaSpacing.space12) {
             HStack(spacing: PaeoniaSpacing.space8) {
                 Button { isDetailPresented = true } label: {
@@ -131,14 +146,14 @@ struct HomeVisitCard: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("home.visit.prompt")
 
-                hideButton
+                if canMoveDown { moveDownButton }
             }
         }
     }
 
-    private var hideButton: some View {
+    private var moveDownButton: some View {
         Button {
-            Task { await visits.hidePrompt() }
+            Task { await visits.movePromptDown() }
         } label: {
             Image(systemName: "xmark")
                 .font(.footnote.weight(.semibold))
@@ -149,7 +164,7 @@ struct HomeVisitCard: View {
                 .padding(.vertical, (Self.iconSize - PaeoniaSpacing.compactButtonHeight) / 2)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(.homeVisitPromptHide))
-        .accessibilityIdentifier("home.visit.hide")
+        .accessibilityLabel(Text(.homeVisitPromptMoveDown))
+        .accessibilityIdentifier("home.visit.moveDown")
     }
 }

@@ -156,7 +156,7 @@ struct VisitsViewModelTests {
         #expect(early == (try day(2_000, 1, 1)))
     }
 
-    @Test func theHiddenQuestionComesBackOnTheThirtiethDayAcrossTheClockChange() async throws {
+    @Test func theMovedQuestionReturnsToTheTopOnTheThirtiethDayAcrossTheClockChange() async throws {
         var oslo = Calendar(identifier: .gregorian)
         oslo.timeZone = try #require(TimeZone(identifier: "Europe/Oslo"))
         let cache = InMemoryVisitsCache()
@@ -165,11 +165,11 @@ struct VisitsViewModelTests {
         // 23:30 on 10 October. Summer time ends on 25 October.
         let lateEvening = try #require(ISO8601DateFormatter().date(from: "2026-10-10T21:30:00Z"))
 
-        await visits.hidePrompt(now: lateEvening, calendar: oslo)
+        await visits.movePromptDown(now: lateEvening, calendar: oslo)
 
-        let lastHiddenNoon = try #require(ISO8601DateFormatter().date(from: "2026-11-08T11:00:00Z"))
+        let lastMovedNoon = try #require(ISO8601DateFormatter().date(from: "2026-11-08T11:00:00Z"))
         let returnNoon = try #require(ISO8601DateFormatter().date(from: "2026-11-09T11:00:00Z"))
-        #expect(visits.homeCard(at: lastHiddenNoon, streak: .hidden, calendar: oslo) == .hidden)
+        #expect(visits.homeCard(at: lastMovedNoon, streak: .hidden, calendar: oslo) == .movedPrompt)
         #expect(visits.homeCard(at: returnNoon, streak: .hidden, calendar: oslo) == .prompt)
         let returnDay = await cache.state(ownerUserID: owner).promptReturnDay
         #expect(returnDay == LockScreenCalendarDate(year: 2_026, month: 11, day: 9))

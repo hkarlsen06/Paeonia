@@ -2,10 +2,13 @@ import Foundation
 
 /// What the Us tab's visit card shows on one day (`HomeVisitCard`).
 nonisolated enum HomeVisitCardState: Equatable, Sendable {
-    /// Nothing: the cache isn't read yet, or the person hid the question.
+    /// Nothing: the cache isn't read yet.
     case hidden
     /// "When do you meet next?"
     case prompt
+    /// The same question after the person moved it under the other cards. It comes back to the
+    /// top on `promptReturnDay`.
+    case movedPrompt
     /// The next visit, which has not started yet.
     case visit(Visit)
     /// The partners are together today. During a visit, `until` is the last day of the visits
@@ -33,7 +36,7 @@ nonisolated enum HomeVisitCardState: Equatable, Sendable {
         } else if let next = visits.currentOrNext(on: today) {
             self = .visit(next)
         } else {
-            self = promptReturnDay.map { today < $0 } == true ? .hidden : .prompt
+            self = promptReturnDay.map { today < $0 } == true ? .movedPrompt : .prompt
         }
     }
 }
