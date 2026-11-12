@@ -44,3 +44,9 @@ echo "$STAGED_SWIFT_FILES" | tr '\n' '\0' | xargs -0 swiftlint lint --quiet
 
 echo "[pre-commit] Checking Swift file length advisory"
 scripts/check-swift-file-lengths.sh
+
+# Only added and removed lines count, so an edit elsewhere in a file that animates stays quiet.
+if git diff --cached -U0 --diff-filter=ACMR -- 'ios/PaeoniaApp/*.swift' |
+  grep -E '^[+-][^+-].*(withAnimation|\.animation\(|\.transition\(|matchedGeometryEffect|navigationTransition|keyframeAnimator|phaseAnimator|PaeoniaMotion\.)' >/dev/null; then
+  echo "[pre-commit] Motion advisory: this commit changes how something moves, and a screenshot does not show that. Record it with scripts/scenario-record <scenario-id> and check the lines it prints."
+fi

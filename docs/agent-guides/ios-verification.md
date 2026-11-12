@@ -34,7 +34,7 @@ Agents build, run tests and drive the app themselves to prove a change works. Wo
 
 To fix a compiler warning or error that reading the code can't settle, reproduce it in a small standalone file and run `scripts/swift-typecheck <file>`. It uses the app target's Swift settings and finishes in seconds. Try candidate fixes in the same file.
 
-Drive the app on the shared simulator to see a change that shows on screen, such as a layout, animation, or navigation change. Physical unit tests use only the approved spare selected by `ios-agent`; keep UI scenarios and fixtures on the simulator. [Devices And Simulators](../../AGENTS.md#devices-and-simulators) names the simulators to use. To see a screen that a developer scenario shows, run `scripts/scenario-screenshot <scenario-id> --out <file.png>`. It builds, takes a simulator, launches the scenario, saves the screenshot and gives the simulator back. Run it with your change stashed and again without it for a before and after.
+Drive the app on the shared simulator to see a change that shows on screen, such as a layout, animation, or navigation change. Physical unit tests use only the approved spare selected by `ios-agent`; keep UI scenarios and fixtures on the simulator. [Devices And Simulators](../../AGENTS.md#devices-and-simulators) names the simulators to use. To see a screen that a developer scenario shows, run `scripts/scenario-screenshot <scenario-id> --out <file.png>`. It builds, takes a simulator, launches the scenario, saves the screenshot and gives the simulator back. Run it with your change stashed and again without it for a before and after. To see how a change moves, run `scripts/scenario-record <scenario-id>`, which [Checking how a change moves](#checking-how-a-change-moves) describes.
 
 Run the iOS tests that cover your change. Backend tests are fine to run any time.
 
@@ -83,14 +83,52 @@ The simulator reaches the Mac's `127.0.0.1` directly, and App Transport Security
 
 Only `main` is deployed to `api.paeonia.no`, with `scripts/deploy-backend`, after the branch is merged.
 
-### Checking short animations
+### Checking how a change moves
 
-Reading the code does not show how a motion under two seconds looks. Record it on the simulator and read the frames:
+A screenshot looks the same whether a change animates or cuts. Record the scenario instead:
 
-1. Build into a scratch `-derivedDataPath` under `/tmp` through the machine-wide compile queue, without holding a simulator lock. Then take a simulator with `SIM="$(scripts/lock acquire simulator)"`, install, and start `xcrun simctl io "$SIM" recordVideo <file>.mp4`.
-2. Launch the developer scenario with `-paeonia-scenario <id> -paeonia-scenario-hide-controls YES`. Scenario screens fade in, which hides the first 0.3 s. To tap through a flow while recording, drive the app with `agent-device` (`open no.paeonia.app --relaunch --launch-args -paeonia-scenario --launch-args <id>`, `click 'label="..."'`, `press x y`). A tap can land 1 to 3 s after the command, so record for at least 6 s. `@e` refs go stale after a relaunch, so use `press` or `click 'label="..."'`.
-3. `recordVideo` writes a frame only when the screen changes, so `fps=` resampling invents timing. List the real frames with `ffprobe -show_entries frame=pts_time`, find the action in a 4 fps overview, then tile the real frames with `ffmpeg -vf "select='between(t,a,b)',crop=...,tile=8x5" -fps_mode passthrough` and read the sheets. Measure positions numerically, for example bright-row runs per frame in Python, instead of judging by eye. Grey rectangles on a static view are recorder artifacts.
-4. Release the lock and delete the scratch folder.
+```bash
+scripts/scenario-record <scenario-id> [--out <dir>] [--then '<command>'] [--seconds <n>] [--wait <n>] [--no-build]
+```
+
+It builds, takes a simulator, installs, records the screen and uninstalls, like `scripts/scenario-screenshot`. It then prints one line for each stretch of change in the recording, in time order, and the output folder last:
+
+```text
+action ran from 0.08 to 5.69 s
+1  5.74-6.11 s  MOTION  0.38 s over 21 changed frames, 2% of the screen, box x=72 y=283 1074x1025, longest gap between frames 28 ms
+```
+
+- `MOTION` is change spread over several frames. The line gives its duration, its frame count and the box that changed. A `JUMP` note names one frame that changed far more than the frames around it.
+- `CUT` is a change between two frames with nothing in between. A missing animation shows as a `CUT`. A `MOTION` that `starts ... after the cut` in the line above is a snap followed by a glide, or a screen that appeared and then animated.
+- `FLASH` is a change that went back within a few frames.
+
+The lines say what the recording shows. A `CUT` is a bug only where the screen should have animated, so compare the lines with what you meant to build.
+
+**An animation that plays when the screen opens.** Run the command with no `--then`. It records the launch for 20 s, so the first lines are the system's launch animation, the launch screen and the scenario appearing. Your motion is among the last lines.
+
+**An animation that follows a tap.** The tap tool is bound to one simulator, so hold that simulator for the whole session:
+
+1. Take a simulator with `SIM="$(scripts/lock acquire simulator)"` and open it with `device_open`.
+2. Run one command with the returned `agent-device`, such as `open com.apple.Preferences`. Its first command on a simulator can take a minute, and a tap sent then may not land.
+3. Run `scripts/scenario-record <scenario-id> --then '<agent-device> open no.paeonia.app && <agent-device> press <x> <y>'`. It waits until the scenario is on screen and still, starts recording and runs the command. `press` takes points, which are the screenshot's pixels divided by 3. The `action ran` line says when the command ran, and your motion is the line after it. When nothing follows it, the tap did not land.
+4. Repeat step 3 for the before and after. The script leaves a simulator you already held with you. Close the device and run `scripts/lock release simulator` when you are done.
+
+`--then` refuses to run when the worktree holds no simulator. A lock the script took itself could be a different simulator from the one your tap tool is open on, and the tap would then land on another agent's screen.
+
+**Before and after.** Run it with your change stashed and again without, with a different `--out`, and quote both lines. `--no-build` reuses the last build for another recording of the same code. A recording takes 30 to 90 s without the build.
+
+The output folder holds `recording.mp4` and two kinds of picture. Read them when a line does not settle the question:
+
+- `segment-<n>.png` shows the real frames of line `n`, left to right.
+- `segment-<n>-slit.png` is a slit-scan of a `MOTION`. It takes one strip of pixels along the path of the motion from every frame and lays the strips side by side in time order, so position against time shows as a curve. An ease bends at both ends, a constant speed is a straight line, and a jump is a break in the curve.
+
+Limits:
+
+- A recording launches the scenario with `-paeonia-scenario-assistive-technology none`. A tap tool is an accessibility client, and without the argument the app would add its optional controls to the screen while you record.
+- The comparison uses brightness, so it misses a change of colour at the same brightness, and a fade fainter than about two brightness levels per frame.
+- A change smaller than 0.05% of the screen in a frame counts as video noise. The report says how many frames it ignored, and a small spinner is among them.
+- The simulator's frame gaps do not show how a phone performs. Measure dropped frames on a device, as [Launch performance and colour](#launch-performance-and-colour) describes.
+- `recordVideo` writes a frame only when the screen changes. If you analyse `recording.mp4` yourself, use the real frame times (`ffprobe -show_entries frame=pts_time`), because `fps=` resampling invents timing. Grey rectangles on a still view are recorder artifacts.
 
 ### Launch performance and colour
 
