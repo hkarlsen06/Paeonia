@@ -29,7 +29,7 @@
       homeMapRecovery, homeMapSlowRender,
       widgetDrawing, widgetHistoryEmpty, widgetHistoryPopulated, widgetHistoryFocused,
       gamesSetup, gamesPartnerPicked, gamesHubYourTurn, gamesHubWaiting, gamesHubReveal, gamesHubPartnerHere,
-      gamesHubBoardGames, gamesHubQuiet,
+      gamesHubBoardGames, gamesHubQuiet, liveActivityGame, liveActivityViews,
       notificationPrimer, settings, settingsPartnerPays, settingsNotificationsDenied, privacySafety, reportAndLeave,
       deepLinkDailyToday, deepLinkDailyReveal, deepLinkWidget, deepLinkStreak, deepLinkSubscription,
     ]

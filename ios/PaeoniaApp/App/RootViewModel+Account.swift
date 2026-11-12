@@ -170,8 +170,19 @@ extension RootViewModel {
             await syncService.stop()
         }
         systemSideEffects.resetPushRegistrationState()
+        systemSideEffects.endLiveActivitySession()
         hasStartedSync = false
         configuredSyncSession = nil
+    }
+
+    /// Nobody is signed in. A session that ended while the app was closed
+    /// still has its Live Activity install on the phone, so that ends here.
+    func showSignedOut() {
+        systemSideEffects.endLiveActivitySession()
+        stopObservingAccessChanges()
+        invalidateAccessResolution()
+        leaveRelationshipSurfaces()
+        route = .signedOut
     }
 
     /// Before a session is used, clears what another account left on this
@@ -198,6 +209,7 @@ extension RootViewModel {
         )
         await syncService.resetForUserChange()
         systemSideEffects.resetPushRegistrationState()
+        systemSideEffects.endLiveActivitySession()
         hasStartedSync = false
         configuredSyncSession = nil
     }

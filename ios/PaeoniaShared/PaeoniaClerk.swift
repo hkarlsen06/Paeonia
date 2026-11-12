@@ -118,6 +118,12 @@ nonisolated enum PaeoniaClerk {
         return Clerk.shared.user?.id
     }
 
+    /// Whether Clerk has read its saved session, so a nil `currentAccountID()` means nobody is signed in.
+    @MainActor
+    static var hasLoaded: Bool {
+        isConfigured && Clerk.shared.isLoaded
+    }
+
     /// The Clerk user id once Clerk has read its saved session, waiting up to
     /// `timeout`. Work started by a launch in the background can run before
     /// Clerk has loaded.

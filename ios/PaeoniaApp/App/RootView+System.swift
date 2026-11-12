@@ -48,6 +48,7 @@ extension RootView {
                 viewModel.state,
                 syncsCanvas: WidgetPendingUploadStore.shared.hasPending
             )
+            await LiveActivityTokenService.shared.foregrounded(signedIn: viewModel.route != .signedOut)
             await viewModel.refreshAfterForegroundActivation()
             await SignInMethodsServerSync.retryIfPending()
             _ = await (locationRefresh, widgetSync)
@@ -225,6 +226,7 @@ extension RootView {
         }
 
         UIApplication.shared.registerForRemoteNotifications()
+        LiveActivityTokenService.shared.start()
         Task {
             await widgetPushRegistration.registerCurrentWidgetPushToken()
         }

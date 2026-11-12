@@ -346,6 +346,8 @@ extension RootViewModel {
             return
         }
 
+        // The partner's games on the Lock Screen go with the relationship, whoever ended it.
+        await systemSideEffects.endGameLiveActivities()
         let purgeID = UUID()
         let purgeTask = Task {
             await syncService.purgeRelationshipAccess(

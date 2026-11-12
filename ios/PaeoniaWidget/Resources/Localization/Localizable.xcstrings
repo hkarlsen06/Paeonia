@@ -94,6 +94,60 @@
         }
       }
     },
+    "widget.game.drawAndGuess" : {
+      "comment" : "Name of the game Draw & Guess, as the app shows it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw & Guess"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn og gjett"
+          }
+        }
+      }
+    },
+    "widget.game.mindMeld" : {
+      "comment" : "Name of the game Mind Meld, as the app shows it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mind Meld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tenk likt"
+          }
+        }
+      }
+    },
+    "widget.game.piccante" : {
+      "comment" : "Name of the game Piccante, as the app shows it. It is a name, so it stays the same in Norwegian.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Piccante"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Piccante"
+          }
+        }
+      }
+    },
     "widget.home.countdown.addDate" : {
       "comment" : "Countdown widget when the couple has no countdowns or birthdays yet. Invites the person to add one.",
       "extractionState" : "manual",
@@ -558,6 +612,114 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ er med. Nå er det din tur!"
+          }
+        }
+      }
+    },
+    "widget.liveActivity.join" : {
+      "comment" : "Second line of the partner's game Live Activity. Tapping it opens the game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to join"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk for å bli med"
+          }
+        }
+      }
+    },
+    "widget.liveActivity.joinShort" : {
+      "comment" : "Very short label at the right of the Dynamic Island while the partner has a game open. Tapping opens the game. Keep it to one or two short words.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med"
+          }
+        }
+      }
+    },
+    "widget.liveActivity.openToCheck" : {
+      "comment" : "Second line of the partner's game Live Activity after it stopped updating. Tapping opens the game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the game to see if they're still there"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne spillet for å se om de fortsatt er der"
+          }
+        }
+      }
+    },
+    "widget.liveActivity.partnerFallback" : {
+      "comment" : "Used in the partner's game Live Activity when the partner has no name yet. Example: Your partner is playing Mind Meld",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din"
+          }
+        }
+      }
+    },
+    "widget.liveActivity.playing" : {
+      "comment" : "Live Activity on the Lock Screen and in the Dynamic Island while the partner has a game open. First argument is what the person calls their partner, second is the game's name. Example: Robin is playing Mind Meld",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ is playing %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ spiller %2$@"
+          }
+        }
+      }
+    },
+    "widget.liveActivity.wasPlaying" : {
+      "comment" : "Live Activity after it stopped updating, so the partner may have left the game. First argument is the partner's name, second is the game's name. Example: Robin was playing Mind Meld",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ was playing %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ spilte %2$@"
           }
         }
       }

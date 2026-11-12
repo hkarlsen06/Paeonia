@@ -16,5 +16,6 @@ struct PaeoniaWidgetBundle: WidgetBundle {
         StreakLockScreenWidget()
         DailyQuestionLockScreenWidget()
         YourMoveLockScreenWidget()
+        GameLiveActivityWidget()
     }
 }

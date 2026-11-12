@@ -43,6 +43,8 @@ struct PaeoniaApp: App {
             // app in the background, so the index follows writes without a screen.
             SiriAppContext.shared.connect(to: viewModel)
             SiriEntityIndexer.shared.start()
+            // A push that starts the partner's game activity launches the app in the background.
+            LiveActivityTokenService.shared.resumeAfterLaunch()
             if #available(iOS 27.3, *) {
                 PaeoniaChatShortcuts.updateAppShortcutParameters()
             }

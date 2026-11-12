@@ -51,7 +51,10 @@ final class GameScreenLoops {
             while !Task.isCancelled {
                 guard let write = self?.enqueuePresence(true) else { return }
                 await write.value
-                if let kind = self?.kind { await DeliveredNotifications.clearGame(kind) }
+                if let kind = self?.kind {
+                    await DeliveredNotifications.clearGame(kind)
+                    await LiveActivityTokenService.shared.gameOpened(kind)
+                }
                 try? await sleep(interval)
             }
         }

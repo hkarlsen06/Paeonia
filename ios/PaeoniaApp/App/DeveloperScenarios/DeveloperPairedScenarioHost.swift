@@ -149,6 +149,14 @@
 
     @ViewBuilder
     var body: some View {
+      // A widget or a Live Activity opens its link in the scenario, as it does in the app.
+      content.onOpenURL { url in
+        if let link = PaeoniaDeepLink(url) { deepLink = link }
+      }
+    }
+
+    @ViewBuilder
+    private var content: some View {
       if Self.opensAnswerFlow(scenario) {
         // Nothing sits behind the flow here, so closing it opens it again, as tapping
         // the answered card does. An answered question then opens its conversation.

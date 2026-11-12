@@ -293,10 +293,7 @@ final class RootViewModel {
                 notice = .sessionEnded
                 return
             }
-            stopObservingAccessChanges()
-            invalidateAccessResolution()
-            leaveRelationshipSurfaces()
-            route = .signedOut
+            showSignedOut()
         case let .onboarding(session):
             await clearDataFromAnotherAccount(before: session)
             await welcomeFlow.sessionStarted(ownerUserID: session.id)
