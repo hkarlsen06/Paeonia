@@ -15,15 +15,12 @@ struct HomeLookBackCard: View {
     var body: some View {
         Button(action: onOpen) {
             PaeoniaCard {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                    header
-                    LookBackContent(
-                        item: item,
-                        currentUserID: currentUserID,
-                        partnerName: partnerName,
-                        thumbnailLoader: thumbnailLoader
-                    )
-                }
+                LookBackContent(
+                    item: item,
+                    currentUserID: currentUserID,
+                    partnerName: partnerName,
+                    thumbnailLoader: thumbnailLoader
+                ) { header }
             }
         }
         .buttonStyle(.paeoniaPressableCard)
@@ -33,22 +30,30 @@ struct HomeLookBackCard: View {
         .accessibilityAction(named: Text(.homeLookBackOpenAction), onOpen)
     }
 
+    /// Beside a picture the column is too narrow for how long ago, and the date under the title says it.
     private var header: some View {
-        HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space12) {
-            Label {
-                Text(eyebrow)
-            } icon: {
-                Image(systemName: "clock.arrow.circlepath")
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space12) {
+                eyebrowLabel
+                Spacer(minLength: PaeoniaSpacing.space8)
+                if let whenText {
+                    Text(verbatim: whenText)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
             }
-            .labelStyle(.titleAndIcon)
-            .paeoniaEyebrowStyle(foreground: .paeoniaAccentPrimary)
-            Spacer(minLength: PaeoniaSpacing.space8)
-            if let whenText {
-                Text(verbatim: whenText)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-            }
+            eyebrowLabel
         }
+    }
+
+    private var eyebrowLabel: some View {
+        Label {
+            Text(eyebrow)
+        } icon: {
+            Image(systemName: "clock.arrow.circlepath")
+        }
+        .labelStyle(.titleAndIcon)
+        .paeoniaEyebrowStyle(foreground: .paeoniaAccentPrimary)
     }
 
     private var eyebrow: LocalizedStringResource {
@@ -64,7 +69,7 @@ struct HomeLookBackCard: View {
     }
 
     private var accessibilityLabel: String {
-        [String(localized: eyebrow), whenText, LookBackContent.summary(
+        [String(localized: eyebrow), whenText, LookBackContent<EmptyView>.summary(
             item: item,
             currentUserID: currentUserID,
             partnerName: partnerName,

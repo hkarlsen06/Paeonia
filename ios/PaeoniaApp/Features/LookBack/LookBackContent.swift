@@ -1,14 +1,16 @@
 import SwiftUI
 import UIKit
 
-/// What the look-back card shows for an item, by kind.
-struct LookBackContent: View {
+/// What the look-back card shows for an item, by kind, under an optional header. A picture's header
+/// sits beside it, above the title, so the picture fills the card's height.
+struct LookBackContent<Header: View>: View {
     let item: LookBackItem
     let currentUserID: UUID?
     let partnerName: String
     let thumbnailLoader: any WidgetRevisionThumbnailLoading
     /// Shows every line of the words instead of the card's short preview, as the recap does.
     var showsFullText = false
+    @ViewBuilder var header: Header
 
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -43,21 +45,24 @@ struct LookBackContent: View {
     // MARK: Question
 
     private func questionContent(_ question: LookBackItem.Question) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(verbatim: question.shortPrompt(for: locale))
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(showsFullText ? nil : 3)
-            LookBackAnswerRow(
-                name: String(localized: .dailyChallengeChoiceYou),
-                answer: question.ownAnswer,
-                names: names(for: question),
-                showsFullText: showsFullText
-            )
-            LookBackAnswerRow(
-                name: partnerName, answer: question.partnerAnswer, names: names(for: question),
-                showsFullText: showsFullText
-            )
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            header
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                Text(verbatim: question.shortPrompt(for: locale))
+                    .font(PaeoniaTypography.bodyEmphasis)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .lineLimit(showsFullText ? nil : 3)
+                LookBackAnswerRow(
+                    name: String(localized: .dailyChallengeChoiceYou),
+                    answer: question.ownAnswer,
+                    names: names(for: question),
+                    showsFullText: showsFullText
+                )
+                LookBackAnswerRow(
+                    name: partnerName, answer: question.partnerAnswer, names: names(for: question),
+                    showsFullText: showsFullText
+                )
+            }
         }
     }
 
@@ -80,15 +85,18 @@ struct LookBackContent: View {
             : AnyLayout(HStackLayout(alignment: .center, spacing: PaeoniaSpacing.space16))
         return layout {
             picture()
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                text()
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .lineLimit(showsFullText ? nil : 3)
-                if let day = item.contentDay {
-                    Text(day, format: .dateTime.day().month(.abbreviated).year())
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                header
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                    text()
+                        .font(PaeoniaTypography.bodyEmphasis)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .lineLimit(showsFullText ? nil : 3)
+                    if let day = item.contentDay {
+                        Text(day, format: .dateTime.day().month(.abbreviated).year())
+                            .font(PaeoniaTypography.caption)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -121,6 +129,24 @@ struct LookBackContent: View {
             return String(localized: .homeLookBackMemoryAccessibility(memory.title))
         }
         return nil
+    }
+}
+
+extension LookBackContent where Header == EmptyView {
+    init(
+        item: LookBackItem,
+        currentUserID: UUID?,
+        partnerName: String,
+        thumbnailLoader: any WidgetRevisionThumbnailLoading,
+        showsFullText: Bool = false
+    ) {
+        self.init(
+            item: item,
+            currentUserID: currentUserID,
+            partnerName: partnerName,
+            thumbnailLoader: thumbnailLoader,
+            showsFullText: showsFullText
+        ) { EmptyView() }
     }
 }
 
