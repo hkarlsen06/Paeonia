@@ -9,7 +9,9 @@ import { guessMySpotBackend } from "./guessMySpot";
 import { mindMeldBackend } from "./mindMeld";
 import { storyChainBackend } from "./storyChain";
 import type { GameLanguage } from "./gameWords";
-import { INVITE_INTERVAL_MS, isGamePresent, openGameInvitesFor, type GameKind, type GamePushKind, type GameWait } from "./games";
+import { INVITE_INTERVAL_MS, openGameInvitesFor, type GameKind, type GamePushKind, type GameWait } from "./games";
+import type { GameTurn } from "./liveActivities";
+import { isGamePresent } from "./presence";
 import { addMs, nowIso } from "./time";
 import { GAME_KINDS } from "./validators";
 
@@ -111,6 +113,21 @@ async function gameWaits(
     if (backend) waits.push(...((await backend.waitingFor?.(ctx, coupleId, userId)) ?? []));
   }
   return waits.filter((wait) => kinds.includes(wait.kind));
+}
+
+/**
+ * Whose turn it is in `kind`, from the viewer's side, for the game Live Activity: `yours` when
+ * something in that game waits for the viewer, else `theirs` when something waits for the partner,
+ * else `none`. Reads only the game's own waits, not invites. The caller checks couple access.
+ */
+export async function gameTurn(
+  ctx: ReaderCtx, coupleId: string, viewerUserId: string, partnerUserId: string, kind: GameKind,
+): Promise<GameTurn> {
+  // The board games share one backend, so the waits are filtered to this kind.
+  const waitsFor = async (userId: string) =>
+    ((await GAME_BACKENDS[kind]?.waitingFor?.(ctx, coupleId, userId)) ?? []).some((wait) => wait.kind === kind);
+  if (await waitsFor(viewerUserId)) return "yours";
+  return (await waitsFor(partnerUserId)) ? "theirs" : "none";
 }
 
 /** The wait keys `userId` hid with "Not now", by kind. */

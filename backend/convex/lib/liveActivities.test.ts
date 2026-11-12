@@ -1,235 +1,170 @@
 import { describe, expect, test } from "vitest";
 import { buildLiveActivityRequest, type PreparedLiveActivityPush } from "./apns";
 import {
-  GAME_ACTIVITY_AWAY_GRACE_MS,
-  GAME_ACTIVITY_CLOSE_GRACE_MS,
+  GAME_ACTIVITY_END_DELAY_MS,
   GAME_ACTIVITY_REFRESH_MS,
   type GameActivityEvent,
   type GameActivityState,
-  needsStartCheck,
+  type GameTurn,
   nextGameActivity,
-  type StartCheck,
 } from "./liveActivities";
+import type { GameKind } from "./games";
 
 const T0 = "2026-11-10T12:00:00.000Z";
 const at = (ms: number) => new Date(Date.parse(T0) + ms).toISOString();
 
-const playing: GameActivityState = { id: "activity-1", game_kind: "mind_meld", phase: "playing", started_at: T0, pushed_at: T0 };
-const idle: GameActivityState = { ...playing, phase: "idle" };
-const held: GameActivityState = { ...playing, phase: "held" };
-const off: GameActivityState = { ...playing, phase: "off" };
-const leaving = (row: GameActivityState, endsAt = at(60_000)): GameActivityState => ({ ...row, ends_at: endsAt });
+const running: GameActivityState = { id: "activity-1", game_kind: "mind_meld", turn: "none", pushed_at: T0 };
+const ending = (row: GameActivityState, endsAt = at(60_000)): GameActivityState => ({ ...row, ends_at: endsAt });
 
-const checked = (start: StartCheck, game_kind: GameActivityState["game_kind"] = "mind_meld"): GameActivityEvent => ({
-  kind: "start_checked",
+const heartbeat = (game_kind: GameKind = "mind_meld", turn: GameTurn = "none", viewer_present = false): GameActivityEvent => ({
+  kind: "heartbeat",
   game_kind,
+  turn,
+  viewer_present,
   at: at(30_000),
-  new_id: "activity-2",
-  start,
 });
-const heartbeat = (game_kind: GameActivityState["game_kind"] = "mind_meld"): GameActivityEvent => ({ kind: "heartbeat", game_kind, at: at(30_000) });
+const turn = (value: GameTurn, viewer_present = false): GameActivityEvent => ({ kind: "turn", turn: value, viewer_present, at: at(30_000) });
+const left = (game_kind: GameKind, ms: number): GameActivityEvent => ({ kind: "left", game_kind, at: at(ms) });
 const check = (partner_present: boolean, ms: number): GameActivityEvent => ({ kind: "check", partner_present, at: at(ms) });
-const push = (event: "start" | "update" | "end", activity_id: string, game_kind: GameActivityState["game_kind"], quiet = false) => ({
+const push = (event: "start" | "update" | "end", game_kind: GameKind = "mind_meld", quiet = false, activity_id = "activity-1") => ({
   event,
   quiet,
   activity_id,
   game_kind,
 });
 
-describe("needsStartCheck", () => {
-  test("is needed with no row, an idle row, a switch, and a held row in another game", () => {
-    expect(needsStartCheck(null, "mind_meld")).toBe(true);
-    expect(needsStartCheck(idle, "mind_meld")).toBe(true);
-    expect(needsStartCheck(playing, "piccante")).toBe(true);
-    expect(needsStartCheck(held, "piccante")).toBe(true);
-  });
-
-  test("is not needed in the running or held game, or with game pushes off", () => {
-    expect(needsStartCheck(playing, "mind_meld")).toBe(false);
-    expect(needsStartCheck(held, "mind_meld")).toBe(false);
-    expect(needsStartCheck(off, "piccante")).toBe(false);
-  });
-});
-
 describe("nextGameActivity", () => {
-  describe("the partner's heartbeat after the start check", () => {
-    test("starts a new activity with a new id from no row, an idle row and a held row in another game", () => {
-      for (const row of [null, idle, { ...held, game_kind: "piccante" as const }]) {
-        expect(nextGameActivity(row, checked("start"))).toEqual({
-          row: { id: "activity-2", game_kind: "mind_meld", phase: "playing", started_at: at(30_000), pushed_at: at(30_000) },
-          push: push("start", "activity-2", "mind_meld"),
-        });
-      }
-    });
-
-    test("notes a viewer who already has the game open as held, without a push", () => {
-      expect(nextGameActivity(null, checked("viewer_present"))).toEqual({
-        row: { id: "activity-2", game_kind: "mind_meld", phase: "held", started_at: at(30_000), pushed_at: at(30_000) },
-        push: null,
-      });
-      expect(nextGameActivity(idle, checked("viewer_present", "piccante"))).toEqual({ row: { ...idle, game_kind: "piccante", phase: "held" }, push: null });
-    });
-
-    test("holds the row without a push while the couple is together, and ends a running activity on a switch", () => {
-      expect(nextGameActivity(null, checked("together"))).toEqual({
-        row: { id: "activity-2", game_kind: "mind_meld", phase: "held", started_at: at(30_000), pushed_at: at(30_000) },
-        push: null,
-      });
-      expect(nextGameActivity(idle, checked("together", "piccante"))).toEqual({ row: { ...idle, game_kind: "piccante", phase: "held" }, push: null });
-      expect(nextGameActivity(leaving(playing), checked("together", "draw_and_guess"))).toEqual({
-        row: { ...held, game_kind: "draw_and_guess" },
-        push: push("end", "activity-1", "mind_meld"),
+  describe("a start", () => {
+    test("stores the activity with its game and turn, and queues one start push", () => {
+      expect(nextGameActivity(null, { kind: "start", id: "activity-2", game_kind: "connect_four", turn: "yours", at: at(30_000) })).toEqual({
+        row: { id: "activity-2", game_kind: "connect_four", turn: "yours", pushed_at: at(30_000) },
+        push: push("start", "connect_four", false, "activity-2"),
       });
     });
 
-    test("turns off for a viewer with game pushes off, and keeps an idle row for a viewer without a phone that can show it", () => {
-      expect(nextGameActivity(idle, checked("pushes_off"))).toEqual({ row: off, push: null });
-      expect(nextGameActivity(null, checked("no_token"))).toEqual({
-        row: { id: "activity-2", game_kind: "mind_meld", phase: "idle", started_at: at(30_000), pushed_at: at(30_000) },
-        push: null,
-      });
-      expect(nextGameActivity(idle, checked("no_token"))).toBeNull();
-    });
-
-    test("moves a running activity to another game with one update and no start, and clears its end", () => {
-      expect(nextGameActivity(leaving(playing), checked("start", "draw_and_guess"))).toEqual({
-        row: { ...playing, game_kind: "draw_and_guess", pushed_at: at(30_000) },
-        push: push("update", "activity-1", "draw_and_guess"),
-      });
-    });
-
-    test("ends a running activity when the partner moves into the game the viewer has open", () => {
-      expect(nextGameActivity(playing, checked("viewer_present", "draw_and_guess"))).toEqual({
-        row: { ...held, game_kind: "draw_and_guess" },
-        push: push("end", "activity-1", "mind_meld"),
-      });
-    });
-
-    test("ends a running activity on a switch when the viewer turned pushes off or has no phone left", () => {
-      expect(nextGameActivity(playing, checked("pushes_off", "piccante"))).toEqual({ row: off, push: push("end", "activity-1", "mind_meld") });
-      expect(nextGameActivity(playing, checked("no_token", "piccante"))).toEqual({ row: idle, push: push("end", "activity-1", "mind_meld") });
+    test("changes nothing while an activity runs", () => {
+      expect(nextGameActivity(running, { kind: "start", id: "activity-2", game_kind: "mind_meld", turn: "none", at: at(30_000) })).toBeNull();
     });
   });
 
-  describe("the partner's heartbeat with no start check", () => {
-    test("changes nothing in the running or held game, or with pushes off", () => {
-      for (const row of [playing, held, off]) expect(nextGameActivity(row, heartbeat())).toBeNull();
+  describe("the partner's heartbeat", () => {
+    test("changes nothing in the same game and turn", () => {
+      expect(nextGameActivity(running, heartbeat())).toBeNull();
     });
 
-    test("clears the end of a partner who came back in time", () => {
-      expect(nextGameActivity(leaving(playing), heartbeat())).toEqual({ row: playing, push: null });
-      expect(nextGameActivity(leaving(held), heartbeat())).toEqual({ row: held, push: null });
+    test("moves the activity to another game or turn with one update", () => {
+      expect(nextGameActivity(running, heartbeat("draw_and_guess"))).toEqual({
+        row: { ...running, game_kind: "draw_and_guess", pushed_at: at(30_000) },
+        push: push("update", "draw_and_guess"),
+      });
+      expect(nextGameActivity(running, heartbeat("mind_meld", "theirs"))).toEqual({
+        row: { ...running, turn: "theirs", pushed_at: at(30_000) },
+        push: push("update"),
+      });
+    });
+
+    test("sends the update quietly while the viewer has that game open", () => {
+      expect(nextGameActivity(running, heartbeat("connect_four", "yours", true))?.push).toEqual(push("update", "connect_four", true));
+    });
+
+    test("clears the end of a partner who came back in time, with an update only when something changed", () => {
+      expect(nextGameActivity(ending(running), heartbeat())).toEqual({ row: running, push: null });
+      expect(nextGameActivity(ending(running), heartbeat("piccante"))).toEqual({
+        row: { ...running, game_kind: "piccante", pushed_at: at(30_000) },
+        push: push("update", "piccante"),
+      });
+    });
+  });
+
+  describe("the turn read again", () => {
+    test("sends one update when it changed, quietly while the viewer has the game open", () => {
+      expect(nextGameActivity(running, turn("none"))).toBeNull();
+      expect(nextGameActivity(running, turn("yours"))).toEqual({ row: { ...running, turn: "yours", pushed_at: at(30_000) }, push: push("update") });
+      expect(nextGameActivity(running, turn("yours", true))?.push).toEqual(push("update", "mind_meld", true));
+    });
+
+    test("brings the end closer once no turn is left, and never moves it later", () => {
+      const waiting = ending({ ...running, turn: "yours" }, at(10 * 60_000));
+      expect(nextGameActivity(waiting, turn("none"))?.row).toEqual({
+        ...running,
+        ends_at: at(30_000 + GAME_ACTIVITY_END_DELAY_MS.none),
+        pushed_at: at(30_000),
+      });
+      expect(nextGameActivity(ending(running, at(40_000)), turn("theirs"))?.row).toEqual({
+        ...running,
+        turn: "theirs",
+        ends_at: at(40_000),
+        pushed_at: at(30_000),
+      });
+    });
+
+    test("changes nothing with no activity", () => {
+      expect(nextGameActivity(null, turn("yours"))).toBeNull();
     });
   });
 
   describe("the partner closing a game screen", () => {
-    test("sets the end a minute after the close, for the running or held game", () => {
-      for (const row of [playing, held]) {
-        expect(nextGameActivity(row, { kind: "left", game_kind: "mind_meld", at: at(10_000) })).toEqual({
-          row: { ...row, ends_at: at(10_000 + GAME_ACTIVITY_CLOSE_GRACE_MS) },
-          push: null,
-        });
+    test("sets the end a minute after the close with no turn, and ten minutes after with one", () => {
+      expect(nextGameActivity(running, left("mind_meld", 10_000))).toEqual({ row: ending(running, at(70_000)), push: null });
+      for (const value of ["yours", "theirs"] as const) {
+        const row = { ...running, turn: value };
+        expect(nextGameActivity(row, left("mind_meld", 10_000))).toEqual({ row: ending(row, at(10_000 + 10 * 60_000)), push: null });
       }
     });
 
-    test("keeps an earlier end", () => {
-      expect(nextGameActivity(leaving(playing, at(20_000)), { kind: "left", game_kind: "mind_meld", at: at(10_000) })).toBeNull();
-    });
-
-    test("changes nothing for another game, an idle row or pushes off", () => {
-      expect(nextGameActivity(playing, { kind: "left", game_kind: "piccante", at: at(10_000) })).toBeNull();
-      expect(nextGameActivity(idle, { kind: "left", game_kind: "mind_meld", at: at(10_000) })).toBeNull();
-      expect(nextGameActivity(off, { kind: "left", game_kind: "mind_meld", at: at(10_000) })).toBeNull();
-    });
-  });
-
-  describe("the viewer's own heartbeat", () => {
-    test("in the running activity's game joins it and ends it on every phone", () => {
-      expect(nextGameActivity(playing, { kind: "viewer_heartbeat", game_kind: "mind_meld" })).toEqual({
-        row: held,
-        push: push("end", "activity-1", "mind_meld"),
-      });
-    });
-
-    test("changes nothing in another game, or once held", () => {
-      expect(nextGameActivity(playing, { kind: "viewer_heartbeat", game_kind: "piccante" })).toBeNull();
-      expect(nextGameActivity(held, { kind: "viewer_heartbeat", game_kind: "mind_meld" })).toBeNull();
-      expect(nextGameActivity(idle, { kind: "viewer_heartbeat", game_kind: "mind_meld" })).toBeNull();
-    });
-  });
-
-  describe("a phone of the viewer that ended the activity on its own", () => {
-    test("ends it on the other phones and lets the next heartbeat start a new one", () => {
-      expect(nextGameActivity(leaving(playing), { kind: "viewer_ended", activity_id: "activity-1" })).toEqual({
-        row: idle,
-        push: push("end", "activity-1", "mind_meld"),
-      });
-    });
-
-    test("changes nothing for an older activity or one that no longer runs", () => {
-      expect(nextGameActivity(playing, { kind: "viewer_ended", activity_id: "activity-0" })).toBeNull();
-      expect(nextGameActivity(held, { kind: "viewer_ended", activity_id: "activity-1" })).toBeNull();
+    test("keeps an earlier end, and changes nothing for another game", () => {
+      expect(nextGameActivity(ending(running, at(20_000)), left("mind_meld", 10_000))).toBeNull();
+      expect(nextGameActivity(running, left("piccante", 10_000))).toBeNull();
     });
   });
 
   describe("a check that finds the partner in a game", () => {
     test("changes nothing soon after the last push", () => {
-      expect(nextGameActivity(playing, check(true, GAME_ACTIVITY_REFRESH_MS - 1))).toBeNull();
-      expect(nextGameActivity(held, check(true, 2 * GAME_ACTIVITY_REFRESH_MS))).toBeNull();
+      expect(nextGameActivity(running, check(true, GAME_ACTIVITY_REFRESH_MS - 1))).toBeNull();
     });
 
     test("sends a quiet update once the last push is old, so the activity does not go stale", () => {
-      expect(nextGameActivity(playing, check(true, GAME_ACTIVITY_REFRESH_MS))).toEqual({
-        row: { ...playing, pushed_at: at(GAME_ACTIVITY_REFRESH_MS) },
-        push: push("update", "activity-1", "mind_meld", true),
+      expect(nextGameActivity(running, check(true, GAME_ACTIVITY_REFRESH_MS))).toEqual({
+        row: { ...running, pushed_at: at(GAME_ACTIVITY_REFRESH_MS) },
+        push: push("update", "mind_meld", true),
       });
     });
 
     test("clears the end of a partner who came back", () => {
-      expect(nextGameActivity(leaving(playing), check(true, 30_000))).toEqual({ row: playing, push: null });
-      expect(nextGameActivity(leaving(held), check(true, 30_000))).toEqual({ row: held, push: null });
+      expect(nextGameActivity(ending(running), check(true, 30_000))).toEqual({ row: running, push: null });
     });
   });
 
   describe("a check that finds the partner in no game", () => {
-    test("first waits, so a partner whose presence timed out has time to come back", () => {
-      expect(nextGameActivity(playing, check(false, 90_000))).toEqual({
-        row: leaving(playing, at(90_000 + GAME_ACTIVITY_AWAY_GRACE_MS)),
-        push: null,
+    test("first sets the end by the turn, so a partner whose presence timed out has time to come back", () => {
+      expect(nextGameActivity(running, check(false, 90_000))).toEqual({ row: ending(running, at(90_000 + 60_000)), push: null });
+      const yours = { ...running, turn: "yours" as const };
+      expect(nextGameActivity(yours, check(false, 90_000))).toEqual({ row: ending(yours, at(90_000 + 10 * 60_000)), push: null });
+    });
+
+    test("waits until the end, then deletes the row with one end push", () => {
+      expect(nextGameActivity(ending(running, at(60_000)), check(false, 59_999))).toBeNull();
+      expect(nextGameActivity(ending(running, at(60_000)), check(false, 60_000))).toEqual({ row: null, push: push("end") });
+    });
+
+    test("keeps the activity from going stale while it ends", () => {
+      const row = ending({ ...running, turn: "yours" }, at(GAME_ACTIVITY_REFRESH_MS + 60_000));
+      expect(nextGameActivity(row, check(false, GAME_ACTIVITY_REFRESH_MS))).toEqual({
+        row: { ...row, pushed_at: at(GAME_ACTIVITY_REFRESH_MS) },
+        push: push("update", "mind_meld", true),
       });
-    });
-
-    test("ends at the next check, even one that runs a little under 30 seconds later", () => {
-      const away = nextGameActivity(playing, check(false, 90_000))!.row;
-      expect(nextGameActivity(away, check(false, 90_000 + 29_500))).toEqual({ row: idle, push: push("end", "activity-1", "mind_meld") });
-    });
-
-    test("waits until the end", () => {
-      expect(nextGameActivity(leaving(playing, at(60_000)), check(false, 59_999))).toBeNull();
-    });
-
-    test("then ends a running activity, and lets a held row start again without a push", () => {
-      expect(nextGameActivity(leaving(playing, at(60_000)), check(false, 60_000))).toEqual({ row: idle, push: push("end", "activity-1", "mind_meld") });
-      expect(nextGameActivity(leaving(held, at(60_000)), check(false, 60_000))).toEqual({ row: idle, push: null });
-    });
-
-    test("changes nothing for an idle row or pushes off", () => {
-      expect(nextGameActivity(idle, check(false, 60_000))).toBeNull();
-      expect(nextGameActivity(off, check(false, 60_000))).toBeNull();
     });
   });
 
-  describe("the viewer's game push setting", () => {
-    test("off ends a running activity, and stops every other row from starting one", () => {
-      expect(nextGameActivity(leaving(playing), { kind: "pushes_off" })).toEqual({ row: off, push: push("end", "activity-1", "mind_meld") });
-      expect(nextGameActivity(held, { kind: "pushes_off" })).toEqual({ row: off, push: null });
-      expect(nextGameActivity(idle, { kind: "pushes_off" })).toEqual({ row: off, push: null });
-      expect(nextGameActivity(off, { kind: "pushes_off" })).toBeNull();
+  describe("the end of an activity", () => {
+    test("a viewer with no phone left that holds it ends it, and an older activity changes nothing", () => {
+      expect(nextGameActivity(ending(running), { kind: "viewer_ended", activity_id: "activity-1" })).toEqual({ row: null, push: push("end") });
+      expect(nextGameActivity(running, { kind: "viewer_ended", activity_id: "activity-0" })).toBeNull();
     });
 
-    test("on lets the next heartbeat check for a start", () => {
-      expect(nextGameActivity(off, { kind: "pushes_on" })).toEqual({ row: idle, push: null });
-      expect(nextGameActivity(playing, { kind: "pushes_on" })).toBeNull();
+    test("game pushes off ends it", () => {
+      expect(nextGameActivity(running, { kind: "stop" })).toEqual({ row: null, push: push("end") });
+      expect(nextGameActivity(null, { kind: "stop" })).toBeNull();
     });
   });
 });
@@ -246,6 +181,7 @@ describe("buildLiveActivityRequest", () => {
     event: "update",
     quiet: false,
     game_kind: "mind_meld",
+    turn: "none",
     queued_at: T0,
     start: null,
   };
@@ -267,7 +203,7 @@ describe("buildLiveActivityRequest", () => {
       aps: {
         timestamp: seconds,
         event: "start",
-        "content-state": { gameKind: "mind_meld", phase: "playing" },
+        "content-state": { gameKind: "mind_meld", phase: "playing", turn: "none" },
         "stale-date": 1_794_312_120,
         "attributes-type": "GameLiveActivityAttributes",
         attributes: { activityID: base.activity_id, partnerName: "Panci" },
@@ -277,12 +213,12 @@ describe("buildLiveActivityRequest", () => {
     });
   });
 
-  test("an update carries the game and a stale date fifteen minutes out, and a quiet one goes at priority 5", () => {
-    expect(body({ ...base, game_kind: "draw_and_guess" })).toEqual({
+  test("an update carries the game, the turn and a stale date fifteen minutes out, and a quiet one goes at priority 5", () => {
+    expect(body({ ...base, game_kind: "connect_four", turn: "yours" })).toEqual({
       aps: {
         timestamp: seconds,
         event: "update",
-        "content-state": { gameKind: "draw_and_guess", phase: "playing" },
+        "content-state": { gameKind: "connect_four", phase: "playing", turn: "yours" },
         "stale-date": 1_794_312_900,
       },
     });
@@ -297,7 +233,7 @@ describe("buildLiveActivityRequest", () => {
       aps: {
         timestamp: seconds,
         event: "end",
-        "content-state": { gameKind: "mind_meld", phase: "ended" },
+        "content-state": { gameKind: "mind_meld", phase: "ended", turn: "none" },
         "dismissal-date": seconds,
       },
     });

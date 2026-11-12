@@ -17,7 +17,6 @@ import {
   moderationStatus,
   notificationKind,
   reactionTargetKind,
-  realTimeGameKind,
   relationshipStatus,
   reviewScenario,
   storekitEnvironment,
@@ -1952,27 +1951,25 @@ export default defineSchema({
     user_ids: v.array(uuid),
   }).index("by_couple_id_day", ["couple_id", "day"]),
 
-  // The Live Activity a viewer's phones show while the partner is in a real-time game. One row per
-  // viewer and couple, moved only by `nextGameActivity` (lib/liveActivities.ts), which also
-  // explains the phases. `id` is the latest activity's id, which the phone holds in its attributes,
-  // and a new activity gets a new one. `ends_at` is when a running or held row goes idle unless
-  // the partner shows up again. `pushed_at` is the last push that moved the stale date. The
-  // `check-game-activities` cron reads the running and held rows by `by_phase`.
+  // The Live Activity a viewer's phones show while the partner is in a game. A row exists only while
+  // the activity runs, one per viewer and couple, and only `nextGameActivity` (lib/liveActivities.ts)
+  // moves it. Ending the activity deletes the row. `id` is the activity's id, which the phone holds in
+  // its attributes. `turn` is whose turn it is in `game_kind`, from the viewer's side. `ends_at` is
+  // when the activity ends unless the partner's game screen shows up again. `pushed_at` is the last
+  // push that moved the stale date.
   game_live_activities: defineTable({
     id: uuid,
     couple_id: uuid,
     viewer_user_id: uuid,
     partner_user_id: uuid,
-    game_kind: realTimeGameKind,
-    phase: literals("idle", "playing", "held", "off"),
+    game_kind: gameKind,
+    turn: literals("yours", "theirs", "none"),
     ends_at: optTs,
-    started_at: ts,
     pushed_at: ts,
   })
     .index("by_uuid", ["id"])
     .index("by_couple_id_partner_user_id", ["couple_id", "partner_user_id"])
-    .index("by_viewer_user_id", ["viewer_user_id"])
-    .index("by_phase", ["phase"]),
+    .index("by_viewer_user_id", ["viewer_user_id"]),
 
   // ActivityKit push tokens. `start` is one install's push-to-start token. `update` is the token
   // of one running activity on that install. `install_id` is the app's id for this sign-in on the
@@ -1997,16 +1994,18 @@ export default defineSchema({
     .index("by_activity_id", ["activity_id"])
     .index("by_token_hash", ["token_hash"]),
 
-  // One ActivityKit push to one token. The send reads the token row when it is due, and a start
-  // reads the partner's name then, so the row holds no name. FK: target_token_id -> live_activity_tokens cascade.
+  // One ActivityKit push to one token. The send reads the token row when it is due. A start or an
+  // update reads the activity's game and turn then, and a start the partner's name, so the row holds
+  // no name. `game_kind` is what an end names. FK: target_token_id -> live_activity_tokens cascade.
   live_activity_push_outbox: defineTable({
     id: uuid,
     recipient_user_id: uuid,
     target_token_id: uuid,
     activity_id: uuid,
     event: literals("start", "update", "end"),
-    game_kind: realTimeGameKind,
-    // A refresh that only keeps the activity from going stale. It goes at APNs priority 5.
+    game_kind: gameKind,
+    // Goes at APNs priority 5: a refresh that only keeps the activity from going stale, or an update
+    // while the viewer has the game open and cannot see the activity.
     quiet: v.optional(v.boolean()),
     provider_message_id: optString,
     last_error: optString,

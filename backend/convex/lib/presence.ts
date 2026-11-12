@@ -50,6 +50,11 @@ export async function onlineUserIds(ctx: ReaderCtx, roomId: string): Promise<str
   return (await presence.listRoom(ctx, roomId, true)).map((row) => row.userId);
 }
 
+/** True while the user has the game screen open. */
+export async function isGamePresent(ctx: ReaderCtx, coupleId: string, kind: GameKind, userId: string): Promise<boolean> {
+  return (await onlineUserIds(ctx, gameRoom(coupleId, kind))).includes(userId);
+}
+
 /** The game kinds a user has open in a couple's rooms. One read for all kinds, where `onlineUserIds` reads one room. */
 export async function openGameKinds(ctx: ReaderCtx, coupleId: string, userId: string): Promise<Set<string>> {
   const prefix = gameRoomPrefix(coupleId);

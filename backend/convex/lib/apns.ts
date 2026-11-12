@@ -2,6 +2,8 @@
 // fallback. The HTTP/2 transport lives in push.ts ("use node").
 
 import { addMs, localWallClockMs } from "./time";
+import type { GameKind } from "./games";
+import type { GameTurn } from "./liveActivities";
 import type { NotificationKind } from "./notifications";
 
 export type ApnsEnvironment = "sandbox" | "production";
@@ -304,9 +306,10 @@ export type PreparedLiveActivityPush = {
   apns_environment: ApnsEnvironment;
   activity_id: string;
   event: "start" | "update" | "end";
-  /** A refresh that only moves the stale date. It goes at priority 5, which iOS does not count against the app. */
+  /** Goes at priority 5, which iOS does not count against the app: a refresh of the stale date, or an update the viewer cannot see. */
   quiet: boolean;
-  game_kind: string;
+  game_kind: GameKind;
+  turn: GameTurn;
   /** When the push was queued. iOS keeps the newest, and the stale and dismissal dates count from it. */
   queued_at: string;
   /** The attributes and the alert a start needs. Null for an update or an end. */
@@ -328,15 +331,15 @@ const LIVE_ACTIVITY_END_EXPIRATION_SECONDS = 8 * 3600;
 
 /**
  * The `aps` of an ActivityKit push. `content-state` and `attributes` use the property names of the
- * Swift types, since iOS decodes them with the default JSON coding. Names the partner and the
- * game, never a move.
+ * Swift types, since iOS decodes them with the default JSON coding. Names the partner, the game
+ * and whose turn it is, never a move.
  */
 export function buildLiveActivityApsPayload(push: PreparedLiveActivityPush): Record<string, unknown> {
   const timestamp = Math.floor(Date.parse(push.queued_at) / 1000);
   const aps: Record<string, unknown> = {
     timestamp,
     event: push.event,
-    "content-state": { gameKind: push.game_kind, phase: push.event === "end" ? "ended" : "playing" },
+    "content-state": { gameKind: push.game_kind, phase: push.event === "end" ? "ended" : "playing", turn: push.turn },
   };
   if (push.event === "end") {
     // A date in the past takes the ended activity off the Lock Screen at once.

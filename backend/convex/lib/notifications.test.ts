@@ -16,7 +16,6 @@ import { deliverDuePushes } from "../push.testing";
 import { enqueueDailyPartnerPush } from "./dailyPartnerPush";
 import { enqueueGamePush } from "./games";
 import { GAME_PUSH_COPY, notificationAlertTitle } from "./notificationCopy";
-import { GAME_KINDS } from "./validators";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -62,12 +61,10 @@ describe("notification copy", () => {
   describe("game pushes", () => {
     const pushKinds = ["game_turn_ready", "game_turn_reminder", "game_result", "game_invite"] as const;
 
-    test("a game without copy gets a title naming the partner, and turn and result pushes use the reminder body", async () => {
+    test("a push that names no known game gets a title naming the partner, and turn and result pushes use the reminder body", async () => {
       const t = newTest();
       const couple = await createCouple(t);
-      // A kind that has no copy yet, while there is one.
-      const uncopied = GAME_KINDS.find((kind) => !GAME_PUSH_COPY[kind]);
-      for (const gameKind of [uncopied, "constructor", undefined]) {
+      for (const gameKind of ["not_a_game", "constructor", undefined]) {
         const payload = { game_kind: gameKind, actor_user_id: couple.first.userId };
         for (const kind of pushKinds) {
           expect(await t.run((ctx) => notificationAlertTitle(ctx, couple.second.userId, kind, payload, "en"))).toBe("Something new from First Partner");
@@ -81,6 +78,7 @@ describe("notification copy", () => {
 
     test("a step picks its own title and body, and any other push keeps the game's copy", async () => {
       // A stand-in for a game with steps. The table is restored after the test.
+      const copy = GAME_PUSH_COPY.story_chain;
       GAME_PUSH_COPY.story_chain = {
         en: { name: "Story chain", steps: { last_line: { title: (actor) => `${actor} wrote the last line`, body: "Open Paeonia to name your story." } } },
         nb: { name: "Historiekjede", steps: { last_line: { title: (actor) => `${actor} skrev siste linje`, body: "Åpne Paeonia for å gi historien et navn." } } },
@@ -123,7 +121,7 @@ describe("notification copy", () => {
         expect(copy("unknown-step")).toEqual(copy("without-step"));
         await t.finishAllScheduledFunctions(vi.runAllTimers);
       } finally {
-        delete GAME_PUSH_COPY.story_chain;
+        GAME_PUSH_COPY.story_chain = copy;
       }
     });
 

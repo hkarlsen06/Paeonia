@@ -3,19 +3,15 @@ import { canAccessCoupleContent, listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { fail } from "./errors";
 import { enqueueNotificationForUser } from "./notifications";
-import { gameRoom, onlineUserIds } from "./presence";
+import { refreshGameActivityTurns } from "./liveActivities";
+import { isGamePresent } from "./presence";
 import { addMs, nowIso } from "./time";
-import { type GAME_KINDS, REAL_TIME_GAME_KINDS } from "./validators";
+import type { GAME_KINDS } from "./validators";
 
 // Helpers every game shares: settings, presence, invites, and pushes. Draw & Guess has its own
 // in drawAndGuess.ts. This file must not import the registry (gameRegistry.ts) or any game.
 
 export type GameKind = (typeof GAME_KINDS)[number];
-export type RealTimeGameKind = (typeof REAL_TIME_GAME_KINDS)[number];
-
-export function isRealTimeGameKind(kind: GameKind): kind is RealTimeGameKind {
-  return (REAL_TIME_GAME_KINDS as readonly GameKind[]).includes(kind);
-}
 export type GameSettings = Doc<"game_settings">;
 
 /** The game screen counts as closed this long after its last heartbeat. The app sends one every 30 seconds. */
@@ -62,13 +58,6 @@ export async function requirePartnerId(ctx: ReaderCtx, coupleId: string, userId:
   const partner = (await listActiveMembers(ctx, coupleId)).find((member) => member.user_id !== userId);
   if (!partner) return fail("23514", "a game needs two active partners");
   return partner.user_id;
-}
-
-// --- Presence ---------------------------------------------------------------
-
-/** True while the user has the game screen open, per the presence component. */
-export async function isGamePresent(ctx: ReaderCtx, coupleId: string, kind: GameKind, userId: string): Promise<boolean> {
-  return (await onlineUserIds(ctx, gameRoom(coupleId, kind))).includes(userId);
 }
 
 // --- Invites ----------------------------------------------------------------
@@ -123,6 +112,7 @@ export function gameDeepLink(kind: GameKind): string {
 /**
  * Queues one lock-screen-safe push. The payload names the game and the people, never the
  * move, a word, or a drawing. `skipIfPresent` drops the push when the recipient has the game open.
+ * A turn or a result also has the couple's game Live Activities read the turn again, open game or not.
  * Returns the number of rows queued.
  */
 export async function enqueueGamePush(
@@ -143,6 +133,9 @@ export async function enqueueGamePush(
     delay_ms?: number;
   },
 ): Promise<number> {
+  if (args.kind === "game_turn_ready" || args.kind === "game_result") {
+    await refreshGameActivityTurns(ctx, args.couple_id, args.game_kind);
+  }
   if (args.skipIfPresent && (await isGamePresent(ctx, args.couple_id, args.game_kind, args.recipient_user_id))) {
     return 0;
   }

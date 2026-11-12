@@ -244,19 +244,18 @@ describe("Download my data", () => {
   test("the partner's game on the Lock Screen comes only from the rows where the person is the viewer", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const row = (viewer: TestUser, partner: TestUser, phase: "playing" | "off") => ({
+    const row = (viewer: TestUser, partner: TestUser) => ({
       id: newUuid(),
       couple_id: couple.coupleId,
       viewer_user_id: viewer.userId,
       partner_user_id: partner.userId,
       game_kind: "mind_meld" as const,
-      phase,
-      started_at: new Date().toISOString(),
+      turn: "none" as const,
       pushed_at: new Date().toISOString(),
     });
-    const mine = row(couple.first, couple.second, "playing");
-    // The partner turned game pushes off, which is their setting and not the person's.
-    const theirs = row(couple.second, couple.first, "off");
+    const mine = row(couple.first, couple.second);
+    // What shows on the partner's phone.
+    const theirs = row(couple.second, couple.first);
     await t.run(async (ctx) => {
       await ctx.db.insert("game_live_activities", mine);
       await ctx.db.insert("game_live_activities", theirs);

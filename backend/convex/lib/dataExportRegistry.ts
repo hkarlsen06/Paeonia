@@ -699,7 +699,7 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
     group: "games",
     about: { en: "When you last opened each game.", nb: "Når dere sist åpnet hvert spill." },
   }),
-  // Only the rows where the person is the viewer. The partner's rows hold the partner's game push setting.
+  // Only the rows where the person is the viewer. The partner's rows are what shows on the partner's phone.
   game_live_activities: own("viewer_user_id", "by_viewer_user_id", {
     group: "games",
     about: {

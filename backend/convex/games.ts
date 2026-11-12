@@ -223,9 +223,9 @@ export const send_game_invite = mutation({
  * after, and `false` when it closes. The presence component marks the screen closed 60
  * seconds after the last `true`, such as when the app was killed. Each call also moves the
  * game's last played time forward (`recordPlayed`), and a `true` counts the caller as playing on today's
- * couple day (`recordPlayDay`), answers the partner's invite to the game, and in a real-time game
- * starts or moves the partner's Live Activity (`recordGameHeartbeat`). A `false` there starts the
- * wait before that activity ends (`recordGameLeave`).
+ * couple day (`recordPlayDay`), answers the partner's invite to the game, and starts or moves the
+ * partner's game Live Activity (`recordGameHeartbeat`). A `false` starts the wait before that
+ * activity ends (`recordGameLeave`) and reads the turn again for the caller's own activity in that game.
  */
 export const set_game_presence = mutation({
   args: { p_kind: gameKind, p_present: v.boolean() },

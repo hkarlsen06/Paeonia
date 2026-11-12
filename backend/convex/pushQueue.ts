@@ -268,9 +268,10 @@ export const prepare_widget_push = internalMutation({
 });
 
 /**
- * Like `prepare_notification` for an ActivityKit push. A start goes out only while its activity
- * still runs and the viewer still has the couple and game pushes, and it carries the game the
- * partner is in now with the name the viewer calls them. An update or end needs only its token.
+ * Like `prepare_notification` for an ActivityKit push. A start or an update goes out only while its
+ * activity still runs, and carries the game the partner is in now and whose turn it is. A start also
+ * needs the viewer to still have the couple and game pushes, and carries the name the viewer calls
+ * the partner. An end needs only its token, and names the game of its outbox row with no turn.
  */
 export const prepare_live_activity_push = internalMutation({
   args: { outbox_id: v.string() },
@@ -279,22 +280,24 @@ export const prepare_live_activity_push = internalMutation({
     if (!row) return null;
     const token = await getByUuid(ctx, "live_activity_tokens", row.target_token_id);
     if (!token) return await drop(ctx, row, TARGET_INELIGIBLE);
-    let gameKind: string = row.game_kind;
+    let shown: Pick<PreparedLiveActivityPush, "game_kind" | "turn"> = { game_kind: row.game_kind, turn: "none" };
     let start: PreparedLiveActivityPush["start"] = null;
-    if (row.event === "start") {
+    if (row.event !== "end") {
       const activity = await getByUuid(ctx, "game_live_activities", row.activity_id);
-      if (activity?.phase !== "playing") return await drop(ctx, row, OUT_OF_DATE);
-      const preference = await ctx.db
-        .query("notification_preferences")
-        .withIndex("by_user_id", (q) => q.eq("user_id", token.user_id))
-        .unique();
-      if (!(preference?.games_enabled ?? false) || !(await canAccessCoupleContent(ctx, token.user_id, activity.couple_id))) {
-        return await drop(ctx, row, TARGET_INELIGIBLE);
+      if (!activity) return await drop(ctx, row, OUT_OF_DATE);
+      shown = { game_kind: activity.game_kind, turn: activity.turn };
+      if (row.event === "start") {
+        const preference = await ctx.db
+          .query("notification_preferences")
+          .withIndex("by_user_id", (q) => q.eq("user_id", token.user_id))
+          .unique();
+        if (!(preference?.games_enabled ?? false) || !(await canAccessCoupleContent(ctx, token.user_id, activity.couple_id))) {
+          return await drop(ctx, row, TARGET_INELIGIBLE);
+        }
+        const partnerName = await shortPartnerName(ctx, token.user_id, activity.partner_user_id);
+        const alert = liveActivityAlert(activity.game_kind, activity.turn, partnerName, notificationLocaleLanguage(token.locale));
+        start = { partner_name: partnerName ?? "", alert_title: alert.title, alert_body: alert.body };
       }
-      gameKind = activity.game_kind;
-      const partnerName = await shortPartnerName(ctx, token.user_id, activity.partner_user_id);
-      const alert = liveActivityAlert(activity.game_kind, partnerName, notificationLocaleLanguage(token.locale));
-      start = { partner_name: partnerName ?? "", alert_title: alert.title, alert_body: alert.body };
     }
     return {
       outbox_id: row.id,
@@ -304,7 +307,7 @@ export const prepare_live_activity_push = internalMutation({
       activity_id: row.activity_id,
       event: row.event,
       quiet: row.quiet ?? false,
-      game_kind: gameKind,
+      ...shown,
       queued_at: row.created_at,
       start,
     };

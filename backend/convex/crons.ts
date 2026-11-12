@@ -11,8 +11,8 @@ const crons = cronJobs();
 // New in Convex: the single reminder for a game turn that waited 72 hours. See gameHooks.ts.
 crons.interval("send-due-game-turn-reminders", { minutes: 15 }, internal.gameHooks.send_due_game_turn_reminders, {});
 
-// New in Convex: the partner's game Live Activity. Ends an activity a minute or two after the partner
-// left the real-time games and keeps a running one from going stale. See liveActivities.ts.
+// New in Convex: the partner's game Live Activity. Ends an activity once the partner left every game
+// and keeps a running one from going stale. See liveActivities.ts.
 crons.interval("check-game-activities", { seconds: 30 }, internal.liveActivities.check_game_activities, {});
 
 // pg_cron 'paeonia-push-notification-drain' has no entry: each outbox row is a pushWorkpool

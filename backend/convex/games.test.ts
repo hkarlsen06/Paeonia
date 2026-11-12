@@ -7,7 +7,6 @@ import { hmacSha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { deleteCoupleGameRows, GAME_BACKENDS, gamePushStillWanted, type GameBackend } from "./lib/gameRegistry";
 import { gameDeepLink } from "./lib/games";
-import { GAME_PUSH_COPY } from "./lib/notificationCopy";
 import { gameRoom } from "./lib/presence";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { GAME_KINDS } from "./lib/validators";
@@ -308,41 +307,32 @@ describe("presence and invites for every kind", () => {
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("an invite for another kind is stored per kind, limited to one every 15 minutes, and has no copy yet", async () => {
+  test("an invite for another kind is stored per kind and limited to one every 15 minutes", async () => {
     const s = await startCouple();
-    // Every built game has push copy, so the test takes one game's copy away and puts it back.
     const kind = "ultimate_tic_tac_toe";
-    const copy = GAME_PUSH_COPY[kind];
-    delete GAME_PUSH_COPY[kind];
-    try {
-      const sent = await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind });
-      const timestamp = await transactionClock(s.t);
-      expect(sent.sent_at).toBe(timestamp(new Date(START).toISOString()));
-      const [row] = await outbox(s.t);
-      expect(row).toMatchObject({
-        recipient_user_id: s.b.userId,
-        title: "Something new from First Partner",
-        body: "Join in when you're ready.",
-        payload: { type: "game_invite", game_kind: kind, couple_id: s.couple.coupleId, route: "games", deeplink: gameDeepLink(kind) },
-      });
-      expect(row.payload).not.toHaveProperty("game_id");
+    const sent = await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind });
+    const timestamp = await transactionClock(s.t);
+    expect(sent.sent_at).toBe(timestamp(new Date(START).toISOString()));
+    const [row] = await outbox(s.t);
+    expect(row).toMatchObject({
+      recipient_user_id: s.b.userId,
+      payload: { type: "game_invite", game_kind: kind, couple_id: s.couple.coupleId, route: "games", deeplink: gameDeepLink(kind) },
+    });
+    expect(row.payload).not.toHaveProperty("game_id");
 
-      tick(14 * 60 + 59);
-      expect((await failure(s.a.as.mutation(api.games.send_game_invite, { p_kind: kind }))).code).toBe("53300");
-      // The limit is per sender and per kind.
-      await s.b.as.mutation(api.games.send_game_invite, { p_kind: kind });
-      await s.a.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
-      vi.setSystemTime(new Date(Date.parse(sent.sent_at) + 15 * 60_000));
-      expect((await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind })).sent_at > sent.sent_at).toBe(true);
-      expect((await s.t.run((ctx) => ctx.db.query("game_invites").collect())).map((invite) => invite.kind).sort()).toEqual([
-        kind,
-        kind,
-        "story_chain",
-      ].sort());
-      await s.t.finishAllScheduledFunctions(vi.runAllTimers);
-    } finally {
-      GAME_PUSH_COPY[kind] = copy;
-    }
+    tick(14 * 60 + 59);
+    expect((await failure(s.a.as.mutation(api.games.send_game_invite, { p_kind: kind }))).code).toBe("53300");
+    // The limit is per sender and per kind.
+    await s.b.as.mutation(api.games.send_game_invite, { p_kind: kind });
+    await s.a.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
+    vi.setSystemTime(new Date(Date.parse(sent.sent_at) + 15 * 60_000));
+    expect((await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind })).sent_at > sent.sent_at).toBe(true);
+    expect((await s.t.run((ctx) => ctx.db.query("game_invites").collect())).map((invite) => invite.kind).sort()).toEqual([
+      kind,
+      kind,
+      "story_chain",
+    ].sort());
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("the push payload carries the deep link of its kind", async () => {

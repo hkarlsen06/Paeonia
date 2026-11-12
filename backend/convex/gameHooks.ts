@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { queueBadgeUpdate } from "./lib/badges";
-import { gameLanguageChanged, hiddenGameKinds, hideGameWaits, sendDueGameTurnReminders } from "./lib/gameRegistry";
+import { gameLanguageChanged, gameTurn, hiddenGameKinds, hideGameWaits, sendDueGameTurnReminders } from "./lib/gameRegistry";
 import { nowIso } from "./lib/time";
 import { gameKind, gameLanguage } from "./lib/validators";
 
@@ -31,6 +31,12 @@ export const send_due_game_turn_reminders = internalMutation({
 export const hidden_game_kinds = internalQuery({
   args: { couple_id: v.string(), user_id: v.string() },
   handler: async (ctx, args) => await hiddenGameKinds(ctx, args.couple_id, args.user_id),
+});
+
+/** Whose turn it is in `kind` for the viewer of a game Live Activity (lib/liveActivities.ts). The caller checks couple access. */
+export const game_turn = internalQuery({
+  args: { couple_id: v.string(), viewer_user_id: v.string(), partner_user_id: v.string(), kind: gameKind },
+  handler: async (ctx, args) => await gameTurn(ctx, args.couple_id, args.viewer_user_id, args.partner_user_id, args.kind),
 });
 
 /** "Not now" on a game, run by `games.hide_waiting_game` after its access check. Updates the icon badge on the user's other phones. */

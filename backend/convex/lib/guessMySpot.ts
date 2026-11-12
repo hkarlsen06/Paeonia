@@ -6,7 +6,8 @@ import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import { roundWithPhoto } from "./gameMediaReferences";
 import type { GameBackend } from "./gameRegistry";
-import { enqueueGamePush, isGamePresent, TURN_REMINDER_AFTER_MS, type GamePushKind, type GameWait } from "./games";
+import { enqueueGamePush, TURN_REMINDER_AFTER_MS, type GamePushKind, type GameWait } from "./games";
+import { isGamePresent } from "./presence";
 import { charLength } from "./text";
 import { addMs } from "./time";
 

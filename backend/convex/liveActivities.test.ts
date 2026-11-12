@@ -3,7 +3,7 @@ import { api, internal } from "./_generated/api";
 import type { ApnsSendRequest, ApnsSendResult } from "./lib/apns";
 import type { GameKind } from "./lib/games";
 import { newUuid } from "./lib/ids";
-import { failure } from "./media.testing";
+import { failure, op } from "./media.testing";
 import { deliverDueLiveActivityPushes } from "./push.testing";
 import { createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
 
@@ -107,6 +107,19 @@ async function deliveredAps(t: TestConvex) {
   send.mockClear();
   await deliverDueLiveActivityPushes(t);
   return send.mock.calls.map(([request]) => ({ request, aps: JSON.parse(request.body).aps as Record<string, unknown> }));
+}
+
+/** The couple's Four in a Row game, made by `starter`, who moves first. */
+async function fourInARow(t: TestConvex, starter: TestUser) {
+  await starter.as.mutation(api.games.set_game_settings, { p_play_style: "against", p_language: "en" });
+  return await starter.as.mutation(api.boardGames.ensure_board_game, { p_kind: "connect_four" });
+}
+
+/** `user` drops a piece in the first column, which passes the turn. */
+async function dropPiece(t: TestConvex, user: TestUser, game: { id: string; version: number }) {
+  const next = await user.as.mutation(api.boardGames.make_move, { ...op(), p_game_id: game.id, p_expected_version: game.version, p_move: 0 });
+  await runDueNow(t);
+  return next;
 }
 
 /** The viewer's phone got the start and registered the activity's update token. */
@@ -253,14 +266,14 @@ describe("end_game_live_activity", () => {
     const { t, installId, activity } = await running();
     const result = t.mutation(api.liveActivities.end_game_live_activity, { p_activity_id: activity.id, p_install_id: installId });
     expect((await failure(result)).code).toBe("42501");
-    expect((await activities(t))[0].phase).toBe("playing");
+    expect(await activities(t)).toEqual([expect.objectContaining({ id: activity.id })]);
   });
 
   test("changes nothing for an activity of another viewer", async () => {
     const { t, partner, installId, activity } = await running();
     await endedOnPhone(partner, installId, activity.id);
     await runDueNow(t);
-    expect((await activities(t))[0].phase).toBe("playing");
+    expect(await activities(t)).toEqual([expect.objectContaining({ id: activity.id })]);
     expect(await queued(t, "end")).toHaveLength(0);
   });
 
@@ -268,12 +281,10 @@ describe("end_game_live_activity", () => {
     const { t, partner, viewer, installId, activity } = await running();
     await endedOnPhone(viewer, installId, activity.id);
     await runDueNow(t);
-    expect(await viewerRow(t, viewer)).toMatchObject({ phase: "idle" });
+    expect(await viewerRow(t, viewer)).toBeUndefined();
 
     await presence(t, partner, "mind_meld", true);
-    const row = (await viewerRow(t, viewer))!;
-    expect(row).toMatchObject({ phase: "playing" });
-    expect(row.id).not.toBe(activity.id);
+    expect((await viewerRow(t, viewer))!.id).not.toBe(activity.id);
   });
 
   test("a phone that ended its stale activity gets no more of its pushes, and the other phones keep it without a new alert", async () => {
@@ -288,7 +299,7 @@ describe("end_game_live_activity", () => {
     await runDueNow(t);
     expect(await deliveredAps(t)).toEqual([]);
     await keepPlaying(t, [[partner, "mind_meld"]], 60_000);
-    expect(await viewerRow(t, viewer)).toMatchObject({ id: activity.id, phase: "playing" });
+    expect(await viewerRow(t, viewer)).toMatchObject({ id: activity.id });
     expect(await queued(t, "start")).toHaveLength(1);
 
     await presence(t, partner, "mind_meld", false);
@@ -351,12 +362,12 @@ describe("one phone, several sign-ins", () => {
   });
 });
 
-describe("the partner in a real-time game", () => {
+describe("the partner in a game", () => {
   test("the first heartbeat starts the activity and queues one start push at once, naming the partner and the game", async () => {
     const { t, partner, viewer } = await setup();
     await partner.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true });
     const activity = (await viewerRow(t, viewer))!;
-    expect(activity).toMatchObject({ viewer_user_id: viewer.userId, partner_user_id: partner.userId, game_kind: "mind_meld", phase: "playing" });
+    expect(activity).toMatchObject({ viewer_user_id: viewer.userId, partner_user_id: partner.userId, game_kind: "mind_meld", turn: "none" });
 
     await runDueNow(t);
     const starts = await queued(t, "start");
@@ -369,7 +380,7 @@ describe("the partner in a real-time game", () => {
       event: "start",
       "attributes-type": "GameLiveActivityAttributes",
       attributes: { activityID: activity.id, partnerName: "First" },
-      "content-state": { gameKind: "mind_meld", phase: "playing" },
+      "content-state": { gameKind: "mind_meld", phase: "playing", turn: "none" },
       alert: { title: "First is playing Mind Meld", body: "Tap to join." },
       "input-push-token": 1,
     });
@@ -379,19 +390,34 @@ describe("the partner in a real-time game", () => {
     expect(await outbox(t)).toHaveLength(1);
   });
 
-  test("a turn-based game starts none", async () => {
-    const { t, partner } = await setup();
-    await presence(t, partner, "connect_four", true);
-    await keepPlaying(t, [[partner, "connect_four"]], 60_000);
-    expect(await activities(t)).toHaveLength(0);
-    expect(await outbox(t)).toHaveLength(0);
-  });
-
-  test("starts none for a viewer who already has the game open", async () => {
+  test("starts none for a viewer who has the game open, and starts one at the partner's next heartbeat after they leave", async () => {
     const { t, partner, viewer } = await setup();
     await presence(t, viewer, "mind_meld", true);
-    await presence(t, partner, "mind_meld", true);
+    await keepPlaying(t, [[partner, "mind_meld"], [viewer, "mind_meld"]], 60_000);
     expect(await outbox(t)).toHaveLength(0);
+    expect(await activities(t)).toHaveLength(0);
+
+    await presence(t, viewer, "mind_meld", false);
+    await presence(t, partner, "mind_meld", true);
+    expect(await queued(t, "start")).toHaveLength(1);
+  });
+
+  test("the activity stays when the viewer opens the game, and changes go quietly while they play", async () => {
+    const { t, partner, viewer, installId } = await setup();
+    const game = await fourInARow(t, partner);
+    await presence(t, partner, "connect_four", true);
+    const activity = await registerUpdateToken(t, viewer, installId);
+    await deliveredAps(t);
+
+    await presence(t, viewer, "connect_four", true);
+    await keepPlaying(t, [[partner, "connect_four"], [viewer, "connect_four"]], 60_000);
+    expect(await queued(t, "end")).toHaveLength(0);
+    expect(await viewerRow(t, viewer)).toMatchObject({ id: activity.id, turn: "theirs" });
+
+    await dropPiece(t, partner, game);
+    const [update] = await deliveredAps(t);
+    expect(update.request.priority).toBe("5");
+    expect(update.aps).toMatchObject({ event: "update", "content-state": { gameKind: "connect_four", turn: "yours" } });
   });
 
   test("a viewer with game pushes off gets none until they turn them on", async () => {
@@ -416,12 +442,12 @@ describe("the partner in a real-time game", () => {
     await presence(t, partner, "mind_meld", false);
     await presence(t, partner, "draw_and_guess", true);
 
-    expect(await activities(t)).toEqual([expect.objectContaining({ id: activity.id, game_kind: "draw_and_guess", phase: "playing" })]);
+    expect(await activities(t)).toEqual([expect.objectContaining({ id: activity.id, game_kind: "draw_and_guess" })]);
     expect(await queued(t, "start")).toHaveLength(1);
     expect(await queued(t, "update")).toHaveLength(updatesBefore + 1);
     const sent = (await deliveredAps(t)).at(-1)!;
     expect(sent.request.token).toBe(UPDATE_TOKEN);
-    expect(sent.aps).toMatchObject({ event: "update", "content-state": { gameKind: "draw_and_guess", phase: "playing" } });
+    expect(sent.aps).toMatchObject({ event: "update", "content-state": { gameKind: "draw_and_guess", phase: "playing", turn: "none" } });
   });
 
   test("an update token that registers late gets the current state", async () => {
@@ -445,15 +471,13 @@ describe("the partner in a real-time game", () => {
     await keepPlaying(t, [[partner, "mind_meld"]], 3 * 60_000);
 
     expect(await queued(t, "end")).toHaveLength(0);
-    const row = (await viewerRow(t, viewer))!;
-    expect(row.phase).toBe("playing");
-    expect("ends_at" in row).toBe(false);
+    expect("ends_at" in (await viewerRow(t, viewer))!).toBe(false);
   });
 
-  test("a partner who closes the game gets one end push between one and two minutes after the close", async () => {
+  test("a partner who closes a game with no turn gets one end push between one and two minutes after the close", async () => {
     const { t, partner, viewer, installId } = await setup();
     await presence(t, partner, "mind_meld", true);
-    const activity = await registerUpdateToken(t, viewer, installId);
+    await registerUpdateToken(t, viewer, installId);
     await deliveredAps(t);
 
     await presence(t, partner, "mind_meld", false);
@@ -464,16 +488,16 @@ describe("the partner in a real-time game", () => {
     expect(ends).toHaveLength(1);
     expect(Date.parse(ends[0].created_at) - leftAt).toBeGreaterThanOrEqual(60_000);
     expect(Date.parse(ends[0].created_at) - leftAt).toBeLessThanOrEqual(120_000);
-    expect(await activities(t)).toEqual([expect.objectContaining({ id: activity.id, phase: "idle" })]);
+    expect(await activities(t)).toHaveLength(0);
 
     const [sent] = await deliveredAps(t);
     expect(sent.request.token).toBe(UPDATE_TOKEN);
-    expect(sent.aps).toMatchObject({ event: "end", "content-state": { gameKind: "mind_meld", phase: "ended" } });
+    expect(sent.aps).toMatchObject({ event: "end", "content-state": { gameKind: "mind_meld", phase: "ended", turn: "none" } });
     expect(typeof sent.aps["dismissal-date"]).toBe("number");
     expect((await tokens(t)).map((row) => row.kind)).toEqual(["start"]);
   });
 
-  test("a partner whose app was killed gets one end push between one and two minutes after its last heartbeat", async () => {
+  test("a partner whose app was killed gets one end push two to three minutes after its last heartbeat", async () => {
     const { t, partner, viewer, installId } = await setup();
     await presence(t, partner, "mind_meld", true);
     await registerUpdateToken(t, viewer, installId);
@@ -481,12 +505,12 @@ describe("the partner in a real-time game", () => {
     const lastHeartbeat = Date.now();
 
     // No close arrives. Presence times the screen out on its own.
-    await elapse(t, 3 * 60_000);
+    await elapse(t, 4 * 60_000);
 
     const ends = await queued(t, "end");
     expect(ends).toHaveLength(1);
-    expect(Date.parse(ends[0].created_at) - lastHeartbeat).toBeGreaterThanOrEqual(60_000);
-    expect(Date.parse(ends[0].created_at) - lastHeartbeat).toBeLessThanOrEqual(120_000);
+    expect(Date.parse(ends[0].created_at) - lastHeartbeat).toBeGreaterThanOrEqual(120_000);
+    expect(Date.parse(ends[0].created_at) - lastHeartbeat).toBeLessThanOrEqual(180_000);
   });
 
   test("a connection that drops 25 seconds after a heartbeat and comes back 55 seconds later keeps the same activity", async () => {
@@ -502,10 +526,10 @@ describe("the partner in a real-time game", () => {
 
     expect(await queued(t, "end")).toHaveLength(0);
     expect(await queued(t, "start")).toHaveLength(1);
-    expect((await viewerRow(t, viewer))!).toMatchObject({ id: first.id, phase: "playing" });
+    expect((await viewerRow(t, viewer))!).toMatchObject({ id: first.id });
   });
 
-  test("the next session after an end starts a new activity in the same row", async () => {
+  test("the next session after an end starts a new activity", async () => {
     const { t, partner } = await setup();
     await presence(t, partner, "mind_meld", true);
     const [first] = await activities(t);
@@ -515,7 +539,7 @@ describe("the partner in a real-time game", () => {
 
     const rows = await activities(t);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ game_kind: "piccante", phase: "playing" });
+    expect(rows[0]).toMatchObject({ game_kind: "piccante" });
     expect(rows[0].id).not.toBe(first.id);
     expect(await queued(t, "start")).toHaveLength(2);
   });
@@ -534,90 +558,79 @@ describe("the partner in a real-time game", () => {
     await presence(t, partner, "piccante", true);
 
     const [row] = await activities(t);
-    expect(row).toMatchObject({ phase: "playing", game_kind: "piccante" });
+    expect(row).toMatchObject({ game_kind: "piccante" });
     expect(row.id).not.toBe(first.id);
     expect(await queued(t, "start")).toHaveLength(2);
   });
 });
 
-describe("the viewer joins the partner's game", () => {
-  async function joinedGame() {
-    const context = await setup();
-    const { t, partner, viewer, installId } = context;
-    await presence(t, partner, "mind_meld", true);
-    const activity = await registerUpdateToken(t, viewer, installId);
-    await deliveredAps(t);
-    await presence(t, viewer, "mind_meld", true);
-    return { ...context, activity };
-  }
+describe("whose turn it is", () => {
+  test("a turn-based game starts an activity that tells the viewer it is their turn", async () => {
+    const { t, partner, viewer } = await setup();
+    await fourInARow(t, viewer);
+    await presence(t, partner, "connect_four", true);
 
-  test("the activity ends on every phone of the viewer, and nothing more goes out while they play", async () => {
+    const [sent] = await deliveredAps(t);
+    expect(sent.aps).toMatchObject({
+      event: "start",
+      "content-state": { gameKind: "connect_four", phase: "playing", turn: "yours" },
+      alert: { title: "First is playing Four in a Row", body: "It's your turn." },
+    });
+  });
+
+  test("a move that passes the turn sends one update with the new turn", async () => {
     const { t, partner, viewer, installId } = await setup();
-    await presence(t, partner, "mind_meld", true);
-    const activity = await registerUpdateToken(t, viewer, installId);
-    const tablet = newUuid();
-    await register(viewer, { p_install_id: tablet, p_kind: "start", p_token: "c3".repeat(32) });
-    await register(viewer, { p_install_id: tablet, p_kind: "update", p_token: "c4".repeat(32), p_activity_id: activity.id });
+    const game = await fourInARow(t, partner);
+    await presence(t, partner, "connect_four", true);
+    await registerUpdateToken(t, viewer, installId);
+    await deliveredAps(t);
+    expect(await viewerRow(t, viewer)).toMatchObject({ turn: "theirs" });
+
+    await dropPiece(t, partner, game);
+    const sent = await deliveredAps(t);
+    expect(sent.map(({ request, aps }) => [request.priority, aps.event, aps["content-state"]])).toEqual([
+      ["10", "update", { gameKind: "connect_four", phase: "playing", turn: "yours" }],
+    ]);
+    await keepPlaying(t, [[partner, "connect_four"]], 60_000);
+    expect(await deliveredAps(t)).toEqual([]);
+  });
+
+  test("a turn that changed without a push, such as a result someone saw, is corrected at the next check", async () => {
+    const { t, partner, viewer, installId } = await setup();
+    await fourInARow(t, viewer);
+    await presence(t, partner, "connect_four", true);
+    await registerUpdateToken(t, viewer, installId);
+    await presence(t, partner, "connect_four", false);
+    await deliveredAps(t);
+    const row = (await viewerRow(t, viewer))!;
+    await t.run((ctx) => ctx.db.patch(row._id, { turn: "theirs" }));
+
+    await elapse(t, 30_000);
+    expect((await deliveredAps(t)).map(({ aps }) => aps["content-state"])).toEqual([
+      { gameKind: "connect_four", phase: "playing", turn: "yours" },
+    ]);
+  });
+
+  test("a close with a turn left ends the activity ten minutes later, and it never goes stale before that", async () => {
+    const { t, partner, viewer, installId } = await setup();
+    await fourInARow(t, viewer);
+    await presence(t, partner, "connect_four", true);
+    await registerUpdateToken(t, viewer, installId);
+    await keepPlaying(t, [[partner, "connect_four"]], 5 * 60_000);
     await deliveredAps(t);
 
-    await presence(t, viewer, "mind_meld", true);
-    const ends = (await deliveredAps(t)).filter(({ aps }) => aps.event === "end");
-    expect(ends.map(({ request }) => request.token).sort()).toEqual([UPDATE_TOKEN, "c4".repeat(32)].sort());
-    expect(await viewerRow(t, viewer)).toMatchObject({ id: activity.id, phase: "held" });
+    await presence(t, partner, "connect_four", false);
+    const leftAt = Date.now();
+    await elapse(t, 9 * 60_000);
+    expect(await queued(t, "end")).toHaveLength(0);
+    // The last push before the close was 5 minutes earlier, and a refresh came during the wait.
+    expect(await queued(t, "update")).toEqual(expect.arrayContaining([expect.objectContaining({ quiet: true })]));
 
-    const outboxBefore = (await outbox(t)).length;
-    await keepPlaying(t, [[partner, "mind_meld"], [viewer, "mind_meld"]], 30 * 60_000);
-    expect(await outbox(t)).toHaveLength(outboxBefore);
-    expect((await tokens(t)).map((row) => row.kind)).toEqual(["start", "start"]);
-  });
-
-  test("a viewer who leaves a game the partner is still in gets no new start while the partner stays", async () => {
-    const { t, partner, viewer } = await joinedGame();
-    await keepPlaying(t, [[partner, "mind_meld"], [viewer, "mind_meld"]], 60_000);
-    await presence(t, viewer, "mind_meld", false);
-    await keepPlaying(t, [[partner, "mind_meld"]], 5 * 60_000);
-
-    expect(await queued(t, "start")).toHaveLength(1);
-    expect((await viewerRow(t, viewer))!.phase).toBe("held");
-  });
-
-  test("after the viewer left, the partner's next game shows again", async () => {
-    const { t, partner, viewer, activity } = await joinedGame();
-    await presence(t, viewer, "mind_meld", false);
-    await keepPlaying(t, [[partner, "mind_meld"]], 60_000);
-    await presence(t, partner, "mind_meld", false);
-    await presence(t, partner, "draw_and_guess", true);
-
-    const starts = await queued(t, "start");
-    expect(starts).toHaveLength(2);
-    expect(starts[1]).toMatchObject({ game_kind: "draw_and_guess" });
-    expect(starts[1].activity_id).not.toBe(activity.id);
-  });
-
-  test("after the viewer left, a partner whose presence lapsed and who comes back later shows again", async () => {
-    const { t, partner, viewer } = await joinedGame();
-    await presence(t, viewer, "mind_meld", false);
-    // The partner's app is killed in the game, and opened again five minutes later.
-    await elapse(t, 5 * 60_000);
-    await presence(t, partner, "mind_meld", true);
-
-    expect(await queued(t, "start")).toHaveLength(2);
-    expect((await viewerRow(t, viewer))!.phase).toBe("playing");
-  });
-
-  test("a partner who moves into the game the viewer has open sends an end, not an update naming it", async () => {
-    const { t, partner, viewer, installId } = await setup();
-    await presence(t, viewer, "draw_and_guess", true);
-    await presence(t, partner, "mind_meld", true);
-    const activity = await registerUpdateToken(t, viewer, installId);
-    const updatesBefore = (await queued(t, "update")).length;
-
-    await presence(t, partner, "mind_meld", false);
-    await presence(t, partner, "draw_and_guess", true);
-
-    expect(await queued(t, "update")).toHaveLength(updatesBefore);
-    expect(await queued(t, "end")).toEqual([expect.objectContaining({ activity_id: activity.id })]);
-    expect(await viewerRow(t, viewer)).toMatchObject({ phase: "held", game_kind: "draw_and_guess" });
+    await elapse(t, 2 * 60_000);
+    const ends = await queued(t, "end");
+    expect(ends).toHaveLength(1);
+    expect(Date.parse(ends[0].created_at) - leftAt).toBeGreaterThanOrEqual(10 * 60_000);
+    expect(Date.parse(ends[0].created_at) - leftAt).toBeLessThanOrEqual(10 * 60_000 + 30_000);
   });
 });
 
@@ -662,7 +675,7 @@ describe("the couple is together", () => {
     await presence(t, partner, "mind_meld", true);
     await keepPlaying(t, [[partner, "mind_meld"]], 60_000);
     expect(await outbox(t)).toHaveLength(0);
-    expect((await viewerRow(t, viewer))?.phase).not.toBe("playing");
+    expect(await viewerRow(t, viewer)).toBeUndefined();
   });
 
   test("starts none on a day location showed them together", async () => {
@@ -671,7 +684,7 @@ describe("the couple is together", () => {
     await presence(t, partner, "mind_meld", true);
     await keepPlaying(t, [[partner, "mind_meld"]], 60_000);
     expect(await outbox(t)).toHaveLength(0);
-    expect((await viewerRow(t, viewer))?.phase).not.toBe("playing");
+    expect(await viewerRow(t, viewer)).toBeUndefined();
   });
 
   test("a visit that ended yesterday starts the activity as usual", async () => {
@@ -683,23 +696,23 @@ describe("the couple is together", () => {
     expect(await queued(t, "start")).toHaveLength(1);
   });
 
-  test("a partner who opened a game together and plays on past the day's end starts none until they come back on a day apart", async () => {
+  test("a partner who plays on past the end of a together day starts the activity at their next heartbeat", async () => {
     const { t, partner, viewer } = await setup();
     await saveVisit(partner, "2026-11-10", "2026-11-10");
     vi.setSystemTime(new Date("2026-11-10T23:58:00.000Z"));
     nextCheckAt = Date.now() + 30_000;
     await presence(t, partner, "mind_meld", true);
-    await keepPlaying(t, [[partner, "mind_meld"]], 5 * 60_000);
+    await keepPlaying(t, [[partner, "mind_meld"]], 60_000);
     expect(await outbox(t)).toHaveLength(0);
 
-    await presence(t, partner, "mind_meld", false);
-    await elapse(t, 2 * 60_000);
-    await presence(t, partner, "mind_meld", true);
-    expect(await queued(t, "start")).toHaveLength(1);
-    expect((await viewerRow(t, viewer))!.phase).toBe("playing");
+    await keepPlaying(t, [[partner, "mind_meld"]], 2 * 60_000);
+    const [start] = await queued(t, "start");
+    expect(Date.parse(start.created_at)).toBeGreaterThanOrEqual(Date.parse("2026-11-11T00:00:00.000Z"));
+    expect(Date.parse(start.created_at)).toBeLessThan(Date.parse("2026-11-11T00:00:30.000Z"));
+    expect(await viewerRow(t, viewer)).toBeDefined();
   });
 
-  test("an activity that runs when the couple becomes together keeps running while the partner plays, and ends on a switch of game", async () => {
+  test("an activity that runs when the couple becomes together keeps running and follows the partner to another game", async () => {
     const { t, partner, viewer, installId, coupleId } = await setup();
     await presence(t, partner, "mind_meld", true);
     const activity = await registerUpdateToken(t, viewer, installId);
@@ -707,16 +720,11 @@ describe("the couple is together", () => {
 
     await meet([partner, viewer], coupleId);
     await keepPlaying(t, [[partner, "mind_meld"]], 60_000);
-    expect(await viewerRow(t, viewer)).toMatchObject({ id: activity.id, phase: "playing", game_kind: "mind_meld" });
-    expect(await queued(t, "end")).toHaveLength(0);
-
     await presence(t, partner, "mind_meld", false);
     await presence(t, partner, "draw_and_guess", true);
-    expect(await queued(t, "update")).toHaveLength(1);
-    expect(await queued(t, "end")).toEqual([expect.objectContaining({ activity_id: activity.id })]);
-    await keepPlaying(t, [[partner, "draw_and_guess"]], 60_000);
-    expect(await queued(t, "start")).toHaveLength(1);
-    expect((await viewerRow(t, viewer))!.phase).not.toBe("playing");
+
+    expect(await viewerRow(t, viewer)).toMatchObject({ id: activity.id, game_kind: "draw_and_guess" });
+    expect(await queued(t, "end")).toHaveLength(0);
   });
 });
 
@@ -731,7 +739,7 @@ describe("turning game pushes off", () => {
     await runDueNow(t);
     const [end] = await deliveredAps(t);
     expect(end).toMatchObject({ request: { token: UPDATE_TOKEN }, aps: { event: "end" } });
-    expect((await viewerRow(t, viewer))!.phase).toBe("off");
+    expect(await viewerRow(t, viewer)).toBeUndefined();
 
     await keepPlaying(t, [[partner, "mind_meld"]], 2 * 60_000);
     expect(await queued(t, "start")).toHaveLength(1);
