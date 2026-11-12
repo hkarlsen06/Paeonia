@@ -44576,6 +44576,68 @@
         }
       }
     },
+    "streakDetail.daysToMilestone" : {
+      "comment" : "Heading over the milestone flowers on the streak sheet, such as \"12 days to 1 month\". The first argument is how many days are left, the second the next milestone's name, such as \"1 month\" or \"100 days\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$#@days@ to %2$@"
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg day"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg days"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$#@days@ til %2$@"
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg dag"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg dager"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "streakDetail.done" : {
       "comment" : "Button that closes the informative streak sheet",
       "extractionState" : "manual",
@@ -44666,24 +44728,6 @@
         }
       }
     },
-    "streakDetail.longestLabel" : {
-      "comment" : "Caption under the couple's longest streak number on the streak sheet",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Longest streak"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lengste rekke"
-          }
-        }
-      }
-    },
     "streakDetail.message" : {
       "comment" : "Explains that the shared streak grows only when both partners take part each day.",
       "extractionState" : "manual",
@@ -44698,6 +44742,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rekken vokser når dere begge gjør noe hver dag."
+          }
+        }
+      }
+    },
+    "streakDetail.milestone.month" : {
+      "comment" : "Name of the 30-day streak milestone, under its flower on the streak sheet and in the line that counts the days to it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 month"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 måned"
           }
         }
       }
@@ -44786,8 +44848,92 @@
         }
       }
     },
+    "streakDetail.milestone.weeks" : {
+      "comment" : "Name of a streak milestone counted in weeks (7 or 14 days), under its flower on the streak sheet and in the line that counts the days to it. %lld is the number of weeks.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld week"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld weeks"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld uke"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld uker"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "streakDetail.milestone.years" : {
+      "comment" : "Name of a streak milestone counted in years, under its flower on the streak sheet and in the line that counts the days to it. %lld is the number of years.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld year"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld years"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld år"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld år"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "streakDetail.nextMilestone.days" : {
-      "comment" : "The next streak milestone on the streak sheet. %lld is its number of days, such as 14.",
+      "comment" : "Name of a streak milestone counted in days, such as 3 or 100, under its flower on the streak sheet and in the line that counts the days to it. %lld is its number of days.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -44828,38 +44974,20 @@
         }
       }
     },
-    "streakDetail.nextMilestone.label" : {
-      "comment" : "Label on the streak sheet before the next milestone",
+    "streakDetail.record" : {
+      "comment" : "Small label on the streak sheet above a mark that shows the couple's longest streak. %lld is its number of days.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Next milestone"
+            "value" : "Record: %lld"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Neste milepæl"
-          }
-        }
-      }
-    },
-    "streakDetail.title" : {
-      "comment" : "Title of the informative streak sheet opened by tapping the streak badge",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your streak"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rekken deres"
+            "value" : "Rekord: %lld"
           }
         }
       }
@@ -45698,42 +45826,6 @@
         }
       }
     },
-    "streakSave.waitingForPartner" : {
-      "comment" : "Streak sheet line on the free save day of a broken streak: the user did something today, the partner has not yet.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You've done your part. Now it's your partner's turn."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du har gjort din del. Nå er det partnerens tur."
-          }
-        }
-      }
-    },
-    "streakSave.yourTurn" : {
-      "comment" : "Streak sheet line on the free save day of a broken streak: the partner did something today, the user has not yet.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your partner has done their part. Now it's your turn."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partneren din har gjort sin del. Nå er det din tur."
-          }
-        }
-      }
-    },
     "streakSaved.eyebrow" : {
       "comment" : "Small label above the title when both partners brought a broken streak back for free by showing up on the day after the missed day",
       "extractionState" : "manual",
@@ -45748,6 +45840,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rekken er reddet"
+          }
+        }
+      }
+    },
+    "streakToday.bothDone" : {
+      "comment" : "Streak sheet, next to both partners' photos: both partners did something for the streak today, so today counts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've both done something today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere har begge gjort noe i dag"
+          }
+        }
+      }
+    },
+    "streakToday.neitherDone" : {
+      "comment" : "Streak sheet, next to both partners' photos: neither partner has done anything for the streak today. Each of them needs to do one small thing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do one small thing each today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør én liten ting hver i dag"
+          }
+        }
+      }
+    },
+    "streakToday.waitingForPartner" : {
+      "comment" : "Streak sheet, next to both partners' photos: the user did something for the streak today, the partner has not yet. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      }
+    },
+    "streakToday.yourTurn" : {
+      "comment" : "Streak sheet, next to both partners' photos: the partner did something for the streak today, the user has not yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur"
           }
         }
       }

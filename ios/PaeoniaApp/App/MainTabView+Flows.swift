@@ -50,6 +50,7 @@ extension MainTabView {
             .sheet(isPresented: $showStreakDetail) {
                 StreakDetailView(
                     streak: dailyChallengeViewModel.streak,
+                    people: StreakPeople(dailyChallengeParticipants),
                     onClose: { showStreakDetail = false }
                 )
                 .analyticsScreen("streak_detail")

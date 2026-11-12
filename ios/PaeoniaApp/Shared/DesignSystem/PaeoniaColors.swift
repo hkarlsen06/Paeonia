@@ -41,6 +41,11 @@ nonisolated extension Color {
     static let paeoniaInkGold = PaeoniaPalette.gold
     static let paeoniaInkBlue = PaeoniaPalette.blue
     static let paeoniaInkLavender = PaeoniaPalette.lavender
+
+    // The peonies drawn in code, such as the streak sheet's milestone stem.
+    static let paeoniaStem = PaeoniaPalette.mint
+    static let paeoniaPeonyPetal = PaeoniaPalette.petalWarm
+    static let paeoniaPeonyHeart = PaeoniaPalette.petalMist
 }
 
 nonisolated extension UIColor {
@@ -79,6 +84,7 @@ nonisolated extension ShapeStyle where Self == Color {
     static var paeoniaPartnerTwoText: Color { Color.paeoniaPartnerTwoText }
     static var paeoniaMemory: Color { Color.paeoniaMemory }
     static var paeoniaWidgetDrawing: Color { Color.paeoniaWidgetDrawing }
+    static var paeoniaStem: Color { Color.paeoniaStem }
 }
 
 extension View {

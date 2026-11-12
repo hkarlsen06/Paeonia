@@ -5,6 +5,9 @@
   struct DeveloperStreakScenarioView: View {
     let scenario: DeveloperScenario
 
+    private let people = StreakPeople(currentName: "Alex", partnerName: "Robin")
+
+    /// Both partners have done something today.
     private var healthyStreak: CoupleStreak {
       CoupleStreak(
         currentCount: 18,
@@ -12,7 +15,9 @@
         lastQualifiedDate: "2026-07-15",
         restoreAvailable: false,
         restorableCount: 0,
-        restoreDeadline: nil
+        restoreDeadline: nil,
+        currentUserContributedToday: true,
+        partnerContributedToday: true
       )
     }
 
@@ -35,9 +40,15 @@
       var streak = healthyStreak
       streak.endsAt = .now.addingTimeInterval(5 * 3_600)
       streak.freezeSavedStreak = scenario == .streakFrozen
+      if scenario == .streakAtRisk {
+        streak.partnerContributedToday = false
+      }
       if scenario == .streakOneDay {
+        // Far enough from the end that the pill shows no hourglass yet.
         streak.currentCount = 1
-        streak.endsAt = nil
+        streak.endsAt = .now.addingTimeInterval(14 * 3_600)
+        streak.currentUserContributedToday = false
+        streak.partnerContributedToday = false
       }
       if scenario == .visitStreakSheet {
         // Together from yesterday to tomorrow, so the streak needs both partners again the day after.
@@ -61,7 +72,7 @@
     var body: some View {
       switch scenario {
       case .streakSaveDay:
-        StreakDetailView(streak: Self.brokenStreak(saveEndsIn: 6 * 3_600, userContributedToday: true))
+        StreakDetailView(streak: Self.brokenStreak(saveEndsIn: 6 * 3_600, userContributedToday: true), people: people)
       case .streakSaved:
         StreakMilestoneView(days: 19, isSave: true)
       case .streakBroken:
@@ -84,12 +95,12 @@
             DailyStreakToolbarLabel(state: StreakPillState(streak))
           }
           .sheet(isPresented: .constant(true)) {
-            StreakDetailView(streak: streak)
+            StreakDetailView(streak: streak, people: people)
               .presentationDetents([.large])
               .presentationBackground(.paeoniaSurfacePrimary)
           }
       default:
-        StreakDetailView(streak: healthyStreak)
+        StreakDetailView(streak: healthyStreak, people: people)
       }
     }
   }

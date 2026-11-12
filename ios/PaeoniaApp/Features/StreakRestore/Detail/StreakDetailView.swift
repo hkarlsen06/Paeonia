@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// A calm, read-only look at the couple's connection streak: the live flame and
-/// day count, their longest run so far, a short, forgiving note on how it works,
-/// the next milestone, and whether their free streak freeze is ready.
+/// day count, a short, forgiving note on how it works, who has done something
+/// today, the milestone stem with their record, and whether their free streak
+/// freeze is ready.
 ///
 /// Opened by tapping the streak badge while the streak is healthy, and on a broken
 /// streak's free save day, when it says how both partners bring it back today. A
@@ -12,7 +13,11 @@ import SwiftUI
 /// brings the streak back.
 struct StreakDetailView: View {
     let streak: CoupleStreak
-    var title: LocalizedStringResource = .streakDetailTitle
+    /// Both partners, for the row about today. The restore celebration passes none.
+    var people: StreakPeople?
+    /// The count and its label under the flame already say what this is, so the
+    /// sheet has no title of its own unless a moment needs one.
+    var title: LocalizedStringResource?
     /// Overrides the default copy. Without it, a streak at zero invites the couple to
     /// start one and any other streak explains how the flame stays lit.
     var message: LocalizedStringResource?
@@ -37,7 +42,7 @@ struct StreakDetailView: View {
         streak.currentCount == 0 && !isSaveDay
     }
 
-    private var titleText: LocalizedStringResource {
+    private var titleText: LocalizedStringResource? {
         isSaveDay ? .streakSaveTitle : title
     }
 
@@ -45,16 +50,6 @@ struct StreakDetailView: View {
         if let message { return message }
         if isSaveDay { return .streakSaveMessage(streak.restorableCount) }
         return hasNotStarted ? .streakDetailEmptyMessage : .streakDetailMessage
-    }
-
-    /// Who still has to show up on the save day, or `nil` before either partner has.
-    private var saveProgressText: LocalizedStringResource? {
-        guard isSaveDay else { return nil }
-        switch (streak.currentUserContributedToday, streak.partnerContributedToday) {
-        case (true, false): return .streakSaveWaitingForPartner
-        case (false, true): return .streakSaveYourTurn
-        default: return nil
-        }
     }
 
     /// Custom copy, such as the restore celebration, replaces the whole note, freeze line included.
@@ -81,13 +76,6 @@ struct StreakDetailView: View {
                 notes
                     .modifier(StreakDetailReveal(shown: shouldShowDetails))
 
-                // Their record, shown only when it beats the current run so it adds
-                // something the hero flame doesn't already say.
-                if !isSaveDay, streak.longestCount > streak.currentCount {
-                    longestStat
-                        .modifier(StreakDetailReveal(shown: shouldShowDetails))
-                }
-
                 Button(action: onClose) {
                     Text(.streakDetailDone)
                 }
@@ -102,14 +90,18 @@ struct StreakDetailView: View {
         .defaultScrollAnchor(.center, for: .alignment)
         .scrollBounceBehavior(.basedOnSize)
         .background(.paeoniaSurfacePrimary)
+        // The app's petal shower draws under this sheet, so the stem's flowers need their own.
+        .modifier(PaeoniaPetalShowerHost())
         .onAppear(perform: revealCelebrationDetails)
     }
 
     private var heading: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            Text(titleText)
-                .font(PaeoniaTypography.heroTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
+            if let titleText {
+                Text(titleText)
+                    .font(PaeoniaTypography.heroTitle)
+                    .foregroundStyle(.paeoniaTextPrimary)
+            }
 
             Text(messageText)
                 .font(PaeoniaTypography.body)
@@ -138,71 +130,24 @@ struct StreakDetailView: View {
         }
     }
 
-    private var longestStat: some View {
-        VStack(spacing: PaeoniaSpacing.space4) {
-            Text(streak.longestCount, format: .number)
-                .font(.system(.title, design: .rounded).weight(.bold))
-                .monospacedDigit()
-                .foregroundStyle(.paeoniaTextPrimary)
-
-            Text(.streakDetailLongestLabel)
-                .paeoniaEyebrowStyle()
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// The next milestone and the freeze line. Custom copy, such as the restore
-    /// celebration, leaves both out. A save day says who still has to show up instead.
+    /// Today, the milestone stem and the freeze line. Custom copy, such as the restore
+    /// celebration, leaves them all out. A save day has no stem, because the streak
+    /// it would show is the one that broke.
     @ViewBuilder
     private var notes: some View {
-        if isSaveDay {
-            if let saveProgressText {
-                Text(saveProgressText)
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        } else if message == nil {
+        if message == nil {
             VStack(spacing: PaeoniaSpacing.space16) {
-                if streak.currentCount > 0, let endsAt = streak.endsAt {
-                    TimelineView(.periodic(from: .now, by: 60)) { timeline in
-                        if streak.restsWhileTogether(at: timeline.date) {
-                            restingLabel
-                        } else if endsAt > timeline.date {
-                            Label {
-                                HStack {
-                                    Text(.streakDetailTimeLeft)
-                                    Text(timerInterval: timeline.date...endsAt, countsDown: true, showsHours: true)
-                                        .monospacedDigit()
-                                        .fixedSize()
-                                }
-                            } icon: {
-                                Image(systemName: "hourglass")
-                            }
-                            .font(PaeoniaTypography.bodyEmphasis)
-                            .foregroundStyle(.paeoniaTextPrimary)
-                        }
-                    }
+                if let people {
+                    StreakTodayRow(streak: streak, people: people)
                 }
-                StreakMilestoneProgressView(currentCount: streak.currentCount, longestCount: streak.longestCount)
+                if !isSaveDay {
+                    StreakMilestoneStem(currentCount: streak.currentCount, longestCount: streak.longestCount)
+                }
                 if let freezeNoteText {
                     freezeNote(freezeNoteText)
                 }
             }
         }
-    }
-
-    /// On a day together the streak needs nothing, so there is no time left to count down.
-    private var restingLabel: some View {
-        Label {
-            Text(.streakTogetherResting)
-                .fixedSize(horizontal: false, vertical: true)
-        } icon: {
-            Image(systemName: "moon.zzz.fill")
-        }
-        .font(PaeoniaTypography.bodyEmphasis)
-        .foregroundStyle(.paeoniaTextPrimary)
     }
 
     private func freezeNote(_ text: LocalizedStringResource) -> some View {

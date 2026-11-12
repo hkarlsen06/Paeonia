@@ -44,4 +44,8 @@ enum PaeoniaMotion {
     /// uncovers in lockstep with the gliding elements rather than drifting out of
     /// sync with them.
     static let heroMorph = Animation.spring(duration: motionMorph, bounce: 0.1)
+
+    /// The streak sheet's stem growing out to the couple's day count, opening each
+    /// flower it passes.
+    static let stemGrowth = standardCurve(duration: 0.9).delay(0.25)
 }

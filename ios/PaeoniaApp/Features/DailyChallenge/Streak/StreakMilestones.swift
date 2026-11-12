@@ -27,16 +27,21 @@ nonisolated enum StreakMilestones {
         }
     }
 
-    /// How far `count` is from the previous milestone to the next, from 0 to 1.
-    static func progress(toward next: Int, from count: Int) -> Double {
-        let start = previous(atOrBelow: count)
-        guard next > start else { return 1 }
-        return Double(count - start) / Double(next - start)
+    /// A milestone's length the way a person says it: 7 days is a week, 30 a month.
+    static func name(for days: Int) -> StreakMilestoneName {
+        switch days {
+        case 7: .weeks(1)
+        case 14: .weeks(2)
+        case 30: .month
+        case let days where days > 0 && days.isMultiple(of: daysPerYear): .years(days / daysPerYear)
+        default: .days(days)
+        }
     }
 
-    /// The badge row on the streak sheet: six milestones around the next one. A
-    /// badge stays earned after a break, because it follows the longest streak.
-    static func badges(currentCount: Int, longestCount: Int, visibleCount: Int = 6) -> [StreakMilestoneBadge] {
+    /// The milestone stem on the streak sheet: six milestones around the next one,
+    /// up to three before it and two after. A milestone the couple reached in an
+    /// earlier streak stays marked, because it follows the longest streak.
+    static func stem(currentCount: Int, longestCount: Int, visibleCount: Int = 6) -> StreakStem {
         let upcoming = next(after: currentCount)
         var values: [Int] = []
         var last = 0
@@ -45,28 +50,98 @@ nonisolated enum StreakMilestones {
             values.append(last)
         }
         let upcomingIndex = values.count - 1
-        // Up to three milestones before the next one and two after it.
         while values.count < max(visibleCount, upcomingIndex + 3) {
             last = next(after: last)
             values.append(last)
         }
         let start = max(0, min(upcomingIndex - 3, values.count - visibleCount))
-        return values[start..<(start + visibleCount)].map { milestone in
-            StreakMilestoneBadge(
-                days: milestone,
-                isEarned: milestone <= longestCount,
-                isNext: milestone == upcoming
-            )
+        let window = Array(values[start..<(start + visibleCount)])
+        let line = StemLine(milestones: window, startDays: start > 0 ? values[start - 1] : 0)
+        let lastReached = previous(atOrBelow: currentCount)
+
+        let nodes = window.map { days in
+            let state: StreakStem.Node.State
+            if days <= currentCount {
+                state = .bloomed
+            } else if days == upcoming {
+                state = .opening(progress: Double(currentCount - lastReached) / Double(upcoming - lastReached))
+            } else if days <= longestCount {
+                state = .bloomedBefore
+            } else {
+                state = .bud
+            }
+            return StreakStem.Node(days: days, state: state)
         }
+        return StreakStem(
+            nodes: nodes,
+            next: upcoming,
+            daysToNext: upcoming - currentCount,
+            growth: line.position(of: currentCount),
+            record: longestCount > currentCount
+                ? StreakStem.Record(days: longestCount, position: line.position(of: longestCount))
+                : nil
+        )
     }
 }
 
-nonisolated struct StreakMilestoneBadge: Equatable, Identifiable, Sendable {
-    let days: Int
-    let isEarned: Bool
-    let isNext: Bool
+/// Where a day count sits along the stem. 0 is the left end, which stands for the
+/// milestone before the window, and 1 the right end. Node `i` of `n` sits at the
+/// centre of its column, `(i + 0.5) / n`, and counts between two nodes fall on a
+/// straight line between them.
+private nonisolated struct StemLine {
+    let milestones: [Int]
+    let startDays: Int
 
-    var id: Int { days }
+    func position(of count: Int) -> Double {
+        var lower = (days: startDays, position: 0.0)
+        for (index, days) in milestones.enumerated() {
+            let position = (Double(index) + 0.5) / Double(milestones.count)
+            if count <= days {
+                let fraction = Double(count - lower.days) / Double(days - lower.days)
+                return lower.position + (position - lower.position) * min(max(fraction, 0), 1)
+            }
+            lower = (days, position)
+        }
+        return 1
+    }
+}
+
+/// A milestone's length the way a person says it.
+nonisolated enum StreakMilestoneName: Equatable, Sendable {
+    case days(Int), weeks(Int), month, years(Int)
+}
+
+/// The streak sheet's row of milestones on a growing stem. Positions run from 0 at
+/// the stem's left end to 1 at its right end.
+nonisolated struct StreakStem: Equatable, Sendable {
+    struct Node: Equatable, Identifiable, Sendable {
+        enum State: Equatable, Sendable {
+            /// The current streak reached it.
+            case bloomed
+            /// The next milestone, with how far the streak has come from the one before, 0 to 1.
+            case opening(progress: Double)
+            /// An earlier streak reached it, the current one has not yet.
+            case bloomedBefore
+            case bud
+        }
+
+        let days: Int
+        let state: State
+        var id: Int { days }
+    }
+
+    struct Record: Equatable, Sendable {
+        let days: Int
+        let position: Double
+    }
+
+    let nodes: [Node]
+    let next: Int
+    let daysToNext: Int
+    /// Where the current streak sits along the stem.
+    let growth: Double
+    /// The longest streak, only while it is longer than the current one.
+    let record: Record?
 }
 
 /// Decides when this phone celebrates a milestone. Each phone shows each milestone
