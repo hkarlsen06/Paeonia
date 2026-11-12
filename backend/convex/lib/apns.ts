@@ -308,8 +308,8 @@ export type PreparedLiveActivityPush = {
   event: "start" | "update" | "end";
   /** Goes at priority 5: a refresh of the stale date, or an update the viewer cannot see. */
   quiet: boolean;
-  /** Lights the screen and opens the Dynamic Island. An Apple Watch shows the words. Null for a push that changes the activity with no sign. */
-  alert: { title: string; body: string } | null;
+  /** Lights the screen and opens the Dynamic Island, with the default sound when `sound`. An Apple Watch shows the words. Null for a push that changes the activity with no sign. */
+  alert: { title: string; body: string; sound: boolean } | null;
   game_kind: GameKind;
   turn: GameTurn;
   /** When the push was queued. iOS keeps the newest, and the stale and dismissal dates count from it. */
@@ -349,7 +349,11 @@ export function buildLiveActivityApsPayload(push: PreparedLiveActivityPush): Rec
   } else {
     aps["stale-date"] = timestamp + staleSeconds(push);
   }
-  if (push.alert) aps.alert = push.alert;
+  if (push.alert) {
+    const { sound, ...words } = push.alert;
+    // An ActivityKit alert names its sound inside the alert.
+    aps.alert = sound ? { ...words, sound: "default" } : words;
+  }
   if (push.start) {
     aps["attributes-type"] = LIVE_ACTIVITY_ATTRIBUTES_TYPE;
     aps.attributes = { activityID: push.activity_id, partnerName: push.start.partner_name };

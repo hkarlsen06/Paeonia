@@ -4,8 +4,8 @@ import type { ApnsSendRequest, ApnsSendResult } from "./lib/apns";
 import type { GameKind } from "./lib/games";
 import { newUuid } from "./lib/ids";
 import { failure, op } from "./media.testing";
-import { deliverDueLiveActivityPushes } from "./push.testing";
-import { createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { deliverDueLiveActivityPushes, deliverDuePushes } from "./push.testing";
+import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
 
 // Stands in for APNs. `push:send_push` imports `sendWithEnvironmentFallback` from lib/apns.
 const send = vi.hoisted(() => vi.fn<(request: ApnsSendRequest) => Promise<ApnsSendResult>>());
@@ -578,7 +578,7 @@ describe("whose turn it is", () => {
     });
   });
 
-  test("a move that passes the turn sends one update with the new turn, which alerts the viewer", async () => {
+  test("a move that passes the turn sends one update with the new turn, which rings", async () => {
     const { t, partner, viewer, installId } = await setup();
     const game = await fourInARow(t, partner);
     await presence(t, partner, "connect_four", true);
@@ -593,11 +593,41 @@ describe("whose turn it is", () => {
         "10",
         "update",
         { gameKind: "connect_four", phase: "playing", turn: "yours" },
-        { title: "First is playing Four in a Row", body: "It's your turn." },
+        { title: "First is playing Four in a Row", body: "It's your turn.", sound: "default" },
       ],
     ]);
     await keepPlaying(t, [[partner, "connect_four"]], 60_000);
     expect(await deliveredAps(t)).toEqual([]);
+  });
+
+  test("while the activity says it is the viewer's turn, the move's own push waits until the activity is gone", async () => {
+    const { t, partner, viewer, installId } = await setup();
+    await addDevice(t, viewer.userId);
+    const game = await fourInARow(t, partner);
+    await presence(t, partner, "connect_four", true);
+    await registerUpdateToken(t, viewer, installId);
+    await deliveredAps(t);
+
+    await dropPiece(t, partner, game);
+    expect(await deliveredAps(t)).toHaveLength(1);
+    expect(await deliverDuePushes(t)).toEqual([]);
+
+    // The partner leaves without a move from the viewer, so the activity ends ten minutes later.
+    await presence(t, partner, "connect_four", false);
+    await elapse(t, 9 * 60_000);
+    expect(await deliverDuePushes(t)).toEqual([]);
+    await elapse(t, 3 * 60_000);
+    expect((await deliverDuePushes(t)).map((push) => push.payload?.type)).toEqual(["game_turn_ready"]);
+  });
+
+  test("a move's push goes out at once while no phone shows the activity", async () => {
+    const { t, partner, viewer } = await setup();
+    await addDevice(t, viewer.userId);
+    const game = await fourInARow(t, partner);
+    await presence(t, partner, "connect_four", true);
+
+    await dropPiece(t, partner, game);
+    expect((await deliverDuePushes(t)).map((push) => push.payload?.type)).toEqual(["game_turn_ready"]);
   });
 
   test("a turn that changed without a push, such as a result someone saw, is corrected at the next check", async () => {

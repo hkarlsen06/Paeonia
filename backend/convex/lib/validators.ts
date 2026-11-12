@@ -115,7 +115,7 @@ export const GAME_KINDS = [
 ] as const;
 export const gameKind = literals(...GAME_KINDS);
 /** How a game Live Activity push reaches the phone (`LiveActivityDelivery` in lib/liveActivities.ts). */
-export const liveActivityDelivery = literals("alert", "now", "quiet");
+export const liveActivityDelivery = literals("ring", "alert", "now", "quiet");
 export const gamePlayStyle = literals("together", "against");
 export const gameLanguage = literals("en", "nb");
 export const wordDifficulty = literals("easy", "medium", "hard");

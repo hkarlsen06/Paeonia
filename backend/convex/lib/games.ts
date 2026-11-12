@@ -112,7 +112,8 @@ export function gameDeepLink(kind: GameKind): string {
 /**
  * Queues one lock-screen-safe push. The payload names the game and the people, never the
  * move, a word, or a drawing. `skipIfPresent` drops the push when the recipient has the game open.
- * A turn or a result also has the couple's game Live Activities read the turn again, open game or not.
+ * A turn or a result also has the couple's game Live Activities read the turn again, open game or not,
+ * and waits at the send while the recipient's activity says "Your turn" for that game.
  * Returns the number of rows queued.
  */
 export async function enqueueGamePush(
@@ -134,7 +135,7 @@ export async function enqueueGamePush(
   },
 ): Promise<number> {
   if (args.kind === "game_turn_ready" || args.kind === "game_result") {
-    await refreshGameActivityTurns(ctx, args.couple_id, args.game_kind);
+    await refreshGameActivityTurns(ctx, args.couple_id, args.game_kind, args.recipient_user_id);
   }
   if (args.skipIfPresent && (await isGamePresent(ctx, args.couple_id, args.game_kind, args.recipient_user_id))) {
     return 0;

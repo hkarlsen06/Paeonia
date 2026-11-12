@@ -14,9 +14,11 @@ import { canAccessCoupleContent, findCurrentCouple } from "./lib/access";
 import { badgeCountForUser } from "./lib/badges";
 import { getByUuid, withTouch } from "./lib/db";
 import { isDailyPartnerPushKind, resolveDailyPartnerPush } from "./lib/dailyPartnerPush";
+import { activitySaysYourTurn, GAME_PUSH_HOLD_MS } from "./lib/liveActivities";
 import { liveActivityAlert, notificationAlertTitle, notificationLocaleLanguage, subscriptionTrialReminderBody } from "./lib/notificationCopy";
 import { notificationStillWanted } from "./lib/notificationState";
 import { uuidArg } from "./lib/ids";
+import { GAME_KINDS } from "./lib/validators";
 import {
   notificationPayloadIsSafe,
   preferenceAllows,
@@ -137,15 +139,26 @@ async function deliverQuietly(
   device: Doc<"user_devices">,
 ): Promise<boolean> {
   if (row.apns_push_type !== "alert" || LOUD_AT_NIGHT_KINDS.includes(row.kind)) return false;
-  let timeZone = device.time_zone_id;
+  return await isNightFor(ctx, device.user_id, device.time_zone_id);
+}
+
+/** Whether it is night in `timeZone`, or in the user's profile zone when that is no zone. */
+async function isNightFor(ctx: WriterCtx, userId: string, timeZone?: string): Promise<boolean> {
   if (!isValidTimeZone(timeZone)) {
     const profile = await ctx.db
       .query("profiles")
-      .withIndex("by_user_id", (q) => q.eq("user_id", device.user_id))
+      .withIndex("by_user_id", (q) => q.eq("user_id", userId))
       .unique();
     timeZone = profile?.time_zone_id;
   }
   return isValidTimeZone(timeZone) && isQuietNight(Date.now(), timeZone);
+}
+
+/** Whether the row is a turn or a result of a game whose Live Activity already says "Your turn" on the recipient's phone. */
+async function heldByGameActivity(ctx: WriterCtx, row: Doc<"notification_outbox">, userId: string): Promise<boolean> {
+  if (row.kind !== "game_turn_ready" && row.kind !== "game_result") return false;
+  const kind = GAME_KINDS.find((item) => item === row.payload?.game_kind);
+  return kind !== undefined && (await activitySaysYourTurn(ctx, userId, kind));
 }
 
 /**
@@ -224,6 +237,11 @@ export const prepare_notification = internalMutation({
     const now = nowIso();
     const still = await notificationStillWanted(ctx, sendable, device.user_id, now);
     if (!still.wanted) return await drop(ctx, row, still.reason === "ineligible" ? TARGET_INELIGIBLE : OUT_OF_DATE);
+    // The activity rang for this move. The push asks again until the activity is gone, and goes out if the turn still waits then.
+    if (await heldByGameActivity(ctx, sendable, device.user_id)) {
+      await rescheduleNotification(ctx, row, addMs(now, GAME_PUSH_HOLD_MS));
+      return null;
+    }
     // A reminder held while the partners are together asks again a day later, at the same time of day.
     if (await waitsWhileTogether(ctx, sendable.kind, sendable.payload ?? {}, now, "held")) {
       await rescheduleNotification(ctx, row, addMs(now, 86_400_000));
@@ -296,11 +314,14 @@ export const prepare_live_activity_push = internalMutation({
           return await drop(ctx, row, TARGET_INELIGIBLE);
         }
       }
-      if (row.event === "start" || row.delivery === "alert") {
+      const alerts = row.delivery === "alert" || row.delivery === "ring";
+      if (row.event === "start" || alerts) {
         const partnerName = await shortPartnerName(ctx, token.user_id, activity.partner_user_id);
         if (row.event === "start") start = { partner_name: partnerName ?? "" };
-        if (row.delivery === "alert") {
-          alert = liveActivityAlert(activity.game_kind, activity.turn, partnerName, notificationLocaleLanguage(token.locale));
+        if (alerts) {
+          const words = liveActivityAlert(activity.game_kind, activity.turn, partnerName, notificationLocaleLanguage(token.locale));
+          // A ring takes the place of the turn push, so it keeps that push's night rule.
+          alert = { ...words, sound: row.delivery === "ring" && !(await isNightFor(ctx, token.user_id)) };
         }
       }
     }

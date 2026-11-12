@@ -52,8 +52,8 @@ export type GameActivityEvent =
   | { kind: "start"; id: string; game_kind: GameKind; turn: GameTurn; at: string }
   /** The partner's game screen is open. `viewer_present`: the viewer has that game open too. */
   | { kind: "heartbeat"; game_kind: GameKind; turn: GameTurn; viewer_present: boolean; at: string }
-  /** The turn in the activity's game was read again, without word from the partner's screen. */
-  | { kind: "turn"; turn: GameTurn; viewer_present: boolean; at: string }
+  /** The turn in the activity's game was read again. `moved`: because a turn or a result there was pushed to the viewer. */
+  | { kind: "turn"; turn: GameTurn; viewer_present: boolean; moved: boolean; at: string }
   /** The partner closed a game screen. */
   | { kind: "left"; game_kind: GameKind; at: string }
   /** The cron looked for the partner in every game. */
@@ -64,9 +64,10 @@ export type GameActivityEvent =
   | { kind: "stop" };
 
 /**
- * How a push reaches the phone. `alert` lights the screen and opens the Dynamic Island. `now`
- * changes the activity with no sign. `quiet` goes at APNs priority 5, which iOS may hold back and
- * does not count against the app.
+ * How a push reaches the phone. `alert` lights the screen and opens the Dynamic Island. `ring` is
+ * an alert with a sound, for a move that waits for the viewer, whose own push waits meanwhile
+ * (`activitySaysYourTurn`). `now` changes the activity with no sign. `quiet` goes at APNs
+ * priority 5, which iOS may hold back and does not count against the app.
  */
 export type LiveActivityDelivery = Infer<typeof liveActivityDelivery>;
 
@@ -102,7 +103,7 @@ export function nextGameActivity(row: GameActivityState | null, event: GameActiv
     case "turn": {
       // While the activity ends, a new turn can bring the end closer but never later.
       const kept = row.ends_at === undefined ? row : { ...row, ends_at: earlier(row.ends_at, endsAfter(event.at, event.turn)) };
-      return showing(kept, row.game_kind, event.turn, event.viewer_present, event.at);
+      return showing(kept, row.game_kind, event.turn, event.viewer_present, event.at, event.moved);
     }
     case "left": {
       if (row.game_kind !== event.game_kind) return null;
@@ -119,16 +120,33 @@ export function nextGameActivity(row: GameActivityState | null, event: GameActiv
 }
 
 /**
- * One update when the game or the turn changed. It alerts when the partner went to another game or
- * the turn became the viewer's. The viewer cannot see the activity while they have the game open,
- * so it goes quiet then.
+ * One update when the game or the turn changed, or a move waits for the viewer. The viewer cannot
+ * see the activity while they have the game open, so a change goes quiet then. Otherwise a move
+ * that waits for them rings, even when the turn was theirs already. Another game, or a turn that
+ * became theirs with no move, alerts.
  */
-function showing(row: GameActivityState, gameKind: GameKind, turn: GameTurn, viewerPresent: boolean, at: string): GameActivityStep | null {
-  if (row.game_kind === gameKind && row.turn === turn) return null;
-  const news = row.game_kind !== gameKind || turn === "yours";
+function showing(
+  row: GameActivityState,
+  gameKind: GameKind,
+  turn: GameTurn,
+  viewerPresent: boolean,
+  at: string,
+  moved = false,
+): GameActivityStep | null {
+  const changed = row.game_kind !== gameKind || row.turn !== turn;
+  let delivery: LiveActivityDelivery;
+  if (viewerPresent) {
+    if (!changed) return null;
+    delivery = "quiet";
+  } else if (moved && turn === "yours") {
+    delivery = "ring";
+  } else {
+    if (!changed) return null;
+    delivery = row.game_kind !== gameKind || turn === "yours" ? "alert" : "now";
+  }
   return {
     row: { ...row, game_kind: gameKind, turn, pushed_at: at },
-    push: { event: "update", delivery: viewerPresent ? "quiet" : news ? "alert" : "now", activity_id: row.id, game_kind: gameKind },
+    push: { event: "update", delivery, activity_id: row.id, game_kind: gameKind },
   };
 }
 
@@ -211,8 +229,9 @@ function readTurn(ctx: WriterCtx, people: ActivityPeople, kind: GameKind): Promi
   });
 }
 
-async function rereadTurn(ctx: WriterCtx, row: GameActivityRow, viewerPresent: boolean, at: string): Promise<void> {
-  await moveGameActivity(ctx, row, { kind: "turn", turn: await readTurn(ctx, row, row.game_kind), viewer_present: viewerPresent, at });
+async function rereadTurn(ctx: WriterCtx, row: GameActivityRow, viewerPresent: boolean, at: string, moved = false): Promise<void> {
+  const turn = await readTurn(ctx, row, row.game_kind);
+  await moveGameActivity(ctx, row, { kind: "turn", turn, viewer_present: viewerPresent, moved, at });
 }
 
 /**
@@ -261,12 +280,37 @@ export async function recordGameLeave(ctx: WriterCtx, coupleId: string, userId: 
   if (theirs?.game_kind === kind) await rereadTurn(ctx, theirs, false, at);
 }
 
-/** A move or a result in `kind` may have changed whose turn it is, so the couple's activities in that game read it again. */
-export async function refreshGameActivityTurns(ctx: WriterCtx, coupleId: string, kind: GameKind): Promise<void> {
+/**
+ * A turn or a result in `kind` is pushed to `recipientUserId`. It may have changed whose turn it
+ * is, so the couple's activities in that game read it again, and the recipient's rings.
+ */
+export async function refreshGameActivityTurns(ctx: WriterCtx, coupleId: string, kind: GameKind, recipientUserId: string): Promise<void> {
   const at = nowIso();
   for (const row of await coupleActivities(ctx, coupleId)) {
-    if (row.game_kind === kind) await rereadTurn(ctx, row, await isGamePresent(ctx, coupleId, kind, row.viewer_user_id), at);
+    if (row.game_kind !== kind) continue;
+    const viewerPresent = await isGamePresent(ctx, coupleId, kind, row.viewer_user_id);
+    await rereadTurn(ctx, row, viewerPresent, at, row.viewer_user_id === recipientUserId);
   }
+}
+
+/** How long a held turn or result push waits before it asks `activitySaysYourTurn` again. */
+export const GAME_PUSH_HOLD_MS = 60_000;
+
+/**
+ * Whether a phone of the viewer shows an activity that says "Your turn" in `kind`. That activity
+ * rang for the move, so the game's turn and result pushes wait until it is gone
+ * (`prepare_notification` in pushQueue.ts). An activity no phone registered a token for may show
+ * nowhere, so it holds nothing back.
+ */
+export async function activitySaysYourTurn(ctx: ReaderCtx, viewerUserId: string, kind: GameKind): Promise<boolean> {
+  const rows = await ctx.db
+    .query("game_live_activities")
+    .withIndex("by_viewer_user_id", (q) => q.eq("viewer_user_id", viewerUserId))
+    .collect();
+  for (const row of rows) {
+    if (row.game_kind === kind && row.turn === "yours" && (await activityTokens(ctx, row.id)).length > 0) return true;
+  }
+  return false;
 }
 
 /**
