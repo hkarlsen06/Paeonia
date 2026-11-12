@@ -5,7 +5,7 @@
     static let liveActivityViews = DeveloperScenario(
       "live-activity-views", "Games · Robin's game Live Activity, every view",
       "The production Lock Screen view and the compact, minimal and expanded Dynamic Island views, "
-        + "playing, stale and ended, laid out on an ordinary screen",
+        + "playing with no turn, your turn, their turn, stale and ended, laid out on an ordinary screen",
       .games
     ) { _ in DeveloperLiveActivityViewsScenarioView() }
   }
@@ -23,9 +23,11 @@
     }
 
     private static let samples = [
-      Sample(label: "Playing", content: content(.mindMeld, .playing, isStale: false)),
-      Sample(label: "Stale", content: content(.drawAndGuess, .playing, isStale: true)),
-      Sample(label: "Ended", content: content(.piccante, .ended, isStale: false)),
+      Sample(label: "Playing", content: content(.mindMeld, .playing, .none, isStale: false)),
+      Sample(label: "YourTurn", content: content(.connectFour, .playing, .yours, isStale: false)),
+      Sample(label: "TheirTurn", content: content(.storyChain, .playing, .theirs, isStale: false)),
+      Sample(label: "Stale", content: content(.drawAndGuess, .playing, .yours, isStale: true)),
+      Sample(label: "Ended", content: content(.piccante, .ended, .none, isStale: false)),
     ]
 
     var body: some View {
@@ -53,9 +55,14 @@
     private static func content(
       _ game: GameLiveActivityAttributes.Game,
       _ phase: GameLiveActivityAttributes.Phase,
+      _ turn: GameLiveActivityAttributes.Turn,
       isStale: Bool
     ) -> GameLiveActivityContent {
-      GameLiveActivityContent(attributes: attributes, state: .init(gameKind: game, phase: phase), isStale: isStale)
+      GameLiveActivityContent(
+        attributes: attributes,
+        state: .init(gameKind: game, phase: phase, turn: turn),
+        isStale: isStale
+      )
     }
 
     private func lockScreen(_ content: GameLiveActivityContent) -> some View {
@@ -89,7 +96,7 @@
         HStack {
           GameLiveActivityIcon(content: content, size: 44)
           Spacer()
-          GameLiveActivityJoinBadge(content: content)
+          GameLiveActivityBadge(content: content)
         }
         GameLiveActivityText(content: content)
           .frame(maxWidth: .infinity, alignment: .leading)

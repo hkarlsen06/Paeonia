@@ -53,7 +53,6 @@ final class GameScreenLoops {
                 await write.value
                 if let kind = self?.kind {
                     await DeliveredNotifications.clearGame(kind)
-                    await LiveActivityTokenService.shared.gameOpened(kind)
                 }
                 try? await sleep(interval)
             }

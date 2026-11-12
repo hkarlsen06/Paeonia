@@ -76,11 +76,6 @@ final class LiveActivityTokenService {
         sendEnds()
     }
 
-    /// The person opened `kind`, so an activity that invites them to it has done its job.
-    func gameOpened(_ kind: GameKind) async {
-        report(ended: await GameLiveActivityController.endActivities(for: kind))
-    }
-
     /// The sign-in ended on this phone, in any way: a sign-out, a session that ended elsewhere
     /// or expired, a deleted account, or another account that signed in. Stops following,
     /// ends the activities on screen, and ends this sign-in's install on the server.

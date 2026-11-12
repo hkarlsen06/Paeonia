@@ -1,17 +1,10 @@
 import ActivityKit
 
 /// Ends this phone's activities about the partner's game once they stop helping. The server
-/// ends them with a push, and these cover what a push cannot: the person joined the game on
-/// this phone, the activity went stale because its pushes stopped reaching the phone, or the
-/// sign-in it was for ended. The ones that return ids end on the phone's own judgment, and
-/// `LiveActivityTokenService` tells the server about them.
+/// ends them with a push, and these cover what a push cannot: the activity went stale because
+/// its pushes stopped reaching the phone, or the sign-in it was for ended. The ones that return
+/// ids end on the phone's own judgment, and `LiveActivityTokenService` tells the server about them.
 enum GameLiveActivityController {
-    /// The person opened `kind`, so an activity that invites them to it has done its job.
-    /// Returns the server ids of the activities it ended.
-    static func endActivities(for kind: GameKind) async -> [String] {
-        await end { $0.content.state.gameKind.rawValue == kind.rawValue }
-    }
-
     /// The app came to the front. A stale or ended activity no longer says anything true about
     /// the partner. Returns the server ids of the activities it ended.
     static func endStaleActivities() async -> [String] {

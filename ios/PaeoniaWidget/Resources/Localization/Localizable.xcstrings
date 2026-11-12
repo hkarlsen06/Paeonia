@@ -94,6 +94,60 @@
         }
       }
     },
+    "widget.game.connectFour" : {
+      "comment" : "Name of the board game Four in a Row, as the app shows it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Four in a Row"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fire på rad"
+          }
+        }
+      }
+    },
+    "widget.game.consensio" : {
+      "comment" : "Name of the game Consensio, as the app shows it. It is a name, so it stays the same in Norwegian.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consensio"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consensio"
+          }
+        }
+      }
+    },
+    "widget.game.dotsAndBoxes" : {
+      "comment" : "Name of the board game Dots and Boxes, as the app shows it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dots and Boxes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prikker og streker"
+          }
+        }
+      }
+    },
     "widget.game.drawAndGuess" : {
       "comment" : "Name of the game Draw & Guess, as the app shows it",
       "extractionState" : "manual",
@@ -108,6 +162,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tegn og gjett"
+          }
+        }
+      }
+    },
+    "widget.game.exquisiteCorpse" : {
+      "comment" : "Name of the game Odd Creatures, as the app shows it. A creature is drawn in three parts by two people.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odd Creatures"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rare skapninger"
+          }
+        }
+      }
+    },
+    "widget.game.guessMySpot" : {
+      "comment" : "Name of the game Guess my spot, as the app shows it. One partner sends a photo and the other guesses on a map where it was taken.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guess my spot"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjett hvor"
+          }
+        }
+      }
+    },
+    "widget.game.ludo" : {
+      "comment" : "Name of the Ludo board game, as the app shows it. Norwegians call the game Ludo too.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ludo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ludo"
           }
         }
       }
@@ -144,6 +252,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Piccante"
+          }
+        }
+      }
+    },
+    "widget.game.storyChain" : {
+      "comment" : "Name of the game Story Chain, where partners write a story together one line at a time, as the app shows it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story Chain"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skrivestafett"
+          }
+        }
+      }
+    },
+    "widget.game.ultimateTicTacToe" : {
+      "comment" : "Name of the board game Ultimate Tic-Tac-Toe, as the app shows it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultimate Tic-Tac-Toe"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultimat bondesjakk"
           }
         }
       }
@@ -616,6 +760,24 @@
         }
       }
     },
+    "widget.liveActivity.gameWith" : {
+      "comment" : "Second line of the game Live Activity when it is this person's turn. First argument is the game's name, second is what the person calls their partner. Example: Four in a Row with Robin",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ with %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ med %2$@"
+          }
+        }
+      }
+    },
     "widget.liveActivity.join" : {
       "comment" : "Second line of the partner's game Live Activity. Tapping it opens the game.",
       "extractionState" : "manual",
@@ -688,6 +850,24 @@
         }
       }
     },
+    "widget.liveActivity.playShort" : {
+      "comment" : "Very short label at the right of the Dynamic Island when it is this person's turn in the partner's game. Tapping opens the game. Keep it to one or two short words.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
+          }
+        }
+      }
+    },
     "widget.liveActivity.playing" : {
       "comment" : "Live Activity on the Lock Screen and in the Dynamic Island while the partner has a game open. First argument is what the person calls their partner, second is the game's name. Example: Robin is playing Mind Meld",
       "extractionState" : "manual",
@@ -706,6 +886,24 @@
         }
       }
     },
+    "widget.liveActivity.waitingFor" : {
+      "comment" : "Title of the game Live Activity when the game waits for the partner to move. The argument is what the person calls their partner. Example: Waiting for Robin",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      }
+    },
     "widget.liveActivity.wasPlaying" : {
       "comment" : "Live Activity after it stopped updating, so the partner may have left the game. First argument is the partner's name, second is the game's name. Example: Robin was playing Mind Meld",
       "extractionState" : "manual",
@@ -720,6 +918,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ spilte %2$@"
+          }
+        }
+      }
+    },
+    "widget.liveActivity.yourTurn" : {
+      "comment" : "Title of the partner's game Live Activity, and the short text in the Dynamic Island, when it is this person's turn in the game the partner has open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur"
           }
         }
       }

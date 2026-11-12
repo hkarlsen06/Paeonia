@@ -3,8 +3,8 @@ import ActivityKit
 import SwiftUI
 import WidgetKit
 
-/// The partner's game on the Lock Screen and in the Dynamic Island. It names the partner and
-/// the game and opens that game, and shows nothing of the game itself. The views are in
+/// The partner's game on the Lock Screen and in the Dynamic Island. It names the partner, the game
+/// and whose turn it is, opens that game, and shows nothing of the game itself. The views are in
 /// GameLiveActivityViews.swift.
 struct GameLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
@@ -25,7 +25,7 @@ struct GameLiveActivityWidget: Widget {
                 GameLiveActivityIcon(content: content, size: 44)
             }
             DynamicIslandExpandedRegion(.trailing) {
-                GameLiveActivityJoinBadge(content: content)
+                GameLiveActivityBadge(content: content)
             }
             DynamicIslandExpandedRegion(.bottom) {
                 GameLiveActivityText(content: content)
@@ -58,16 +58,18 @@ private extension GameLiveActivityAttributes {
 }
 
 private extension GameLiveActivityAttributes.ContentState {
-    static let mindMeld = Self(gameKind: .mindMeld, phase: .playing)
-    static let drawAndGuess = Self(gameKind: .drawAndGuess, phase: .playing)
-    static let ended = Self(gameKind: .mindMeld, phase: .ended)
+    static let mindMeld = Self(gameKind: .mindMeld, phase: .playing, turn: .none)
+    static let yourTurn = Self(gameKind: .connectFour, phase: .playing, turn: .yours)
+    static let theirTurn = Self(gameKind: .storyChain, phase: .playing, turn: .theirs)
+    static let ended = Self(gameKind: .mindMeld, phase: .ended, turn: .none)
 }
 
 #Preview("Lock Screen", as: .content, using: GameLiveActivityAttributes.preview) {
     GameLiveActivityWidget()
 } contentStates: {
     GameLiveActivityAttributes.ContentState.mindMeld
-    GameLiveActivityAttributes.ContentState.drawAndGuess
+    GameLiveActivityAttributes.ContentState.yourTurn
+    GameLiveActivityAttributes.ContentState.theirTurn
     GameLiveActivityAttributes.ContentState.ended
 }
 
@@ -75,6 +77,7 @@ private extension GameLiveActivityAttributes.ContentState {
     GameLiveActivityWidget()
 } contentStates: {
     GameLiveActivityAttributes.ContentState.mindMeld
+    GameLiveActivityAttributes.ContentState.yourTurn
     GameLiveActivityAttributes.ContentState.ended
 }
 
@@ -82,7 +85,8 @@ private extension GameLiveActivityAttributes.ContentState {
     GameLiveActivityWidget()
 } contentStates: {
     GameLiveActivityAttributes.ContentState.mindMeld
-    GameLiveActivityAttributes.ContentState.drawAndGuess
+    GameLiveActivityAttributes.ContentState.yourTurn
+    GameLiveActivityAttributes.ContentState.theirTurn
 }
 
 #Preview("Dynamic Island minimal", as: .dynamicIsland(.minimal), using: GameLiveActivityAttributes.preview) {

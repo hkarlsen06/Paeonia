@@ -43,14 +43,15 @@
       await endAll()
       _ = try? Activity.request(
         attributes: GameLiveActivityAttributes(activityID: UUID().uuidString, partnerName: "Robin"),
-        content: ActivityContent(state: .init(gameKind: game, phase: .playing), staleDate: nil),
+        content: ActivityContent(state: .init(gameKind: game, phase: .playing, turn: .none), staleDate: nil),
         pushType: nil
       )
     }
 
     private func show(_ game: GameLiveActivityAttributes.Game) async {
       for activity in Activity<GameLiveActivityAttributes>.activities {
-        await activity.update(ActivityContent(state: .init(gameKind: game, phase: .playing), staleDate: nil))
+        let state = GameLiveActivityAttributes.ContentState(gameKind: game, phase: .playing, turn: .none)
+        await activity.update(ActivityContent(state: state, staleDate: nil))
       }
     }
 
