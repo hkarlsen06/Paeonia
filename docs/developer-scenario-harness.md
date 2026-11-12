@@ -24,8 +24,8 @@ replaced with in-memory implementations.
 - `local-flow-pairing`: begin entitled and unpaired, on the invite screen. Nothing
   simulates the partner joining yet.
 - `local-flow-paired`: begin in the paired app, past the pairing celebration and
-  the first day, with local questions, memories, settings, countdown, visits, location, and
-  widget dependencies. `AccountJourneyUITests` logs out, leaves, and deletes the
+  the first day, with local questions, memories, settings, countdown, visits, location, an
+  anniversary recap, and widget dependencies. `AccountJourneyUITests` logs out, leaves, and deletes the
   account from here.
 
 The purchase button grants local entitlement, invite acceptance creates the local
@@ -55,7 +55,9 @@ value to the scenario ID, for example:
 PAEONIA_SCENARIO=local-flow-fresh
 ```
 
-UI tests use the same environment variable on `XCUIApplication`.
+UI tests use the same environment variable on `XCUIApplication`. A local flow also reads
+`PAEONIA_LAUNCH_LINK`, such as `paeonia://recap/2026-09-14`, and starts with that link, the
+way a push tapped while the app was closed does.
 
 ## Contract for future features
 
