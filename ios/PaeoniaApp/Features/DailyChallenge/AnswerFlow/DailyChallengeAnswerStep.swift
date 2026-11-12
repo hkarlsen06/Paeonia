@@ -156,7 +156,9 @@ struct DailyChallengeAnswerStep: View {
                 Text(.dailyChallengeTextAnswerLabel)
                     .font(PaeoniaTypography.caption.weight(.semibold))
                     .foregroundStyle(DailyAnswerComposerColors.composer.secondary)
-                    .transition(.dailyComposerFold)
+                    // The label leaves at once. While it fades it is drawn outside the shrinking
+                    // card, and the rising card carries it up over the question.
+                    .transition(.asymmetric(insertion: .dailyComposerFold, removal: .identity))
             }
             if !question.usesCombinedCompose && question.composableAnswerKinds.count > 1 {
                 DailyAnswerKindPicker(
