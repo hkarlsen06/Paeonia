@@ -102,6 +102,15 @@ struct PaeoniaDeepLinkTests {
         #expect(PaeoniaDeepLink(URL(string: "paeonia://memories")!) == .memories)
     }
 
+    @Test func recapLinkCarriesTheAnniversaryDate() {
+        #expect(
+            PaeoniaDeepLink(notificationUserInfo: ["deeplink": "paeonia://recap/2026-11-11"])
+                == .recap(anniversaryDate: "2026-11-11")
+        )
+        #expect(PaeoniaDeepLink(URL(string: "paeonia://recap")!) == nil)
+        #expect(PaeoniaDeepLink(URL(string: "paeonia://recap/tomorrow")!) == nil)
+    }
+
     @Test func notificationPayloadWithoutUsableDeeplinkIsIgnored() {
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "streak_reminder"]) == nil)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "memories"]) == nil)

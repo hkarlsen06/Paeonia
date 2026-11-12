@@ -36,6 +36,9 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case mail(letterID: UUID?)
     /// `paeonia://us`: opens the Us tab, for example after the partner joined.
     case us
+    /// `paeonia://recap/<yyyy-MM-dd>`: the anniversary push. Opens that recap over the Us tab.
+    /// Mirrors `recapDeepLink` in `backend/convex/lib/deepLinks.ts`.
+    case recap(anniversaryDate: String)
     /// `paeonia://dates`: a reminder about a birthday, the anniversary or a countdown.
     /// Opens Home with the dates timeline on top.
     case dates
@@ -203,7 +206,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         case (_, []):
             hostOnlyLinks[host]
         default:
-            nil
+            recapLink(host: host, pathComponents: pathComponents)
         }
     }
 
@@ -212,6 +215,13 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         "subscription": .subscription,
         "data-export": .dataExport,
     ]
+
+    private static func recapLink(host: String, pathComponents: [String]) -> Self? {
+        guard host == "recap", pathComponents.count == 1,
+              pathComponents[0].wholeMatch(of: /\d{4}-\d{2}-\d{2}/) != nil
+        else { return nil }
+        return .recap(anniversaryDate: pathComponents[0])
+    }
 
     private static func dailyLink(pathComponents: [String], query: [URLQueryItem]) -> Self? {
         switch pathComponents {

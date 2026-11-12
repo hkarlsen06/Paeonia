@@ -20,6 +20,7 @@ struct RootFeatureDependencies {
     var avatarStylingModel: AvatarStylingModel?
     var storiesViewModel: StoriesViewModel?
     var mailViewModel: MailViewModel?
+    var recapViewModel: RecapViewModel?
     var homeMapTiles: HomeMapTileStatus?
     var settingsPrivacyService: (any PrivacySafetyServicing)?
     var settingsPrivacyOperationProvider: (any SyncClientOperationProviding)?
@@ -42,6 +43,7 @@ struct RootFeatureDependencies {
         avatarStylingModel: AvatarStylingModel? = nil,
         storiesViewModel: StoriesViewModel? = nil,
         mailViewModel: MailViewModel? = nil,
+        recapViewModel: RecapViewModel? = nil,
         homeMapTiles: HomeMapTileStatus? = nil,
         settingsPrivacyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
         settingsPrivacyOperationProvider: (any SyncClientOperationProviding)? = nil,
@@ -63,6 +65,7 @@ struct RootFeatureDependencies {
         self.avatarStylingModel = avatarStylingModel
         self.storiesViewModel = storiesViewModel
         self.mailViewModel = mailViewModel
+        self.recapViewModel = recapViewModel
         self.homeMapTiles = homeMapTiles
         self.settingsPrivacyService = settingsPrivacyService
         self.settingsPrivacyOperationProvider = settingsPrivacyOperationProvider

@@ -7,6 +7,8 @@ struct LookBackContent: View {
     let currentUserID: UUID?
     let partnerName: String
     let thumbnailLoader: any WidgetRevisionThumbnailLoading
+    /// Shows every line of the words instead of the card's short preview, as the recap does.
+    var showsFullText = false
 
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -45,13 +47,17 @@ struct LookBackContent: View {
             Text(verbatim: question.shortPrompt(for: locale))
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(3)
+                .lineLimit(showsFullText ? nil : 3)
             LookBackAnswerRow(
                 name: String(localized: .dailyChallengeChoiceYou),
                 answer: question.ownAnswer,
-                names: names(for: question)
+                names: names(for: question),
+                showsFullText: showsFullText
             )
-            LookBackAnswerRow(name: partnerName, answer: question.partnerAnswer, names: names(for: question))
+            LookBackAnswerRow(
+                name: partnerName, answer: question.partnerAnswer, names: names(for: question),
+                showsFullText: showsFullText
+            )
         }
     }
 
@@ -78,7 +84,7 @@ struct LookBackContent: View {
                 text()
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)
-                    .lineLimit(3)
+                    .lineLimit(showsFullText ? nil : 3)
                 if let day = item.contentDay {
                     Text(day, format: .dateTime.day().month(.abbreviated).year())
                         .font(PaeoniaTypography.caption)
@@ -142,9 +148,16 @@ private struct LookBackAnswerRow: View {
     let answer: LookBackItem.Answer
     /// Names by user id, to name the person a "pick one of you" answer chose.
     let names: [UUID: String]
+    let showsFullText: Bool
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8) {
+        // With every line shown at accessibility sizes, the words go under the name and use the full width.
+        let layout = showsFullText && dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space2))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8))
+        layout {
             Text(verbatim: name)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextTertiary)
@@ -159,7 +172,7 @@ private struct LookBackAnswerRow: View {
             Text(verbatim: text)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(2)
+                .lineLimit(showsFullText ? nil : 2)
         case .photo:
             indicator("photo", Text(.dailyChallengeKindPhoto))
         case .voice:

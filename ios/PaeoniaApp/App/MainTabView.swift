@@ -111,6 +111,7 @@ final class MainTabModels {
         thumbnailLoader: dependencies.widgetHistoryThumbnailLoader
             ?? WidgetRevisionThumbnailLoader(gateway: WidgetDrawingHistoryFactory.makeGateway())
     )
+    lazy var recap = dependencies.recapViewModel ?? RecapViewModel.live(thumbnailLoader: lookBack.thumbnailLoader)
     private var settingsModel: SettingsViewModel?
 
     /// Built for the first signed-in user it is asked for, like the
@@ -463,6 +464,7 @@ extension MainTabView {
             || isSearchPresented
             || gameChatSheet != nil
             || isLookBackDrawingHistoryPresented
+            || models.recap.presented != nil
     }
 }
 

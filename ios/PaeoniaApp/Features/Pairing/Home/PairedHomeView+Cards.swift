@@ -49,6 +49,29 @@ extension PairedHomeView {
         }
     }
 
+    /// The recap on the anniversary itself, among the first cards, since the day calls for it.
+    @ViewBuilder
+    var anniversaryRecapCard: some View {
+        if let recap, let shown = recap.homeRecap, recap.isAnniversaryToday(shown) {
+            recapCard(shown, isAnniversaryToday: true)
+        }
+    }
+
+    /// The recap on the days after, below the tiles, so it never takes room from the map.
+    @ViewBuilder
+    var laterRecapCard: some View {
+        if let recap, let shown = recap.homeRecap, !recap.isAnniversaryToday(shown) {
+            recapCard(shown, isAnniversaryToday: false)
+        }
+    }
+
+    private func recapCard(_ shown: AnniversaryRecap, isAnniversaryToday: Bool) -> some View {
+        HomeRecapCard(recap: shown, isAnniversaryToday: isAnniversaryToday) {
+            recap?.presented = shown
+        }
+        .transition(.opacity)
+    }
+
     /// Only the game the partner opened last. Whose turn it is belongs on the Games tab.
     @ViewBuilder
     var partnerGameCard: some View {

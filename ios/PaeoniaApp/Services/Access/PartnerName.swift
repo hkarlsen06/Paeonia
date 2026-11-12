@@ -29,6 +29,12 @@ nonisolated struct PartnerName: Equatable, Hashable, Sendable {
         nickname ?? accountName
     }
 
+    /// The partner's own name, for things other people see, such as a shared picture. A nickname is
+    /// private to this person, so it never goes there.
+    var sharedName: String? {
+        accountName
+    }
+
     /// `display`, or "Your partner" when no name is known yet. Use it where the copy needs text.
     var displayOrFallback: String {
         display ?? String(localized: .pairingCelebrationPartnerName)

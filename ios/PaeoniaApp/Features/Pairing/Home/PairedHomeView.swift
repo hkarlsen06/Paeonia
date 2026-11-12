@@ -56,6 +56,7 @@ struct PairedHomeView: View {
     @AppStorage("home.accessNotice.dismissed") var dismissedAccessNoticeID = ""
     /// The next visit and the couple's list (`HomeVisitCard`). Nil hides the card.
     @Environment(VisitsViewModel.self) var visits: VisitsViewModel?
+    @Environment(RecapViewModel.self) var recap: RecapViewModel?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.dynamicTypeSize) var dynamicTypeSize
@@ -304,6 +305,7 @@ extension PairedHomeView {
                         id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: usesMapHeader
                     )
                 unreadChatsCard
+                anniversaryRecapCard
                 waitingMailCard
                 firstStepsCard
                 visitCard
@@ -318,6 +320,7 @@ extension PairedHomeView {
         } footer: {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 visitMemoryAsk
+                laterRecapCard
                 writeMailRow
                 lookBackCard
             }
@@ -354,6 +357,7 @@ extension PairedHomeView {
                         id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: !usesMapHeader
                     )
                 unreadChatsCard
+                anniversaryRecapCard
                 waitingMailCard
                 firstStepsCard
                 visitCard
@@ -365,6 +369,7 @@ extension PairedHomeView {
                     .layoutValue(key: HomeWideRole.self, value: .tiles)
                 mapCard
                 visitMemoryAsk
+                laterRecapCard
                 writeMailRow
                 lookBackCard
             }

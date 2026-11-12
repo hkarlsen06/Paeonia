@@ -227,6 +227,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let favoritesCache: any FavoritesCaching
     private let storiesCache: any StoriesCaching
     private let mailCache: any MailCaching
+    private let recapCache: any RecapCaching
     private let reactionsCache: any ReactionsCaching
     private let topicsCache: any TopicsCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
@@ -258,6 +259,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         favoritesCache: any FavoritesCaching = FileFavoritesCache.shared,
         storiesCache: any StoriesCaching = FileStoriesCache.shared,
         mailCache: any MailCaching = FileMailCache.shared,
+        recapCache: any RecapCaching = FileRecapCache.shared,
         reactionsCache: any ReactionsCaching = FileReactionsCache.shared,
         topicsCache: any TopicsCaching = FileTopicsCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
@@ -288,6 +290,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.favoritesCache = favoritesCache
         self.storiesCache = storiesCache
         self.mailCache = mailCache
+        self.recapCache = recapCache
         self.reactionsCache = reactionsCache
         self.topicsCache = topicsCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
@@ -406,6 +409,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await exquisiteCorpseCache.clearAll()
         await boardGamesCache.clearAll()
         lookBackCache.clearAll()
+        recapCache.clearAll()
         BoardMarkRenderer.removeAll()
         MemoryImageDecoding.removeAll()
         gameDrawingStore.purge(for: scope)

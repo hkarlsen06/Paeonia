@@ -35819,6 +35819,654 @@
         }
       }
     },
+    "recap.card.anniversary" : {
+      "comment" : "Small heading on the recap card on the anniversary day itself",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Happy anniversary"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratulerer med jubileet"
+          }
+        }
+      }
+    },
+    "recap.card.title" : {
+      "comment" : "Us tab card that opens the anniversary recap",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Look back at your year"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se tilbake på året deres"
+          }
+        }
+      }
+    },
+    "recap.card.titleSinceJoined" : {
+      "comment" : "Us tab card that opens a recap covering less than a year, because the couple started in Paeonia during that year",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Look back at what you've shared"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se tilbake på det dere har delt"
+          }
+        }
+      }
+    },
+    "recap.intro.swipe" : {
+      "comment" : "Hint on the first recap page that more pages follow",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swipe to look back."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sveip for å se tilbake."
+          }
+        }
+      }
+    },
+    "recap.moments.title" : {
+      "comment" : "Recap page heading above up to three moments from the year",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moments from your year"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Øyeblikk fra året deres"
+          }
+        }
+      }
+    },
+    "recap.moments.titleSinceJoined" : {
+      "comment" : "Recap page title above up to three moments, for a recap that covers less than a year",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moments you shared"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Øyeblikk dere delte"
+          }
+        }
+      }
+    },
+    "recap.number.allTime" : {
+      "comment" : "Under the hearts number in a recap, which counts every heart sent until the date. %@ is that date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In total up to %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Til sammen fram til %@."
+          }
+        }
+      }
+    },
+    "recap.number.allTimeShort" : {
+      "comment" : "After the hearts and longest streak rows in the recap summary and share picture. %@ is the date the recap was made.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "up to %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fram til %@"
+          }
+        }
+      }
+    },
+    "recap.number.answered" : {
+      "comment" : "Follows a large number on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "questions you both answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spørsmål dere begge svarte på"
+          }
+        }
+      }
+    },
+    "recap.number.answeredOne" : {
+      "comment" : "Follows the number 1 on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "question you both answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spørsmål dere begge svarte på"
+          }
+        }
+      }
+    },
+    "recap.number.drawings" : {
+      "comment" : "Follows a large number on a recap page. Drawings sent to each other's home screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "drawings you sent each other"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tegninger dere sendte hverandre"
+          }
+        }
+      }
+    },
+    "recap.number.drawingsOne" : {
+      "comment" : "Follows the number 1 on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "drawing you sent each other"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tegning dere sendte hverandre"
+          }
+        }
+      }
+    },
+    "recap.number.gameDays" : {
+      "comment" : "Follows a large number on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days you played together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager dere spilte sammen"
+          }
+        }
+      }
+    },
+    "recap.number.gameDaysOne" : {
+      "comment" : "Follows the number 1 on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day you played together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dag dere spilte sammen"
+          }
+        }
+      }
+    },
+    "recap.number.hearts" : {
+      "comment" : "Follows a large number on a recap page. Hearts sent to each other in the app",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hearts you've sent each other"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hjerter dere har sendt hverandre"
+          }
+        }
+      }
+    },
+    "recap.number.heartsOne" : {
+      "comment" : "Follows the number 1 on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "heart you've sent each other"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hjerte dere har sendt hverandre"
+          }
+        }
+      }
+    },
+    "recap.number.letters" : {
+      "comment" : "Follows a large number on a recap page. Letters in Mail that reached the other person",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "letters that arrived"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "brev som kom fram"
+          }
+        }
+      }
+    },
+    "recap.number.lettersOne" : {
+      "comment" : "Follows the number 1 on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "letter that arrived"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "brev som kom fram"
+          }
+        }
+      }
+    },
+    "recap.number.memories" : {
+      "comment" : "Follows a large number on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "memories you saved"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "minner dere tok vare på"
+          }
+        }
+      }
+    },
+    "recap.number.memories.photos" : {
+      "comment" : "Line under the memories number. The argument is a number of photos, 2 or more",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "with %@ photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "med %@ bilder"
+          }
+        }
+      }
+    },
+    "recap.number.memories.photosOne" : {
+      "comment" : "Line under the memories number when there is one photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "with 1 photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "med 1 bilde"
+          }
+        }
+      }
+    },
+    "recap.number.memoriesOne" : {
+      "comment" : "Follows the number 1 on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "memory you saved"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "minne dere tok vare på"
+          }
+        }
+      }
+    },
+    "recap.number.stories" : {
+      "comment" : "Follows a large number on a recap page. Stories are photos posted for the partner",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "stories you shared"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "historier dere delte"
+          }
+        }
+      }
+    },
+    "recap.number.storiesOne" : {
+      "comment" : "Follows the number 1 on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "story you shared"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "historie dere delte"
+          }
+        }
+      }
+    },
+    "recap.number.streak" : {
+      "comment" : "Follows a large number on a recap page. The longest run of days in a row",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days in your longest streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager i den lengste rekken deres"
+          }
+        }
+      }
+    },
+    "recap.number.streakOne" : {
+      "comment" : "Follows the number 1 on a recap page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day in your longest streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dag i den lengste rekken deres"
+          }
+        }
+      }
+    },
+    "recap.number.streakUpTo" : {
+      "comment" : "Under the longest streak number in a recap. The streak is the longest so far, counted on the date. %@ is that date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fram til %@."
+          }
+        }
+      }
+    },
+    "recap.number.visits" : {
+      "comment" : "Recap number label: how many visits the couple planned in the app in that year. Says planned, since the app cannot know a visit happened.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "visits you planned"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "besøk dere planla"
+          }
+        }
+      }
+    },
+    "recap.number.visits.days" : {
+      "comment" : "Under the planned visits number: how many days those visits cover in that year. %@ is a number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ days in all"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ dager til sammen"
+          }
+        }
+      }
+    },
+    "recap.number.visits.daysOne" : {
+      "comment" : "Under the planned visits number when they cover one day",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 day in all"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 dag til sammen"
+          }
+        }
+      }
+    },
+    "recap.number.visitsOne" : {
+      "comment" : "Recap number label for exactly one planned visit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "visit you planned"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "besøk dere planla"
+          }
+        }
+      }
+    },
+    "recap.period.sinceJoined" : {
+      "comment" : "Recap intro and summary when the couple started in Paeonia less than a year before the anniversary: the days the recap counts, up to the day before the anniversary. %1$@ and %2$@ are dates.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Here's what you shared on Paeonia from %1$@ to %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Her er det dere delte i Paeonia fra %1$@ til %2$@."
+          }
+        }
+      }
+    },
+    "recap.period.year" : {
+      "comment" : "Recap intro and summary: the days the recap counts, from the anniversary before to the day before this one. %1$@ and %2$@ are dates.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Here's what you shared from %1$@ to %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Her er det dere delte fra %1$@ til %2$@."
+          }
+        }
+      }
+    },
+    "recap.timeline.open" : {
+      "comment" : "Link under a past anniversary in the milestones list that opens its recap",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See your recap"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se tilbakeblikket"
+          }
+        }
+      }
+    },
+    "recap.title.years" : {
+      "comment" : "Recap heading. The argument is a number of years, 2 or more",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ years together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ år sammen"
+          }
+        }
+      }
+    },
+    "recap.title.yearsOne" : {
+      "comment" : "Recap heading for a first anniversary",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One year together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ett år sammen"
+          }
+        }
+      }
+    },
     "reportAndLeave.block.description" : {
       "comment" : "Description of the optional block toggle. The placeholder is the partner name.",
       "extractionState" : "manual",

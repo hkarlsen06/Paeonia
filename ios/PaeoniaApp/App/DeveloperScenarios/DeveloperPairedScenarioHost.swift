@@ -29,7 +29,7 @@
       _deepLink = State(
         initialValue: Self.opensAnswerFlow(scenario)
           ? .dailyToday(coupleDayID: DeveloperScenarioDailyFixture.coupleDayID)
-          : nil
+          : scenario == .recapLeapDay ? .dates : nil
       )
 
       _dailyChallengeViewModel = State(
@@ -185,7 +185,7 @@
             partnerName: PartnerName(accountName: "Robin", nickname: nil),
             pairID: scenario.firstStepsProgress == nil ? nil : DeveloperLocalFlowIDs.pairID,
             coupleID: DeveloperScenarioFixture.coupleID,
-            relationshipStartedOn: "2025-09-14",
+            relationshipStartedOn: DeveloperRecapFixture.startedOn(for: scenario) ?? "2025-09-14",
             accessNotice: scenario.accessNotice
           ),
           // PROTOTYPE: a live map for the Home map layout, or the state named by
@@ -204,7 +204,8 @@
             milestoneViewModel: milestoneViewModel,
             memoriesViewModel: memoriesViewModel,
             gamesViewModel: gamesViewModel,
-            visitsViewModel: visitsViewModel
+            visitsViewModel: visitsViewModel,
+            recapViewModel: DeveloperRecapFixture.model(for: scenario)
           ),
           // Past the first day with a saved card, for the `home-first-steps` scenarios.
           pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(firstSteps: scenario.firstStepsProgress),

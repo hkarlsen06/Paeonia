@@ -13,6 +13,11 @@
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil, gameConversation: Bool = false,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
          mail: DeveloperMailSeed = .none) {
+      // A link the app was launched with, such as a push tapped while the app was not running.
+      _deepLink = State(
+        initialValue: ProcessInfo.processInfo.environment["PAEONIA_LAUNCH_LINK"]
+          .flatMap(URL.init(string:)).flatMap(PaeoniaDeepLink.init)
+      )
       _environment = State(
         initialValue: DeveloperLocalFlowEnvironment(
           seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation, avatarStories: avatarStories,
@@ -261,6 +266,7 @@
         avatarStylingModel: AvatarStylingModel(gateway: DeveloperAvatarDecorationGateway(store: store)),
         storiesViewModel: avatar?.viewModel,
         mailViewModel: DeveloperMailFixture.viewModel(mail),
+        recapViewModel: seed == .paired ? DeveloperRecapFixture.model(recaps: [DeveloperRecapFixture.localFlow]) : nil,
         homeMapTiles: mapTiles.makeStatus(),
         settingsPrivacyService: nil,
         settingsPrivacyOperationProvider: operationProvider,

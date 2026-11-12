@@ -210,7 +210,9 @@ struct RelationshipTimelineView: View {
 
     @ViewBuilder
     private func eventButton(for event: CoupleDateEvent, isPast: Bool) -> some View {
-        if let editor = CoupleDateEditor(event), coupleDates != nil {
+        if case .milestone = event.kind {
+            RecapTimelineLink(day: event.date) { eventLabel(for: event, isPast: isPast) }
+        } else if let editor = CoupleDateEditor(event), coupleDates != nil {
             // The couple's own dates open their editor. Milestones come from the start
             // date, which the pencil edits.
             Button { dateEditor = editor } label: {

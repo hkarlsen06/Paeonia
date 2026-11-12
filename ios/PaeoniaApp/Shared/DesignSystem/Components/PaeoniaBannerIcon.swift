@@ -48,6 +48,7 @@ extension PaeoniaDeepLink {
         case .mail: "envelope.fill"
         case .us: "heart.fill"
         case .dates: "calendar"
+        case .recap: "sparkles"
         case .streak: "flame.fill"
         case .subscription: "arrow.clockwise"
         case .dataExport: "square.and.arrow.down"

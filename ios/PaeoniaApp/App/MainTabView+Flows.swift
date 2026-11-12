@@ -311,7 +311,7 @@ extension MainTabView {
             await openGame(kind, for: deepLink)
         case .streak:
             await openStreak(for: deepLink)
-        case .stories, .us, .dates, .story, .firstDayAnswer, .mail:
+        case .stories, .us, .dates, .story, .firstDayAnswer, .mail, .recap:
             await openUs(for: deepLink)
         }
     }
@@ -334,9 +334,7 @@ extension MainTabView {
             guard isCurrent(deepLink) else { return }
             storiesViewModel.requestOpen(storyID: storyID, showsReplies: showsReplies)
         }
-        if case let .mail(letterID) = deepLink {
-            guard await mailViewModel.presentLink(letterID, isCurrent: { isCurrent(deepLink) }) else { return }
-        }
+        guard await presentUsSheet(for: deepLink, isCurrent: { isCurrent(deepLink) }) else { return }
         self.deepLink.wrappedValue = nil
     }
 

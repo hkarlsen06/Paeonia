@@ -100,7 +100,7 @@ extension RootView {
             selectTabForDeepLink(viewModel.selectedMainTab)
         case .game:
             selectTabForDeepLink(.games)
-        case .streak, .stories, .story, .us, .dates, .firstDayAnswer, .mail:
+        case .streak, .stories, .story, .us, .dates, .firstDayAnswer, .mail, .recap:
             selectTabForDeepLink(.us)
         case .subscription, .dataExport:
             openAccountLink(deepLink)

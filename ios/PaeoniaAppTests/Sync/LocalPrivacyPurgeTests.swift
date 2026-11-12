@@ -418,7 +418,8 @@ struct LivePurgeFixture {
 
     init(widgetCanvas: WidgetCanvasService, memoryMediaURL: URL,
          guessMySpotPhotos: any GuessMySpotPhotoStoring = FileGuessMySpotPhotoStore.shared,
-         mailCache: any MailCaching = FileMailCache.shared) throws {
+         mailCache: any MailCaching = FileMailCache.shared,
+         recapCache: any RecapCaching = FileRecapCache.shared) throws {
         let client = PaeoniaConvexClient(
             deploymentURL: try #require(URL(string: "https://privacy-purge.invalid")),
             session: URLSession(configuration: .ephemeral),
@@ -435,7 +436,8 @@ struct LivePurgeFixture {
                 memoryMediaCache: MemoryMediaImageService(client: client, directoryURL: memoryMediaURL),
                 profilePhotoCache: nil,
                 guessMySpotPhotos: guessMySpotPhotos,
-                mailCache: mailCache
+                mailCache: mailCache,
+                recapCache: recapCache
             ),
             entityIndex: FakeSpotlightIndex(),
             retryStore: InMemoryLocalPrivacyPurgeRetryStore(),

@@ -231,7 +231,7 @@ extension MainTabView {
         NavigationStack {
             // Home hides its navigation bar and draws the brand mark and streak in its
             // own header. Screens pushed from it keep their bar.
-            pairedHome
+            withRecap(pairedHome)
                 // Shows only where Home has a navigation bar, on a wide iPad.
                 .searchToolbarButton(placement: .topBarTrailing, action: openSearch)
                 .analyticsScreen("us")
