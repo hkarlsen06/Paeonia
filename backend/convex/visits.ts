@@ -179,13 +179,15 @@ export const save_visit = mutation({
       } else if (existing) {
         const today = await todayOnStreakClock(ctx, coupleId, now);
         await keepVisitDays(ctx, existing, today, now);
-        await ctx.db.patch(existing._id, withUpdatedAt({ ...fields, together_from: today }));
+        const firstDaySetAt = existing.start_date === start ? existing.first_day_set_at : now;
+        await ctx.db.patch(existing._id, withUpdatedAt({ ...fields, together_from: today, first_day_set_at: firstDaySetAt }));
       } else {
         await ctx.db.insert("visits", {
           id: visitId,
           couple_id: coupleId,
           ...fields,
           together_from: await todayOnStreakClock(ctx, coupleId, now),
+          first_day_set_at: now,
           created_by_user_id: userId,
           created_at: now,
           updated_at: now,

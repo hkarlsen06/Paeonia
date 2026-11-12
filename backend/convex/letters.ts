@@ -10,6 +10,7 @@ import { runClientOperation } from "./lib/clientOperations";
 import { getByUuid, type ReaderCtx, type WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { optionalTimestampArg, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
+import { sharesLocation } from "./lib/locationPause";
 import {
   deliverAtFor,
   DUE_LETTER_PAGE,
@@ -21,6 +22,9 @@ import {
   MAX_WAITING_LETTERS,
   nextLetterState,
   parseLetterBody,
+  VISIT_SWEEP_DAYS,
+  visitLettersWrittenBefore,
+  visitLetterTime,
   type LetterDelivery,
   type LetterTemplateKey,
 } from "./lib/letters";
@@ -29,7 +33,9 @@ import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
 import { enqueueLetterNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { resolveMemberStreakTimeZone } from "./lib/streakDeadlines";
-import { nowIso } from "./lib/time";
+import { addDaysToDate, nowIso } from "./lib/time";
+import { isCoupleTogetherAt, todayOnStreakClock } from "./lib/together";
+import { openVisits } from "./lib/visits";
 
 /**
  * The letter as `viewerId` may see it, or null when they may not see it at all. The author sees
@@ -158,17 +164,57 @@ export const get_older_letters = query({
 });
 
 /**
- * The time zone the partner's morning letters follow, so the composer can show when one arrives.
- * The app reads it once, and `send_letter` works the time out again when the letter goes. Null
- * without a partner. Fails with `42501` without an entitled couple.
+ * How a letter for the next meeting to `recipientId`, written at `now`, could arrive. The next
+ * visit is the first one that starts after today, and `next_visit_start_date` names it only when
+ * its evening would bring the letter on (`visitLetterTime`). Otherwise `next_visit_too_soon` is
+ * true. Sharing is read as the map reads it, so a partner's pause changes nothing here.
  */
-export const get_letter_partner_time_zone = query({
-  args: {},
-  handler: async (ctx) => {
+async function meetingOptions(ctx: ReaderCtx, coupleId: string, recipientId: string | null, now: string) {
+  const members = await listActiveMembers(ctx, coupleId);
+  const today = await todayOnStreakClock(ctx, coupleId, now);
+  const next = (await openVisits(ctx, coupleId, today))
+    .filter((visit) => visit.start_date > today)
+    .reduce<Doc<"visits"> | null>((first, visit) => (first === null || visit.start_date < first.start_date ? visit : first), null);
+  const evening = next === null || recipientId === null
+    ? null
+    : visitLetterTime(next, await resolveMemberStreakTimeZone(ctx, recipientId));
+  const counts = next !== null && evening !== null && now < evening;
+  const sharing = await Promise.all(members.map((member) =>
+    ctx.db
+      .query("location_sharing_preferences")
+      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", member.user_id))
+      .unique()));
+  return {
+    together_now: await isCoupleTogetherAt(ctx, coupleId, now),
+    next_visit_start_date: counts ? next.start_date : null,
+    next_visit_too_soon: next !== null && !counts,
+    both_share_location: members.length === 2 && sharing.every(sharesLocation),
+  };
+}
+
+/** A letter for the next meeting can be sent while apart, with a visit ahead or both sharing location. */
+const offersMeetingLetter = (options: Awaited<ReturnType<typeof meetingOptions>>) =>
+  !options.together_now && (options.next_visit_start_date !== null || options.both_share_location);
+
+/**
+ * What the composer's delivery step needs at `p_now`, the phone's time, read once when it opens.
+ * `partner_time_zone_id` is the zone the partner's morning letters follow, null without a
+ * partner. `send_letter` works the time out again when the letter goes. `together_now`,
+ * `next_visit_start_date`, `next_visit_too_soon` and `both_share_location` say whether a letter
+ * for the next meeting can be sent (`offersMeetingLetter`) and how it would arrive
+ * (`meetingOptions`). Fails with `42501` without an entitled couple.
+ */
+export const get_letter_delivery_options = query({
+  args: { p_now: v.string() },
+  handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
+    const now = timestampArg(args.p_now);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const partnerId = await partnerOf(ctx, coupleId, userId);
-    return { partner_time_zone_id: partnerId === null ? null : await resolveMemberStreakTimeZone(ctx, partnerId) };
+    return {
+      partner_time_zone_id: partnerId === null ? null : await resolveMemberStreakTimeZone(ctx, partnerId),
+      ...(await meetingOptions(ctx, coupleId, partnerId, now)),
+    };
   },
 });
 
@@ -182,6 +228,8 @@ function parseDelivery(kind: string, deliverAt: string | null | undefined, nowMs
       return { kind: "now" };
     case "morning":
       return { kind: "morning" };
+    case "together":
+      return { kind: "together" };
     case "at": {
       const at = optionalTimestampArg(deliverAt) ?? fail("23514", "a letter for a set time needs the time");
       if (Date.parse(at) > nowMs + MAX_LETTER_WAIT_MS) fail("23514", "a letter can wait at most a year");
@@ -195,21 +243,83 @@ function parseDelivery(kind: string, deliverAt: string | null | undefined, nowMs
 /**
  * Delivers a sealed letter that still exists while both partners are still together, and queues
  * the push in its own job, so a push that fails cannot undo the delivery. Anything else writes
- * nothing, so a second run, the sweep and the scheduled job together still deliver once.
+ * nothing, so a second run, the sweep and the scheduled job together still deliver once. Returns
+ * whether it delivered.
  */
-async function deliverLetter(ctx: WriterCtx, letter: Doc<"letters">): Promise<void> {
+async function deliverLetter(ctx: WriterCtx, letter: Doc<"letters">): Promise<boolean> {
   const state = letter.deleted_at === undefined ? nextLetterState(letter.state, "deliver") : null;
-  if (state === null || !(await bothStillTogether(ctx, letter))) return;
+  if (state === null || !(await bothStillTogether(ctx, letter))) return false;
   await ctx.db.patch(letter._id, { state, delivered_at: nowIso() });
   await ctx.scheduler.runAfter(0, internal.letters.notify_letter_arrived, { letter_id: letter.id });
+  return true;
+}
+
+/**
+ * Delivers the letters `recipientId` gets at the couple's next meeting, a page at a time, or only
+ * the ones written before `writtenBefore` when it is set. The caller decides that the partners met.
+ * With no letter waiting this reads no document.
+ */
+export async function deliverMeetingLetters(
+  ctx: WriterCtx,
+  coupleId: string,
+  recipientId: string,
+  writtenBefore?: string,
+): Promise<void> {
+  const range = ctx.db
+    .query("letters")
+    .withIndex("by_couple_id_recipient_user_id_delivery_kind_state_deleted_at", (q) =>
+      q.eq("couple_id", coupleId).eq("recipient_user_id", recipientId).eq("delivery_kind", "together")
+        .eq("state", "sealed").eq("deleted_at", undefined));
+  const waiting = await (writtenBefore === undefined
+    ? range
+    : range.filter((q) => q.lt(q.field("created_at"), writtenBefore))).take(DUE_LETTER_PAGE);
+  let delivered = 0;
+  for (const letter of waiting) if (await deliverLetter(ctx, letter)) delivered += 1;
+  // A delivered letter leaves the range, so a full page means more may wait.
+  if (delivered === DUE_LETTER_PAGE) {
+    await ctx.scheduler.runAfter(0, internal.letters.deliver_meeting_letters, {
+      couple_id: coupleId,
+      recipient_user_id: recipientId,
+      ...(writtenBefore === undefined ? {} : { written_before: writtenBefore }),
+    });
+  }
+}
+
+/**
+ * Delivers the letters for the next meeting that `visit` has brought on: for each partner who
+ * has one waiting, the ones written before the visit's evening on that partner's clock as it is
+ * now (`visitLetterTime`) and before its first day began everywhere (`visitLettersWrittenBefore`),
+ * once that evening is no later than `now`. A visit whose first day was
+ * set less than 20 hours before that evening brings nothing on, so the recipient alone cannot
+ * bring a letter on without the author seeing the visit for that long. Reads a partner's devices
+ * only when a letter waits for them.
+ */
+async function deliverVisitLetters(ctx: WriterCtx, visit: Doc<"visits">, now: string): Promise<void> {
+  for (const member of await listActiveMembers(ctx, visit.couple_id)) {
+    const waits = await ctx.db
+      .query("letters")
+      .withIndex("by_couple_id_recipient_user_id_delivery_kind_state_deleted_at", (q) =>
+        q.eq("couple_id", visit.couple_id).eq("recipient_user_id", member.user_id).eq("delivery_kind", "together")
+          .eq("state", "sealed").eq("deleted_at", undefined))
+      .first();
+    if (waits === null) continue;
+    const at = visitLetterTime(visit, await resolveMemberStreakTimeZone(ctx, member.user_id));
+    if (at !== null && at <= now) {
+      await deliverMeetingLetters(ctx, visit.couple_id, member.user_id, visitLettersWrittenBefore(visit, at));
+    }
+  }
 }
 
 /**
  * Sends the letter `p_letter_id` to the caller's partner. The phone picks the id, so a send and
  * its retries are the same write. `p_delivery_kind` is `now`, `at` (with `p_deliver_at`, at most a
- * year ahead) or `morning` (the partner's next 08:00). The letter stays sealed until then, and
- * `deliver_letter` runs at that time. The optional image is a `letter_image` upload reserved for
- * this letter. Returns the letter as its author sees it now, or null when the author deleted it since.
+ * year ahead), `morning` (the partner's next 08:00) or `together` (the next meeting). The letter
+ * stays sealed until then, and `deliver_letter` runs at that time. A letter for the next meeting
+ * arrives when the caller's phone shows the partners together (`location.ts`), or at 20:00 on the
+ * partner's clock on the first day of a planned visit (`sweep_letters_for_visits`). It fails with
+ * `55000` when the composer would not offer it now (`offersMeetingLetter`). The optional image is a
+ * `letter_image` upload reserved for this letter. Returns the letter as its author sees it now, or
+ * null when the author deleted it since.
  */
 export const send_letter = mutation({
   args: {
@@ -256,6 +366,9 @@ export const send_letter = mutation({
         return null;
       }
       const recipientId = (await partnerOf(ctx, coupleId, userId)) ?? fail("42501", "a letter needs a partner to receive it");
+      if (delivery.kind === "together" && !offersMeetingLetter(await meetingOptions(ctx, coupleId, recipientId, new Date(nowMs).toISOString()))) {
+        return fail("55000", "a letter for the next meeting needs a visit ahead or both sharing location, while apart");
+      }
 
       if (assetId !== undefined) {
         const asset = await getByUuid(ctx, "media_assets", assetId);
@@ -283,11 +396,12 @@ export const send_letter = mutation({
         body,
         media_asset_id: assetId,
         delivery_kind: delivery.kind,
-        deliver_at: deliverAt,
+        deliver_at: deliverAt ?? undefined,
         state: "sealed",
         moderation_status: "visible",
         created_at: nowIso(),
       });
+      if (deliverAt === null) return null;
       if (Date.parse(deliverAt) <= nowMs) {
         await deliverLetter(ctx, (await ctx.db.get(docId))!);
       } else {
@@ -314,12 +428,21 @@ export const deliver_letter = internalMutation({
   },
 });
 
+/** The next page of `deliverMeetingLetters`. */
+export const deliver_meeting_letters = internalMutation({
+  args: { couple_id: v.string(), recipient_user_id: v.string(), written_before: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await deliverMeetingLetters(ctx, args.couple_id, args.recipient_user_id, args.written_before);
+    return null;
+  },
+});
+
 /**
  * The `deliver-due-letters` sweep. Delivers every sealed letter whose time has come, in pages, so
  * a letter arrives even when its scheduled `deliver_letter` was lost. A restore from a backup
  * carries no scheduled jobs, a renamed function leaves its old jobs pointing nowhere, and a failed
  * job is not retried. A letter waiting for a couple that ended stays in the range and writes
- * nothing until the relationship cleanup deletes it.
+ * nothing until the relationship cleanup deletes it. Each run starts `sweep_letters_for_visits`.
  */
 export const deliver_due_letters = internalMutation({
   args: {
@@ -336,6 +459,38 @@ export const deliver_due_letters = internalMutation({
     for (const letter of page.page) await deliverLetter(ctx, letter);
     if (!page.isDone) {
       await ctx.scheduler.runAfter(0, internal.letters.deliver_due_letters, { p_now: now, cursor: page.continueCursor });
+    }
+    if (args.cursor === undefined || args.cursor === null) {
+      await ctx.scheduler.runAfter(0, internal.letters.sweep_letters_for_visits, { p_now: now });
+    }
+    return null;
+  },
+});
+
+/**
+ * The visit half of the delivery sweep, every 5 minutes. Pages over the visits whose first day is
+ * from `VISIT_SWEEP_DAYS` days before today in UTC to today, since an evening on a later first
+ * day has not come in any zone, and delivers what each has brought on (`deliverVisitLetters`).
+ * Nothing is scheduled per visit or letter, so a moved or deleted visit, a recipient in a new zone
+ * or an ended couple needs nothing undone. A run that never happened is made up by the next for
+ * at least two days after the evening.
+ */
+export const sweep_letters_for_visits = internalMutation({
+  args: {
+    p_now: v.optional(v.union(v.null(), v.string())),
+    cursor: v.optional(v.union(v.null(), v.string())),
+  },
+  handler: async (ctx, args) => {
+    const now = optionalTimestampArg(args.p_now) ?? nowIso();
+    const today = now.slice(0, 10);
+    const page = await ctx.db
+      .query("visits")
+      .withIndex("by_deleted_at_start_date", (q) =>
+        q.eq("deleted_at", undefined).gte("start_date", addDaysToDate(today, -VISIT_SWEEP_DAYS)).lte("start_date", today))
+      .paginate({ numItems: DUE_LETTER_PAGE, cursor: args.cursor ?? null });
+    for (const visit of page.page) await deliverVisitLetters(ctx, visit, now);
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.letters.sweep_letters_for_visits, { p_now: now, cursor: page.continueCursor });
     }
     return null;
   },

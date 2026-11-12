@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
+import { deliverMeetingLetters } from "./letters";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
@@ -8,7 +9,7 @@ import { runClientOperation } from "./lib/clientOperations";
 import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { optionalTimestampArg, timestampArg, uuidArg } from "./lib/ids";
-import { isSharingNow, MAX_LOCATION_PAUSE_MS } from "./lib/locationPause";
+import { isSharingNow, MAX_LOCATION_PAUSE_MS, sharesLocation } from "./lib/locationPause";
 import {
   enqueueLockScreenRefreshForPartner,
   enqueueLockScreenRefreshForUser,
@@ -211,6 +212,7 @@ export const update_latest_partner_location = mutation({
           .withIndex("by_couple_id_status", (q) => q.eq("couple_id", coupleId).eq("status", "active"))
           .collect();
         let partnerShares = false;
+        let partnerSharesSeen = false;
         for (const member of members) {
           if (member.user_id === userId) continue;
           const partnerPreference = await ctx.db
@@ -218,16 +220,23 @@ export const update_latest_partner_location = mutation({
             .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", member.user_id))
             .unique();
           if (isSharingNow(partnerPreference)) partnerShares = true;
+          if (sharesLocation(partnerPreference)) partnerSharesSeen = true;
         }
         const partner = members.find((member) => member.user_id !== userId);
+        // A paused partner's last fix still counts, as the map still shows it, so a pause changes
+        // no together day and no letter this phone's owner can see.
         const partnerFix =
-          partnerShares && partner
+          partnerSharesSeen && partner
             ? await ctx.db
                 .query("latest_partner_locations")
                 .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", partner.user_id))
                 .unique()
             : null;
-        await noteLocationFix(ctx, coupleId, row, partnerFix, now);
+        // Only the phone of a letter's author can bring its meeting about, since the server cannot
+        // tell a made-up fix from a real one and the recipient must not open a letter early.
+        if (partner && (await noteLocationFix(ctx, coupleId, row, partnerFix, now))) {
+          await deliverMeetingLetters(ctx, coupleId, partner.user_id);
+        }
         if (partnerShares) {
           // The distance on the partner's Lock Screen changes with every fix. Updates come often, so this lane sends at most one push per half hour.
           await enqueueLockScreenRefreshForPartner(ctx, {

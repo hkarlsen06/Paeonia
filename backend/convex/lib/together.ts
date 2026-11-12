@@ -247,8 +247,9 @@ async function recordLocationTogetherDay(
  * Stores today as a together day when `fix`, just stored, and the partner's latest fix show the
  * partners together (`togetherCaptureAt`). The day is the one the later capture is on, and only
  * today counts, so a fix sent after its day ended marks nothing. Nothing else a fix, a pause or
- * turning sharing off does changes a stored day. `partnerFix` is null when the partner does not
- * share now.
+ * turning sharing off does changes a stored day. `partnerFix` is null when the partner has
+ * sharing off, and a paused partner's last fix counts. Returns whether the two fixes show the
+ * partners together, also when the day was already stored.
  */
 export async function noteLocationFix(
   ctx: WriterCtx,
@@ -256,14 +257,15 @@ export async function noteLocationFix(
   fix: Fix,
   partnerFix: Fix | null,
   now: string,
-): Promise<void> {
+): Promise<boolean> {
   const capturedAt = partnerFix === null ? null : togetherCaptureAt(fix, partnerFix, now);
-  if (capturedAt === null) return;
+  if (capturedAt === null) return false;
   const clock = await streakClock(ctx, coupleId);
   const date = dayOf(clock, capturedAt);
-  if (date !== dayOf(clock, now)) return;
+  if (date !== dayOf(clock, now)) return true;
   // Only location stores today, so a row that reaches today is a match from earlier today.
   const latest = await rowsEndingFrom(ctx, coupleId, addDaysToDate(date, -1)).first();
-  if (latest !== null && latest.end_date >= date) return;
+  if (latest !== null && latest.end_date >= date) return true;
   await recordLocationTogetherDay(ctx, coupleId, date, latest, now);
+  return true;
 }

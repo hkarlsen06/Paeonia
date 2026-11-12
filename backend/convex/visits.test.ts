@@ -636,6 +636,7 @@ async function insertVisits(t: TestConvex, couple: TestCouple, count: number, da
         start_date: date,
         end_date: date,
         together_from: date,
+        first_day_set_at: NOW,
         created_by_user_id: couple.first.userId,
         last_edited_by_user_id: couple.first.userId,
         created_at: NOW,

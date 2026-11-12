@@ -32,7 +32,7 @@ type SendOptions = {
   user?: TestUser;
   letterId?: string;
   body?: string;
-  delivery?: "now" | "at" | "morning";
+  delivery?: "now" | "at" | "morning" | "together";
   deliverAt?: string;
   withImage?: boolean;
   template?: string;
@@ -77,6 +77,8 @@ async function runDueJobs(t: TestConvex) {
   await vi.runOnlyPendingTimersAsync();
   await t.finishInProgressScheduledFunctions();
 }
+const deliveryOptions = (user: TestUser) =>
+  user.as.query(api.letters.get_letter_delivery_options, { p_now: new Date().toISOString() });
 const scheduledDeliveries = (t: TestConvex) =>
   t.run(async (ctx) =>
     (await ctx.db.system.query("_scheduled_functions").collect()).filter((job) => job.name.includes("deliver_letter")),
@@ -93,7 +95,7 @@ describe("access", () => {
     for (const user of [stranger, lapsed.first]) {
       expect((await failure(getLetters(user))).code).toBe("42501");
       expect((await failure(olderLetters(user, "received", { at: NOW, id: letterId }))).code).toBe("42501");
-      expect((await failure(user.as.query(api.letters.get_letter_partner_time_zone, {}))).code).toBe("42501");
+      expect((await failure(deliveryOptions(user))).code).toBe("42501");
       expect((await failure(user.as.mutation(api.letters.send_letter, {
         p_letter_id: newUuid(),
         p_template_key: "blank",
@@ -313,7 +315,7 @@ describe("morning delivery", () => {
   test("arrives at 08:00 on the recipient's clock, worked out at the send", async () => {
     const t = newTest();
     const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Asia/Tokyo"] });
-    const partnerZone = () => couple.first.as.query(api.letters.get_letter_partner_time_zone, {});
+    const partnerZone = async () => ({ partner_time_zone_id: (await deliveryOptions(couple.first)).partner_time_zone_id });
     const sent = await send(t, couple, { delivery: "morning" });
     expect(sent.letter?.deliver_at).toBe("2026-11-10T23:00:00.000Z");
     expect(await partnerZone()).toEqual({ partner_time_zone_id: "Asia/Tokyo" });
@@ -637,5 +639,416 @@ describe("bounded reads", () => {
     expect(mail.waiting).toHaveLength(50);
     expect(mail.waiting[0].delivered_at).toBe(at(100));
     expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ us: 50, icon: 50 });
+  });
+});
+
+describe("letters for the next meeting", () => {
+  const HOME = { latitude: 59.9, longitude: 10.75 };
+  const AWAY = { latitude: 60.9, longitude: 10.75 };
+
+  async function share(user: TestUser, couple: TestCouple, pausedUntil?: string) {
+    await user.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: couple.coupleId,
+      p_is_enabled: true,
+      p_consent_version: "test-v1",
+      p_source: "settings_toggle",
+      ...(pausedUntil ? { p_paused_until: pausedUntil } : {}),
+      ...op(),
+    });
+  }
+  const moveTo = (user: TestUser, couple: TestCouple, at: typeof HOME) =>
+    user.as.mutation(api.location.update_latest_partner_location, {
+      p_couple_id: couple.coupleId,
+      p_latitude: at.latitude,
+      p_longitude: at.longitude,
+      p_accuracy_m: 20,
+      p_captured_at: new Date(Date.now() - 60_000).toISOString(),
+      p_source: "foreground_open",
+      ...op(),
+    });
+  const saveVisit = (user: TestUser, id: string, start: string, end: string) =>
+    user.as.mutation(api.visits.save_visit, { p_visit_id: id, p_start_date: start, p_end_date: end, p_place: null, ...op() });
+  const deleteVisit = (user: TestUser, id: string) => user.as.mutation(api.visits.delete_visit, { p_visit_id: id, ...op() });
+  /** One run of the visit half of the delivery sweep, at the test's clock. */
+  const sweepAt = async (t: TestConvex, at: string) => {
+    vi.setSystemTime(new Date(at));
+    await t.mutation(internal.letters.sweep_letters_for_visits, {});
+  };
+  /** Jobs of the letters module that wait to run, such as a delivery set for later. */
+  const pendingLetterJobs = (t: TestConvex) =>
+    t.run(async (ctx) =>
+      (await ctx.db.system.query("_scheduled_functions").collect())
+        .filter((job) => job.name.includes("letters") && job.state.kind === "pending"));
+  const stateOf = async (t: TestConvex, letterId: string) => (await letterRows(t)).find((row) => row.id === letterId)?.state;
+  const arrivedPushes = async (t: TestConvex) => (await outbox(t)).filter((row) => row.kind === "letter_arrived");
+
+  async function sharingCouple(t = newTest()) {
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    await addDevice(t, couple.second.userId, { locale: "en" });
+    await share(couple.first, couple);
+    await share(couple.second, couple);
+    await moveTo(couple.first, couple, AWAY);
+    await moveTo(couple.second, couple, HOME);
+    return { t, couple };
+  }
+  /** A couple in Oslo with a visit planned from `start` to `end`, saved now. */
+  async function visitingCouple(start = "2026-11-14", end = "2026-11-16") {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    const visitId = newUuid();
+    await saveVisit(couple.first, visitId, start, end);
+    return { t, couple, visitId };
+  }
+
+  test("has no time, schedules nothing, and leaves no trace in the recipient's reads", async () => {
+    const { t, couple } = await visitingCouple();
+    const before = await getLetters(couple.second);
+    const { letterId, imageId, letter } = await send(t, couple, { delivery: "together", withImage: true });
+    expect(letter).toMatchObject({ delivery_kind: "together", deliver_at: null, state: "sealed", delivered_at: null });
+    expect(await pendingLetterJobs(t)).toEqual([]);
+
+    expect(await getLetters(couple.second)).toEqual(before);
+    expect((await failure(open(couple.second, letterId))).code).toBe("42501");
+    expect((await failure(signImage(couple.second, imageId!))).code).toBe("42501");
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ us: 0, icon: 0 });
+    await t.mutation(internal.letters.deliver_due_letters, { p_now: "2026-11-13T20:00:00.000Z" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await stateOf(t, letterId)).toBe("sealed");
+  });
+
+  test("arrives when the author's phone shows the two together, once, and the push goes out", async () => {
+    const { t, couple } = await sharingCouple();
+    const { letterId } = await send(t, couple, { delivery: "together" });
+
+    await moveTo(couple.first, couple, HOME);
+    expect(await stateOf(t, letterId)).toBe("delivered");
+    expect((await getLetters(couple.second)).waiting.map((letter) => letter.id)).toEqual([letterId]);
+    await moveTo(couple.first, couple, HOME);
+    await runDueJobs(t);
+    const pushes = await deliverDuePushes(t);
+    expect(pushes.filter((push) => push.payload.type === "letter_arrived")).toHaveLength(1);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await arrivedPushes(t)).toHaveLength(1);
+  });
+
+  test("the recipient's phone alone cannot bring it on, even when it claims to stand by the author", async () => {
+    const { t, couple } = await sharingCouple();
+    const { letterId } = await send(t, couple, { delivery: "together" });
+
+    await moveTo(couple.second, couple, AWAY);
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    expect(await lettersFor(couple.second)).toEqual([]);
+
+    // The author's next fix there is the meeting, though today is already a together day.
+    await moveTo(couple.first, couple, AWAY);
+    expect(await stateOf(t, letterId)).toBe("delivered");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a letter the author unsent never arrives at the meeting", async () => {
+    const { t, couple } = await sharingCouple();
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    await remove(couple.first, letterId);
+    await moveTo(couple.first, couple, HOME);
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    expect(await lettersFor(couple.second)).toEqual([]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await arrivedPushes(t)).toEqual([]);
+  });
+
+  test("a partner's pause changes nothing the author is offered, sends or sees", async () => {
+    // Two couples alike, but in one the recipient paused sharing after their last fix.
+    const authorView = async (paused: boolean) => {
+      vi.setSystemTime(new Date(NOW));
+      const { t, couple } = await sharingCouple();
+      const sentRows = async () =>
+        (await getLetters(couple.first)).sent.letters.map(({ id, author_user_id, recipient_user_id, ...rest }) => rest);
+      if (paused) await share(couple.second, couple, new Date(Date.now() + 4 * 3_600_000).toISOString());
+      const offered = await deliveryOptions(couple.first);
+      await send(t, couple, { delivery: "together" });
+      const waiting = await sentRows();
+      await moveTo(couple.first, couple, HOME);
+      const met = await deliveryOptions(couple.first);
+      const sent = await sentRows();
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+      return { offered, waiting, met, sent };
+    };
+    const silent = await authorView(false);
+    expect(silent.offered).toMatchObject({ together_now: false, both_share_location: true });
+    expect(silent.sent[0]).toMatchObject({ state: "delivered" });
+    expect(await authorView(true)).toEqual(silent);
+  });
+
+  test("arrives at 20:00 on the recipient's clock on the first day of a visit planned before it, once", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Asia/Tokyo"] });
+    await addDevice(t, couple.first.userId);
+    await addDevice(t, couple.second.userId);
+    await saveVisit(couple.second, newUuid(), "2026-11-14", "2026-11-16");
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    const back = await send(t, couple, { user: couple.second, delivery: "together" });
+    expect(await pendingLetterJobs(t)).toEqual([]);
+
+    await sweepAt(t, "2026-11-14T10:59:59.999Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    await sweepAt(t, "2026-11-14T11:00:00.000Z");
+    await sweepAt(t, "2026-11-14T11:05:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("delivered");
+    expect(await stateOf(t, back.letterId)).toBe("sealed");
+    await sweepAt(t, "2026-11-14T19:00:00.000Z");
+    expect(await stateOf(t, back.letterId)).toBe("delivered");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect((await arrivedPushes(t)).map((row) => row.payload.letter_id).sort()).toEqual([letterId, back.letterId].sort());
+  });
+
+  test("when no sweep ran on the evening, as after a restore, the next run of the delivery sweep still brings the letter", async () => {
+    const { t, couple } = await visitingCouple();
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    // A restore brings back no scheduled job, so nothing may wait for the evening but the cron.
+    await t.run(async (ctx) => {
+      for (const job of await ctx.db.system.query("_scheduled_functions").collect()) {
+        if (job.state.kind === "pending") await ctx.scheduler.cancel(job._id);
+      }
+    });
+    vi.setSystemTime(new Date("2026-11-16T12:00:00.000Z"));
+    await t.mutation(internal.letters.deliver_due_letters, {});
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await stateOf(t, letterId)).toBe("delivered");
+  });
+
+  test("follows the recipient's zone on the day, not the one when the visit was saved", async () => {
+    const { t, couple } = await visitingCouple("2026-11-20", "2026-11-22");
+    await addDevice(t, couple.second.userId, { timeZone: "Europe/Oslo" });
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    vi.setSystemTime(new Date("2026-11-19T12:00:00.000Z"));
+    await addDevice(t, couple.second.userId, { timeZone: "America/New_York" });
+
+    await sweepAt(t, "2026-11-20T19:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    await sweepAt(t, "2026-11-21T01:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("delivered");
+  });
+
+  test("a visit saved on its own first day or later delivers nothing by time, and location still can", async () => {
+    const { t, couple } = await sharingCouple();
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    const today = newUuid();
+    await saveVisit(couple.second, today, "2026-11-10", "2026-11-11");
+    await sweepAt(t, "2026-11-10T21:00:00.000Z");
+    await deleteVisit(couple.second, today);
+    // A visit planned ahead whose first day moves to today counts as planned today.
+    const moved = newUuid();
+    await saveVisit(couple.second, moved, "2026-11-13", "2026-11-14");
+    vi.setSystemTime(new Date("2026-11-12T08:00:00.000Z"));
+    await saveVisit(couple.second, moved, "2026-11-12", "2026-11-14");
+    await sweepAt(t, "2026-11-12T19:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    expect(await lettersFor(couple.second)).toEqual([]);
+
+    await moveTo(couple.second, couple, HOME);
+    await moveTo(couple.first, couple, HOME);
+    expect(await stateOf(t, letterId)).toBe("delivered");
+  });
+
+  /** A couple whose `first` writes from `authorZone` and whose `second` receives in `recipientZone`, sharing location. */
+  async function farApartCouple(authorZone: string, recipientZone: string) {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: [authorZone, recipientZone] });
+    await addDevice(t, couple.first.userId, { timeZone: authorZone });
+    await addDevice(t, couple.second.userId, { timeZone: recipientZone });
+    await share(couple.first, couple);
+    await share(couple.second, couple);
+    return { t, couple };
+  }
+
+  test("in Los Angeles and Auckland, a visit the recipient plans for their own today brings nothing on by time", async () => {
+    const { t, couple } = await farApartCouple("America/Los_Angeles", "Pacific/Auckland");
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    // Thursday 19 November 19:55 in Auckland is Wednesday 18 November 22:55 in Los Angeles.
+    vi.setSystemTime(new Date("2026-11-19T06:55:00.000Z"));
+    const visitId = newUuid();
+    await saveVisit(couple.second, visitId, "2026-11-19", "2026-11-19");
+    expect(await deliveryOptions(couple.first)).toMatchObject({ next_visit_start_date: null, next_visit_too_soon: true });
+
+    await sweepAt(t, "2026-11-19T07:05:00.000Z");
+    await sweepAt(t, "2026-11-20T07:05:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    expect(await lettersFor(couple.second)).toEqual([]);
+  });
+
+  test("in Oslo and New York, a visit the recipient plans early on its first day brings nothing on by time", async () => {
+    const { t, couple } = await farApartCouple("America/New_York", "Europe/Oslo");
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    // Thursday 19 November 05:30 in Oslo is Wednesday 18 November 23:30 in New York.
+    vi.setSystemTime(new Date("2026-11-19T04:30:00.000Z"));
+    await saveVisit(couple.second, newUuid(), "2026-11-19", "2026-11-20");
+    expect(await deliveryOptions(couple.first)).toMatchObject({ next_visit_start_date: null, next_visit_too_soon: true });
+
+    await sweepAt(t, "2026-11-19T19:00:00.000Z");
+    await sweepAt(t, "2026-11-20T19:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+  });
+
+  test("in far zones, a visit planned before the recipient's first day starts arrives on its evening", async () => {
+    const { t, couple } = await farApartCouple("America/Los_Angeles", "Pacific/Auckland");
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    // 23:59 on Wednesday 18 November in Auckland, 20 hours and a minute before 20:00 on the 19th there.
+    vi.setSystemTime(new Date("2026-11-18T10:59:00.000Z"));
+    await saveVisit(couple.second, newUuid(), "2026-11-19", "2026-11-20");
+    expect(await deliveryOptions(couple.first)).toMatchObject({ next_visit_start_date: "2026-11-19", next_visit_too_soon: false });
+
+    await sweepAt(t, "2026-11-19T06:59:59.999Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    await sweepAt(t, "2026-11-19T07:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("delivered");
+  });
+
+  test("a letter written after a one-day visit is not brought on by it when the recipient's phone moves west", async () => {
+    const { t, couple } = await sharingCouple();
+    await addDevice(t, couple.second.userId, { timeZone: "Europe/Oslo" });
+    await saveVisit(couple.second, newUuid(), "2026-11-14", "2026-11-14");
+    // Sunday 15 November 00:30 in Oslo, after the visit.
+    vi.setSystemTime(new Date("2026-11-14T23:30:00.000Z"));
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    await sweepAt(t, "2026-11-15T00:05:00.000Z");
+    // The recipient lands in New York, where it is still 20:00 on the 14th at 01:00 UTC on the 15th.
+    vi.setSystemTime(new Date("2026-11-15T14:00:00.000Z"));
+    await addDevice(t, couple.second.userId, { timeZone: "America/New_York" });
+    await sweepAt(t, "2026-11-15T14:05:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    expect(await lettersFor(couple.second)).toEqual([]);
+  });
+
+  test("a letter for the visit the composer named after a one-day visit waits for that visit, whatever the recipient's zone", async () => {
+    const { t, couple } = await visitingCouple("2026-11-14", "2026-11-14");
+    await addDevice(t, couple.second.userId, { timeZone: "Europe/Oslo" });
+    await saveVisit(couple.first, newUuid(), "2026-12-12", "2026-12-14");
+    vi.setSystemTime(new Date("2026-11-14T23:30:00.000Z"));
+    expect(await deliveryOptions(couple.first)).toMatchObject({ next_visit_start_date: "2026-12-12" });
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    vi.setSystemTime(new Date("2026-11-15T07:00:00.000Z"));
+    await addDevice(t, couple.second.userId, { timeZone: "Pacific/Pago_Pago" });
+    await sweepAt(t, "2026-11-15T07:05:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    // 20:00 on 12 December in Pago Pago.
+    await sweepAt(t, "2026-12-13T07:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("delivered");
+  });
+
+  test("a letter the composer took on the last minute of the day before the visit, 12 hours behind UTC, arrives that evening", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Etc/GMT+12", "Etc/GMT+12"] });
+    await addDevice(t, couple.second.userId, { timeZone: "Etc/GMT+12" });
+    await saveVisit(couple.second, newUuid(), "2026-11-19", "2026-11-20");
+    // 23:59 on 18 November in UTC-12.
+    vi.setSystemTime(new Date("2026-11-19T11:59:00.000Z"));
+    expect(await deliveryOptions(couple.first)).toMatchObject({ together_now: false, next_visit_start_date: "2026-11-19" });
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    await sweepAt(t, "2026-11-20T07:59:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    await sweepAt(t, "2026-11-20T08:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("delivered");
+  });
+
+  test("a visit planned ahead and made longer or moved somewhere else on its first day still arrives that evening", async () => {
+    const { t, couple, visitId } = await visitingCouple("2026-11-14", "2026-11-15");
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    vi.setSystemTime(new Date("2026-11-14T09:00:00.000Z"));
+    await saveVisit(couple.second, visitId, "2026-11-14", "2026-11-16");
+    await couple.second.as.mutation(api.visits.save_visit, {
+      p_visit_id: visitId,
+      p_place: { name: "Bergen", latitude: 60.39, longitude: 5.32 },
+      ...op(),
+    });
+    await sweepAt(t, "2026-11-14T19:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("delivered");
+  });
+
+  test("a moved visit arrives on its new first day, a deleted one never, and neither leaves a run behind", async () => {
+    const { t, couple, visitId } = await visitingCouple();
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    await saveVisit(couple.first, visitId, "2026-11-21", "2026-11-23");
+    await sweepAt(t, "2026-11-14T19:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+
+    await deleteVisit(couple.first, visitId);
+    expect(await pendingLetterJobs(t)).toEqual([]);
+    await sweepAt(t, "2026-11-21T19:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    expect((await getLetters(couple.first)).sent.letters[0]).toMatchObject({ id: letterId, state: "sealed", delivery_kind: "together" });
+    expect(await lettersFor(couple.second)).toEqual([]);
+
+    const later = newUuid();
+    vi.setSystemTime(new Date(NOW));
+    await saveVisit(couple.first, later, "2026-11-28", "2026-11-29");
+    await saveVisit(couple.first, later, "2026-11-30", "2026-12-01");
+    await saveVisit(couple.first, newUuid(), "2100-12-01", "2100-12-02");
+    expect(await pendingLetterJobs(t)).toEqual([]);
+    await sweepAt(t, "2026-11-28T19:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    await sweepAt(t, "2026-11-30T19:00:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("delivered");
+  });
+
+  test("a visit that ended before the letter was written does not deliver it", async () => {
+    vi.setSystemTime(new Date("2026-10-25T12:00:00.000Z"));
+    const { t, couple } = await visitingCouple("2026-11-01", "2026-11-03");
+    vi.setSystemTime(new Date(NOW));
+    await saveVisit(couple.first, newUuid(), "2026-12-01", "2026-12-02");
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    await sweepAt(t, "2026-11-10T20:05:00.000Z");
+    expect(await stateOf(t, letterId)).toBe("sealed");
+  });
+
+  test("send refuses one the composer would not offer, and stores nothing", async () => {
+    const t = newTest();
+    const apart = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    expect(await deliveryOptions(apart.first)).toMatchObject({ next_visit_start_date: null, both_share_location: false });
+    expect((await failure(send(t, apart, { delivery: "together" }))).code).toBe("55000");
+
+    const visiting = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    await saveVisit(visiting.first, newUuid(), "2026-11-09", "2026-11-12");
+    expect(await deliveryOptions(visiting.first)).toMatchObject({ together_now: true });
+    expect((await failure(send(t, visiting, { delivery: "together" }))).code).toBe("55000");
+    expect(await letterRows(t)).toEqual([]);
+  });
+
+  test("the composer offers it only while apart, with a visit ahead or both sharing location", async () => {
+    const { t, couple } = await sharingCouple();
+    expect(await deliveryOptions(couple.first)).toEqual({
+      partner_time_zone_id: "Europe/Oslo",
+      together_now: false,
+      next_visit_start_date: null,
+      next_visit_too_soon: false,
+      both_share_location: true,
+    });
+    await saveVisit(couple.second, newUuid(), "2026-11-20", "2026-11-22");
+    await saveVisit(couple.second, newUuid(), "2026-11-14", "2026-11-15");
+    expect(await deliveryOptions(couple.first)).toMatchObject({ together_now: false, next_visit_start_date: "2026-11-14" });
+
+    await moveTo(couple.first, couple, HOME);
+    expect(await deliveryOptions(couple.first)).toMatchObject({ together_now: true });
+    const apart = await createCouple(t);
+    expect(await deliveryOptions(apart.first)).toMatchObject({ together_now: false, both_share_location: false });
+  });
+
+  test("after the relationship ends it is never delivered, and the cleanup takes it and its photo", async () => {
+    const { t, couple } = await visitingCouple();
+    await addDevice(t, couple.second.userId);
+    const { letterId, imageId } = await send(t, couple, { delivery: "together", withImage: true });
+    await couple.second.as.mutation(api.relationship.leave_relationship, op());
+
+    await sweepAt(t, "2026-11-14T19:00:00.000Z");
+    await t.mutation(internal.letters.deliver_meeting_letters, { couple_id: couple.coupleId, recipient_user_id: couple.second.userId });
+    expect(await stateOf(t, letterId)).toBe("sealed");
+    expect(await pendingLetterJobs(t)).toEqual([]);
+
+    const row = await t.run(async (ctx) => (await ctx.db.query("couples").collect()).find((c) => c.id === couple.coupleId)!);
+    await t.run((ctx) => cleanupCoupleContent(ctx, row, "2026-11-14T19:00:00.000Z"));
+    expect((await letterRows(t))[0].deleted_at).toBe("2026-11-14T19:00:00.000Z");
+    const asset = await t.run((ctx) => ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", imageId!)).unique());
+    expect(asset?.storage_delete_status).toBe("pending");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await arrivedPushes(t)).toEqual([]);
   });
 });

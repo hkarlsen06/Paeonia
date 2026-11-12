@@ -104,12 +104,12 @@ describe("location together days", () => {
     expect(await togetherDays(t, couple)).toEqual(["2026-06-29..2026-06-29"]);
   });
 
-  test("a partner who paused sharing does not count", async () => {
+  test("a partner's pause counts as a phone that sent nothing new, since the partner is not told of it", async () => {
     const { t, couple } = await sharingCouple();
     await moveTo(couple.first, couple.coupleId, HOME);
     await share(couple.first, couple.coupleId, { pausedUntil: "2026-06-28T20:00:00.000Z" });
     await moveTo(couple.second, couple.coupleId, HOME);
-    expect(await togetherDays(t, couple)).toEqual([]);
+    expect(await togetherDays(t, couple)).toEqual(["2026-06-28..2026-06-28"]);
   });
 
   test("a partner who turned sharing off does not count", async () => {
@@ -132,6 +132,7 @@ describe("visit boundaries", () => {
         start_date: "2026-10-24",
         end_date: "2026-10-25",
         together_from: "2026-10-01",
+        first_day_set_at: "2026-10-01T00:00:00.000Z",
         created_by_user_id: couple.first.userId,
         last_edited_by_user_id: couple.first.userId,
         created_at: "2026-10-01T00:00:00.000Z",

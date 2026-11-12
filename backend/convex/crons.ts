@@ -67,7 +67,8 @@ crons.interval("paeonia-expire-stale-pairing-invites", { hours: 1 }, internal.pa
 crons.interval("send-pairing-invite-reminders", { hours: 1 }, internal.pairingReminders.send_pairing_invite_reminders, {});
 
 // New in Convex: delivers sealed letters whose time has come when their scheduled `deliver_letter`
-// was lost, such as after a restore. `deliver_letter` still delivers on time. See letters.ts.
+// was lost, such as after a restore. `deliver_letter` still delivers on time. Each run also
+// delivers the letters for the next meeting that a visit has brought on. See letters.ts.
 crons.interval("deliver-due-letters", { minutes: 5 }, internal.letters.deliver_due_letters, {});
 
 // New in Convex: deletes notes whose 24 hours are over, so they are gone and not only hidden.

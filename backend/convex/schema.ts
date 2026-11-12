@@ -833,8 +833,10 @@ export default defineSchema({
   // whether a visit is upcoming, ongoing or over. Delete sets deleted_at, like countdowns.
   // together_from is the date the dates were last saved, on the streak's clock. The visit makes
   // together days only from then on (`lib/together.ts`), and `keepVisitDays` runs before every
-  // change to the dates. memory_prompt_dismissed_user_ids holds who hid the card that asks for
-  // the visit's photos. The memory itself points at the visit (`memories.visit_id`).
+  // change to the dates. first_day_set_at is when start_date was last set, which decides whether
+  // the visit brings on letters for the next meeting (`visitLetterTime` in `lib/letters.ts`).
+  // memory_prompt_dismissed_user_ids holds who hid the card that asks for the visit's photos.
+  // The memory itself points at the visit (`memories.visit_id`).
   // FK: couple_id -> couples cascade.
   visits: defineTable({
     id: uuid,
@@ -842,6 +844,7 @@ export default defineSchema({
     start_date: date,
     end_date: date,
     together_from: date,
+    first_day_set_at: ts,
     place: v.optional(placeField),
     memory_prompt_dismissed_user_ids: v.optional(v.array(uuid)),
     created_by_user_id: uuid,
@@ -851,7 +854,8 @@ export default defineSchema({
     deleted_at: optTs,
   })
     .index("by_uuid", ["id"])
-    .index("by_couple_id_deleted_at_end_date", ["couple_id", "deleted_at", "end_date"]),
+    .index("by_couple_id_deleted_at_end_date", ["couple_id", "deleted_at", "end_date"])
+    .index("by_deleted_at_start_date", ["deleted_at", "start_date"]),
 
   // Days the partners were together, start_date to end_date on the streak's clock
   // (`lib/together.ts`): location showed them less than 1000 m apart on each, or a visit covered
@@ -922,6 +926,7 @@ export default defineSchema({
 
   // A letter one partner writes to the other (lib/letters.ts). It stays sealed until deliver_at,
   // when `deliver_letter` or the `deliver-due-letters` sweep delivers it, and the recipient opens it.
+  // A `together` letter has no deliver_at and arrives at the partners' next meeting (letters.ts).
   // The recipient never reads a sealed letter, nor the body, card, image or written time of one
   // they have not opened (`get_letters`, the image read check). Only the author deletes, which sets
   // deleted_at. Each read range has deleted_at in its key, so deleted letters cost no reads, and
@@ -969,6 +974,13 @@ export default defineSchema({
       "delivered_at",
     ])
     .index("by_state_deleted_at_deliver_at", ["state", "deleted_at", "deliver_at"])
+    .index("by_couple_id_recipient_user_id_delivery_kind_state_deleted_at", [
+      "couple_id",
+      "recipient_user_id",
+      "delivery_kind",
+      "state",
+      "deleted_at",
+    ])
     .index("by_media_asset_id", ["media_asset_id"]),
 
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.

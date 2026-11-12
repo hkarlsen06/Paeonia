@@ -15,3 +15,12 @@ export const MAX_LOCATION_PAUSE_MS = 48 * 3_600_000;
 export function isSharingNow(preference: Doc<"location_sharing_preferences"> | null | undefined): boolean {
   return preference?.is_enabled === true && preference.paused_until === undefined;
 }
+
+/**
+ * Whether the person shares as their partner sees it: sharing is on, paused or not. The partner
+ * is never told of a pause (`get_partner_location_visibility`), so anything the partner can see
+ * reads this and not `isSharingNow`.
+ */
+export function sharesLocation(preference: Doc<"location_sharing_preferences"> | null | undefined): boolean {
+  return preference?.is_enabled === true;
+}
