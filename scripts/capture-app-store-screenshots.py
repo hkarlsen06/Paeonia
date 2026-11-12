@@ -6,7 +6,7 @@ and scripts/sim-sign-in, with the simulator signed in as Hjalmar:
 
     python3 scripts/capture-app-store-screenshots.py --locale en-US --ids ids.json \\
         --agent-device "<agent-device command with its --platform, --udid, --config and --session flags>" \\
-        [--screens 01-widget,02-question,...] [--simulator "Paeonia Screenshots"] [--output DIR]
+        [--screens 01-widget,02-chat,...] [--simulator "Paeonia Screenshots"] [--output DIR]
 
 The simulator is an iPhone 17 Pro Max or an iPad Pro 13-inch, and FAMILIES says
 what differs between the two. Captures are named <family>-<screen>.png, such as
@@ -77,9 +77,10 @@ capture, as <capture>.spotlight.json, which scripts/render-3d-screenshots.mjs
 reads for a device with a spotlight. It hides the Dynamic Island, which
 SpringBoard otherwise draws as a black pill over screens such as the Ludo table.
 
---record films 03-ludo and 06-draw for the promotional film in video/ instead:
+--record films 02-question, 03-ludo and 06-draw for the promotional film in video/
+instead:
 
-    ... --record --simulator "$SIM" --screens 03-ludo,06-draw
+    ... --record --simulator "$SIM" --screens 02-question,03-ludo,06-draw
 
 It writes <family>-<screen>.mp4, the whole screen at a constant 30 fps in
 H.264, and <family>-<screen>.events.json, the times of what happens in it in
@@ -96,6 +97,27 @@ Screen steps and the size check, but still sets the language, which reboots
 the simulator when it changes it, because the status bar shows 9:41 only in
 English. The script records through agent-device, which keeps touches out of
 the video.
+
+02-question starts on Home and needs the seeding of `scripts/app-store-content
+--question-film`, which leaves today's question to Hjalmar. It taps the Home
+card's button, the composer's photo button and the newest photo in the system
+picker, so add scripts/assets/app-store/photos/question-snow.jpg to the
+simulator's photo library first with `xcrun simctl addmedia`. Then it taps the
+text field, types the film_answer from --ids one letter at a time and sends. The
+cover turns into the question's conversation. Once two accessibility snapshots
+in a row match, about 2 s after the reveal comes to rest, it swipes the
+conversation down with one SWIPE, so the earlier day shows, and records until
+the list is still. It does not take screenshots there, because an agent-device
+screenshot brings back the hidden Dynamic Island. The on-screen keyboard stays
+hidden while the simulator has a hardware keyboard, unless Automatic Keyboard
+Minimization is off: `xcrun simctl spawn "$SIM" defaults write
+com.apple.keyboard.preferences AutomaticMinimizationEnabled -bool NO`, which the
+app reads when it launches. The composer keeps a draft, so clear the photo and
+the text after a take that stopped before sending. After a take that sent, stop
+the app and run `scripts/app-store-content --question-film` again, which clears
+Hjalmar's answer. Before each take the script removes the app's QUESTION_CACHES,
+which still hold the day that reset removed. With them the conversation can open
+on the earlier day and the composer on the sent photo.
 
 03-ludo flicks Hjalmar's die (a tap on the die does nothing), taps the pawn at
 LUDO_PAWNS[0], and after a 6 flicks again and taps the other pawn. Then it makes
@@ -117,6 +139,7 @@ from pathlib import Path
 import plistlib
 import re
 import shlex
+import shutil
 import struct
 import subprocess
 import tempfile
@@ -156,8 +179,51 @@ SCREENS = {
 }
 # How many letters of the Draw & Guess word 06-draw types before the capture.
 GUESS_LETTERS = 2
-# The screens --record films.
-RECORDINGS = ("03-ludo", "06-draw")
+# The screens --record films, in this order, and the ones SCREENS lacks with their link and wait.
+RECORDINGS = ("02-question", "03-ludo", "06-draw")
+# An empty link launches the app on Home and opens no link.
+FILMS = {"02-question": ("", 10)}
+# 02-question finds the Home card's answer button, the answer's text field and the send button by their
+# accessibility identifiers, and the composer's photo button by its label, since it has no identifier. The
+# photo remove button shows once a photo is staged.
+ANSWER_ACTION = "home.dailyPrompt.action"
+PHOTO_BUTTON = {"en-US": "Your photo", "no": "Bildet ditt"}
+PHOTO_REMOVE = "daily.answer.photo.remove"
+ANSWER_TEXT = "daily.answer.text"
+SEND_ACTION = "daily.flow.primary"
+CHAT_CLOSE = "daily.chat.close"
+# A node's frame, in this order. The snapshot lists the keys in no fixed order.
+RECT_KEYS = ("x", "y", "width", "height")
+# The app's files, in its Application Support folder, that 02-question removes before it launches the app.
+# The app fills them again from the backend.
+QUESTION_CACHES = ("ThreadChatCache", "DailyChallengeSnapshotCache", "DailyAnswerMediaDrafts")
+# Milliseconds between typed letters, and the seconds the reveal gets to load both days' photos.
+TYPE_DELAY_MS = 140
+REVEAL_SECONDS = 12
+# The brightness, of 255, above which a pixel is part of the answer's white letters. The pink cursor
+# (at most 170) and the grey placeholder stay under it, so the count of such pixels in the text field
+# grows with each letter and ignores the cursor's blink. At full size a letter adds 35 such pixels or
+# more, a period included, and compression moves the count by less than TEXT_STEP between frames.
+TEXT_LEVEL = 200
+TEXT_STEP = 25
+# The swipe that scrolls the conversation back to the earlier day: its start and its travel as fractions of
+# the screen, and its milliseconds. The list keeps moving after the finger lifts, and this speed ends with both
+# of the earlier day's answers above the message field. A faster swipe stops at the top of the list, where
+# the message field covers Hjalmar's earlier photo and line. A 0.38 swipe left his line half under the field,
+# and a 0.35 swipe left most of the earlier question above the screen.
+SWIPE = ((0.5, 0.4), (0, 0.36), 400)
+# The seconds the list gets to come to rest after the swipe.
+SCROLL_SECONDS = 9
+# The band of the conversation, as (x, y, width, height) in fractions of the screen, that holds today's divider
+# and question once the conversation rests on today, before the partner's answer opens below it. The band
+# matches its look at the end of the reveal when less than TODAY_SHARE of it differs. The list can rest a point
+# off its last place for a few frames, which changes about 2% of the band. The answer's sparkles change 4 to 5%.
+TODAY_BAND = (0, 0.13, 1, 0.17)
+TODAY_SHARE = 1 / 40
+# The answer cover's header row, as (x, y, width, height) in fractions of the screen. It changes from
+# the partner's status to the conversation's title only when the conversation takes over, while the
+# keyboard's drop and the send button's spinner before it stay below the row.
+COVER_HEADER = (0, 0.075, 1, 0.06)
 # Where Hjalmar's die rests and his two pawns stand in the seeded Ludo position, as fractions of
 # the screen, which the camera keeps on iPhones of the same shape. The pawn in front comes first.
 LUDO_DIE = (0.457, 0.605)
@@ -403,9 +469,11 @@ def capture(udid, path, size):
     assert_distinct(path)
 
 
-def snapshot_nodes(agent_device):
-    """The accessibility tree as a list of nodes, the app first, with frames in points."""
-    tree = run(*agent_device[:1], "snapshot", "-i", "--json", *agent_device[1:], capture_output=True).stdout
+def snapshot_nodes(agent_device, interactive=True):
+    """The accessibility tree as a list of nodes, the app first, with frames in points. The interactive
+    tree can leave out a text field that has no focus."""
+    tree = run(*agent_device[:1], "snapshot", *(["-i"] if interactive else []), "--json", *agent_device[1:],
+               capture_output=True).stdout
     return json.loads(tree)["data"]["nodes"]
 
 
@@ -536,6 +604,77 @@ def film_draw(recording, word, nodes):
     time.sleep(10)  # The reveal's last step, the reaction row, comes about 4.5 s after the last letter.
 
 
+def wait_for_node(agent_device, what, match, seconds=30):
+    """The first accessibility node that match accepts, from snapshots taken until one shows."""
+    deadline = time.monotonic() + seconds
+    while not (found := next((node for node in snapshot_nodes(agent_device, False) if match(node)), None)):
+        if time.monotonic() > deadline:
+            raise SystemExit(f"Found no {what} on the screen in {seconds} s.")
+        time.sleep(0.5)
+    return found
+
+
+def wait_until_still(agent_device):
+    """Returns once two accessibility snapshots in a row hold the same elements in the same places. A snapshot
+    takes a second or two, so the screen has been still for at least that long."""
+    def layout():
+        return [(node.get("type"), node.get("label"), *(round(node["rect"][key]) for key in RECT_KEYS))
+                for node in snapshot_nodes(agent_device, False)]
+    previous = layout()
+    while (current := layout()) != previous:
+        previous = current
+
+
+def node_center(node, screen):
+    """The middle of a node's frame as fractions of the screen."""
+    rect = node["rect"]
+    return ((rect["x"] + rect["width"] / 2) / screen[0], (rect["y"] + rect["height"] / 2) / screen[1])
+
+
+def film_question(recording, agent_device, locale, text):
+    """Hjalmar opens today's question from Home, adds the newest photo from the picker, types text and sends."""
+    def find(what, match, seconds=30):
+        return wait_for_node(agent_device, what, match, seconds)
+
+    def by_id(identifier):
+        return lambda node: node.get("identifier") == identifier
+
+    card = find("answer button on Home's question card", by_id(ANSWER_ACTION))
+    time.sleep(LEAD_SECONDS + 0.5)
+    recording.touch("card tap", node_center(card, recording.screen))
+    photo = find("photo button in the composer",
+                 lambda node: node.get("label") == PHOTO_BUTTON[locale] or node.get("identifier") == PHOTO_REMOVE)
+    if photo.get("identifier") == PHOTO_REMOVE:
+        raise SystemExit("The composer still holds a photo from an earlier take. Remove it, close the answer, "
+                         "stop the app and record again.")
+    time.sleep(2)
+    recording.touch("photo tap", node_center(photo, recording.screen))
+    # The picker shows the newest photo first, in a grid of cells about a third of the screen wide.
+    newest = find("photo in the picker", lambda node: node.get("type") == "Image" and node["rect"]["width"] > 100)
+    time.sleep(1.5)
+    recording.touch("photo pick", node_center(newest, recording.screen))
+    find("staged photo", by_id(PHOTO_REMOVE))
+    time.sleep(2.5)
+    recording.touch("field tap", node_center(find("answer text field", by_id(ANSWER_TEXT)), recording.screen))
+    time.sleep(2)
+    # The field moved up with the keyboard. Its frame is where the letters show.
+    rect = find("answer text field", by_id(ANSWER_TEXT))["rect"]
+    area = (rect["x"] / recording.screen[0], rect["y"] / recording.screen[1],
+            rect["width"] / recording.screen[0], rect["height"] / recording.screen[1])
+    recording.act("typing", "type", text, "--delay-ms", str(TYPE_DELAY_MS))
+    recording.actions[-1] = (*recording.actions[-1][:2], area)
+    recording.act("typed")
+    time.sleep(1.5)
+    recording.touch("send tap", node_center(find("send button", by_id(SEND_ACTION)), recording.screen))
+    find("conversation", by_id(CHAT_CLOSE), REVEAL_SECONDS)
+    # Two matching snapshots and the start of the swipe take about 2 s, near the pause the film wants after the reveal.
+    wait_until_still(agent_device)
+    (x, y), (dx, dy), ms = SWIPE
+    points = [round(value * side) for value, side in zip((x, y, dx, dy), recording.screen * 2)]
+    recording.act("swipe", "gesture", "pan", *map(str, points), str(ms), point=((x, y), (x + dx, y + dy), ms / 1000))
+    time.sleep(SCROLL_SECONDS)
+
+
 def frame_changes(video, area=None):
     """For each 30 fps frame after the first, how many pixels at a sixth of the size changed by more than
     MOTION_LEVEL, and whether the full frame repeats the one before. area is (x, y, width, height) in
@@ -551,6 +690,34 @@ def frame_changes(video, area=None):
     moved = bytes(0 if value <= MOTION_LEVEL else 1 for value in range(256))
     return [(diffs[i * size:(i + 1) * size].translate(moved).count(1), sums[i + 1] == sums[i])
             for i in range(len(sums) - 1)]
+
+
+def gray_frames(video, area, shrink=1):
+    """Each 30 fps frame's area, shrink times smaller, as gray bytes. area is (x, y, width, height) in
+    fractions of the screen. Frame i of the video is item i."""
+    width, height = (int(side) for side in run(
+        "ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height",
+        "-of", "csv=p=0", str(video), capture_output=True).stdout.strip().split(","))
+    # ffmpeg crops and scales a YUV 4:2:0 video to even sizes, so the frames are split at the same sizes.
+    crop = [round(fraction * side / 2) * 2 for fraction, side in zip(area, (width, height, width, height))]
+    out = [crop[2] // shrink // 2 * 2, crop[3] // shrink // 2 * 2]
+    frames = subprocess.run(["ffmpeg", "-v", "error", "-i", str(video), "-vf",
+                             f"fps={RECORD_FPS},crop={crop[2]}:{crop[3]}:{crop[0]}:{crop[1]},"
+                             f"scale={out[0]}:{out[1]},format=gray", "-f", "rawvideo", "-"],
+                            check=True, capture_output=True).stdout
+    size = out[0] * out[1]
+    return [frames[i:i + size] for i in range(0, len(frames) - size + 1, size)]
+
+
+def bright_pixels(video, area):
+    """For each 30 fps frame, how many pixels in area are brighter than TEXT_LEVEL."""
+    bright = bytes(1 if value > TEXT_LEVEL else 0 for value in range(256))
+    return [frame.translate(bright).count(1) for frame in gray_frames(video, area)]
+
+
+def looks_like(frame, other):
+    """Whether fewer than TODAY_SHARE of two gray frames' pixels differ by more than MOTION_LEVEL."""
+    return sum(1 for a, b in zip(frame, other) if abs(a - b) > MOTION_LEVEL) < len(frame) * TODAY_SHARE
 
 
 def moving(changes, frame, pixels=MOTION_PIXELS):
@@ -594,10 +761,56 @@ def find_events(screen, actions, video, full):
     full is frame_changes(video). The first action's motion tells how far the video's clock is from the
     script's."""
     first = actions[0][1]
-    offset = motion_from(full, round(max(first - 1, 0) * RECORD_FPS)) - first * RECORD_FPS
+    # The heart between the two photos on Home pulses, so the cover that opens over Home counts only from
+    # a change the size of a screen.
+    opens = SCREEN_CHANGE_PIXELS if screen == "02-question" else MOTION_PIXELS
+    offset = motion_from(full, round(max(first - 1, 0) * RECORD_FPS), opens) - first * RECORD_FPS
     # Each name's first action. The first action's own lag is in the offset, so a later action may show
     # sooner after it was sent. Searching from half a second earlier allows for that.
     anchor = {name: round((t - 0.5) * RECORD_FPS + offset) for name, t, _ in reversed(actions)}
+    if screen == "02-question":
+        def start(name):
+            return motion_from(full, anchor[name])
+        taps = [(start(name), point) for name, _, point in actions if name not in ("typing", "typed", "swipe")]
+        card, send = motion_from(full, anchor["card tap"], opens), start("send tap")
+        taps[0] = (card, taps[0][1])
+        # The picker and the photo it hands back have settled before the text field is tapped.
+        staged = max(i for i in range(start("photo pick"), anchor["field tap"]) if moving(full, i)) + 1
+        # Each letter adds white pixels to the field. Frame i of the video is index i of the counts.
+        letters = bright_pixels(video, actions[[name for name, _, _ in actions].index("typing")][2])
+        # The keyboard can start rising a second after the composer takes its compact shape. Only the cursor,
+        # under MOTION_PIXELS, blinks after it has risen. The field moves through its final frame while the
+        # keyboard rises, so the letters count from after that, and until a second after the typing command
+        # returned, well before the send button lights up.
+        keyboard = max(i for i in range(start("field tap"), anchor["typing"]) if moving(full, i)) + 1
+        typed = [i for i in range(max(anchor["typing"], keyboard), anchor["typed"] + RECORD_FPS)
+                 if abs(letters[i] - letters[i - 1]) >= TEXT_STEP]
+        if not typed:
+            raise SystemExit("Found no letters appearing in the answer's text field.")
+        reveal = motion_from(frame_changes(video, COVER_HEADER), send)
+        # The swipe can reach the app seconds after it is sent, so its motion is found from the end: it is the
+        # last motion, and the list rests for over a second before it.
+        last = max(i for i in range(send, len(full) + 1) if moving(full, i))
+        if last > len(full) - TAIL_SECONDS * RECORD_FPS:
+            raise SystemExit("The list still moved near the end of the recording. Record again when the Mac is idle.")
+        scroll = last
+        while any(moving(full, i) for i in range(scroll - MOTION_GAP, scroll)):
+            scroll -= 1
+        settled = max(i for i in range(send, scroll) if moving(full, i)) + 1
+        # The conversation first shows where the phone's copy of the chat put it, then moves to today. It rests on
+        # today once today's band looks as it does when the reveal has settled, for three frames in a row.
+        band = gray_frames(video, TODAY_BAND, 3)
+        today = next((i for i in range(reveal, settled + 1)
+                      if all(looks_like(band[j], band[settled]) for j in range(i, i + 3))), None)
+        if today is None:
+            raise SystemExit("The conversation never rested on today before the reveal settled.")
+        (_, _, (origin, target, seconds)), = [action for action in actions if action[0] == "swipe"]
+        # In pairs, each motion's start and end, so the repeated-frame report covers them. The rest come last.
+        return {"card tap": card, "question shown": motion_end(full, card) + 1, "photo tap": start("photo tap"),
+                "photo staged": staged, "field tap": start("field tap"), "keyboard up": keyboard,
+                "typing starts": typed[0], "typing done": typed[-1], "reveal starts": reveal,
+                "reveal settled": settled, "scroll starts": scroll, "scroll settled": last + 1,
+                "today shown": today, "send tap": send}, taps, [(scroll, origin, target, seconds)]
     if screen == "03-ludo":
         taps = [(motion_from(full, round((t - 0.5) * RECORD_FPS + offset)), point) for _, t, point in actions if point]
         # A move ends with the die hopping to the next player's tray, right as the last pawn lands.
@@ -612,7 +825,7 @@ def find_events(screen, actions, video, full):
             partner = motion_from(full, anchor["partner move"])
             events |= {"partner die starts": partner,
                        "partner piece lands": motion_end(full, partner) - TRAY_HOP_FRAMES}
-        return events, taps
+        return events, taps, []
     # Each letter's tile starts to move toward its slot. The canvas area leaves out the speed bonus
     # line under it, which moves the whole time.
     tiles, canvas = frame_changes(video, DRAW_TILES), frame_changes(video, DRAW_CANVAS)
@@ -625,14 +838,14 @@ def find_events(screen, actions, video, full):
     done = max(i for i in range(1, taps[0][0]) if moving(canvas, i))
     return {"drawing starts": stroke, "drawing done": done,
             "celebration starts": taps[-1][0],
-            "celebration settled": motion_end(full, taps[-1][0], CELEBRATION_GAP)}, taps
+            "celebration settled": motion_end(full, taps[-1][0], CELEBRATION_GAP)}, taps, []
 
 
 def finish_recording(screen, recording, path):
     """Cuts the raw recording to its actions, writes it at a constant 30 fps in H.264 with its events
     file, and prints how many frames repeat inside each motion."""
     changes = frame_changes(recording.path)
-    events, taps = find_events(screen, recording.actions, recording.path, changes)
+    events, taps, swipes = find_events(screen, recording.actions, recording.path, changes)
     first = max(0, min(events.values()) - round(LEAD_SECONDS * RECORD_FPS))
     last = min(len(changes), max(events.values()) + TAIL_SECONDS * RECORD_FPS)
     run("ffmpeg", "-v", "error", "-y", "-i", str(recording.path), "-vf",
@@ -641,6 +854,8 @@ def finish_recording(screen, recording, path):
         "-movflags", "+faststart", str(path))
     names = list(events)
     for start, end in zip(names[::2], names[1::2]):
+        if events[end] <= events[start]:
+            continue
         repeats = [changes[i - 1][1] for i in range(events[start] + 1, events[end] + 1)]
         longest = run_length = 0
         for repeat in repeats:
@@ -651,6 +866,10 @@ def finish_recording(screen, recording, path):
     seconds = {name: round((frame - first) / RECORD_FPS, 3) for name, frame in events.items()}
     seconds["taps"] = [{"t": round((frame - first) / RECORD_FPS, 3), "x": round(point[0], 4), "y": round(point[1], 4)}
                        for frame, point in taps]
+    if swipes:
+        seconds["swipes"] = [{"t": round((frame - first) / RECORD_FPS, 3), "x": round(origin[0], 4),
+                              "y": round(origin[1], 4), "to_x": round(target[0], 4), "to_y": round(target[1], 4),
+                              "seconds": duration} for frame, origin, target, duration in swipes]
     path.with_suffix(".events.json").write_text(json.dumps(seconds, indent=2, ensure_ascii=False) + "\n")
 
 
@@ -665,10 +884,11 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "ios/ASConnectScreenshots/trial-1/raw")
     args = parser.parse_args()
     ids = json.loads(args.ids.read_text().strip().splitlines()[-1])
-    requested = set((args.screens or ",".join(RECORDINGS if args.record else SCREENS)).split(","))
-    if unknown := requested - set(RECORDINGS if args.record else SCREENS):
+    available = RECORDINGS if args.record else SCREENS
+    requested = set((args.screens or ",".join(available)).split(","))
+    if unknown := requested - set(available):
         raise SystemExit(f"Unknown screens: {', '.join(sorted(unknown))}")
-    screens = [screen for screen in SCREENS if screen in requested]
+    screens = [screen for screen in available if screen in requested]
 
     simulator = device(args.simulator)
     udid = simulator["udid"]
@@ -681,11 +901,15 @@ def main():
     if "01-widget" in screens and family.edit_mode:
         use_large_icons(agent_device, args.locale, family.edit_mode)
     for screen in screens:
-        url, wait = SCREENS[screen]
+        url, wait = {**SCREENS, **FILMS}[screen]
         # Every screen starts from a fresh launch. A deep link opens beneath a full-screen
         # cover, such as the reveal, so a cover left from an earlier screen or run would
         # hide it. Terminating fails when the app is not running, which is fine.
         subprocess.run(["xcrun", "simctl", "terminate", udid, BUNDLE_ID], stderr=subprocess.DEVNULL)
+        if args.record and screen == "02-question":
+            data = Path(simctl("get_app_container", udid, BUNDLE_ID, "data", capture_output=True).stdout.strip())
+            for cache in QUESTION_CACHES:
+                shutil.rmtree(data / "Library/Application Support" / cache, ignore_errors=True)
         if url is not None:
             # Launched through agent-device, so the link below opens without "Open in Paeonia?".
             run(*agent_device[:1], "open", BUNDLE_ID, *agent_device[1:], stdout=subprocess.DEVNULL)
@@ -698,6 +922,9 @@ def main():
                 if screen == "06-draw":
                     recording.start()
                     recording.act("open link")
+                if screen == "02-question" and "film_answer" not in ids:
+                    raise SystemExit("--ids has no film_answer. Seed with scripts/app-store-content --question-film.")
+        if url:
             run(*agent_device[:1], "open", BUNDLE_ID, re.sub(r"\{(\w+)\}", lambda m: ids[m.group(1)], url),
                 *agent_device[1:], stdout=subprocess.DEVNULL)
             time.sleep(1)
@@ -707,7 +934,11 @@ def main():
                     stdout=subprocess.DEVNULL)
         if args.record:
             path = folder / f"{name}-{screen}.mp4"
-            if screen == "03-ludo":
+            if screen == "02-question":
+                time.sleep(wait)
+                recording.start()
+                film_question(recording, agent_device, args.locale, ids["film_answer"])
+            elif screen == "03-ludo":
                 time.sleep(wait)
                 recording.start()
                 film_ludo(recording, ids["partner_clerk_subject"])
