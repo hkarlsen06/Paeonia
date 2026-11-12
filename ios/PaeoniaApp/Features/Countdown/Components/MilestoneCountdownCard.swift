@@ -14,8 +14,8 @@ import SwiftUI
 ///
 /// Tapping the tile opens `RelationshipTimelineView` (days together, the milestones
 /// ahead, and the date editor). On the event's day the page says "Today" and the heart
-/// burst plays on its own, once, with a haptic and a sound, when the tile scrolls into
-/// view. Without a start date the tile still counts down to a birthday or countdown the
+/// burst plays on its own, once, with a sound and the petal shower with hearts, when the
+/// tile scrolls into view. Without a start date the tile still counts down to a birthday or countdown the
 /// couple added. With no date at all the page shows a question mark and the tile opens
 /// the date editor.
 struct MilestoneCountdownCard: View {
@@ -30,6 +30,7 @@ struct MilestoneCountdownCard: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.petalShower) private var petalShower
     @State private var isEditorPresented = false
     @State private var isTimelinePresented = false
     @State private var selectedDate = Date()
@@ -214,17 +215,17 @@ struct MilestoneCountdownCard: View {
         hasCountedUp = true
     }
 
-    /// Plays the heart burst once when the card is showing "Today". The moment is
+    /// Plays the heart burst and the shower once when the card is showing "Today". The moment is
     /// earned by reaching the milestone, not by tapping. Tapping opens the timeline.
     private func celebrateIfMilestoneDay(_ milestone: CoupleDateEvent) {
         guard milestone.daysRemaining == 0, celebratedMilestoneDate != milestone.date else { return }
         celebratedMilestoneDate = milestone.date
-        celebrate()
+        celebrate(milestone)
     }
 
-    private func celebrate() {
+    private func celebrate(_ milestone: CoupleDateEvent) {
         celebrationID += 1
-        PaeoniaHaptics.milestoneReached()
+        petalShower(seed: milestone.id, hearts: true)
         GameSound.win.play()
         withAnimation(reduceMotion ? .easeOut(duration: 0.2) : PaeoniaMotion.celebrationReveal) {
             isCelebrating = true

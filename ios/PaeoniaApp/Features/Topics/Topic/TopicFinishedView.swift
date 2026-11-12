@@ -6,7 +6,7 @@ struct TopicFinishedView: View {
     let topic: TopicSummary
     let onDone: () -> Void
 
-    @State private var bloomStart = Date()
+    @Environment(\.petalShower) private var petalShower
 
     var body: some View {
         ZStack {
@@ -15,11 +15,6 @@ struct TopicFinishedView: View {
 
             VStack(spacing: PaeoniaSpacing.space16) {
                 TopicArtwork(topicKey: topic.id, height: 120)
-                    .overlay {
-                        GamePetalBloom(start: bloomStart, seed: topic.id)
-                            .frame(width: 280, height: 280)
-                            .allowsHitTesting(false)
-                    }
 
                 Text(.topicsFinishedTitle(topic.title))
                     .font(PaeoniaTypography.collectionHeroTitle)
@@ -41,10 +36,8 @@ struct TopicFinishedView: View {
             .padding(.horizontal, PaeoniaSpacing.space32)
             .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
         }
-        .onAppear {
-            bloomStart = Date()
-            PaeoniaHaptics.milestoneReached()
-        }
+        // Waits for the view to fade in over the topic.
+        .onAppear { petalShower(seed: "topic.\(topic.id)", after: 0.25) }
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
     }

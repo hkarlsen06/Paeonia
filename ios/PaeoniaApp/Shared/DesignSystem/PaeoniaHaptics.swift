@@ -54,15 +54,9 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
-    /// The heart burst on the Us tab card the day a relationship milestone lands.
+    /// The heart burst as the day count lands in onboarding's days together reveal
+    /// (`RelationshipDaysReveal`).
     static func milestoneReached() {
-        notify(.success)
-    }
-
-    /// The big check lands on Home's "Things to try together" card once every row is
-    /// done.
-    static func firstStepsFinished() {
-        impact(.medium, intensity: 0.9)
         notify(.success)
     }
 
@@ -104,9 +98,9 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
-    /// A memory saved from the Us tab's visit photo card arrives on its screen with petals: a heavy
-    /// pop as they fire, then soft taps that fade as they fall.
-    static func memoryCelebrated() {
+    /// The full-screen petal shower (`PaeoniaPetalShowerHost`): a heavy pop as the petals fire,
+    /// then soft taps that fade as they fall.
+    static func petalShowerFired() {
         impact(.heavy, intensity: 1)
         notify(.success)
         let patter: [(afterPop: Int, intensity: CGFloat)] = [(220, 0.75), (500, 0.55), (850, 0.4), (1_300, 0.25)]

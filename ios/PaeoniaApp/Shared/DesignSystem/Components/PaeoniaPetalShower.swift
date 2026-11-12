@@ -2,10 +2,12 @@ import SwiftUI
 
 /// Petals fired from two cannons below the bottom corners. They shoot up, spread over the whole
 /// width of the screen, and tumble back down over about three and a half seconds. The same seed
-/// gives the same shower.
-struct MemoryPetalShower: View {
+/// gives the same shower. With `hearts`, every fifth petal is a heart. `PaeoniaPetalShowerHost`
+/// draws it over the whole window.
+struct PaeoniaPetalShower: View {
     let start: Date
     let seed: String
+    var hearts = false
 
     static let duration: TimeInterval = 3.6
     private static let petalCount = 150
@@ -47,11 +49,18 @@ struct MemoryPetalShower: View {
     }
 
     private func draw(in context: inout GraphicsContext, size: CGSize, elapsed: Double) {
+        let heart = hearts ? context.resolve(Image(systemName: "heart.fill")) : nil
         for index in 0..<Self.petalCount {
             guard let petal = petal(index, size: size, elapsed: elapsed) else { continue }
             var layer = context
             layer.translateBy(x: petal.position.x, y: petal.position.y)
             layer.rotate(by: .radians(petal.rotation))
+            if var heart, index.isMultiple(of: 5) {
+                heart.shading = .color(color(for: index).opacity(petal.opacity))
+                let side = petal.length * 1.3
+                layer.draw(heart, in: CGRect(x: -side / 2, y: -side / 2, width: side, height: side))
+                continue
+            }
             let height = petal.length * 0.58 * petal.flip
             let rect = CGRect(x: -petal.length / 2, y: -height / 2, width: petal.length, height: height)
             layer.fill(Path(ellipseIn: rect), with: .color(color(for: index).opacity(petal.opacity)))
@@ -104,7 +113,7 @@ struct MemoryPetalShower: View {
         }
     }
 
-    /// A number from the seed string, so each memory has its own shower.
+    /// A number from the seed string, so each moment has its own shower.
     private var seedOffset: Double {
         Double(seed.unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) % 9_973 })
     }

@@ -121,6 +121,8 @@
     var body: some View {
       scenarioContent
         .id(reloadID)
+        // The menu opens a scenario in a cover, which draws above the app root's host.
+        .modifier(PaeoniaPetalShowerHost())
         .environment(bannerCenter)
         .preferredColorScheme(.dark)
         // No host-level accessibilityIdentifier here: a container identifier

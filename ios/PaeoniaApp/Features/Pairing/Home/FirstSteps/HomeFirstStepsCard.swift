@@ -13,13 +13,13 @@ struct HomeIsCoveredKey: PreferenceKey {
 
 extension EnvironmentValues {
     /// Home's scroll view. The finish moment scrolls the card to the middle of the screen,
-    /// so the check and the petals are not left under the tab bar.
+    /// so the check is not left under the tab bar.
     @Entry var homeScrollProxy: ScrollViewProxy?
 }
 
 /// The Home card after the first day with a few things to try together. Each row opens
 /// its feature and ticks itself off once the thing is done. Once every row is done and
-/// the person sees the card, the list clears, a big check lands with a burst of petals,
+/// the person sees the card, the list clears, a big check lands with the petal shower,
 /// and the card closes itself (`playFinish`). The person can also close it at any time.
 struct HomeFirstStepsCard: View {
     let steps: HomeFirstSteps
@@ -38,8 +38,8 @@ struct HomeFirstStepsCard: View {
         case waiting
         /// The list shrinks away.
         case clearing
-        /// The check is in, and the petals burst from it at `bloomStart`.
-        case checked(bloomStart: Date)
+        /// The check is in.
+        case checked
         /// `onFinished` ran. The check stays while Home takes the card away.
         case finished
     }
@@ -48,14 +48,12 @@ struct HomeFirstStepsCard: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dailyFlowIsPresented) private var flowIsPresented
     @Environment(\.homeScrollProxy) private var scrollProxy
+    @Environment(\.petalShower) private var petalShower
     @ScaledMetric(relativeTo: .largeTitle) private var checkSize: CGFloat = 72
     @State private var phase = FinishPhase.idle
     @State private var isAppeared = false
     @State private var momentTask: Task<Void, Never>?
 
-    /// The petals need room around the check. They draw outside the card without taking
-    /// layout space.
-    private static let bloomSize: CGFloat = 380
     private static let scrollID = "home.firstSteps"
 
     var body: some View {
@@ -141,7 +139,6 @@ struct HomeFirstStepsCard: View {
                 .font(.system(size: checkSize))
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .symbolEffect(.bounce, value: isChecked && !reduceMotion)
-                .background { petals }
                 .accessibilityHidden(true)
             Text(.homeFirstStepsFinished)
                 .font(PaeoniaTypography.title)
@@ -157,24 +154,6 @@ struct HomeFirstStepsCard: View {
         .accessibilityHidden(!isChecked)
     }
 
-    /// A burst from the check, and a smaller one a moment later.
-    @ViewBuilder
-    private var petals: some View {
-        if case let .checked(bloomStart) = phase {
-            ZStack {
-                GamePetalBloom(start: bloomStart, seed: "homeFirstSteps")
-                GamePetalBloom(
-                    start: bloomStart.addingTimeInterval(0.25),
-                    seed: "homeFirstSteps.second",
-                    intensity: 0.6
-                )
-            }
-            .frame(width: Self.bloomSize, height: Self.bloomSize)
-            // The petals start at once instead of fading in with the check.
-            .transition(.identity)
-        }
-    }
-
     // MARK: Finish moment
 
     /// Starts a waiting moment once Home shows the card, with no sheet or answer flow
@@ -188,9 +167,9 @@ struct HomeFirstStepsCard: View {
 
     /// Waits for the tab switch or the sheet closing to land on the card, and scrolls the
     /// card to the middle of the screen, since Home may have it below the fold. Then the list
-    /// shrinks away, the check springs in with a tap and a burst of petals, and it holds
-    /// long enough to read before the card closes for good. With Reduce Motion the list
-    /// crossfades to the check, with no petals.
+    /// shrinks away, the check springs in with the petal shower, and it holds long enough
+    /// to read before the card closes for good. With Reduce Motion the list crossfades to
+    /// the check, and the shower plays only its haptic.
     private func playFinish() async {
         try? await Task.sleep(for: .milliseconds(550))
         guard !Task.isCancelled else { return }
@@ -205,11 +184,11 @@ struct HomeFirstStepsCard: View {
             guard !Task.isCancelled else { return }
         }
         withAnimation(reduceMotion ? PaeoniaMotion.meaningfulMoment : .spring(duration: 0.5, bounce: 0.35)) {
-            phase = .checked(bloomStart: .now)
+            phase = .checked
         }
-        PaeoniaHaptics.firstStepsFinished()
+        petalShower(seed: "homeFirstSteps")
         AccessibilityNotification.Announcement(String(localized: .homeFirstStepsFinished)).post()
-        try? await Task.sleep(for: .milliseconds(1_500))
+        try? await Task.sleep(for: .milliseconds(2_600))
         guard !Task.isCancelled else { return }
         finish()
     }

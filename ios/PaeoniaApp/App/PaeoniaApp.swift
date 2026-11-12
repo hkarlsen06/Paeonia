@@ -55,6 +55,7 @@ struct PaeoniaApp: App {
         WindowGroup {
             appContent
             .modifier(PaeoniaSymbolMotionPreferences())
+            .modifier(PaeoniaPetalShowerHost())
             .modifier(PaeoniaContrastPreference())
             .onOpenURL { url in
                 if let deepLink = PaeoniaDeepLink(url) {

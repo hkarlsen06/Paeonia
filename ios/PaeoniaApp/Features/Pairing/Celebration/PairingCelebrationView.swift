@@ -12,8 +12,11 @@ import SwiftUI
 /// `PairingCelebrationTimeline` runs the script; this view renders its state.
 struct PairingCelebrationView: View {
     private static let coordinateSpace = "pairingCelebration"
+    /// Seconds from the start of `linking` until the partner's avatar has glided into its slot.
+    private static let landingTime: TimeInterval = 0.45
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.petalShower) private var petalShower
 
     @State private var timeline: PairingCelebrationTimeline
     @State private var currentPhoto = PairingProfilePhoto()
@@ -107,6 +110,13 @@ struct PairingCelebrationView: View {
         }
         .onChange(of: reduceMotion) { _, enabled in
             if enabled { timeline.stop() }
+        }
+        .onChange(of: timeline.phase) { _, phase in
+            // The petals fire as the partner's avatar reaches its place. A skipped intro
+            // never passes through `linking`, so it gets no shower.
+            if phase == .linking {
+                petalShower(seed: "pairing", hearts: true, after: Self.landingTime)
+            }
         }
         .onChange(of: timeline.isSettled) { _, isSettled in
             if isSettled {
