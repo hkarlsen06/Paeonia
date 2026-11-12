@@ -164,7 +164,7 @@ def backdrop(cv, t):
     pulse = A.pulse[min(max(round(t), 0), FRAMES - 1)]
     phone_h = 0.82 * (SUBJECT[3] - SUBJECT[1])
     subject = ((SUBJECT[0] + SUBJECT[2]) / 2, (SUBJECT[1] + SUBJECT[3]) / 2)
-    gx, gy = kf(t, (at(END), subject), (at(END, 3), (W / 2, 0.44 * H)), (FADE, (W / 2, 0.44 * H)),
+    gx, gy = kf(t, (at(END), subject), (at(END, 3), (W / 2, H / 2)), (FADE, (W / 2, H / 2)),
                 (FRAMES - 2, subject))
     m = skia.Matrix.Translate(gx, gy)
     m.preScale(0.55 * phone_h, 0.45 * phone_h)  # CSS: radial-gradient(0.55h 0.45h at the phone, glow, transparent)
@@ -429,16 +429,28 @@ TAGLINE_GAP, SMALL_GAP = 3.5, 3
 FADE = FRAMES - 16
 
 
+def wordmark():
+    """The wordmark and the box of its ink, found by drawing it. The blob's own bounds leave room for the font's
+    widest glyph on every side, so they do not centre the letters."""
+    blob = skia.TextBlob.MakeFromShapedText('Paeonia', font(WORDMARK))
+    loose = blob.bounds().roundOut()
+    buf = np.zeros((loose.height(), loose.width(), 4), np.uint8)
+    skia.Surface(buf).getCanvas().drawTextBlob(blob, -loose.left(), -loose.top(), paint(WHITE))
+    rows, columns = (np.flatnonzero((buf[..., 3] > 127).any(axis)) for axis in (1, 0))
+    return blob, skia.Rect.MakeLTRB(loose.left() + columns[0], loose.top() + rows[0], loose.left() + columns[-1] + 1,
+                                    loose.top() + rows[-1] + 1)
+
+
 def lockup():
-    """Top edge of each line of the end card, stacked around 44 % of the frame's height and kept above its bottom
-    15 %, where the App Store puts its controls."""
+    """Top edge of each line of the end card, stacked around the middle of the frame and kept above its bottom 15 %,
+    where the App Store puts its controls."""
     tag_w = TEXT[2] - TEXT[0]
     _, tag_h = layout(A.tagline, TAGLINE, tag_w, 1.2, 'center')
     _, small_h = layout(A.small, SMALL, tag_w, 1.3, 'center')
-    gaps = 40, 56, 26, 64
-    heights = MARK / 2, WORDMARK, tag_h, small_h, BADGE
+    gaps = 90, 40, 26, 64
+    heights = MARK / 2, A.wordmark[1].height(), tag_h, small_h, BADGE
     total = sum(heights) + sum(gaps)
-    y = min(0.44 * H - total / 2, 0.85 * H - total)
+    y = min(H / 2 - total / 2, 0.85 * H - total)
     tops = {}
     for key, height, gap in zip(('mark', 'wordmark', 'tagline', 'small', 'badge'), heights, (*gaps, 0)):
         tops[key] = y
@@ -461,9 +473,8 @@ def endcard(cv, t):
                          paint(a=alpha))
     e, dy, alpha = rise('wordmark', 40)
     if e > 0.001:
-        bounds = A.wordmark_blob.bounds()
-        cv.drawTextBlob(A.wordmark_blob, (W - bounds.width()) / 2 - bounds.left(), lock['wordmark'] + dy - bounds.top(),
-                        paint(TEXT_COLOR, alpha))
+        blob, ink = A.wordmark
+        cv.drawTextBlob(blob, W / 2 - ink.centerX(), lock['wordmark'] + dy - ink.top(), paint(TEXT_COLOR, alpha))
     headline(cv, A.tagline, (TEXT[0], lock['tagline'], TEXT[2], 0), t, CARD['tagline'], None, size=TAGLINE,
              align='center', leading=1.2, alpha=fade, color=ACCENT, gap=TAGLINE_GAP)
     headline(cv, A.small, (TEXT[0], lock['small'], TEXT[2], 0), t, CARD['small'], None, size=SMALL, align='center',
@@ -536,13 +547,22 @@ def drawing(name, locale):
     return Strokes(ASSETS / f"{DRAWINGS[name].replace('{lang}', LOCALES[locale])}.strokes.json")
 
 
+def load_card():
+    """What the end card draws in A.locale."""
+    A.tagline, A.small = strings('app.tagline'), strings('paywall.subtitle')
+    A.mark = svg_image(ROOT / 'ios/PaeoniaApp/Resources/Assets.xcassets/PaeoniaMark.imageset/paeonia-mark.svg',
+                       MARK)
+    A.wordmark = wordmark()
+    A.badge = svg_image(BRAND / f"app-store-{'no' if A.locale == 'no' else 'en'}.svg", 2 * BADGE)
+
+
 def init(opts):
     for key, value in opts.items(): setattr(A, key, value)
     A.track = json.loads((A.layer / 'track.json').read_text())
     A.typeface = skia.Typeface.MakeFromFile(str(ASSETS / CONFIG['font']))
     panels = CONFIG['panels'][A.locale]
     A.copy = {key: panels[panel][line] for key, (panel, line) in COPY.items()}
-    A.tagline, A.small = strings('app.tagline'), strings('paywall.subtitle')
+    load_card()
     glass = load_captures(A.captures, A.locale)
     A.crops = {}
     for name in LIFTS:
@@ -554,10 +574,6 @@ def init(opts):
         strokes = drawing(name, A.locale)
         A.strokes[name] = strokes
         A.blank[name] = image(inpaint(glass[REGIONS[name].screen][t:b, l:r], strokes.coverage(r - l, 3) > 0.01))
-    A.mark = svg_image(ROOT / 'ios/PaeoniaApp/Resources/Assets.xcassets/PaeoniaMark.imageset/paeonia-mark.svg',
-                       MARK)
-    A.wordmark_blob = skia.TextBlob.MakeFromShapedText('Paeonia', font(WORDMARK))
-    A.badge = svg_image(BRAND / f"app-store-{'no' if A.locale == 'no' else 'en'}.svg", 2 * BADGE)
 
 
 # Sound ------------------------------------------------------------------------------------------------------------
@@ -818,6 +834,17 @@ def check():
         all_up = max(CARD['mark'] + settled, CARD['wordmark'] + settled, CARD['badge'] + settled, tagline_up,
                      CARD['small'] + (words['small'] - 1) * SMALL_GAP + settled)
         ok &= least(f'{locale} end card fully up before it fades', FADE - all_up, 1.0)
+        # Each line of the settled end card has as much ink left of the frame's middle as right of it. The rows
+        # where two lines meet are left out, since the edge of one line's ink can reach a pixel into the next.
+        load_card()
+        buf = np.zeros((H, W, 4), np.uint8)
+        endcard(skia.Surface(buf).getCanvas(), FADE)
+        tops = [*lockup().values(), H]
+        for key, top, bottom in zip(lockup(), tops, tops[1:]):
+            columns = np.flatnonzero((buf[round(top) + 2:round(bottom) - 2, :, 3] > 127).any(0))
+            off = (columns[0] + columns[-1] + 1) / 2 - W / 2
+            print(f'{locale} end card {key}: {off:+.1f} px from the middle, at most 2 px')
+            ok &= abs(off) <= 2
     audio = music()
     seconds = len(audio) / SR
     print(f'music: {seconds:.3f} s for {FRAMES / FPS:.3f} s of film')
