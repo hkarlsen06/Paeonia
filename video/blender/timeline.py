@@ -1,6 +1,7 @@
 """Frame grid, region table and phone geometry shared by phone3d.py, which renders the 3D layer in Blender, and
 showcase.py, which draws the rest."""
 import json
+import math
 import re
 import subprocess
 from pathlib import Path
@@ -24,9 +25,9 @@ TEXT = 64, 168, W - 64, 560  # headlines stay in this box, above the phones
 # The music is 120 BPM and cut on its bar lines (EDIT in showcase.py), so a bar of the film is 2 s.
 BEAT = 15  # frames
 BAR = 4 * BEAT
-# The bar each scene starts on, counted from the film's first frame.
-WIDGET, COUNTDOWN, HOME, CHAT, PLAY, DRAW, MEMORIES, END = 0, 1, 2, 3.5, 6.5, 8, 10.5, 12
-POSTERS = 90, 150  # frames that must be clean holds: 3.0 s and 5.0 s
+# The bar each scene starts on, counted from the film's first frame. The drums come in on bar 2, at 4 s.
+WIDGET, COUNTDOWN, QUESTION, PLAY, DRAW, MEMORIES, END = 0, 0.5, 1.5, 6.5, 8, 10.5, 12
+POSTERS = 60, 150  # frames that must be clean holds: 2.0 s and 5.0 s
 
 
 def at(bar, beats=0, frames=0):
@@ -36,24 +37,44 @@ def at(bar, beats=0, frames=0):
 
 # The main phone's screen through the film, as (frame the change is centred on, screen). Each change dissolves over
 # DISSOLVE frames. 06-draw is on a second phone of its own, which is in the film over the frames of SECOND_PHONE.
-SHOTS = [(0, '01-widget'), (at(HOME, 0, 2), '04-home'), (at(CHAT, 0, -4), '02-chat'), (at(PLAY, 0, -4), '03-ludo'),
+SHOTS = [(0, '01-widget'), (at(QUESTION), '02-question'), (at(PLAY, 0, -4), '03-ludo'),
          (at(MEMORIES, 0, -4), '05-memories')]
 DISSOLVE = 10
 SECOND_PHONE = at(DRAW, 0, -16), at(MEMORIES, 0, 5)
-SCREENS = '01-widget', '02-chat', '04-home', '05-memories'  # the stills; 03-ludo and 06-draw are screen recordings
+SCREENS = '01-widget', '05-memories'  # the stills; the other screens are recordings
 
 
 class Clip(NamedTuple):
     """A stretch of a screen recording. From film frame `start` the recording plays at `speed`, placed so that its
     event `event` falls `after` film frames past `start`. With `fit`, a later event, the speed is instead the one that
     brings that event to the next clip's start. A clip runs until the next clip of the same screen, and the first one
-    also covers the frames before its start."""
+    also covers the frames before its start. With `dissolve`, the clip fades in over that many frames from its start,
+    over the clip before it held on the frame that clip reached at the start."""
     start: int
     event: str
     after: float = 0
     speed: float = 1.0
     fit: str | None = None
+    dissolve: int = 0
 
+
+# The film frames 02-question's moments fall on. The card tap comes 3 frames before the drums, so the answer cover
+# starts to open on their first downbeat. The question stays at its full size until the tap on the text field, the
+# typing takes 1.2 s, the conversation comes in on a bar line, and the swipe to the earlier day starts about 1.5 s after
+# the partner's answer has opened. The list coasts for 2.5 s after the swipe, which the film plays in 1 s. Fit these
+# to the recording; FOOTAGE plays the stretches between them.
+CARD_TAP = at(QUESTION, 2, -3)
+QUESTION_SHOWN = at(QUESTION, 3)
+PHOTO_TAP = at(QUESTION, 4, 6)
+FIELD_TAP = at(QUESTION, 5, 6)
+TYPING = at(QUESTION, 6, 6)
+TYPED = at(QUESTION, 8, 12)
+SEND = at(QUESTION, 9, 4)
+REVEAL = at(QUESTION, 10)
+SCROLL = at(QUESTION, 15, 7)
+SCROLLED = at(QUESTION, 17, 7)
+PICKER_DISSOLVE = 7  # frames from the photo tap to the photo in the composer, so the picker never shows
+REVEAL_DISSOLVE = 8  # frames from the sending answer to the conversation resting on today
 
 # The screen recordings, cut against their events so every locale's recording lines up without numbers of its own.
 # Ludo: the die is flicked a third of a second after the screen is fully in and rolls at its own pace. The recording
@@ -62,6 +83,14 @@ class Clip(NamedTuple):
 # strokes play at twice their speed as the phone arrives, the guess cuts in just before its first letter, its letters
 # play in a second, and the celebration then plays at its own pace.
 FOOTAGE = {
+    '02-question': (Clip(CARD_TAP, 'card tap', fit='question shown'),
+                    Clip(QUESTION_SHOWN, 'question shown', fit='photo tap'),
+                    Clip(PHOTO_TAP, 'photo staged', speed=0, dissolve=PICKER_DISSOLVE),
+                    Clip(FIELD_TAP - 2, 'field tap', 2, fit='keyboard up'),
+                    Clip(TYPING, 'typing starts', fit='typing done'),
+                    Clip(TYPED, 'typing done', speed=0), Clip(SEND - 2, 'send tap', 2),
+                    Clip(REVEAL, 'today shown', dissolve=REVEAL_DISSOLVE),
+                    Clip(SCROLL, 'scroll starts', fit='scroll settled'), Clip(SCROLLED, 'scroll settled')),
     '03-ludo': (Clip(at(PLAY, 0, 10), 'die tap'), Clip(at(PLAY, 0, 56), 'piece starts', 8),
                 Clip(at(DRAW, 0, 30), 'partner die starts', speed=0)),
     '06-draw': (Clip(at(DRAW, 0, 24), 'drawing done', speed=2),
@@ -71,10 +100,12 @@ FOOTAGE = {
 
 class Recording(NamedTuple):
     """A screen recording: its mp4, the seconds of each named event from its first frame, its taps as (seconds, x, y)
-    with x and y as fractions of the screen, and the seconds of its last frame."""
+    with x and y as fractions of the screen, its swipes as (seconds, x, y, x it ends on, y it ends on, seconds the
+    finger drags), and the seconds of its last frame."""
     path: Path
     events: dict
     taps: list
+    swipes: list
     length: float
 
 
@@ -91,19 +122,26 @@ def recording(folder, locale, screen):
     taps = sorted((tap['t'], tap['x'], tap['y']) for tap in events.pop('taps', []))
     if taps:
         events['first tap'], events['last tap'] = taps[0][0], taps[-1][0]
+    swipes = [tuple(swipe[key] for key in ('t', 'x', 'y', 'to_x', 'to_y', 'seconds'))
+              for swipe in events.pop('swipes', [])]
     missing = {name for clip in FOOTAGE[screen] for name in (clip.event, clip.fit) if name} - set(events)
     if missing:
         raise SystemExit(f'{notes} has no {", ".join(sorted(missing))}')
     frames = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-count_packets', '-show_entries',
                              'stream=nb_read_packets', '-of', 'csv=p=0', str(path)],
                             capture_output=True, text=True, check=True).stdout
-    return Recording(path, events, taps, (int(frames) - 1) / FPS)
+    return Recording(path, events, taps, swipes, (int(frames) - 1) / FPS)
 
 
-def footage_time(screen, frame, rec):
-    """Seconds into the recording of `screen` at film frame `frame`, held on its first and last frames."""
+def clip_at(screen, frame):
+    """Index in FOOTAGE[screen] of the clip that plays at film frame `frame`."""
+    return max([0] + [i for i, clip in enumerate(FOOTAGE[screen]) if clip.start <= frame])
+
+
+def clip_time(screen, k, frame, rec):
+    """Seconds into the recording at film frame `frame` as clip k of `screen` plays it, held on the recording's first
+    and last frames."""
     clips = FOOTAGE[screen]
-    k = max([0] + [i for i, clip in enumerate(clips) if clip.start <= frame])
     clip = clips[k]
     speed = clip.speed
     if clip.fit:
@@ -111,9 +149,21 @@ def footage_time(screen, frame, rec):
     return min(max(rec.events[clip.event] + (frame - clip.start - clip.after) * speed / FPS, 0.0), rec.length)
 
 
-def cuts(screen):
-    """Film frames where a recording jumps to another moment."""
-    return {clip.start for clip in FOOTAGE[screen][1:]}
+def footage_time(screen, frame, rec):
+    """Seconds into the recording of `screen` at film frame `frame`."""
+    return clip_time(screen, clip_at(screen, frame), frame, rec)
+
+
+def footage_mix(screen, frame, rec):
+    """What the glass shows of the recording at film frame `frame`, as (seconds, weight) pairs: one, or two while a
+    clip dissolves in, eased like the dissolves between SHOTS."""
+    k = clip_at(screen, frame)
+    clip = FOOTAGE[screen][k]
+    now = clip_time(screen, k, frame, rec)
+    x = (frame - clip.start + 0.5) / clip.dissolve if clip.dissolve else 1
+    if x >= 1: return [(now, 1.0)]
+    w = (1 - math.cos(math.pi * x)) / 2
+    return [(clip_time(screen, k - 1, clip.start, rec), 1 - w), (now, w)]
 
 
 def showing(screen):
@@ -126,10 +176,10 @@ def showing(screen):
 
 
 class Region(NamedTuple):
-    """A part of a capture: its screen, its box (left, top, right, bottom) in capture pixels, or one box per locale
-    when a translation moves it, and its corner radius in capture pixels."""
+    """A part of a capture: its screen, its box (left, top, right, bottom) in capture pixels and its corner radius in
+    capture pixels."""
     screen: str
-    box: tuple | dict
+    box: tuple
     radius: float = 0
 
 
@@ -142,9 +192,6 @@ REGIONS = {
     'widget canvas': Region('01-widget', (212, 340, 1108, 1236)),
     'streak widget': Region('01-widget', (75, 1523, 625, 2073), 84),
     'countdown widget': Region('01-widget', (695, 1523, 1245, 2073), 84),
-    'envelope': Region('04-home', (40, 950, 1280, 1400), 64),
-    'partner answer': Region('02-chat', {'en-US': (144, 730, 983, 1050), 'no': (144, 664, 1010, 984)}, 54),
-    'your answer': Region('02-chat', {'en-US': (230, 1074, 1284, 1328), 'no': (277, 1008, 1284, 1328)}, 54),
     'photo 1': Region('05-memories', (684, 547, 1212, 1075), 40),
     'photo 2': Region('05-memories', (684, 1370, 1212, 1898), 40),
     'photo 3': Region('05-memories', (684, 2193, 1212, 2590), 40),
@@ -156,11 +203,6 @@ DRAWINGS = {'widget canvas': 'widget-drawing-plane-{lang}'}
 
 def canvas_radius(side):
     return side * 28 / 360
-
-
-def box(name, locale):
-    value = REGIONS[name].box
-    return value[locale] if isinstance(value, dict) else value
 
 
 def capture(folder, locale, screen):

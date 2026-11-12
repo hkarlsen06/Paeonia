@@ -35,9 +35,10 @@ import numpy as np
 import skia
 
 from strokes import Strokes, inpaint
-from timeline import (ASSETS, CAPTURE, CAPTURES, CHAT, CONFIG, COUNTDOWN, DRAWINGS, END, FOOTAGE, FPS, FRAMES, H,
-                      HOME, LOCALES, MEMORIES, OUT, PLAY, POSTERS, REGIONS, ROOT, SCREENS, SUBJECT, TEXT, W, WIDGET, at,
-                      box, canvas_radius, capture, cuts, footage_time, layer, on_glass, recording, showing)
+from timeline import (ASSETS, BEAT, CAPTURE, CAPTURES, CONFIG, COUNTDOWN, DISSOLVE, DRAWINGS, END, FOOTAGE, FPS,
+                      FRAMES, H, LOCALES, MEMORIES, OUT, PLAY, POSTERS, QUESTION, REGIONS, ROOT, SCREENS, SHOTS,
+                      SUBJECT, TEXT, W, WIDGET, at, canvas_radius, capture, clip_at, clip_time, footage_time, layer,
+                      on_glass, recording, showing)
 
 MUSIC, SR = ROOT / 'video/blender/music.mp3', 48000
 BRAND = ROOT / 'video/brand'
@@ -62,8 +63,9 @@ COPY = {'drawing': (0, 0), 'drawing body': (0, 1), 'question': (1, 0), 'play': (
 # Headlines, as (copy, frame the first word rises on, frame the words leave on). A rise of None means the words are
 # already up on the first frame.
 # Each leaves just before its scene's last bar line and the next rises just before the bar, so its words have
-# settled by the second beat.
-HEADLINES = [('drawing', None, at(HOME, 0, -14)), ('question', at(HOME, 0, -2), at(PLAY, 0, -14)),
+# settled by the second beat. The question's headline leaves before the photo tap instead, since the camera then
+# moves in close and the phone fills the space above it.
+HEADLINES = [('drawing', None, at(QUESTION, 0, -14)), ('question', at(QUESTION, 0, -2), at(QUESTION, 5, 3)),
              ('play', at(PLAY, 0, -2), at(MEMORIES, 0, -14)), ('moments', at(MEMORIES, 0, -2), at(END, 0, -14))]
 # The music is the track cut on its bar lines, as (first bar of the track counted from 1, bars). Two soft intro bars,
 # ten bars from the drums' entry, then the closing bar, whose ring-out is silent by the last frame.
@@ -84,11 +86,8 @@ class Lift(NamedTuple):
 
 
 LIFTS = {
-    'drawing widget': Lift(-RISE, at(COUNTDOWN), 540, (0, -10)),
-    'countdown widget': Lift(at(COUNTDOWN, 0, 2), at(HOME, 0, -18), 330, (70, -30)),
-    'envelope': Lift(at(HOME, 1, -9), at(CHAT, 0, -20), 560, (0, -40)),
-    'your answer': Lift(at(CHAT), at(PLAY, 0, -20), 690, (-10, 76)),
-    'partner answer': Lift(at(CHAT + 1), at(PLAY, 0, -20), 620, (-10, -90)),
+    'drawing widget': Lift(-RISE, at(COUNTDOWN, 0, 8), 540, (0, -10)),
+    'countdown widget': Lift(at(COUNTDOWN, 0, 6), at(QUESTION, 0, -19), 330, (70, -30)),
     'photo 1': Lift(at(MEMORIES, 0, 8), at(END, 0, -26), 270, (-80, -40), -9),
     'photo 2': Lift(at(MEMORIES, 0, 14), at(END, 0, -22), 280, (10, -110), 2),
     'photo 3': Lift(at(MEMORIES, 0, 20), at(END, 0, -18), 270, (110, -40), 10),
@@ -105,7 +104,7 @@ class Replay(NamedTuple):
 
 
 # The film opens with the first 12 of the route's 24 dashes drawn.
-REPLAYS = {'widget canvas': Replay(0, at(WIDGET, 3, 3), 12)}
+REPLAYS = {'widget canvas': Replay(0, at(WIDGET, 1, 13), 12)}
 PHONE_GONE = at(END, 0, 18)  # the main phone has sunk out of the frame; its lifted cards fade with it
 TOUCH = 8  # frames a tap of a screen recording shows as a dot on the glass
 
@@ -200,7 +199,7 @@ def raised(name, t):
 def target(name, t):
     """Corners of the lifted card, which faces the camera at the lift's width, moved and turned."""
     lift = LIFTS[name]
-    l, tp, r, b = box(name, A.locale)
+    l, tp, r, b = REGIONS[name].box
     w, h = lift.width, lift.width * (b - tp) / (r - l)
     cx, cy = centre(quad(name, t))
     cx, cy = cx + lift.move[0], cy + lift.move[1]
@@ -213,7 +212,7 @@ def card(cv, name, e, alpha, content):
     """The region `name` raised by e from its place on the glass, as a soft shadow and then the content drawn by
     content(canvas) in the region's own capture pixels, clipped to its corners."""
     t = A.t
-    l, tp, r, b = box(name, A.locale)
+    l, tp, r, b = REGIONS[name].box
     w, h, radius = r - l, b - tp, REGIONS[name].radius
     dst = [(lerp(p[0], q[0], e), lerp(p[1], q[1], e)) for p, q in zip(quad(name, t), target(name, t))]
     m = poly(w, h, dst)
@@ -244,7 +243,7 @@ def lifts(cv, t):
     up = [(name, raised(name, t)) for name in LIFTS]
     up = [(name, e) for name, e in up if e > 0.002 and alpha > 0]
     for name, e in up:
-        l, tp, r, b = box(name, A.locale)
+        l, tp, r, b = REGIONS[name].box
         hole = skia.Path()
         hole.addRRect(rrect(0, 0, r - l, b - tp, REGIONS[name].radius))
         hole.transform(poly(r - l, b - tp, quad(name, t)))
@@ -252,7 +251,7 @@ def lifts(cv, t):
     for name, e in up:
         def content(c, name=name):
             c.drawImage(A.crops[name], 0, 0, SAMPLING)
-            if name == 'drawing widget': replay(c, 'widget canvas', t, box(name, A.locale))
+            if name == 'drawing widget': replay(c, 'widget canvas', t, REGIONS[name].box)
         card(cv, name, e, alpha, content)
 
 
@@ -264,7 +263,7 @@ def replay(cv, name, t, inside):
     alpha = 1 - prog(t, spec.end, spec.end + HANDOVER)
     if t < spec.start - 2 or alpha <= 0: return
     strokes = A.strokes[name]
-    l, tp, r, b = box(name, A.locale)
+    l, tp, r, b = REGIONS[name].box
     shown = strokes.total(range(spec.shown)) + strokes.GAP if spec.shown else 0
     u = lerp(shown, strokes.total(range(len(strokes.strokes))), prog(t, spec.start, spec.end))
     cv.save()
@@ -279,34 +278,56 @@ def replay(cv, name, t, inside):
 
 
 def touches(cv, t):
-    """Each tap in a screen recording as a soft white dot on the glass under the finger. A tap on the main phone that
-    the Draw & Guess phone covers is not shown."""
+    """Each tap in a screen recording as a soft white dot on the glass under the finger, and each swipe as a dot
+    that moves with it. A touch on the main phone that the Draw & Guess phone covers is not shown."""
     front = skia.Path()
     front.addPoly([skia.Point(*p) for p in quad('draw screen', t)], True)
-    for screen, taps in A.taps.items():
+    for screen in FOOTAGE:
         name = 'draw screen' if screen == '06-draw' else 'screen'
         m = poly(*CAPTURE, quad(name, t))
-        for frame, x, y in taps:
-            age = t - frame
-            if not 0 <= age < TOUCH: continue
+
+        def dot(x, y, radius, alpha):
             px, py = m.mapXY(x * CAPTURE[0], y * CAPTURE[1])
-            if name == 'screen' and front.contains(px, py): continue
+            if name == 'screen' and front.contains(px, py): return
             cv.save()
             cv.concat(m)
-            e = prog(age, 0, 2) * (1 - io3(prog(age, 3, TOUCH)))
-            cv.drawCircle(x * CAPTURE[0], y * CAPTURE[1], 66 + 10 * prog(age, 0, TOUCH),
-                          paint(WHITE, 0.5 * e, MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10)))
+            cv.drawCircle(x * CAPTURE[0], y * CAPTURE[1], radius,
+                          paint(WHITE, 0.5 * alpha, MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10)))
             cv.restore()
+
+        for frame, _, x, y in A.taps[screen]:
+            age = t - frame
+            if 0 <= age < TOUCH:
+                dot(x, y, 66 + 10 * prog(age, 0, TOUCH), prog(age, 0, 2) * (1 - io3(prog(age, 3, TOUCH))))
+        for down, up, x, y, to_x, to_y in A.swipes[screen]:
+            if down - 2 <= t < up + 4:
+                k = prog(t, down, up)
+                dot(x + (to_x - x) * k, y + (to_y - y) * k, 66,
+                    prog(t, down - 2, down) * (1 - io3(prog(t, up, up + 4))))
 
 
 def tap_frames(screen, rec):
-    """The film frame each tap of a recording falls on, with its x and y, for the taps the cut plays through."""
-    taps = []
+    """The film frame each tap of a recording falls on, with its seconds in the recording and its x and y, for the
+    taps the cut plays through. A clip that dissolves in shows the clip before it up to its start, and the taps that
+    clip reaches there; the stretch it skips shows none."""
+    taps, clips = [], FOOTAGE[screen]
     for f in showing(screen):
-        if f in cuts(screen): continue
+        k = clip_at(screen, f)
         before, now = footage_time(screen, f - 1, rec), footage_time(screen, f, rec)
-        taps += [(f - (now - s) / (now - before), x, y) for s, x, y in rec.taps if before < s <= now]
+        if k and f == clips[k].start:
+            if not clips[k].dissolve: continue
+            now = clip_time(screen, k - 1, f, rec)
+        # A clip with `fit` reaches its event within rounding of the frame it lands on.
+        taps += [(f - (now - s) / (now - before), s, x, y) for s, x, y in rec.taps if before < s <= now + 1e-9]
     return taps
+
+
+def swipe_frames(screen, rec):
+    """Each swipe of a recording as the film frame the finger lands on, the frame it lifts on, and where it starts
+    and ends on the screen."""
+    def reached(seconds):
+        return next(f for f in showing(screen) if footage_time(screen, f, rec) >= seconds - 1e-6)
+    return [(reached(s), reached(s + drag), x, y, to_x, to_y) for s, x, y, to_x, to_y, drag in rec.swipes]
 
 
 # Type -------------------------------------------------------------------------------------------------------------
@@ -566,11 +587,11 @@ def init(opts):
     glass = load_captures(A.captures, A.locale)
     A.crops = {}
     for name in LIFTS:
-        l, t, r, b = box(name, A.locale)
+        l, t, r, b = REGIONS[name].box
         A.crops[name] = image(glass[REGIONS[name].screen][t:b, l:r])
     A.strokes, A.blank = {}, {}
     for name in REPLAYS:
-        l, t, r, b = box(name, A.locale)
+        l, t, r, b = REGIONS[name].box
         strokes = drawing(name, A.locale)
         A.strokes[name] = strokes
         A.blank[name] = image(inpaint(glass[REGIONS[name].screen][t:b, l:r], strokes.coverage(r - l, 3) > 0.01))
@@ -635,8 +656,16 @@ def loudness(path):
 
 # Tools ------------------------------------------------------------------------------------------------------------
 
-# Invented events of the stand-in recordings, in seconds, with their length.
+# Invented events of the stand-in recordings, in seconds, with their length. 02-question taps the card, the add
+# photo button, a photo in the picker, the text field and send, and then swipes to the earlier day.
 STAND_IN = {
+    '02-question': (22, {'card tap': 2.0, 'question shown': 2.6, 'photo tap': 4.4, 'photo staged': 7.4,
+                         'field tap': 8.0, 'keyboard up': 8.6, 'typing starts': 9.0, 'typing done': 13.0,
+                         'send tap': 13.4, 'reveal starts': 13.9, 'today shown': 14.4, 'reveal settled': 15.6,
+                         'scroll starts': 17.2, 'scroll settled': 19.0,
+                         'taps': [(2.0, 0.5, 0.4), (4.4, 0.18, 0.62), (5.6, 0.3, 0.35), (8.0, 0.5, 0.8),
+                                  (13.4, 0.88, 0.6)],
+                         'swipes': [dict(t=17.2, x=0.5, y=0.4, to_x=0.5, to_y=0.76, seconds=0.4)]}),
     '03-ludo': (10, {'die tap': 1.0, 'die settled': 1.8, 'piece starts': 2.1, 'piece lands': 2.9,
                      'partner die starts': 5.0, 'partner piece lands': 6.6, 'taps': [(1.0, 0.5, 0.86)]}),
     '06-draw': (12, {'drawing starts': 0.5, 'drawing done': 5.5, 'celebration starts': 8.6,
@@ -660,8 +689,8 @@ def placeholder(c, screen, locale):
 
 def placeholders(folder):
     """Stand-in captures, marked as such, with each region of REGIONS where the table puts it and the real drawing on
-    its canvas, and stand-in screen recordings that show their time, their last event and their taps, so the whole
-    film renders before the real captures exist."""
+    its canvas, and stand-in screen recordings that show their time, their last event, their taps and text at the
+    app's sizes, so the whole film renders before the real captures exist."""
     A.typeface = skia.Typeface.MakeFromFile(str(ASSETS / CONFIG['font']))
     tint = [(242, 126, 178), (111, 177, 240), (242, 184, 75), (91, 185, 139), (185, 156, 242), (232, 93, 134)]
     for locale in CONFIG['panels']:
@@ -673,7 +702,7 @@ def placeholders(folder):
             placeholder(c, screen, locale)
             for j, (name, region) in enumerate(REGIONS.items()):
                 if region.screen != screen: continue
-                l, t, r, b = box(name, locale)
+                l, t, r, b = REGIONS[name].box
                 color = tint[(j + k) % len(tint)]
                 if name in DRAWINGS:
                     c.drawRRect(rrect(l, t, r, b, canvas_radius(r - l)), paint(hexc('#380f27')))
@@ -703,10 +732,13 @@ def placeholders(folder):
             for f in range(seconds * FPS):
                 now = f / FPS
                 placeholder(c, screen, locale)
-                last = max(((t, name) for name, t in events.items() if name != 'taps' and t <= now), default=None)
+                last = max(((t, name) for name, t in events.items() if name not in ('taps', 'swipes') and t <= now),
+                           default=None)
                 c.drawString(f'{now:5.2f} s', 90, 900, font(220), paint(WHITE))
                 if last: c.drawString(last[1], 90, 1100, font(110), paint(ACCENT))
                 c.drawRect(skia.Rect.MakeXYWH(0, 1300, CAPTURE[0] * now / seconds, 40), paint(WHITE, 0.6))
+                for y, points in ((1520, 32), (1700, 17), (1900, 17), (2100, 17), (2300, 17), (2500, 17)):
+                    c.drawString(f'{points} pt text, as the app draws it', 90, y, font(3 * points), paint(WHITE))
                 for t, x, y in events['taps']:
                     if t <= now < t + 0.3:
                         c.drawCircle(x * CAPTURE[0], y * CAPTURE[1], 80, paint(ACCENT))
@@ -737,7 +769,7 @@ def fit(folder):
         glass = load_captures(folder, locale)
         for name in DRAWINGS:
             strokes = drawing(name, locale)
-            l, t, r, b = box(name, locale)
+            l, t, r, b = REGIONS[name].box
             margin = 80
             x0, y0 = max(0, l - margin), max(0, t - margin)
             region = glass[REGIONS[name].screen][y0:min(CAPTURE[1], b + margin), x0:min(CAPTURE[0], r + margin)]
@@ -778,10 +810,10 @@ def fit(folder):
                   f'{(l, t, r, b)}, {cost(guess, 0) * 100:.2f} % of the area differs')
 
 
-def check():
+def check(captures):
     """Overlays each finished replay on its PencilKit preview, checks that every headline stays readable for 1.5 s,
-    that the poster frames hold still, how long the cards stay up, the order of the end card, and the cut music's
-    length and bar lines."""
+    that the poster frames hold still, how the question recording is cut, the order of the end card, and the cut
+    music's length and bar lines."""
     ok = True
     for stem in ('widget-drawing-plane-en', 'widget-drawing-plane-nb'):
         strokes = Strokes(ASSETS / f'{stem}.strokes.json')
@@ -812,6 +844,9 @@ def check():
         moving = [name for name in LIFTS if abs(raised(name, f + 1) - raised(name, f - 1)) > 0.002]
         moving += [name for name, spec in REPLAYS.items() if spec.start <= f <= spec.end + HANDOVER]
         moving += [key for key, rise, up, t_out in words_up if rise <= f < up or t_out <= f < t_out + 30]
+        moving += [screen for start, screen in SHOTS[1:] if abs(f - start) <= DISSOLVE / 2 + 1]
+        moving += [screen for screen, clips in FOOTAGE.items() for clip in clips[1:]
+                   if clip.start - 1 <= f <= clip.start + clip.dissolve + 1]
         print(f'poster frame {f}: ' + (f'moving: {", ".join(sorted(set(moving)))}' if moving else 'a clean hold'))
         ok &= not moving
 
@@ -819,11 +854,8 @@ def check():
         print(f'{label}: {frames / FPS:.2f} s, at least {seconds} s')
         return frames / FPS >= seconds
 
-    def up(name): return LIFTS[name].rise + RISE
-    ok &= least('envelope fully up', LIFTS['envelope'].settle - up('envelope'), 1.2)
-    answers = 'your answer', 'partner answer'
-    ok &= least('both answers fully up together', min(LIFTS[n].settle for n in answers) - max(up(n) for n in answers),
-                2.5)
+    for locale in CONFIG['panels']:
+        ok &= check_question(locale, recording(captures, locale, '02-question'), least)
     for locale in CONFIG['panels']:
         A.locale = locale
         words = {key: len(layout(strings(string), size, TEXT[2] - TEXT[0], leading, 'center')[0])
@@ -874,6 +906,46 @@ def check():
     return ok
 
 
+def check_question(locale, rec, least):
+    """The question recording's cut: the question holds at full size until the tap on the text field, the picker is
+    cut out by a dissolve from the photo tap to the photo in the composer, the typing is quick, the conversation
+    comes in on a beat, today's answers hold before the swipe and the earlier day holds until the change to Ludo, and
+    only the card, photo, field and send taps show a dot."""
+    screen, ok = '02-question', True
+    clips = FOOTAGE[screen]
+    if missing := {'photo tap', 'send tap', 'reveal settled', 'scroll settled'} - set(rec.events):
+        sys.exit(f'{rec.path} has no {", ".join(sorted(missing))}')
+
+    def reached(event):
+        """The first film frame that shows the event, or a moment after it."""
+        return next(f for f in showing(screen) if footage_time(screen, f, rec) >= rec.events[event] - 1e-6)
+
+    ok &= least(f'{locale} question at full size', reached('field tap') - reached('question shown'), 1.2)
+    k = next(i for i, clip in enumerate(clips) if clip.dissolve)
+    held = clip_time(screen, k - 1, clips[k].start, rec)
+    lands = (clips[k].event == 'photo staged' and abs(held - rec.events['photo tap']) < 0.5 / FPS
+             and 6 <= clips[k].dissolve <= 8)
+    print(f'{locale} picker cut: a {clips[k].dissolve}-frame dissolve from {held:.2f} s to {clips[k].event} at '
+          f'{rec.events[clips[k].event]:.2f} s, from the photo tap at {rec.events["photo tap"]:.2f} s')
+    ok &= lands
+    typing = (reached('typing done') - reached('typing starts')) / FPS
+    print(f'{locale} typing: {typing:.2f} s, at most 1.5 s')
+    ok &= typing <= 1.5
+    reveal = reached('today shown')
+    print(f'{locale} conversation comes in at {reveal / FPS:.2f} s, on a beat no later than 9.5 s')
+    ok &= reveal % BEAT == 0 and reveal <= 9.5 * FPS
+    ok &= least(f"{locale} today's answers still before the swipe",
+                reached('scroll starts') - reached('reveal settled'), 1.4)
+    ludo = next(start for start, name in SHOTS if name == '03-ludo')
+    ok &= least(f'{locale} earlier day still before the change to Ludo', ludo - reached('scroll settled'), 1.0)
+    dots = sorted(s for _, s, _, _ in tap_frames(screen, rec))
+    wanted = sorted(rec.events[name] for name in ('card tap', 'photo tap', 'field tap', 'send tap'))
+    print(f'{locale} tap dots at {", ".join(f"{s:.2f}" for s in dots)} s of the recording, only the card, photo, field '
+          f'and send taps')
+    ok &= len(dots) == len(wanted) and all(abs(a - b) < 1e-6 for a, b in zip(dots, wanted))
+    return ok
+
+
 def onsets(mono):
     """Spectral flux every 5 ms, which is how much the log spectrum rose since the step before, summed over bands."""
     hop, n = SR // 200, 1024
@@ -895,15 +967,17 @@ def main():
     if args.placeholders: return placeholders(Path(args.placeholders))
     if args.fit: return fit(args.captures)
     if not MUSIC.exists(): sys.exit(f'Download the music to {MUSIC} first; see the top of this file.')
-    if args.check: sys.exit(0 if check() else 'check failed')
+    if args.check: sys.exit(0 if check(args.captures) else 'check failed')
     frames = args.still or range(FRAMES)
     folder = layer(args.locale, args.preview)
     missing = [i for i in frames if not (folder / f'{i:04d}.png').exists()]
     if missing: sys.exit(f'{len(missing)} frames of the 3D layer are missing from {folder}; run phone3d.py first.')
-    taps = {screen: tap_frames(screen, recording(args.captures, args.locale, screen)) for screen in FOOTAGE}
+    recordings = {screen: recording(args.captures, args.locale, screen) for screen in FOOTAGE}
+    taps = {screen: tap_frames(screen, rec) for screen, rec in recordings.items()}
+    swipes = {screen: swipe_frames(screen, rec) for screen, rec in recordings.items()}
     audio = music()
     opts = dict(layer=folder, scale=0.5 if args.preview else 1.0, samples=3 if args.preview else 6,
-                locale=args.locale, captures=args.captures, pulse=bass_pulse(audio), taps=taps)
+                locale=args.locale, captures=args.captures, pulse=bass_pulse(audio), taps=taps, swipes=swipes)
     w, h = size(opts['scale'])
     with Pool(max(1, (os.cpu_count() or 2) - 1), initializer=init, initargs=(opts,)) as pool:
         if args.still:

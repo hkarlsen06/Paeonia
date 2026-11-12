@@ -32,10 +32,10 @@ from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).parent))
-from timeline import (CANVAS, CAPTURE, CAPTURES, CHAT, CONFIG, DISSOLVE, DRAW, EDGE, END, FOOTAGE,  # noqa: E402
-                      FPS, FRAMES, GLASS_H, GLASS_W, H, HOME, MEMORIES, OFFSET, PHONE_D, PHONE_H, PHONE_R, PHONE_W,
-                      PLAY, PX_PER_MM, REGIONS, SCREEN_RADIUS, SECOND_PHONE, SHOTS, SUBJECT, W, at, box, capture,
-                      footage_time, glare, layer, recording, showing)
+from timeline import (CANVAS, CAPTURE, CAPTURES, CONFIG, DISSOLVE, DRAW, EDGE, END, FOOTAGE, FPS,  # noqa: E402
+                      FRAMES, GLASS_H, GLASS_W, H, MEMORIES, OFFSET, PHONE_D, PHONE_H, PHONE_R, PHONE_W, PHOTO_TAP,
+                      PLAY, PX_PER_MM, QUESTION, REGIONS, REVEAL, SCREEN_RADIUS, SECOND_PHONE, SHOTS, SUBJECT,
+                      TYPING, W, at, capture, footage_mix, glare, layer, recording, showing)
 
 LENS = 100 * (SUBJECT[3] - SUBJECT[1]) / H  # mm on a 24 mm tall sensor, so the subject box sees what 100 mm would
 APERTURE = 6  # mm, about f/11: everything near the focus is sharp, only things far behind soften
@@ -172,7 +172,7 @@ def screen_texture(screen):
 def footage_texture(screen, user):
     """A screen recording on the glass as an image sequence with a file per film frame, made the way screen_texture
     makes a still. Only the frames the film shows are made, or of those only the --stills frames. Film frames that show
-    the same recording frame link to one file."""
+    the same recording frame, or the same mix of two while a clip dissolves in, link to one file."""
     rec = recording(args.captures, args.locale, screen)
     shown = showing(screen)
     # A sequence holds its first and last files outside its frames, so --stills makes those as well.
@@ -180,8 +180,10 @@ def footage_texture(screen, user):
     folder = layer(args.locale, args.preview) / 'footage' / screen
     shutil.rmtree(folder, ignore_errors=True)
     folder.mkdir(parents=True)
-    source = {f: round(footage_time(screen, f, rec) * FPS) for f in frames}
-    wanted = sorted(set(source.values()))
+    source = {f: tuple((round(t * FPS), w) for t, w in footage_mix(screen, f, rec)) for f in frames}
+    wanted = sorted({i for mix in source.values() for i, _ in mix})
+    blends = sorted({mix for mix in source.values() if len(mix) > 1})
+    kept = {i: None for mix in blends for i, _ in mix}
     if not wanted:
         return bpy.data.images.new(f'screen {screen}', 1, 1)
     w, h = CAPTURE
@@ -198,14 +200,20 @@ def footage_texture(screen, user):
             raise SystemExit(f'{rec.path} ends at frame {frame}, before frame {wanted[-1]}')
         if frame == wanted[index]:
             pixels = np.frombuffer(data, np.uint8).reshape(h, w, 3).astype(np.float32) / 255
-            encode.stdin.write(np.rint(glass(pixels) * 255).astype(np.uint8).tobytes())
+            texture = np.rint(glass(pixels) * 255).astype(np.uint8)
+            encode.stdin.write(texture.tobytes())
+            if frame in kept: kept[frame] = texture
             index += 1
+    for mix in blends:
+        encode.stdin.write(np.rint(sum(kept[i] * np.float32(weight) for i, weight in mix)).astype(np.uint8).tobytes())
     decode.stdout.close()
     encode.stdin.close()
     if decode.wait() or encode.wait():
         raise SystemExit(f'ffmpeg failed on {rec.path}')
     for f in frames:
-        (folder / f'{f:04d}.png').symlink_to(f'r{wanted.index(source[f]):05d}.png')
+        mix = source[f]
+        n = wanted.index(mix[0][0]) if len(mix) == 1 else len(wanted) + blends.index(mix)
+        (folder / f'{f:04d}.png').symlink_to(f'r{n:05d}.png')
     image = bpy.data.images.load(str(folder / f'{frames[0]:04d}.png'))
     image.source = 'SEQUENCE'
     user.frame_start, user.frame_duration, user.frame_offset = shown.start, len(shown), shown.start - 1
@@ -385,18 +393,19 @@ def build():
         ob.rotation_euler = (-Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
 
     # The main phone holds the centre and turns a little between scenes, while its screen dissolves on the bar line.
-    # Each pose is (bar, location in metres, rotation in degrees). The turn into a pose takes the 24 frames around
-    # its bar line, and the phone then drifts 2 degrees back toward facing the camera until the next turn.
+    # Each pose is (frame, location in metres, rotation in degrees). The turn into a pose takes the 24 frames around
+    # its frame, and the phone then drifts 2 degrees back toward facing the camera until the next turn. It turns
+    # once more inside the question, as the camera moves in to read the answer.
     hero, hero_model = phone('phone', SHOTS, mats)
-    poses = [(0, (0, 0, 0), (-3, 0, -9)), (HOME, (0, 0, 0.002), (-3, 0, 8)), (CHAT, (0, 0, 0), (-2, 0, -7)),
-             (PLAY, (0, 0, 0), (-3, 0, 9)), (DRAW, (-0.047, 0.04, 0.004), (-3, 0, 16)),
-             (MEMORIES, (0, 0, 0), (-3, 0, -8))]
+    poses = [(0, (0, 0, 0), (-3, 0, -9)), (at(QUESTION), (0, 0, 0.002), (-3, 0, 8)),
+             (PHOTO_TAP + 14, (0, 0, 0), (-2, 0, -7)), (at(PLAY), (0, 0, 0), (-3, 0, 9)),
+             (at(DRAW), (-0.047, 0.04, 0.004), (-3, 0, 16)), (at(MEMORIES), (0, 0, 0), (-3, 0, -8))]
 
     def drifted(rot): return rot[0], rot[1], rot[2] - math.copysign(2, rot[2])
 
     keys = [(0, poses[0][1], poses[0][2], 'linear')]
-    for (_, loc, rot), (bar, next_loc, next_rot) in zip(poses, poses[1:]):
-        keys += [(at(bar, 0, -14), loc, drifted(rot), 'io'), (at(bar, 0, 10), next_loc, next_rot, 'linear')]
+    for (_, loc, rot), (frame, next_loc, next_rot) in zip(poses, poses[1:]):
+        keys += [(frame - 14, loc, drifted(rot), 'io'), (frame + 10, next_loc, next_rot, 'linear')]
     # The phone sinks away and tips back as the drums stop.
     keys += [(at(END, 0, -4), poses[-1][1], drifted(poses[-1][2]), 'in'),
              (at(END, 0, 22), (0, 0.12, -0.42), (28, 0, 14), 'linear')]
@@ -411,22 +420,43 @@ def build():
                 (SECOND_PHONE[1] - 1, (0.40, 0.08, 0.01), (-3, 0, -36), 'linear')])
     visible([draw], *SECOND_PHONE)
 
-    # Camera shots, as (frame, aim, distance, yaw, pitch, ease of the move to the next shot). When Draw & Guess joins,
-    # the camera follows it and holds its screen for the guess, with the Ludo phone half in the frame beside it. The
-    # key at HOME keeps the opening 4 s as the first cut of the film had them.
-    centre, guess = Vector((0, 0, 0)), Vector((0.034, -0.01, 0.008))
-    shots = [
-        (0, centre, 0.84, -3, 2, 'linear'), (at(HOME), centre, 0.8261, -1.266, 2, 'linear'),
-        (at(DRAW, 0, -16), centre, 0.80, 2, 2, 'io'), (at(DRAW, 0, 24), guess, 0.86, -2, 2, 'io'),
-        (at(MEMORIES, 0, -18), guess, 0.84, -2, 2, 'io'),
-        (at(MEMORIES, 0, 14), centre, 0.84, 2, 2, 'linear'), (at(END), centre, 0.80, -2, 2, 'linear'),
-        (FRAMES - 1, centre, 0.80, -2, 2, 'linear'),
-    ]
-    for frame, target, distance, yaw, pitch, how in shots:
+    # Camera shots, as (frame, aim, camera location, ease of the move to the next shot). As the photo goes in, the
+    # camera moves close enough to the main phone that 17 pt text reads, on the composer while the line is typed and
+    # on the answers for the reveal. When Draw & Guess joins, the camera follows it and holds its screen for the
+    # guess, with the Ludo phone half in the frame beside it.
+    def orbit(target, distance, yaw, pitch):
         yaw, pitch = math.radians(yaw), math.radians(pitch)
-        offset = Vector((math.sin(yaw) * math.cos(pitch), -math.cos(yaw) * math.cos(pitch), math.sin(pitch)))
+        return target + distance * Vector((math.sin(yaw) * math.cos(pitch), -math.cos(yaw) * math.cos(pitch),
+                                           math.sin(pitch)))
+
+    def glass_point(frame, px, py):  # where capture pixel px, py of the main phone is at that frame
+        scene.frame_set(frame)
+        return hero_model.matrix_world @ on_glass(px, py)
+
+    centre, guess = Vector((0, 0, 0)), Vector((0.034, -0.01, 0.008))
+    composer, answers = glass_point(TYPING + 15, CAPTURE[0] / 2, 1150), glass_point(REVEAL, CAPTURE[0] / 2, 1750)
+
+    def drift(frame):
+        """The straight move the camera made from 4 s to the Draw & Guess key before the question scene existed. The
+        camera is back on it at the Ludo change, so the film from there on is unchanged."""
+        return orbit(centre, 0.8261, -1.266, 2).lerp(orbit(centre, 0.80, 2, 2),
+                                                      (frame - at(2)) / (at(DRAW, 0, -16) - at(2)))
+
+    shots = [
+        (0, centre, orbit(centre, 0.84, -3, 2), 'linear'), (PHOTO_TAP, centre, orbit(centre, 0.815, -1, 2), 'io'),
+        (TYPING + 15, composer, orbit(composer, 0.6, -5, 2), 'io'),
+        (REVEAL, answers, orbit(answers, 0.49, -4, 2), 'linear'),
+        (at(PLAY, 0, -30), answers, orbit(answers, 0.48, -3, 2), 'io'),
+        (at(PLAY), centre, drift(at(PLAY)), 'linear'), (at(DRAW, 0, -16), centre, orbit(centre, 0.80, 2, 2), 'io'),
+        (at(DRAW, 0, 24), guess, orbit(guess, 0.86, -2, 2), 'io'),
+        (at(MEMORIES, 0, -18), guess, orbit(guess, 0.84, -2, 2), 'io'),
+        (at(MEMORIES, 0, 14), centre, orbit(centre, 0.84, 2, 2), 'linear'),
+        (at(END), centre, orbit(centre, 0.80, -2, 2), 'linear'),
+        (FRAMES - 1, centre, orbit(centre, 0.80, -2, 2), 'linear'),
+    ]
+    for frame, target, location, how in shots:
         anim(aim, 'location', [(frame, target, how)])
-        anim(camera, 'location', [(frame, target + distance * offset, how)])
+        anim(camera, 'location', [(frame, location, how)])
 
     # Focus on the screen in front, which is the drawing phone's while it is on and the main phone's otherwise.
     for frame in range(FRAMES):
@@ -443,7 +473,7 @@ def corners(scene, camera, models):
     """Where the corners (top left, top right, bottom right, bottom left) of every region, and of the whole capture
     on the main phone as 'screen' and on the Draw & Guess phone as 'draw screen', land on screen in full-size pixels,
     for every frame."""
-    boxes = {name: box(name, args.locale) for name in REGIONS}
+    boxes = {name: region.box for name, region in REGIONS.items()}
     boxes['screen'] = boxes['draw screen'] = (0, 0, *CAPTURE)
     owner = {name: 'draw phone' if name == 'draw screen' else 'phone' for name in boxes}
     track = {name: [] for name in boxes}
