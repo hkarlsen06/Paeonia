@@ -6,17 +6,21 @@
 #   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--no-build]
 #   scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--no-build]
 #
-# It builds the App scheme into a scratch derived data folder for this worktree
-# through the machine-wide build queue, then takes a
-# simulator with scripts/lock, installs the app, launches the scenario with its
-# debug controls hidden, waits (default 8 s, for map tiles and fade-ins), saves
-# the screenshot, uninstalls the app and releases the simulator. It prints the
-# PNG's path last. --no-build reuses the last build, for a second screenshot.
+# It builds the App scheme through the machine-wide build queue, into the
+# derived data folder that scripts/xcode-build-agent.sh and
+# scripts/xcode-test-agent.sh use for this worktree, so a build by one of the
+# three serves the others. It then takes a simulator with scripts/lock,
+# installs the app, launches the scenario with its debug controls hidden, waits
+# (default 8 s, for map tiles and fade-ins), saves the screenshot, uninstalls
+# the app and releases the simulator. It prints the PNG's path last. --no-build
+# reuses the last build, from this script or from either wrapper.
 # --language runs the app in another language, such as nb, without changing
 # the shared simulator's settings.
 #
 # For a before and after, run it once with your change stashed and once without,
-# with a different --out each time. Scenario ids are in
+# with a different --out each time. Do both in one worktree, because a second
+# worktree compiles the whole app again, which takes about 4 minutes. Scenario
+# ids are in
 # ios/PaeoniaApp/App/DeveloperScenarios/DeveloperScenario+App.swift.
 #
 # scenario-record records the screen instead. Without --then it records the
@@ -114,8 +118,8 @@ if [[ $record == 1 ]]; then
 fi
 
 bundle_id=no.paeonia.app
-derived_data=$scratch/DerivedData
-app=$derived_data/Build/Products/Debug-iphonesimulator/PaeoniaApp.app
+xcode_args=(-project "$root/ios/Paeonia.xcodeproj" -scheme App -configuration Debug
+  -destination 'generic/platform=iOS Simulator')
 if [[ $record == 1 ]]; then
   mkdir -p "$scratch" "$out"
 else
@@ -125,10 +129,7 @@ fi
 if [[ $build == 1 ]]; then
   log=$scratch/build.log
   "$root/scripts/generate-ios-build-number.sh" >/dev/null
-  echo "Building into $derived_data" >&2
-  "${XA_XCODEBUILD[@]}" \
-    -quiet -project "$root/ios/Paeonia.xcodeproj" -scheme App -configuration Debug \
-    -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived_data" build >"$log" 2>&1 &
+  "${XA_XCODEBUILD[@]}" -quiet "${xcode_args[@]}" build >"$log" 2>&1 &
   XCODEBUILD_PID=$!
   xa_start_heartbeat build
   status=0
@@ -142,6 +143,8 @@ if [[ $build == 1 ]]; then
     exit 1
   fi
 fi
+app=$("${XA_XCODEBUILD[@]}" "${xcode_args[@]}" -showBuildSettings 2>/dev/null |
+  awk -F' = ' '$1 ~ /^ *BUILT_PRODUCTS_DIR$/ && !found { print $2; found = 1 }' || true)/PaeoniaApp.app
 [[ -d $app ]] || { echo "No build at $app. Run without --no-build." >&2; exit 1; }
 
 cd "$root"

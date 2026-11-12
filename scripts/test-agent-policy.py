@@ -77,6 +77,10 @@ else:
 if os.environ.get("POLICY_CONTROLLER", "") != os.environ["POLICY_EXPECT_CONTROLLER"]:
     print("error: xcodebuild ran outside the host controller, or the controller ran where none is installed")
     sys.exit(8)
+products = os.environ["POLICY_ROOT"] + "/DerivedData/Build/Products/Debug-iphonesimulator"
+if "-showBuildSettings" in args:
+    print("    BUILT_PRODUCTS_DIR = " + products)
+    sys.exit(0)
 if os.environ.get("POLICY_BUILD_FAIL") == "1":
     print("error: mock compile failed")
     sys.exit(9)
@@ -85,9 +89,8 @@ if os.environ.get("POLICY_BUILD_BLOCK") == "1":
     time.sleep(30)
 if "-resultBundlePath" in args:
     pathlib.Path(args[args.index("-resultBundlePath") + 1]).mkdir()
-if "-derivedDataPath" in args:
-    app = pathlib.Path(args[args.index("-derivedDataPath") + 1], "Build/Products/Debug-iphonesimulator/PaeoniaApp.app")
-    app.mkdir(parents=True, exist_ok=True)
+if "build" in args:
+    pathlib.Path(products, "PaeoniaApp.app").mkdir(parents=True, exist_ok=True)
 print("Executed 1 test, with 0 failures")
 ''')
     executable(tools / "xcrun", common + '''
