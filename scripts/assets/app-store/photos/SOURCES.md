@@ -12,5 +12,11 @@
 | `beach-dunes.jpg` | https://unsplash.com/photos/a-sandy-beach-next-to-the-ocean-under-a-cloudy-sky-7gsDvwtB_oQ | [Sebastian Puskeiler](https://unsplash.com/@keiler) |
 | `beach-ice-cream.jpg` | https://unsplash.com/photos/a-hand-holding-an-ice-cream-cone-in-front-of-a-blue-sky-QF03mdb14QI | [Yuika Takamura](https://unsplash.com/@blue_hamberts) |
 | `elena-portrait.jpg` | https://unsplash.com/photos/woman-in-white-crew-neck-shirt-6RHjS66Hs-Y | [Artur Rekstad](https://unsplash.com/@arturrekstad) |
+| `question-cat.jpg` | https://unsplash.com/photos/a-fluffy-grey-cat-sits-on-a-windowsill-looking-out-7wNZYV2nHgc | [Sarah Windeler](https://unsplash.com/@hyggepause) |
+| `question-snow.jpg` | https://unsplash.com/photos/a-city-street-is-covered-in-snow-at-night--qv6y0uwihE | [Alexander Fastovets](https://unsplash.com/@darkmoon_afa) |
+| `question-tulips.jpg` | https://unsplash.com/photos/fresh-tulips-are-displayed-in-paper-bags-WYlu98J-oN4 | [Eugenia Pan'kiv](https://unsplash.com/@eugenivy_now) |
+| `question-bike.jpg` | https://unsplash.com/photos/a-bicycle-is-parked-next-to-a-bush-of-flowers-CAG2fOmgrhk | [Anya Chernykh](https://unsplash.com/@anyachernykh) |
 
 `elena-portrait.jpg` is an 801 px square crop of the 1420 px wide original, cut to match `marketing/static/art/elena.webp`. Hjalmar's profile photo is `marketing/static/art/hjalmar.webp`, the developer's own photo.
+
+The `question-*.jpg` photos are for the film's question recording (`scripts/app-store-content --question-film`). The script uploads all of them except `question-snow.jpg`, which Hjalmar picks in the recording, so it goes into the simulator's photo library with `xcrun simctl addmedia`.

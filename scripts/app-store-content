@@ -4,11 +4,20 @@
 #
 #   scripts/app-store-content --locale en|nb [--drawing <file.pkdrawing>]
 #       [--drawing-canvas-side 320] [--drawing-strokes N --drawing-points N
-#        --drawing-bounds x,y,width,height] [--partner-answer-only | --chat-only]
+#        --drawing-bounds x,y,width,height] [--partner-answer-only | --chat-only | --question-film]
 #
 # --partner-answer-only has only Elena answer today's question and leaves the
 # chat out, so Home still invites Hjalmar to answer. A later run with
 # --chat-only answers for Hjalmar if he has not, and adds the chat.
+#
+# --question-film seeds the film's question recording (02-question in
+# scripts/capture-app-store-screenshots.py) instead of the screenshots' question.
+# Today's question becomes FILM_QUESTION_KEY, which Elena answers with a photo and
+# a line, and it has an earlier day on earlier_film_date() that both answered with
+# a photo and a line. The question picker never gives a past day, so the script
+# answers the question today and then moves that day and its answers back. It
+# writes no chat. After a take that sent Hjalmar's answer, run it again: it clears
+# today with daily:reset_daily_challenge_for_testing and has Elena answer again.
 #
 # Run it on a backend that holds only the paired test couple from
 # scripts/test-couple. The first account becomes Hjalmar and the second Elena.
@@ -27,11 +36,12 @@
 # times a day. The script skips until today's question is QUESTION_KEY. When the
 # skips run out, it runs the operator mutation daily:reset_daily_challenge_for_testing
 # with `npx convex run`, which clears today's question and skips, and tries again.
-# Two more steps do not run as an account, because the app's functions cannot do
-# them: the couple's streak (STREAK_DAYS answered days in a row)
-# and the drawing's time (--drawing-time, so the widget and the Home card show a
-# morning time beside the 9:41 status bar). Both rewrite one table on the local
-# backend with `npx convex data` and `npx convex import --replace`. These steps
+# Three more steps do not run as an account, because the app's functions cannot do
+# them: the couple's streak (STREAK_DAYS answered days in a row), the drawing's
+# time (--drawing-time, so the widget and the Home card show a morning time beside
+# the 9:41 status bar), and with --question-film the earlier day's date. Each
+# rewrites whole tables on the local backend with `npx convex data` and
+# `npx convex import --replace`. These steps
 # refuse to run unless backend/.env.local names the same local backend as
 # ios/local.xcconfig. Seed once per locale and capture every screen from that one
 # seeding, so the drawing shows the same time everywhere.
@@ -42,7 +52,7 @@
 # ids the screenshot deep links need, the Draw & Guess word, the countdown's
 # title, which the capture script finds the Home countdown card by, and Elena's
 # Clerk subject, which scripts/capture-app-store-screenshots.py uses to show
-# Elena at the Ludo table.
+# Elena at the Ludo table. film_answer is the line Hjalmar types in 02-question.
 #
 # It reads CLERK_DEV_SECRET_KEY and CLERK_DEV_JWT_ISSUER_DOMAIN from the
 # api.paeonia.no env the way scripts/test-couple does. Tokens are never printed.
@@ -57,7 +67,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -79,6 +89,8 @@ DAILY_SHUFFLE_LIMIT = 30  # DAILY_SHUFFLE_LIMIT in backend/convex/daily.ts, per 
 # A round of 60 skips sees 61 of the 156 questions, so 25 rounds all miss about once in 200,000 runs.
 DAILY_RESET_LIMIT = 25
 QUESTION_KEY = "future_first_meal_together"
+# --question-film's question. Its answers take a photo and text, and it comes back after 6 months.
+FILM_QUESTION_KEY = "today_thing_to_show"
 # (mover, die, pawn): both of each player's pawns end up out, and Hjalmar moves next.
 # See backend/convex/lib/ludo.ts. A 6 brings a pawn out and gives another roll.
 LUDO_MOVES = [
@@ -139,6 +151,19 @@ CONTENT = {
             "beach": ("Stranddag", "Vind, sand og helt perfekt. Isen smeltet fortere enn vi rakk å spise den."),
         },
     },
+}
+
+# --question-film's answers as (text, photo in PHOTOS). Hjalmar picks his photo and types his line for
+# today in the recording, so the script seeds only Elena's answer for today.
+FILM_ANSWERS = {
+    "en": {"today": {"second": ("This one walked me home.", "question-cat.jpg"),
+                     "first": ("First snow in Oslo.", "question-snow.jpg")},
+           "earlier": {"second": ("Tulip season at the market.", "question-tulips.jpg"),
+                       "first": ("First bike ride of the year.", "question-bike.jpg")}},
+    "nb": {"today": {"second": ("Denne fulgte meg hjem.", "question-cat.jpg"),
+                     "first": ("Første snø i Oslo.", "question-snow.jpg")},
+           "earlier": {"second": ("Tulipansesong på torget.", "question-tulips.jpg"),
+                       "first": ("Årets første sykkeltur.", "question-bike.jpg")}},
 }
 
 # Oldest first, so the newest memory is created last. Each is (key, author, days ago, place, photos).
@@ -339,12 +364,12 @@ def todays_question(snapshot: list) -> dict:
     return next(row for row in snapshot[0]["questions"] if row["is_current_day"])
 
 
-def skip_to_question(first: Person, second: Person) -> dict | None:
-    """Skips today's question as Hjalmar, then Elena, until it is QUESTION_KEY. Returns the snapshot, or None."""
+def skip_to_question(first: Person, second: Person, key: str) -> dict | None:
+    """Skips today's question as Hjalmar, then Elena, until it is key. Returns the snapshot, or None."""
     snapshot = first.mutation("daily:start_daily_challenge_snapshot", operation())
     for person in [first] * DAILY_SHUFFLE_LIMIT + [second] * DAILY_SHUFFLE_LIMIT:
         question = todays_question(snapshot)
-        if question["question_key"] == QUESTION_KEY:
+        if question["question_key"] == key:
             return snapshot
         # An answered question can't be skipped, so only the reset can replace it.
         if question["own_answer_id"] or question["partner_answer_id"]:
@@ -354,20 +379,23 @@ def skip_to_question(first: Person, second: Person) -> dict | None:
         except ConvexError as error:
             if "daily shuffle limit reached" not in str(error):
                 raise
-    return snapshot if todays_question(snapshot)["question_key"] == QUESTION_KEY else None
+    return snapshot if todays_question(snapshot)["question_key"] == key else None
 
 
 def seed_daily_question(convex: Convex, people: dict, couple_id: str, locale: str,
-                        roles: tuple[str, ...] = ("first", "second")) -> tuple[dict, str]:
-    """Makes QUESTION_KEY today's question and answers it as each role in order. Returns the question row and the day id."""
+                        roles: tuple[str, ...] = ("first", "second"), key: str = QUESTION_KEY,
+                        payload=None) -> tuple[dict, str]:
+    """Makes key today's question and answers it as each role in order. Returns the question row and the day id.
+
+    payload(role) gives a role's answer. By default it is the role's text in CONTENT."""
     first, second = people["first"], people["second"]
     for resets in range(DAILY_RESET_LIMIT):
-        snapshot = skip_to_question(first, second)
+        snapshot = skip_to_question(first, second, key)
         if snapshot:
             break
         convex.cli("run", "daily:reset_daily_challenge_for_testing", json.dumps({"p_couple_id": couple_id}))
     else:
-        raise SystemExit(f"Today's question never became {QUESTION_KEY} in {DAILY_RESET_LIMIT} rounds of skips.")
+        raise SystemExit(f"Today's question never became {key} in {DAILY_RESET_LIMIT} rounds of skips.")
     question = todays_question(snapshot)
     day_id = snapshot[0]["couple_day_id"]
     for role in roles:
@@ -376,10 +404,10 @@ def seed_daily_question(convex: Convex, people: dict, couple_id: str, locale: st
                   ["questions"] if row["instance_id"] == question["instance_id"]]
         if mine["own_answer_id"]:
             continue
-        person.mutation("daily:submit_daily_answer", {
-            "p_instance_id": question["instance_id"],
-            "p_payload": {"answer_id": str(uuid.uuid4()), "text": CONTENT[locale]["answers"][role]}, **operation()})
-    print(f"Question {QUESTION_KEY} ({question['question_id']}) answered by {', '.join(roles)} after {resets} resets")
+        answer = payload(role) if payload else {"answer_id": str(uuid.uuid4()), "text": CONTENT[locale]["answers"][role]}
+        person.mutation("daily:submit_daily_answer",
+                        {"p_instance_id": question["instance_id"], "p_payload": answer, **operation()})
+    print(f"Question {key} ({question['question_id']}) answered by {', '.join(roles) or 'nobody'} after {resets} resets")
     return question, day_id
 
 
@@ -402,6 +430,86 @@ def seed_chat(people: dict, couple_id: str, question_id: str, locale: str) -> No
     for person in people.values():
         person.mutation("chatPresence:mark_thread_read", {"p_thread_id": thread_id, "p_message_id": message_id})
     print(f"Chat {thread_id} with {len(lines)} messages")
+
+
+def earlier_film_date() -> date:
+    """The latest 3 May at least 6 months before today, so the question may come back today and the
+    earlier day is in tulip season."""
+    year = today().year
+    return date(year if today() >= date(year, 11, 3) else year - 1, 5, 3)
+
+
+def film_answer(people: dict, couple_id: str, answers: dict):
+    """The payload function for seed_daily_question: the role's text and photo from answers."""
+    def payload(role: str) -> dict:
+        text, photo = answers[role]
+        answer_id = str(uuid.uuid4())
+        asset_id = people[role].upload_image(PHOTOS / photo, {
+            "p_reserved_parent_kind": "daily_answer_media", "p_reserved_parent_id": answer_id,
+            "p_couple_id": couple_id, "p_upload_purpose": "daily_answer_media", "p_media_type": "image"})
+        return {"answer_id": answer_id, "text": text, "media_asset_ids": [asset_id]}
+    return payload
+
+
+def move_day_back(convex: Convex, day_id: str, local_date: date) -> None:
+    """Moves a couple day to local_date on the local backend, with its questions and their answers, at
+    the same times of day. The question's chat then lists it as an earlier day."""
+    shift = {}
+
+    def moved(value: str) -> str:
+        return iso(datetime.fromisoformat(value) + shift["by"])
+
+    def edit_days(rows: list) -> list:
+        [day] = [row for row in rows if row["id"] == day_id]
+        zone = ZoneInfo(day["anchor_time_zone_id"])
+        starts = datetime.combine(local_date, time(), zone)
+        shift["by"] = starts - datetime.fromisoformat(day["starts_at"])
+        day |= {"local_date": local_date.isoformat(), "starts_at": iso(starts.astimezone(timezone.utc)),
+                "ends_at": iso(datetime.combine(local_date + timedelta(days=1), time(), zone).astimezone(timezone.utc)),
+                "created_at": moved(day["created_at"])}
+        return rows
+
+    instance_ids = set()
+
+    def edit_instances(rows: list) -> list:
+        for row in rows:
+            if row.get("couple_day_id") == day_id:
+                instance_ids.add(row["id"])
+                row |= {key: moved(row[key]) for key in ("created_at", "replaced_at") if row.get(key)}
+        return rows
+
+    def edit_answers(rows: list) -> list:
+        for row in rows:
+            if row["instance_id"] in instance_ids:
+                row |= {key: moved(row[key]) for key in ("created_at", "updated_at")}
+        return rows
+
+    replace_rows(convex, "couple_days", edit_days)
+    replace_rows(convex, "daily_question_instances", edit_instances)
+    replace_rows(convex, "daily_question_answers", edit_answers)
+    print(f"Moved day {day_id} back to {local_date}")
+
+
+def seed_film_question(convex: Convex, people: dict, couple_id: str, locale: str) -> tuple[dict, str]:
+    """Gives FILM_QUESTION_KEY an earlier day both answered, then makes it today's question with only
+    Elena's answer. Returns today's question row and day id."""
+    answers = FILM_ANSWERS[locale]
+    question, day_id = seed_daily_question(convex, people, couple_id, locale, (), FILM_QUESTION_KEY)
+    rounds = people["first"].query("dailyQuestionChat:get_daily_question_chat", {
+        "p_couple_id": couple_id, "p_question_id": question["question_id"]})["questions"]
+    if any(row["local_date"] < today().isoformat() for row in rounds):
+        print("The question already has an earlier day")
+        if question["own_answer_id"]:
+            # A take answered for Hjalmar. Clearing today lets the next take answer again.
+            convex.cli("run", "daily:reset_daily_challenge_for_testing", json.dumps({"p_couple_id": couple_id}))
+    else:
+        # Today's answers on the question can only be from a run that stopped before the move.
+        seed_daily_question(convex, people, couple_id, locale, ("second", "first"), FILM_QUESTION_KEY,
+                            film_answer(people, couple_id, answers["earlier"]))
+        move_day_back(convex, day_id, earlier_film_date())
+    second_only = {"second": answers["today"]["second"]}
+    return seed_daily_question(convex, people, couple_id, locale, ("second",), FILM_QUESTION_KEY,
+                               film_answer(people, couple_id, second_only))
 
 
 def seed_memories(people: dict, couple_id: str, locale: str) -> list[str]:
@@ -579,6 +687,8 @@ def main() -> None:
     stage.add_argument("--partner-answer-only", action="store_true",
                        help="only Elena answers today's question, so Home still invites Hjalmar to answer")
     stage.add_argument("--chat-only", action="store_true", help="only add the question's chat to an earlier run")
+    stage.add_argument("--question-film", action="store_true",
+                       help="seed the film's photo question with an earlier day instead of the screenshots' question")
     args = parser.parse_args()
     locale = args.locale
 
@@ -604,9 +714,12 @@ def main() -> None:
         return
     seed_profiles(people)
     seed_dates(first, locale, couple_id)
-    question, day_id = seed_daily_question(convex, people, couple_id, locale,
-                                           ("second",) if args.partner_answer_only else ("first", "second"))
-    if not args.partner_answer_only:
+    if args.question_film:
+        question, day_id = seed_film_question(convex, people, couple_id, locale)
+    else:
+        question, day_id = seed_daily_question(convex, people, couple_id, locale,
+                                               ("second",) if args.partner_answer_only else ("first", "second"))
+    if not (args.partner_answer_only or args.question_film):
         seed_chat(people, couple_id, question["question_id"], locale)
     memory_ids = seed_memories(people, couple_id, locale)
     ludo_id = seed_ludo(people, locale)
@@ -619,7 +732,8 @@ def main() -> None:
                       "question_id": question["question_id"], "memory_ids": memory_ids, "ludo_game_id": ludo_id,
                       "draw_round_id": draw_round_id, "guess_word": CONTENT[locale]["guess_word"],
                       "partner_clerk_subject": subjects["second"],
-                      "countdown_title": CONTENT[locale]["countdown"]}, ensure_ascii=False))
+                      "countdown_title": CONTENT[locale]["countdown"],
+                      "film_answer": FILM_ANSWERS[locale]["today"]["first"][0]}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
