@@ -241,6 +241,33 @@ describe("Download my data", () => {
     expect(jsonOf(zips[0]!, "account/profiles.json")).toHaveLength(1);
   });
 
+  test("the partner's game on the Lock Screen comes only from the rows where the person is the viewer", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const row = (viewer: TestUser, partner: TestUser, phase: "playing" | "off") => ({
+      id: newUuid(),
+      couple_id: couple.coupleId,
+      viewer_user_id: viewer.userId,
+      partner_user_id: partner.userId,
+      game_kind: "mind_meld" as const,
+      phase,
+      started_at: new Date().toISOString(),
+      pushed_at: new Date().toISOString(),
+    });
+    const mine = row(couple.first, couple.second, "playing");
+    // The partner turned game pushes off, which is their setting and not the person's.
+    const theirs = row(couple.second, couple.first, "off");
+    await t.run(async (ctx) => {
+      await ctx.db.insert("game_live_activities", mine);
+      await ctx.db.insert("game_live_activities", theirs);
+    });
+
+    const { status } = await requestExport(t, couple.first, false);
+    const text = allJsonText((await downloadZips(t, couple.first, status.id)).zips);
+    expect(text).toContain(mine.id);
+    expect(text).not.toContain(theirs.id);
+  });
+
   test("leaving the files out gives data only", async () => {
     const t = newTest();
     const couple = await createCouple(t);

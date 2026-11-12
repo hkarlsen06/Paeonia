@@ -1,5 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import { deleteCoupleGameRows } from "./gameRegistry";
+import { endCoupleGameActivities } from "./liveActivities";
 import { deleteHeartsForCouple } from "./hearts";
 import { deleteCoupleRecaps } from "./recap";
 import {
@@ -280,6 +281,7 @@ export async function cleanupCoupleContent(
   // Game rows have no soft delete. Their drawing media is queued with the couple's other media below.
   // The registry deletes them in one go, so a couple with a long game history can still be large.
   budget.left -= await deleteCoupleGameRows(ctx, couple.id);
+  budget.left -= await endCoupleGameActivities(ctx, couple.id);
   // A favorite is private to one person, so it goes with the content it points at.
   budget.left -= await deleteCoupleFavorites(ctx, couple.id);
   // A reaction says nothing without the content it is on, so it goes with it.
@@ -546,6 +548,7 @@ export async function purgeCoupleContent(
     await deleteCoupleRecaps(ctx, couple.id),
     await clearPartnerNicknames(ctx, couple.id),
     await deleteCoupleNotes(ctx, couple.id),
+    await endCoupleGameActivities(ctx, couple.id),
   ]) {
     contentDeleted += deleted;
     budget.left -= deleted;

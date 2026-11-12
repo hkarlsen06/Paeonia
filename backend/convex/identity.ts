@@ -10,6 +10,7 @@ import { authProviderFromIdentity, ensureCurrentUser, requireUserId, requireUser
 import { type ReaderCtx, withTouch } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
+import { setGameActivitiesAllowed } from "./lib/liveActivities";
 import { sha256Hex } from "./lib/crypto";
 import { isValidQuestionTimeMinutes } from "./lib/questionTime";
 import { lettersEnabled } from "./lib/letters";
@@ -324,6 +325,7 @@ export const set_notification_preference = mutation({
     const row = await findNotificationPreferences(ctx, userId);
     if (!row) return fail("P0002", "notification preferences were not found");
     await ctx.db.patch(row._id, withTouch(row, { [column]: args.p_enabled }));
+    if (column === "games_enabled") await setGameActivitiesAllowed(ctx, userId, args.p_enabled);
     return notificationPreferencesRow((await findNotificationPreferences(ctx, userId))!);
   },
 });

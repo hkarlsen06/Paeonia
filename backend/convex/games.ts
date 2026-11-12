@@ -20,6 +20,7 @@ import {
   requirePartnerId,
   settingsJson,
 } from "./lib/games";
+import { recordGameHeartbeat, recordGameLeave } from "./lib/liveActivities";
 import { signLiveTicket } from "./lib/liveTicket";
 import { gameRoom, openGameKinds, setPresent } from "./lib/presence";
 import { addMs, nowIso } from "./lib/time";
@@ -222,7 +223,9 @@ export const send_game_invite = mutation({
  * after, and `false` when it closes. The presence component marks the screen closed 60
  * seconds after the last `true`, such as when the app was killed. Each call also moves the
  * game's last played time forward (`recordPlayed`), and a `true` counts the caller as playing on today's
- * couple day (`recordPlayDay`) and answers the partner's invite to the game.
+ * couple day (`recordPlayDay`), answers the partner's invite to the game, and in a real-time game
+ * starts or moves the partner's Live Activity (`recordGameHeartbeat`). A `false` there starts the
+ * wait before that activity ends (`recordGameLeave`).
  */
 export const set_game_presence = mutation({
   args: { p_kind: gameKind, p_present: v.boolean() },
@@ -236,6 +239,9 @@ export const set_game_presence = mutation({
       // A close can arrive after midnight, so only an open counts the day.
       await recordPlayDay(ctx, coupleId, userId);
       await answerGameInvite(ctx, coupleId, args.p_kind, userId);
+      await recordGameHeartbeat(ctx, coupleId, userId, args.p_kind);
+    } else {
+      await recordGameLeave(ctx, coupleId, userId, args.p_kind);
     }
     return null;
   },

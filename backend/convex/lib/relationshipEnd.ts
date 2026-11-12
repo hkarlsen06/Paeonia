@@ -2,6 +2,7 @@ import type { WriterCtx } from "./db";
 import { withUpdatedAt } from "./db";
 import { fail } from "./errors";
 import { deleteHeartsForCouple } from "./hearts";
+import { endCoupleGameActivities } from "./liveActivities";
 import { queueBadgeUpdate } from "./badges";
 import { deleteCoupleRecaps } from "./recap";
 import { enqueueLockScreenRefreshForUser } from "./notifications";
@@ -88,8 +89,9 @@ export async function endRelationshipForPair(
   await deleteHeartsForCouple(ctx, couple.id);
   // A nickname is a private note about one person, so it ends with the relationship.
   await clearPartnerNicknames(ctx, couple.id);
-  // Open game screens and typing dots of both partners go at once.
+  // Open game screens and typing dots of both partners go at once, and so does the partner's game on a Lock Screen.
   await removePresenceRooms(ctx, members.map((member) => member.user_id), `${couple.id}:`);
+  await endCoupleGameActivities(ctx, couple.id);
   await ctx.db.patch(initiator._id, withUpdatedAt({ status: "left" as const, left_at: now }));
   for (const member of members) {
     if (member.user_id !== initiatedByUserId && member.status === "active") {

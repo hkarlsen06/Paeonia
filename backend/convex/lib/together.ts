@@ -2,6 +2,7 @@ import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { resolveMemberStreakTimeZone } from "./streakDeadlines";
 import { addDaysToDate, addMs, localDateOf, startOfLocalDay } from "./time";
+import { earliestLocalDate, openVisits } from "./visits";
 
 // A together day is a date on the streak's clock (`StreakClock`) on which the partners are
 // together: a `together_days` row spans it, or a visit covers it from the visit's `together_from`.
@@ -178,10 +179,23 @@ async function togetherDaysAt(ctx: ReaderCtx, coupleId: string, at: string) {
   return days === null ? null : { days, today: dayOf(days.clock, at) };
 }
 
-/** True when the partners are together on the day `at` is on, by a visit or by location. */
+/**
+ * True when the partners are together on the day `at` is on, by a visit or by location. Reads the
+ * stored days that reach that day and the visits that are not over, and the clock only when one of
+ * them reaches it.
+ */
 export async function isCoupleTogetherAt(ctx: ReaderCtx, coupleId: string, at: string): Promise<boolean> {
-  const found = await togetherDaysAt(ctx, coupleId, at);
-  return found !== null && isTogether(found.days, found.today);
+  // The day `at` is on is within a day of its UTC date in every time zone.
+  const first = earliestLocalDate(at);
+  const last = addDaysToDate(at.slice(0, 10), 1);
+  const visits = (await openVisits(ctx, coupleId, first)).map((visit) => ({
+    start_date: later(visit.start_date, visit.together_from),
+    end_date: visit.end_date,
+  }));
+  const spans = [...(await rowsEndingFrom(ctx, coupleId, first).collect()), ...visits].filter((span) => span.start_date <= last);
+  if (spans.length === 0) return false;
+  const today = dayOf(await streakClock(ctx, coupleId), at);
+  return spans.some((span) => span.start_date <= today && today <= span.end_date);
 }
 
 /** True when the day `at` is on rests the streak and the reminders. */

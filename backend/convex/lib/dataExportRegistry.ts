@@ -259,6 +259,22 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
     },
     hide: ["widget_push_token", "widget_push_token_hash"],
   }),
+  live_activity_tokens: own("user_id", "by_user_id_kind", {
+    group: "settings",
+    about: {
+      en: "The phones that can show your partner's game on the Lock Screen. The secret codes are left out.",
+      nb: "Telefonene som kan vise spillet til partneren din på låseskjermen. De hemmelige kodene er utelatt.",
+    },
+    hide: ["token", "token_hash", "install_id"],
+  }),
+  live_activity_push_outbox: own("recipient_user_id", "by_recipient_user_id", {
+    group: "settings",
+    about: {
+      en: "Signals in the last 30 days that showed, changed or ended your partner's game on your Lock Screen.",
+      nb: "Signaler de siste 30 dagene som viste, endret eller fjernet spillet til partneren din på låseskjermen.",
+    },
+    hide: ["target_token_id"],
+  }),
   notification_preferences: own("user_id", "by_user_id", {
     group: "settings",
     about: {
@@ -682,6 +698,14 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   game_plays: shared("by_couple_id_kind", {
     group: "games",
     about: { en: "When you last opened each game.", nb: "Når dere sist åpnet hvert spill." },
+  }),
+  // Only the rows where the person is the viewer. The partner's rows hold the partner's game push setting.
+  game_live_activities: own("viewer_user_id", "by_viewer_user_id", {
+    group: "games",
+    about: {
+      en: "Whether your partner is in a game right now, which shows on your Lock Screen.",
+      nb: "Om partneren din er i et spill akkurat nå, som vises på låseskjermen din.",
+    },
   }),
   game_play_days: shared("by_couple_id_day", {
     group: "games",

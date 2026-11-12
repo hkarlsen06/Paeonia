@@ -9,8 +9,9 @@ import { TOGETHER_DAYS_KEPT } from "./lib/together";
 //
 // client_operations: replay protection for the phone's offline queue. A queued write older than
 // this window runs again instead of returning the stored response.
-// notification_outbox, widget_push_outbox: a row is sent or failed within hours, so an old row
-// protects nothing. The Lock Screen push key repeats, and only its newest row is ever checked.
+// notification_outbox, widget_push_outbox, live_activity_push_outbox: a row is sent or failed
+// within hours, so an old row protects nothing. The Lock Screen push key repeats, and only its
+// newest row is ever checked.
 // together_days: dates the partners were together, from location or a visit that changed after
 // them, kept TOGETHER_DAYS_KEPT days by date. A row that starts earlier keeps its later dates.
 const RETENTION_DAYS = 30;
@@ -34,6 +35,10 @@ export const prune_expired_rows = internalMutation({
         .take(BATCH),
       await ctx.db
         .query("widget_push_outbox")
+        .withIndex("by_created_at", (q) => q.lt("created_at", cutoff))
+        .take(BATCH),
+      await ctx.db
+        .query("live_activity_push_outbox")
         .withIndex("by_created_at", (q) => q.lt("created_at", cutoff))
         .take(BATCH),
     ];

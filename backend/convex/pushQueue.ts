@@ -2,13 +2,19 @@ import { vOnCompleteArgs } from "@convex-dev/workpool";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
-import { isQuietNight, notificationStaleAt, type PreparedNotification, type PreparedWidgetPush } from "./lib/apns";
+import {
+  isQuietNight,
+  notificationStaleAt,
+  type PreparedLiveActivityPush,
+  type PreparedNotification,
+  type PreparedWidgetPush,
+} from "./lib/apns";
 import type { WriterCtx } from "./lib/db";
-import { findCurrentCouple } from "./lib/access";
+import { canAccessCoupleContent, findCurrentCouple } from "./lib/access";
 import { badgeCountForUser } from "./lib/badges";
 import { getByUuid, withTouch } from "./lib/db";
 import { isDailyPartnerPushKind, resolveDailyPartnerPush } from "./lib/dailyPartnerPush";
-import { notificationAlertTitle, subscriptionTrialReminderBody } from "./lib/notificationCopy";
+import { liveActivityAlert, notificationAlertTitle, notificationLocaleLanguage, subscriptionTrialReminderBody } from "./lib/notificationCopy";
 import { notificationStillWanted } from "./lib/notificationState";
 import { uuidArg } from "./lib/ids";
 import {
@@ -19,6 +25,7 @@ import {
   UNSAFE_PAYLOAD_ERROR,
   waitsWhileTogether,
 } from "./lib/notifications";
+import { nameAndSourceForViewer } from "./lib/partnerNames";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { addMs, isValidTimeZone, nowIso } from "./lib/time";
 import { pushStatus } from "./lib/pushStatus";
@@ -30,9 +37,14 @@ import { pushStatus } from "./lib/pushStatus";
 const TARGET_INELIGIBLE = "notification target is no longer eligible";
 const OUT_OF_DATE = "notification is out of date";
 
-const deviceKind = v.union(v.literal("app"), v.literal("widget"));
-type DeviceKind = "app" | "widget";
-const OUTBOX = { app: "notification_outbox", widget: "widget_push_outbox" } as const;
+const deviceKind = v.union(v.literal("app"), v.literal("widget"), v.literal("liveactivity"));
+type DeviceKind = "app" | "widget" | "liveactivity";
+const OUTBOX = {
+  app: "notification_outbox",
+  widget: "widget_push_outbox",
+  liveactivity: "live_activity_push_outbox",
+} as const;
+type OutboxTable = (typeof OUTBOX)[DeviceKind];
 
 /** `substring(btrim(text) for max)` that turns an empty result into undefined. */
 function cleanText(value: string | null | undefined, max: number): string | undefined {
@@ -41,7 +53,7 @@ function cleanText(value: string | null | undefined, max: number): string | unde
 }
 
 /** The row when it is neither sent nor failed. */
-async function pendingRow<T extends "notification_outbox" | "widget_push_outbox">(
+async function pendingRow<T extends OutboxTable>(
   ctx: WriterCtx,
   table: T,
   outboxId: string,
@@ -52,7 +64,7 @@ async function pendingRow<T extends "notification_outbox" | "widget_push_outbox"
 
 async function drop(
   ctx: WriterCtx,
-  row: Doc<"notification_outbox"> | Doc<"widget_push_outbox">,
+  row: Doc<OutboxTable>,
   error: string,
 ): Promise<null> {
   await ctx.db.patch(row._id, { failed_at: nowIso(), last_error: error });
@@ -255,6 +267,57 @@ export const prepare_widget_push = internalMutation({
   },
 });
 
+/**
+ * Like `prepare_notification` for an ActivityKit push. A start goes out only while its activity
+ * still runs and the viewer still has the couple and game pushes, and it carries the game the
+ * partner is in now with the name the viewer calls them. An update or end needs only its token.
+ */
+export const prepare_live_activity_push = internalMutation({
+  args: { outbox_id: v.string() },
+  handler: async (ctx, args): Promise<PreparedLiveActivityPush | null> => {
+    const row = await pendingRow(ctx, "live_activity_push_outbox", args.outbox_id);
+    if (!row) return null;
+    const token = await getByUuid(ctx, "live_activity_tokens", row.target_token_id);
+    if (!token) return await drop(ctx, row, TARGET_INELIGIBLE);
+    let gameKind: string = row.game_kind;
+    let start: PreparedLiveActivityPush["start"] = null;
+    if (row.event === "start") {
+      const activity = await getByUuid(ctx, "game_live_activities", row.activity_id);
+      if (activity?.phase !== "playing") return await drop(ctx, row, OUT_OF_DATE);
+      const preference = await ctx.db
+        .query("notification_preferences")
+        .withIndex("by_user_id", (q) => q.eq("user_id", token.user_id))
+        .unique();
+      if (!(preference?.games_enabled ?? false) || !(await canAccessCoupleContent(ctx, token.user_id, activity.couple_id))) {
+        return await drop(ctx, row, TARGET_INELIGIBLE);
+      }
+      gameKind = activity.game_kind;
+      const partnerName = await shortPartnerName(ctx, token.user_id, activity.partner_user_id);
+      const alert = liveActivityAlert(activity.game_kind, partnerName, notificationLocaleLanguage(token.locale));
+      start = { partner_name: partnerName ?? "", alert_title: alert.title, alert_body: alert.body };
+    }
+    return {
+      outbox_id: row.id,
+      target_token_id: token.id,
+      token: token.token,
+      apns_environment: token.apns_environment,
+      activity_id: row.activity_id,
+      event: row.event,
+      quiet: row.quiet ?? false,
+      game_kind: gameKind,
+      queued_at: row.created_at,
+      start,
+    };
+  },
+});
+
+/** What the viewer calls the partner, as short as the Dynamic Island needs: a nickname whole, an account name's first word. */
+async function shortPartnerName(ctx: WriterCtx, viewerUserId: string, partnerUserId: string): Promise<string | null> {
+  const { name, usesNickname } = await nameAndSourceForViewer(ctx, viewerUserId, partnerUserId);
+  if (name === null || usesNickname) return name;
+  return name.trim().split(/\s+/)[0] || null;
+}
+
 async function recordResult(
   ctx: WriterCtx,
   kind: DeviceKind,
@@ -291,6 +354,7 @@ export const push_finished = internalMutation({
   args: vOnCompleteArgs(v.object({ kind: deviceKind, outbox_id: v.string() })),
   handler: async (ctx, { context, result }) => {
     if (result.kind !== "success") {
+      if (context.kind === "liveactivity") await releaseEndedActivityToken(ctx, context.outbox_id);
       await recordResult(ctx, context.kind, context.outbox_id, {
         error: result.kind === "failed" ? result.error : "delivery was canceled",
       });
@@ -298,6 +362,10 @@ export const push_finished = internalMutation({
     }
     const outcome = result.returnValue as PushOutcome | null;
     if (!outcome) return null;
+    if (context.kind === "liveactivity") {
+      await finishLiveActivityPush(ctx, context.outbox_id, outcome);
+      return null;
+    }
     if (outcome.confirmed_environment) {
       await persistDeviceEnvironment(ctx, context.kind, outcome.device_id, outcome.confirmed_environment);
     }
@@ -307,9 +375,32 @@ export const push_finished = internalMutation({
   },
 });
 
+/**
+ * Records an ActivityKit send. A dead token is deleted, since iOS hands out a new one. The token
+ * of an activity that got its end is deleted too, because nothing goes to that activity again.
+ */
+async function finishLiveActivityPush(ctx: WriterCtx, outboxId: string, outcome: PushOutcome): Promise<void> {
+  const token = await getByUuid(ctx, "live_activity_tokens", outcome.device_id);
+  if (token && outcome.invalid_token) {
+    await ctx.db.delete(token._id);
+  } else if (token && outcome.confirmed_environment) {
+    await ctx.db.patch(token._id, { apns_environment: outcome.confirmed_environment, updated_at: nowIso() });
+  }
+  await releaseEndedActivityToken(ctx, outboxId);
+  await recordResult(ctx, "liveactivity", outboxId, outcome);
+}
+
+/** Deletes the activity token an end push went to, whether the end arrived or not. */
+async function releaseEndedActivityToken(ctx: WriterCtx, outboxId: string): Promise<void> {
+  const row = await pendingRow(ctx, "live_activity_push_outbox", outboxId);
+  if (row?.event !== "end") return;
+  const token = await getByUuid(ctx, "live_activity_tokens", row.target_token_id);
+  if (token?.kind === "update") await ctx.db.delete(token._id);
+}
+
 async function persistDeviceEnvironment(
   ctx: WriterCtx,
-  kind: DeviceKind,
+  kind: "app" | "widget",
   deviceId: string,
   environment: "sandbox" | "production",
 ): Promise<void> {
@@ -323,7 +414,7 @@ async function persistDeviceEnvironment(
   }
 }
 
-async function disableDevice(ctx: WriterCtx, kind: DeviceKind, deviceId: string): Promise<void> {
+async function disableDevice(ctx: WriterCtx, kind: "app" | "widget", deviceId: string): Promise<void> {
   const id = uuidArg(deviceId);
   const now = nowIso();
   if (kind === "app") {

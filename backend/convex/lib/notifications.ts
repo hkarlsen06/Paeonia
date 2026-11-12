@@ -146,7 +146,12 @@ const pushWorkpool = new Workpool(components.pushWorkpool, {
  * Queues the send of one outbox row at its `scheduled_for`. Replaces the
  * `invoke_push_notification_drain` triggers and the 30 second drain cron.
  */
-async function enqueuePush(ctx: WriterCtx, kind: "app" | "widget", outboxId: string, scheduledFor: string): Promise<void> {
+export async function enqueuePush(
+  ctx: WriterCtx,
+  kind: "app" | "widget" | "liveactivity",
+  outboxId: string,
+  scheduledFor: string,
+): Promise<void> {
   const context = { kind, outbox_id: outboxId };
   await pushWorkpool.enqueueAction(ctx, internal.push.send_push, context, {
     runAt: Date.parse(scheduledFor),

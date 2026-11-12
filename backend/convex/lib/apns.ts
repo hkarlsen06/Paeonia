@@ -296,6 +296,83 @@ export function buildWidgetRequest(notification: PreparedWidgetPush, bundleId: s
   };
 }
 
+/** One ActivityKit push, read when it is due (`prepare_live_activity_push` in pushQueue.ts). */
+export type PreparedLiveActivityPush = {
+  outbox_id: string;
+  target_token_id: string;
+  token: string;
+  apns_environment: ApnsEnvironment;
+  activity_id: string;
+  event: "start" | "update" | "end";
+  /** A refresh that only moves the stale date. It goes at priority 5, which iOS does not count against the app. */
+  quiet: boolean;
+  game_kind: string;
+  /** When the push was queued. iOS keeps the newest, and the stale and dismissal dates count from it. */
+  queued_at: string;
+  /** The attributes and the alert a start needs. Null for an update or an end. */
+  start: { partner_name: string; alert_title: string; alert_body: string } | null;
+};
+
+/** The Swift type of the activity's attributes, `GameLiveActivityAttributes` in PaeoniaWidget/LiveActivity. */
+export const LIVE_ACTIVITY_ATTRIBUTES_TYPE = "GameLiveActivityAttributes";
+/**
+ * A running activity shows its ended state this long after the last update it got. A start goes
+ * stale after `LIVE_ACTIVITY_START_STALE_SECONDS`, so a phone that never registered the activity's
+ * token, and so gets no update, shows the ended state soon. The update that follows the token's
+ * registration moves it to this.
+ */
+export const LIVE_ACTIVITY_STALE_SECONDS = 15 * 60;
+export const LIVE_ACTIVITY_START_STALE_SECONDS = 2 * 60;
+/** An end waits at APNs for an offline phone as long as an activity can run. */
+const LIVE_ACTIVITY_END_EXPIRATION_SECONDS = 8 * 3600;
+
+/**
+ * The `aps` of an ActivityKit push. `content-state` and `attributes` use the property names of the
+ * Swift types, since iOS decodes them with the default JSON coding. Names the partner and the
+ * game, never a move.
+ */
+export function buildLiveActivityApsPayload(push: PreparedLiveActivityPush): Record<string, unknown> {
+  const timestamp = Math.floor(Date.parse(push.queued_at) / 1000);
+  const aps: Record<string, unknown> = {
+    timestamp,
+    event: push.event,
+    "content-state": { gameKind: push.game_kind, phase: push.event === "end" ? "ended" : "playing" },
+  };
+  if (push.event === "end") {
+    // A date in the past takes the ended activity off the Lock Screen at once.
+    aps["dismissal-date"] = timestamp;
+  } else {
+    aps["stale-date"] = timestamp + staleSeconds(push);
+  }
+  if (push.start) {
+    aps["attributes-type"] = LIVE_ACTIVITY_ATTRIBUTES_TYPE;
+    aps.attributes = { activityID: push.activity_id, partnerName: push.start.partner_name };
+    aps.alert = { title: push.start.alert_title, body: push.start.alert_body };
+    // Asks iOS for the activity's own token, which its updates and its end go to.
+    aps["input-push-token"] = 1;
+  }
+  return { aps };
+}
+
+const staleSeconds = (push: PreparedLiveActivityPush) =>
+  push.event === "start" ? LIVE_ACTIVITY_START_STALE_SECONDS : LIVE_ACTIVITY_STALE_SECONDS;
+
+export function buildLiveActivityRequest(push: PreparedLiveActivityPush, bundleId: string): ApnsSendRequest {
+  const timestamp = Math.floor(Date.parse(push.queued_at) / 1000);
+  // A start or an update that cannot reach the phone before it would be stale is not worth sending.
+  const lifetime = push.event === "end" ? LIVE_ACTIVITY_END_EXPIRATION_SECONDS : staleSeconds(push);
+  return {
+    token: push.token,
+    preferredEnvironment: push.apns_environment,
+    topic: `${bundleId}.push-type.liveactivity`,
+    pushType: "liveactivity",
+    priority: push.quiet ? "5" : "10",
+    expiration: String(timestamp + lifetime),
+    collapseId: null,
+    body: JSON.stringify(buildLiveActivityApsPayload(push)),
+  };
+}
+
 /** The HTTP/2 request headers, including the pseudo headers. */
 export function apnsHeaders(jwt: string, request: ApnsSendRequest): Record<string, string> {
   const headers: Record<string, string> = {

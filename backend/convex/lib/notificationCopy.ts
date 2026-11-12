@@ -1,5 +1,5 @@
 import type { ReaderCtx } from "./db";
-import type { GameKind } from "./games";
+import type { GameKind, RealTimeGameKind } from "./games";
 import { nameForViewer } from "./partnerNames";
 
 /** Port of `internal.notification_locale_language`: Norwegian locales map to 'nb', everything else to 'en'. */
@@ -27,8 +27,13 @@ type GamePushCopy = {
   steps?: Record<string, { title: (actor: string) => string; body: string }>;
 };
 
-/** Each game adds its entry before it sends pushes. The copy reads `payload.game_kind`. */
-export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePushCopy> } = {
+/**
+ * Each game adds its entry before it sends pushes. The copy reads `payload.game_kind`. Every
+ * real-time game has one, because a Live Activity alert names it (`liveActivityAlert`).
+ */
+export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePushCopy> } & {
+  [Kind in RealTimeGameKind]: Record<"en" | "nb", GamePushCopy>;
+} = {
   draw_and_guess: {
     en: {
       name: "Draw & Guess",
@@ -198,6 +203,22 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
     },
   },
 };
+
+/**
+ * The alert iOS shows as a Live Activity starts on the viewer's phone. `partnerName` is what the
+ * viewer calls the partner, or null for "Your partner".
+ */
+export function liveActivityAlert(
+  kind: RealTimeGameKind,
+  partnerName: string | null,
+  language: "en" | "nb",
+): { title: string; body: string } {
+  const game = GAME_PUSH_COPY[kind][language].name;
+  if (language === "nb") {
+    return { title: `${partnerName ?? "Partneren din"} spiller ${game}`, body: "Trykk for å bli med." };
+  }
+  return { title: `${partnerName ?? "Your partner"} is playing ${game}`, body: "Tap to join." };
+}
 
 /** The copy of the game a push names in `payload.game_kind`, or null when the game has no entry. */
 function gamePushCopy(payload: Record<string, unknown>, language: "en" | "nb"): GamePushCopy | null {

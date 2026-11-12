@@ -12,6 +12,7 @@ import {
   apnsHeaders,
   apnsHost,
   buildAppRequest,
+  buildLiveActivityRequest,
   buildWidgetRequest,
   cachedProviderTokens,
   readApnsConfig,
@@ -96,7 +97,7 @@ function createTransport(config: ReturnType<typeof readApnsConfig>): ApnsTranspo
  * keep a session open between runs, and at this app's volume one TLS handshake per push is fine.
  */
 export const send_push = internalAction({
-  args: { kind: v.union(v.literal("app"), v.literal("widget")), outbox_id: v.string() },
+  args: { kind: v.union(v.literal("app"), v.literal("widget"), v.literal("liveactivity")), outbox_id: v.string() },
   handler: async (ctx, { kind, outbox_id }): Promise<PushOutcome | null> => {
     const config = readApnsConfig(process.env);
     if (config.missing.length > 0) {
@@ -114,6 +115,12 @@ export const send_push = internalAction({
       request = buildAppRequest(notification, config.bundleId);
       deviceId = notification.target_device_id;
       queuedEnvironment = notification.apns_environment;
+    } else if (kind === "liveactivity") {
+      const push = await ctx.runMutation(internal.pushQueue.prepare_live_activity_push, { outbox_id });
+      if (!push) return null;
+      request = buildLiveActivityRequest(push, config.bundleId);
+      deviceId = push.target_token_id;
+      queuedEnvironment = push.apns_environment;
     } else {
       const push = await ctx.runMutation(internal.pushQueue.prepare_widget_push, { outbox_id });
       if (!push) return null;

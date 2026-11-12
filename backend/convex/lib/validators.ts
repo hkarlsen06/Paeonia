@@ -114,6 +114,9 @@ export const GAME_KINDS = [
   "guess_my_spot",
 ] as const;
 export const gameKind = literals(...GAME_KINDS);
+/** The games two people play at the same moment. Opening one shows the partner a Live Activity (lib/liveActivities.ts). */
+export const REAL_TIME_GAME_KINDS = ["draw_and_guess", "mind_meld", "piccante"] as const satisfies readonly (typeof GAME_KINDS)[number][];
+export const realTimeGameKind = literals(...REAL_TIME_GAME_KINDS);
 export const gamePlayStyle = literals("together", "against");
 export const gameLanguage = literals("en", "nb");
 export const wordDifficulty = literals("easy", "medium", "hard");

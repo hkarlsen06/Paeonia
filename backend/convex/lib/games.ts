@@ -5,12 +5,17 @@ import { fail } from "./errors";
 import { enqueueNotificationForUser } from "./notifications";
 import { gameRoom, onlineUserIds } from "./presence";
 import { addMs, nowIso } from "./time";
-import type { GAME_KINDS } from "./validators";
+import { type GAME_KINDS, REAL_TIME_GAME_KINDS } from "./validators";
 
 // Helpers every game shares: settings, presence, invites, and pushes. Draw & Guess has its own
 // in drawAndGuess.ts. This file must not import the registry (gameRegistry.ts) or any game.
 
 export type GameKind = (typeof GAME_KINDS)[number];
+export type RealTimeGameKind = (typeof REAL_TIME_GAME_KINDS)[number];
+
+export function isRealTimeGameKind(kind: GameKind): kind is RealTimeGameKind {
+  return (REAL_TIME_GAME_KINDS as readonly GameKind[]).includes(kind);
+}
 export type GameSettings = Doc<"game_settings">;
 
 /** The game screen counts as closed this long after its last heartbeat. The app sends one every 30 seconds. */

@@ -30,6 +30,8 @@ const LIMITS = {
   // The signed-out welcome counts have no user, so one bucket covers every phone. It only
   // stops a flood from filling the counts, far above what real installs send.
   welcomeStep: { kind: "token bucket", rate: 6000, period: HOUR, capacity: 1000 },
+  // Live Activity tokens and the ends a phone reports. A phone sends a few per launch and per game session.
+  liveActivity: { kind: "token bucket", rate: 120, period: HOUR, capacity: 60 },
 } as const;
 
 export const rateLimiter = new RateLimiter(components.rateLimiter, LIMITS);

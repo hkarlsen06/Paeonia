@@ -21,6 +21,7 @@ import {
   stableAuthDeleteErrorCode,
 } from "./lib/accountDeletionProviders";
 import { removePresenceRooms } from "./lib/presence";
+import { pushStatus } from "./lib/pushStatus";
 import { findProfile, updateProfile } from "./lib/profiles";
 import { reactionsByUser } from "./lib/reactions";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
@@ -218,6 +219,24 @@ export async function requestAccountDeletion(
     .query("widget_push_outbox")
     .withIndex("by_recipient_user_id", (q) => q.eq("recipient_user_id", userId))
     .collect()) {
+    await ctx.db.delete(row._id);
+  }
+  // The ends the relationship end queued above still go to the user's other phones, so those rows
+  // and their activity tokens stay. `push_finished` deletes each token once its end went or failed.
+  const activityPushes = await ctx.db
+    .query("live_activity_push_outbox")
+    .withIndex("by_recipient_user_id", (q) => q.eq("recipient_user_id", userId))
+    .collect();
+  const pendingEnds = activityPushes.filter((row) => row.event === "end" && pushStatus(row) === "pending");
+  const endTokenIds = new Set(pendingEnds.map((row) => row.target_token_id));
+  const activityTokens = await ctx.db
+    .query("live_activity_tokens")
+    .withIndex("by_user_id_kind", (q) => q.eq("user_id", userId))
+    .collect();
+  for (const row of [
+    ...activityPushes.filter((row) => !pendingEnds.includes(row)),
+    ...activityTokens.filter((token) => !(token.kind === "update" && endTokenIds.has(token.id))),
+  ]) {
     await ctx.db.delete(row._id);
   }
   const outboxRows = await ctx.db
