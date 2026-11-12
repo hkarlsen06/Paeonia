@@ -38,7 +38,7 @@ struct MailViewModelTests {
         func send(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter? { nil }
         func open(id: UUID) async throws -> Letter { throw URLError(.badServerResponse) }
         func delete(id: UUID, operation: SyncClientOperation) async throws {}
-        func partnerTimeZoneID() async throws -> String? { nil }
+        func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions { MailDeliveryOptions() }
         // swiftlint:enable async_without_await
     }
 
@@ -83,7 +83,29 @@ struct MailViewModelTests {
         func open(id: UUID) async throws -> Letter { throw URLError(.badServerResponse) }
         func delete(id: UUID, operation: SyncClientOperation) async throws {}
         func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage { MailPage() }
-        func partnerTimeZoneID() async throws -> String? { nil }
+        func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions { MailDeliveryOptions() }
+        // swiftlint:enable async_without_await
+    }
+
+    /// Refuses every letter for the next meeting, as when the visit went since the composer read
+    /// the options. The first options read names a visit, and every read after it fails.
+    private actor Refusal: MailGateway {
+        private var reads = 0
+
+        // swiftlint:disable async_without_await
+        func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions {
+            reads += 1
+            guard reads == 1 else { throw URLError(.timedOut) }
+            return MailDeliveryOptions(nextVisitStartDate: "2027-01-15")
+        }
+
+        func send(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter? {
+            throw PaeoniaConvexError.server(code: "55000", message: "a letter for the next meeting needs a visit ahead")
+        }
+
+        func open(id: UUID) async throws -> Letter { throw URLError(.badServerResponse) }
+        func delete(id: UUID, operation: SyncClientOperation) async throws {}
+        func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage { MailPage() }
         // swiftlint:enable async_without_await
     }
 
@@ -250,5 +272,25 @@ struct MailViewModelTests {
         #expect(mail.composer.draft == nil)
         let notes = await server.stored.map(\.content.trimmedBody)
         #expect(notes == ["See you.", "See you. P.S. I booked the train for Friday."])
+    }
+
+    @Test func aRefusedLetterForTheNextMeetingCannotBeSentAgainUntilTheOptionsAreReadAgain() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let mail = MailViewModel(
+            cache: FileMailCache(directoryURL: directory), gateway: Refusal(), evictPhotos: { _ in }
+        )
+        await mail.configure(ownerUserID: me, coupleID: UUID())
+        await mail.loadDeliveryOptions()
+        #expect(mail.deliveryOptions?.allows(.together) == true)
+        mail.composer.choose(LetterTemplate(.missYou))
+        mail.composer.updateBody("See you soon.")
+        mail.composer.updateDelivery(.together)
+
+        await mail.send()
+
+        #expect(mail.notice?.error == .meetingUnavailable)
+        #expect(mail.composer.draft?.content.delivery == .together)
+        #expect(mail.deliveryOptions == nil)
+        #expect(mail.deliveryOptionsFailure != nil)
     }
 }

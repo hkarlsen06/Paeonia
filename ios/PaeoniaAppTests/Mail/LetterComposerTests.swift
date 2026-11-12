@@ -45,7 +45,7 @@ struct LetterComposerTests {
         func open(id: UUID) async throws -> Letter { throw URLError(.badServerResponse) }
         func delete(id: UUID, operation: SyncClientOperation) async throws {}
         func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage { MailPage() }
-        func partnerTimeZoneID() async throws -> String? { nil }
+        func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions { MailDeliveryOptions() }
         // swiftlint:enable async_without_await
     }
 
@@ -75,7 +75,7 @@ struct LetterComposerTests {
         func open(id: UUID) async throws -> Letter { throw URLError(.badServerResponse) }
         func delete(id: UUID, operation: SyncClientOperation) async throws {}
         func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage { MailPage() }
-        func partnerTimeZoneID() async throws -> String? { nil }
+        func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions { MailDeliveryOptions() }
         // swiftlint:enable async_without_await
     }
 

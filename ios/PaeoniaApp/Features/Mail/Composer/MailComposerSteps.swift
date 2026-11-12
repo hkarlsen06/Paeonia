@@ -150,12 +150,17 @@ struct MailPhotoStep: View {
     }
 }
 
-/// When the letter arrives. Now, at the partner's next 08:00, or at a time the author picks.
+/// When the letter arrives. Now, at the partner's next 08:00, when the two next meet, or at a
+/// time the author picks.
 struct MailDeliveryPicker: View {
     @Binding var delivery: LetterDelivery
     let partnerName: String
-    /// Nil until the server said where the partner is, and then the morning option names no time.
-    let partnerTimeZone: TimeZone?
+    /// Nil until the server answered. Until then the morning option names no time, and the
+    /// option for the next meeting shows only when the draft already chose it.
+    let options: MailDeliveryOptions?
+    /// Why the options could not be read. Nil while they load or once they did.
+    let optionsFailure: PaeoniaFailure?
+    let retryOptions: () -> Void
     /// The saved time had passed and the composer moved it, so the picker says so.
     let movedPastTime: Bool
 
@@ -167,6 +172,7 @@ struct MailDeliveryPicker: View {
         VStack(spacing: PaeoniaSpacing.space12) {
             option(.now, title: .mailDeliveryNowTitle, detail: String(localized: .mailDeliveryNowDetail(partnerName)))
             option(.morning, title: .mailDeliveryMorningTitle, detail: morningDetail(now: now))
+            nextMeeting
             option(.at(setTime), title: .mailDeliveryAtTitle, detail: nil)
             if case let .at(date) = delivery {
                 timePicker(now: now)
@@ -219,8 +225,62 @@ struct MailDeliveryPicker: View {
         }
     }
 
+    /// The option, when the two can meet, or one line that says why it is missing.
+    @ViewBuilder
+    private var nextMeeting: some View {
+        let meeting = options?.nextMeeting()
+        if meeting?.offersLetter == true || (meeting == nil && delivery == .together) {
+            option(.together, title: .mailDeliveryTogetherTitle, detail: meeting.map(meetingLine) ?? uncheckedLine)
+            if meeting == nil, optionsFailure != nil {
+                Button(action: retryOptions) {
+                    Text(.mailDeliveryTogetherRetry)
+                        .font(PaeoniaTypography.bodyEmphasis)
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                }
+                .padding(.horizontal, PaeoniaSpacing.space16)
+                .accessibilityIdentifier("mail.delivery.together.retry")
+            }
+        } else if let meeting {
+            Text(verbatim: meetingLine(meeting))
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, PaeoniaSpacing.space16)
+                .accessibilityIdentifier("mail.delivery.together.missing")
+        }
+    }
+
+    /// Why a draft that chose the next meeting can't be sent while the options are missing.
+    private var uncheckedLine: String? {
+        switch optionsFailure {
+        case .offline: String(localized: .mailDeliveryTogetherUncheckedOffline)
+        case .other: String(localized: .mailDeliveryTogetherUnchecked)
+        case nil: nil
+        }
+    }
+
+    private func meetingLine(_ meeting: MailDeliveryOptions.NextMeeting) -> String {
+        switch meeting {
+        case let .visit(start, byLocation):
+            let day = start.formatted(.dateTime.weekday(.wide).day().month(.wide))
+            return byLocation
+                ? String(localized: .mailDeliveryTogetherVisitOrNear(partnerName, day))
+                : String(localized: .mailDeliveryTogetherVisit(day))
+        case .location:
+            return String(localized: .mailDeliveryTogetherNear(partnerName))
+        case .togetherNow:
+            return String(localized: .mailDeliveryTogetherTogetherNow)
+        case .visitTooSoon:
+            return String(localized: .mailDeliveryTogetherTooSoon)
+        case .unplanned:
+            return String(localized: .mailDeliveryTogetherUnplanned)
+        }
+    }
+
     private func morningDetail(now: Date) -> String {
-        guard let partnerTimeZone else {
+        guard let partnerTimeZone = options?.partnerTimeZoneID.flatMap(TimeZone.init(identifier:)) else {
             return String(localized: .mailDeliveryMorningDetailUnknownZone(partnerName))
         }
         let morning = LetterDelivery.nextMorning(after: now, in: partnerTimeZone)

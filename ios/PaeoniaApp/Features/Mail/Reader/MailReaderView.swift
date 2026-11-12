@@ -227,7 +227,7 @@ struct MailLetterPage: View {
             letter.deliverAt.map { date in
                 let when = date.formatted(.dateTime.weekday(.wide).day().month().hour().minute())
                 return String(localized: .mailStatusArrives(when))
-            }
+            } ?? String(localized: .mailStatusWaitsForMeeting)
         case .delivered:
             String(localized: .mailStatusDelivered)
         case .opened:

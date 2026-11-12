@@ -85,7 +85,7 @@ struct MailComposerView: View {
         .onChange(of: composer.draft == nil) { _, hasNoDraft in
             if !hasNoDraft, step == .template, let saved = composer.draft?.step { step = saved }
         }
-        .task { await mail.loadPartnerTimeZone() }
+        .task { await mail.loadDeliveryOptions() }
     }
 
     private var title: LocalizedStringResource {
@@ -125,7 +125,9 @@ struct MailComposerView: View {
                     set: { composer.updateDelivery($0) }
                 ),
                 partnerName: partnerName,
-                partnerTimeZone: mail.partnerTimeZone,
+                options: mail.deliveryOptions,
+                optionsFailure: mail.deliveryOptionsFailure,
+                retryOptions: { Task { await mail.loadDeliveryOptions() } },
                 movedPastTime: composer.movedPastTime
             )
             .onAppear { composer.moveTimeIfPassed() }
@@ -153,6 +155,13 @@ struct MailComposerView: View {
         .background(Color.paeoniaBackgroundPrimary)
     }
 
+    /// The draft's choice of arrival must be one the delivery step offers now. The next meeting
+    /// needs the options, since only they say whether it can be picked.
+    private var canSend: Bool {
+        guard let content = composer.draft?.content, content.canSend, !composer.isSending else { return false }
+        return mail.deliveryOptions?.allows(content.delivery) ?? (content.delivery != .together)
+    }
+
     /// Send on the last step, Next or Skip before it.
     @ViewBuilder
     private var forward: some View {
@@ -163,7 +172,7 @@ struct MailComposerView: View {
                 Text(.mailComposerSend)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: composer.isSending))
-            .disabled(composer.draft?.content.canSend != true || composer.isSending)
+            .disabled(!canSend)
             .accessibilityIdentifier("mail.composer.send")
         } else {
             Button {

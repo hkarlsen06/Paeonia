@@ -8,11 +8,13 @@ nonisolated enum LetterState: String, Codable, Sendable {
     case opened
 }
 
-/// When a letter arrives. Only the author's phone knows it.
+/// When a letter arrives. Only the author's phone knows it. A `together` letter has no time and
+/// arrives when the partners next meet.
 nonisolated enum LetterDeliveryKind: String, Codable, Sendable {
     case now
     case at
     case morning
+    case together
 }
 
 /// One letter as the server shows it to this person (`letters:get_letters`).
@@ -135,12 +137,14 @@ nonisolated enum LetterDelivery: Codable, Equatable, Sendable {
     case now
     case morning
     case at(Date)
+    case together
 
     var kind: LetterDeliveryKind {
         switch self {
         case .now: .now
         case .morning: .morning
         case .at: .at
+        case .together: .together
         }
     }
 
@@ -151,5 +155,63 @@ nonisolated enum LetterDelivery: Codable, Equatable, Sendable {
         let today = calendar.date(bySettingHour: 8, minute: 0, second: 0, of: now) ?? now
         if today > now { return today }
         return calendar.date(byAdding: .day, value: 1, to: today) ?? today
+    }
+}
+
+/// What the composer's delivery step offers, as `letters:get_letter_delivery_options` read it
+/// when the composer opened.
+nonisolated struct MailDeliveryOptions: Decodable, Equatable, Sendable {
+    /// The zone the partner's morning letters follow. Nil without a partner.
+    var partnerTimeZoneID: String?
+    var togetherNow = false
+    /// The first day of the next visit (`yyyy-MM-dd`) that starts after today, when a letter
+    /// written now would arrive on its evening.
+    var nextVisitStartDate: String?
+    /// The next visit starts too soon for a letter written now to arrive on its evening.
+    var nextVisitTooSoon = false
+    var bothShareLocation = false
+
+    enum CodingKeys: String, CodingKey {
+        case partnerTimeZoneID = "partner_time_zone_id"
+        case togetherNow = "together_now"
+        case nextVisitStartDate = "next_visit_start_date"
+        case nextVisitTooSoon = "next_visit_too_soon"
+        case bothShareLocation = "both_share_location"
+    }
+
+    /// How a letter for the next meeting would arrive, or why it can't be sent now.
+    enum NextMeeting: Equatable, Sendable {
+        /// At the visit that starts on `start`, or sooner when the phone shows the partners
+        /// together and `byLocation` holds.
+        case visit(start: Date, byLocation: Bool)
+        /// When the phone shows the partners together.
+        case location
+        /// The partners are together today, so the next meeting is not this one.
+        case togetherNow
+        /// The next visit starts too soon to wait for, and location can't tell.
+        case visitTooSoon
+        /// No visit is planned and location can't tell.
+        case unplanned
+
+        var offersLetter: Bool {
+            switch self {
+            case .visit, .location: true
+            case .togetherNow, .visitTooSoon, .unplanned: false
+            }
+        }
+    }
+
+    /// False while a draft that chose the next meeting can't be sent with that choice.
+    func allows(_ delivery: LetterDelivery) -> Bool {
+        delivery != .together || nextMeeting().offersLetter
+    }
+
+    func nextMeeting(calendar: Calendar = .current) -> NextMeeting {
+        if togetherNow { return .togetherNow }
+        if let start = nextVisitStartDate.flatMap(LockScreenCalendarDate.init)?.startOfDay(in: calendar) {
+            return .visit(start: start, byLocation: bothShareLocation)
+        }
+        if bothShareLocation { return .location }
+        return nextVisitTooSoon ? .visitTooSoon : .unplanned
     }
 }

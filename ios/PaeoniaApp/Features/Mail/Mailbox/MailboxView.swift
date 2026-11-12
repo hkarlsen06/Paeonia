@@ -215,7 +215,8 @@ private struct MailboxRow: View {
         if isSent {
             switch letter.state {
             case .sealed:
-                let when = letter.deliverAt?.formatted(.dateTime.weekday(.wide).day().month().hour().minute()) ?? ""
+                guard let deliverAt = letter.deliverAt else { return String(localized: .mailStatusWaitsForMeeting) }
+                let when = deliverAt.formatted(.dateTime.weekday(.wide).day().month().hour().minute())
                 return String(localized: .mailStatusArrives(when))
             case .delivered:
                 return String(localized: .mailStatusDelivered)

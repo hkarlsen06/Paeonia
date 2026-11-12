@@ -28,7 +28,51 @@ nonisolated extension DeveloperScenario {
     ) { _ in
         DeveloperLocalFlowHost(seed: .paired, mail: DeveloperMailSeed(
             letters: [], presentation: MailPresentation(path: [.composer], tab: .sent),
-            draft: DeveloperMailFixture.pastDraft, partnerTimeZoneID: nil
+            draft: DeveloperMailFixture.pastDraft, deliveryOptions: MailDeliveryOptions()
+        ))
+    }
+    static let mailComposerTogether = DeveloperScenario(
+        "mail-composer-together", "Mail · when we next meet",
+        "The delivery step for a couple who share location and plan a visit in nine days", .localFlows
+    ) { _ in
+        DeveloperLocalFlowHost(seed: .paired, mail: DeveloperMailSeed(
+            letters: [], presentation: MailPresentation(path: [.composer], tab: .sent),
+            draft: DeveloperMailFixture.deliveryDraft(.together),
+            deliveryOptions: MailDeliveryOptions(
+                partnerTimeZoneID: "Asia/Tokyo",
+                nextVisitStartDate: Date.now.addingTimeInterval(9 * 86_400)
+                    .formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day()),
+                bothShareLocation: true
+            )
+        ))
+    }
+    static let mailComposerTogetherUnchecked = DeveloperScenario(
+        "mail-composer-together-unchecked", "Mail · meeting not checked",
+        "A letter for when you next meet, while the phone could not check how you meet", .localFlows
+    ) { _ in
+        DeveloperLocalFlowHost(seed: .paired, mail: DeveloperMailSeed(
+            letters: [], presentation: MailPresentation(path: [.composer], tab: .sent),
+            draft: DeveloperMailFixture.deliveryDraft(.together), deliveryOptions: nil
+        ))
+    }
+    static let mailComposerNoVisit = DeveloperScenario(
+        "mail-composer-no-visit", "Mail · no visit planned",
+        "The delivery step for a couple with no visit planned who don't share location", .localFlows
+    ) { _ in
+        DeveloperLocalFlowHost(seed: .paired, mail: DeveloperMailSeed(
+            letters: [], presentation: MailPresentation(path: [.composer], tab: .sent),
+            draft: DeveloperMailFixture.deliveryDraft(.now),
+            deliveryOptions: MailDeliveryOptions(partnerTimeZoneID: "Asia/Tokyo")
+        ))
+    }
+    static let mailComposerVisitTooSoon = DeveloperScenario(
+        "mail-composer-visit-too-soon", "Mail · visit too soon",
+        "The delivery step when the next visit starts too soon to wait for and location can't tell", .localFlows
+    ) { _ in
+        DeveloperLocalFlowHost(seed: .paired, mail: DeveloperMailSeed(
+            letters: [], presentation: MailPresentation(path: [.composer], tab: .sent),
+            draft: DeveloperMailFixture.deliveryDraft(.now),
+            deliveryOptions: MailDeliveryOptions(partnerTimeZoneID: "Asia/Tokyo", nextVisitTooSoon: true)
         ))
     }
     static let mailReaderGone = DeveloperScenario(
@@ -53,7 +97,8 @@ struct DeveloperMailSeed {
     var letters: [Letter]
     var presentation: MailPresentation?
     var draft: LetterDraft?
-    var partnerTimeZoneID: String? = "Asia/Tokyo"
+    /// Nil when the delivery options can't be read.
+    var deliveryOptions: MailDeliveryOptions? = MailDeliveryOptions(partnerTimeZoneID: "Asia/Tokyo")
 
     static let none = DeveloperMailSeed(letters: [], presentation: nil)
 
@@ -61,7 +106,8 @@ struct DeveloperMailSeed {
         DeveloperMailSeed(letters: [], presentation: presentation)
     }
 
-    /// A sealed letter waiting, an opened one, and two sent ones, one on its way and one opened.
+    /// A sealed letter waiting, an opened one, and three sent ones: one on its way, one for the
+    /// next meeting, and one opened.
     static func everyKind(showing presentation: MailPresentation?) -> DeveloperMailSeed {
         DeveloperMailSeed(letters: DeveloperMailFixture.letters(), presentation: presentation)
     }
@@ -78,6 +124,13 @@ enum DeveloperMailFixture {
         draft.step = .delivery
         return draft
     }
+    static func deliveryDraft(_ delivery: LetterDelivery) -> LetterDraft {
+        var content = LetterContent(templateKey: .missYou, body: "I can't wait to hug you at the station.")
+        content.delivery = delivery
+        var draft = LetterDraft(content: content)
+        draft.step = .delivery
+        return draft
+    }
     static var unfinishedDraft: LetterDraft {
         var draft = LetterDraft(content: LetterContent(templateKey: .missYou, body: "Three more weeks. I"))
         draft.step = .note
@@ -86,7 +139,7 @@ enum DeveloperMailFixture {
 
     static func viewModel(_ seed: DeveloperMailSeed) -> MailViewModel {
         seedPhoto()
-        let gateway = DeveloperMailGateway(letters: seed.letters, partnerTimeZoneID: seed.partnerTimeZoneID)
+        let gateway = DeveloperMailGateway(letters: seed.letters, deliveryOptions: seed.deliveryOptions)
         let model = MailViewModel(
             cache: DeveloperMailCache(snapshot(of: seed.letters), draft: seed.draft),
             gateway: gateway,
@@ -128,6 +181,12 @@ enum DeveloperMailFixture {
                 body: "Sleep well. I'm thinking of you.", mediaAssetID: nil, deliveryKind: .morning,
                 deliverAt: now.addingTimeInterval(9 * hour), state: .sealed, deliveredAt: nil, openedAt: nil,
                 createdAt: now.addingTimeInterval(-2 * hour)
+            ),
+            Letter(
+                id: UUID(), authorUserID: me, recipientUserID: partner, templateKey: .missYou,
+                body: "Open this when we're finally together again.", mediaAssetID: nil, deliveryKind: .together,
+                deliverAt: nil, state: .sealed, deliveredAt: nil, openedAt: nil,
+                createdAt: now.addingTimeInterval(-5 * hour)
             ),
             Letter(
                 id: openedLetterID, authorUserID: partner, recipientUserID: me, templateKey: .missYou,
@@ -215,32 +274,36 @@ actor DeveloperMailCache: MailCaching {
 }
 
 /// Sends, opens and deletes letters in memory. A letter for now arrives at once, and one for
-/// later stays sealed.
+/// later or for the next meeting stays sealed. Without delivery options their read fails.
 actor DeveloperMailGateway: MailGateway {
     private var letters: [UUID: Letter]
-    private let partnerZone: String?
+    private let options: MailDeliveryOptions?
 
-    init(letters: [Letter], partnerTimeZoneID: String?) {
+    init(letters: [Letter], deliveryOptions: MailDeliveryOptions?) {
         self.letters = Dictionary(uniqueKeysWithValues: letters.map { ($0.id, $0) })
-        partnerZone = partnerTimeZoneID
+        options = deliveryOptions
     }
 
     // Protocol methods replace the network boundary with local results.
     // swiftlint:disable async_without_await
     func send(_ letter: LetterSend, photo: MemoryUploadMedia?, coupleID: UUID) async throws -> Letter? {
         let now = Date()
-        let deliverAt: Date = switch letter.content.delivery {
+        let deliverAt: Date? = switch letter.content.delivery {
         case .now: now
         case .morning:
-            LetterDelivery.nextMorning(after: now, in: TimeZone(identifier: partnerZone ?? "UTC") ?? .current)
+            LetterDelivery.nextMorning(
+                after: now, in: TimeZone(identifier: options?.partnerTimeZoneID ?? "UTC") ?? .current
+            )
         case let .at(date): date
+        case .together: nil
         }
+        let arrived = deliverAt.map { $0 <= now } ?? false
         let sent = Letter(
             id: letter.id, authorUserID: DeveloperScenarioFixture.currentUserID,
             recipientUserID: DeveloperScenarioFixture.partnerUserID, templateKey: letter.content.templateKey,
             body: letter.content.trimmedBody, mediaAssetID: photo == nil ? nil : DeveloperMailFixture.photo,
             deliveryKind: letter.content.delivery.kind, deliverAt: deliverAt,
-            state: deliverAt <= now ? .delivered : .sealed, deliveredAt: deliverAt <= now ? now : nil,
+            state: arrived ? .delivered : .sealed, deliveredAt: arrived ? now : nil,
             openedAt: nil, createdAt: now
         )
         letters[sent.id] = sent
@@ -263,8 +326,9 @@ actor DeveloperMailGateway: MailGateway {
         MailPage()
     }
 
-    func partnerTimeZoneID() async throws -> String? {
-        partnerZone
+    func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions {
+        guard let options else { throw URLError(.badServerResponse) }
+        return options
     }
     // swiftlint:enable async_without_await
 }

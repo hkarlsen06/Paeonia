@@ -7,6 +7,8 @@ nonisolated enum MailError: Equatable, Sendable {
     case sendFailed
     case letterTooLong
     case timePassed
+    /// The server would not take a letter for the next meeting, as when the visit was deleted.
+    case meetingUnavailable
     /// The letter had already reached the server when the author changed it and sent again.
     /// The changes stay as a new letter.
     case changesNotAdded
@@ -25,6 +27,8 @@ nonisolated enum MailError: Equatable, Sendable {
             self = .sendOffline
         } else if case .server(code: "22001", _)? = error as? PaeoniaConvexError {
             self = .letterTooLong
+        } else if case .server(code: "55000", _)? = error as? PaeoniaConvexError {
+            self = .meetingUnavailable
         } else {
             self = .sendFailed
         }
@@ -46,6 +50,7 @@ nonisolated enum MailError: Equatable, Sendable {
         case .sendFailed: String(localized: .mailErrorSendFailed)
         case .letterTooLong: String(localized: .mailErrorTooLong)
         case .timePassed: String(localized: .mailErrorTimePassed)
+        case .meetingUnavailable: String(localized: .mailErrorMeetingUnavailable)
         case .changesNotAdded: String(localized: .mailErrorChangesNotAdded)
         case .photoUnreadable: String(localized: .mailErrorPhotoUnreadable)
         case .photoMissing: String(localized: .mailErrorPhotoMissing)

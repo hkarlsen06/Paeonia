@@ -12,8 +12,8 @@ nonisolated protocol MailGateway: Sendable {
     func delete(id: UUID, operation: SyncClientOperation) async throws
     /// The page of `list` after `before`.
     func olderLetters(in list: MailboxTab, before: LetterCursor, limit: Int) async throws -> MailPage
-    /// The time zone the partner's morning letters follow, or nil without a partner.
-    func partnerTimeZoneID() async throws -> String?
+    /// What the composer's delivery step offers at `now`.
+    func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions
 }
 
 nonisolated struct LiveMailGateway: MailGateway {
@@ -60,9 +60,11 @@ nonisolated struct LiveMailGateway: MailGateway {
         )
     }
 
-    func partnerTimeZoneID() async throws -> String? {
-        let result: PartnerTimeZone = try await client.query("letters:get_letter_partner_time_zone")
-        return result.partnerTimeZoneID
+    func deliveryOptions(at now: Date) async throws -> MailDeliveryOptions {
+        try await client.query(
+            "letters:get_letter_delivery_options",
+            args: DeliveryOptionsRequest(now: now)
+        )
     }
 }
 
@@ -87,11 +89,11 @@ nonisolated private struct OlderLettersRequest: Encodable {
     }
 }
 
-nonisolated private struct PartnerTimeZone: Decodable {
-    let partnerTimeZoneID: String?
+nonisolated private struct DeliveryOptionsRequest: Encodable {
+    let now: Date
 
     enum CodingKeys: String, CodingKey {
-        case partnerTimeZoneID = "partner_time_zone_id"
+        case now = "p_now"
     }
 }
 

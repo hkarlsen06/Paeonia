@@ -36,8 +36,10 @@ final class MailViewModel {
     /// The lists as the mailbox shows them, with the older pages loaded so far.
     private(set) var lists: [MailboxTab: MailPage] = [:]
     private(set) var loadingOlder: Set<MailboxTab> = []
-    /// The zone the partner's morning letters follow. Nil until the composer read it.
-    private(set) var partnerTimeZone: TimeZone?
+    /// What the composer's delivery step offers. Nil until the composer read it.
+    private(set) var deliveryOptions: MailDeliveryOptions?
+    /// Why the last read of the delivery options failed. Nil once one succeeds.
+    private(set) var deliveryOptionsFailure: PaeoniaFailure?
     private(set) var openingLetterID: UUID?
     private(set) var notice: MailNotice?
     var presentation: MailPresentation? {
@@ -118,7 +120,8 @@ final class MailViewModel {
         if self.ownerUserID != nil, self.ownerUserID != ownerUserID {
             snapshot = MailSnapshot()
             lists = [:]
-            partnerTimeZone = nil
+            deliveryOptions = nil
+            deliveryOptionsFailure = nil
             notice = nil
             presentation = nil
         }
@@ -136,7 +139,8 @@ final class MailViewModel {
         self.coupleID = coupleID
         guard hadCouple else { return }
         presentation = nil
-        partnerTimeZone = nil
+        deliveryOptions = nil
+        deliveryOptionsFailure = nil
         await composer.load(ownerUserID: ownerUserID)
     }
 
@@ -194,10 +198,19 @@ final class MailViewModel {
         }
     }
 
-    /// Reads the partner's time zone for the morning option. Without it the option shows no time.
-    func loadPartnerTimeZone() async {
-        guard let gateway, let id = try? await gateway.partnerTimeZoneID() else { return }
-        partnerTimeZone = TimeZone(identifier: id)
+    /// Reads what the delivery step offers. Without it the morning option shows no time, and the
+    /// option for the next meeting shows only on a draft that already chose it, which can't be
+    /// sent until a read succeeds. A failed read drops the options read before, since the server
+    /// may have just refused them.
+    func loadDeliveryOptions() async {
+        guard let gateway else { return }
+        do {
+            deliveryOptions = try await gateway.deliveryOptions(at: .now)
+            deliveryOptionsFailure = nil
+        } catch {
+            deliveryOptions = nil
+            deliveryOptionsFailure = PaeoniaFailure(error)
+        }
     }
 
     // MARK: Reading
@@ -342,6 +355,8 @@ extension MailViewModel {
             logger.error("Sending a letter failed: \(String(describing: error))")
             #endif
             post(error)
+            // The delivery step then says why the next meeting can't be picked now.
+            if error == .meetingUnavailable { await loadDeliveryOptions() }
         case .ignored:
             break
         }

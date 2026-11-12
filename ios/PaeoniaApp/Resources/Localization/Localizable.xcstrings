@@ -24747,6 +24747,186 @@
         }
       }
     },
+    "mail.delivery.together.near" : {
+      "comment" : "When a letter for the next meeting arrives, for a couple that shares location and has no visit planned. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrives when your phone shows you're near %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer fram når telefonen din viser at du er i nærheten av %@."
+          }
+        }
+      }
+    },
+    "mail.delivery.together.retry" : {
+      "comment" : "Button that checks again when the couple next meets.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen"
+          }
+        }
+      }
+    },
+    "mail.delivery.together.title" : {
+      "comment" : "Option that delivers the letter the next time the two partners meet in person",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When we next meet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når vi møtes neste gang"
+          }
+        }
+      }
+    },
+    "mail.delivery.together.togetherNow" : {
+      "comment" : "Shown instead of the next-meeting option while the partners are together today",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're together today. Once you're apart again, you can send a letter for when you next meet."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere er sammen i dag. Når dere er fra hverandre igjen, kan du sende et brev til neste gang dere møtes."
+          }
+        }
+      }
+    },
+    "mail.delivery.together.tooSoon" : {
+      "comment" : "Shown instead of the next-meeting option when the next visit starts too soon for a letter written now to arrive on its evening, and location can't tell when the partners meet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your next visit starts too soon to send a letter for it. Pick another time instead."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste besøk starter for snart til at du kan sende et brev til det. Velg et annet tidspunkt i stedet."
+          }
+        }
+      }
+    },
+    "mail.delivery.together.unchecked" : {
+      "comment" : "Under 'When we next meet' when the app could not check how the couple will meet. Not offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't check when you two next meet. Try again, or pick another time."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke sjekket når dere møtes neste gang. Prøv igjen, eller velg et annet tidspunkt."
+          }
+        }
+      }
+    },
+    "mail.delivery.together.uncheckedOffline" : {
+      "comment" : "Under 'When we next meet' when the phone is offline, so the app could not check how the couple will meet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline, so we can't check when you two next meet. Try again when you're online, or pick another time."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet, så vi kan ikke sjekke når dere møtes neste gang. Prøv igjen når du er på nett, eller velg et annet tidspunkt."
+          }
+        }
+      }
+    },
+    "mail.delivery.together.unplanned" : {
+      "comment" : "Shown instead of the next-meeting option when no visit is planned and location can't tell when the partners meet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To send a letter for when you next meet, plan your next visit first."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For å sende et brev til neste gang dere møtes, må du planlegge neste besøk først."
+          }
+        }
+      }
+    },
+    "mail.delivery.together.visit" : {
+      "comment" : "When a letter for the next meeting arrives, for a couple that plans a visit. %@ is the visit's first day",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrives on the evening your next visit starts, %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer fram på kvelden den dagen neste besøk starter, %@."
+          }
+        }
+      }
+    },
+    "mail.delivery.together.visitOrNear" : {
+      "comment" : "When a letter for the next meeting arrives, for a couple that shares location and plans a visit. %1$@ is the partner's name, %2$@ the visit's first day",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrives when your phone shows you're near %1$@, or on the evening your next visit starts, %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer fram når telefonen din viser at du er i nærheten av %1$@, eller på kvelden den dagen neste besøk starter, %2$@."
+          }
+        }
+      }
+    },
     "mail.done" : {
       "comment" : "Button that closes the Mail screens",
       "extractionState" : "manual",
@@ -24869,6 +25049,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du er frakoblet. Eldre brev lastes inn når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "mail.error.meetingUnavailable" : {
+      "comment" : "Shown when the server would not take a letter set to arrive when the couple next meets.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This letter can't wait for your next meeting right now. It's saved, so pick another time and send it again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette brevet kan ikke vente til dere møtes neste gang akkurat nå. Det er lagret, så velg et annet tidspunkt og send det igjen."
           }
         }
       }
@@ -25409,6 +25607,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Forseglet. Trykk for å åpne."
+          }
+        }
+      }
+    },
+    "mail.status.waitsForMeeting" : {
+      "comment" : "Status of a sent letter that arrives the next time the partners meet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waits until you next meet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter til dere møtes neste gang"
           }
         }
       }
