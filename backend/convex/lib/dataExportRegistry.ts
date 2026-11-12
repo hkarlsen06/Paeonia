@@ -126,6 +126,11 @@ function without(row: Row, keys: readonly string[]): Row {
   return copy;
 }
 
+function visitExport(row: Row, me: string): Row {
+  const hiddenBy = Array.isArray(row.memory_prompt_dismissed_user_ids) ? row.memory_prompt_dismissed_user_ids : [];
+  return { ...without(row, ["memory_prompt_dismissed_user_ids"]), you_hid_the_photo_card: hiddenBy.includes(me) };
+}
+
 /** A Draw & Guess round shows its word to the guesser only once the round is over. */
 function drawAndGuessRound(row: Row, me: string): Row {
   const over = row.state === "solved" || row.state === "missed";
@@ -354,9 +359,10 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   visits: shared("by_couple_id_deleted_at_end_date", {
     group: "relationship",
     about: {
-      en: "The visits you and your partner planned: the first and last day, and the place if you added one.",
-      nb: "Besøkene du og partneren din har planlagt: første og siste dag, og stedet hvis dere la det til.",
+      en: "The visits you and your partner planned: the first and last day, the place if you added one, and whether you hid the card that asked for photos from it.",
+      nb: "Besøkene du og partneren din har planlagt: første og siste dag, stedet hvis dere la det til, og om du skjulte kortet som ba om bilder fra det.",
     },
+    select: visitExport,
   }),
   together_list_items: shared("by_couple_id_deleted_at", {
     group: "relationship",

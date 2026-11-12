@@ -14,6 +14,7 @@ import { queueMemoryMediaAssetsIfOrphaned, queueThreadMediaAssetsIfOrphaned } fr
 import { enqueueMemoryCreatedNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { deleteReactionsOf, deleteReactionsOfThread } from "./lib/reactions";
+import { tombstoneReportTargets } from "./lib/reports";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
@@ -21,6 +22,9 @@ import { isUsableMediaAsset } from "./lib/mediaAssetState";
 import { normalizePlace, placeArg, type Place } from "./lib/places";
 
 const nullableUuidArray = v.optional(v.union(v.null(), v.array(v.string())));
+
+const MAX_NOTE_CODE_POINTS = 4000;
+const MAX_PHOTOS_PER_PARTNER = 5;
 
 /** Port of `internal.normalize_memory_title`. */
 export function normalizeMemoryTitle(title: string | null | undefined): string {
@@ -34,7 +38,7 @@ export function normalizeMemoryTitle(title: string | null | undefined): string {
 export function normalizeMemoryNoteBody(body: string | null | undefined): string {
   const normalized = btrimToNull(body);
   if (normalized === null) return fail("23514", "memory note body is required");
-  if (charLength(normalized) > 4000) return fail("23514", "memory note body is too long");
+  if (charLength(normalized) > MAX_NOTE_CODE_POINTS) return fail("23514", "memory note body is too long");
   return normalized;
 }
 
@@ -102,6 +106,7 @@ async function insertMemory(
     title: string;
     memory_date: string;
     place?: Place;
+    visit_id?: string;
     created_by_user_id: string;
     last_edited_by_user_id: string;
   },
@@ -215,6 +220,26 @@ async function requireWritableMemory(ctx: ReaderCtx, userId: string, memoryId: s
   return memory;
 }
 
+/** How many photos `userId` shows on the memory, and the highest sort order of their media on it. */
+async function ownMemoryMedia(ctx: ReaderCtx, memoryId: string, userId: string) {
+  const mine = await ctx.db
+    .query("memory_media")
+    .withIndex("by_memory_id_owner_user_id_sort_order", (q) => q.eq("memory_id", memoryId).eq("owner_user_id", userId))
+    .collect();
+  let imageCount = 0;
+  let maxSortOrder = 0;
+  for (const link of mine) {
+    if (link.deleted_at !== undefined) continue;
+    maxSortOrder = Math.max(maxSortOrder, link.sort_order);
+    if (link.moderation_status !== "visible") continue;
+    const asset = await getByUuid(ctx, "media_assets", link.media_asset_id);
+    if (asset && asset.media_type === "image" && asset.deleted_at === undefined && asset.moderation_status === "visible") {
+      imageCount += 1;
+    }
+  }
+  return { imageCount, maxSortOrder };
+}
+
 /** Port of `internal.attach_memory_media_assets`. Returns the new memory_media ids. */
 async function attachMemoryMediaAssets(
   ctx: WriterCtx,
@@ -228,22 +253,9 @@ async function attachMemoryMediaAssets(
   if (new Set(mediaIds).size !== mediaIds.length) fail("23514", "memory media asset ids must be unique");
 
   const memory = await requireWritableMemory(ctx, userId, memoryId);
-
-  const mine = await ctx.db
-    .query("memory_media")
-    .withIndex("by_memory_id_owner_user_id_sort_order", (q) => q.eq("memory_id", memory.id).eq("owner_user_id", userId))
-    .collect();
-  let activeImageCount = 0;
-  let maxSortOrder = 0;
-  for (const link of mine) {
-    if (link.deleted_at !== undefined) continue;
-    maxSortOrder = Math.max(maxSortOrder, link.sort_order);
-    if (link.moderation_status !== "visible") continue;
-    const asset = await getByUuid(ctx, "media_assets", link.media_asset_id);
-    if (asset && asset.media_type === "image" && asset.deleted_at === undefined && asset.moderation_status === "visible") {
-      activeImageCount += 1;
-    }
-  }
+  const own = await ownMemoryMedia(ctx, memory.id, userId);
+  let activeImageCount = own.imageCount;
+  const maxSortOrder = own.maxSortOrder;
 
   const inserted: string[] = [];
   for (const [index, assetId] of mediaIds.entries()) {
@@ -261,7 +273,9 @@ async function attachMemoryMediaAssets(
     }
     if (asset.media_type === "image") {
       activeImageCount += 1;
-      if (activeImageCount > 5) fail("23514", "each partner can add at most 5 photos to a memory");
+      if (activeImageCount > MAX_PHOTOS_PER_PARTNER) {
+        fail("23514", `each partner can add at most ${MAX_PHOTOS_PER_PARTNER} photos to a memory`);
+      }
     }
     await insertMemoryMedia(ctx, {
       id: asset.reserved_parent_id,
@@ -276,6 +290,55 @@ async function attachMemoryMediaAssets(
   return inserted;
 }
 
+/** The visible memory the couple made for `visitId`, if there is one. */
+async function visitMemory(ctx: ReaderCtx, coupleId: string, visitId: string): Promise<Doc<"memories"> | null> {
+  const memories = await ctx.db
+    .query("memories")
+    .withIndex("by_couple_id_visit_id", (q) => q.eq("couple_id", coupleId).eq("visit_id", visitId))
+    .collect();
+  return memories.find((memory) => memory.deleted_at === undefined && memory.moderation_status === "visible") ?? null;
+}
+
+/**
+ * Adds a second partner's new memory for a visit to the memory the visit already has: their
+ * photos, and their note, with their title on top when it differs, so nothing they typed is
+ * lost. The memory takes their place when it has none. Returns false and writes nothing when it
+ * doesn't fit, because they already have a note there, or it would hold too many of their
+ * photos or too long a note.
+ */
+async function joinVisitMemory(
+  ctx: WriterCtx,
+  userId: string,
+  memory: Doc<"memories">,
+  input: { title: string; noteBody: string | null; mediaIds: string[]; place: Place | null },
+): Promise<boolean> {
+  const parts = [input.title === memory.title ? null : input.title, input.noteBody];
+  const note = parts.filter((part) => part !== null).join("\n\n") || null;
+  if (note !== null) {
+    if (charLength(note) > MAX_NOTE_CODE_POINTS) return false;
+    const ownNote = await ctx.db
+      .query("memory_notes")
+      .withIndex("by_memory_id_user_id", (q) => q.eq("memory_id", memory.id).eq("user_id", userId))
+      .first();
+    if (ownNote) return false;
+  }
+  const { imageCount } = await ownMemoryMedia(ctx, memory.id, userId);
+  if (imageCount + input.mediaIds.length > MAX_PHOTOS_PER_PARTNER) return false;
+
+  if (note !== null) await insertMemoryNote(ctx, { memory_id: memory.id, user_id: userId, body: note });
+  await attachMemoryMediaAssets(ctx, userId, memory.id, input.mediaIds);
+  const place = memory.place === undefined && input.place !== null ? { place: input.place, last_edited_by_user_id: userId } : {};
+  await ctx.db.patch(memory._id, withUpdatedAt(place));
+  return true;
+}
+
+/**
+ * Saves a new memory and returns its id. With `p_visit_id` the memory belongs to that visit of the
+ * caller's couple, and a visit of another couple fails with `42501`. A visit that was deleted, or
+ * whose save hasn't arrived yet, still gets the memory, so a save that waited offline keeps its
+ * photos. When the visit already has a memory, the new one joins it (`joinVisitMemory`) and this
+ * returns that memory's id, so partners who both save one at the same time end with one memory.
+ */
 export const create_memory = mutation({
   args: {
     p_memory_id: v.string(),
@@ -284,6 +347,7 @@ export const create_memory = mutation({
     p_note_body: v.optional(v.union(v.null(), v.string())),
     p_media_asset_ids: nullableUuidArray,
     p_place: placeArg,
+    p_visit_id: v.optional(v.union(v.null(), v.string())),
     ...clientOperationArgs,
   },
   handler: async (ctx, args): Promise<string> => {
@@ -292,10 +356,11 @@ export const create_memory = mutation({
     const memoryId = uuidArg(args.p_memory_id);
     const memoryDate = dateArg(args.p_memory_date);
     const noteBody = btrimToNull(args.p_note_body);
-    if (noteBody !== null && charLength(noteBody) > 4000) fail("23514", "memory note body is too long");
+    if (noteBody !== null && charLength(noteBody) > MAX_NOTE_CODE_POINTS) fail("23514", "memory note body is too long");
     const place = normalizePlace(args.p_place, "memory");
     const mediaIds = (args.p_media_asset_ids ?? []).map(uuidArg);
     if (noteBody === null && mediaIds.length === 0) fail("23514", "memory must include a note or media");
+    const visitId = optionalUuidArg(args.p_visit_id);
 
     const stored = await runClientOperation(
       ctx,
@@ -303,17 +368,39 @@ export const create_memory = mutation({
       toClientOperation(args, {
         kind: "create_memory",
         scope: "memories",
-        request: ["create_memory", memoryId, title, memoryDate, noteBody ?? "", mediaIds, place],
+        request: ["create_memory", memoryId, title, memoryDate, noteBody ?? "", mediaIds, place, visitId ?? ""],
       }),
       async () => {
         await consumeRateLimit(ctx, "memoryCreate", userId);
         const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+        const recordActivity = async (storedId: string) => {
+          const now = nowIso();
+          await applyCoupleActivity(ctx, {
+            couple_id: coupleId,
+            user_id: userId,
+            couple_day_id: await getOrCreateCoupleDayAt(ctx, coupleId, now),
+            activity_kind: "memory_created",
+            occurred_at: now,
+            dedupe_key: `memory_created:${memoryId}`,
+            metadata: { memory_id: storedId },
+          });
+          return { memory_id: storedId };
+        };
+        if (visitId !== undefined) {
+          const visit = await getByUuid(ctx, "visits", visitId);
+          if (visit && visit.couple_id !== coupleId) fail("42501", "visit belongs to another couple");
+          const joined = await visitMemory(ctx, coupleId, visitId);
+          if (joined && (await joinVisitMemory(ctx, userId, joined, { title, noteBody, mediaIds, place }))) {
+            return await recordActivity(joined.id);
+          }
+        }
         await insertMemory(ctx, {
           id: memoryId,
           couple_id: coupleId,
           title,
           memory_date: memoryDate,
           ...(place === null ? {} : { place }),
+          ...(visitId === undefined ? {} : { visit_id: visitId }),
           created_by_user_id: userId,
           last_edited_by_user_id: userId,
         });
@@ -321,17 +408,7 @@ export const create_memory = mutation({
           await insertMemoryNote(ctx, { memory_id: memoryId, user_id: userId, body: noteBody });
         }
         await attachMemoryMediaAssets(ctx, userId, memoryId, mediaIds);
-        const now = nowIso();
-        await applyCoupleActivity(ctx, {
-          couple_id: coupleId,
-          user_id: userId,
-          couple_day_id: await getOrCreateCoupleDayAt(ctx, coupleId, now),
-          activity_kind: "memory_created",
-          occurred_at: now,
-          dedupe_key: `memory_created:${memoryId}`,
-          metadata: { memory_id: memoryId },
-        });
-        return { memory_id: memoryId };
+        return await recordActivity(memoryId);
       },
     );
     return stored.memory_id;
@@ -520,6 +597,47 @@ export const upsert_memory_note = mutation({
   },
 });
 
+/**
+ * Deletes the caller's own note on a memory while its revision is still `p_expected_revision`.
+ * The memory and the partner's note stay. A note that is gone already, or that a moderator hid,
+ * stays as it is. The row goes, so the person can write a new note there later.
+ */
+export const delete_memory_note = mutation({
+  args: {
+    p_memory_id: v.string(),
+    p_expected_revision: v.number(),
+    ...clientOperationArgs,
+  },
+  handler: async (ctx, args): Promise<null> => {
+    const userId = await requireUserId(ctx);
+    const memoryId = uuidArg(args.p_memory_id);
+
+    await runClientOperation(
+      ctx,
+      userId,
+      toClientOperation(args, {
+        kind: "delete_memory_note",
+        scope: "memories",
+        request: ["delete_memory_note", memoryId, args.p_expected_revision],
+      }),
+      async () => {
+        const memory = await requireWritableMemory(ctx, userId, memoryId);
+        const note = await ctx.db
+          .query("memory_notes")
+          .withIndex("by_memory_id_user_id", (q) => q.eq("memory_id", memory.id).eq("user_id", userId))
+          .unique();
+        if (!note || note.deleted_at !== undefined || note.moderation_status !== "visible") return null;
+        if (note.revision !== args.p_expected_revision) fail("40001", "memory note revision conflict");
+        await tombstoneReportTargets(ctx, "memory_note", note.id);
+        await ctx.db.delete(note._id);
+        await ctx.db.patch(memory._id, withUpdatedAt({}));
+        return null;
+      },
+    );
+    return null;
+  },
+});
+
 export const attach_memory_media = mutation({
   args: {
     p_memory_id: v.string(),
@@ -697,6 +815,7 @@ async function buildMemoryRow(ctx: ReaderCtx, userId: string, memory: Doc<"memor
     title: visibleMemory ? memory.title : null,
     memory_date: memory.memory_date,
     place: visibleMemory ? (memory.place ?? null) : null,
+    visit_id: memory.visit_id ?? null,
     created_by_user_id: memory.created_by_user_id,
     last_edited_by_user_id: memory.last_edited_by_user_id,
     revision: memory.revision,

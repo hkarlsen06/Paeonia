@@ -465,6 +465,60 @@ describe("upsert_memory_note", () => {
   });
 });
 
+describe("delete_memory_note", () => {
+  const remove = (user: TestUser, memoryId: string, expected: number) =>
+    user.as.mutation(api.memories.delete_memory_note, { ...op(), p_memory_id: memoryId, p_expected_revision: expected });
+
+  test("deletes only the caller's note, and they can write a new one later", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    await couple.second.as.mutation(api.memories.upsert_memory_note, {
+      ...op(), p_memory_id: memoryId, p_expected_revision: 0, p_body: "Cold sea",
+    });
+
+    expect(await remove(couple.second, memoryId, 1)).toBeNull();
+    expect(await remove(couple.second, memoryId, 1)).toBeNull();
+
+    const [forFirst] = await getMemories(couple.first);
+    expect(forFirst).toMatchObject({ memory_id: memoryId, deleted_at: null, own_note_body: "Warm sand", partner_note_body: null });
+    expect((await getMemories(couple.second))[0]).toMatchObject({ own_note_body: null, partner_note_body: "Warm sand" });
+    await couple.second.as.mutation(api.memories.upsert_memory_note, {
+      ...op(), p_memory_id: memoryId, p_expected_revision: 0, p_body: "A new note",
+    });
+    expect((await getMemories(couple.first))[0]).toMatchObject({ partner_note_body: "A new note" });
+  });
+
+  test("refuses a note edited since, and leaves a hidden note alone", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    expect(await failure(remove(couple.first, memoryId, 2))).toEqual({ code: "40001", message: "memory note revision conflict" });
+    await t.run(async (ctx) => {
+      const note = await ctx.db.query("memory_notes").first();
+      await ctx.db.patch(note!._id, { moderation_status: "hidden" });
+    });
+    expect(await remove(couple.first, memoryId, 1)).toBeNull();
+    expect(await t.run((ctx) => ctx.db.query("memory_notes").collect())).toHaveLength(1);
+  });
+
+  test("a report of the note keeps its copy and loses the live link", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    const noteId = await t.run(async (ctx) => (await ctx.db.query("memory_notes").first())!.id);
+    await t.run((ctx) => ctx.db.insert("content_report_targets", {
+      report_id: newUuid(), target_kind: "memory_note", memory_note_id: noteId, created_at: "2026-10-10T11:00:00.000Z",
+    }));
+
+    await remove(couple.first, memoryId, 1);
+
+    const target = await t.run((ctx) => ctx.db.query("content_report_targets").first());
+    expect(target?.memory_note_id).toBeUndefined();
+    expect(target?.live_target_deleted_at).toBeDefined();
+  });
+});
+
 describe("get_memories", () => {
   test("pages by sync time and memory id", async () => {
     const t = newTest();
@@ -534,7 +588,7 @@ describe("get_memories", () => {
         "own_note_revision", "own_note_updated_at", "own_note_deleted_at", "own_note_moderation_status", "partner_note_id",
         "partner_note_user_id", "partner_note_body", "partner_note_revision", "partner_note_updated_at",
         "partner_note_deleted_at", "partner_note_moderation_status", "memory_media_ids", "media_asset_ids",
-        "memory_media_states", "thread_id", "place",
+        "memory_media_states", "thread_id", "place", "visit_id",
       ].sort(),
     );
     expect(row).toMatchObject({
@@ -545,6 +599,7 @@ describe("get_memories", () => {
       deleted_at: null,
       thread_id: null,
       place: null,
+      visit_id: null,
       memory_media_ids: [],
       memory_media_states: [],
     });
@@ -716,6 +771,9 @@ describe("access", () => {
       await failure(caller.as.mutation(api.memories.upsert_memory_note, { ...op(), p_memory_id: memoryId, p_expected_revision: null, p_body: "x" })),
     ).toEqual(memoryDenied);
     expect(
+      await failure(caller.as.mutation(api.memories.delete_memory_note, { ...op(), p_memory_id: memoryId, p_expected_revision: 1 })),
+    ).toEqual(memoryDenied);
+    expect(
       await failure(caller.as.mutation(api.memories.attach_memory_media, { ...op(), p_memory_id: memoryId, p_media_asset_ids: [photoAsset.assetId] })),
     ).toEqual(memoryDenied);
     expect(
@@ -725,6 +783,7 @@ describe("access", () => {
     expect(await failure(getMemories(caller))).toEqual(denied);
     expect(await failure(newMemory(caller).call())).toEqual(denied);
     expect((await memoryRow(t, memoryId))?.revision).toBe(1);
+    expect(await t.run((ctx) => ctx.db.query("memory_notes").collect())).toHaveLength(1);
   });
 
   test("an unentitled couple cannot use memories", async () => {
@@ -793,4 +852,111 @@ test("photo descriptions persist, are separately readable, and only their author
   await couple.first.as.mutation(api.memories.update_memory, { ...change, p_expected_revision: 2,
     p_photo_descriptions: [{ media_asset_id: uploaded.assetId, text: "" }], ...op() });
   expect((await getMemories(couple.second))[0]?.memory_media_states[0]?.accessibility_text).toBeNull();
+});
+
+describe("memories for a visit", () => {
+  const planVisit = async (couple: TestCouple) => {
+    const visitId = newUuid();
+    await couple.first.as.mutation(api.visits.save_visit, {
+      ...op(), p_visit_id: visitId, p_start_date: "2026-10-01", p_end_date: "2026-10-05",
+    });
+    return visitId;
+  };
+  const photos = async (t: TestConvex, user: TestUser, coupleId: string, count: number) => {
+    const ids = [];
+    for (let i = 0; i < count; i += 1) ids.push((await uploadAsset(t, user, photo(coupleId))).assetId);
+    return ids;
+  };
+  const memories = (t: TestConvex) => t.run((ctx) => ctx.db.query("memories").collect());
+
+  test("links the memory to the visit, and get_memories says which visit", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const visitId = await planVisit(couple);
+    const memoryId = await createMemory(couple.first, { p_visit_id: visitId.toUpperCase() });
+    const [row] = await getMemories(couple.second);
+    expect(row).toMatchObject({ memory_id: memoryId, visit_id: visitId });
+    await createMemory(couple.first);
+    expect((await getMemories(couple.first)).map((memory) => memory.visit_id)).toContain(null);
+  });
+
+  test("refuses a visit of another couple, and someone outside the couple or without access", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const visitId = await planVisit(couple);
+    const stranger = await createCouple(t);
+    const loner = await createSignedInUser(t, { name: "Loner" });
+    const unentitled = await createCouple(t, { entitled: false });
+
+    expect(await failure(newMemory(stranger.first, { p_visit_id: visitId }).call())).toEqual({
+      code: "42501",
+      message: "visit belongs to another couple",
+    });
+    expect(await failure(newMemory(loner, { p_visit_id: visitId }).call())).toMatchObject({ code: "42501" });
+    expect(await failure(newMemory(unentitled.first, { p_visit_id: visitId }).call())).toMatchObject({ code: "42501" });
+    expect(await memories(t)).toEqual([]);
+  });
+
+  test("a second memory for the visit joins the first, with the partner's photos, note and title", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const visitId = await planVisit(couple);
+    const mine = await photos(t, couple.first, couple.coupleId, 2);
+    const theirs = await photos(t, couple.second, couple.coupleId, 2);
+    const first = await createMemory(couple.first, {
+      p_visit_id: visitId, p_note_body: null, p_media_asset_ids: mine,
+    });
+    const second = newMemory(couple.second, {
+      p_visit_id: visitId, p_title: "Oslo days", p_note_body: "Best ramen", p_media_asset_ids: theirs,
+      p_place: { name: "Bryggen", latitude: 60.397, longitude: 5.324 },
+    });
+
+    expect(await second.call()).toBe(first);
+    expect(await second.call()).toBe(first);
+    expect(await memories(t)).toHaveLength(1);
+    const [row] = await getMemories(couple.first);
+    expect(row).toMatchObject({ memory_id: first, title: "Beach weekend", partner_note_body: "Oslo days\n\nBest ramen" });
+    expect(row.place).toMatchObject({ name: "Bryggen" });
+    expect([...row.media_asset_ids].sort()).toEqual([...mine, ...theirs].sort());
+  });
+
+  test("a partner who saves the same title keeps only their note", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const visitId = await planVisit(couple);
+    const first = await createMemory(couple.first, { p_visit_id: visitId });
+    expect(await newMemory(couple.second, { p_visit_id: visitId, p_note_body: "Cold sea" }).call()).toBe(first);
+    expect((await getMemories(couple.first))[0]).toMatchObject({ own_note_body: "Warm sand", partner_note_body: "Cold sea" });
+  });
+
+  test("a second memory that doesn't fit is saved on its own for the visit", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const visitId = await planVisit(couple);
+    const first = await createMemory(couple.first, { p_visit_id: visitId });
+    const sameAuthor = newMemory(couple.first, { p_visit_id: visitId, p_note_body: "Another note" });
+    expect(await sameAuthor.call()).toBe(sameAuthor.memoryId);
+    const tooMany = newMemory(couple.second, {
+      p_visit_id: visitId, p_note_body: null, p_media_asset_ids: await photos(t, couple.second, couple.coupleId, 6),
+    });
+    expect(await failure(tooMany.call())).toMatchObject({ code: "23514" });
+
+    const rows = await memories(t);
+    expect(rows.map((memory) => [memory.id, memory.visit_id])).toEqual(
+      expect.arrayContaining([[first, visitId], [sameAuthor.memoryId, visitId]]),
+    );
+  });
+
+  test("a deleted visit, or one whose save hasn't arrived, still gets the memory", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const visitId = await planVisit(couple);
+    await couple.second.as.mutation(api.visits.delete_visit, { ...op(), p_visit_id: visitId });
+    const unsaved = newUuid();
+
+    const forDeleted = await createMemory(couple.first, { p_visit_id: visitId });
+    const forUnsaved = await createMemory(couple.first, { p_visit_id: unsaved });
+    expect((await memoryRow(t, forDeleted))?.visit_id).toBe(visitId);
+    expect((await memoryRow(t, forUnsaved))?.visit_id).toBe(unsaved);
+  });
 });

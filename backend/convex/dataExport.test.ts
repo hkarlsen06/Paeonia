@@ -396,6 +396,30 @@ describe("Download my data", () => {
     expect(allJsonText(zips)).not.toContain("BBB their answer");
   });
 
+  test("a visit says only whether the person hid its photo card, never whether the partner did", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const hiddenByPartner = newUuid();
+    const hiddenByMe = newUuid();
+    for (const visitId of [hiddenByPartner, hiddenByMe]) {
+      await couple.first.as.mutation(api.visits.save_visit, {
+        ...op(), p_visit_id: visitId, p_start_date: "2026-10-01", p_end_date: "2026-10-05",
+      });
+    }
+    await couple.second.as.mutation(api.visits.dismiss_visit_memory_prompt, { ...op(), p_visit_id: hiddenByPartner });
+    await couple.first.as.mutation(api.visits.dismiss_visit_memory_prompt, { ...op(), p_visit_id: hiddenByMe });
+
+    const { status } = await requestExport(t, couple.first, false);
+    const { zips } = await downloadZips(t, couple.first, status.id);
+    const visits = jsonOf<Record<string, unknown>[]>(zips[0]!, "relationship/visits.json");
+    expect(Object.fromEntries(visits.map((visit) => [visit.id, visit.you_hid_the_photo_card]))).toEqual({
+      [hiddenByPartner]: false,
+      [hiddenByMe]: true,
+    });
+    expect(allJsonText(zips)).not.toContain("memory_prompt_dismissed_user_ids");
+    expect(JSON.stringify(visits)).not.toContain(couple.second.userId);
+  });
+
   test("a file that is gone from storage is left out and counted", async () => {
     const t = newTest();
     const couple = await createCouple(t);

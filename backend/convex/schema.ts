@@ -833,7 +833,8 @@ export default defineSchema({
   // whether a visit is upcoming, ongoing or over. Delete sets deleted_at, like countdowns.
   // together_from is the date the dates were last saved, on the streak's clock. The visit makes
   // together days only from then on (`lib/together.ts`), and `keepVisitDays` runs before every
-  // change to the dates.
+  // change to the dates. memory_prompt_dismissed_user_ids holds who hid the card that asks for
+  // the visit's photos. The memory itself points at the visit (`memories.visit_id`).
   // FK: couple_id -> couples cascade.
   visits: defineTable({
     id: uuid,
@@ -842,6 +843,7 @@ export default defineSchema({
     end_date: date,
     together_from: date,
     place: v.optional(placeField),
+    memory_prompt_dismissed_user_ids: v.optional(v.array(uuid)),
     created_by_user_id: uuid,
     last_edited_by_user_id: uuid,
     created_at: ts,
@@ -1091,6 +1093,9 @@ export default defineSchema({
         country_code: optString,
       }),
     ),
+    // The visit the partners made this memory for, from `create_memory`'s `p_visit_id`. Not a
+    // foreign key: the visit may be deleted later, or its save may still be on its way.
+    visit_id: optUuid,
     created_by_user_id: uuid,
     last_edited_by_user_id: uuid,
     revision: v.number(),
@@ -1102,6 +1107,7 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_couple_id_memory_date_id", ["couple_id", "memory_date", "id"])
     .index("by_couple_id_updated_at_id", ["couple_id", "updated_at", "id"])
+    .index("by_couple_id_visit_id", ["couple_id", "visit_id"])
     .index("by_created_by_user_id", ["created_by_user_id"])
     .index("by_last_edited_by_user_id", ["last_edited_by_user_id"])
     .index("by_moderated_by", ["moderated_by"])

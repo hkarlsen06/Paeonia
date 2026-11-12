@@ -349,6 +349,58 @@ describe("delete_visit", () => {
   });
 });
 
+describe("dismiss_visit_memory_prompt", () => {
+  const dismiss = (user: Member, id: string, operation = op()) =>
+    user.as.mutation(api.visits.dismiss_visit_memory_prompt, { p_visit_id: id, ...operation });
+
+  test("hides the photo card for the caller only, and a repeat is fine", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const id = newUuid();
+    await saveVisit(couple.first, id, "2026-10-01", "2026-10-05");
+    const operation = op();
+    expect(await dismiss(couple.first, id, operation)).toMatchObject({ id, memory_prompt_dismissed: true });
+    expect(await dismiss(couple.first, id, operation)).toMatchObject({ memory_prompt_dismissed: true });
+    expect(await dismiss(couple.first, id)).toMatchObject({ memory_prompt_dismissed: true });
+    expect((await read(couple.first)).visits[0]).toMatchObject({ memory_prompt_dismissed: true });
+    expect((await read(couple.second)).visits[0]).toMatchObject({ memory_prompt_dismissed: false });
+  });
+
+  test("a later visit edit still lands after a dismissal from the same phone", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const id = newUuid();
+    await saveVisit(couple.first, id, "2026-10-01", "2026-10-05");
+    const edit = op();
+    await dismiss(couple.first, id);
+    await saveVisit(couple.first, id, "2026-10-01", "2026-10-06", null, edit);
+    expect((await read(couple.first)).visits[0]).toMatchObject({ end_date: "2026-10-06", memory_prompt_dismissed: true });
+  });
+
+  test("a deleted or unknown visit returns null", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const id = newUuid();
+    await saveVisit(couple.first, id, "2026-10-01", "2026-10-05");
+    await deleteVisit(couple.second, id);
+    expect(await dismiss(couple.first, id)).toBeNull();
+    expect(await dismiss(couple.first, newUuid())).toBeNull();
+  });
+
+  test("refuses someone outside the couple and someone without access", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const id = newUuid();
+    await saveVisit(couple.first, id, "2026-10-01", "2026-10-05");
+    const { stranger, loner, unentitled } = await outsiders(t);
+
+    expect(await failure(dismiss(stranger.first, id))).toMatchObject({ code: "42501" });
+    expect(await failure(dismiss(loner, id))).toMatchObject({ code: "42501" });
+    expect(await failure(dismiss(unentitled.first, id))).toMatchObject({ code: "42501" });
+    expect((await read(couple.first)).visits[0]).toMatchObject({ memory_prompt_dismissed: false });
+  });
+});
+
 describe("save_together_item", () => {
   test("adds an item once, keeps its title, and caps the list at 100", async () => {
     const t = newTest();

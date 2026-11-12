@@ -44,13 +44,15 @@ const refreshPartnerLockScreen = (ctx: WriterCtx, coupleId: string, userId: stri
     delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
   });
 
-function visitRow(row: Doc<"visits">) {
+/** The visit as `userId` sees it. `memory_prompt_dismissed` is whether they hid the card that asks for its photos. */
+function visitRow(row: Doc<"visits">, userId: string) {
   return {
     id: row.id,
     start_date: row.start_date,
     end_date: row.end_date,
     place: row.place ?? null,
     created_by_user_id: row.created_by_user_id,
+    memory_prompt_dismissed: row.memory_prompt_dismissed_user_ids?.includes(userId) ?? false,
     updated_at: row.updated_at,
   };
 }
@@ -83,15 +85,15 @@ export const get_visits = query({
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    const visits = (await recentVisits(ctx, coupleId)).sort(byStartDate).map(visitRow);
+    const visits = (await recentVisits(ctx, coupleId)).sort(byStartDate).map((row) => visitRow(row, userId));
     const items = (await liveTogetherItems(ctx, coupleId)).sort(byCreatedAt).map(itemRow);
     return { couple_id: coupleId, visits, items };
   },
 });
 
-async function currentVisit(ctx: ReaderCtx, visitId: string, coupleId: string) {
+async function currentVisit(ctx: ReaderCtx, visitId: string, coupleId: string, userId: string) {
   const row = await getByUuid(ctx, "visits", visitId);
-  return row && row.couple_id === coupleId && row.deleted_at === undefined ? visitRow(row) : null;
+  return row && row.couple_id === coupleId && row.deleted_at === undefined ? visitRow(row, userId) : null;
 }
 
 async function currentItem(ctx: ReaderCtx, itemId: string, coupleId: string) {
@@ -196,7 +198,40 @@ export const save_visit = mutation({
     });
     // Read after the operation, so a replay returns today's row and not the answer it stored back
     // then, which a partner's edit may have replaced.
-    return await currentVisit(ctx, visitId, coupleId);
+    return await currentVisit(ctx, visitId, coupleId, userId);
+  },
+});
+
+/**
+ * Hides the card that asks the caller for the photos of the visit `p_visit_id`, on all their
+ * phones. The partner keeps theirs. A missing or deleted visit is fine. Returns the visit as
+ * stored now, or null when it is deleted or was never saved.
+ */
+export const dismiss_visit_memory_prompt = mutation({
+  args: { p_visit_id: v.string(), ...clientOperationArgs },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const visitId = uuidArg(args.p_visit_id);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+
+    // Its own scope, so a visit edit that arrives after it still lands (`isSupersededClientOperation`).
+    const input = toClientOperation(args, {
+      kind: "dismiss_visit_memory_prompt",
+      scope: `visit_memory_prompt:${visitId}`,
+      request: { kind: "dismiss_visit_memory_prompt", couple_id: coupleId, id: visitId },
+    });
+    await runClientOperation(ctx, userId, input, async () => {
+      const existing = await getByUuid(ctx, "visits", visitId);
+      if (existing && existing.couple_id !== coupleId) {
+        return fail("42501", "visit belongs to another couple");
+      }
+      const dismissed = existing?.memory_prompt_dismissed_user_ids ?? [];
+      if (existing && existing.deleted_at === undefined && !dismissed.includes(userId)) {
+        await ctx.db.patch(existing._id, { memory_prompt_dismissed_user_ids: [...dismissed, userId] });
+      }
+      return null;
+    });
+    return await currentVisit(ctx, visitId, coupleId, userId);
   },
 });
 
