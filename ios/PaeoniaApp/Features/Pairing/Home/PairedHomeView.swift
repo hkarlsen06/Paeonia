@@ -51,6 +51,8 @@ struct PairedHomeView: View {
     var mail: MailViewModel?
     /// The couple's memories, for the card that asks for photos after a visit. Nil hides it.
     var memories: MemoriesViewModel?
+    /// Opens a memory the visit photo card's form saved, once the form is gone.
+    var openSavedMemory: (UUID) -> Void = { _ in }
     var onRefresh: () async -> Void = {}
     /// The access notice this person closed (`AccessNotice.id`). A new notice shows again.
     @AppStorage("home.accessNotice.dismissed") var dismissedAccessNoticeID = ""
@@ -166,7 +168,9 @@ struct PairedHomeView: View {
         ScrollViewReader { proxy in
             homeContent
                 .environment(\.homeScrollProxy, proxy)
-                .modifier(VisitMemoryFormSheet(form: $visitMemoryForm, memories: memories, viewerID: currentUserID))
+                .modifier(VisitMemoryFormSheet(
+                    form: $visitMemoryForm, memories: memories, viewerID: currentUserID, onSaved: openSavedMemory
+                ))
         }
         .onPreferenceChange(HomeIsCoveredKey.self) { covered in
             isCovered = covered

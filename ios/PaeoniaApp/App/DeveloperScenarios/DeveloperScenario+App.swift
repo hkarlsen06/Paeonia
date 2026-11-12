@@ -23,7 +23,7 @@
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
       streakHealthy, streakOneDay, streakAtRisk, streakFrozen, streakSaveHome, streakSaveDay, streakSaved, streakBroken,
       streakRestoreExpired, streakRestored,
-      memoriesEmpty, memoriesPopulated, memoriesCards, memoryEditor, memoryDetail,
+      memoriesEmpty, memoriesPopulated, memoriesCards, memoryEditor, memoryDetail, memoryCelebration,
       countdownMissing, countdownUpcoming, countdownToday,
       locationNotSharing, locationCurrentMissing, locationLive, locationStale, homeMapOutage, homeMapOffline,
       homeMapRecovery, homeMapSlowRender,

@@ -104,6 +104,17 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    /// A memory saved from the Us tab's visit photo card arrives on its screen with petals: a firm
+    /// tap and a soft one, after the save's own success haptic.
+    static func memoryCelebrated() {
+        impact(.medium, intensity: 0.9)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(120))
+            guard !Task.isCancelled else { return }
+            impact(.soft, intensity: 0.7)
+        }
+    }
+
     /// Onboarding found the Paeonia widget on the Home Screen after the person
     /// went to add it.
     static func widgetAdded() {

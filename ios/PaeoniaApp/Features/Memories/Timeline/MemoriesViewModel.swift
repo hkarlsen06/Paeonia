@@ -51,6 +51,9 @@ final class MemoriesViewModel {
     /// Set by Siri's "open this photo" (`PaeoniaDeepLink.memoryPhoto`) to the photo the open
     /// memory should show. The memory's detail screen clears it once it shows the photo.
     var requestedPhotoID: UUID?
+    /// Set when a save from the Us tab's visit photo card opens the memory. Its screen celebrates
+    /// once and clears it (`MemoryCelebration`).
+    var celebrationRequestedMemoryID: UUID?
     /// Set when Siri brought photos for a new memory. The Memories screen opens the form and clears it.
     var isNewMemoryRequested = false
 
@@ -218,6 +221,7 @@ final class MemoriesViewModel {
     /// nothing is saved and the form stays put so the user can retry. Content is never
     /// silently dropped. Returns whether the memory was saved.
     func createMemory(
+        memoryID: UUID = UUID(),
         title: String,
         date: String,
         note: String,
@@ -251,7 +255,7 @@ final class MemoriesViewModel {
             _ = try await self.memoryService.createMemory(
                 ownerUserID: currentUserID,
                 coupleID: coupleID,
-                memoryID: UUID(),
+                memoryID: memoryID,
                 title: trimmedTitle,
                 memoryDate: date,
                 noteBody: trimmedNote.isEmpty ? nil : trimmedNote,

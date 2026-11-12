@@ -89,6 +89,7 @@ struct MemoryDetailView: View {
             Text(.memoriesDeleteMessage)
         }
         .paeoniaImageViewer(selection: $imageViewerSelection)
+        .modifier(MemoryCelebration(memoryID: memoryID, viewModel: viewModel))
         .memoryOnScreenForSiri(
             record?.snapshot.memoryID ?? memoryID, title: record?.snapshot.title, viewModel: viewModel,
             shownPhotoID: $shownPhotoID
@@ -220,6 +221,7 @@ struct MemoryDetailView: View {
                 Image(systemName: "ellipsis")
                     .accessibilityLabel(Text(.memoriesDetailMenu))
             }
+            .accessibilityIdentifier("memories.detail.menu")
             .disabled(record == nil)
         }
     }

@@ -7,6 +7,8 @@ import SwiftUI
 struct NewMemoryEditor: View {
     let viewModel: MemoriesViewModel
     var visitID: UUID?
+    /// Called with the memory's id once it is saved, before the form closes.
+    var onSaved: ((UUID) -> Void)?
     /// The saved draft, shown while the sheet closes. `createMemory` empties the view model's draft
     /// as soon as the memory is saved, so a kept draft can never save the same memory twice.
     @State private var saving: MemoryDraft?
@@ -29,13 +31,18 @@ struct NewMemoryEditor: View {
             onDiscardDraft: { viewModel.discardDraft() }
         ) { title, date, note, photos, _, place in
             saving = viewModel.draft
+            let memoryID = UUID()
             let saved = await viewModel.createMemory(
-                title: title, date: date, note: note, photos: photos,
+                memoryID: memoryID, title: title, date: date, note: note, photos: photos,
                 photoDescriptions: viewModel.draft.photos.map(\.accessibilityText), place: place,
                 visitID: viewModel.draft.visitLink(forCardOf: visitID)
             )
-            if !saved { saving = nil }
-            return saved ? .saved : .failed
+            guard saved else {
+                saving = nil
+                return .failed
+            }
+            onSaved?(memoryID)
+            return .saved
         }
     }
 }

@@ -159,18 +159,24 @@ struct VisitMemoryFormSheet: ViewModifier {
     @Binding var form: VisitMemoryForm?
     let memories: MemoriesViewModel?
     let viewerID: UUID?
+    /// Opens the memory the form saved, once the form is gone. A cancel or a failed save opens nothing.
+    var onSaved: (UUID) -> Void = { _ in }
+
+    @State private var savedMemoryID: UUID?
 
     func body(content: Content) -> some View {
         let isOpen = form != nil
         return content
-            .sheet(item: $form, onDismiss: { memories?.flushDraft() }) { form in
+            .sheet(item: $form, onDismiss: closed) { form in
                 if let memories {
                     Group {
                         switch form {
                         case let .new(visitID):
-                            NewMemoryEditor(viewModel: memories, visitID: visitID)
+                            NewMemoryEditor(viewModel: memories, visitID: visitID) { savedMemoryID = $0 }
                         case let .edit(record):
-                            ExistingMemoryEditor(record: record, currentUserID: viewerID, viewModel: memories)
+                            ExistingMemoryEditor(record: record, currentUserID: viewerID, viewModel: memories) {
+                                savedMemoryID = $0
+                            }
                         }
                     }
                     .modifier(MemoryNoticeBanners(memories: memories))
@@ -178,6 +184,13 @@ struct VisitMemoryFormSheet: ViewModifier {
             }
             // `.preference` would replace the value the cards below report for `HomeIsCoveredKey`.
             .transformPreference(HomeIsCoveredKey.self) { $0 = $0 || isOpen }
+    }
+
+    private func closed() {
+        memories?.flushDraft()
+        guard let savedMemoryID else { return }
+        self.savedMemoryID = nil
+        onSaved(savedMemoryID)
     }
 }
 

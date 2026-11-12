@@ -130,6 +130,13 @@ extension PairedHomeView {
         }
     }
 
+    /// Where a memory saved from the visit photo card's form opens.
+    func onOpenSavedMemory(_ open: @escaping (UUID) -> Void) -> Self {
+        var view = self
+        view.openSavedMemory = open
+        return view
+    }
+
     /// The partner's photos from a visit, waiting for this person's. Among the first cards.
     var waitingVisitMemoryCard: some View {
         visitMemoryCard(waiting: true)

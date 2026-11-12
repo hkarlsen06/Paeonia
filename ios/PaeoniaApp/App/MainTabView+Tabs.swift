@@ -326,7 +326,7 @@ extension MainTabView {
                 await refreshDailyChallenge()
                 await actions.refreshHome()
             }
-        )
+        ).onOpenSavedMemory(openSavedVisitMemory)
     }
 
     private var questionsTab: some View {

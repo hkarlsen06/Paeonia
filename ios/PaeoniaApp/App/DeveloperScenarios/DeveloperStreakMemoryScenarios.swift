@@ -117,20 +117,22 @@
     @State private var viewModel: MemoriesViewModel
     @State private var mediaImageProvider: DeveloperMemoryGalleryImageProvider
 
-    init() {
+    /// `celebrates` opens the memory the way a save from the Us tab's visit photo card does.
+    init(celebrates: Bool = false) {
       let records = DeveloperMemoryGalleryFixture.records()
       _mediaImageProvider = State(initialValue: DeveloperMemoryGalleryImageProvider(
         failsFirstFullImageLoad: UserDefaults.standard.bool(forKey: "paeonia-scenario-gallery-retry")
       ))
-      memoryID = UUID(uuidString: "aaaaaaa1-aaaa-aaaa-aaaa-aaaaaaaaaaaa") ?? UUID()
-      _viewModel = State(
-        initialValue: MemoriesViewModel(
-          memoryService: DeveloperScenarioMemoryDataService(records: records),
-          operationProvider: DeveloperScenarioOperationProvider(),
-          mediaUploader: nil,
-          mediaImageCache: nil
-        )
+      let memoryID = UUID(uuidString: "aaaaaaa1-aaaa-aaaa-aaaa-aaaaaaaaaaaa") ?? UUID()
+      self.memoryID = memoryID
+      let viewModel = MemoriesViewModel(
+        memoryService: DeveloperScenarioMemoryDataService(records: records),
+        operationProvider: DeveloperScenarioOperationProvider(),
+        mediaUploader: nil,
+        mediaImageCache: nil
       )
+      if celebrates { viewModel.celebrationRequestedMemoryID = memoryID }
+      _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
@@ -149,5 +151,12 @@
         )
       }
     }
+  }
+
+  nonisolated extension DeveloperScenario {
+    static let memoryCelebration = DeveloperScenario(
+      "memory-celebration", "Memory · saved from the Us tab",
+      "The memory's screen right after a save from the visit photo card: a haptic and petals", .memories
+    ) { _ in DeveloperMemoryDetailScenarioView(celebrates: true) }
   }
 #endif

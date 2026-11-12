@@ -1,7 +1,8 @@
 import XCTest
 
 /// The Us tab's card after a visit, in the paired local flow: it opens the new-memory form on
-/// the visit's first day and place, and once the person saved a photo from the visit it goes.
+/// the visit's first day and place. Saving a photo from the visit opens the memory in the
+/// Memories tab, and back on the Us tab the card is gone.
 final class VisitMemoryJourneyUITests: XCTestCase {
 
     override func setUpWithError() throws {
@@ -9,7 +10,7 @@ final class VisitMemoryJourneyUITests: XCTestCase {
     }
 
     @MainActor
-    func testSavingAPhotoFromTheVisitCardHidesTheCard() throws {
+    func testSavingAPhotoFromTheVisitCardOpensTheMemoryAndHidesTheCard() throws {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-paired"
         // English, so the date and the button names can be checked.
@@ -48,6 +49,14 @@ final class VisitMemoryJourneyUITests: XCTestCase {
         save.tap()
 
         XCTAssertTrue(save.waitForNonExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["memories.detail.menu"].waitForExistence(timeout: 10))
+        XCTAssertTrue(element(labelled: "Rainy Bergen", in: app).exists)
+        let selected = NSPredicate(format: "isSelected == true")
+        expectation(for: selected, evaluatedWith: app.buttons["mainTab.memories"])
+        waitForExpectations(timeout: 5)
+
+        app.buttons["mainTab.us"].tap()
+        XCTAssertTrue(app.buttons["mainTab.us"].waitForExistence(timeout: 5))
         XCTAssertTrue(card.waitForNonExistence(timeout: 10))
     }
 

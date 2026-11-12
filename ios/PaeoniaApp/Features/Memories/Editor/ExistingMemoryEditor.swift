@@ -7,14 +7,23 @@ import SwiftUI
 struct ExistingMemoryEditor: View {
     let viewModel: MemoriesViewModel
     let currentUserID: UUID?
+    /// Called with the memory's id when a save went through whole, before the form closes. After a
+    /// join it is the joined memory, which the form follows.
+    let onSaved: ((UUID) -> Void)?
     /// What the form compares with. A partial save moves it to the saved copy.
     @State private var base: MemoryRecord
     @State private var draft: MemoryDraft
     @State private var join: MemoryJoinNotice?
 
-    init(record: MemoryRecord, currentUserID: UUID?, viewModel: MemoriesViewModel) {
+    init(
+        record: MemoryRecord,
+        currentUserID: UUID?,
+        viewModel: MemoriesViewModel,
+        onSaved: ((UUID) -> Void)? = nil
+    ) {
         self.viewModel = viewModel
         self.currentUserID = currentUserID
+        self.onSaved = onSaved
         _base = State(initialValue: record)
         _draft = State(
             initialValue: MemoryDraft(
@@ -60,6 +69,7 @@ struct ExistingMemoryEditor: View {
                 draft.rebaseUntouchedFields(from: base, to: savedRecord)
                 base = savedRecord
             }
+            if case .saved = result { onSaved?(base.snapshot.memoryID) }
             return result
         }
         .onChange(of: latest?.snapshot.memoryID) {
