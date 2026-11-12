@@ -124,9 +124,10 @@ struct HomeMapLibreView: UIViewRepresentable {
 
     /// The framing, worked out on the Web Mercator map MapLibre draws (512 point tiles).
     /// `area` is where the two avatars' centers may go, in the view's points. Apart, the zoom
-    /// puts them `apartSpacing` apart, never closer in than together, and north up. When the
-    /// world is too small for that, they spread further, and the map turns only as far as it
-    /// must to fit them in `area`. The midpoint between them lands in the middle of `area`.
+    /// puts them `apartSpacing` apart, never closer in than together, and north up. When they
+    /// don't fit `area` north up, the map turns only as far as it must. When the world is too
+    /// small to bring them that close, they spread further. The midpoint between them lands
+    /// in the middle of `area`.
     static func camera(
         current: CLLocationCoordinate2D,
         partner: CLLocationCoordinate2D,
@@ -195,14 +196,15 @@ struct HomeMapLibreView: UIViewRepresentable {
         // `apartSpacing` apart, never closer in than together and never wider than the world.
         var zoom = max(min(log2(apartSpacing / hypot(dx, dy) / 512), nearZoom), log2(widest / 512))
         if log2(worldSize(turnedBy: 0) / 512) < zoom {
-            // They don't fit north up, mostly because the world can't get any smaller, so
-            // the map turns only as far as it must. How far the line between them leans
-            // from level, north up, from -90 to 90.
+            // They don't fit north up: the area is short, so a couple that lives mostly
+            // north and south of each other would stack. The map turns only as far as it
+            // must. How far the line between them leans from level, north up, from -90 to 90.
             var lean = atan2(dx, -dy) * 180 / .pi - 90
             while lean > 90 { lean -= 180 }
             while lean <= -90 { lean += 180 }
-            // The most lean that still fits the area's height at the level zoom.
-            let mostLean = asin(min(1, Double(area.height) / max(Double(area.width), 1))) * 180 / .pi
+            // The most lean that still fits the area's height with the two this far apart.
+            let spacing = hypot(dx, dy) * 512 * pow(2, zoom)
+            let mostLean = asin(min(1, Double(area.height) / max(spacing, 1))) * 180 / .pi
             if abs(lean) > mostLean {
                 direction = lean - (lean > 0 ? mostLean : -mostLean)
             }
