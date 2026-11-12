@@ -1,4 +1,5 @@
 import MapLibre
+import Observation
 import OSLog
 import UIKit
 
@@ -214,6 +215,13 @@ extension HomeMapLibreView {
             HomeMapLibreView.recolor(style)
         }
     }
+}
+
+/// The projection the map last drew. A class, so a new one each frame updates only the
+/// views that read it.
+@Observable
+final class HomeMapCamera {
+    var projection: HomeMapProjection?
 }
 
 /// The positions on the camera being drawn, before any avatar spacing is applied.

@@ -36,7 +36,9 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     @State private var compass = PartnerCompass()
     @State private var flights = HeartFlights()
     @State private var heartTaps = 0
-    @State var mapProjection: HomeMapProjection?
+    /// Changes on every frame the camera moves, so only the views that place things on the
+    /// map read it, not this body.
+    @State private var camera = HomeMapCamera()
     @State private var mapLocations: HomeMapLocations?
     @State var markerMeasurements = StoryMarkerMeasurements()
     @State var explorer = HomeMapExplorer()
@@ -196,9 +198,9 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
                 canStartIntro: launchContentRevealed && scenePhase == .active,
                 explorer: explorer,
                 tiles: mapTiles,
-                onProjection: { projection in
-                    guard mapProjection != projection else { return }
-                    mapProjection = projection
+                onProjection: { [camera] projection in
+                    guard camera.projection != projection else { return }
+                    camera.projection = projection
                 }
             )
             // Always as tall as the map can get, so the map view never resizes while
@@ -302,7 +304,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     private func retainMapLocations() {
         guard case let .ready(current, partner, _) = mapState else {
             mapLocations = nil
-            mapProjection = nil
+            camera.projection = nil
             return
         }
         let latest = HomeMapLocations(
@@ -340,6 +342,8 @@ extension HomeMapLayout {
         }
         .frame(height: metrics.bandHeight)
     }
+
+    var mapProjection: HomeMapProjection? { camera.projection }
 
     private var reservesMapSpace: Bool { mapState == .loading || couple != nil }
 
