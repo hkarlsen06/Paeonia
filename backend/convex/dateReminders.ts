@@ -10,13 +10,16 @@ import {
   planDateReminders,
   type DateReminder,
 } from "./lib/dateReminders";
+import { recapDeepLink } from "./lib/deepLinks";
 import { optionalTimestampArg } from "./lib/ids";
 import { enqueueNotificationForUser } from "./lib/notifications";
+import { dueRecapPeriod } from "./lib/recap";
 import { resolveMemberStreakTimeZone } from "./lib/streakDeadlines";
 import { endOfLocalDay, localTimeWindow, nowIso } from "./lib/time";
 import { openVisits } from "./lib/visits";
 
 const USER_PAGE_SIZE = 50;
+const DATES_ROUTE = { route: "dates", deeplink: "paeonia://dates" };
 
 /**
  * Queues the reminders for the dates the couple keeps (`lib/dateReminders.ts` decides which)
@@ -79,7 +82,19 @@ async function remindUser(ctx: MutationCtx, preference: Doc<"notification_prefer
   const expiresAt = endOfLocalDay(morning.localDate, timeZone);
   let queued = 0;
   for (const reminder of reminders) {
-    queued += await enqueueReminder(ctx, userId, coupleId, reminder, expiresAt, now);
+    const recap = reminder.extra.milestone === "years" && couple
+      ? dueRecapPeriod(couple, morning.localDate, timeZone)
+      : null;
+    if (recap) {
+      // Counted in its own mutations, so a failure there never undoes this reminder.
+      await ctx.scheduler.runAfter(0, internal.recap.start_recap, {
+        couple_id: coupleId,
+        today: morning.localDate,
+        time_zone: timeZone,
+      });
+    }
+    const route = recap ? { route: "recap", deeplink: recapDeepLink(recap.anniversary_date) } : DATES_ROUTE;
+    queued += await enqueueReminder(ctx, userId, coupleId, reminder, route, expiresAt, now);
   }
   return queued;
 }
@@ -89,6 +104,7 @@ async function enqueueReminder(
   userId: string,
   coupleId: string,
   reminder: DateReminder,
+  route: { route: string; deeplink: string },
   expiresAt: string,
   now: string,
 ): Promise<number> {
@@ -104,8 +120,7 @@ async function enqueueReminder(
       ...(reminder.subject_user_id === undefined ? {} : { actor_user_id: reminder.subject_user_id }),
       ...reminder.extra,
       expires_at: expiresAt,
-      route: "dates",
-      deeplink: "paeonia://dates",
+      ...route,
     },
     dedupe_key: `date_reminder:${reminder.reminder}:${subject}:${reminder.occurrence}:${userId}`,
     redaction_level: "private",

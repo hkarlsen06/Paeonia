@@ -1,5 +1,5 @@
 /**
- * The `deeplink` of a push that opens one memory, one story, one letter or the couple chat. The app reads these in
+ * The `deeplink` of a push that opens one memory, one story, one letter, a recap or the couple chat. The app reads these in
  * `PaeoniaDeepLink` (ios/PaeoniaApp/Services/Notifications/PaeoniaDeepLink.swift), so change the
  * two together. A push about a comment or a reply passes the flag that opens the conversation too.
  */
@@ -17,6 +17,10 @@ export function storyDeepLink(storyId: string, options: { replies?: boolean } = 
 /** Opens the letter in Mail: an unopened one on its envelope, an opened one to read. */
 export function letterDeepLink(letterId: string): string {
   return `paeonia://mail/${letterId}`;
+}
+
+export function recapDeepLink(anniversaryDate: string): string {
+  return `paeonia://recap/${anniversaryDate}`;
 }
 
 /** Opens the couple chat, the one chat a couple has that is not about anything in particular. */

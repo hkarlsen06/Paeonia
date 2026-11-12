@@ -407,3 +407,35 @@ async function loadMemory(frame: Frame, memory: Doc<"memories">): Promise<LookBa
     },
   };
 }
+
+export type LookBackRef = { kind: LookBackItem["kind"]; id: string };
+
+export async function loadLookBackRef(
+  ctx: ReaderCtx,
+  userId: string,
+  coupleId: string,
+  ref: LookBackRef,
+  today: string,
+  timeZone: string,
+): Promise<LookBackItem | null> {
+  if (!(await canAccessCoupleContent(ctx, userId, coupleId))) return null;
+  const frame: Frame = { ctx, userId, coupleId, today, timeZone, cutoffDate: today, cutoffAt: endOfLocalDay(today, timeZone) };
+  switch (ref.kind) {
+    case "question": {
+      const instance = await getByUuid(ctx, "daily_question_instances", ref.id);
+      const day = instance?.couple_day_id ? await getByUuid(ctx, "couple_days", instance.couple_day_id) : null;
+      if (!instance || !day || day.couple_id !== coupleId || instance.status === "shuffled") return null;
+      return await loadQuestion(frame, new QuestionContentReader(ctx), instance, day);
+    }
+    case "drawing": {
+      const revision = await getByUuid(ctx, "widget_drawing_revisions", ref.id);
+      const canvas = revision ? await getByUuid(ctx, "widget_canvases", revision.canvas_id) : null;
+      if (!revision || !canvas || canvas.couple_id !== coupleId || canvas.deleted_at !== undefined) return null;
+      return await loadDrawing(frame, revision, localDateOf(revision.created_at, timeZone));
+    }
+    case "memory": {
+      const memory = await getByUuid(ctx, "memories", ref.id);
+      return memory && memory.couple_id === coupleId ? await loadMemory(frame, memory) : null;
+    }
+  }
+}

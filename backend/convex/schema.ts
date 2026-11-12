@@ -892,6 +892,55 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_couple_id_deleted_at", ["couple_id", "deleted_at"]),
 
+  // The recap of one anniversary (lib/recap.ts): counts of what both partners can see in the app
+  // from period_start up to the anniversary, and up to three moment ids. Never content. Made once
+  // per couple and anniversary, counted across several calls while `counting` is set, and deleted
+  // when the start date changes. `hearts_sent` keeps each sender's all-time total, so an export
+  // holds only the person's own. `endRelationshipForPair` deletes the couple's rows.
+  // FK: couple_id -> couples cascade.
+  anniversary_recaps: defineTable({
+    couple_id: uuid,
+    anniversary_date: date,
+    years: v.number(),
+    period_start: date,
+    period_end: date,
+    since_joined: v.boolean(),
+    counts: v.object({
+      answered_together: v.number(),
+      drawings: v.number(),
+      memories: v.number(),
+      memory_photos: v.number(),
+      stories: v.number(),
+      letters: v.number(),
+      visits: v.number(),
+      visit_days: v.number(),
+      game_days: v.number(),
+      longest_streak_all_time: v.number(),
+    }),
+    hearts_sent: v.array(v.object({ user_id: uuid, count: v.number() })),
+    // The couple-local day the all-time numbers were read.
+    counted_on: date,
+    highlights: v.array(v.object({ kind: literals("question", "drawing", "memory"), id: uuid })),
+    // While counting: where it stopped, and what later sources need. `answered` holds the questions
+    // the first partner answered in the period, `answered_by_both` those the second answered too.
+    counting: v.optional(
+      v.object({
+        member_ids: v.array(uuid),
+        time_zone: v.string(),
+        source: v.number(),
+        cursor: v.union(v.string(), v.null()),
+        answered: v.array(uuid),
+        answered_by_both: v.array(uuid),
+        memories: v.array(v.object({ id: uuid, photos: v.number() })),
+        // Planned visits by id, cut to the period. Their days are merged when the count ends.
+        visits: v.array(v.object({ id: uuid, first: date, last: date })),
+        questions: v.array(uuid),
+        drawings: v.array(uuid),
+      }),
+    ),
+    created_at: ts,
+  }).index("by_couple_id_anniversary_date", ["couple_id", "anniversary_date"]),
+
   // A photo with an optional short caption that one partner posts as an "I thought about you"
   // check-in. The phone shows it in a ring on Home for 24 hours after created_at, then keeps it in
   // the Stories archive. The server stores no expiry. seen_at is when the partner first opened it.

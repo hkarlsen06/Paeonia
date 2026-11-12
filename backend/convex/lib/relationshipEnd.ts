@@ -3,6 +3,7 @@ import { withUpdatedAt } from "./db";
 import { fail } from "./errors";
 import { deleteHeartsForCouple } from "./hearts";
 import { queueBadgeUpdate } from "./badges";
+import { deleteCoupleRecaps } from "./recap";
 import { enqueueLockScreenRefreshForUser } from "./notifications";
 import { removePresenceRooms } from "./presence";
 import { createRelationshipSyncEvent } from "./syncEvents";
@@ -83,6 +84,7 @@ export async function endRelationshipForPair(
   await deleteLatestLocationsForCouple(ctx, couple.id);
   // The privacy text promises that the dates noted from location and visits go now, not at cleanup.
   await deleteCoupleTogetherDays(ctx, couple.id);
+  await deleteCoupleRecaps(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
   // A nickname is a private note about one person, so it ends with the relationship.
   await clearPartnerNicknames(ctx, couple.id);

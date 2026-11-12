@@ -378,6 +378,17 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       nb: "Rekken deres: hvor mange dager på rad, og den lengste.",
     },
   }),
+  anniversary_recaps: shared("by_couple_id_anniversary_date", {
+    group: "relationship",
+    about: {
+      en: "The recap of each anniversary: how many answers, drawings, memories, stories, letters, planned visits and game days you shared that year, your longest streak and the hearts you had sent by then, and which moments it showed. Only numbers and links, never the content.",
+      nb: "Tilbakeblikket på hver merkedag: hvor mange svar, tegninger, minner, historier, brev, planlagte besøk og spilldager dere delte det året, den lengste rekken deres og hjertene du hadde sendt til da, og hvilke øyeblikk det viste. Bare tall og lenker, aldri innholdet.",
+    },
+    select: (row, me) =>
+      row.counting === undefined
+        ? { ...row, hearts_sent: (row.hearts_sent as { user_id: string }[]).filter((sent) => sent.user_id === me) }
+        : null,
+  }),
   couple_hearts: yours("by_couple_id_sender_user_id", "sender_user_id", {
     group: "relationship",
     about: {

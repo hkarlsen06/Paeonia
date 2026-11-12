@@ -1,7 +1,12 @@
 import type { Doc } from "../_generated/dataModel";
 import { deleteCoupleGameRows } from "./gameRegistry";
 import { deleteHeartsForCouple } from "./hearts";
-import { clearPartnerNicknames, deleteCoupleTogetherDays, deleteLatestLocationsForCouple } from "./relationshipEnd";
+import { deleteCoupleRecaps } from "./recap";
+import {
+  clearPartnerNicknames,
+  deleteCoupleTogetherDays,
+  deleteLatestLocationsForCouple,
+} from "./relationshipEnd";
 import { withTouch, withUpdatedAt, type WriterCtx } from "./db";
 import { deleteCoupleFavorites } from "./favoriteRows";
 import { deleteCoupleReactions } from "./reactions";
@@ -304,6 +309,7 @@ export async function cleanupCoupleContent(
   await deleteCoupleVisits(ctx, couple.id, budget);
   if (budget.left <= 0) return unfinished();
   await deleteCoupleTogetherDays(ctx, couple.id);
+  await deleteCoupleRecaps(ctx, couple.id);
   await clearPartnerNicknames(ctx, couple.id);
   await deleteCoupleNotes(ctx, couple.id);
   const current = (await ctx.db.get(couple._id))!;
@@ -537,6 +543,7 @@ export async function purgeCoupleContent(
     await deleteHeartsForCouple(ctx, couple.id),
     await deleteCoupleDates(ctx, couple.id),
     await deleteCoupleTogetherDays(ctx, couple.id),
+    await deleteCoupleRecaps(ctx, couple.id),
     await clearPartnerNicknames(ctx, couple.id),
     await deleteCoupleNotes(ctx, couple.id),
   ]) {

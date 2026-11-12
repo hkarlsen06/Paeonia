@@ -205,6 +205,28 @@ describe("enqueue_date_reminders", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
+  test("the anniversary builds the year's recap once, apart from the reminder, and its push opens the recap", async () => {
+    const { t, couple, a, b } = await osloCouple();
+    await setStartedOn(t, couple, "2025-10-21");
+    await t.run(async (ctx) => {
+      const row = (await ctx.db.query("couples").collect()).find((c) => c.id === couple.coupleId)!;
+      await ctx.db.patch(row._id, { created_at: "2025-01-01T00:00:00.000Z" });
+    });
+    const recapRows = () => t.run(async (ctx) => await ctx.db.query("anniversary_recaps").collect());
+    expect(await run(t, "2026-10-21T07:00:00Z")).toBe(2);
+    // The reminder's own mutation never reads or writes a recap, so a recap that fails costs no reminder.
+    expect(await recapRows()).toEqual([]);
+    for (const user of [a, b]) {
+      const row = (await outbox(t)).find((r) => r.recipient_user_id === user.userId)!;
+      expect(row.payload).toMatchObject({ route: "recap", deeplink: "paeonia://recap/2026-10-21" });
+    }
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await run(t, "2026-10-21T07:15:00Z")).toBe(0);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const recaps = await recapRows();
+    expect(recaps.map((recap) => [recap.anniversary_date, recap.counting])).toEqual([["2026-10-21", undefined]]);
+  });
+
   test("a milestone uses the reader's language and number format", async () => {
     const { t, couple, b } = await osloCouple();
     await setStartedOn(t, couple, "2024-01-25");

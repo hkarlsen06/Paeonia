@@ -347,6 +347,9 @@ export function notificationAlertBody(
         case "anniversary_soon":
           return nb ? "Tid til å planlegge noe sammen." : "Time to plan something together.";
         case "milestone":
+          if (payload.route === "recap") {
+            return nb ? "Se tilbake på det dere har delt." : "Look back at what you've shared.";
+          }
           return nb ? "Ta en stund til å feire." : "Take a moment to celebrate.";
         case "countdown":
           return payloadCount(payload.count) > 1

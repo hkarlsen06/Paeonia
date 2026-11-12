@@ -252,6 +252,50 @@ describe("Download my data", () => {
     expect(textOf(zips[0]!, "README.md")).toContain("You chose to leave out");
   });
 
+  test("a recap holds only the person's own hearts, and a recap still being counted is left out", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const recap = (anniversary: string) => ({
+      couple_id: couple.coupleId,
+      anniversary_date: anniversary,
+      years: 1,
+      period_start: "2025-01-01",
+      period_end: anniversary,
+      since_joined: false,
+      counts: {
+        answered_together: 3, drawings: 0, memories: 0, memory_photos: 0, stories: 0, letters: 0, visits: 0,
+        visit_days: 0, game_days: 0, longest_streak_all_time: 4,
+      },
+      hearts_sent: [{ user_id: couple.first.userId, count: 40 }, { user_id: couple.second.userId, count: 2 }],
+      counted_on: anniversary,
+      highlights: [],
+      created_at: "2026-01-01T09:00:00.000Z",
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.insert("anniversary_recaps", recap("2026-01-01"));
+      await ctx.db.insert("anniversary_recaps", {
+        ...recap("2027-01-01"),
+        counting: {
+          member_ids: [couple.first.userId, couple.second.userId],
+          time_zone: "UTC",
+          source: 1,
+          cursor: null,
+          answered: [],
+          answered_by_both: [],
+          memories: [],
+          visits: [],
+          questions: [],
+          drawings: [],
+        },
+      });
+    });
+    const { status } = await requestExport(t, couple.second);
+    const { zips } = await downloadZips(t, couple.second, status.id);
+    expect(jsonOf(zips[0]!, "relationship/anniversary_recaps.json")).toEqual([
+      expect.objectContaining({ anniversary_date: "2026-01-01", hearts_sent: [{ user_id: couple.second.userId, count: 2 }] }),
+    ]);
+  });
+
   test("a relationship that ended keeps only the person's own things", async () => {
     const t = newTest();
     const couple = await createCouple(t);

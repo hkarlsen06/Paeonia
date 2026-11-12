@@ -7,6 +7,7 @@ import { assertStartedOnNotInFuture } from "./lib/coupleDays";
 import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dateArg, optionalTimestampArg, optionalUuidArg } from "./lib/ids";
+import { deleteCoupleRecaps } from "./lib/recap";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./lib/notifications";
 import { requireUserId } from "./lib/auth";
@@ -131,6 +132,8 @@ export const set_couple_started_on = mutation({
         return fail("P0002", "active relationship not found");
       }
       await ctx.db.patch(couple._id, withUpdatedAt({ started_on: startedOn }));
+      // A recap's years and period come from the start date, so they go with the old one.
+      if (couple.started_on !== startedOn) await deleteCoupleRecaps(ctx, coupleId);
       const members = await ctx.db
         .query("couple_members")
         .withIndex("by_couple_id_status", (q) => q.eq("couple_id", coupleId).eq("status", "active"))
