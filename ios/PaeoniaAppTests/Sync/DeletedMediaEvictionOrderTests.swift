@@ -199,7 +199,7 @@ private final class HeldSignedURLServer: Sendable {
     }
 
     func answer() {
-        HeldSignedURLProtocol.state.withLock { $0[host]?.gate.signal() }
+        HeldSignedURLProtocol.state.withLock { _ = $0[host]?.gate.signal() }
     }
 }
 
