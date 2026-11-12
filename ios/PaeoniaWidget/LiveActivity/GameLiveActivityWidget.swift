@@ -19,17 +19,26 @@ struct GameLiveActivityWidget: Widget {
         }
     }
 
+    /// The expanded island cuts off what sits in its rounded corners, so its parts stay this far
+    /// from the sides, and the text farther from the bottom.
+    private static let islandSideInset: CGFloat = 8
+    private static let islandBottomInset: CGFloat = 12
+
     private static func island(_ content: GameLiveActivityContent) -> DynamicIsland {
         DynamicIsland {
             DynamicIslandExpandedRegion(.leading) {
                 GameLiveActivityIcon(content: content, size: 44)
+                    .padding(.leading, islandSideInset)
             }
             DynamicIslandExpandedRegion(.trailing) {
                 GameLiveActivityBadge(content: content)
+                    .padding(.trailing, islandSideInset)
             }
             DynamicIslandExpandedRegion(.bottom) {
                 GameLiveActivityText(content: content)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, islandSideInset)
+                    .padding(.bottom, islandBottomInset)
             }
         } compactLeading: {
             GameLiveActivityIcon(content: content, size: 24, speaksTitle: true)
