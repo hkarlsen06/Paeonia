@@ -200,7 +200,9 @@
           // `-proto.home.mapState`.
           locationMapState: Self.protoMapState ?? .ready(
             current: LocationPoint(latitude: 59.9139, longitude: 10.7522, capturedAt: .now.addingTimeInterval(-60)),
-            partner: LocationPoint(latitude: 59.9142, longitude: 10.7530, capturedAt: .now.addingTimeInterval(-7_200)),
+            partner: scenario == .homeMapApart
+              ? LocationPoint(latitude: 69.6492, longitude: 18.9553, capturedAt: .now.addingTimeInterval(-7_200))
+              : LocationPoint(latitude: 59.9142, longitude: 10.7530, capturedAt: .now.addingTimeInterval(-7_200)),
             partnerWasStaleAtLastRefresh: false
           ),
           locationViewModel: locationViewModel,

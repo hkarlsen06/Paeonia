@@ -63,5 +63,10 @@ nonisolated extension DeveloperScenario {
       "home-map-recovery", "Home map · OpenFreeMap back",
       "An endpoint check fails, and OpenFreeMap answers again on return to the app", .relationship
     ) { _ in DeveloperLocalFlowHost(seed: .paired, homeLaunch: .locationFirst, mapTiles: .recovery) }
+    /// A couple that lives mostly north and south of each other, so the map turns to fit them.
+    static let homeMapApart = DeveloperScenario(
+      "home-map-apart", "Home map · far apart",
+      "Oslo and Tromsø, 1,150 km apart and mostly north and south of each other", .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
 }
 #endif
