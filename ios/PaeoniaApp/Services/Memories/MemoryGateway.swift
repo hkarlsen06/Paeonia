@@ -26,6 +26,10 @@ protocol MemoryGateway: Actor {
         _ payload: UpsertMemoryNoteOperationPayload,
         operation: SyncClientOperation
     ) async throws -> MemoryNoteRevisionResponse?
+    func deleteMemoryNote(
+        _ payload: DeleteMemoryNoteOperationPayload,
+        operation: SyncClientOperation
+    ) async throws
     func attachMemoryMedia(
         _ payload: AttachMemoryMediaOperationPayload,
         operation: SyncClientOperation
@@ -122,6 +126,18 @@ actor LiveMemoryGateway: MemoryGateway {
             args: UpsertMemoryNoteRequest(payload: payload, operation: operation)
         )
         return rows.first
+    }
+
+    func deleteMemoryNote(
+        _ payload: DeleteMemoryNoteOperationPayload,
+        operation: SyncClientOperation
+    ) async throws {
+        try await PaeoniaSignedIn.require(isSignedIn)
+
+        try await client.mutation(
+            "memories:delete_memory_note",
+            args: DeleteMemoryNoteRequest(payload: payload, operation: ClientOperationFields(operation))
+        )
     }
 
     func attachMemoryMedia(

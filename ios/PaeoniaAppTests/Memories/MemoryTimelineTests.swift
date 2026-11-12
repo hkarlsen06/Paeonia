@@ -117,7 +117,8 @@ struct MemoryTimelineTests {
                 visibleMemoryMediaIDs: [],
                 visibleMediaAssetIDs: [],
                 media: [],
-                threadID: nil
+                threadID: nil,
+                visitID: nil
             ),
             syncStatus: syncStatus,
             localUpdatedAt: created

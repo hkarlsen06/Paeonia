@@ -128,6 +128,56 @@ struct MemoriesViewModelRaceTests {
         #expect(viewModel.timeline.flatMap(\.memories).count == 1)
     }
 
+    /// The person saves a note on their visit memory just as its create joins the partner's memory
+    /// for the visit, which takes this phone's copy away.
+    @Test func aNoteSavedAsTheMemoryJoinsThePartnersDoesNotSayItWasDeleted() async throws {
+        let store = InMemoryMemoryRecordRepository()
+        let service = GatedMemoryDataService(
+            base: MemoryDataService(memoryStore: store, pendingOperationStore: InMemoryPendingSyncOperationRepository())
+        )
+        let viewModel = MemoriesViewModel(
+            memoryService: service, operationProvider: MemoryTestOperationProvider(), mediaUploader: nil,
+            mediaImageCache: nil, draftStore: makeIsolatedMemoryDraftStore()
+        )
+        let (userID, partnerID, coupleID, visitID, partnersMemory) = (UUID(), UUID(), UUID(), UUID(), UUID())
+        await viewModel.configure(currentUserID: userID, coupleID: coupleID)
+        _ = await viewModel.createMemory(
+            title: "Bergen", date: "2026-06-30", note: "Rain", photos: [], visitID: visitID
+        )
+        let waiting = try #require(viewModel.timeline.flatMap(\.memories).first)
+        try await store.saveRemote(
+            [visitMemoryRow(memoryID: partnersMemory, coupleID: coupleID, by: partnerID, visitID: visitID)],
+            ownerUserID: userID, mergePolicy: .preserveLocalChanges
+        )
+        await viewModel.load()
+        await service.runBeforeNextNoteWrite {
+            await store.remove(ownerUserID: userID, memoryID: waiting.snapshot.memoryID)
+        }
+
+        let saved = await viewModel.saveEdits(MemoryEdit(
+            base: waiting, title: "Bergen", date: "2026-06-30", note: "Rain all week",
+            newPhotos: [], removedMedia: [], place: nil
+        ))
+
+        #expect(!saved.isSaved)
+        #expect(viewModel.notice == nil)
+        #expect(viewModel.record(for: waiting.snapshot.memoryID)?.snapshot.memoryID == partnersMemory)
+    }
+
+    private func visitMemoryRow(memoryID: UUID, coupleID: UUID, by owner: UUID, visitID: UUID) -> MemoryRemoteRow {
+        let at = Date(timeIntervalSince1970: 50)
+        return MemoryRemoteRow(
+            memoryID: memoryID, coupleID: coupleID, title: "Trip", memoryDate: "2026-07-01", place: nil,
+            createdByUserID: owner, lastEditedByUserID: owner, revision: 1, moderationStatus: .visible,
+            deletedAt: nil, createdAt: at, updatedAt: at, syncUpdatedAt: at,
+            ownNoteID: nil, ownNoteBody: nil, ownNoteRevision: nil, ownNoteUpdatedAt: nil, ownNoteDeletedAt: nil,
+            ownNoteModerationStatus: nil, partnerNoteID: nil, partnerNoteUserID: nil, partnerNoteBody: nil,
+            partnerNoteRevision: nil, partnerNoteUpdatedAt: nil, partnerNoteDeletedAt: nil,
+            partnerNoteModerationStatus: nil, memoryMediaIDs: [], mediaAssetIDs: [], memoryMediaStates: [],
+            threadID: nil, visitID: visitID
+        )
+    }
+
     @Test func deletingAMemoryThePartnerAlreadyDeletedIsQuiet() async throws {
         let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)

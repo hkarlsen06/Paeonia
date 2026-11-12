@@ -10,10 +10,11 @@ import Foundation
 /// subscribes again from that cursor. A first launch with a long history pages
 /// through it the same way, 100 rows at a time.
 nonisolated struct MemoryLiveFeed: LiveFeed {
-    /// The Memories tab reads the store, and the Questions tab lists the memory chats. The feed
-    /// starts at the stored cursor, so a visit catches up.
+    /// The Memories tab reads the store, the Questions tab lists the memory chats, and the Us
+    /// tab's card after a visit asks for photos until the person's are in the visit's memory.
+    /// The feed starts at the stored cursor, so a visit catches up.
     var activation: LiveFeedActivation {
-        .whileNeeded([.memoriesTab, .questionsTab])
+        .whileNeeded([.memoriesTab, .questionsTab, .usTab])
     }
 
     private let memoryStore: any MemoryRecordPersisting

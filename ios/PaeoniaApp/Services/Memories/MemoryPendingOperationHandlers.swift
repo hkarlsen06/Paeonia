@@ -35,7 +35,16 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
         }
 
         let payload = try JSONDecoder().decodeQueuedPayload(CreateMemoryOperationPayload.self, from: requestData)
-        _ = try await gateway.createMemory(payload, operation: operation.operation)
+        let storedID = try await gateway.createMemory(payload, operation: operation.operation)
+        if storedID != payload.memoryID {
+            try await MemoryPendingOperationRefresh.joined(
+                operation,
+                into: storedID,
+                gateway: gateway,
+                memoryStore: memoryStore,
+                pendingStore: context.pendingOperationStore
+            )
+        }
         return try await MemoryPendingOperationRefresh.succeeded(
             operation,
             gateway: gateway,
@@ -87,23 +96,70 @@ struct UpdateMemoryPendingOperationHandler: PendingSyncOperationHandling {
             guard row.isVisibleMemory else {
                 return try await refresh.acceptRemoval(row, operation, memoryStore: memoryStore)
             }
-
-            let rebased = payload.rebased(onto: row)
-            if rebased.title != row.title || rebased.memoryDate != row.memoryDate {
-                _ = try await gateway.updateMemory(rebased, operation: operation.operation)
-            }
+            try await resend(payload, onto: row, operation, context: context)
         } catch {
-            return try await refresh.settleRejectedWrite(
-                error,
-                memoryID: payload.memoryID,
-                operation,
-                gateway: gateway,
-                memoryStore: memoryStore,
-                context: context
-            )
+            return try await settleRefused(error, payload, operation, context: context)
         }
 
         return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore, context: context)
+    }
+
+    /// When the server refuses an edit because it describes a photo the memory does not have, sends
+    /// the edit again without those descriptions. Any other refusal settles as before.
+    private func settleRefused(
+        _ error: any Error,
+        _ payload: UpdateMemoryOperationPayload,
+        _ operation: PendingSyncOperationSnapshot,
+        context: SyncContext
+    ) async throws -> PendingSyncOperationSendResult {
+        let refresh = MemoryPendingOperationRefresh.self
+        if refresh.isServerRejection(error), !payload.photoDescriptions.isEmpty,
+           let row = try await refresh.serverRow(memoryID: payload.memoryID, gateway: gateway), row.isVisibleMemory,
+           try await describable(payload.photoDescriptions, on: row, operation, context: context).count
+            < payload.photoDescriptions.count {
+            try await resend(payload, onto: row, operation, context: context)
+            return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore, context: context)
+        }
+        return try await refresh.settleRejectedWrite(
+            error, memoryID: payload.memoryID, operation, gateway: gateway, memoryStore: memoryStore, context: context
+        )
+    }
+
+    /// Sends the edit again on top of the server's `row`, when anything is left to change.
+    private func resend(
+        _ payload: UpdateMemoryOperationPayload,
+        onto row: MemoryRemoteRow,
+        _ operation: PendingSyncOperationSnapshot,
+        context: SyncContext
+    ) async throws {
+        let rebased = payload.rebased(onto: row)
+        let descriptions = try await describable(rebased.photoDescriptions, on: row, operation, context: context)
+        guard rebased.title != row.title || rebased.memoryDate != row.memoryDate || !descriptions.isEmpty else {
+            return
+        }
+        _ = try await gateway.updateMemory(rebased.describing(descriptions), operation: operation.operation)
+    }
+
+    /// Keeps the descriptions of the person's photos that the memory has or that a queued attach adds.
+    private func describable(
+        _ descriptions: [MemoryPhotoDescription],
+        on row: MemoryRemoteRow,
+        _ operation: PendingSyncOperationSnapshot,
+        context: SyncContext
+    ) async throws -> [MemoryPhotoDescription] {
+        let owner = operation.ownerUserID
+        var photos = Set(
+            row.memoryMediaStates.map(\.snapshot).filter { $0.ownerUserID == owner && $0.isVisible }.map(\.mediaAssetID)
+        )
+        for attach in try await context.pendingOperationStore.inFlightOperations(
+            ownerUserID: owner, kind: .attachMemoryMedia
+        ) {
+            guard let queued = try? JSONDecoder().decode(
+                AttachMemoryMediaOperationPayload.self, from: attach.requestData ?? Data()
+            ), queued.memoryID == row.memoryID else { continue }
+            photos.formUnion(queued.mediaAssetIDs)
+        }
+        return descriptions.filter { photos.contains($0.mediaAssetID) }
     }
 }
 

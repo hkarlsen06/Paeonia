@@ -13,6 +13,7 @@ actor GatedMemoryDataService {
     private var failingRemovalCall: Int?
     private var removalCalls = 0
     private var heldLoad: CheckedContinuation<Void, Never>?
+    private var beforeNextNoteWrite: (@Sendable () async throws -> Void)?
 
     init(base: MemoryDataService) {
         self.base = base
@@ -24,6 +25,11 @@ actor GatedMemoryDataService {
 
     func failRemoval(call: Int) {
         failingRemovalCall = call
+    }
+
+    /// Runs `hook` when the next note write starts, after the caller read the memory.
+    func runBeforeNextNoteWrite(_ hook: @escaping @Sendable () async throws -> Void) {
+        beforeNextNoteWrite = hook
     }
 
     func holdNextLoad() {
@@ -69,6 +75,7 @@ actor GatedMemoryDataService {
         noteBody: String?,
         optimisticMedia: [MemoryMediaSnapshot],
         place: MemoryPlace?,
+        visitID: UUID?,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
         try await base.createMemory(
@@ -80,6 +87,7 @@ actor GatedMemoryDataService {
             noteBody: noteBody,
             optimisticMedia: optimisticMedia,
             place: place,
+            visitID: visitID,
             operation: operation
         )
     }
@@ -139,7 +147,11 @@ actor GatedMemoryDataService {
         body: String,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
-        try await base.upsertMemoryNote(
+        if let hook = beforeNextNoteWrite {
+            beforeNextNoteWrite = nil
+            try await hook()
+        }
+        return try await base.upsertMemoryNote(
             ownerUserID: ownerUserID,
             memoryID: memoryID,
             expectedRevision: expectedRevision,
@@ -176,6 +188,11 @@ actor GatedMemoryDataService {
             memoryMediaID: memoryMediaID,
             operation: operation
         )
+    }
+
+    func deleteOwnNote(ownerUserID: UUID, memoryID: UUID, operation: SyncClientOperation) async throws
+        -> MemoryRecord {
+        try await base.deleteOwnNote(ownerUserID: ownerUserID, memoryID: memoryID, operation: operation)
     }
 }
 

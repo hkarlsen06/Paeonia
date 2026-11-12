@@ -94,6 +94,8 @@
       case .memoriesMapTab:
         DeveloperMemoriesMapFixture.seedPhotos()
         return DeveloperMemoriesMapFixture.records(withPlaces: true)
+      case .visitEndedPartnerAdded:
+        return [DeveloperVisitsFixture.partnerVisitMemory()]
       default:
         return []
       }

@@ -97,6 +97,36 @@ extension PairedHomeView {
         }
     }
 
+    /// What both visit photo cards ask, for the page's change animation.
+    var visitMemoryPrompts: [VisitMemoryPrompt] {
+        guard let visits, let memories, let currentUserID else { return [] }
+        return [true, false].compactMap { waiting in
+            HomeVisitMemoryCard.prompt(
+                visits: visits, memories: memories, viewerID: currentUserID, waiting: waiting, at: Date()
+            )
+        }
+    }
+
+    /// The partner's photos from a visit, waiting for this person's. Among the first cards.
+    var waitingVisitMemoryCard: some View {
+        visitMemoryCard(waiting: true)
+    }
+
+    /// The ask for photos from a visit. Under the tiles, where it takes no room from the map.
+    var visitMemoryAsk: some View {
+        visitMemoryCard(waiting: false)
+    }
+
+    @ViewBuilder
+    private func visitMemoryCard(waiting: Bool) -> some View {
+        if let visits, let memories, let currentUserID {
+            HomeVisitMemoryCard(
+                visits: visits, memories: memories, viewerID: currentUserID, partnerName: partnerName,
+                waiting: waiting, onOpen: { visitMemoryForm = $0 }
+            )
+        }
+    }
+
     @ViewBuilder
     var firstStepsCard: some View {
         if let firstSteps {

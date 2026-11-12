@@ -366,6 +366,8 @@ actor ScriptedMemoryGateway: MemoryGateway {
     private(set) var updates: [UpdateMemoryOperationPayload] = []
     private(set) var places: [SetMemoryPlaceOperationPayload] = []
     private(set) var hides: [HideMemoryOperationPayload] = []
+    /// The id `createMemory` answers with, when the server added the new memory to another one.
+    private let joinedMemoryID: UUID?
 
     init(
         rows: [MemoryRemoteRow],
@@ -373,9 +375,11 @@ actor ScriptedMemoryGateway: MemoryGateway {
         hideFailures: [PaeoniaConvexError] = [],
         noteFailures: [PaeoniaConvexError] = [],
         removeFailures: [PaeoniaConvexError] = [],
-        placeFailures: [PaeoniaConvexError] = []
+        placeFailures: [PaeoniaConvexError] = [],
+        joinedMemoryID: UUID? = nil
     ) {
         self.rows = rows
+        self.joinedMemoryID = joinedMemoryID
         self.updateFailures = updateFailures
         self.hideFailures = hideFailures
         self.noteFailures = noteFailures
@@ -388,7 +392,7 @@ actor ScriptedMemoryGateway: MemoryGateway {
     }
 
     func createMemory(_ payload: CreateMemoryOperationPayload, operation: SyncClientOperation) throws -> UUID {
-        payload.memoryID
+        joinedMemoryID ?? payload.memoryID
     }
 
     func updateMemory(
@@ -425,6 +429,8 @@ actor ScriptedMemoryGateway: MemoryGateway {
         if !noteFailures.isEmpty { throw noteFailures.removeFirst() }
         return nil
     }
+
+    func deleteMemoryNote(_ payload: DeleteMemoryNoteOperationPayload, operation: SyncClientOperation) {}
 
     func attachMemoryMedia(
         _ payload: AttachMemoryMediaOperationPayload,

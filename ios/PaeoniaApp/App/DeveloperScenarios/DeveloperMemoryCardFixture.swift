@@ -76,7 +76,8 @@
           visibleMemoryMediaIDs: media.map(\.memoryMediaID),
           visibleMediaAssetIDs: media.map(\.mediaAssetID),
           media: media,
-          threadID: nil
+          threadID: nil,
+          visitID: nil
         ),
         syncStatus: example.isDirty ? .dirty : .clean
       )

@@ -11,7 +11,8 @@ nonisolated enum DeveloperHomeMapTiles: Sendable {
     case outage
     /// The phone has no connection.
     case offline
-    /// OpenFreeMap initially fails and answers again a few seconds in.
+    /// OpenFreeMap fails at first and answers the next check: when the app comes back to the
+    /// screen, or a minute later. Opening a sheet first shows that Home waits for it to close.
     case recovery
 
     private static let unreachableStyle = URL(string: "https://tiles.openfreemap.invalid/styles/dark")!
@@ -39,12 +40,7 @@ nonisolated enum DeveloperHomeMapTiles: Sendable {
                     throw URLError(.badServerResponse)
                 }
             }
-            Task {
-                await status.mapDidNotLoad()
-                try? await Task.sleep(for: .seconds(4))
-                guard !Task.isCancelled else { return }
-                await status.checkOnReturn()
-            }
+            Task { await status.mapDidNotLoad() }
             return status
         }
     }
@@ -65,7 +61,7 @@ nonisolated extension DeveloperScenario {
     ) { _ in DeveloperLocalFlowHost(seed: .paired, homeLaunch: .locationFirst, mapTiles: .offline) }
     static let homeMapRecovery = DeveloperScenario(
       "home-map-recovery", "Home map · OpenFreeMap back",
-      "An endpoint check fails, then OpenFreeMap answers and the map returns", .relationship
+      "An endpoint check fails, and OpenFreeMap answers again on return to the app", .relationship
     ) { _ in DeveloperLocalFlowHost(seed: .paired, homeLaunch: .locationFirst, mapTiles: .recovery) }
 }
 #endif

@@ -48,7 +48,7 @@ extension MemoriesViewModel {
             } catch MemoryDataServiceError.staleRevision {
                 do {
                     guard let fresh = try await storedVisibleRecord(current.snapshot.memoryID) else {
-                        notice = .memoryRemoved
+                        await noticeRemovalUnlessJoined(current.snapshot.memoryID)
                         return .failed
                     }
                     current = fresh
@@ -56,6 +56,9 @@ extension MemoriesViewModel {
                     report("Reading newer memory details failed", error, notice: .editFailed)
                     return .failed
                 }
+            } catch MemoryDataServiceError.missingMemory {
+                await noticeRemovalUnlessJoined(current.snapshot.memoryID)
+                return .failed
             } catch {
                 report("Saving memory details failed", error, notice: .editFailed)
                 return .failed
@@ -86,7 +89,9 @@ extension MemoriesViewModel {
         guard !note.isEmpty, note != baseNote, note != latest.snapshot.ownNote?.body else {
             return .unchanged
         }
-        let saved = await perform("Saving a memory note failed", notice: .noteFailed) {
+        let saved = await perform(
+            "Saving a memory note failed", notice: .noteFailed, memoryID: latest.snapshot.memoryID
+        ) {
             _ = try await self.memoryService.upsertMemoryNote(
                 ownerUserID: userID,
                 memoryID: latest.snapshot.memoryID,
@@ -104,7 +109,9 @@ extension MemoriesViewModel {
         guard !toRemove.isEmpty else { return .unchanged }
         var removedAny = false
         for media in toRemove {
-            let removed = await perform("Removing a memory photo failed", notice: .editFailed) {
+            let removed = await perform(
+                "Removing a memory photo failed", notice: .editFailed, memoryID: latest.snapshot.memoryID
+            ) {
                 _ = try await self.memoryService.removeMemoryMedia(
                     ownerUserID: userID,
                     memoryID: latest.snapshot.memoryID,
@@ -116,5 +123,38 @@ extension MemoriesViewModel {
             removedAny = true
         }
         return .saved
+    }
+
+    /// Deletes (hides) a memory for both partners. Hidden immediately on the device and
+    /// removed on the server by the same revision-checked path. A memory that is
+    /// already gone (the partner deleted it first) counts as deleted. `record` is the memory
+    /// the person was asked about. When it joined the partner's memory for its visit before
+    /// they confirmed, only their part comes off that memory.
+    func deleteMemory(_ record: MemoryRecord) async {
+        guard let currentUserID else { return }
+
+        do {
+            _ = try await memoryService.hideMemory(
+                ownerUserID: currentUserID,
+                memoryID: record.snapshot.memoryID,
+                expectedRevision: record.snapshot.revision,
+                operation: operationProvider.makeOperation()
+            )
+        } catch MemoryDataServiceError.missingMemory {
+            await load()
+            if let joined = self.record(for: record.snapshot.memoryID),
+               joined.snapshot.memoryID != record.snapshot.memoryID {
+                await takeTheirPart(of: record, off: joined)
+            }
+            return
+        } catch {
+            logFailure("Deleting a memory failed", error)
+            notice = .deleteFailed
+            return
+        }
+
+        PaeoniaHaptics.destructiveActionConfirmed()
+        await load()
+        syncInBackground()
     }
 }

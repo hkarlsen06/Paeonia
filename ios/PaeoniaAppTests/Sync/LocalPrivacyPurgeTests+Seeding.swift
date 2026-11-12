@@ -104,7 +104,8 @@ extension LocalPrivacyPurgeTests {
                 visibleMemoryMediaIDs: [],
                 visibleMediaAssetIDs: [],
                 media: [],
-                threadID: nil
+                threadID: nil,
+                visitID: nil
             )
         )
         let emptyArrayData = Data("[]".utf8)

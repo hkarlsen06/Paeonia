@@ -21,6 +21,7 @@ nonisolated protocol MemoryDataServicing: Actor {
         noteBody: String?,
         optimisticMedia: [MemoryMediaSnapshot],
         place: MemoryPlace?,
+        visitID: UUID?,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord
     func updateMemory(
@@ -63,6 +64,8 @@ nonisolated protocol MemoryDataServicing: Actor {
         memoryMediaID: UUID,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord
+    func deleteOwnNote(ownerUserID: UUID, memoryID: UUID, operation: SyncClientOperation) async throws
+        -> MemoryRecord
 }
 // swiftlint:enable function_parameter_count
 
@@ -202,7 +205,8 @@ actor MemoryDataService: MemoryDataServicing {
                 visibleMemoryMediaIDs: visibleMemoryMediaIDs ?? snapshot.visibleMemoryMediaIDs,
                 visibleMediaAssetIDs: visibleMediaAssetIDs ?? snapshot.visibleMediaAssetIDs,
                 media: media ?? snapshot.media,
-                threadID: snapshot.threadID
+                threadID: snapshot.threadID,
+                visitID: snapshot.visitID
             ),
             syncStatus: syncStatus,
             pendingOperationID: operation.id,
@@ -261,6 +265,21 @@ actor MemoryDataService: MemoryDataServicing {
 
     static func normalizedRequired(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// The trimmed title, or the error for an empty one or one the server would refuse.
+    static func validTitle(_ title: String) throws -> String {
+        let normalized = normalizedRequired(title)
+        guard !normalized.isEmpty else { throw MemoryDataServiceError.emptyTitle }
+        guard !isOverLimit(normalized, titleCharacterLimit) else { throw MemoryDataServiceError.titleTooLong }
+        return normalized
+    }
+
+    /// The trimmed note, or the error for an empty one or one the server would refuse.
+    static func validNote(_ body: String) throws -> String {
+        guard let normalized = normalizedOptional(body) else { throw MemoryDataServiceError.emptyNote }
+        guard !isOverLimit(normalized, noteCharacterLimit) else { throw MemoryDataServiceError.noteTooLong }
+        return normalized
     }
 
     static func normalizedOptional(_ value: String?) -> String? {

@@ -13,19 +13,14 @@ extension MemoryDataService {
         noteBody: String?,
         optimisticMedia: [MemoryMediaSnapshot] = [],
         place: MemoryPlace? = nil,
+        visitID: UUID? = nil,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
         let normalizedNote = Self.normalizedOptional(noteBody)
         guard normalizedNote != nil || !optimisticMedia.isEmpty else {
             throw MemoryDataServiceError.missingCreateContent
         }
-        let normalizedTitle = Self.normalizedRequired(title)
-        guard !normalizedTitle.isEmpty else {
-            throw MemoryDataServiceError.emptyTitle
-        }
-        guard !Self.isOverLimit(normalizedTitle, Self.titleCharacterLimit) else {
-            throw MemoryDataServiceError.titleTooLong
-        }
+        let normalizedTitle = try Self.validTitle(title)
         if let normalizedNote, Self.isOverLimit(normalizedNote, Self.noteCharacterLimit) {
             throw MemoryDataServiceError.noteTooLong
         }
@@ -39,7 +34,8 @@ extension MemoryDataService {
             noteBody: normalizedNote,
             mediaAssetIDs: optimisticMedia.map(\.mediaAssetID),
             optimisticMedia: optimisticMedia,
-            place: normalizedPlace
+            place: normalizedPlace,
+            visitID: visitID
         )
 
         let now = operation.localCreatedAt
@@ -74,7 +70,8 @@ extension MemoryDataService {
                 visibleMemoryMediaIDs: optimisticMedia.filter(\.isVisible).map(\.memoryMediaID),
                 visibleMediaAssetIDs: optimisticMedia.filter(\.isVisible).map(\.mediaAssetID),
                 media: optimisticMedia,
-                threadID: nil
+                threadID: nil,
+                visitID: visitID
             ),
             syncStatus: .dirty,
             pendingOperationID: operation.id,
@@ -101,14 +98,10 @@ extension MemoryDataService {
         photoDescriptions: [MemoryPhotoDescription] = [],
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
+        await MemoryWriteLock.shared.take([memoryID])
+        defer { MemoryWriteLock.shared.release([memoryID]) }
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
-        let normalizedTitle = Self.normalizedRequired(title)
-        guard !normalizedTitle.isEmpty else {
-            throw MemoryDataServiceError.emptyTitle
-        }
-        guard !Self.isOverLimit(normalizedTitle, Self.titleCharacterLimit) else {
-            throw MemoryDataServiceError.titleTooLong
-        }
+        let normalizedTitle = try Self.validTitle(title)
 
         // The caller decided which fields to keep from the record it read. If that
         // record changed since, its untouched fields may now hold the partner's newer
@@ -157,6 +150,8 @@ extension MemoryDataService {
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
         let normalizedPlace = try Self.normalizedPlace(place)
+        await MemoryWriteLock.shared.take([memoryID])
+        defer { MemoryWriteLock.shared.release([memoryID]) }
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
         let payload = SetMemoryPlaceOperationPayload(memoryID: memoryID, place: normalizedPlace)
         let next = record(
@@ -184,6 +179,8 @@ extension MemoryDataService {
         expectedRevision: Int,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
+        await MemoryWriteLock.shared.take([memoryID])
+        defer { MemoryWriteLock.shared.release([memoryID]) }
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
         let resolvedRevision = max(expectedRevision, existing.snapshot.revision)
         let payload = HideMemoryOperationPayload(
@@ -217,14 +214,10 @@ extension MemoryDataService {
         body: String,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
-        let normalizedBody = Self.normalizedOptional(body)
-        guard let normalizedBody else {
-            throw MemoryDataServiceError.emptyNote
-        }
-        guard !Self.isOverLimit(normalizedBody, Self.noteCharacterLimit) else {
-            throw MemoryDataServiceError.noteTooLong
-        }
+        let normalizedBody = try Self.validNote(body)
 
+        await MemoryWriteLock.shared.take([memoryID])
+        defer { MemoryWriteLock.shared.release([memoryID]) }
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
         let resolvedRevision = max(expectedRevision ?? 0, existing.snapshot.ownNote?.revision ?? 0)
         let nextNoteRevision = resolvedRevision == 0 ? 1 : resolvedRevision + 1
@@ -270,6 +263,8 @@ extension MemoryDataService {
             throw MemoryDataServiceError.emptyMediaAttachment
         }
 
+        await MemoryWriteLock.shared.take([memoryID])
+        defer { MemoryWriteLock.shared.release([memoryID]) }
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
         let payload = AttachMemoryMediaOperationPayload(
             memoryID: memoryID,
@@ -305,28 +300,15 @@ extension MemoryDataService {
         memoryMediaID: UUID,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
+        await MemoryWriteLock.shared.take([memoryID])
+        defer { MemoryWriteLock.shared.release([memoryID]) }
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
         let payload = RemoveMemoryMediaOperationPayload(
             memoryID: memoryID,
             memoryMediaID: memoryMediaID
         )
         let media = existing.snapshot.media.map { item in
-            guard item.memoryMediaID == memoryMediaID else {
-                return item
-            }
-
-            return MemoryMediaSnapshot(
-                memoryMediaID: item.memoryMediaID,
-                mediaAssetID: item.mediaAssetID,
-                ownerUserID: item.ownerUserID,
-                sortOrder: item.sortOrder,
-                deletedAt: operation.localCreatedAt,
-                moderationStatus: item.moderationStatus,
-                assetDeletedAt: item.assetDeletedAt,
-                assetModerationStatus: item.assetModerationStatus,
-                assetStorageDeleteStatus: item.assetStorageDeleteStatus,
-                updatedAt: operation.localCreatedAt
-            )
+            item.memoryMediaID == memoryMediaID ? item.removed(at: operation.localCreatedAt) : item
         }
         let next = record(
             from: existing,

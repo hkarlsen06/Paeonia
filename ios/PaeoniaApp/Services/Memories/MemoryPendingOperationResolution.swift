@@ -17,6 +17,18 @@ extension UpdateMemoryOperationPayload {
             photoDescriptions: photoDescriptions
         )
     }
+
+    nonisolated func describing(_ descriptions: [MemoryPhotoDescription]) -> UpdateMemoryOperationPayload {
+        UpdateMemoryOperationPayload(
+            memoryID: memoryID,
+            expectedRevision: expectedRevision,
+            title: title,
+            memoryDate: memoryDate,
+            baseTitle: baseTitle,
+            baseMemoryDate: baseMemoryDate,
+            photoDescriptions: descriptions
+        )
+    }
 }
 
 extension MemoryRemoteRow {
@@ -105,7 +117,7 @@ enum MemoryPendingOperationRefresh {
 
     /// Every kind of queued memory write. Each payload names its memory as `memoryID`.
     nonisolated static let memoryWriteKinds: [SyncPendingOperationKind] = [
-        .createMemory, .updateMemory, .setMemoryPlace, .hideMemory, .upsertMemoryNote,
+        .createMemory, .updateMemory, .setMemoryPlace, .hideMemory, .upsertMemoryNote, .deleteMemoryNote,
         .attachMemoryMedia, .removeMemoryMedia,
     ]
 

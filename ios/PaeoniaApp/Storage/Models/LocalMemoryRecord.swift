@@ -24,6 +24,7 @@ final class LocalMemoryRecord {
     var mediaData: Data
     var placeData: Data?
     var threadID: UUID?
+    var visitID: UUID?
     var syncStatusRawValue: String
     var pendingOperationID: UUID?
     var conflictReason: String?
@@ -60,6 +61,7 @@ final class LocalMemoryRecord {
         self.mediaData = mediaData
         self.placeData = placeData
         threadID = snapshot.threadID
+        visitID = snapshot.visitID
         syncStatusRawValue = record.syncStatus.rawValue
         pendingOperationID = record.pendingOperationID
         conflictReason = record.conflictReason
@@ -97,6 +99,7 @@ final class LocalMemoryRecord {
         self.mediaData = mediaData
         self.placeData = placeData
         threadID = snapshot.threadID
+        visitID = snapshot.visitID
         syncStatusRawValue = record.syncStatus.rawValue
         pendingOperationID = record.pendingOperationID
         conflictReason = record.conflictReason

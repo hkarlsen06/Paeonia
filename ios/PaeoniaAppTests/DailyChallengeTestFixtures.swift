@@ -62,7 +62,8 @@ func memoryConversation(addedAt: Date, memoryDate: String, isUnread: Bool = fals
         visibleMemoryMediaIDs: [],
         visibleMediaAssetIDs: [],
         media: [],
-        threadID: UUID()
+        threadID: UUID(),
+        visitID: nil
     )
     return SubjectConversation(
         subject: .memory(MemoryRecord(snapshot: snapshot)),

@@ -39,6 +39,8 @@ struct MemoryEditorView: View {
     /// form stays open so the typed text isn't lost, explains why it can't be saved,
     /// and offers to copy the text.
     var isMemoryRemoved = false
+    /// Set once the memory joined another memory for the same visit, which the form now edits.
+    var join: MemoryJoinNotice?
     /// Whether photo attachment is available (false in previews/tests without an
     /// uploader, or before the active couple is known). When false the photo controls
     /// are hidden and a note is required.
@@ -158,11 +160,7 @@ struct MemoryEditorView: View {
 
     private var editorFields: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-            if hasPartiallySaved {
-                Text(.memoriesEditorPartialSaveMessage)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextPrimary)
-            }
+            statusMessages
             if draftFailure == .write {
                 Text(.memoriesDraftSaveFailed)
                     .font(PaeoniaTypography.body)
@@ -261,15 +259,12 @@ struct MemoryEditorView: View {
                 isFocused: $focusedField,
                 field: .note,
                 lineLimit: 3...8,
-                characterLimit: MemoryDataService.noteCharacterLimit
+                // A note that is already too long, such as one the form put a title above when the
+                // memory joined, stays whole until the person shortens it.
+                characterLimit: isNoteTooLong ? nil : MemoryDataService.noteCharacterLimit
             )
 
-            if isClearingExistingNote {
-                Text(.memoriesEditorNoteRequired)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            noteMessage
         }
         .animation(PaeoniaMotion.stateChange, value: isClearingExistingNote)
     }
@@ -327,7 +322,7 @@ struct MemoryEditorView: View {
     }
 
     private var canSave: Bool {
-        guard !isMemoryRemoved, draftFailure != .read, loadingPhotoCount == 0 else { return false }
+        guard !isMemoryRemoved, !isNoteTooLong, draftFailure != .read, loadingPhotoCount == 0 else { return false }
         guard (draft.photos.map(\.accessibilityText) + Array(draft.existingDescriptions.values))
             .allSatisfy({ $0.unicodeScalars.count <= 10_000 }) else { return false }
         guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -410,6 +405,39 @@ struct MemoryEditorView: View {
     private func discardNewDraft() {
         if let onDiscardDraft { onDiscardDraft() } else { draft = MemoryDraft() }
         dismiss()
+    }
+}
+
+private extension MemoryEditorView {
+    var isNoteTooLong: Bool {
+        MemoryDataService.isOverLimit(draft.note, MemoryDataService.noteCharacterLimit)
+    }
+
+    @ViewBuilder var noteMessage: some View {
+        if isNoteTooLong {
+            Text(.memoriesEditorNoteTooLong)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if isClearingExistingNote {
+            Text(.memoriesEditorNoteRequired)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder var statusMessages: some View {
+        if hasPartiallySaved {
+            Text(.memoriesEditorPartialSaveMessage)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextPrimary)
+        }
+        if let join {
+            Text(verbatim: join.message)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextPrimary)
+        }
     }
 }
 

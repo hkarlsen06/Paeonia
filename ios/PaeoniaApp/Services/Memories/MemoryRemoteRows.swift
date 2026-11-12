@@ -31,6 +31,7 @@ nonisolated struct MemoryRemoteRow: Codable, Equatable, Sendable {
     let mediaAssetIDs: [UUID]
     let memoryMediaStates: [MemoryMediaStateRow]
     let threadID: UUID?
+    var visitID: UUID?
 
     enum CodingKeys: String, CodingKey {
         case memoryID = "memory_id"
@@ -63,6 +64,7 @@ nonisolated struct MemoryRemoteRow: Codable, Equatable, Sendable {
         case mediaAssetIDs = "media_asset_ids"
         case memoryMediaStates = "memory_media_states"
         case threadID = "thread_id"
+        case visitID = "visit_id"
     }
 
     func snapshot(ownerUserID: UUID) -> MemorySnapshot {
@@ -86,7 +88,8 @@ nonisolated struct MemoryRemoteRow: Codable, Equatable, Sendable {
             visibleMemoryMediaIDs: memoryMediaIDs,
             visibleMediaAssetIDs: mediaAssetIDs,
             media: memoryMediaStates.map(\.snapshot),
-            threadID: threadID
+            threadID: threadID,
+            visitID: visitID
         )
     }
 

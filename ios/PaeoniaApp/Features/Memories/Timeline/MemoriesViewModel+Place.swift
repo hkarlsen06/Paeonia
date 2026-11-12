@@ -8,7 +8,10 @@ extension MemoriesViewModel {
     @discardableResult
     func setPlace(_ place: MemoryPlace?, forMemory memoryID: UUID) async -> Bool {
         guard let currentUserID else { return false }
-        let saved = await perform("Saving a memory place failed", notice: .editFailed) {
+        let saved = await perform(
+            "Saving a memory place failed", notice: .editFailed, memoryID: memoryID,
+            joinedNotice: .placeNotAddedAfterJoin
+        ) {
             _ = try await self.memoryService.setMemoryPlace(
                 ownerUserID: currentUserID,
                 memoryID: memoryID,
@@ -32,7 +35,9 @@ extension MemoriesViewModel {
         guard edit.place != edit.base.snapshot.place, edit.place != latest.snapshot.place else {
             return .unchanged
         }
-        let saved = await perform("Saving a memory place failed", notice: .editFailed) {
+        let saved = await perform(
+            "Saving a memory place failed", notice: .editFailed, memoryID: latest.snapshot.memoryID
+        ) {
             _ = try await self.memoryService.setMemoryPlace(
                 ownerUserID: userID,
                 memoryID: latest.snapshot.memoryID,

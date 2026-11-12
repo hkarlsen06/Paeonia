@@ -5,6 +5,7 @@ import Foundation
 nonisolated protocol VisitsGateway: Sendable {
     func saveVisit(_ payload: SaveVisitPayload, operation: SyncClientOperation) async throws -> Visit?
     func deleteVisit(id: UUID, operation: SyncClientOperation) async throws
+    func dismissMemoryPrompt(visitID: UUID, operation: SyncClientOperation) async throws -> Visit?
     func saveItem(_ payload: SaveTogetherItemPayload, operation: SyncClientOperation) async throws
         -> RemoteTogetherItem?
     func setItemDone(_ payload: SetTogetherItemDonePayload, operation: SyncClientOperation) async throws
@@ -23,6 +24,13 @@ nonisolated struct LiveVisitsGateway: VisitsGateway {
         try await client.mutation(
             "visits:delete_visit",
             args: IDRequest(key: "p_visit_id", id: id, operation: operation)
+        )
+    }
+
+    func dismissMemoryPrompt(visitID: UUID, operation: SyncClientOperation) async throws -> Visit? {
+        try await client.mutation(
+            "visits:dismiss_visit_memory_prompt",
+            args: IDRequest(key: "p_visit_id", id: visitID, operation: operation)
         )
     }
 

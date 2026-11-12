@@ -167,7 +167,8 @@ struct MemoryPlaceTests {
                 visibleMemoryMediaIDs: [],
                 visibleMediaAssetIDs: photo.map { [$0] } ?? [],
                 media: [],
-                threadID: nil
+                threadID: nil,
+                visitID: nil
             )
         )
     }

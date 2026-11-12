@@ -321,6 +321,7 @@ extension MainTabView {
             stories: storiesViewModel,
             storyPeople: storyPeople,
             mail: mailViewModel,
+            memories: memoriesViewModel,
             onRefresh: {
                 await refreshDailyChallenge()
                 await actions.refreshHome()

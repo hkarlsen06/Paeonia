@@ -4,22 +4,27 @@ import Foundation
 nonisolated enum VisitsWrite: Equatable, Sendable {
     case saveVisit(SaveVisitPayload)
     case deleteVisit(UUID)
+    case dismissMemoryPrompt(UUID)
     case saveItem(SaveTogetherItemPayload)
     case setItemDone(SetTogetherItemDonePayload)
     case deleteItem(UUID)
 
     init?(_ operation: PendingSyncOperationSnapshot) {
-        guard let data = operation.requestData, let kind = operation.operationKind else { return nil }
-        let write: Self? = switch kind {
-        case .saveVisit: Self.decode(SaveVisitPayload.self, data).map(Self.saveVisit)
-        case .deleteVisit: Self.decode(VisitIDPayload.self, data).map { .deleteVisit($0.id) }
-        case .saveTogetherItem: Self.decode(SaveTogetherItemPayload.self, data).map(Self.saveItem)
-        case .setTogetherItemDone: Self.decode(SetTogetherItemDonePayload.self, data).map(Self.setItemDone)
-        case .deleteTogetherItem: Self.decode(VisitIDPayload.self, data).map { .deleteItem($0.id) }
+        guard let data = operation.requestData, let kind = operation.operationKind,
+              let write = Self.decode(kind, data) else { return nil }
+        self = write
+    }
+
+    private static func decode(_ kind: SyncPendingOperationKind, _ data: Data) -> Self? {
+        switch kind {
+        case .saveVisit: decode(SaveVisitPayload.self, data).map(Self.saveVisit)
+        case .deleteVisit: decode(VisitIDPayload.self, data).map { .deleteVisit($0.id) }
+        case .dismissVisitMemoryPrompt: decode(VisitIDPayload.self, data).map { .dismissMemoryPrompt($0.id) }
+        case .saveTogetherItem: decode(SaveTogetherItemPayload.self, data).map(Self.saveItem)
+        case .setTogetherItemDone: decode(SetTogetherItemDonePayload.self, data).map(Self.setItemDone)
+        case .deleteTogetherItem: decode(VisitIDPayload.self, data).map { .deleteItem($0.id) }
         default: nil
         }
-        guard let write else { return nil }
-        self = write
     }
 
     private static func decode<T: Decodable>(_ type: T.Type, _ data: Data) -> T? {
@@ -27,7 +32,8 @@ nonisolated enum VisitsWrite: Equatable, Sendable {
     }
 
     static let operationKinds: [SyncPendingOperationKind] = [
-        .saveVisit, .deleteVisit, .saveTogetherItem, .setTogetherItemDone, .deleteTogetherItem,
+        .saveVisit, .deleteVisit, .dismissVisitMemoryPrompt, .saveTogetherItem, .setTogetherItemDone,
+        .deleteTogetherItem,
     ]
 
     /// The list item this write adds when the server doesn't have it yet.
@@ -35,17 +41,18 @@ nonisolated enum VisitsWrite: Equatable, Sendable {
         switch self {
         case let .saveItem(payload): payload.id
         case let .setItemDone(payload): payload.id
-        case .saveVisit, .deleteVisit, .deleteItem: nil
+        case .saveVisit, .deleteVisit, .dismissMemoryPrompt, .deleteItem: nil
         }
     }
 
-    /// What the person loses when the server refuses this write for good. Nil for a delete.
+    /// What the person loses when the server refuses this write for good. Nil for a delete and
+    /// for hiding the photo card, which hold nothing the person made.
     var refusal: VisitsRefusal? {
         switch self {
         case let .saveVisit(payload): .visit(payload.visit)
         case let .saveItem(payload): .item(title: payload.title)
         case let .setItemDone(payload): .item(title: payload.title)
-        case .deleteVisit, .deleteItem: nil
+        case .deleteVisit, .dismissMemoryPrompt, .deleteItem: nil
         }
     }
 }
@@ -93,7 +100,7 @@ nonisolated struct SaveVisitPayload: Codable, Equatable, Sendable {
     }
 }
 
-/// `visits:delete_visit` and `visits:delete_together_item`.
+/// `visits:delete_visit`, `visits:dismiss_visit_memory_prompt` and `visits:delete_together_item`.
 nonisolated struct VisitIDPayload: Codable, Equatable, Sendable {
     let id: UUID
 }

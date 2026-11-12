@@ -210,9 +210,12 @@
       let memoriesViewModel = MemoriesViewModel(
         memoryService: DeveloperScenarioMemoryDataService(records: memoryRecords),
         operationProvider: operationProvider,
-        mediaUploader: nil,
+        mediaUploader: DeveloperLocalFlowMemoryUploader(),
         mediaImageCache: nil
       )
+      let visits = ProcessInfo.processInfo.arguments.contains("-paeonia-scenario-visit-ended")
+        ? DeveloperVisitsFixture.planned(from: -5, through: -2, id: DeveloperVisitsFixture.endedVisitID)
+        : CoupleVisits()
       let settingsViewModel = SettingsViewModel(
         preferences: DeveloperNotificationPreferences(),
         authorization: DeveloperScenarioPushAuthorization(denied: false),
@@ -253,7 +256,7 @@
         milestoneViewModel: milestoneViewModel,
         memoriesViewModel: memoriesViewModel,
         gamesViewModel: gameFlow?.games,
-        visitsViewModel: DeveloperVisitsFixture.model(CoupleVisits()),
+        visitsViewModel: DeveloperVisitsFixture.model(visits),
         settingsViewModel: settingsViewModel,
         avatarStylingModel: AvatarStylingModel(gateway: DeveloperAvatarDecorationGateway(store: store)),
         storiesViewModel: avatar?.viewModel,
@@ -299,6 +302,18 @@
           return true
         }
       )
+    }
+  }
+
+  nonisolated struct DeveloperLocalFlowMemoryUploader: MemoryMediaUploading {
+    func uploadMedia(
+      _: MemoryUploadMedia,
+      memoryMediaID: UUID,
+      coupleID _: UUID,
+      reserveOperation _: SyncClientOperation,
+      finalizeOperation _: SyncClientOperation
+    ) -> MemoryMediaUploadResult {
+      MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: UUID())
     }
   }
 

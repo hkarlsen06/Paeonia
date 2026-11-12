@@ -11,6 +11,9 @@ struct DeletedMediaEvictionTests {
     enum MemoryChange: CaseIterable {
         case memoryDeleted
         case photoRemoved
+        /// The phone drops its copy of a memory the server never kept under that id, such as one
+        /// that joined a partner's memory after the partner deleted it.
+        case copyRemoved
     }
 
     @Test(arguments: MemoryChange.allCases)
@@ -29,15 +32,20 @@ struct DeletedMediaEvictionTests {
         ], ownerUserID: owner, mergePolicy: .preserveLocalChanges)
 
         let after = Date(timeIntervalSince1970: 200)
-        let changed: MemoryRemoteRow = switch change {
+        switch change {
         case .memoryDeleted:
-            .fixture(ownerUserID: owner, memoryID: memory, coupleID: couple, title: "Harbour", revision: 2,
-                     deletedAt: after, memoryMediaIDs: [removed, shared], syncUpdatedAt: after)
+            try await repository.saveRemote([
+                .fixture(ownerUserID: owner, memoryID: memory, coupleID: couple, title: "Harbour", revision: 2,
+                         deletedAt: after, memoryMediaIDs: [removed, shared], syncUpdatedAt: after)
+            ], ownerUserID: owner, mergePolicy: .preserveLocalChanges)
         case .photoRemoved:
-            .fixture(ownerUserID: owner, memoryID: memory, coupleID: couple, title: "Harbour", revision: 2,
-                     memoryMediaIDs: [shared], syncUpdatedAt: after)
+            try await repository.saveRemote([
+                .fixture(ownerUserID: owner, memoryID: memory, coupleID: couple, title: "Harbour", revision: 2,
+                         memoryMediaIDs: [shared], syncUpdatedAt: after)
+            ], ownerUserID: owner, mergePolicy: .preserveLocalChanges)
+        case .copyRemoved:
+            try await repository.remove(ownerUserID: owner, memoryID: memory)
         }
-        try await repository.saveRemote([changed], ownerUserID: owner, mergePolicy: .preserveLocalChanges)
 
         #expect(await photos.isCached(removed) == false)
         #expect(await photos.isCached(shared), "the other memory still shows it")

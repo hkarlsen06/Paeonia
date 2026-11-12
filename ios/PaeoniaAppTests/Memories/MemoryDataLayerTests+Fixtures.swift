@@ -154,7 +154,8 @@ extension MemoryDataLayerTests {
                 visibleMemoryMediaIDs: snapshot.visibleMemoryMediaIDs,
                 visibleMediaAssetIDs: snapshot.visibleMediaAssetIDs,
                 media: snapshot.media,
-                threadID: snapshot.threadID
+                threadID: snapshot.threadID,
+                visitID: snapshot.visitID
             ),
             syncStatus: syncStatus,
             pendingOperationID: pendingOperationID,

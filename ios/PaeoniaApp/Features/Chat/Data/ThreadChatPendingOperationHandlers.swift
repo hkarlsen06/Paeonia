@@ -45,6 +45,9 @@ struct CreateChatThreadOperationHandler: PendingSyncOperationHandling {
             )
         } catch {
             guard isPermanentChatFailure(error) else { throw error }
+            if try await isWaitingForItsMemory(payload.subject, operation, context: context) {
+                return .retry(after: nil)
+            }
             await markChatMessageFailed(operation, cache: cache)
             try await failMessagesWaitingForThread(of: payload.subject, operation, context: context)
             return .terminalFailure("The chat is no longer available")
@@ -57,6 +60,19 @@ struct CreateChatThreadOperationHandler: PendingSyncOperationHandling {
 
     func gaveUp(on operation: PendingSyncOperationSnapshot, context _: SyncContext) async {
         await markChatMessageFailed(operation, cache: cache)
+    }
+
+    /// A comment on a memory this phone saved but has not sent yet. The server does not have the
+    /// memory, so the comment waits for it, and moves with it if it joins the partner's memory.
+    private func isWaitingForItsMemory(
+        _ subject: ThreadChatSubject,
+        _ operation: PendingSyncOperationSnapshot,
+        context: SyncContext
+    ) async throws -> Bool {
+        guard case let .memory(memoryID) = subject else { return false }
+        return try await context.pendingOperationStore
+            .inFlightOperations(ownerUserID: operation.ownerUserID, kind: .createMemory)
+            .contains { $0.requestData.flatMap(MemoryPendingOperationRefresh.memoryID(in:)) == memoryID }
     }
 
     /// Messages queued while this thread was being created wait for its id. The

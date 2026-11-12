@@ -1,13 +1,14 @@
 #if DEBUG
   import SwiftUI
 
-  /// The visit scenarios. `visit-none`, `visit-upcoming`, `visit-together` and
-  /// `visit-ended-yesterday` open the real paired tabs on the Us tab. `visit-streak-sheet` opens
+  /// The visit scenarios. `visit-none`, `visit-upcoming`, `visit-together`,
+  /// `visit-ended-yesterday` and the three `visit-ended` photo card scenarios open the real
+  /// paired tabs on the Us tab. `visit-streak-sheet` opens
   /// the streak sheet on a day together. The others open the visit screen or the editor on their own.
   nonisolated extension DeveloperScenario {
     static let visits: [DeveloperScenario] = [
-      visitNone, visitUpcoming, visitTogether, visitEndedYesterday, visitStreakSheet, visitDetail, visitEditor,
-      visitListFull, visitEditorFull, visitRefused,
+      visitNone, visitUpcoming, visitTogether, visitEndedYesterday, visitEnded, visitEndedPartnerAdded,
+      visitEndedOld, visitStreakSheet, visitDetail, visitEditor, visitListFull, visitEditorFull, visitRefused,
     ]
 
     static let visitNone = DeveloperScenario(
@@ -22,6 +23,17 @@
     ) { DeveloperPairedScenarioHost(scenario: $0) }
     static let visitEndedYesterday = DeveloperScenario(
       "visit-ended-yesterday", "Visit · ended yesterday", "The first day apart again, so the streak needs both",
+      .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
+    static let visitEnded = DeveloperScenario(
+      "visit-ended", "Visit · ended, no photos", "The Us tab asks for photos from the Bergen visit", .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
+    static let visitEndedPartnerAdded = DeveloperScenario(
+      "visit-ended-partner-added", "Visit · partner added photos",
+      "The partner saved photos from the Bergen visit and the Us tab asks for yours", .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
+    static let visitEndedOld = DeveloperScenario(
+      "visit-ended-old", "Visit · ended 15 days ago", "The photo question is gone two weeks after a visit",
       .relationship
     ) { DeveloperPairedScenarioHost(scenario: $0) }
     static let visitStreakSheet = DeveloperScenario(
@@ -59,8 +71,48 @@
       case .visitUpcoming: model(planned())
       case .visitTogether: model(planned(from: -1, through: 2))
       case .visitEndedYesterday: model(planned(from: -4, through: -1))
+      case .visitEnded, .visitEndedPartnerAdded: model(planned(from: -5, through: -2, id: endedVisitID))
+      case .visitEndedOld: model(planned(from: -19, through: -15))
       default: model(CoupleVisits())
       }
+    }
+
+    /// The Bergen visit that ended in `visit-ended` and `visit-ended-partner-added`.
+    nonisolated static let endedVisitID = UUID(uuidString: "71517000-0000-4000-8000-000000000001") ?? UUID()
+
+    /// The memory the partner made of the ended Bergen visit, with two of their photos.
+    nonisolated static func partnerVisitMemory(now: Date = Date()) -> MemoryRecord {
+      let partner = DeveloperScenarioFixture.partnerUserID
+      let photos = (1...2).map { index in
+        MemoryMediaSnapshot(
+          memoryMediaID: UUID(), mediaAssetID: UUID(), ownerUserID: partner, sortOrder: index, updatedAt: now
+        )
+      }
+      return MemoryRecord(
+        snapshot: MemorySnapshot(
+          ownerUserID: DeveloperScenarioFixture.currentUserID,
+          memoryID: UUID(),
+          coupleID: DeveloperScenarioFixture.coupleID,
+          title: "Bergen in the rain",
+          memoryDate: PairingStartDate(date: now.addingTimeInterval(-5 * 86_400), calendar: .current).rawValue,
+          place: nil,
+          createdByUserID: partner,
+          lastEditedByUserID: partner,
+          revision: 1,
+          moderationStatus: .visible,
+          deletedAt: nil,
+          createdAt: now,
+          updatedAt: now,
+          syncUpdatedAt: now,
+          ownNote: nil,
+          partnerNote: nil,
+          visibleMemoryMediaIDs: photos.map(\.memoryMediaID),
+          visibleMediaAssetIDs: photos.map(\.mediaAssetID),
+          media: photos,
+          threadID: nil,
+          visitID: endedVisitID
+        )
+      )
     }
 
     static func model(_ visits: CoupleVisits, refusals: [VisitsRefusal] = []) -> VisitsViewModel {
@@ -74,13 +126,14 @@
     /// A visit in Bergen, by default 12 to 16 days from today, and three things to do, the second
     /// one ticked.
     static func planned(
-      from startOffset: Int = 12, through endOffset: Int = 16, now: Date = Date(), calendar: Calendar = .current
+      from startOffset: Int = 12, through endOffset: Int = 16, id: UUID = UUID(), now: Date = Date(),
+      calendar: Calendar = .current
     ) -> CoupleVisits {
       let bergen = MemoryPlace(
         name: "Bryggen", latitude: 60.397, longitude: 5.324, city: "Bergen", countryCode: "NO"
       )
       return CoupleVisits(
-        visits: [visit(from: startOffset, to: endOffset, place: bergen, now: now, calendar: calendar)],
+        visits: [visit(from: startOffset, to: endOffset, place: bergen, id: id, now: now, calendar: calendar)],
         items: [
           TogetherListItem(id: UUID(), title: "Ice skating at Frogner", isDone: false),
           TogetherListItem(id: UUID(), title: "Cook ramen together", isDone: true),
@@ -111,14 +164,14 @@
     }
 
     private static func visit(
-      from start: Int, to end: Int, place: MemoryPlace?, now: Date, calendar: Calendar
+      from start: Int, to end: Int, place: MemoryPlace?, id: UUID = UUID(), now: Date, calendar: Calendar
     ) -> Visit {
       let today = calendar.startOfDay(for: now)
       func day(_ offset: Int) -> String {
         PairingStartDate(date: calendar.date(byAdding: .day, value: offset, to: today) ?? today, calendar: calendar)
           .rawValue
       }
-      return Visit(id: UUID(), startDate: day(start), endDate: day(end), place: place)
+      return Visit(id: id, startDate: day(start), endDate: day(end), place: place)
     }
   }
 

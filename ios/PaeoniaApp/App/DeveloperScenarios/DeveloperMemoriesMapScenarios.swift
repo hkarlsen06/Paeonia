@@ -234,7 +234,8 @@
           visibleMemoryMediaIDs: [media.memoryMediaID],
           visibleMediaAssetIDs: [media.mediaAssetID],
           media: [media],
-          threadID: nil
+          threadID: nil,
+          visitID: nil
         )
       )
     }

@@ -178,6 +178,34 @@ struct ThreadChatOperationFailureTests {
         )
     }
 
+    /// A comment on a memory this phone saved and has not sent yet. The server does not have the
+    /// memory, so it refuses the comment, which waits for the memory instead of failing.
+    @Test func aCommentOnAMemoryNotSentYetWaitsForIt() async throws {
+        let fixture = ChatTestFixture()
+        let memoryID = UUID()
+        try await fixture.pendingStore.enqueue(PendingSyncOperationRequest(
+            ownerUserID: fixture.ownerUserID, operation: fixture.operationProvider.makeOperation(),
+            operationKind: .createMemory, idempotencyScope: "memory:\(memoryID.uuidString.lowercased())",
+            requestData: try JSONEncoder().encode(["memoryID": memoryID])
+        ))
+        let comment = fixture.operationProvider.makeOperation()
+        let data = try JSONEncoder().encode(
+            CreateChatThreadPayload(subject: .memory(memoryID), coupleID: fixture.question.coupleID, body: "Miss you")
+        )
+        await fixture.gateway.setSendError(
+            PaeoniaConvexError.server(code: "42501", message: "active entitled memory access is required")
+        )
+
+        let result = try await fixture.createHandler().send(
+            chatPendingSnapshot(
+                ownerUserID: fixture.ownerUserID, operation: comment, kind: .createChatThreadWithMessage, payload: data
+            ),
+            context: chatSyncContext(ownerUserID: fixture.ownerUserID, pendingStore: fixture.pendingStore)
+        )
+
+        #expect(result == .retry(after: nil))
+    }
+
     /// A message queued behind a refused thread used to retry forever.
     @Test func aRefusedThreadFailsTheMessagesWaitingForIt() async throws {
         let fixture = ChatTestFixture()

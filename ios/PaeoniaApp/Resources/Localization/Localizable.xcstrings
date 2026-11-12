@@ -22617,6 +22617,96 @@
         }
       }
     },
+    "home.visitMemory.addYours.detail" : {
+      "comment" : "Second line of the Us tab card after the partner added photos from a visit. %@ is the visit's dates, such as Fri 20 – Mon 23 Nov",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add yours too · %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til dine også · %@"
+          }
+        }
+      }
+    },
+    "home.visitMemory.addYours.title" : {
+      "comment" : "Us tab card title after a visit when a memory of it exists but holds none of the person's photos",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add your photos from your visit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til bildene dine fra besøket"
+          }
+        }
+      }
+    },
+    "home.visitMemory.hide" : {
+      "comment" : "Accessibility label of the close button that hides the card asking for photos from a visit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't ask for photos from this visit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke spør om bilder fra dette besøket"
+          }
+        }
+      }
+    },
+    "home.visitMemory.partnerAdded.title" : {
+      "comment" : "Us tab card title after a visit when the partner already added photos. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ added photos from your visit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ la til bilder fra besøket"
+          }
+        }
+      }
+    },
+    "home.visitMemory.start.title" : {
+      "comment" : "Us tab card title the day after a visit ends, asking the person to save photos from it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save photos from your visit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre bilder fra besøket"
+          }
+        }
+      }
+    },
     "home.widget.card.hint" : {
       "comment" : "Accessibility hint for the tappable widget preview on the home screen",
       "extractionState" : "manual",
@@ -26349,6 +26439,24 @@
         }
       }
     },
+    "memories.detail.visit" : {
+      "comment" : "Line on a memory's screen when the memory was made for a visit. %@ is the visit's dates, such as Fri 20 – Mon 23 Nov",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your visit, %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra besøket, %@"
+          }
+        }
+      }
+    },
     "memories.detail.yourNote" : {
       "comment" : "Heading above the current user's own note on a memory.",
       "extractionState" : "manual",
@@ -26547,6 +26655,60 @@
         }
       }
     },
+    "memories.editor.joinedMessage" : {
+      "comment" : "On the memory edit form, after the visit memory being edited was added to the memory the partner already saved for the same visit. The form now shows that shared memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner also saved a memory from this visit, so yours is now part of it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din lagret også et minne fra dette besøket, så ditt er nå en del av det."
+          }
+        }
+      }
+    },
+    "memories.editor.joinedOwnMessage" : {
+      "comment" : "On the memory edit form, after the visit memory being edited was added to a memory the same person saved for the same visit on their other phone. The form now shows that memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You also saved a memory from this visit on another phone, so this one is now part of it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du lagret også et minne fra dette besøket på en annen telefon, så dette er nå en del av det."
+          }
+        }
+      }
+    },
+    "memories.editor.joinedTitleMessage" : {
+      "comment" : "Follows memories.editor.joinedMessage or memories.editor.joinedOwnMessage when the person's own title differed from the shared memory's title, so the form moved it to the first line of their note.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your title is at the top of your note."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tittelen din står øverst i notatet ditt."
+          }
+        }
+      }
+    },
     "memories.editor.newTitle" : {
       "comment" : "Navigation title for the new-memory form.",
       "extractionState" : "manual",
@@ -26597,6 +26759,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du kan endre notatet ditt, men ikke fjerne det."
+          }
+        }
+      }
+    },
+    "memories.editor.noteTooLong" : {
+      "comment" : "Under the note field of the memory form when the note is longer than can be saved, for example after the form moved the person's title to the top of their note when their memory joined the partner's. Save stays off until it is shorter.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your note is too long to save. Shorten it to 4,000 characters."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet ditt er for langt til å lagres. Kort det ned til 4 000 tegn."
           }
         }
       }
@@ -27303,6 +27483,24 @@
         }
       }
     },
+    "memories.notice.ownPartRemoved.message" : {
+      "comment" : "Banner after the person confirmed deleting their visit memory, which had just become part of the memory their partner saved for the same visit. Only the person's own photos and note were removed; the partner's memory stays.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your memory had become part of your partner's memory from this visit, so only your photos and note were removed."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minnet ditt hadde blitt en del av partnerens minne fra dette besøket, så bare bildene og notatet ditt ble fjernet."
+          }
+        }
+      }
+    },
     "memories.notice.photoFailed.message" : {
       "comment" : "Error banner body shown when photo upload failed, suggesting a connection check.",
       "extractionState" : "manual",
@@ -27407,6 +27605,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi klarte ikke å lagre bildet"
+          }
+        }
+      }
+    },
+    "memories.notice.placeNotAdded.message" : {
+      "comment" : "Banner after the person picked a place on the map for a visit memory that had just become part of the memory their partner saved for the same visit. The partner's memory keeps its own place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This memory is now part of your partner's memory from the same visit, so the place wasn't added."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette minnet er nå en del av partnerens minne fra samme besøk, så stedet ble ikke lagt til."
           }
         }
       }

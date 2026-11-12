@@ -104,7 +104,8 @@
           visibleMemoryMediaIDs: [],
           visibleMediaAssetIDs: [],
           media: [],
-          threadID: nil
+          threadID: nil,
+          visitID: nil
         )
       )
     }
@@ -337,13 +338,13 @@
     // swiftlint:disable:next function_parameter_count
     func createMemory(
       ownerUserID: UUID, coupleID: UUID, memoryID: UUID, title: String, memoryDate: String,
-      noteBody: String?, optimisticMedia: [MemoryMediaSnapshot], place: MemoryPlace?,
+      noteBody: String?, optimisticMedia: [MemoryMediaSnapshot], place: MemoryPlace?, visitID: UUID?,
       operation: SyncClientOperation
     ) async throws -> MemoryRecord {
       try await service.createMemory(
         ownerUserID: ownerUserID, coupleID: coupleID, memoryID: memoryID, title: title,
         memoryDate: memoryDate, noteBody: noteBody, optimisticMedia: optimisticMedia,
-        place: place, operation: operation)
+        place: place, visitID: visitID, operation: operation)
     }
     // swiftlint:disable:next function_parameter_count
     func updateMemory(
@@ -390,6 +391,9 @@
       try await service.removeMemoryMedia(
         ownerUserID: ownerUserID, memoryID: memoryID, memoryMediaID: memoryMediaID,
         operation: operation)
+    }
+    func deleteOwnNote(ownerUserID: UUID, memoryID: UUID, operation: SyncClientOperation) async throws -> MemoryRecord {
+      try await service.deleteOwnNote(ownerUserID: ownerUserID, memoryID: memoryID, operation: operation)
     }
   }
 

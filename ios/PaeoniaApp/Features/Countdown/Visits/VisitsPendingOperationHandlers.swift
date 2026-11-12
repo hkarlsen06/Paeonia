@@ -2,7 +2,7 @@ import Foundation
 
 /// Sends one queued visit or list write, then writes what the server stored into the cache,
 /// so the screen doesn't flash the old state between the send and the live feed. One handler
-/// type serves the five write kinds. A write the server refuses for good is kept in the cache
+/// type serves every visit write kind. A write the server refuses for good is kept in the cache
 /// until a screen tells the person. A refused add or tick takes the item's other queued adds and
 /// ticks with it, so the item doesn't come back after the person heard it wasn't added.
 struct VisitsPendingOperationHandler: PendingSyncOperationHandling {
@@ -22,6 +22,9 @@ struct VisitsPendingOperationHandler: PendingSyncOperationHandling {
         guard let write = VisitsWrite(operation) else {
             return .terminalFailure("Missing visit payload")
         }
+        if let save = try await queuedSave(hiddenBy: write, operation, context: context) {
+            return .retry(after: save.nextRetryAt ?? Date().addingTimeInterval(5))
+        }
         do {
             let confirmed = try await send(write, operation: operation.operation)
             await cache.confirm(confirmed, ownerUserID: operation.ownerUserID)
@@ -36,6 +39,19 @@ struct VisitsPendingOperationHandler: PendingSyncOperationHandling {
             }
             return .terminalFailure(error.description)
         }
+    }
+
+    private func queuedSave(
+        hiddenBy write: VisitsWrite,
+        _ operation: PendingSyncOperationSnapshot,
+        context: SyncContext
+    ) async throws -> PendingSyncOperationSnapshot? {
+        guard case let .dismissMemoryPrompt(visitID) = write else { return nil }
+        return try await context.pendingOperationStore
+            .inFlightOperations(ownerUserID: operation.ownerUserID, kind: .saveVisit)
+            .first { save in
+                if case let .saveVisit(payload) = VisitsWrite(save) { payload.visit.id == visitID } else { false }
+            }
     }
 
     private func dropQueuedWrites(
@@ -66,6 +82,9 @@ struct VisitsPendingOperationHandler: PendingSyncOperationHandling {
         case let .deleteVisit(id):
             try await gateway.deleteVisit(id: id, operation: operation)
             return .visitGone(id)
+        case let .dismissMemoryPrompt(id):
+            let stored = try await gateway.dismissMemoryPrompt(visitID: id, operation: operation)
+            return stored.map(VisitsConfirmation.visit) ?? .visitGone(id)
         case let .saveItem(payload):
             let stored = try await gateway.saveItem(payload, operation: operation)
             return stored.map { .item($0.item) } ?? .itemGone(payload.id)

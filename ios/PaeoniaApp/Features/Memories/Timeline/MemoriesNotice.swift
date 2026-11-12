@@ -14,6 +14,12 @@ enum MemoriesNotice: Equatable {
     case memoryRemoved
     /// The title or note is longer than the server accepts.
     case textTooLong
+    /// The person deleted their memory after it joined the partner's memory for the visit, so
+    /// only their photos and note came off.
+    case ownPartRemovedAfterJoin
+    /// A place picked for a memory that joined the partner's memory meanwhile. The partner's
+    /// memory keeps its own place.
+    case placeNotAddedAfterJoin
     case photoSaved
     case photoSaveDenied
     case photoSaveFailed
@@ -22,6 +28,8 @@ enum MemoriesNotice: Equatable {
         switch self {
         case .photoSaved:
             .info(message: String(localized: .memoriesNoticePhotoSavedMessage), systemImage: "square.and.arrow.down")
+        case .ownPartRemovedAfterJoin, .placeNotAddedAfterJoin:
+            .info(message: String(localized: message), systemImage: "info.circle")
         default:
             .error(title: String(localized: title), message: String(localized: message), timing: timing)
         }
@@ -52,7 +60,7 @@ enum MemoriesNotice: Equatable {
             .memoriesNoticeTooLongTitle
         case .photoSaveDenied:
             .memoriesNoticePhotoSaveDeniedTitle
-        case .photoSaveFailed, .photoSaved:
+        case .photoSaveFailed, .photoSaved, .ownPartRemovedAfterJoin, .placeNotAddedAfterJoin:
             .memoriesNoticePhotoSaveFailedTitle
         }
     }
@@ -69,6 +77,10 @@ enum MemoriesNotice: Equatable {
             .memoriesNoticeTooLongMessage
         case .photoSaveDenied:
             .memoriesNoticePhotoSaveDeniedMessage
+        case .ownPartRemovedAfterJoin:
+            .memoriesNoticeOwnPartRemovedMessage
+        case .placeNotAddedAfterJoin:
+            .memoriesNoticePlaceNotAddedMessage
         case .createFailed, .editFailed, .loadFailed, .deleteFailed, .noteFailed, .photoSaveFailed, .photoSaved:
             .memoriesNoticeRetryMessage
         }

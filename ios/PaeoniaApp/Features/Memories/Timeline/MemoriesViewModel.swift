@@ -32,6 +32,7 @@ final class MemoriesViewModel {
     private var loadGeneration = 0
 
     private(set) var timeline: [MemoryTimelineDay] = []
+    private var joinedMemoryIDs: [UUID: UUID] = [:]
     /// Whether the first cached load has settled, so the empty state never flashes
     /// before we've read what's on the device.
     private(set) var hasLoadedOnce = false
@@ -122,6 +123,7 @@ final class MemoriesViewModel {
         self.currentUserID = currentUserID
         if currentUserID == nil { pendingImportedPhotos.removeAll() }
         timeline = []
+        joinedMemoryIDs = [:]
         hasLoadedOnce = false
         loadFailure = nil
         photoUploads.reset()
@@ -158,7 +160,11 @@ final class MemoriesViewModel {
                 ownerUserID: currentUserID,
                 includeHidden: false
             )
+            let joins = await joinedVisitMemories(
+                leaving: timeline.flatMap(\.memories), for: records, ownerUserID: currentUserID
+            )
             guard generation == loadGeneration, currentUserID == self.currentUserID else { return }
+            joinedMemoryIDs.merge(joins) { $1 }
             timeline = MemoryTimeline.grouped(records)
             hasLoadedOnce = true
             loadFailure = nil
@@ -201,7 +207,7 @@ final class MemoriesViewModel {
                 return match
             }
         }
-        return nil
+        return joinedMemoryIDs[memoryID].flatMap(record(for:))
     }
 
     // MARK: - Changes
@@ -217,7 +223,8 @@ final class MemoriesViewModel {
         note: String,
         photos: [Data],
         photoDescriptions: [String] = [],
-        place: MemoryPlace? = nil
+        place: MemoryPlace? = nil,
+        visitID: UUID? = nil
     ) async -> Bool {
         guard !isSaving else { return false }
         guard let currentUserID, let coupleID else {
@@ -250,6 +257,7 @@ final class MemoriesViewModel {
                 noteBody: trimmedNote.isEmpty ? nil : trimmedNote,
                 optimisticMedia: media,
                 place: place,
+                visitID: visitID,
                 operation: self.operationProvider.makeOperation()
             )
         }
@@ -291,7 +299,7 @@ final class MemoriesViewModel {
             let steps = [saveDetails, savePlace, saveNote, removePhotos, addPhotos]
             for step in steps {
                 guard let current = try await storedVisibleRecord(edit.base.snapshot.memoryID) else {
-                    notice = .memoryRemoved
+                    await noticeRemovalUnlessJoined(edit.base.snapshot.memoryID)
                     return await failedEditResult(edit, changed: changed)
                 }
                 let result = await step(edit, current, currentUserID)
@@ -316,33 +324,6 @@ final class MemoriesViewModel {
         guard changed || queued != nil else { return .failed }
         let savedRecord = try? await storedVisibleRecord(edit.base.snapshot.memoryID)
         return .partial(savedRecord: queued ?? savedRecord)
-    }
-
-    /// Deletes (hides) a memory for both partners. Hidden immediately on the device and
-    /// removed on the server by the same revision-checked path. A memory that is
-    /// already gone (the partner deleted it first) counts as deleted.
-    func deleteMemory(_ record: MemoryRecord) async {
-        guard let currentUserID else { return }
-
-        do {
-            _ = try await memoryService.hideMemory(
-                ownerUserID: currentUserID,
-                memoryID: record.snapshot.memoryID,
-                expectedRevision: record.snapshot.revision,
-                operation: operationProvider.makeOperation()
-            )
-        } catch MemoryDataServiceError.missingMemory {
-            await load()
-            return
-        } catch {
-            logFailure("Deleting a memory failed", error)
-            notice = .deleteFailed
-            return
-        }
-
-        PaeoniaHaptics.destructiveActionConfirmed()
-        await load()
-        syncInBackground()
     }
 
     /// Adds a memory photo to the person's photo library, asking for add-only access the
@@ -370,17 +351,25 @@ final class MemoriesViewModel {
 extension MemoriesViewModel {
     // MARK: - Helpers
 
-    /// Runs one local write. On failure it logs, shows `notice`, and returns false.
+    /// Runs one local write. On failure it logs, shows `notice`, and returns false. A write to
+    /// `memoryID` that finds it gone says the memory was deleted only when it did not join the
+    /// partner's memory for a visit.
     func perform(
         _ context: String,
         notice failureNotice: MemoriesNotice,
+        memoryID: UUID? = nil,
+        joinedNotice: MemoriesNotice? = nil,
         _ write: () async throws -> Void
     ) async -> Bool {
         do {
             try await write()
             return true
         } catch {
-            report(context, error, notice: failureNotice)
+            if let memoryID, error as? MemoryDataServiceError == .missingMemory {
+                await noticeRemovalUnlessJoined(memoryID, joinedNotice: joinedNotice)
+            } else {
+                report(context, error, notice: failureNotice)
+            }
             return false
         }
     }

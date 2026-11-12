@@ -63,7 +63,8 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
             date: stored.date,
             note: stored.note,
             photos: photos,
-            place: stored.place
+            place: stored.place,
+            visitID: stored.visitID
         )
         return draft.isEmpty ? nil : draft
     }
@@ -82,7 +83,8 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
             note: draft.note,
             photoCount: draft.photos.count,
             photoDescriptions: draft.photos.map(\.accessibilityText),
-            place: draft.place
+            place: draft.place,
+            visitID: draft.visitID
         )
         let data = try encoder.encode(stored)
         if writtenPhotos[userID] != photoIDs {
@@ -151,4 +153,5 @@ private struct StoredDraft: Codable {
     var photoCount: Int
     var photoDescriptions: [String]
     var place: MemoryPlace?
+    var visitID: UUID?
 }

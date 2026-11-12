@@ -49,6 +49,8 @@ struct PairedHomeView: View {
     var storyPeople: StoryPeople?
     /// The couple's letters. Nil hides the Mail card.
     var mail: MailViewModel?
+    /// The couple's memories, for the card that asks for photos after a visit. Nil hides it.
+    var memories: MemoriesViewModel?
     var onRefresh: () async -> Void = {}
     /// The access notice this person closed (`AccessNotice.id`). A new notice shows again.
     @AppStorage("home.accessNotice.dismissed") var dismissedAccessNoticeID = ""
@@ -63,6 +65,7 @@ struct PairedHomeView: View {
     @State var isWideLayout = false
     /// A sheet from one of the cards is up (`HomeIsCoveredKey`).
     @State var isCovered = false
+    @State var visitMemoryForm: VisitMemoryForm?
     /// `mapTiles.showsMapHeader`, changed inside an animation so the layouts cross-fade.
     @State private var showsMapHeader: Bool
     /// Both layouts are on screen while one fades into the other.
@@ -113,6 +116,7 @@ struct PairedHomeView: View {
         stories: StoriesViewModel? = nil,
         storyPeople: StoryPeople? = nil,
         mail: MailViewModel? = nil,
+        memories: MemoriesViewModel? = nil,
         onRefresh: @escaping () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
@@ -153,6 +157,7 @@ struct PairedHomeView: View {
         self.stories = stories
         self.storyPeople = storyPeople
         self.mail = mail
+        self.memories = memories
         self.onRefresh = onRefresh
     }
 
@@ -160,6 +165,7 @@ struct PairedHomeView: View {
         ScrollViewReader { proxy in
             homeContent
                 .environment(\.homeScrollProxy, proxy)
+                .modifier(VisitMemoryFormSheet(form: $visitMemoryForm, memories: memories, viewerID: currentUserID))
         }
         .onPreferenceChange(HomeIsCoveredKey.self) { covered in
             isCovered = covered
@@ -301,6 +307,7 @@ extension PairedHomeView {
                 waitingMailCard
                 firstStepsCard
                 visitCard
+                waitingVisitMemoryCard
                 milestoneAndWidget
                     .matchedGeometryEffect(id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: usesMapHeader)
             }
@@ -310,6 +317,7 @@ extension PairedHomeView {
             .padding(.bottom, PaeoniaSpacing.space16)
         } footer: {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                visitMemoryAsk
                 writeMailRow
                 lookBackCard
             }
@@ -349,12 +357,14 @@ extension PairedHomeView {
                 waitingMailCard
                 firstStepsCard
                 visitCard
+                waitingVisitMemoryCard
                 milestoneAndWidget
                     .matchedGeometryEffect(
                         id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: !usesMapHeader
                     )
                     .layoutValue(key: HomeWideRole.self, value: .tiles)
                 mapCard
+                visitMemoryAsk
                 writeMailRow
                 lookBackCard
             }
@@ -384,7 +394,8 @@ extension PairedHomeView {
             milestoneIsLoading: milestoneIsLoading,
             relationshipStartedOn: relationshipStartedOn,
             visitCard: visits?.homeCard(at: Date(), streak: dailyChallengeStreak),
-            waitingLetters: mail?.waiting.count ?? 0
+            waitingLetters: mail?.waiting.count ?? 0,
+            visitMemoryCard: visitMemoryPrompts
         )
     }
 
@@ -417,6 +428,7 @@ private struct HomeCardChangeAnimations: ViewModifier {
     /// The visit card shows nothing until the cache is read, then a short question or a tall countdown.
     let visitCard: HomeVisitCardState?
     let waitingLetters: Int
+    let visitMemoryCard: [VisitMemoryPrompt]
 
     func body(content: Content) -> some View {
         content
@@ -431,6 +443,7 @@ private struct HomeCardChangeAnimations: ViewModifier {
             .animation(animation, value: relationshipStartedOn)
             .animation(animation, value: visitCard)
             .animation(animation, value: waitingLetters)
+            .animation(animation, value: visitMemoryCard)
     }
 }
 

@@ -129,7 +129,9 @@ extension MemoriesViewModel {
             photoUploads.reset()
             return .unchanged
         }
-        let attached = await perform("Attaching photos to a memory failed", notice: .photoUploadFailed) {
+        let attached = await perform(
+            "Attaching photos to a memory failed", notice: .photoUploadFailed, memoryID: latest.snapshot.memoryID
+        ) {
             _ = try await self.memoryService.attachMemoryMedia(
                 ownerUserID: userID,
                 memoryID: latest.snapshot.memoryID,

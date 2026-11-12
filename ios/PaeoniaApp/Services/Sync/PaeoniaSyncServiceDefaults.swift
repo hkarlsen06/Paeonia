@@ -145,6 +145,10 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 gateway: memoryGateway,
                 memoryStore: memoryStore
             ),
+            DeleteMemoryNotePendingOperationHandler(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
+            ),
             AttachMemoryMediaPendingOperationHandler(
                 gateway: memoryGateway,
                 memoryStore: memoryStore

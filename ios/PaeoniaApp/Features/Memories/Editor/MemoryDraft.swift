@@ -36,6 +36,7 @@ struct MemoryDraft: Equatable {
     var note: String = ""
     var photos: [MemoryDraftPhoto] = []
     var place: MemoryPlace?
+    var visitID: UUID?
 
     var isEmpty: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -67,6 +68,21 @@ extension MemoryDraft {
             note = saved.snapshot.ownNote?.visibleBody ?? ""
         }
         if place == base.snapshot.place { place = saved.snapshot.place }
+    }
+
+    func visitLink(forCardOf cardVisitID: UUID?) -> UUID? {
+        cardVisitID != nil && visitID == cardVisitID ? cardVisitID : nil
+    }
+
+    /// Moves the form onto the memory this one joined. When the form's title differs from the
+    /// joined memory's, it goes on the first line of the note. Returns whether it did.
+    mutating func follow(_ joined: MemoryRecord) -> Bool {
+        let movesTitle = VisitMemoryJoin.note(title: title, body: nil, joinedTitle: joined.snapshot.title) != nil
+        note = VisitMemoryJoin.note(title: title, body: note, joinedTitle: joined.snapshot.title) ?? ""
+        title = joined.snapshot.title ?? ""
+        date = MemoryTimeline.pickerDate(forLocalDate: joined.snapshot.memoryDate) ?? date
+        place = joined.snapshot.place
+        return movesTitle
     }
 
     /// The durable part of an edit. New photo picks remain unsaved until attached.

@@ -9,6 +9,9 @@ nonisolated struct CreateMemoryOperationPayload: Codable, Equatable, Sendable {
     let mediaAssetIDs: [UUID]
     let optimisticMedia: [MemoryMediaSnapshot]
     let place: MemoryPlace?
+    /// The visit the memory is for. The server may add it to the memory the partner already
+    /// made for that visit, and then answers with that memory's id.
+    var visitID: UUID?
 }
 
 nonisolated struct MemoryPhotoDescription: Codable, Equatable, Sendable {
@@ -49,6 +52,11 @@ nonisolated struct UpsertMemoryNoteOperationPayload: Codable, Equatable, Sendabl
     let memoryID: UUID
     let expectedRevision: Int?
     let body: String
+}
+
+nonisolated struct DeleteMemoryNoteOperationPayload: Codable, Equatable, Sendable {
+    let memoryID: UUID
+    let expectedRevision: Int
 }
 
 nonisolated struct AttachMemoryMediaOperationPayload: Codable, Equatable, Sendable {

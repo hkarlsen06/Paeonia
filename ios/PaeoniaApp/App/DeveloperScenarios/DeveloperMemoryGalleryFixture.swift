@@ -31,7 +31,7 @@ enum DeveloperMemoryGalleryFixture {
             deletedAt: original.deletedAt, createdAt: original.createdAt, updatedAt: original.updatedAt,
             syncUpdatedAt: original.syncUpdatedAt, ownNote: original.ownNote, partnerNote: original.partnerNote,
             visibleMemoryMediaIDs: media.map(\.memoryMediaID), visibleMediaAssetIDs: media.map(\.mediaAssetID),
-            media: media, threadID: original.threadID
+            media: media, threadID: original.threadID, visitID: original.visitID
         )
         return records
     }

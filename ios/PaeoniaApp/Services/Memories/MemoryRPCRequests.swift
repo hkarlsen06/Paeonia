@@ -19,6 +19,7 @@ nonisolated struct CreateMemoryRequest: Encodable {
     let noteBody: String?
     let mediaAssetIDs: [UUID]
     let place: MemoryPlace?
+    let visitID: UUID?
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
@@ -31,6 +32,7 @@ nonisolated struct CreateMemoryRequest: Encodable {
         noteBody = payload.noteBody
         mediaAssetIDs = payload.mediaAssetIDs
         place = payload.place
+        visitID = payload.visitID
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -44,6 +46,7 @@ nonisolated struct CreateMemoryRequest: Encodable {
         case noteBody = "p_note_body"
         case mediaAssetIDs = "p_media_asset_ids"
         case place = "p_place"
+        case visitID = "p_visit_id"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"
@@ -58,6 +61,7 @@ nonisolated struct CreateMemoryRequest: Encodable {
         try container.encode(noteBody, forKey: .noteBody)
         try container.encode(mediaAssetIDs, forKey: .mediaAssetIDs)
         try container.encode(place, forKey: .place)
+        try container.encodeIfPresent(visitID, forKey: .visitID)
         try container.encode(clientOperationID, forKey: .clientOperationID)
         try container.encode(clientID, forKey: .clientID)
         try container.encode(clientSequence, forKey: .clientSequence)
@@ -163,6 +167,23 @@ nonisolated struct HideMemoryRequest: Encodable {
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"
         case localCreatedAt = "p_local_created_at"
+    }
+}
+
+nonisolated struct DeleteMemoryNoteRequest: Encodable {
+    let payload: DeleteMemoryNoteOperationPayload
+    let operation: ClientOperationFields
+
+    enum CodingKeys: String, CodingKey {
+        case memoryID = "p_memory_id"
+        case expectedRevision = "p_expected_revision"
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(payload.memoryID, forKey: .memoryID)
+        try container.encode(payload.expectedRevision, forKey: .expectedRevision)
+        try operation.encode(to: encoder)
     }
 }
 

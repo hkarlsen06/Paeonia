@@ -175,6 +175,14 @@ final class VisitsViewModel {
         await enqueue(.deleteVisit(id), kind: .deleteVisit, payload: VisitIDPayload(id: id))
     }
 
+    /// Hides the Us tab card that asks this person for the visit's photos, on all their phones.
+    @discardableResult
+    func dismissMemoryPrompt(visitID: UUID) async -> Bool {
+        await enqueue(
+            .dismissMemoryPrompt(visitID), kind: .dismissVisitMemoryPrompt, payload: VisitIDPayload(id: visitID)
+        )
+    }
+
     /// Adds `itemDraft` to the list and empties the field. A full list keeps the text in it.
     @discardableResult
     func addItem(newID: UUID = UUID()) async -> Bool {

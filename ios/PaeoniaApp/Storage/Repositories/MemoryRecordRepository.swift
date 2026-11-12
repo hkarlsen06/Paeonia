@@ -16,6 +16,8 @@ protocol MemoryRecordPersisting: Actor {
         ownerUserID: UUID,
         memoryID: UUID
     ) async throws -> MemoryRecord?
+    /// Deletes this phone's copy of a memory the server never kept under that id.
+    func remove(ownerUserID: UUID, memoryID: UUID) async throws
 }
 
 nonisolated enum MemoryRemoteMergePolicy: Equatable, Sendable {
@@ -180,6 +182,22 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         }
     }
 
+    func remove(ownerUserID: UUID, memoryID: UUID) async throws {
+        try await evictPhotos(ownerUserID: ownerUserID) { context in
+            guard let localRecord = try self.fetch(ownerUserID: ownerUserID, memoryID: memoryID, in: context) else {
+                return []
+            }
+            let shown = try self.record(from: localRecord).snapshot.shownMediaAssetIDs
+            context.delete(localRecord)
+            return shown
+        }
+        let context = ModelContext(container)
+        guard let localRecord = try fetch(ownerUserID: ownerUserID, memoryID: memoryID, in: context) else { return }
+        context.delete(localRecord)
+        try context.save()
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
+    }
+
     private func localRecord(from record: MemoryRecord) throws -> LocalMemoryRecord {
         try LocalMemoryRecord(
             record: record,
@@ -214,7 +232,8 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
                 visibleMemoryMediaIDs: try decode([UUID].self, from: local.visibleMemoryMediaIDsData),
                 visibleMediaAssetIDs: try decode([UUID].self, from: local.visibleMediaAssetIDsData),
                 media: try decode([MemoryMediaSnapshot].self, from: local.mediaData),
-                threadID: local.threadID
+                threadID: local.threadID,
+                visitID: local.visitID
             ),
             syncStatus: SyncRecordStatus(rawValue: local.syncStatusRawValue) ?? .clean,
             pendingOperationID: local.pendingOperationID,
@@ -339,6 +358,11 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
         memoryID: UUID
     ) throws -> MemoryRecord? {
         records[key(ownerUserID: ownerUserID, memoryID: memoryID)]
+    }
+
+    func remove(ownerUserID: UUID, memoryID: UUID) {
+        records[key(ownerUserID: ownerUserID, memoryID: memoryID)] = nil
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     private func key(ownerUserID: UUID, memoryID: UUID) -> String {

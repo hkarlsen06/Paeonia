@@ -10,6 +10,8 @@ nonisolated struct Visit: Codable, Hashable, Identifiable, Sendable {
     var place: MemoryPlace?
     /// When the server last changed it. Nil for a write this phone has not sent yet.
     var updatedAt: String?
+    /// Whether this person hid the Us tab card that asks for the visit's photos.
+    var memoryPromptDismissed = false
 
     /// The server refuses more visits that may not be over on some phone, so the phone says so
     /// before queueing one.
@@ -25,6 +27,7 @@ nonisolated struct Visit: Codable, Hashable, Identifiable, Sendable {
         case endDate = "end_date"
         case place
         case updatedAt = "updated_at"
+        case memoryPromptDismissed = "memory_prompt_dismissed"
     }
 
     enum Phase: Equatable, Sendable {
@@ -157,6 +160,17 @@ nonisolated struct CoupleVisits: Codable, Equatable, Sendable {
             }
         case let .deleteVisit(id):
             visits.removeAll { $0.id == id }
+        case let .dismissMemoryPrompt(id):
+            if let index = visits.firstIndex(where: { $0.id == id }) {
+                visits[index].memoryPromptDismissed = true
+            }
+        case .saveItem, .setItemDone, .deleteItem:
+            applyItem(write)
+        }
+    }
+
+    private mutating func applyItem(_ write: VisitsWrite) {
+        switch write {
         case let .saveItem(payload):
             if !items.contains(where: { $0.id == payload.id }) {
                 items.append(TogetherListItem(id: payload.id, title: payload.title, isDone: false))
@@ -169,6 +183,8 @@ nonisolated struct CoupleVisits: Codable, Equatable, Sendable {
             }
         case let .deleteItem(id):
             items.removeAll { $0.id == id }
+        case .saveVisit, .deleteVisit, .dismissMemoryPrompt:
+            break
         }
     }
 

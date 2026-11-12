@@ -13,15 +13,17 @@ struct MemoryDetailView: View {
     let mediaImageProvider: (any MemoryMediaImageProviding)?
 
     @Environment(\.dismiss) private var dismiss
+    /// Names the visit the memory was made for. Nil leaves the visit out.
+    @Environment(VisitsViewModel.self) private var visits: VisitsViewModel?
 
-    @State private var isEditingMemory = false
-    @State private var editDraft = MemoryDraft()
-    /// The memory as it was when the edit sheet opened. Saving compares against it, so
-    /// only what the person changed is sent, and the sheet keeps using it if the
-    /// memory is deleted mid-edit so the typed text stays on screen.
-    @State private var editingRecord: MemoryRecord?
-    @State private var wasRemovedWhileEditing = false
-    @State private var isConfirmingDelete = false
+    /// The memory as it was when the edit sheet opened, and the sheet's item, so the sheet is
+    /// built from it. Saving compares against it, so only what the person changed is sent, and
+    /// the sheet keeps using it if the memory is deleted mid-edit so the typed text stays on screen.
+    @State private var editing: EditedMemory?
+    /// The memory the delete alert asks about, as it was when the alert opened. If it joins the
+    /// partner's memory for its visit before the person confirms, the screen behind shows that
+    /// memory, and the delete still acts on this one.
+    @State private var deleting: MemoryRecord?
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
     /// The media asset id of the photo the carousel shows. Nil shows the first.
     @State private var shownPhotoID: UUID?
@@ -66,30 +68,30 @@ struct MemoryDetailView: View {
         .onChange(of: record == nil) { _, isGone in
             guard isGone else { return }
             // Closing the screen now would also close the edit sheet and drop the
-            // unsaved text. Keep the sheet open and explain instead.
-            if isEditingMemory {
-                wasRemovedWhileEditing = true
-            } else {
-                dismiss()
-            }
+            // unsaved text. The sheet stays open and explains instead.
+            if editing == nil { dismiss() }
         }
-        .sheet(isPresented: $isEditingMemory, onDismiss: closeAfterRemoval) { memoryEditorSheet }
+        .sheet(item: $editing, onDismiss: closeAfterRemoval) { editing in
+            ExistingMemoryEditor(record: editing.record, currentUserID: currentUserID, viewModel: viewModel)
+        }
         .alert(
             Text(.memoriesDeleteTitle),
-            isPresented: $isConfirmingDelete
-        ) {
+            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+            presenting: deleting
+        ) { asked in
             Button(role: .cancel) {} label: { Text(.commonCancel) }
             Button(role: .destructive) {
-                Task { await deleteMemory() }
+                Task { await viewModel.deleteMemory(asked) }
             } label: {
                 Text(.memoriesDeleteAction)
             }
-        } message: {
+        } message: { _ in
             Text(.memoriesDeleteMessage)
         }
         .paeoniaImageViewer(selection: $imageViewerSelection)
         .memoryOnScreenForSiri(
-            memoryID, title: record?.snapshot.title, viewModel: viewModel, shownPhotoID: $shownPhotoID
+            record?.snapshot.memoryID ?? memoryID, title: record?.snapshot.title, viewModel: viewModel,
+            shownPhotoID: $shownPhotoID
         )
     }
 
@@ -108,7 +110,7 @@ struct MemoryDetailView: View {
                     noteBlock(title: .memoriesDetailPartnerNote, body: body)
                 }
 
-                ReactionSection(target: .memory(memoryID))
+                ReactionSection(target: .memory(record.snapshot.memoryID))
 
                 MemoryCommentsSection(record: record, viewModel: viewModel)
             }
@@ -118,27 +120,6 @@ struct MemoryDetailView: View {
             .padding(.bottom, PaeoniaSpacing.space32)
             .paeoniaReadableWidth()
         }
-    }
-
-    private func header(for record: MemoryRecord) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            Group {
-                if let place = record.snapshot.place {
-                    Text(verbatim: "\(dayStartUTC(for: record).formatted(MemoryDateStyle.long)) · \(place.nameAndCity)")
-                } else {
-                    Text(dayStartUTC(for: record), format: MemoryDateStyle.long)
-                }
-            }
-            .font(PaeoniaTypography.caption)
-            .foregroundStyle(.paeoniaMemory)
-
-            Text(record.snapshot.title ?? "")
-                .font(PaeoniaTypography.heroTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityAddTraits(.isHeader)
-        }
-        .accessibilityElement(children: .combine)
     }
 
     private func photoGallery(for record: MemoryRecord) -> some View {
@@ -231,7 +212,7 @@ struct MemoryDetailView: View {
                 }
 
                 Button(role: .destructive) {
-                    isConfirmingDelete = true
+                    deleting = record
                 } label: {
                     Label { Text(.memoriesDetailDelete) } icon: { Image(systemName: "trash") }
                 }
@@ -243,72 +224,17 @@ struct MemoryDetailView: View {
         }
     }
 
-    @ViewBuilder
-    private var memoryEditorSheet: some View {
-        if let base = editingRecord {
-            let current = record ?? base
-            MemoryEditorView(
-                draft: $editDraft,
-                mode: .edit,
-                existingMedia: visibleMedia(for: current),
-                currentUserID: currentUserID,
-                hasExistingNote: visibleBody(of: current.snapshot.ownNote) != nil,
-                isMemoryRemoved: wasRemovedWhileEditing,
-                allowsPhotos: viewModel.canAttachPhotos,
-                uploadProgress: viewModel.photoUploadProgress,
-                knownPlaces: viewModel.knownPlaces
-            ) { title, date, note, photos, removedMedia, place in
-                let result = await viewModel.saveEdits(
-                    MemoryEdit(
-                        photoDescriptions: editDraft.photos.map(\.accessibilityText),
-                        existingDescriptions: editDraft.existingDescriptions,
-                        base: base,
-                        title: title,
-                        date: date,
-                        note: note,
-                        newPhotos: photos,
-                        removedMedia: removedMedia,
-                        place: place
-                    )
-                )
-                if case .partial(let savedRecord) = result, let savedRecord {
-                    editDraft.rebaseUntouchedFields(from: base, to: savedRecord)
-                    editingRecord = savedRecord
-                }
-                return result
-            }
-        }
-    }
-
     // MARK: - Actions
 
     private func openMemoryEditor() {
         guard let record else { return }
-        editDraft = MemoryDraft(
-            title: record.snapshot.title ?? "",
-            date: MemoryTimeline.pickerDate(forLocalDate: record.snapshot.memoryDate) ?? record.snapshot.createdAt,
-            note: visibleBody(of: record.snapshot.ownNote) ?? "",
-            photos: [],
-            place: record.snapshot.place
-        )
-        editingRecord = record
-        wasRemovedWhileEditing = false
-        isEditingMemory = true
+        editing = EditedMemory(record: record)
     }
 
     /// After the sheet closes on a memory that was deleted, there is nothing left to
     /// show, so leave the detail screen.
     private func closeAfterRemoval() {
-        editingRecord = nil
-        if wasRemovedWhileEditing || record == nil {
-            wasRemovedWhileEditing = false
-            dismiss()
-        }
-    }
-
-    private func deleteMemory() async {
-        guard let record else { return }
-        await viewModel.deleteMemory(record)
+        if record == nil { dismiss() }
     }
 
     /// Opens the full-screen viewer on the tapped photo, with every photo of the memory
@@ -333,9 +259,41 @@ struct MemoryDetailView: View {
     }
 }
 
+private struct EditedMemory: Identifiable {
+    let record: MemoryRecord
+    var id: UUID { record.snapshot.memoryID }
+}
+
 // MARK: - Derived
 
 extension MemoryDetailView {
+    private func header(for record: MemoryRecord) -> some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+            Group {
+                if let place = record.snapshot.place {
+                    Text(verbatim: "\(dayStartUTC(for: record).formatted(MemoryDateStyle.long)) · \(place.nameAndCity)")
+                } else {
+                    Text(dayStartUTC(for: record), format: MemoryDateStyle.long)
+                }
+            }
+            .font(PaeoniaTypography.caption)
+            .foregroundStyle(.paeoniaMemory)
+
+            if let visit = visits?.state.visits.first(where: { $0.id == record.snapshot.visitID }) {
+                Text(.memoriesDetailVisit(visit.dateRangeText()))
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
+
+            Text(record.snapshot.title ?? "")
+                .font(PaeoniaTypography.heroTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityAddTraits(.isHeader)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
     private func visibleMedia(for record: MemoryRecord) -> [MemoryMediaSnapshot] {
         record.snapshot.media.filter(\.isVisible).sortedForMemoryDisplay()
     }

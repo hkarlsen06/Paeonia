@@ -180,6 +180,8 @@ nonisolated struct MemorySnapshot: Codable, Equatable, Sendable {
     let visibleMediaAssetIDs: [UUID]
     let media: [MemoryMediaSnapshot]
     let threadID: UUID?
+    /// The visit the partners made this memory for, if any.
+    let visitID: UUID?
 
     init(
         ownerUserID: UUID,
@@ -201,7 +203,8 @@ nonisolated struct MemorySnapshot: Codable, Equatable, Sendable {
         visibleMemoryMediaIDs: [UUID],
         visibleMediaAssetIDs: [UUID],
         media: [MemoryMediaSnapshot],
-        threadID: UUID?
+        threadID: UUID?,
+        visitID: UUID?
     ) {
         self.ownerUserID = ownerUserID
         self.memoryID = memoryID
@@ -223,6 +226,7 @@ nonisolated struct MemorySnapshot: Codable, Equatable, Sendable {
         self.visibleMediaAssetIDs = visibleMediaAssetIDs
         self.media = media
         self.threadID = threadID
+        self.visitID = visitID
     }
 
     var isVisible: Bool {
@@ -259,6 +263,21 @@ nonisolated struct MemoryRecord: Codable, Equatable, Sendable {
 }
 
 extension MemoryMediaSnapshot {
+    nonisolated func removed(at date: Date) -> Self {
+        MemoryMediaSnapshot(
+            memoryMediaID: memoryMediaID,
+            mediaAssetID: mediaAssetID,
+            ownerUserID: ownerUserID,
+            sortOrder: sortOrder,
+            deletedAt: date,
+            moderationStatus: moderationStatus,
+            assetDeletedAt: assetDeletedAt,
+            assetModerationStatus: assetModerationStatus,
+            assetStorageDeleteStatus: assetStorageDeleteStatus,
+            updatedAt: date
+        )
+    }
+
     nonisolated func applying(_ edits: [MemoryPhotoDescription], author: UUID) -> Self {
         var result = self
         if ownerUserID == author, let edit = edits.first(where: { $0.mediaAssetID == mediaAssetID }) {

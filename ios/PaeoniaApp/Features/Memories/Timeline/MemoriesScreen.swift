@@ -92,33 +92,10 @@ struct MemoriesScreen: View {
             .onChange(of: viewModel.isNewMemoryRequested, initial: true) { _, isRequested in
                 guard isRequested else { return }
                 viewModel.isNewMemoryRequested = false
-                isCreating = true
+                openCreate()
             }
             .sheet(isPresented: $isCreating, onDismiss: { viewModel.flushDraft() }) {
-                // Swipe dismissal waits for draft persistence. Failed writes keep the
-                // form open with its attachments and a retry action.
-                MemoryEditorView(
-                    draft: draftBinding,
-                    allowsPhotos: viewModel.canAttachPhotos,
-                    uploadProgress: viewModel.photoUploadProgress,
-                    knownPlaces: viewModel.knownPlaces,
-                    draftFailure: viewModel.draftFailure,
-                    draftNeedsSaving: viewModel.draftNeedsSaving,
-                    onRetryDraft: {
-                        if viewModel.draftFailure == .read {
-                            viewModel.restoreDraft()
-                        } else {
-                            viewModel.saveDraftNow()
-                        }
-                    },
-                    onDiscardDraft: { viewModel.discardDraft() }
-                ) { title, date, note, photos, _, place in
-                    let saved = await viewModel.createMemory(
-                        title: title, date: date, note: note, photos: photos,
-                        photoDescriptions: viewModel.draft.photos.map(\.accessibilityText), place: place
-                    )
-                    return saved ? .saved : .failed
-                }
+                NewMemoryEditor(viewModel: viewModel)
             }
             // New-memory alerts are seen once their memory is on the timeline.
             .task(id: shownMemoryIDs) {
@@ -277,16 +254,11 @@ struct MemoriesScreen: View {
     /// Opens the new-memory form. A fresh (empty) draft defaults its date to today;
     /// a draft left over from an earlier dismissal is restored untouched.
     private func openCreate() {
-        if viewModel.draft.isEmpty {
-            var fresh = viewModel.draft
-            fresh.date = Date()
-            viewModel.updateDraft(fresh)
-        }
+        var draft = viewModel.draft
+        if draft.isEmpty { draft.date = Date() }
+        draft.visitID = nil
+        if draft != viewModel.draft { viewModel.updateDraft(draft) }
         isCreating = true
-    }
-
-    private var draftBinding: Binding<MemoryDraft> {
-        Binding(get: { viewModel.draft }, set: { viewModel.updateDraft($0) })
     }
 
     private func showBanner(for notice: MemoriesNotice?) {
