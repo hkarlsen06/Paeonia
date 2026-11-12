@@ -134,6 +134,7 @@ async function insertLetter(
       delivery_kind: "at",
       moderation_status: "visible",
       created_at: "2026-03-01T09:00:00.000Z",
+      waits_since: "2026-03-01T09:00:00.000Z",
       ...fields,
     });
   });

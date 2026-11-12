@@ -992,6 +992,10 @@ export default defineSchema({
     media_asset_id: optUuid,
     delivery_kind: literals(...LETTER_DELIVERY_KINDS),
     deliver_at: optTs,
+    // When the letter started to wait for its delivery: its send, or the change that moved it to
+    // the next meeting. A visit brings on only the letters for the next meeting that waited since
+    // before its evening. Every row has it, so the visit sweep never meets one without it.
+    waits_since: ts,
     state: literals(...LETTER_STATES),
     delivered_at: optTs,
     opened_at: optTs,

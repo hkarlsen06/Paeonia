@@ -480,6 +480,7 @@ describe("delivery that cannot be lost", () => {
           state: "sealed",
           moderation_status: "visible",
           created_at: NOW,
+          waits_since: NOW,
         });
       }
     });
@@ -544,6 +545,7 @@ describe("bounded reads", () => {
           ...(row.deleted ? { deleted_at: row.at } : {}),
           moderation_status: row.hidden ? "hidden" : "visible",
           created_at: row.at,
+          waits_since: row.at,
         });
       }
     });
@@ -1017,6 +1019,7 @@ describe("letters for the next meeting", () => {
     const { t, couple } = await sharingCouple();
     expect(await deliveryOptions(couple.first)).toEqual({
       partner_time_zone_id: "Europe/Oslo",
+      partner_birthday: null,
       together_now: false,
       next_visit_start_date: null,
       next_visit_too_soon: false,
@@ -1050,5 +1053,388 @@ describe("letters for the next meeting", () => {
     expect(asset?.storage_delete_status).toBe("pending");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect(await arrivedPushes(t)).toEqual([]);
+  });
+});
+
+type EditOptions = {
+  user?: TestUser;
+  body?: string;
+  template?: string;
+  imageId?: string | null;
+  delivery?: "now" | "at" | "morning" | "together";
+  deliverAt?: string;
+  operation?: ReturnType<typeof op>;
+};
+
+/** Changes the letter `letterId` as the app does, with every part of it given again. */
+const edit = (couple: TestCouple, letterId: string, options: EditOptions = {}) =>
+  (options.user ?? couple.first).as.mutation(api.letters.edit_letter, {
+    p_letter_id: letterId,
+    p_template_key: options.template ?? "good_morning",
+    p_body: options.body ?? SECRET,
+    ...(options.imageId ? { p_media_asset_id: options.imageId } : {}),
+    p_delivery_kind: options.delivery ?? "at",
+    ...(options.deliverAt ? { p_deliver_at: options.deliverAt } : {}),
+    ...(options.operation ?? op()),
+  });
+/** Moves the clock to `iso` and runs the jobs that came due on the way, as the scheduler does. */
+async function runJobsUntil(t: TestConvex, iso: string) {
+  await vi.advanceTimersByTimeAsync(Date.parse(iso) - Date.now());
+  await t.finishInProgressScheduledFunctions();
+}
+const assetStatus = (t: TestConvex, id: string) =>
+  t.run(async (ctx) =>
+    (await ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", id)).unique())?.storage_delete_status);
+
+describe("edit_letter", () => {
+  const LATER = "2026-11-11T20:00:00.000Z";
+  const NEW_WORDS = "The train gets in at six";
+
+  test("only the author changes a letter, and only while it is sealed", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const other = await createCouple(t);
+    const stranger = await createSignedInUser(t);
+    const lapsed = await createCouple(t, { entitled: false });
+    const { letterId } = await send(t, couple, { delivery: "at", deliverAt: LATER });
+    const changed = { body: NEW_WORDS, deliverAt: LATER };
+
+    for (const user of [stranger, lapsed.first, other.first, other.second, couple.second]) {
+      expect((await failure(edit(couple, letterId, { ...changed, user }))).code).toBe("42501");
+    }
+    expect((await failure(edit(couple, newUuid(), changed))).code).toBe("P0002");
+
+    const arrived = await send(t, couple);
+    expect((await failure(edit(couple, arrived.letterId, changed))).code).toBe("40001");
+    expect((await failure(edit(couple, arrived.letterId, { ...changed, user: couple.second }))).code).toBe("42501");
+    await remove(couple.first, letterId);
+    expect((await failure(edit(couple, letterId, changed))).code).toBe("P0002");
+
+    expect((await letterRows(t)).map((row) => row.body)).toEqual([SECRET, SECRET]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a letter moved later arrives once, with the new words, at the new time, and the partner sees nothing before", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await addDevice(t, couple.second.userId, { locale: "en" });
+    const badges = (user: TestUser) => user.as.query(api.badges.get_badges, {});
+    const { letterId, imageId } = await send(t, couple, { delivery: "at", deliverAt: LATER, withImage: true });
+    const partnerBefore = { mail: await getLetters(couple.second), badges: await badges(couple.second) };
+
+    const newer = await uploadAsset(t, couple.first, { ...photo(couple.coupleId, "letter", "letter_image"), parentId: letterId });
+    const movedTo = "2026-11-12T09:30:00.000Z";
+    const operation = op();
+    const changed = await edit(couple, letterId, {
+      template: "miss_you", body: NEW_WORDS, imageId: newer.assetId, deliverAt: movedTo, operation,
+    });
+    expect(changed).toMatchObject({
+      template_key: "miss_you", body: NEW_WORDS, media_asset_id: newer.assetId, state: "sealed", deliver_at: movedTo,
+    });
+    expect(await assetStatus(t, imageId!)).toBe("pending");
+    expect(await assetStatus(t, newer.assetId)).not.toBe("pending");
+    expect(await getLetters(couple.second)).toEqual(partnerBefore.mail);
+    expect(await badges(couple.second)).toEqual(partnerBefore.badges);
+    expect((await failure(signImage(couple.second, newer.assetId))).code).toBe("42501");
+
+    await runJobsUntil(t, LATER);
+    await t.mutation(internal.letters.deliver_due_letters, {});
+    expect(await lettersFor(couple.second)).toEqual([]);
+    expect(await deliverDuePushes(t)).toEqual([]);
+
+    await runJobsUntil(t, movedTo);
+    await runDueJobs(t);
+    const [row] = await letterRows(t);
+    expect(row).toMatchObject({ state: "delivered", body: NEW_WORDS, delivered_at: expect.stringMatching(/^2026-11-12T09:30/) });
+    expect((await outbox(t)).filter((push) => push.kind === "letter_arrived")).toHaveLength(1);
+    const opened = await open(couple.second, letterId);
+    expect(opened).toMatchObject({ body: NEW_WORDS, template_key: "miss_you", media_asset_id: newer.assetId });
+    expect(JSON.stringify(await getLetters(couple.second))).not.toContain(SECRET);
+
+    const replay = await couple.first.as.mutation(api.letters.edit_letter, {
+      p_letter_id: letterId, p_template_key: "miss_you", p_body: NEW_WORDS, p_media_asset_id: newer.assetId,
+      p_delivery_kind: "at", p_deliver_at: movedTo, ...operation,
+    });
+    expect(replay).toMatchObject({ id: letterId, state: "opened", body: NEW_WORDS });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a letter moved earlier arrives at the new time and the old job writes nothing", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await addDevice(t, couple.second.userId);
+    const { letterId } = await send(t, couple, { delivery: "at", deliverAt: LATER });
+    const earlier = "2026-11-10T22:00:00.000Z";
+    await edit(couple, letterId, { body: NEW_WORDS, deliverAt: earlier });
+
+    await runJobsUntil(t, earlier);
+    await runDueJobs(t);
+    const [row] = await letterRows(t);
+    expect(row.state).toBe("delivered");
+    expect(row.delivered_at?.startsWith("2026-11-10T22:00")).toBe(true);
+    await runJobsUntil(t, LATER);
+    expect((await letterRows(t))[0].delivered_at).toBe(row.delivered_at);
+    expect((await outbox(t)).filter((push) => push.kind === "letter_arrived")).toHaveLength(1);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("changing to now delivers at once, and removing the image queues it for deletion", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { letterId, imageId } = await send(t, couple, { delivery: "morning", withImage: true });
+    const changed = await edit(couple, letterId, { body: NEW_WORDS, delivery: "now" });
+    expect(changed).toMatchObject({ state: "delivered", media_asset_id: null, body: NEW_WORDS });
+    expect(await assetStatus(t, imageId!)).toBe("pending");
+    expect(await lettersFor(couple.second)).toHaveLength(1);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect((await letterRows(t))[0].state).toBe("delivered");
+  });
+
+  test("new words for a morning letter whose 08:00 came before its job ran keep that morning, and it arrives at once", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    const { letterId, letter } = await send(t, couple, { delivery: "morning" });
+    expect(letter?.deliver_at).toBe("2026-11-11T07:00:00.000Z");
+
+    // The clock passes 08:00 in Oslo before the scheduler runs the job, as when it is late or lost.
+    vi.setSystemTime(new Date("2026-11-11T07:00:30.000Z"));
+    const changed = await edit(couple, letterId, { body: NEW_WORDS, delivery: "morning" });
+    expect(changed).toMatchObject({ deliver_at: "2026-11-11T07:00:00.000Z", state: "delivered", body: NEW_WORDS });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect((await letterRows(t))[0].delivered_at?.startsWith("2026-11-11T07:00")).toBe(true);
+  });
+
+  test("keeping the image keeps it, and a borrowed image is refused", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { letterId, imageId } = await send(t, couple, { delivery: "at", deliverAt: LATER, withImage: true });
+    const other = await send(t, couple, { delivery: "at", deliverAt: LATER, withImage: true });
+    expect(await edit(couple, letterId, { body: NEW_WORDS, deliverAt: LATER, imageId })).toMatchObject({ media_asset_id: imageId });
+    expect(await assetStatus(t, imageId!)).not.toBe("pending");
+    expect((await failure(edit(couple, letterId, { deliverAt: LATER, imageId: other.imageId }))).code).toBe("23514");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("a birthday card", () => {
+  test("the composer reads the partner's saved birthday with their time zone", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Pacific/Kiritimati"] });
+    await couple.first.as.mutation(api.countdowns.set_birthday, {
+      p_user_id: couple.second.userId, p_birthday: "1999-02-28", ...op(),
+    });
+    expect(await deliveryOptions(couple.first)).toMatchObject({
+      partner_time_zone_id: "Pacific/Kiritimati", partner_birthday: "1999-02-28",
+    });
+    expect(await deliveryOptions(couple.second)).toMatchObject({ partner_birthday: null });
+  });
+
+  test("the latest birthday morning the app can pick fits the year a letter may wait", async () => {
+    vi.setSystemTime(new Date("2027-03-01T10:00:00.000Z"));
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Pacific/Pago_Pago", "Pacific/Kiritimati"] });
+    const nextBirthday = "2028-02-29T18:00:00.000Z";
+    const { letter } = await send(t, couple, { template: "birthday", delivery: "at", deliverAt: nextBirthday });
+    expect(letter).toMatchObject({ state: "sealed", deliver_at: nextBirthday });
+    const tooFar = new Date(Date.parse("2027-03-01T10:00:00.000Z") + 366 * 86_400_000 + 60_000).toISOString();
+    expect((await failure(send(t, couple, { delivery: "at", deliverAt: tooFar }))).code).toBe("23514");
+  });
+});
+
+describe("changing a letter for the next meeting", () => {
+  const HOME = { latitude: 59.9, longitude: 10.75 };
+  const AWAY = { latitude: 60.9, longitude: 10.75 };
+  const EVENING = "2026-11-14T19:00:00.000Z";
+  const NEW_WORDS = "The train gets in at six";
+
+  const share = (user: TestUser, couple: TestCouple) =>
+    user.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: couple.coupleId, p_is_enabled: true, p_consent_version: "test-v1", p_source: "settings_toggle", ...op(),
+    });
+  const moveTo = (user: TestUser, couple: TestCouple, at: typeof HOME) =>
+    user.as.mutation(api.location.update_latest_partner_location, {
+      p_couple_id: couple.coupleId, p_latitude: at.latitude, p_longitude: at.longitude, p_accuracy_m: 20,
+      p_captured_at: new Date(Date.now() - 60_000).toISOString(), p_source: "foreground_open", ...op(),
+    });
+  const saveVisit = (user: TestUser, start: string, end: string) =>
+    user.as.mutation(api.visits.save_visit, { p_visit_id: newUuid(), p_start_date: start, p_end_date: end, p_place: null, ...op() });
+  const sweepAt = async (t: TestConvex, at: string) => {
+    await runJobsUntil(t, at);
+    await t.mutation(internal.letters.sweep_letters_for_visits, {});
+    await t.mutation(internal.letters.deliver_due_letters, {});
+  };
+  const pendingLetterJobs = (t: TestConvex) =>
+    t.run(async (ctx) =>
+      (await ctx.db.system.query("_scheduled_functions").collect())
+        .filter((job) => job.name.includes("letters") && job.state.kind === "pending"));
+  const rowOf = async (t: TestConvex, letterId: string) => (await letterRows(t)).find((row) => row.id === letterId)!;
+  const arrivedPushes = async (t: TestConvex) => (await outbox(t)).filter((row) => row.kind === "letter_arrived");
+
+  /** A couple in Oslo with a visit from 14 to 16 November planned now, so its evening is `EVENING`. */
+  async function visitingCouple() {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    await addDevice(t, couple.second.userId, { locale: "en" });
+    await saveVisit(couple.first, "2026-11-14", "2026-11-16");
+    return { t, couple };
+  }
+  /** A couple apart who both share their location, with no visit planned. */
+  async function sharingCouple() {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    await addDevice(t, couple.second.userId, { locale: "en" });
+    await share(couple.first, couple);
+    await share(couple.second, couple);
+    await moveTo(couple.first, couple, AWAY);
+    await moveTo(couple.second, couple, HOME);
+    return { t, couple };
+  }
+
+  test("only the author changes it, as with any sealed letter", async () => {
+    const { t, couple } = await visitingCouple();
+    const other = await createCouple(t);
+    const stranger = await createSignedInUser(t);
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    for (const user of [stranger, other.first, couple.second]) {
+      expect((await failure(edit(couple, letterId, { user, body: NEW_WORDS, delivery: "together" }))).code).toBe("42501");
+    }
+    expect((await rowOf(t, letterId)).body).toBe(SECRET);
+  });
+
+  test("new words keep it waiting, with no time and no job, and it arrives with them at the meeting", async () => {
+    const { t, couple } = await visitingCouple();
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    const partnerBefore = { mail: await getLetters(couple.second), badges: await couple.second.as.query(api.badges.get_badges, {}) };
+
+    const changed = await edit(couple, letterId, { body: NEW_WORDS, template: "miss_you", delivery: "together" });
+    expect(changed).toMatchObject({ delivery_kind: "together", deliver_at: null, state: "sealed", body: NEW_WORDS });
+    expect(await pendingLetterJobs(t)).toEqual([]);
+    expect(await getLetters(couple.second)).toEqual(partnerBefore.mail);
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toEqual(partnerBefore.badges);
+
+    await sweepAt(t, "2026-11-14T18:59:00.000Z");
+    expect((await rowOf(t, letterId)).state).toBe("sealed");
+    await sweepAt(t, EVENING);
+    await runDueJobs(t);
+    expect(await arrivedPushes(t)).toHaveLength(1);
+    expect(await open(couple.second, letterId)).toMatchObject({ body: NEW_WORDS, template_key: "miss_you" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a letter for a set time moves to the next meeting only when the composer would offer it", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    const { letterId } = await send(t, couple, { delivery: "at", deliverAt: "2026-11-12T09:00:00.000Z" });
+    expect((await failure(edit(couple, letterId, { delivery: "together" }))).code).toBe("55000");
+    expect(await rowOf(t, letterId)).toMatchObject({ delivery_kind: "at", deliver_at: "2026-11-12T09:00:00.000Z" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect((await rowOf(t, letterId)).state).toBe("delivered");
+  });
+
+  test("moved to the next meeting, neither its old job nor the time sweep delivers it, and the visit does once", async () => {
+    const { t, couple } = await visitingCouple();
+    const at = "2026-11-12T09:00:00.000Z";
+    const { letterId } = await send(t, couple, { delivery: "at", deliverAt: at });
+    expect(await edit(couple, letterId, { delivery: "together" })).toMatchObject({ delivery_kind: "together", deliver_at: null });
+
+    await sweepAt(t, "2026-11-12T09:01:00.000Z");
+    expect((await rowOf(t, letterId)).state).toBe("sealed");
+    expect(await lettersFor(couple.second)).toEqual([]);
+    await sweepAt(t, EVENING);
+    await sweepAt(t, "2026-11-14T19:05:00.000Z");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect((await rowOf(t, letterId)).delivered_at?.startsWith("2026-11-14T19:00")).toBe(true);
+    expect(await arrivedPushes(t)).toHaveLength(1);
+  });
+
+  test("every letter row says when it started to wait, so the visit sweep never meets one without it", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { letterId } = await send(t, couple, { delivery: "at", deliverAt: "2026-11-12T09:00:00.000Z" });
+    expect((await rowOf(t, letterId)).waits_since).toBe((await rowOf(t, letterId)).created_at);
+    await expect(t.run((ctx) => ctx.db.insert("letters", {
+      id: newUuid(), couple_id: couple.coupleId, author_user_id: couple.first.userId,
+      recipient_user_id: couple.second.userId, template_key: "blank", body: SECRET, delivery_kind: "together",
+      state: "sealed", moderation_status: "visible", created_at: NOW,
+    } as never))).rejects.toThrow(/waits_since/);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("moved to the next meeting after a visit's evening, it waits for the next meeting, not the one that passed", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    await saveVisit(couple.first, "2026-11-14", "2026-11-14");
+    const { letterId } = await send(t, couple, { delivery: "at", deliverAt: "2026-11-20T09:00:00.000Z" });
+
+    await runJobsUntil(t, "2026-11-15T12:00:00.000Z");
+    await saveVisit(couple.first, "2026-11-25", "2026-11-26");
+    await edit(couple, letterId, { delivery: "together" });
+    await sweepAt(t, "2026-11-15T12:05:00.000Z");
+    expect((await rowOf(t, letterId)).state).toBe("sealed");
+    await sweepAt(t, "2026-11-20T09:01:00.000Z");
+    expect((await rowOf(t, letterId)).state).toBe("sealed");
+    await sweepAt(t, "2026-11-25T19:00:00.000Z");
+    expect((await rowOf(t, letterId)).state).toBe("delivered");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("moved from the next meeting to a time, the meeting no longer brings it, and its time does", async () => {
+    const { t, couple } = await sharingCouple();
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    const at = "2026-11-11T09:00:00.000Z";
+    expect(await edit(couple, letterId, { deliverAt: at })).toMatchObject({ delivery_kind: "at", deliver_at: at });
+
+    await moveTo(couple.first, couple, HOME);
+    expect((await rowOf(t, letterId)).state).toBe("sealed");
+    await runJobsUntil(t, at);
+    expect((await rowOf(t, letterId)).state).toBe("delivered");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await arrivedPushes(t)).toHaveLength(1);
+  });
+
+  test("after any back and forth between a time and the next meeting it arrives once, by one path", async () => {
+    const { t, couple } = await sharingCouple();
+    const first = "2026-11-11T09:00:00.000Z";
+    const second = "2026-11-11T10:00:00.000Z";
+    const { letterId } = await send(t, couple, { delivery: "at", deliverAt: first });
+    await edit(couple, letterId, { delivery: "together" });
+    await edit(couple, letterId, { deliverAt: second });
+    await edit(couple, letterId, { delivery: "together", body: NEW_WORDS });
+
+    // Both timed jobs and the time sweep pass by, and the letter still waits for the meeting.
+    await runJobsUntil(t, "2026-11-11T10:01:00.000Z");
+    await t.mutation(internal.letters.deliver_due_letters, {});
+    expect((await rowOf(t, letterId)).state).toBe("sealed");
+
+    // The partner's phone reports where she is now, then the author's phone shows them together.
+    await moveTo(couple.second, couple, HOME);
+    expect((await rowOf(t, letterId)).state).toBe("sealed");
+    await moveTo(couple.first, couple, HOME);
+    const delivered = (await rowOf(t, letterId)).delivered_at;
+    expect(delivered).toBeDefined();
+    await moveTo(couple.first, couple, HOME);
+    await t.mutation(internal.letters.deliver_due_letters, {});
+    await t.mutation(internal.letters.sweep_letters_for_visits, {});
+    await t.mutation(internal.letters.deliver_letter, { letter_id: letterId });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect((await rowOf(t, letterId)).delivered_at).toBe(delivered);
+    expect(await arrivedPushes(t)).toHaveLength(1);
+    expect((await open(couple.second, letterId))?.body).toBe(NEW_WORDS);
+  });
+
+  test("moved from the next meeting to a time and back, the old time's job does not deliver it", async () => {
+    const { t, couple } = await sharingCouple();
+    const at = "2026-11-11T09:00:00.000Z";
+    const { letterId } = await send(t, couple, { delivery: "together" });
+    await edit(couple, letterId, { deliverAt: at });
+    await edit(couple, letterId, { delivery: "together" });
+    await runJobsUntil(t, "2026-11-11T09:01:00.000Z");
+    await t.mutation(internal.letters.deliver_due_letters, {});
+    expect((await rowOf(t, letterId)).state).toBe("sealed");
+    await moveTo(couple.second, couple, HOME);
+    await moveTo(couple.first, couple, HOME);
+    expect((await rowOf(t, letterId)).state).toBe("delivered");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await arrivedPushes(t)).toHaveLength(1);
   });
 });

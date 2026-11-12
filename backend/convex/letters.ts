@@ -199,7 +199,9 @@ const offersMeetingLetter = (options: Awaited<ReturnType<typeof meetingOptions>>
 /**
  * What the composer's delivery step needs at `p_now`, the phone's time, read once when it opens.
  * `partner_time_zone_id` is the zone the partner's morning letters follow, null without a
- * partner. `send_letter` works the time out again when the letter goes. `together_now`,
+ * partner. `send_letter` works the time out again when the letter goes. `partner_birthday`
+ * (`YYYY-MM-DD`) is the partner's birthday from Settings, which a birthday card is set to arrive
+ * on, null when nobody saved it. `together_now`,
  * `next_visit_start_date`, `next_visit_too_soon` and `both_share_location` say whether a letter
  * for the next meeting can be sent (`offersMeetingLetter`) and how it would arrive
  * (`meetingOptions`). Fails with `42501` without an entitled couple.
@@ -210,10 +212,11 @@ export const get_letter_delivery_options = query({
     const userId = await requireUserId(ctx);
     const now = timestampArg(args.p_now);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    const partnerId = await partnerOf(ctx, coupleId, userId);
+    const partner = (await listActiveMembers(ctx, coupleId)).find((member) => member.user_id !== userId);
     return {
-      partner_time_zone_id: partnerId === null ? null : await resolveMemberStreakTimeZone(ctx, partnerId),
-      ...(await meetingOptions(ctx, coupleId, partnerId, now)),
+      partner_time_zone_id: partner === undefined ? null : await resolveMemberStreakTimeZone(ctx, partner.user_id),
+      partner_birthday: partner?.birthday ?? null,
+      ...(await meetingOptions(ctx, coupleId, partner?.user_id ?? null, now)),
     };
   },
 });
@@ -240,6 +243,23 @@ function parseDelivery(kind: string, deliverAt: string | null | undefined, nowMs
   }
 }
 
+/** Fails unless `assetId` is a usable `letter_image` upload of `userId`'s, reserved for the letter `letterId`. */
+async function assertLetterImage(ctx: ReaderCtx, assetId: string, userId: string, coupleId: string, letterId: string) {
+  const asset = await getByUuid(ctx, "media_assets", assetId);
+  if (!asset || asset.owner_user_id !== userId || asset.couple_id !== coupleId) {
+    return fail("42501", "letter image is not available");
+  }
+  if (
+    asset.upload_purpose !== "letter_image" ||
+    asset.media_type !== "image" ||
+    asset.reserved_parent_kind !== "letter" ||
+    asset.reserved_parent_id !== letterId ||
+    !isUsableMediaAsset(asset)
+  ) {
+    return fail("23514", "letter image is not usable");
+  }
+}
+
 /**
  * Delivers a sealed letter that still exists while both partners are still together, and queues
  * the push in its own job, so a push that fails cannot undo the delivery. Anything else writes
@@ -256,7 +276,7 @@ async function deliverLetter(ctx: WriterCtx, letter: Doc<"letters">): Promise<bo
 
 /**
  * Delivers the letters `recipientId` gets at the couple's next meeting, a page at a time, or only
- * the ones written before `writtenBefore` when it is set. The caller decides that the partners met.
+ * the ones that waited since before `writtenBefore` when it is set (`waits_since`). The caller decides that the partners met.
  * With no letter waiting this reads no document.
  */
 export async function deliverMeetingLetters(
@@ -272,7 +292,7 @@ export async function deliverMeetingLetters(
         .eq("state", "sealed").eq("deleted_at", undefined));
   const waiting = await (writtenBefore === undefined
     ? range
-    : range.filter((q) => q.lt(q.field("created_at"), writtenBefore))).take(DUE_LETTER_PAGE);
+    : range.filter((q) => q.lt(q.field("waits_since"), writtenBefore))).take(DUE_LETTER_PAGE);
   let delivered = 0;
   for (const letter of waiting) if (await deliverLetter(ctx, letter)) delivered += 1;
   // A delivered letter leaves the range, so a full page means more may wait.
@@ -370,23 +390,10 @@ export const send_letter = mutation({
         return fail("55000", "a letter for the next meeting needs a visit ahead or both sharing location, while apart");
       }
 
-      if (assetId !== undefined) {
-        const asset = await getByUuid(ctx, "media_assets", assetId);
-        if (!asset || asset.owner_user_id !== userId || asset.couple_id !== coupleId) {
-          return fail("42501", "letter image is not available");
-        }
-        if (
-          asset.upload_purpose !== "letter_image" ||
-          asset.media_type !== "image" ||
-          asset.reserved_parent_kind !== "letter" ||
-          asset.reserved_parent_id !== letterId ||
-          !isUsableMediaAsset(asset)
-        ) {
-          return fail("23514", "letter image is not usable");
-        }
-      }
+      if (assetId !== undefined) await assertLetterImage(ctx, assetId, userId, coupleId, letterId);
 
       const deliverAt = deliverAtFor(delivery, nowMs, await resolveMemberStreakTimeZone(ctx, recipientId));
+      const sentAt = nowIso();
       const docId = await ctx.db.insert("letters", {
         id: letterId,
         couple_id: coupleId,
@@ -397,9 +404,10 @@ export const send_letter = mutation({
         media_asset_id: assetId,
         delivery_kind: delivery.kind,
         deliver_at: deliverAt ?? undefined,
+        waits_since: sentAt,
         state: "sealed",
         moderation_status: "visible",
-        created_at: nowIso(),
+        created_at: sentAt,
       });
       if (deliverAt === null) return null;
       if (Date.parse(deliverAt) <= nowMs) {
@@ -416,14 +424,17 @@ export const send_letter = mutation({
 });
 
 /**
- * Delivers the letter `letter_id` at its time. Runs from the scheduler that `send_letter` set. A
- * letter that was deleted, already delivered, or whose couple ended stays as it is.
+ * Delivers the letter `letter_id` at its time. Runs from the scheduler that `send_letter` or
+ * `edit_letter` set. A letter that was deleted, already delivered, or whose couple ended stays as
+ * it is, and so does one whose time an edit moved later, which the job for its new time delivers.
  */
 export const deliver_letter = internalMutation({
   args: { letter_id: v.string() },
   handler: async (ctx, args) => {
     const letter = await getByUuid(ctx, "letters", args.letter_id);
-    if (letter) await deliverLetter(ctx, letter);
+    if (letter?.deliver_at !== undefined && Date.parse(letter.deliver_at) <= Date.now()) {
+      await deliverLetter(ctx, letter);
+    }
     return null;
   },
 });
@@ -434,6 +445,94 @@ export const deliver_meeting_letters = internalMutation({
   handler: async (ctx, args) => {
     await deliverMeetingLetters(ctx, args.couple_id, args.recipient_user_id, args.written_before);
     return null;
+  },
+});
+
+/**
+ * Changes the sealed letter `p_letter_id` that the caller wrote. It takes the card, the note, the
+ * image and the delivery as `send_letter` does, and replaces all of them, so the last change saved
+ * wins. The partner can tell nothing until the letter arrives: a sealed letter is outside every
+ * range they read. A replaced or removed image is queued for deletion. Moving a letter to the next
+ * meeting needs what `send_letter` needs (`55000` otherwise), and it then waits from now, so a visit
+ * whose evening has passed does not bring it on. A change that keeps "in the morning" keeps the
+ * morning it was set for, so it arrives at once when that morning came before its job ran. A letter that arrived fails with `40001`, a
+ * deleted or missing one with `P0002`, and someone else's with `42501`. Returns the letter as its
+ * author sees it now, also on a replay after it arrived.
+ */
+export const edit_letter = mutation({
+  args: {
+    p_letter_id: v.string(),
+    p_template_key: v.string(),
+    p_body: v.string(),
+    p_media_asset_id: v.optional(v.union(v.null(), v.string())),
+    p_delivery_kind: v.string(),
+    p_deliver_at: v.optional(v.union(v.null(), v.string())),
+    ...clientOperationArgs,
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const letterId = uuidArg(args.p_letter_id);
+    const assetId = optionalUuidArg(args.p_media_asset_id);
+    const templateKey = parseTemplateKey(args.p_template_key);
+    const body = parseLetterBody(args.p_body);
+    const nowMs = Date.now();
+    const delivery = parseDelivery(args.p_delivery_kind, args.p_deliver_at, nowMs);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+
+    const input = toClientOperation(args, {
+      kind: "edit_letter",
+      scope: `letter:${letterId}`,
+      request: {
+        kind: "edit_letter",
+        couple_id: coupleId,
+        id: letterId,
+        template_key: templateKey,
+        body,
+        media_asset_id: assetId ?? null,
+        delivery,
+      },
+    });
+    await runClientOperation(ctx, userId, input, async () => {
+      await consumeRateLimit(ctx, "letterEdit", userId);
+      const letter = await getByUuid(ctx, "letters", letterId);
+      if (letter && (letter.couple_id !== coupleId || letter.author_user_id !== userId)) {
+        return fail("42501", "only the author can change a letter");
+      }
+      if (!letter || letter.deleted_at !== undefined) return fail("P0002", "letter was deleted");
+      if (letter.state !== "sealed") return fail("40001", "letter already arrived");
+      const startsWaiting = delivery.kind === "together" && letter.delivery_kind !== "together";
+      const now = new Date(nowMs).toISOString();
+      if (startsWaiting && !offersMeetingLetter(await meetingOptions(ctx, coupleId, letter.recipient_user_id, now))) {
+        return fail("55000", "a letter for the next meeting needs a visit ahead or both sharing location, while apart");
+      }
+      if (assetId !== undefined && assetId !== letter.media_asset_id) {
+        await assertLetterImage(ctx, assetId, userId, coupleId, letterId);
+      }
+
+      // A change that keeps "in the morning" keeps the morning it was set for, also once it came.
+      const deliverAt = delivery.kind === "morning" && letter.delivery_kind === "morning" && letter.deliver_at
+        ? letter.deliver_at
+        : deliverAtFor(delivery, nowMs, await resolveMemberStreakTimeZone(ctx, letter.recipient_user_id));
+      await ctx.db.patch(letter._id, {
+        template_key: templateKey,
+        body,
+        media_asset_id: assetId,
+        delivery_kind: delivery.kind,
+        deliver_at: deliverAt ?? undefined,
+        waits_since: startsWaiting ? now : letter.waits_since,
+      });
+      if (letter.media_asset_id !== assetId) await queueOrphanedMediaAssetForDelete(ctx, letter.media_asset_id);
+      // A letter for the next meeting has no time. The meeting paths read only `together` letters.
+      if (deliverAt === null) return null;
+      if (Date.parse(deliverAt) <= nowMs) {
+        await deliverLetter(ctx, (await ctx.db.get(letter._id))!);
+      } else if (deliverAt !== letter.deliver_at) {
+        await ctx.scheduler.runAt(Date.parse(deliverAt), internal.letters.deliver_letter, { letter_id: letterId });
+      }
+      return null;
+    });
+    const letter = await getByUuid(ctx, "letters", letterId);
+    return letter && letter.couple_id === coupleId ? letterForViewer(letter, userId) : null;
   },
 });
 
