@@ -40,7 +40,7 @@ class PolicyTests(unittest.TestCase):
     def test_caps_workers_and_testing(self):
         args = agent.build_arguments(["test", "-jobs", "16", "-jobs=8", "-parallel-testing-enabled", "YES"])
         self.assertEqual(args.count("-jobs"), 1)
-        self.assertEqual(args[args.index("-jobs") + 1], "2")
+        self.assertEqual(args[args.index("-jobs") + 1], "6")
         self.assertEqual(args[args.index("-parallel-testing-enabled") + 1], "NO")
 
     def test_pool_is_three_simulators_unless_made_smaller(self):

@@ -4,17 +4,17 @@
 #
 # Xcode work on this Mac goes through ios-agent, the host controller. It
 # queues compiles from every repo first come, first served, and runs them with
-# two jobs at a lower CPU priority. `ios-agent status` shows the queue. A
+# six jobs at a lower CPU priority. `ios-agent status` shows the queue. A
 # machine without ios-agent, such as CI, runs xcodebuild directly.
 #
 # Must stay compatible with macOS /bin/bash 3.2 (no mapfile, no ${x,,}).
 #
 # Environment overrides, read by ios-agent too:
 #   XCODE_AGENT_NICE=N                 nice level, 0 disables (default 10)
-#   XCODE_AGENT_JOBS=N                 xcodebuild -jobs (default 2)
+#   XCODE_AGENT_JOBS=N                 xcodebuild -jobs (default 6)
 
 XA_NICE="${XCODE_AGENT_NICE:-10}"
-XA_JOBS="${XCODE_AGENT_JOBS:-2}"
+XA_JOBS="${XCODE_AGENT_JOBS:-6}"
 
 # Turn INT/TERM/HUP into a normal exit so the caller's EXIT trap runs,
 # which stops xcodebuild instead of orphaning it.
