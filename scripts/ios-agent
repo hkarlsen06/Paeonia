@@ -38,6 +38,9 @@ FREE_VALUES = {"-derivedDataPath", "-resultBundlePath", "-resultStreamPath", "-a
 STALE = 60
 # Seconds a requester that left the line while waiting keeps its place.
 RESERVED = 900
+# Seconds an extra simulator stays booted after its reservation ends. A boot takes about 45 seconds
+# and five cores, and nearly half of the runs on an extra simulator start within five minutes of the last.
+WARM = 300
 STATE = Path.home() / ".local/state/ios-agent"
 
 
@@ -103,6 +106,8 @@ def grant_simulator(target, directory=None, lock_root=None, ttl_seconds=None):
         temporary = directory / f"{lease.name}-{os.getpid()}"
         temporary.write_text(json.dumps({"owner": owner, "path": str(owner_path), "inode": inode, "ttl": ttl_seconds}))
         temporary.replace(lease)
+        # A reservation shorter than the enforcer's interval must still start a new warm period.
+        (directory / f"{lease.name}.idle").unlink(missing_ok=True)
 
 
 def simulator_reserved(udid, directory):
@@ -120,17 +125,45 @@ def simulator_reserved(udid, directory):
         return False
 
 
+def memory_tight():
+    """Whether the kernel reports memory pressure, or under 30% of memory is available."""
+    try:
+        pressure, available = subprocess.run(
+            ["/usr/sbin/sysctl", "-n", "kern.memorystatus_vm_pressure_level", "kern.memorystatus_level"],
+            capture_output=True, text=True, timeout=5, check=True).stdout.split()
+        return pressure != "1" or int(available) < 30
+    except (subprocess.SubprocessError, OSError, ValueError):
+        return True
+
+
 def enforce_simulators(directory=None):
+    """Shuts down each extra simulator that nobody has reserved for WARM seconds.
+
+    A booted simulator holds about 5 GB, so it goes at once while memory is tight.
+    """
     directory = directory or STATE / "simulators"
     with simulator_guard(directory):
         result = subprocess.run(["/usr/bin/xcrun", "simctl", "list", "devices", "booted", "--json"],
                                 capture_output=True, text=True, timeout=15, check=True)
-        for devices in json.loads(result.stdout)["devices"].values():
-            for device in devices:
-                udid = device["udid"]
-                if device.get("state") == "Booted" and udid in {pair[1] for pair in SIMULATORS[1:]} and not simulator_reserved(udid, directory):
-                    log(f"shutting down {device['name']}; no enabled simulator reservation")
-                    subprocess.run(["/usr/bin/xcrun", "simctl", "shutdown", udid], timeout=15, check=True)
+        booted = {device["udid"] for devices in json.loads(result.stdout)["devices"].values()
+                  for device in devices if device.get("state") == "Booted"}
+        for name, udid in SIMULATORS[1:]:
+            # The age of this file is how long the simulator has been booted without a reservation.
+            idle = directory / f"{udid}.idle"
+            if udid not in booted or simulator_reserved(udid, directory):
+                idle.unlink(missing_ok=True)
+                continue
+            if not idle.exists():
+                idle.touch()
+            unreserved = time.time() - idle.stat().st_mtime
+            if unreserved >= WARM:
+                log(f"shutting down {name}; no reservation for {duration(unreserved)}")
+            elif memory_tight():
+                log(f"shutting down {name}; no reservation, and memory is tight")
+            else:
+                continue
+            subprocess.run(["/usr/bin/xcrun", "simctl", "shutdown", udid], timeout=15, check=True)
+            idle.unlink()
 
 
 def destinations(arguments):

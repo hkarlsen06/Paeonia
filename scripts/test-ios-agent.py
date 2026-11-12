@@ -533,19 +533,63 @@ class SimulatorLeaseTests(unittest.TestCase):
                 {"name": name, "udid": udid, "state": "Booted"}
                 for name, udid in agent.SIMULATORS
             ]}}
-            with mock.patch.object(agent.subprocess, "run", return_value=mock.Mock(stdout=json.dumps(devices))) as run:
-                agent.enforce_simulators(lease_root)
-                shutdowns = [call.args[0][-1] for call in run.call_args_list if "shutdown" in call.args[0]]
-                self.assertEqual(shutdowns, [agent.SIMULATORS[1][1], agent.SIMULATORS[2][1]])
-            owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
-            with mock.patch.object(agent.subprocess, "run", return_value=mock.Mock(stdout=json.dumps(devices))) as run:
-                agent.enforce_simulators(lease_root)
-                shutdowns = [call.args[0][-1] for call in run.call_args_list if "shutdown" in call.args[0]]
-                self.assertEqual(shutdowns, [agent.SIMULATORS[2][1]])
+            with mock.patch.object(agent, "memory_tight", return_value=True):
+                self.assertEqual(self.shutdowns(lease_root, devices), [agent.SIMULATORS[1][1], agent.SIMULATORS[2][1]])
+                owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
+                self.assertEqual(self.shutdowns(lease_root, devices), [agent.SIMULATORS[2][1]])
             owner.parent.rename(owners / "released")
             owner.parent.mkdir()
             owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
             self.assertFalse(agent.simulator_reserved(agent.SIMULATORS[1][1], lease_root))
+
+    def shutdowns(self, lease_root, devices):
+        with mock.patch.object(agent.subprocess, "run", return_value=mock.Mock(stdout=json.dumps(devices))) as run:
+            agent.enforce_simulators(lease_root)
+            return [call.args[0][-1] for call in run.call_args_list if "shutdown" in call.args[0]]
+
+    def test_a_released_extra_stays_booted_for_the_warm_period(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            owners = root / "locks"
+            lease_root = root / "leases"
+            owner = owners / "simulator-2/owner"
+            owner.parent.mkdir(parents=True)
+            owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
+            agent.grant_simulator("Shared iPhone 2", lease_root, owners)
+            name, udid = agent.SIMULATORS[1]
+            devices = {"devices": {"runtime": [{"name": name, "udid": udid, "state": "Booted"}]}}
+            idle = lease_root / f"{udid}.idle"
+
+            def age(seconds):
+                os.utime(idle, (time.time() - seconds,) * 2)
+
+            with mock.patch.object(agent, "memory_tight", return_value=False):
+                owner.unlink()
+                self.assertEqual(self.shutdowns(lease_root, devices), [])
+                age(agent.WARM - 30)
+                self.assertEqual(self.shutdowns(lease_root, devices), [])
+                # The next agent takes it within the period, so a later release starts a new one.
+                owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
+                self.assertEqual(self.shutdowns(lease_root, devices), [])
+                owner.unlink()
+                self.assertEqual(self.shutdowns(lease_root, devices), [])
+                # So does one that takes and releases it between two checks.
+                age(agent.WARM)
+                owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
+                agent.grant_simulator("Shared iPhone 2", lease_root, owners)
+                owner.unlink()
+                self.assertEqual(self.shutdowns(lease_root, devices), [])
+                age(agent.WARM - 30)
+                self.assertEqual(self.shutdowns(lease_root, devices), [])
+                age(agent.WARM)
+                self.assertEqual(self.shutdowns(lease_root, devices), [udid])
+                # A simulator that something else shut down starts a new period at its next release.
+                self.assertEqual(self.shutdowns(lease_root, devices), [])
+                age(agent.WARM)
+                self.assertEqual(self.shutdowns(lease_root, {"devices": {}}), [])
+                self.assertEqual(self.shutdowns(lease_root, devices), [])
+            with mock.patch.object(agent, "memory_tight", return_value=True):
+                self.assertEqual(self.shutdowns(lease_root, devices), [udid])
 
 
 if __name__ == "__main__":
