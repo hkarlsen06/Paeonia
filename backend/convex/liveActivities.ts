@@ -11,7 +11,7 @@ import { newUuid, uuidArg } from "./lib/ids";
 import { activityTokens, checkGameActivity, moveGameActivity, queueActivityPush, queueLiveActivityPush } from "./lib/liveActivities";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { btrimToNull, charLength } from "./lib/text";
-import { gameKind, literals } from "./lib/validators";
+import { gameKind, literals, liveActivityDelivery } from "./lib/validators";
 import { nowIso } from "./lib/time";
 
 // The Live Activity that shows the partner's game session (lib/liveActivities.ts). The app
@@ -103,7 +103,7 @@ export const register_live_activity_token = mutation({
       return "saved";
     }
     const token = (await ctx.db.get(tokenId!))!;
-    await queueLiveActivityPush(ctx, token, { event: "update", quiet: false, activity_id: activity.id, game_kind: activity.game_kind });
+    await queueLiveActivityPush(ctx, token, { event: "update", delivery: "now", activity_id: activity.id, game_kind: activity.game_kind });
     return "playing";
   },
 });
@@ -198,7 +198,7 @@ export const queue_game_activity_push = internalMutation({
     activity_id: v.string(),
     game_kind: gameKind,
     event: literals("start", "update", "end"),
-    quiet: v.boolean(),
+    delivery: liveActivityDelivery,
   },
   handler: async (ctx, { viewer_user_id, ...push }) => {
     if (push.event !== "end" && !(await getByUuid(ctx, "game_live_activities", push.activity_id))) return null;

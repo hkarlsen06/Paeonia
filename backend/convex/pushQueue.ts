@@ -270,8 +270,8 @@ export const prepare_widget_push = internalMutation({
 /**
  * Like `prepare_notification` for an ActivityKit push. A start or an update goes out only while its
  * activity still runs, and carries the game the partner is in now and whose turn it is. A start also
- * needs the viewer to still have the couple and game pushes, and carries the name the viewer calls
- * the partner. An end needs only its token, and names the game of its outbox row with no turn.
+ * needs the viewer to still have the couple and game pushes. A start and an alert carry the name the
+ * viewer calls the partner. An end needs only its token, and names the game of its outbox row with no turn.
  */
 export const prepare_live_activity_push = internalMutation({
   args: { outbox_id: v.string() },
@@ -282,6 +282,7 @@ export const prepare_live_activity_push = internalMutation({
     if (!token) return await drop(ctx, row, TARGET_INELIGIBLE);
     let shown: Pick<PreparedLiveActivityPush, "game_kind" | "turn"> = { game_kind: row.game_kind, turn: "none" };
     let start: PreparedLiveActivityPush["start"] = null;
+    let alert: PreparedLiveActivityPush["alert"] = null;
     if (row.event !== "end") {
       const activity = await getByUuid(ctx, "game_live_activities", row.activity_id);
       if (!activity) return await drop(ctx, row, OUT_OF_DATE);
@@ -294,9 +295,13 @@ export const prepare_live_activity_push = internalMutation({
         if (!(preference?.games_enabled ?? false) || !(await canAccessCoupleContent(ctx, token.user_id, activity.couple_id))) {
           return await drop(ctx, row, TARGET_INELIGIBLE);
         }
+      }
+      if (row.event === "start" || row.delivery === "alert") {
         const partnerName = await shortPartnerName(ctx, token.user_id, activity.partner_user_id);
-        const alert = liveActivityAlert(activity.game_kind, activity.turn, partnerName, notificationLocaleLanguage(token.locale));
-        start = { partner_name: partnerName ?? "", alert_title: alert.title, alert_body: alert.body };
+        if (row.event === "start") start = { partner_name: partnerName ?? "" };
+        if (row.delivery === "alert") {
+          alert = liveActivityAlert(activity.game_kind, activity.turn, partnerName, notificationLocaleLanguage(token.locale));
+        }
       }
     }
     return {
@@ -306,7 +311,8 @@ export const prepare_live_activity_push = internalMutation({
       apns_environment: token.apns_environment,
       activity_id: row.activity_id,
       event: row.event,
-      quiet: row.quiet ?? false,
+      quiet: row.delivery === "quiet",
+      alert,
       ...shown,
       queued_at: row.created_at,
       start,

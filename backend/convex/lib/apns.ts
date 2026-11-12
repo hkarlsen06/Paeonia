@@ -306,14 +306,16 @@ export type PreparedLiveActivityPush = {
   apns_environment: ApnsEnvironment;
   activity_id: string;
   event: "start" | "update" | "end";
-  /** Goes at priority 5, which iOS does not count against the app: a refresh of the stale date, or an update the viewer cannot see. */
+  /** Goes at priority 5: a refresh of the stale date, or an update the viewer cannot see. */
   quiet: boolean;
+  /** Lights the screen and opens the Dynamic Island. An Apple Watch shows the words. Null for a push that changes the activity with no sign. */
+  alert: { title: string; body: string } | null;
   game_kind: GameKind;
   turn: GameTurn;
   /** When the push was queued. iOS keeps the newest, and the stale and dismissal dates count from it. */
   queued_at: string;
-  /** The attributes and the alert a start needs. Null for an update or an end. */
-  start: { partner_name: string; alert_title: string; alert_body: string } | null;
+  /** The attributes a start needs. Null for an update or an end. */
+  start: { partner_name: string } | null;
 };
 
 /** The Swift type of the activity's attributes, `GameLiveActivityAttributes` in PaeoniaWidget/LiveActivity. */
@@ -347,10 +349,10 @@ export function buildLiveActivityApsPayload(push: PreparedLiveActivityPush): Rec
   } else {
     aps["stale-date"] = timestamp + staleSeconds(push);
   }
+  if (push.alert) aps.alert = push.alert;
   if (push.start) {
     aps["attributes-type"] = LIVE_ACTIVITY_ATTRIBUTES_TYPE;
     aps.attributes = { activityID: push.activity_id, partnerName: push.start.partner_name };
-    aps.alert = { title: push.start.alert_title, body: push.start.alert_body };
     // Asks iOS for the activity's own token, which its updates and its end go to.
     aps["input-push-token"] = 1;
   }

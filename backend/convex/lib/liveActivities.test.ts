@@ -6,6 +6,7 @@ import {
   type GameActivityEvent,
   type GameActivityState,
   type GameTurn,
+  type LiveActivityDelivery,
   nextGameActivity,
 } from "./liveActivities";
 import type { GameKind } from "./games";
@@ -26,9 +27,14 @@ const heartbeat = (game_kind: GameKind = "mind_meld", turn: GameTurn = "none", v
 const turn = (value: GameTurn, viewer_present = false): GameActivityEvent => ({ kind: "turn", turn: value, viewer_present, at: at(30_000) });
 const left = (game_kind: GameKind, ms: number): GameActivityEvent => ({ kind: "left", game_kind, at: at(ms) });
 const check = (partner_present: boolean, ms: number): GameActivityEvent => ({ kind: "check", partner_present, at: at(ms) });
-const push = (event: "start" | "update" | "end", game_kind: GameKind = "mind_meld", quiet = false, activity_id = "activity-1") => ({
+const push = (
+  event: "start" | "update" | "end",
+  game_kind: GameKind = "mind_meld",
+  delivery: LiveActivityDelivery = "now",
+  activity_id = "activity-1",
+) => ({
   event,
-  quiet,
+  delivery,
   activity_id,
   game_kind,
 });
@@ -38,7 +44,7 @@ describe("nextGameActivity", () => {
     test("stores the activity with its game and turn, and queues one start push", () => {
       expect(nextGameActivity(null, { kind: "start", id: "activity-2", game_kind: "connect_four", turn: "yours", at: at(30_000) })).toEqual({
         row: { id: "activity-2", game_kind: "connect_four", turn: "yours", pushed_at: at(30_000) },
-        push: push("start", "connect_four", false, "activity-2"),
+        push: push("start", "connect_four", "alert", "activity-2"),
       });
     });
 
@@ -52,10 +58,10 @@ describe("nextGameActivity", () => {
       expect(nextGameActivity(running, heartbeat())).toBeNull();
     });
 
-    test("moves the activity to another game or turn with one update", () => {
+    test("moves the activity to another game or turn with one update, which alerts for another game", () => {
       expect(nextGameActivity(running, heartbeat("draw_and_guess"))).toEqual({
         row: { ...running, game_kind: "draw_and_guess", pushed_at: at(30_000) },
-        push: push("update", "draw_and_guess"),
+        push: push("update", "draw_and_guess", "alert"),
       });
       expect(nextGameActivity(running, heartbeat("mind_meld", "theirs"))).toEqual({
         row: { ...running, turn: "theirs", pushed_at: at(30_000) },
@@ -64,14 +70,14 @@ describe("nextGameActivity", () => {
     });
 
     test("sends the update quietly while the viewer has that game open", () => {
-      expect(nextGameActivity(running, heartbeat("connect_four", "yours", true))?.push).toEqual(push("update", "connect_four", true));
+      expect(nextGameActivity(running, heartbeat("connect_four", "yours", true))?.push).toEqual(push("update", "connect_four", "quiet"));
     });
 
     test("clears the end of a partner who came back in time, with an update only when something changed", () => {
       expect(nextGameActivity(ending(running), heartbeat())).toEqual({ row: running, push: null });
       expect(nextGameActivity(ending(running), heartbeat("piccante"))).toEqual({
         row: { ...running, game_kind: "piccante", pushed_at: at(30_000) },
-        push: push("update", "piccante"),
+        push: push("update", "piccante", "alert"),
       });
     });
   });
@@ -79,8 +85,14 @@ describe("nextGameActivity", () => {
   describe("the turn read again", () => {
     test("sends one update when it changed, quietly while the viewer has the game open", () => {
       expect(nextGameActivity(running, turn("none"))).toBeNull();
-      expect(nextGameActivity(running, turn("yours"))).toEqual({ row: { ...running, turn: "yours", pushed_at: at(30_000) }, push: push("update") });
-      expect(nextGameActivity(running, turn("yours", true))?.push).toEqual(push("update", "mind_meld", true));
+      expect(nextGameActivity(running, turn("theirs"))).toEqual({ row: { ...running, turn: "theirs", pushed_at: at(30_000) }, push: push("update") });
+      expect(nextGameActivity(running, turn("theirs", true))?.push).toEqual(push("update", "mind_meld", "quiet"));
+    });
+
+    test("alerts when the turn became the viewer's, unless they have the game open", () => {
+      expect(nextGameActivity(running, turn("yours"))?.push).toEqual(push("update", "mind_meld", "alert"));
+      expect(nextGameActivity(running, turn("yours", true))?.push).toEqual(push("update", "mind_meld", "quiet"));
+      expect(nextGameActivity({ ...running, turn: "yours" }, turn("none"))?.push).toEqual(push("update"));
     });
 
     test("brings the end closer once no turn is left, and never moves it later", () => {
@@ -126,7 +138,7 @@ describe("nextGameActivity", () => {
     test("sends a quiet update once the last push is old, so the activity does not go stale", () => {
       expect(nextGameActivity(running, check(true, GAME_ACTIVITY_REFRESH_MS))).toEqual({
         row: { ...running, pushed_at: at(GAME_ACTIVITY_REFRESH_MS) },
-        push: push("update", "mind_meld", true),
+        push: push("update", "mind_meld", "quiet"),
       });
     });
 
@@ -151,7 +163,7 @@ describe("nextGameActivity", () => {
       const row = ending({ ...running, turn: "yours" }, at(GAME_ACTIVITY_REFRESH_MS + 60_000));
       expect(nextGameActivity(row, check(false, GAME_ACTIVITY_REFRESH_MS))).toEqual({
         row: { ...row, pushed_at: at(GAME_ACTIVITY_REFRESH_MS) },
-        push: push("update", "mind_meld", true),
+        push: push("update", "mind_meld", "quiet"),
       });
     });
   });
@@ -180,6 +192,7 @@ describe("buildLiveActivityRequest", () => {
     activity_id: "6f1c2d3e-4b5a-4c7d-8e9f-0a1b2c3d4e5f",
     event: "update",
     quiet: false,
+    alert: null,
     game_kind: "mind_meld",
     turn: "none",
     queued_at: T0,
@@ -188,7 +201,7 @@ describe("buildLiveActivityRequest", () => {
   const body = (push: PreparedLiveActivityPush) => JSON.parse(buildLiveActivityRequest(push, "no.paeonia.app").body);
 
   test("a start carries the attributes, the alert, the ask for an update token, and a stale date two minutes out", () => {
-    const push = { ...base, event: "start" as const, start: { partner_name: "Panci", alert_title: "Panci is playing Mind Meld", alert_body: "Tap to join." } };
+    const push = { ...base, event: "start" as const, alert: { title: "Panci is playing Mind Meld", body: "Tap to join." }, start: { partner_name: "Panci" } };
     const request = buildLiveActivityRequest(push, "no.paeonia.app");
     expect(request).toMatchObject({
       token: base.token,
@@ -224,6 +237,17 @@ describe("buildLiveActivityRequest", () => {
     });
     expect(buildLiveActivityRequest(base, "no.paeonia.app").expiration).toBe("1794312900");
     expect(buildLiveActivityRequest({ ...base, quiet: true }, "no.paeonia.app").priority).toBe("5");
+  });
+
+  test("an update with an alert carries its words, and no attributes", () => {
+    const alert = { title: "Panci is playing Connect Four", body: "It's your turn." };
+    expect(body({ ...base, alert }).aps).toEqual({
+      timestamp: seconds,
+      event: "update",
+      "content-state": { gameKind: "mind_meld", phase: "playing", turn: "none" },
+      "stale-date": 1_794_312_900,
+      alert,
+    });
   });
 
   test("an end shows the ended state and leaves the Lock Screen at once", () => {

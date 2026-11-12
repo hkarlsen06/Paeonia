@@ -578,7 +578,7 @@ describe("whose turn it is", () => {
     });
   });
 
-  test("a move that passes the turn sends one update with the new turn", async () => {
+  test("a move that passes the turn sends one update with the new turn, which alerts the viewer", async () => {
     const { t, partner, viewer, installId } = await setup();
     const game = await fourInARow(t, partner);
     await presence(t, partner, "connect_four", true);
@@ -588,8 +588,13 @@ describe("whose turn it is", () => {
 
     await dropPiece(t, partner, game);
     const sent = await deliveredAps(t);
-    expect(sent.map(({ request, aps }) => [request.priority, aps.event, aps["content-state"]])).toEqual([
-      ["10", "update", { gameKind: "connect_four", phase: "playing", turn: "yours" }],
+    expect(sent.map(({ request, aps }) => [request.priority, aps.event, aps["content-state"], aps.alert])).toEqual([
+      [
+        "10",
+        "update",
+        { gameKind: "connect_four", phase: "playing", turn: "yours" },
+        { title: "First is playing Four in a Row", body: "It's your turn." },
+      ],
     ]);
     await keepPlaying(t, [[partner, "connect_four"]], 60_000);
     expect(await deliveredAps(t)).toEqual([]);
@@ -624,7 +629,7 @@ describe("whose turn it is", () => {
     await elapse(t, 9 * 60_000);
     expect(await queued(t, "end")).toHaveLength(0);
     // The last push before the close was 5 minutes earlier, and a refresh came during the wait.
-    expect(await queued(t, "update")).toEqual(expect.arrayContaining([expect.objectContaining({ quiet: true })]));
+    expect(await queued(t, "update")).toEqual(expect.arrayContaining([expect.objectContaining({ delivery: "quiet" })]));
 
     await elapse(t, 2 * 60_000);
     const ends = await queued(t, "end");

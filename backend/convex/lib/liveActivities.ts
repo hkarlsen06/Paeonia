@@ -1,3 +1,4 @@
+import type { Infer } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx, WriterCtx } from "./db";
@@ -7,6 +8,7 @@ import { enqueuePush } from "./notifications";
 import { isGamePresent, openGameKinds } from "./presence";
 import { addMs, nowIso } from "./time";
 import { isCoupleTogetherAt } from "./together";
+import type { liveActivityDelivery } from "./validators";
 
 // The Live Activity that shows a viewer their partner's game session. A row exists only while an
 // activity runs, one per viewer and couple. It starts on the partner's game screen heartbeat,
@@ -62,12 +64,19 @@ export type GameActivityEvent =
   | { kind: "stop" };
 
 /**
+ * How a push reaches the phone. `alert` lights the screen and opens the Dynamic Island. `now`
+ * changes the activity with no sign. `quiet` goes at APNs priority 5, which iOS may hold back and
+ * does not count against the app.
+ */
+export type LiveActivityDelivery = Infer<typeof liveActivityDelivery>;
+
+/**
  * One push to the viewer's phones. A start goes to every push-to-start token of the viewer, an
- * update or an end to every token of activity `activity_id`. `quiet` goes at APNs priority 5.
+ * update or an end to every token of activity `activity_id`.
  */
 export type LiveActivityPush = {
   event: "start" | "update" | "end";
-  quiet: boolean;
+  delivery: LiveActivityDelivery;
   activity_id: string;
   game_kind: GameKind;
 };
@@ -81,7 +90,7 @@ export function nextGameActivity(row: GameActivityState | null, event: GameActiv
     if (row) return null;
     return {
       row: { id: event.id, game_kind: event.game_kind, turn: event.turn, pushed_at: event.at },
-      push: { event: "start", quiet: false, activity_id: event.id, game_kind: event.game_kind },
+      push: { event: "start", delivery: "alert", activity_id: event.id, game_kind: event.game_kind },
     };
   }
   if (!row) return null;
@@ -109,12 +118,17 @@ export function nextGameActivity(row: GameActivityState | null, event: GameActiv
   }
 }
 
-/** One update when the game or the turn changed. The viewer cannot see the activity while they have the game open, so it goes quiet then. */
+/**
+ * One update when the game or the turn changed. It alerts when the partner went to another game or
+ * the turn became the viewer's. The viewer cannot see the activity while they have the game open,
+ * so it goes quiet then.
+ */
 function showing(row: GameActivityState, gameKind: GameKind, turn: GameTurn, viewerPresent: boolean, at: string): GameActivityStep | null {
   if (row.game_kind === gameKind && row.turn === turn) return null;
+  const news = row.game_kind !== gameKind || turn === "yours";
   return {
     row: { ...row, game_kind: gameKind, turn, pushed_at: at },
-    push: { event: "update", quiet: viewerPresent, activity_id: row.id, game_kind: gameKind },
+    push: { event: "update", delivery: viewerPresent ? "quiet" : news ? "alert" : "now", activity_id: row.id, game_kind: gameKind },
   };
 }
 
@@ -126,7 +140,7 @@ function afterCheck(row: GameActivityState, event: Extract<GameActivityEvent, { 
   if (!refresh && kept.ends_at === row.ends_at) return null;
   return {
     row: refresh ? { ...kept, pushed_at: event.at } : kept,
-    push: refresh ? { event: "update", quiet: true, activity_id: row.id, game_kind: row.game_kind } : null,
+    push: refresh ? { event: "update", delivery: "quiet", activity_id: row.id, game_kind: row.game_kind } : null,
   };
 }
 
@@ -135,7 +149,7 @@ function withoutEnd(row: GameActivityState): GameActivityState {
   return rest;
 }
 
-const endOf = (row: GameActivityState): LiveActivityPush => ({ event: "end", quiet: false, activity_id: row.id, game_kind: row.game_kind });
+const endOf = (row: GameActivityState): LiveActivityPush => ({ event: "end", delivery: "now", activity_id: row.id, game_kind: row.game_kind });
 const endsAfter = (at: string, turn: GameTurn) => addMs(at, GAME_ACTIVITY_END_DELAY_MS[turn]);
 const msBetween = (from: string, to: string) => Date.parse(to) - Date.parse(from);
 const earlier = (a: string | undefined, b: string) => (a !== undefined && a < b ? a : b);
@@ -326,7 +340,7 @@ export async function queueLiveActivityPush(ctx: WriterCtx, token: Doc<"live_act
     activity_id: push.activity_id,
     event: push.event,
     game_kind: push.game_kind,
-    ...(push.quiet ? { quiet: true } : {}),
+    delivery: push.delivery,
     scheduled_for: now,
     created_at: now,
   });

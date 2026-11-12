@@ -7,6 +7,7 @@ import {
   avatarDecoration,
   favoriteKind,
   gameKind,
+  liveActivityDelivery,
   gameLanguage,
   gamePlayStyle,
   grantKind,
@@ -1995,8 +1996,9 @@ export default defineSchema({
     .index("by_token_hash", ["token_hash"]),
 
   // One ActivityKit push to one token. The send reads the token row when it is due. A start or an
-  // update reads the activity's game and turn then, and a start the partner's name, so the row holds
-  // no name. `game_kind` is what an end names. FK: target_token_id -> live_activity_tokens cascade.
+  // update reads the activity's game and turn then, and a start or an alert the partner's name, so
+  // the row holds no name. `game_kind` is what an end names. `delivery` is `LiveActivityDelivery` in
+  // lib/liveActivities.ts. FK: target_token_id -> live_activity_tokens cascade.
   live_activity_push_outbox: defineTable({
     id: uuid,
     recipient_user_id: uuid,
@@ -2004,9 +2006,7 @@ export default defineSchema({
     activity_id: uuid,
     event: literals("start", "update", "end"),
     game_kind: gameKind,
-    // Goes at APNs priority 5: a refresh that only keeps the activity from going stale, or an update
-    // while the viewer has the game open and cannot see the activity.
-    quiet: v.optional(v.boolean()),
+    delivery: liveActivityDelivery,
     provider_message_id: optString,
     last_error: optString,
     scheduled_for: ts,

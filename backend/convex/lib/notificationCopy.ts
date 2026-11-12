@@ -201,8 +201,8 @@ export const GAME_PUSH_COPY: Record<GameKind, Record<"en" | "nb", GamePushCopy>>
 };
 
 /**
- * The alert iOS shows as a Live Activity starts on the viewer's phone. `partnerName` is what the
- * viewer calls the partner, or null for "Your partner".
+ * The alert of a Live Activity push: its start, the partner's move to another game, or the turn
+ * that became the viewer's. `partnerName` is what the viewer calls the partner, or null for "Your partner".
  */
 export function liveActivityAlert(
   kind: GameKind,
