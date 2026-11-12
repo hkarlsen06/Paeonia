@@ -10,9 +10,10 @@ around the 3D layer from phone3d.py and cuts the music to it. Run from the repos
 
 Writes video/blender/out/paeonia-showcase-<locale>.mp4, or -preview.mp4 at half size from the preview layer.
 --still writes those frames and a contact sheet to video/blender/out/stills/ instead.
---placeholders DIR writes marked stand-in captures for every locale into DIR, to render with before the real ones.
---fit measures where each drawing sits in the captures, to copy into REGIONS in timeline.py.
---check compares the replayed drawings with their PencilKit previews and checks the cut music.
+--placeholders DIR writes marked stand-in captures and screen recordings for every locale into DIR, to render with
+before the real ones.
+--fit measures where the widget drawing sits in the captures, to copy into REGIONS in timeline.py.
+--check compares the replayed drawings with their PencilKit previews, checks the timing rules and the cut music.
 
 The music is "Day Dreamin' with U" by Michael Ramir C. from Mixkit, under the Mixkit Stock Music Free License:
 https://assets.mixkit.co/music/988/988.mp3. Download it to video/blender/music.mp3. The license lets the film use
@@ -34,9 +35,9 @@ import numpy as np
 import skia
 
 from strokes import Strokes, inpaint
-from timeline import (ASSETS, CAPTURE, CAPTURES, CHAT, CONFIG, COUNTDOWN, DRAW, DRAWINGS, END, FPS, FRAMES, H, HOME,
-                      LOCALES, MEMORIES, OUT, PLAY, POSTERS, REGIONS, ROOT, ROUTE, SCREENS, SPOTLIGHT, SUBJECT, TEXT, W,
-                      WIDGET, at, box, canvas_radius, capture, layer, on_glass)
+from timeline import (ASSETS, CAPTURE, CAPTURES, CHAT, CONFIG, COUNTDOWN, DRAWINGS, END, FOOTAGE, FPS, FRAMES, H,
+                      HOME, LOCALES, MEMORIES, OUT, PLAY, POSTERS, REGIONS, ROOT, SCREENS, SUBJECT, TEXT, W, WIDGET, at,
+                      box, canvas_radius, capture, cuts, footage_time, layer, on_glass, recording, showing)
 
 MUSIC, SR = ROOT / 'video/blender/music.mp3', 48000
 BRAND = ROOT / 'video/brand'
@@ -54,19 +55,16 @@ SHADOW, SHADOW_ALPHA = hexc(CONFIG['shadow']), int(CONFIG['shadow'][7:9], 16) / 
 GRADIENT = [hexc('#' + c) for c in re.findall(r'#(\w{6})', CONFIG['background'])]
 STOPS = [int(p) / 100 for p in re.findall(r'(\d+)%', CONFIG['background'])]
 ANGLE = math.radians(int(re.search(r'(\d+)deg', CONFIG['background'])[1]))
-SPOT = next(p['spotlight'] for p in CONFIG['devices']['iPhone']['layout'] if 'spotlight' in p)
 
 # On-screen text, as (panel, line) in the "panels" of paeonia-3d.json, where line 0 is the headline and 1 the body.
 # The film reuses the approved App Store copy, so any locale the screenshots have renders here as well.
-COPY = {'drawing': (0, 0), 'drawing body': (0, 1), 'question': (1, 0), 'play': (2, 0), 'moments': (4, 0),
-        'countdown': (3, 0)}
+COPY = {'drawing': (0, 0), 'drawing body': (0, 1), 'question': (1, 0), 'play': (2, 0), 'moments': (4, 0)}
 # Headlines, as (copy, frame the first word rises on, frame the words leave on). A rise of None means the words are
 # already up on the first frame.
 # Each leaves just before its scene's last bar line and the next rises just before the bar, so its words have
 # settled by the second beat.
 HEADLINES = [('drawing', None, at(HOME, 0, -14)), ('question', at(HOME, 0, -2), at(PLAY, 0, -14)),
-             ('play', at(PLAY, 0, -2), at(MEMORIES, 0, -14)), ('moments', at(MEMORIES, 0, -2), at(SPOTLIGHT, 0, -14)),
-             ('countdown', at(SPOTLIGHT, 0, -2), at(ROUTE, 0, -10))]
+             ('play', at(PLAY, 0, -2), at(MEMORIES, 0, -14)), ('moments', at(MEMORIES, 0, -2), at(END, 0, -14))]
 # The music is the track cut on its bar lines, as (first bar of the track counted from 1, bars). Two soft intro bars,
 # ten bars from the drums' entry, then the closing bar, whose ring-out is silent by the last frame.
 BAR0, BAR_S = 1.99, 2.0  # 10 ms before the track's first downbeat, whose drum hits fall at 2.000 s, and the bar length
@@ -77,9 +75,9 @@ RISE, SETTLE, HANDOVER = 20, 16, 8  # frames a lift takes to rise and to settle,
 class Lift(NamedTuple):
     """A region rising off the glass. It has the frame it starts to rise, the frame it starts to settle back, its
     width on screen when up, how far its centre moves from its place on the glass, and how far it turns in degrees.
-    A lift that never settles stays up until the phone leaves."""
+    Cards stack in the order of LIFTS, the later one in front."""
     rise: float
-    settle: float | None
+    settle: float
     width: float
     move: tuple = (0, 0)
     turn: float = 0
@@ -88,13 +86,12 @@ class Lift(NamedTuple):
 LIFTS = {
     'drawing widget': Lift(-RISE, at(COUNTDOWN), 540, (0, -10)),
     'countdown widget': Lift(at(COUNTDOWN, 0, 2), at(HOME, 0, -18), 330, (70, -30)),
-    'envelope': Lift(at(HOME, 1, -9), at(CHAT, 0, -24), 560, (0, -40)),
-    'your answer': Lift(at(CHAT), at(CHAT + 1, 0, -4), 600, (-40, -40)),
-    'partner answer': Lift(at(CHAT + 1), at(PLAY, 0, -22), 620, (40, -40)),
-    'photo 1': Lift(at(MEMORIES, 0, 18), at(SPOTLIGHT, 0, -40), 270, (-80, -40), -9),
-    'photo 2': Lift(at(MEMORIES, 0, 24), at(SPOTLIGHT, 0, -36), 280, (10, -110), 2),
-    'photo 3': Lift(at(MEMORIES, 0, 30), at(SPOTLIGHT, 0, -32), 270, (110, -40), 10),
-    'countdown tile': Lift(at(SPOTLIGHT, 0, 14), None, 360, (60, -120)),
+    'envelope': Lift(at(HOME, 1, -9), at(CHAT, 0, -20), 560, (0, -40)),
+    'your answer': Lift(at(CHAT), at(PLAY, 0, -20), 690, (-10, 76)),
+    'partner answer': Lift(at(CHAT + 1), at(PLAY, 0, -20), 620, (-10, -90)),
+    'photo 1': Lift(at(MEMORIES, 0, 8), at(END, 0, -26), 270, (-80, -40), -9),
+    'photo 2': Lift(at(MEMORIES, 0, 14), at(END, 0, -22), 280, (10, -110), 2),
+    'photo 3': Lift(at(MEMORIES, 0, 20), at(END, 0, -18), 270, (110, -40), 10),
 }
 
 
@@ -108,10 +105,9 @@ class Replay(NamedTuple):
 
 
 # The film opens with the first 12 of the route's 24 dashes drawn.
-REPLAYS = {'widget canvas': Replay(0, at(WIDGET, 3, 3), 12), 'snail canvas': Replay(at(DRAW), at(DRAW, 6, 6))}
-SPOTLIGHT_ON, SPOTLIGHT_OFF = at(SPOTLIGHT, 0, 8), at(ROUTE, 0, -10)  # the dim fades in and out from these frames
-PHONE_GONE = at(ROUTE, 0, 18)  # the main phone has sunk out of the frame; its lifted cards fade with it
-FADE = FRAMES - 24  # the end card fades out from here, and the background returns to how the film starts
+REPLAYS = {'widget canvas': Replay(0, at(WIDGET, 3, 3), 12)}
+PHONE_GONE = at(END, 0, 18)  # the main phone has sunk out of the frame; its lifted cards fade with it
+TOUCH = 8  # frames a tap of a screen recording shows as a dot on the glass
 
 
 # Timing -----------------------------------------------------------------------------------------------------------
@@ -119,7 +115,6 @@ FADE = FRAMES - 24  # the end card fades out from here, and the background retur
 def clamp(x, a=0.0, b=1.0): return a if x < a else b if x > b else x
 def lerp(a, b, x): return a + (b - a) * x
 def prog(t, t0, t1): return clamp((t - t0) / (t1 - t0))
-def out3(x): return 1 - (1 - x) ** 3
 def io3(x): return 4 * x ** 3 if x < 0.5 else 1 - (2 - 2 * x) ** 3 / 2
 def back(x, s=0.9): return 1 + (s + 1) * (x - 1) ** 3 + s * (x - 1) ** 2
 
@@ -160,7 +155,7 @@ def poly(w, h, dst):
 def backdrop(cv, t):
     """The brand gradient and the glow behind the phone. The film drifts a little along the App Store strip's
     gradient and comes back to where it started, so the last frame meets the first; the glow pulses with the bass."""
-    p = kf(t, (0, 0.0), (at(PLAY), 0.10), (at(SPOTLIGHT), 0.16), (at(END), 0.22), (FADE, 0.22), (FRAMES - 2, 0.0))
+    p = kf(t, (0, 0.0), (at(PLAY), 0.10), (at(MEMORIES), 0.16), (at(END), 0.22), (FADE, 0.22), (FRAMES - 2, 0.0))
     length = W / 0.18  # the frame is a sixth of the strip
     dx, dy = math.sin(ANGLE), -math.cos(ANGLE)  # CSS angles: 0deg points up, 90deg right
     x0 = -p * length
@@ -169,7 +164,7 @@ def backdrop(cv, t):
     pulse = A.pulse[min(max(round(t), 0), FRAMES - 1)]
     phone_h = 0.82 * (SUBJECT[3] - SUBJECT[1])
     subject = ((SUBJECT[0] + SUBJECT[2]) / 2, (SUBJECT[1] + SUBJECT[3]) / 2)
-    gx, gy = kf(t, (at(ROUTE), subject), (at(ROUTE, 3), (W / 2, 0.44 * H)), (FADE, (W / 2, 0.44 * H)),
+    gx, gy = kf(t, (at(END), subject), (at(END, 3), (W / 2, 0.44 * H)), (FADE, (W / 2, 0.44 * H)),
                 (FRAMES - 2, subject))
     m = skia.Matrix.Translate(gx, gy)
     m.preScale(0.55 * phone_h, 0.45 * phone_h)  # CSS: radial-gradient(0.55h 0.45h at the phone, glow, transparent)
@@ -199,9 +194,7 @@ def centre(points): return sum(p[0] for p in points) / 4, sum(p[1] for p in poin
 def raised(name, t):
     """0 on the glass, 1 lifted (overshooting a little on the way up)."""
     lift = LIFTS[name]
-    e = back(prog(t, lift.rise, lift.rise + RISE))
-    if lift.settle is not None: e *= 1 - io3(prog(t, lift.settle, lift.settle + SETTLE))
-    return e
+    return back(prog(t, lift.rise, lift.rise + RISE)) * (1 - io3(prog(t, lift.settle, lift.settle + SETTLE)))
 
 
 def target(name, t):
@@ -247,7 +240,7 @@ def lifts(cv, t):
     """Parts of the screen rise off the glass toward the viewer, then settle back. A card starts exactly on its
     region of the 3D screen, so the lift reads as the pixels themselves coming loose; the glass under it darkens like
     the shadow it leaves."""
-    alpha = 1 - prog(t, at(ROUTE, 0, -4), PHONE_GONE)
+    alpha = 1 - prog(t, at(END, 0, -4), PHONE_GONE)
     up = [(name, raised(name, t)) for name in LIFTS]
     up = [(name, e) for name, e in up if e > 0.002 and alpha > 0]
     for name, e in up:
@@ -256,50 +249,14 @@ def lifts(cv, t):
         hole.addRRect(rrect(0, 0, r - l, b - tp, REGIONS[name].radius))
         hole.transform(poly(r - l, b - tp, quad(name, t)))
         cv.drawPath(hole, paint(BLACK, 0.4 * clamp(3 * e) * alpha))
-    for name, e in sorted(up, key=lambda item: item[1]):
+    for name, e in up:
         def content(c, name=name):
             c.drawImage(A.crops[name], 0, 0, SAMPLING)
             if name == 'drawing widget': replay(c, 'widget canvas', t, box(name, A.locale))
         card(cv, name, e, alpha, content)
-        if name == 'countdown tile': glow(cv, name, e * alpha)
 
 
-def glow(cv, name, e):
-    """The spotlit tile's glowing outline and sparkles, as scripts/lib/device3d.mjs draws them."""
-    if e <= 0.01: return
-    l, tp, r, b = box(name, A.locale)
-    w, h = r - l, b - tp
-    k = LIFTS[name].width / w
-    dst = target(name, A.t)
-    m = poly(w, h, dst)
-    outline = skia.Path()
-    outline.addRRect(rrect(0, 0, w, h, REGIONS[name].radius))
-    outline.transform(m)
-    color = hexc(SPOT['glow'])
-    for width, blur in ((14, 70), (8, 36), (5, 12)):
-        cv.drawPath(outline, paint(color, clamp(e), Style=skia.Paint.kStroke_Style, StrokeWidth=width * k * 1.2,
-                                   MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, blur * k * 0.5)))
-        cv.drawPath(outline, paint(color, clamp(e), Style=skia.Paint.kStroke_Style, StrokeWidth=width * k * 0.4))
-    corner = REGIONS[name].radius * (1 - math.sqrt(0.5))
-    for i, (x, y, size) in enumerate(((w - corner, corner, 34), (0, h * 0.62, 22), (w * 0.3, h, 26),
-                                      (w + 10, h * 0.4, 14))):
-        twinkle = clamp(e * 2 - i * 0.25) * (0.75 + 0.25 * math.sin(A.t * 0.25 + i * 1.7))
-        if twinkle <= 0: continue
-        px, py = m.mapXY(x, y)
-        cv.save()
-        cv.translate(px, py)
-        cv.scale(twinkle * k * 1.3, twinkle * k * 1.3)
-        star = skia.Path()
-        star.moveTo(size, 0)
-        for j in range(4):
-            a = j * math.pi / 2
-            star.quadTo(0, 0, size * math.cos(a + math.pi / 2), size * math.sin(a + math.pi / 2))
-        star.close()
-        cv.drawPath(star, paint(hexc('#fff6fa'), MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 2)))
-        cv.restore()
-
-
-def replay(cv, name, t, inside=None):
+def replay(cv, name, t, inside):
     """A drawing replaying on its canvas region, drawn in the capture pixels of `inside` (left, top, ...), which holds
     the region. Behind the strokes is the canvas's own background; HANDOVER frames after the last stroke the replay
     has dissolved into the capture."""
@@ -311,7 +268,7 @@ def replay(cv, name, t, inside=None):
     shown = strokes.total(range(spec.shown)) + strokes.GAP if spec.shown else 0
     u = lerp(shown, strokes.total(range(len(strokes.strokes))), prog(t, spec.start, spec.end))
     cv.save()
-    if inside: cv.translate(l - inside[0], tp - inside[1])
+    cv.translate(l - inside[0], tp - inside[1])
     cv.clipRRect(rrect(0, 0, r - l, b - tp, canvas_radius(r - l)), True)
     cv.saveLayerAlpha(None, round(255 * alpha))
     cv.drawImage(A.blank[name], 0, 0, SAMPLING)
@@ -321,25 +278,35 @@ def replay(cv, name, t, inside=None):
     cv.restore()
 
 
-def on_screen_replay(cv, t):
-    """The snail draws itself on the Draw & Guess phone's glass."""
-    spec = REPLAYS['snail canvas']
-    if not spec.start - 2 <= t < spec.end + HANDOVER: return
-    l, tp, r, b = box('snail canvas', A.locale)
-    cv.save()
-    cv.concat(poly(r - l, b - tp, quad('snail canvas', t)))
-    replay(cv, 'snail canvas', t)
-    cv.restore()
+def touches(cv, t):
+    """Each tap in a screen recording as a soft white dot on the glass under the finger. A tap on the main phone that
+    the Draw & Guess phone covers is not shown."""
+    front = skia.Path()
+    front.addPoly([skia.Point(*p) for p in quad('draw screen', t)], True)
+    for screen, taps in A.taps.items():
+        name = 'draw screen' if screen == '06-draw' else 'screen'
+        m = poly(*CAPTURE, quad(name, t))
+        for frame, x, y in taps:
+            age = t - frame
+            if not 0 <= age < TOUCH: continue
+            px, py = m.mapXY(x * CAPTURE[0], y * CAPTURE[1])
+            if name == 'screen' and front.contains(px, py): continue
+            cv.save()
+            cv.concat(m)
+            e = prog(age, 0, 2) * (1 - io3(prog(age, 3, TOUCH)))
+            cv.drawCircle(x * CAPTURE[0], y * CAPTURE[1], 66 + 10 * prog(age, 0, TOUCH),
+                          paint(WHITE, 0.5 * e, MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10)))
+            cv.restore()
 
 
-def spotlight(cv, t):
-    """The screen dims around the countdown tile, as the App Store screenshot shows it."""
-    e = prog(t, SPOTLIGHT_ON, SPOTLIGHT_ON + 14) * (1 - prog(t, SPOTLIGHT_OFF, SPOTLIGHT_OFF + 12))
-    if e <= 0: return
-    cv.save()
-    cv.concat(poly(*CAPTURE, quad('screen', t)))
-    cv.drawImage(A.dim, 0, 0, SAMPLING, paint(a=io3(e)))
-    cv.restore()
+def tap_frames(screen, rec):
+    """The film frame each tap of a recording falls on, with its x and y, for the taps the cut plays through."""
+    taps = []
+    for f in showing(screen):
+        if f in cuts(screen): continue
+        before, now = footage_time(screen, f - 1, rec), footage_time(screen, f, rec)
+        taps += [(f - (now - s) / (now - before), x, y) for s, x, y in rec.taps if before < s <= now]
+    return taps
 
 
 # Type -------------------------------------------------------------------------------------------------------------
@@ -451,66 +418,15 @@ def svg_image(path, height):
     return surf.makeImageSnapshot().withDefaultMipmaps()
 
 
-# The ending -------------------------------------------------------------------------------------------------------
+# The end card ------------------------------------------------------------------------------------------------------
 
-ROUTE_SCALE = 2.75  # screen pixels per canvas point when the opening drawing replays across the frame
-ROUTE_ORDER = 'plane', 'route', 'heart'  # the plane is there first, then its dotted route runs to the heart
-ROUTE_START, ROUTE_DONE = at(ROUTE), at(END, 0, -8)
-# The heart becomes the mark where it is, the route fades, and the mark rises into the end card. Then each line of the
-# end card rises in turn, and from FADE everything fades to the first frame's plum.
-MORPH, ROUTE_GONE, MARK_UP, MARK_RISE = at(END, 0, -6), at(END, 0, 2), at(END, 0, 4), 20
-CARD = {'wordmark': at(END, 0, 20), 'tagline': at(END, 0, 30), 'small': at(END, 0, 38), 'badge': at(END, 0, 46)}
-
-
-def route_origin():
-    """Where the canvas's top left sits on screen, so the drawing's route and heart are centred under the end card."""
-    return W / 2 - 165 * ROUTE_SCALE, 0.47 * H - 160 * ROUTE_SCALE
-
-
-def heart_box():
-    """The heart of the opening drawing on screen, as (centre x, centre y, width)."""
-    s = A.route
-    i = s.parts(['heart'])[1]
-    ox, oy = route_origin()
-    cx, cy = s.strokes[i]['centre']
-    return ox + cx * ROUTE_SCALE, oy + cy * ROUTE_SCALE, 2 * s.strokes[i]['reach'] * ROUTE_SCALE * 0.95
-
-
-def ending(cv, t):
-    """The opening drawing's real strokes replay large across the frame; the heart they arrive at becomes the peony
-    mark, which rises into the end card. The end card then fades to the first frame's plum."""
-    if t < ROUTE_START - 1: return
-    s = A.route
-    order = s.parts(ROUTE_ORDER)
-    u = s.total(order) * io3(prog(t, ROUTE_START, ROUTE_DONE)) ** 0.85
-    gone = io3(prog(t, ROUTE_GONE, ROUTE_GONE + 20))
-    heart = s.parts(['heart'])
-    ox, oy = route_origin()
-    others = [i for i in order if i not in heart]
-    if gone < 1:
-        cv.save()
-        cv.translate(ox, oy)
-        cv.scale(ROUTE_SCALE, ROUTE_SCALE)
-        s.draw(cv, u, others, alpha=1 - gone)
-        cv.restore()
-    fade_out = 1 - io3(prog(t, FADE, FRAMES - 2))
-    morph = io3(prog(t, MORPH, MORPH + 14))
-    hx, hy, hw = heart_box()
-    lock = lockup()
-    mx, my = kf(t, (MARK_UP, (hx, hy)), (MARK_UP + MARK_RISE, (W / 2, lock['mark'] + MARK / 4)))
-    mw = kf(t, (MORPH, hw * 1.05), (MORPH + 14, hw * 1.6, out3), (MARK_UP + MARK_RISE, MARK))
-    if morph < 1:
-        cv.save()
-        cv.translate(hx, hy)
-        cv.scale(ROUTE_SCALE * lerp(1, 1.35, morph), ROUTE_SCALE * lerp(1, 1.35, morph))
-        cv.translate(*(-c for c in s.strokes[heart[1]]['centre']))
-        s.draw(cv, u - s.total(others) - s.GAP, heart, alpha=1 - morph)
-        cv.restore()
-    if morph > 0:
-        mh = mw / 2
-        cv.drawImageRect(A.mark, skia.Rect.MakeXYWH(mx - mw / 2, my - mh / 2, mw, mh), SAMPLING,
-                         paint(a=morph * fade_out))
-    endcard(cv, t, lock, fade_out)
+# The phone sinks away from END. The mark rises on the downbeat of the music's last chord and the wordmark right after
+# it. The tagline then rises a word every TAGLINE_GAP frames, and the subscription line only once the tagline has been
+# fully up for a moment. From FADE everything fades to the first frame's plum.
+CARD = {'mark': at(END), 'wordmark': at(END, 0, 6), 'tagline': at(END, 0, 22), 'small': at(END, 0, 82),
+        'badge': at(END, 0, 98)}
+TAGLINE_GAP, SMALL_GAP = 3.5, 3
+FADE = FRAMES - 16
 
 
 def lockup():
@@ -530,27 +446,33 @@ def lockup():
     return tops
 
 
-def endcard(cv, t, lock, fade):
-    if t < CARD['wordmark'] - 1: return
-    word = A.wordmark_blob
-    bounds = word.bounds()
-    e = spring(t - CARD['wordmark'], 0.85, 10)
+def endcard(cv, t):
+    if t < CARD['mark'] - 1: return
+    fade = 1 - io3(prog(t, FADE, FRAMES - 2))
+    lock = lockup()
+
+    def rise(key, drop):
+        e = spring(t - CARD[key], 0.85, 10)
+        return e, (1 - e) * drop, clamp(1.5 * e) * fade
+
+    e, dy, alpha = rise('mark', 40)
     if e > 0.001:
-        y = lock['wordmark'] + (1 - e) * 40
-        cv.drawTextBlob(word, (W - bounds.width()) / 2 - bounds.left(), y - bounds.top(),
-                        paint(TEXT_COLOR, clamp(1.5 * e) * fade))
+        cv.drawImageRect(A.mark, skia.Rect.MakeXYWH(W / 2 - MARK / 2, lock['mark'] + dy, MARK, MARK / 2), SAMPLING,
+                         paint(a=alpha))
+    e, dy, alpha = rise('wordmark', 40)
+    if e > 0.001:
+        bounds = A.wordmark_blob.bounds()
+        cv.drawTextBlob(A.wordmark_blob, (W - bounds.width()) / 2 - bounds.left(), lock['wordmark'] + dy - bounds.top(),
+                        paint(TEXT_COLOR, alpha))
     headline(cv, A.tagline, (TEXT[0], lock['tagline'], TEXT[2], 0), t, CARD['tagline'], None, size=TAGLINE,
-             align='center', leading=1.2, alpha=fade, color=ACCENT, gap=1.5)
+             align='center', leading=1.2, alpha=fade, color=ACCENT, gap=TAGLINE_GAP)
     headline(cv, A.small, (TEXT[0], lock['small'], TEXT[2], 0), t, CARD['small'], None, size=SMALL, align='center',
-             leading=1.3, alpha=0.72 * fade, gap=1.5)
-    e = spring(t - CARD['badge'], 0.85, 10)
+             leading=1.3, alpha=0.72 * fade, gap=SMALL_GAP)
+    e, dy, alpha = rise('badge', 24)
     if e > 0.001:
         bw = A.badge.width() * BADGE / A.badge.height()
-        cv.save()
-        cv.translate(W / 2, lock['badge'] + BADGE / 2 + (1 - e) * 24)
-        cv.drawImageRect(A.badge, skia.Rect.MakeXYWH(-bw / 2, -BADGE / 2, bw, BADGE), SAMPLING,
-                         paint(a=clamp(1.5 * e) * fade))
-        cv.restore()
+        cv.drawImageRect(A.badge, skia.Rect.MakeXYWH(W / 2 - bw / 2, lock['badge'] + dy, bw, BADGE), SAMPLING,
+                         paint(a=alpha))
 
 
 # Frame ------------------------------------------------------------------------------------------------------------
@@ -559,11 +481,10 @@ def scene(cv, t, layer):
     A.t = t
     backdrop(cv, t)
     cv.drawImageRect(layer, skia.Rect.MakeWH(W, H), SAMPLING)
-    spotlight(cv, t)
-    on_screen_replay(cv, t)
+    touches(cv, t)
     lifts(cv, t)
     headlines(cv, t)
-    ending(cv, t)
+    endcard(cv, t)
     cv.drawPaint(skia.Paint(Shader=skia.GradientShader.MakeRadial(
         skia.Point(W / 2, H / 2), 1300, [argb(BLACK, 0), argb(BLACK, 0.3)], [0.55, 1.0])))
 
@@ -633,18 +554,6 @@ def init(opts):
         strokes = drawing(name, A.locale)
         A.strokes[name] = strokes
         A.blank[name] = image(inpaint(glass[REGIONS[name].screen][t:b, l:r], strokes.coverage(r - l, 3) > 0.01))
-    A.route = drawing('widget canvas', A.locale)
-    # The spotlight's shade: SPOT['dim'] over the whole capture except a rounded box around the tile, feathered.
-    l, t, r, b = box('countdown tile', A.locale)
-    pad, feather = SPOT['padding'], SPOT['feather']
-    shade = skia.Surface(*CAPTURE)
-    c = shade.getCanvas()
-    c.clear(argb(BLACK, SPOT['dim']))
-    hole = paint(BLACK, BlendMode=skia.BlendMode.kDstOut,
-                 MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, feather / 2))
-    c.drawRRect(rrect(l - pad - feather / 2, t - pad - feather / 2, r + pad + feather / 2, b + pad + feather / 2,
-                      SPOT['radius'] + feather / 2), hole)
-    A.dim = shade.makeImageSnapshot().withDefaultMipmaps()
     A.mark = svg_image(ROOT / 'ios/PaeoniaApp/Resources/Assets.xcassets/PaeoniaMark.imageset/paeonia-mark.svg',
                        MARK)
     A.wordmark_blob = skia.TextBlob.MakeFromShapedText('Paeonia', font(WORDMARK))
@@ -710,9 +619,33 @@ def loudness(path):
 
 # Tools ------------------------------------------------------------------------------------------------------------
 
+# Invented events of the stand-in recordings, in seconds, with their length.
+STAND_IN = {
+    '03-ludo': (10, {'die tap': 1.0, 'die settled': 1.8, 'piece starts': 2.1, 'piece lands': 2.9,
+                     'partner die starts': 5.0, 'partner piece lands': 6.6, 'taps': [(1.0, 0.5, 0.86)]}),
+    '06-draw': (12, {'drawing starts': 0.5, 'drawing done': 5.5, 'celebration starts': 8.6,
+                     'celebration settled': 10.0,
+                     'taps': [(6.4, 0.2, 0.8), (6.8, 0.6, 0.8), (7.3, 0.4, 0.86), (7.7, 0.7, 0.86), (8.2, 0.3, 0.8)]}),
+}
+
+
+def placeholder(c, screen, locale):
+    c.drawPaint(skia.Paint(Shader=skia.GradientShader.MakeLinear(
+        [skia.Point(0, 0), skia.Point(0, CAPTURE[1])], [argb(hexc('#3a1029')), argb(hexc('#1f0716'))])))
+    c.save()
+    c.translate(CAPTURE[0] / 2, CAPTURE[1] / 2)
+    c.rotate(-60)
+    for row in range(-6, 7):
+        c.drawString('PLACEHOLDER', -font(150).measureText('PLACEHOLDER') / 2, row * 420, font(150), paint(WHITE, 0.05))
+    c.restore()
+    c.drawString(f'{screen}  {locale}', 90, 2690, font(90), paint(WHITE, 0.85))
+    c.drawString('placeholder, not a real capture', 90, 2780, font(48), paint(ACCENT))
+
+
 def placeholders(folder):
-    """Stand-in captures, marked as such, with each region of REGIONS where the table puts it and the real drawings
-    on their canvases, so the whole film renders before the real captures exist."""
+    """Stand-in captures, marked as such, with each region of REGIONS where the table puts it and the real drawing on
+    its canvas, and stand-in screen recordings that show their time, their last event and their taps, so the whole
+    film renders before the real captures exist."""
     A.typeface = skia.Typeface.MakeFromFile(str(ASSETS / CONFIG['font']))
     tint = [(242, 126, 178), (111, 177, 240), (242, 184, 75), (91, 185, 139), (185, 156, 242), (232, 93, 134)]
     for locale in CONFIG['panels']:
@@ -721,17 +654,7 @@ def placeholders(folder):
         for k, screen in enumerate(SCREENS):
             surf = skia.Surface(*CAPTURE)
             c = surf.getCanvas()
-            c.drawPaint(skia.Paint(Shader=skia.GradientShader.MakeLinear(
-                [skia.Point(0, 0), skia.Point(0, CAPTURE[1])], [argb(hexc('#3a1029')), argb(hexc('#1f0716'))])))
-            c.save()
-            c.translate(CAPTURE[0] / 2, CAPTURE[1] / 2)
-            c.rotate(-60)
-            for row in range(-6, 7):
-                c.drawString('PLACEHOLDER', -font(150).measureText('PLACEHOLDER') / 2, row * 420, font(150),
-                             paint(WHITE, 0.05))
-            c.restore()
-            c.drawString(f'{screen}  {locale}', 90, 2690, font(90), paint(WHITE, 0.85))
-            c.drawString('placeholder, not a real capture', 90, 2780, font(48), paint(ACCENT))
+            placeholder(c, screen, locale)
             for j, (name, region) in enumerate(REGIONS.items()):
                 if region.screen != screen: continue
                 l, t, r, b = box(name, locale)
@@ -751,7 +674,30 @@ def placeholders(folder):
                                                                     StrokeWidth=6))
                 c.drawString(name, l + 30, t + 70, font(52), paint(WHITE))
             surf.makeImageSnapshot().save(str(capture(folder, locale, screen)), skia.kPNG)
-    print(f'Wrote placeholder captures for {", ".join(CONFIG["panels"])} to {folder}')
+        for screen, (seconds, events) in STAND_IN.items():
+            path = capture(folder, locale, screen).with_suffix('.mp4')
+            notes = {**events, 'taps': [dict(t=t, x=x, y=y) for t, x, y in events['taps']]}
+            path.with_suffix('.events.json').write_text(json.dumps(notes, indent=2) + '\n')
+            ff = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgba', '-s',
+                                   f'{CAPTURE[0]}x{CAPTURE[1]}', '-r', str(FPS), '-i', '-', '-vf',
+                                   'scale=1206:2622', '-c:v', 'libx264', '-crf', '20', '-pix_fmt', 'yuv420p',
+                                   str(path)], stdin=subprocess.PIPE)
+            surf = skia.Surface(*CAPTURE)
+            c = surf.getCanvas()
+            for f in range(seconds * FPS):
+                now = f / FPS
+                placeholder(c, screen, locale)
+                last = max(((t, name) for name, t in events.items() if name != 'taps' and t <= now), default=None)
+                c.drawString(f'{now:5.2f} s', 90, 900, font(220), paint(WHITE))
+                if last: c.drawString(last[1], 90, 1100, font(110), paint(ACCENT))
+                c.drawRect(skia.Rect.MakeXYWH(0, 1300, CAPTURE[0] * now / seconds, 40), paint(WHITE, 0.6))
+                for t, x, y in events['taps']:
+                    if t <= now < t + 0.3:
+                        c.drawCircle(x * CAPTURE[0], y * CAPTURE[1], 80, paint(ACCENT))
+                ff.stdin.write(surf.makeImageSnapshot().toarray().tobytes())
+            ff.stdin.close()
+            if ff.wait(): sys.exit('ffmpeg failed')
+    print(f'Wrote placeholder captures and recordings for {", ".join(CONFIG["panels"])} to {folder}')
 
 
 def soften(pixels, radius):
@@ -818,7 +764,8 @@ def fit(folder):
 
 def check():
     """Overlays each finished replay on its PencilKit preview, checks that every headline stays readable for 1.5 s,
-    and checks the cut music's length and bar lines."""
+    that the poster frames hold still, how long the cards stay up, the order of the end card, and the cut music's
+    length and bar lines."""
     ok = True
     for stem in ('widget-drawing-plane-en', 'widget-drawing-plane-nb'):
         strokes = Strokes(ASSETS / f'{stem}.strokes.json')
@@ -851,6 +798,26 @@ def check():
         moving += [key for key, rise, up, t_out in words_up if rise <= f < up or t_out <= f < t_out + 30]
         print(f'poster frame {f}: ' + (f'moving: {", ".join(sorted(set(moving)))}' if moving else 'a clean hold'))
         ok &= not moving
+
+    def least(label, frames, seconds):
+        print(f'{label}: {frames / FPS:.2f} s, at least {seconds} s')
+        return frames / FPS >= seconds
+
+    def up(name): return LIFTS[name].rise + RISE
+    ok &= least('envelope fully up', LIFTS['envelope'].settle - up('envelope'), 1.2)
+    answers = 'your answer', 'partner answer'
+    ok &= least('both answers fully up together', min(LIFTS[n].settle for n in answers) - max(up(n) for n in answers),
+                2.5)
+    for locale in CONFIG['panels']:
+        A.locale = locale
+        words = {key: len(layout(strings(string), size, TEXT[2] - TEXT[0], leading, 'center')[0])
+                 for key, string, size, leading in (('tagline', 'app.tagline', TAGLINE, 1.2),
+                                                    ('small', 'paywall.subtitle', SMALL, 1.3))}
+        tagline_up = CARD['tagline'] + (words['tagline'] - 1) * TAGLINE_GAP + settled
+        ok &= least(f'{locale} tagline fully up before the subscription line rises', CARD['small'] - tagline_up, 0.7)
+        all_up = max(CARD['mark'] + settled, CARD['wordmark'] + settled, CARD['badge'] + settled, tagline_up,
+                     CARD['small'] + (words['small'] - 1) * SMALL_GAP + settled)
+        ok &= least(f'{locale} end card fully up before it fades', FADE - all_up, 1.0)
     audio = music()
     seconds = len(audio) / SR
     print(f'music: {seconds:.3f} s for {FRAMES / FPS:.3f} s of film')
@@ -906,9 +873,10 @@ def main():
     folder = layer(args.locale, args.preview)
     missing = [i for i in frames if not (folder / f'{i:04d}.png').exists()]
     if missing: sys.exit(f'{len(missing)} frames of the 3D layer are missing from {folder}; run phone3d.py first.')
+    taps = {screen: tap_frames(screen, recording(args.captures, args.locale, screen)) for screen in FOOTAGE}
     audio = music()
     opts = dict(layer=folder, scale=0.5 if args.preview else 1.0, samples=3 if args.preview else 6,
-                locale=args.locale, captures=args.captures, pulse=bass_pulse(audio))
+                locale=args.locale, captures=args.captures, pulse=bass_pulse(audio), taps=taps)
     w, h = size(opts['scale'])
     with Pool(max(1, (os.cpu_count() or 2) - 1), initializer=init, initargs=(opts,)) as pool:
         if args.still:

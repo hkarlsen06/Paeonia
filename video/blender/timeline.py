@@ -2,6 +2,7 @@
 showcase.py, which draws the rest."""
 import json
 import re
+import subprocess
 from pathlib import Path
 from typing import NamedTuple
 
@@ -24,7 +25,7 @@ TEXT = 64, 168, W - 64, 560  # headlines stay in this box, above the phones
 BEAT = 15  # frames
 BAR = 4 * BEAT
 # The bar each scene starts on, counted from the film's first frame.
-WIDGET, COUNTDOWN, HOME, CHAT, PLAY, DRAW, MEMORIES, SPOTLIGHT, ROUTE, END = 0, 1, 2, 3, 5, 6, 8, 10, 12, 13
+WIDGET, COUNTDOWN, HOME, CHAT, PLAY, DRAW, MEMORIES, END = 0, 1, 2, 3.5, 6.5, 8, 10.5, 12
 POSTERS = 90, 150  # frames that must be clean holds: 3.0 s and 5.0 s
 
 
@@ -34,11 +35,94 @@ def at(bar, beats=0, frames=0):
 
 
 # The main phone's screen through the film, as (frame the change is centred on, screen). Each change dissolves over
-# DISSOLVE frames. 06-draw is on a second phone of its own in the games scene.
+# DISSOLVE frames. 06-draw is on a second phone of its own, which is in the film over the frames of SECOND_PHONE.
 SHOTS = [(0, '01-widget'), (at(HOME, 0, 2), '04-home'), (at(CHAT, 0, -4), '02-chat'), (at(PLAY, 0, -4), '03-ludo'),
-         (at(MEMORIES, 0, -4), '05-memories'), (at(SPOTLIGHT, 0, -4), '04-home')]
+         (at(MEMORIES, 0, -4), '05-memories')]
 DISSOLVE = 10
-SCREENS = '01-widget', '02-chat', '03-ludo', '04-home', '05-memories', '06-draw'
+SECOND_PHONE = at(DRAW, 0, -16), at(MEMORIES, 0, 5)
+SCREENS = '01-widget', '02-chat', '04-home', '05-memories'  # the stills; 03-ludo and 06-draw are screen recordings
+
+
+class Clip(NamedTuple):
+    """A stretch of a screen recording. From film frame `start` the recording plays at `speed`, placed so that its
+    event `event` falls `after` film frames past `start`. With `fit`, a later event, the speed is instead the one that
+    brings that event to the next clip's start. A clip runs until the next clip of the same screen, and the first one
+    also covers the frames before its start."""
+    start: int
+    event: str
+    after: float = 0
+    speed: float = 1.0
+    fit: str | None = None
+
+
+# The screen recordings, cut against their events so every locale's recording lines up without numbers of its own.
+# Ludo: the die is flicked a third of a second after the screen is fully in and rolls at its own pace. The recording
+# then waits several seconds for the pawn's tap, so the film cuts to just before the pawn hops, and holds before the
+# partner's turn, which would otherwise start at a different moment in each locale. Draw & Guess: the drawing's last
+# strokes play at twice their speed as the phone arrives, the guess cuts in just before its first letter, its letters
+# play in a second, and the celebration then plays at its own pace.
+FOOTAGE = {
+    '03-ludo': (Clip(at(PLAY, 0, 10), 'die tap'), Clip(at(PLAY, 0, 56), 'piece starts', 8),
+                Clip(at(DRAW, 0, 30), 'partner die starts', speed=0)),
+    '06-draw': (Clip(at(DRAW, 0, 24), 'drawing done', speed=2),
+                Clip(at(DRAW, 0, 27), 'first tap', 2, fit='last tap'), Clip(at(DRAW, 0, 57), 'last tap')),
+}
+
+
+class Recording(NamedTuple):
+    """A screen recording: its mp4, the seconds of each named event from its first frame, its taps as (seconds, x, y)
+    with x and y as fractions of the screen, and the seconds of its last frame."""
+    path: Path
+    events: dict
+    taps: list
+    length: float
+
+
+def recording(folder, locale, screen):
+    """The recording that stands in for a capture: <capture>.mp4 beside its <capture>.events.json. The first and last
+    tap count as the events 'first tap' and 'last tap'."""
+    path = capture(folder, locale, screen).with_suffix('.mp4')
+    notes = path.with_suffix('.events.json')
+    for p in (path, notes):
+        if not p.exists():
+            raise SystemExit(f'Missing recording {p}. Pass --captures, or make stand-ins with showcase.py '
+                             f'--placeholders.')
+    events = json.loads(notes.read_text())
+    taps = sorted((tap['t'], tap['x'], tap['y']) for tap in events.pop('taps', []))
+    if taps:
+        events['first tap'], events['last tap'] = taps[0][0], taps[-1][0]
+    missing = {name for clip in FOOTAGE[screen] for name in (clip.event, clip.fit) if name} - set(events)
+    if missing:
+        raise SystemExit(f'{notes} has no {", ".join(sorted(missing))}')
+    frames = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-count_packets', '-show_entries',
+                             'stream=nb_read_packets', '-of', 'csv=p=0', str(path)],
+                            capture_output=True, text=True, check=True).stdout
+    return Recording(path, events, taps, (int(frames) - 1) / FPS)
+
+
+def footage_time(screen, frame, rec):
+    """Seconds into the recording of `screen` at film frame `frame`, held on its first and last frames."""
+    clips = FOOTAGE[screen]
+    k = max([0] + [i for i, clip in enumerate(clips) if clip.start <= frame])
+    clip = clips[k]
+    speed = clip.speed
+    if clip.fit:
+        speed = (rec.events[clip.fit] - rec.events[clip.event]) * FPS / (clips[k + 1].start - clip.start - clip.after)
+    return min(max(rec.events[clip.event] + (frame - clip.start - clip.after) * speed / FPS, 0.0), rec.length)
+
+
+def cuts(screen):
+    """Film frames where a recording jumps to another moment."""
+    return {clip.start for clip in FOOTAGE[screen][1:]}
+
+
+def showing(screen):
+    """The film frames a recorded screen is on a phone, dissolves included."""
+    if screen == '06-draw':
+        return range(*SECOND_PHONE)
+    i = [s for _, s in SHOTS].index(screen)
+    end = SHOTS[i + 1][0] + DISSOLVE // 2 + 1 if i + 1 < len(SHOTS) else FRAMES
+    return range(SHOTS[i][0] - DISSOLVE // 2, end)
 
 
 class Region(NamedTuple):
@@ -50,7 +134,7 @@ class Region(NamedTuple):
 
 
 # Every part of a capture the film lifts off the glass or draws strokes on. The boxes are measured on the captures,
-# so this is the one table to tune when they change. A canvas is the square the drawing's 320 pt canvas fills in the
+# so this is the one table to tune when they change. The canvas is the square the drawing's 320 pt canvas fills in the
 # capture, where the film replays the strokes. `showcase.py --fit` measures it, and its corners round like the app's
 # DrawingCanvasShape, by 28/360 of its side.
 REGIONS = {
@@ -59,17 +143,15 @@ REGIONS = {
     'streak widget': Region('01-widget', (75, 1523, 625, 2073), 84),
     'countdown widget': Region('01-widget', (695, 1523, 1245, 2073), 84),
     'envelope': Region('04-home', (40, 950, 1280, 1400), 64),
-    'countdown tile': Region('04-home', (60, 1423, 636, 1999), 72),
     'partner answer': Region('02-chat', {'en-US': (144, 730, 983, 1050), 'no': (144, 664, 1010, 984)}, 54),
     'your answer': Region('02-chat', {'en-US': (230, 1074, 1284, 1328), 'no': (277, 1008, 1284, 1328)}, 54),
     'photo 1': Region('05-memories', (684, 547, 1212, 1075), 40),
     'photo 2': Region('05-memories', (684, 1370, 1212, 1898), 40),
     'photo 3': Region('05-memories', (684, 2193, 1212, 2590), 40),
-    'snail canvas': Region('06-draw', (61, 481, 1259, 1679)),
 }
 # The drawing each canvas shows, as the stem of its stroke file in scripts/assets/app-store/. {lang} is the
 # drawing's language in LOCALES.
-DRAWINGS = {'widget canvas': 'widget-drawing-plane-{lang}', 'snail canvas': 'game-drawing-snail'}
+DRAWINGS = {'widget canvas': 'widget-drawing-plane-{lang}'}
 
 
 def canvas_radius(side):

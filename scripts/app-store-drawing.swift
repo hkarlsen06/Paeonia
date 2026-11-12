@@ -15,7 +15,7 @@
 // widget's plum), and prints the inks and widths in each payload, the counts,
 // and the bounds JSON the app sends with it.
 //
-//   swift scripts/app-store-drawing.swift --strokes scripts/assets/app-store/*.pkdrawing
+//   swift scripts/app-store-drawing.swift --strokes scripts/assets/app-store/widget-drawing-plane-*.pkdrawing
 //
 // Writes <name>.strokes.json beside each payload for the promotional film in
 // video/blender, which replays the strokes. It reads the committed payloads

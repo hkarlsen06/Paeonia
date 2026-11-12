@@ -17,8 +17,11 @@ nothing.
 import argparse
 import json
 import math
+import shutil
+import subprocess
 import sys
 import time
+from functools import cache
 from pathlib import Path
 
 import bmesh
@@ -29,9 +32,10 @@ from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).parent))
-from timeline import (CANVAS, CAPTURE, CAPTURES, CHAT, CONFIG, DISSOLVE, DRAW, EDGE, FPS, FRAMES,  # noqa: E402
-                      GLASS_H, GLASS_W, H, HOME, MEMORIES, OFFSET, PHONE_D, PHONE_H, PHONE_R, PHONE_W, PLAY, PX_PER_MM,
-                      REGIONS, ROUTE, SCREEN_RADIUS, SHOTS, SPOTLIGHT, SUBJECT, W, at, box, capture, glare, layer)
+from timeline import (CANVAS, CAPTURE, CAPTURES, CHAT, CONFIG, DISSOLVE, DRAW, EDGE, END, FOOTAGE,  # noqa: E402
+                      FPS, FRAMES, GLASS_H, GLASS_W, H, HOME, MEMORIES, OFFSET, PHONE_D, PHONE_H, PHONE_R, PHONE_W,
+                      PLAY, PX_PER_MM, REGIONS, SCREEN_RADIUS, SECOND_PHONE, SHOTS, SUBJECT, W, at, box, capture,
+                      footage_time, glare, layer, recording, showing)
 
 LENS = 100 * (SUBJECT[3] - SUBJECT[1]) / H  # mm on a 24 mm tall sensor, so the subject box sees what 100 mm would
 APERTURE = 6  # mm, about f/11: everything near the focus is sharp, only things far behind soften
@@ -120,12 +124,10 @@ def capture_pixels(screen):
     return pixels.reshape(CAPTURE[1], CAPTURE[0], 4)[::-1, :, :3]
 
 
-def screen_texture(screen):
-    """The capture as scripts/lib/device3d.mjs draws it on the glass: rounded display corners on a black border, the
-    Dynamic Island and a faint glare. The capture pixels themselves are not changed."""
-    if screen in TEXTURES:
-        return TEXTURES[screen]
-    w, h = CAPTURE
+@cache
+def glass_masks():
+    """What scripts/lib/device3d.mjs draws around a capture on the glass, as arrays the size of the glass texture:
+    where the display shows, with its rounded corners, where the Dynamic Island covers it, and the glare."""
     cw, ch = CANVAS
     y, x = np.mgrid[0:ch, 0:cw] + 0.5
 
@@ -133,21 +135,80 @@ def screen_texture(screen):
         qx = np.abs(x - left - width / 2) - width / 2 + r
         qy = np.abs(y - top - height / 2) - height / 2 + r
         d = np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) + np.minimum(np.maximum(qx, qy), 0) - r
-        return np.clip(0.5 - d, 0, 1)[..., None]
+        return np.clip(0.5 - d, 0, 1)[..., None].astype(np.float32)
 
     ox, oy = OFFSET
-    canvas = np.empty((ch, cw, 3), np.float32)
-    canvas[:] = np.array(hex_rgb('#030304'))
-    placed = canvas.copy()
-    placed[oy:oy + h, ox:ox + w] = capture_pixels(screen)
-    display = inside(ox, oy, w, h, SCREEN_RADIUS)
-    canvas = placed * display + canvas * (1 - display)
-    canvas *= 1 - inside(cw / 2 - 189, oy + 33, 378, 111, 55.5)  # Dynamic Island
-    g = glare(x, y)[..., None]
-    canvas = canvas * (1 - g) + g
+    display = inside(ox, oy, *CAPTURE, SCREEN_RADIUS)
+    island = inside(cw / 2 - 189, oy + 33, 378, 111, 55.5)
+    return display, island, glare(x, y)[..., None].astype(np.float32)
+
+
+def glass(pixels):
+    """A capture (H x W x 3, 0 to 1) as the glass texture shows it: rounded display corners on a black border, the
+    Dynamic Island and a faint glare. The capture pixels themselves are not changed."""
+    display, island, g = glass_masks()
+    ox, oy = OFFSET
+    border = np.array(hex_rgb('#030304'), np.float32)
+    canvas = np.empty((CANVAS[1], CANVAS[0], 3), np.float32)
+    canvas[:] = border
+    canvas[oy:oy + CAPTURE[1], ox:ox + CAPTURE[0]] = pixels
+    canvas = canvas * display + border * (1 - display)
+    canvas *= 1 - island
+    return canvas * (1 - g) + g
+
+
+def screen_texture(screen):
+    """A still capture on the glass."""
+    if screen in TEXTURES:
+        return TEXTURES[screen]
+    cw, ch = CANVAS
     image = bpy.data.images.new(f'screen {screen}', cw, ch)
+    canvas = glass(capture_pixels(screen))
     image.pixels.foreach_set(np.concatenate([canvas, np.ones((ch, cw, 1))], axis=2)[::-1].astype(np.float32).ravel())
     TEXTURES[screen] = image
+    return image
+
+
+def footage_texture(screen, user):
+    """A screen recording on the glass as an image sequence with a file per film frame, made the way screen_texture
+    makes a still. Only the frames the film shows are made, or of those only the --stills frames. Film frames that show
+    the same recording frame link to one file."""
+    rec = recording(args.captures, args.locale, screen)
+    shown = showing(screen)
+    # A sequence holds its first and last files outside its frames, so --stills makes those as well.
+    frames = [] if args.track else [f for f in shown if not args.stills or f in (*args.stills, shown[0], shown[-1])]
+    folder = layer(args.locale, args.preview) / 'footage' / screen
+    shutil.rmtree(folder, ignore_errors=True)
+    folder.mkdir(parents=True)
+    source = {f: round(footage_time(screen, f, rec) * FPS) for f in frames}
+    wanted = sorted(set(source.values()))
+    if not wanted:
+        return bpy.data.images.new(f'screen {screen}', 1, 1)
+    w, h = CAPTURE
+    decode = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', str(rec.path), '-frames:v', str(wanted[-1] + 1),
+                               '-vf', f'scale={w}:{h}:flags=lanczos', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
+                              stdout=subprocess.PIPE)
+    encode = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s',
+                               f'{CANVAS[0]}x{CANVAS[1]}', '-i', '-', '-compression_level', '1', '-start_number', '0',
+                               str(folder / 'r%05d.png')], stdin=subprocess.PIPE)
+    index = 0
+    for frame in range(wanted[-1] + 1):
+        data = decode.stdout.read(w * h * 3)
+        if len(data) < w * h * 3:
+            raise SystemExit(f'{rec.path} ends at frame {frame}, before frame {wanted[-1]}')
+        if frame == wanted[index]:
+            pixels = np.frombuffer(data, np.uint8).reshape(h, w, 3).astype(np.float32) / 255
+            encode.stdin.write(np.rint(glass(pixels) * 255).astype(np.uint8).tobytes())
+            index += 1
+    decode.stdout.close()
+    encode.stdin.close()
+    if decode.wait() or encode.wait():
+        raise SystemExit(f'ffmpeg failed on {rec.path}')
+    for f in frames:
+        (folder / f'{f:04d}.png').symlink_to(f'r{wanted.index(source[f]):05d}.png')
+    image = bpy.data.images.load(str(folder / f'{frames[0]:04d}.png'))
+    image.source = 'SEQUENCE'
+    user.frame_start, user.frame_duration, user.frame_offset = shown.start, len(shown), shown.start - 1
     return image
 
 
@@ -163,7 +224,7 @@ def screen_material(name, shots):
     color = None
     for frame, screen in shots:
         tex = tree.nodes.new('ShaderNodeTexImage')
-        tex.image = screen_texture(screen)
+        tex.image = footage_texture(screen, tex.image_user) if screen in FOOTAGE else screen_texture(screen)
         tex.extension = 'EXTEND'
         if color is None:
             color = tex.outputs['Color']
@@ -329,7 +390,7 @@ def build():
     hero, hero_model = phone('phone', SHOTS, mats)
     poses = [(0, (0, 0, 0), (-3, 0, -9)), (HOME, (0, 0, 0.002), (-3, 0, 8)), (CHAT, (0, 0, 0), (-2, 0, -7)),
              (PLAY, (0, 0, 0), (-3, 0, 9)), (DRAW, (-0.047, 0.04, 0.004), (-3, 0, 16)),
-             (MEMORIES, (0, 0, 0), (-3, 0, -8)), (SPOTLIGHT, (0, -0.01, 0.002), (-2, 0, 5))]
+             (MEMORIES, (0, 0, 0), (-3, 0, -8))]
 
     def drifted(rot): return rot[0], rot[1], rot[2] - math.copysign(2, rot[2])
 
@@ -337,28 +398,29 @@ def build():
     for (_, loc, rot), (bar, next_loc, next_rot) in zip(poses, poses[1:]):
         keys += [(at(bar, 0, -14), loc, drifted(rot), 'io'), (at(bar, 0, 10), next_loc, next_rot, 'linear')]
     # The phone sinks away and tips back as the drums stop.
-    keys += [(at(ROUTE, 0, -4), poses[-1][1], drifted(poses[-1][2]), 'in'),
-             (at(ROUTE, 0, 22), (0, 0.12, -0.42), (28, 0, 14), 'linear')]
+    keys += [(at(END, 0, -4), poses[-1][1], drifted(poses[-1][2]), 'in'),
+             (at(END, 0, 22), (0, 0.12, -0.42), (28, 0, 14), 'linear')]
     move(hero, keys)
-    visible([hero], 0, at(ROUTE, 0, 23))
+    visible([hero], 0, at(END, 0, 23))
 
-    # Draw & Guess joins from the right on the bar line and stays until memories.
+    # Draw & Guess joins from the right, has arrived by the bar line and stays until memories.
     draw, draw_model = phone('draw phone', [(0, '06-draw')], mats)
-    move(draw, [(at(DRAW, 0, -8), (0.36, 0.08, 0.01), (-3, 0, -40), 'out'),
-                (at(DRAW, 0, 22), (0.045, -0.02, 0), (-3, 0, -13), 'linear'),
+    move(draw, [(SECOND_PHONE[0], (0.36, 0.08, 0.01), (-3, 0, -40), 'out'),
+                (at(DRAW, 0, 12), (0.045, -0.02, 0), (-3, 0, -13), 'linear'),
                 (at(MEMORIES, 0, -16), (0.044, -0.02, 0), (-3, 0, -10), 'in'),
-                (at(MEMORIES, 0, 4), (0.40, 0.08, 0.01), (-3, 0, -36), 'linear')])
-    visible([draw], at(DRAW, 0, -8), at(MEMORIES, 0, 5))
+                (SECOND_PHONE[1] - 1, (0.40, 0.08, 0.01), (-3, 0, -36), 'linear')])
+    visible([draw], *SECOND_PHONE)
 
-    # Camera shots, as (frame, aim, distance, yaw, pitch, ease of the move to the next shot). The camera pulls back to
-    # hold both phones when Draw & Guess joins, then leans in on the drawing as it fills in.
-    centre, pair, sketch = Vector((0, 0, 0)), Vector((-0.001, 0.01, 0)), Vector((0.022, 0, 0.008))
+    # Camera shots, as (frame, aim, distance, yaw, pitch, ease of the move to the next shot). When Draw & Guess joins,
+    # the camera follows it and holds its screen for the guess, with the Ludo phone half in the frame beside it. The
+    # key at HOME keeps the opening 4 s as the first cut of the film had them.
+    centre, guess = Vector((0, 0, 0)), Vector((0.034, -0.01, 0.008))
     shots = [
-        (0, centre, 0.84, -3, 2, 'linear'), (at(DRAW, 0, -14), centre, 0.80, 2, 2, 'io'),
-        (at(DRAW, 0, 16), pair, 1.12, 0, 2, 'io'), (at(DRAW, 1), pair, 1.10, 0, 2, 'io'),
-        (at(MEMORIES, 0, -18), sketch, 0.94, -2, 2, 'io'), (at(MEMORIES, 0, 14), centre, 0.84, 2, 2, 'linear'),
-        (at(SPOTLIGHT, 0, -14), centre, 0.84, 1, 2, 'io'), (at(SPOTLIGHT, 0, 10), centre, 0.80, -2, 2, 'linear'),
-        (at(ROUTE), centre, 0.80, -2, 2, 'linear'), (FRAMES - 1, centre, 0.80, -2, 2, 'linear'),
+        (0, centre, 0.84, -3, 2, 'linear'), (at(HOME), centre, 0.8261, -1.266, 2, 'linear'),
+        (at(DRAW, 0, -16), centre, 0.80, 2, 2, 'io'), (at(DRAW, 0, 24), guess, 0.86, -2, 2, 'io'),
+        (at(MEMORIES, 0, -18), guess, 0.84, -2, 2, 'io'),
+        (at(MEMORIES, 0, 14), centre, 0.84, 2, 2, 'linear'), (at(END), centre, 0.80, -2, 2, 'linear'),
+        (FRAMES - 1, centre, 0.80, -2, 2, 'linear'),
     ]
     for frame, target, distance, yaw, pitch, how in shots:
         yaw, pitch = math.radians(yaw), math.radians(pitch)
@@ -378,12 +440,12 @@ def build():
 
 
 def corners(scene, camera, models):
-    """Where the corners (top left, top right, bottom right, bottom left) of every region, and of the main phone's
-    whole capture as 'screen', land on screen in full-size pixels, for every frame."""
+    """Where the corners (top left, top right, bottom right, bottom left) of every region, and of the whole capture
+    on the main phone as 'screen' and on the Draw & Guess phone as 'draw screen', land on screen in full-size pixels,
+    for every frame."""
     boxes = {name: box(name, args.locale) for name in REGIONS}
-    boxes['screen'] = (0, 0, *CAPTURE)
-    owner = {name: 'draw phone' if name != 'screen' and REGIONS[name].screen == '06-draw' else 'phone'
-             for name in boxes}
+    boxes['screen'] = boxes['draw screen'] = (0, 0, *CAPTURE)
+    owner = {name: 'draw phone' if name == 'draw screen' else 'phone' for name in boxes}
     track = {name: [] for name in boxes}
     for frame in range(FRAMES):
         scene.frame_set(frame)

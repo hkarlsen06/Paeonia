@@ -38,15 +38,6 @@ class Strokes:
                 self.strokes.append(dict(color=color, points=points, lengths=lengths, width=width,
                                          units=max(1.0, lengths[-1] / self.PEN)))
 
-    def parts(self, order):
-        """Stroke indices of the widget drawing's parts: the dashes of the route, the heart, the plane and the
-        words, in the order given. Its strokes come in that drawing order, and the heart's outline is the stroke
-        before the first bucket fill."""
-        heart = next(i for i, s in enumerate(self.strokes) if 'fill' in s) - 1
-        ranges = {'route': range(0, heart), 'heart': range(heart, heart + 2), 'plane': range(heart + 2, heart + 11),
-                  'words': range(heart + 11, len(self.strokes))}
-        return [i for part in order for i in ranges[part]]
-
     def total(self, indices):
         return sum(self.strokes[i]['units'] + self.GAP for i in indices) - self.GAP
 
