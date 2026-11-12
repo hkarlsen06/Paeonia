@@ -104,14 +104,20 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
-    /// A memory saved from the Us tab's visit photo card arrives on its screen with petals: a firm
-    /// tap and a soft one, after the save's own success haptic.
+    /// A memory saved from the Us tab's visit photo card arrives on its screen with petals: a heavy
+    /// pop as they fire, then soft taps that fade as they fall.
     static func memoryCelebrated() {
-        impact(.medium, intensity: 0.9)
+        impact(.heavy, intensity: 1)
+        notify(.success)
+        let patter: [(afterPop: Int, intensity: CGFloat)] = [(220, 0.75), (500, 0.55), (850, 0.4), (1_300, 0.25)]
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(120))
-            guard !Task.isCancelled else { return }
-            impact(.soft, intensity: 0.7)
+            var elapsed = 0
+            for tap in patter {
+                try? await Task.sleep(for: .milliseconds(tap.afterPop - elapsed))
+                guard !Task.isCancelled else { return }
+                elapsed = tap.afterPop
+                impact(.soft, intensity: tap.intensity)
+            }
         }
     }
 
