@@ -56,6 +56,9 @@ struct PairedHomeView: View {
     var onRefresh: () async -> Void = {}
     /// The access notice this person closed (`AccessNotice.id`). A new notice shows again.
     @AppStorage("home.accessNotice.dismissed") var dismissedAccessNoticeID = ""
+    /// The save day whose card this person closed, by its `saveDeadline`. A later broken
+    /// streak has a new deadline, so its card shows again.
+    @AppStorage("home.streakSave.dismissed") var dismissedStreakSaveDeadline: Double = 0
     /// The next visit and the couple's list (`HomeVisitCard`). Nil hides the card.
     @Environment(VisitsViewModel.self) var visits: VisitsViewModel?
     @Environment(RecapViewModel.self) var recap: RecapViewModel?
@@ -396,8 +399,8 @@ extension PairedHomeView {
         HomeCardChangeAnimations(
             animation: reduceMotion ? nil : PaeoniaMotion.homeLayoutChange,
             hasUnreadChats: !unreadChats.isEmpty,
-            accessNotice: accessNotice,
-            isStreakSavable: dailyChallengeStreak.isSavable,
+            accessNotice: shownAccessNotice,
+            streakSaveDeadline: shownStreakSaveDeadline,
             partnerGame: games?.partnerGame?.kind,
             lookBack: lookBack?.item,
             firstSteps: firstSteps,
@@ -428,7 +431,7 @@ private struct HomeCardChangeAnimations: ViewModifier {
     let animation: Animation?
     let hasUnreadChats: Bool
     let accessNotice: AccessNotice?
-    let isStreakSavable: Bool
+    let streakSaveDeadline: Date?
     let partnerGame: GameKind?
     let lookBack: LookBackItem?
     let firstSteps: HomeFirstSteps?
@@ -446,7 +449,7 @@ private struct HomeCardChangeAnimations: ViewModifier {
         content
             .animation(animation, value: hasUnreadChats)
             .animation(animation, value: accessNotice)
-            .animation(animation, value: isStreakSavable)
+            .animation(animation, value: streakSaveDeadline)
             .animation(animation, value: partnerGame)
             .animation(animation, value: lookBack)
             .animation(animation, value: firstSteps)

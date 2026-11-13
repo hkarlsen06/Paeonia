@@ -3,20 +3,32 @@ import SwiftUI
 /// The cards `body` lays out.
 extension PairedHomeView {
     /// The notices above the cards: access ending (`AccessNotice`), and a broken
-    /// streak's free save day.
+    /// streak's free save day. Each stays closed once this person closes it.
     @ViewBuilder
     var notices: some View {
-        if let accessNotice, accessNotice.id != dismissedAccessNoticeID {
+        if let accessNotice = shownAccessNotice {
             HomeAccessNoticeCard(notice: accessNotice) {
-                withAnimation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange) {
-                    dismissedAccessNoticeID = accessNotice.id
-                }
+                dismissedAccessNoticeID = accessNotice.id
             }
             .transition(.opacity)
         }
-        if dailyChallengeStreak.isSavable {
-            HomeStreakSaveCard(streak: dailyChallengeStreak, onTap: onTapStreak)
+        if let saveDeadline = shownStreakSaveDeadline {
+            HomeStreakSaveCard(streak: dailyChallengeStreak, onTap: onTapStreak) {
+                dismissedStreakSaveDeadline = saveDeadline.timeIntervalSince1970
+            }
+            .transition(.opacity)
         }
+    }
+
+    var shownAccessNotice: AccessNotice? {
+        accessNotice.flatMap { $0.id == dismissedAccessNoticeID ? nil : $0 }
+    }
+
+    /// The end of the save day whose card shows, or nil when there is none or this person closed it.
+    var shownStreakSaveDeadline: Date? {
+        guard dailyChallengeStreak.isSavable, let deadline = dailyChallengeStreak.saveDeadline,
+              deadline.timeIntervalSince1970 != dismissedStreakSaveDeadline else { return nil }
+        return deadline
     }
 
     @ViewBuilder
