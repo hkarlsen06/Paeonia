@@ -18,9 +18,11 @@ extension HomeMapLibreView {
         }
         /// From 0 to 1 as the intro carries the avatars to their places. 1 without an intro.
         var introProgress: Double = 1
-        /// Both places on the intro's first camera. They miss the waiting avatars when the
-        /// map can't zoom out far enough.
+        /// The intro's points on its first camera. They miss the waiting avatars only where
+        /// the camera can't go: closer than street level, or wider than the whole world.
         var introStartPoints = HomeMapAvatarPoints(own: .zero, partner: .zero)
+        /// The map points the intro carries under the avatars (`HomeMapLibreView.introAnchors`).
+        var introAnchors: HomeMapLibreView.MapPair = (.zero, .zero)
         private var projectionTask: Task<Void, Never>?
 
         /// Frames the map again when the couple, the box or the view's real size changed.
@@ -92,9 +94,15 @@ extension HomeMapLibreView {
 
         private func publishCurrentProjection(_ mapView: MLNMapView) {
             guard let parent, lastFraming != nil else { return }
+            // During the intro the avatars ride on the points they land on.
+            let (own, partner) = if case .none = intro {
+                (parent.current, parent.partner)
+            } else {
+                (HomeMapLibreView.coordinate(introAnchors.own), HomeMapLibreView.coordinate(introAnchors.partner))
+            }
             parent.onProjection(HomeMapProjection(
-                own: mapView.convert(parent.current, toPointTo: mapView),
-                partner: mapView.convert(parent.partner, toPointTo: mapView),
+                own: mapView.convert(own, toPointTo: mapView),
+                partner: mapView.convert(partner, toPointTo: mapView),
                 direction: mapView.direction,
                 zoom: mapView.zoomLevel,
                 introProgress: introProgress,

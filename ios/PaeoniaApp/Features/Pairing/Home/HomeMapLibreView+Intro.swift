@@ -2,8 +2,9 @@ import MapLibre
 import SwiftUI
 
 /// PROTOTYPE. When the map first shows, it fades in under the avatars and carries them from
-/// where they waited, side by side, to their places. The avatars follow the camera, so the
-/// camera starts where the two places land on those spots, then zooms and turns to the framing.
+/// where they waited, side by side, to where they land. The avatars ride on the map points
+/// under their landing spots (`introAnchors`), so the camera starts with those points on the
+/// waiting spots, then zooms and turns to the framing.
 extension HomeMapLibreView {
     static let introDuration: CFTimeInterval = 1.8
     /// The intro starts this long after the map appears even if its tiles have not loaded.
@@ -16,6 +17,11 @@ extension HomeMapLibreView {
     /// Street level. Two places closer than the avatars' spacing start no closer than this.
     private static let introMaxZoom: Double = 17
 
+    struct IntroSpots {
+        let waiting: HomeMapAvatarPoints
+        let landing: HomeMapAvatarPoints
+    }
+
     /// A camera as its zoom, its turn, and where the midpoint between the two places lands.
     struct IntroPose {
         let zoom: Double
@@ -26,10 +32,6 @@ extension HomeMapLibreView {
             self.zoom = zoom
             self.direction = direction
             self.mid = mid
-        }
-
-        init(_ framing: Framing) {
-            self.init(zoom: framing.zoom, direction: framing.direction, mid: midpoint(framing.own, framing.partner))
         }
 
         /// Zoom and turn change at an even pace, the short way round, so both avatars swing
@@ -45,10 +47,13 @@ extension HomeMapLibreView {
         }
     }
 
-    /// The pose that lands `current` on `own` and `partner` on `partnerAt`, as close as the
-    /// map's zoom allows.
-    func introPose(own: CGPoint, partnerAt: CGPoint, viewSize: CGSize, fallbackDirection: Double) -> IntroPose {
-        let (ownPoint, partnerPoint) = Self.mercatorPair(current, partner)
+    /// The pose that lands `anchors` on `own` and `partnerAt`, as close as the map allows.
+    /// MapLibre keeps the poles out of sight, so a couple far apart in the far north or
+    /// south starts zoomed in just enough for the camera to sit where it must.
+    func introPose(
+        _ anchors: MapPair, own: CGPoint, partnerAt: CGPoint, viewSize: CGSize, fallbackDirection: Double
+    ) -> IntroPose {
+        let (ownPoint, partnerPoint) = anchors
         let dx = Double(partnerPoint.x - ownPoint.x)
         let dy = Double(partnerPoint.y - ownPoint.y)
         let sx = Double(partnerAt.x - own.x)
@@ -59,23 +64,93 @@ extension HomeMapLibreView {
         guard mapLength > 1e-12 else {
             return IntroPose(zoom: Self.introMaxZoom, direction: fallbackDirection, mid: Self.midpoint(own, partnerAt))
         }
-        let zoom = log2(hypot(sx, sy) / mapLength / 512)
-        return IntroPose(
-            zoom: min(max(zoom, widestZoom), Self.introMaxZoom),
+        let pose = IntroPose(
+            zoom: min(max(log2(hypot(sx, sy) / mapLength / 512), widestZoom), Self.introMaxZoom),
             direction: (atan2(dy, dx) - atan2(sy, sx)) * 180 / .pi,
             mid: Self.midpoint(own, partnerAt)
         )
+        func zoomed(_ zoom: Double) -> IntroPose { IntroPose(zoom: zoom, direction: pose.direction, mid: pose.mid) }
+        guard !keepsPolesOut(pose, anchors, viewSize: viewSize) else { return pose }
+        // A wider world gives the camera more room, so the closest zoom that fits is found
+        // by halving the range.
+        var fits = Self.introMaxZoom
+        var tooWide = pose.zoom
+        for _ in 0..<24 where fits - tooWide > 0.001 {
+            let zoom = (fits + tooWide) / 2
+            if keepsPolesOut(zoomed(zoom), anchors, viewSize: viewSize) { fits = zoom } else { tooWide = zoom }
+        }
+        return zoomed(fits)
     }
 
-    func show(_ pose: IntroPose, on map: MLNMapView) {
-        let (ownPoint, partnerPoint) = Self.mercatorPair(current, partner)
-        let center = Self.mapCenter(
+    /// Whether MapLibre draws `pose` as asked. It moves the camera instead when the view,
+    /// measured on its height, would show past a pole (the same limit `camera` applies).
+    private func keepsPolesOut(_ pose: IntroPose, _ anchors: MapPair, viewSize: CGSize) -> Bool {
+        let worldSize = 512 * pow(2, pose.zoom)
+        let reach = max(0, (worldSize - Double(viewSize.height)) / 2) / worldSize
+        return abs(introCenter(pose, anchors, viewSize: viewSize).y - 0.5) <= reach
+    }
+
+    /// Where the two map points land on `pose`.
+    func introPoints(_ anchors: MapPair, on pose: IntroPose) -> HomeMapAvatarPoints {
+        let (ownPoint, partnerPoint) = anchors
+        let worldSize = 512 * pow(2, pose.zoom)
+        let turn = pose.direction * .pi / 180
+        let mid = Self.midpoint(ownPoint, partnerPoint)
+        func point(_ mapPoint: CGPoint) -> CGPoint {
+            let x = (mapPoint.x - mid.x) * worldSize
+            let y = (mapPoint.y - mid.y) * worldSize
+            return CGPoint(x: pose.mid.x + x * cos(turn) + y * sin(turn), y: pose.mid.y - x * sin(turn) + y * cos(turn))
+        }
+        return HomeMapAvatarPoints(own: point(ownPoint), partner: point(partnerPoint))
+    }
+
+    private func introCenter(_ pose: IntroPose, _ anchors: MapPair, viewSize: CGSize) -> CGPoint {
+        let (ownPoint, partnerPoint) = anchors
+        return Self.mapCenter(
             putting: Self.midpoint(ownPoint, partnerPoint),
             at: pose.mid,
             worldSize: 512 * pow(2, pose.zoom),
             turn: pose.direction * .pi / 180,
-            viewSize: map.bounds.size
+            viewSize: viewSize
         )
+    }
+
+    /// The map points under the spots where the avatars land: their places, moved as far
+    /// as the avatars are pushed apart or kept on the map. The intro flies these, so the
+    /// map carries the avatars the whole way.
+    func introAnchors(viewSize: CGSize) -> MapPair {
+        let places = Self.mercatorPair(current, partner)
+        guard let landing = introSpots?.landing else { return places }
+        let framing = framing(in: viewSize)
+        let worldSize = 512 * pow(2, framing.zoom)
+        let turn = framing.direction * .pi / 180
+        var center = Self.mercator(framing.center)
+        // The places may sit across the date line from the camera's center.
+        let mid = Self.midpoint(places.own, places.partner)
+        if center.x - mid.x > 0.5 { center.x -= 1 } else if mid.x - center.x > 0.5 { center.x += 1 }
+        // Back from the view to the map: the inverse of `camera`'s turn.
+        func mapPoint(_ point: CGPoint) -> CGPoint {
+            let x = Double(point.x) - Double(viewSize.width) / 2
+            let y = Double(point.y) - Double(viewSize.height) / 2
+            return CGPoint(
+                x: center.x + (x * cos(turn) - y * sin(turn)) / worldSize,
+                y: center.y + (x * sin(turn) + y * cos(turn)) / worldSize
+            )
+        }
+        return (mapPoint(landing.own), mapPoint(landing.partner))
+    }
+
+    /// The framing, with the avatars where they land.
+    func introEndPose(viewSize: CGSize) -> IntroPose {
+        let framing = framing(in: viewSize)
+        let landing = introSpots?.landing ?? HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
+        return IntroPose(
+            zoom: framing.zoom, direction: framing.direction, mid: Self.midpoint(landing.own, landing.partner)
+        )
+    }
+
+    func show(_ pose: IntroPose, _ anchors: MapPair, on map: MLNMapView) {
+        let center = introCenter(pose, anchors, viewSize: map.bounds.size)
         map.setCenter(
             Self.coordinate(center), zoomLevel: pose.zoom, direction: Self.heading(pose.direction), animated: false
         )
@@ -87,7 +162,7 @@ extension HomeMapLibreView.Coordinator {
         case none
         /// The camera holds the start pose until the map loads and the person can see it.
         case waiting(HomeMapLibreView.IntroPose, since: Date)
-        case flying(HomeMapLibreView.IntroPose, began: CFTimeInterval)
+        case flying(began: CFTimeInterval)
     }
 
     /// Holds the camera on the intro's start pose, or leaves it to a flight under way.
@@ -101,7 +176,7 @@ extension HomeMapLibreView.Coordinator {
         case let .waiting(_, waitingSince):
             since = waitingSince
         case .none:
-            guard isFirstFraming, parent.introStart != nil, !UIAccessibility.isReduceMotionEnabled else {
+            guard isFirstFraming, parent.introSpots != nil, !UIAccessibility.isReduceMotionEnabled else {
                 return false
             }
             since = .now
@@ -110,31 +185,38 @@ extension HomeMapLibreView.Coordinator {
                 self?.startIntroIfReady()
             }
         }
-        guard let start = parent.introStart else {
+        guard let pose = startPose(parent, map) else {
             intro = .none
             introProgress = 1
             return false
         }
+        intro = .waiting(pose, since: since)
+        introProgress = 0
+        parent.show(pose, introAnchors, on: map)
+        return true
+    }
+
+    /// Where the flight starts: the landing points on the spots where the avatars wait now.
+    /// Read again each frame, because those spots move while the cards settle.
+    private func startPose(_ parent: HomeMapLibreView, _ map: MLNMapView) -> HomeMapLibreView.IntroPose? {
+        guard let start = parent.introSpots?.waiting else { return nil }
+        let anchors = parent.introAnchors(viewSize: map.bounds.size)
+        introAnchors = anchors
         let pose = parent.introPose(
+            anchors,
             own: start.own,
             partnerAt: start.partner,
             viewSize: map.bounds.size,
             fallbackDirection: parent.framing(in: map.bounds.size).direction
         )
-        intro = .waiting(pose, since: since)
-        introProgress = 0
-        parent.show(pose, on: map)
-        introStartPoints = HomeMapAvatarPoints(
-            own: map.convert(parent.current, toPointTo: map),
-            partner: map.convert(parent.partner, toPointTo: map)
-        )
-        return true
+        introStartPoints = parent.introPoints(anchors, on: pose)
+        return pose
     }
 
     func startIntroIfReady() {
-        guard case let .waiting(pose, since) = intro, let parent, let map, parent.canStartIntro,
+        guard case let .waiting(_, since) = intro, let parent, let map, parent.canStartIntro,
               isLoaded || Date.now.timeIntervalSince(since) >= HomeMapLibreView.introLoadWait else { return }
-        intro = .flying(pose, began: CACurrentMediaTime())
+        intro = .flying(began: CACurrentMediaTime())
         map.tileLodZoomShift = HomeMapLibreView.tileDetailShift(zoom: parent.framing(in: map.bounds.size).zoom)
         let link = CADisplayLink(target: self, selector: #selector(introTick))
         // ProMotion screens run the flight at up to 120 Hz, like the map's own redraws.
@@ -142,14 +224,16 @@ extension HomeMapLibreView.Coordinator {
         link.add(to: .main, forMode: .common)
     }
 
-    /// Reads the framing each frame, so the flight lands on a framing that changed on the way.
+    /// Reads where it starts and where it lands each frame, so the avatars stay on the map
+    /// when either moves on the way.
     @objc private func introTick(_ link: CADisplayLink) {
-        guard let parent, let map, case let .flying(start, began) = intro else {
+        guard let parent, let map, case let .flying(began) = intro else {
             link.invalidate()
             return
         }
         let time = min(1, (link.targetTimestamp - began) / HomeMapLibreView.introDuration)
-        guard time < 1 else {
+        let start = startPose(parent, map)
+        guard time < 1, let start else {
             link.invalidate()
             intro = .none
             introProgress = 1
@@ -158,8 +242,8 @@ extension HomeMapLibreView.Coordinator {
             return
         }
         introProgress = HomeMapLibreView.introCurve.value(at: time)
-        let end = HomeMapLibreView.IntroPose(parent.framing(in: map.bounds.size))
-        parent.show(start.toward(end, by: introProgress), on: map)
+        let end = parent.introEndPose(viewSize: map.bounds.size)
+        parent.show(start.toward(end, by: introProgress), introAnchors, on: map)
     }
 }
 

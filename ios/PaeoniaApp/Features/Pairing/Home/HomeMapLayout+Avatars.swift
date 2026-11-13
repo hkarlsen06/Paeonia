@@ -45,16 +45,30 @@ extension HomeMapLayout {
         _ metrics: HomeMapMetrics,
         _ projection: HomeMapProjection
     ) -> HomeMapAvatarPoints {
-        let framing = framing(couple, metrics)
-        let rawEnd = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
+        // The map carries the avatars to where they land, so only a start the camera could
+        // not reach is left to make up.
+        let end = landingPoints(couple, metrics)
         let points = raw.duringIntro(
             rawStart: projection.introStart,
             waiting: waitingPoints(metrics),
-            rawEnd: rawEnd,
-            end: fitted(separated(rawEnd, isNear: couple.isNear), in: metrics),
+            rawEnd: end,
+            end: end,
             progress: projection.introProgress
         )
         return fitted(points, in: metrics)
+    }
+
+    /// Where the map's intro takes the avatars from and to. Reduce Motion has no intro.
+    func introSpots(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapLibreView.IntroSpots? {
+        guard !reduceMotion else { return nil }
+        return HomeMapLibreView.IntroSpots(waiting: waitingPoints(metrics), landing: landingPoints(couple, metrics))
+    }
+
+    /// Where the avatars sit once the map has framed the couple.
+    func landingPoints(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
+        let framing = framing(couple, metrics)
+        let places = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
+        return fitted(separated(places, isNear: couple.isNear), in: metrics)
     }
 
     /// Smaller as the person zooms out from where they started looking around, so far

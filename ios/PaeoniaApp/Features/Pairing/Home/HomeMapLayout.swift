@@ -193,7 +193,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
                 framedBox: metrics.framedBox,
                 avatarSize: avatarSize,
                 compass: compass,
-                introStart: reduceMotion ? nil : waitingPoints(metrics),
+                introSpots: introSpots(couple, metrics),
                 // Home also mounts under the App Store's purchase sheet after a purchase.
                 // The intro waits until nothing covers the app, so the person sees it.
                 canStartIntro: launchContentRevealed && scenePhase == .active,

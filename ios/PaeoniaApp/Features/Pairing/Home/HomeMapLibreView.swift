@@ -17,9 +17,9 @@ struct HomeMapLibreView: UIViewRepresentable {
     let framedBox: CGRect
     let avatarSize: CGFloat
     var compass: PartnerCompass?
-    /// Where the avatars wait before the map shows. The map then fades in and flies them
-    /// from there to their places (`HomeMapLibreView+Intro`). Nil skips the intro.
-    var introStart: HomeMapAvatarPoints?
+    /// Where the avatars wait before the map shows, and where they land. The map then fades
+    /// in and carries them from one to the other (`HomeMapLibreView+Intro`). Nil skips the intro.
+    var introSpots: IntroSpots?
     /// The intro waits for this, so it plays where the person can see it.
     var canStartIntro = true
     /// Told while the intro waits or flies, so launch work waits for it to land.
@@ -224,12 +224,15 @@ struct HomeMapLibreView: UIViewRepresentable {
         return (zoom, direction)
     }
 
+    /// Two points on the Web Mercator square.
+    typealias MapPair = (own: CGPoint, partner: CGPoint)
+
     /// The two places on the Web Mercator square, the short way round, across the date
     /// line if need be.
     static func mercatorPair(
         _ current: CLLocationCoordinate2D,
         _ partner: CLLocationCoordinate2D
-    ) -> (own: CGPoint, partner: CGPoint) {
+    ) -> MapPair {
         var ownPoint = mercator(current)
         var partnerPoint = mercator(partner)
         if partnerPoint.x - ownPoint.x > 0.5 {
