@@ -55,6 +55,9 @@ struct HomeMapLibreView: UIViewRepresentable {
         map.attributionButton.isHidden = true
         map.compassView.isHidden = true
         map.showsScale = false
+        // MapLibre's default asks for 60 Hz on ProMotion screens, while SwiftUI moves the
+        // avatars at 120 Hz. The map only redraws while it moves.
+        map.preferredFramesPerSecond = MLNMapViewPreferredFramesPerSecond(120)
         map.backgroundColor = UIColor(Color.paeoniaBackgroundPrimary)
         compass?.setReferenceBody(map)
         return map
