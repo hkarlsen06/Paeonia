@@ -60,19 +60,20 @@ class Clip(NamedTuple):
 
 # The film frames 02-question's moments fall on. The card tap comes 3 frames before the drums, so the answer cover
 # starts to open on their first downbeat. The question stays at its full size until the tap on the text field, the
-# typing takes 1.2 s, the conversation comes in on a bar line, and the swipe to the earlier day starts about 1.5 s after
-# the partner's answer has opened. The list coasts for 2.5 s after the swipe, which the film plays in 1 s. Fit these
-# to the recording; FOOTAGE plays the stretches between them.
+# keyboard rises and the photo shrinks at their own pace, the typing takes 1 s, the conversation comes in on a bar
+# line, and the swipe to the earlier day starts about 1.5 s after the partner's answer has opened. The list coasts
+# for 2.5 s after the swipe, which the film plays in under 1 s. Fit these to the recording; FOOTAGE plays the
+# stretches between them.
 CARD_TAP = at(QUESTION, 2, -3)
 QUESTION_SHOWN = at(QUESTION, 3)
 PHOTO_TAP = at(QUESTION, 4, 6)
 FIELD_TAP = at(QUESTION, 5, 6)
-TYPING = at(QUESTION, 6, 6)
-TYPED = at(QUESTION, 8, 12)
-SEND = at(QUESTION, 9, 4)
+TYPING = at(QUESTION, 6, 13)
+TYPED = at(QUESTION, 8, 14)
+SEND = at(QUESTION, 9, 6)
 REVEAL = at(QUESTION, 10)
-SCROLL = at(QUESTION, 15, 7)
-SCROLLED = at(QUESTION, 17, 7)
+SCROLL = at(QUESTION, 15, 13)
+SCROLLED = at(QUESTION, 17, 9)
 PICKER_DISSOLVE = 7  # frames from the photo tap to the photo in the composer, so the picker never shows
 REVEAL_DISSOLVE = 8  # frames from the sending answer to the conversation resting on today
 
@@ -86,7 +87,7 @@ FOOTAGE = {
     '02-question': (Clip(CARD_TAP, 'card tap', fit='question shown'),
                     Clip(QUESTION_SHOWN, 'question shown', fit='photo tap'),
                     Clip(PHOTO_TAP, 'photo staged', speed=0, dissolve=PICKER_DISSOLVE),
-                    Clip(FIELD_TAP - 2, 'field tap', 2, fit='keyboard up'),
+                    Clip(FIELD_TAP - 2, 'field tap', 2),
                     Clip(TYPING, 'typing starts', fit='typing done'),
                     Clip(TYPED, 'typing done', speed=0), Clip(SEND - 2, 'send tap', 2),
                     Clip(REVEAL, 'today shown', dissolve=REVEAL_DISSOLVE),
