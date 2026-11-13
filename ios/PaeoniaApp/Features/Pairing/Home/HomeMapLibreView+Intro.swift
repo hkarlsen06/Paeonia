@@ -137,6 +137,8 @@ extension HomeMapLibreView.Coordinator {
         intro = .flying(pose, began: CACurrentMediaTime())
         map.tileLodZoomShift = HomeMapLibreView.tileDetailShift(zoom: parent.framing(in: map.bounds.size).zoom)
         let link = CADisplayLink(target: self, selector: #selector(introTick))
+        // ProMotion screens run the flight at up to 120 Hz, like the map's own redraws.
+        link.preferredFrameRateRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
         link.add(to: .main, forMode: .common)
     }
 
