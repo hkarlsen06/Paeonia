@@ -12,10 +12,19 @@ extension EnvironmentValues {
     /// previews) shows at once.
     @Entry var launchContentRevealed = true
 
-    /// True once the cold-launch intro has fully finished. Launch-adjacent moments
-    /// that shouldn't compete with the intro (e.g. streak celebrations) can wait on
-    /// this. Defaults to true so anything outside the cold launch behaves normally.
+    /// True once the cold-launch intro has fully finished: the overlay has faded and
+    /// the Home map's flight (`LaunchMapFlight`) has landed. Launch-adjacent moments
+    /// and loads that shouldn't compete with the intro (e.g. streak celebrations)
+    /// wait on this. Defaults to true so anything outside the cold launch behaves normally.
     @Entry var launchIntroComplete = true
+}
+
+/// Whether the Home map is waiting for or playing its intro flight. The root counts
+/// the flight as part of the launch intro, so the work that waits for the intro does
+/// not take frames from it.
+@Observable
+final class LaunchMapFlight {
+    var isPlaying = false
 }
 
 extension View {

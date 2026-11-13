@@ -30,6 +30,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.launchContentRevealed) private var launchContentRevealed
+    @Environment(LaunchMapFlight.self) private var launchMapFlight: LaunchMapFlight?
     @Environment(\.scenePhase) private var scenePhase
     @State private var scrollOffset: CGFloat = 0
     @State private var topBarHeight = Self.headerHeight
@@ -196,6 +197,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
                 // Home also mounts under the App Store's purchase sheet after a purchase.
                 // The intro waits until nothing covers the app, so the person sees it.
                 canStartIntro: launchContentRevealed && scenePhase == .active,
+                launchFlight: launchMapFlight,
                 explorer: explorer,
                 tiles: mapTiles,
                 onProjection: { [camera] projection in

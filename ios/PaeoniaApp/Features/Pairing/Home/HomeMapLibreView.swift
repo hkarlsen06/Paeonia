@@ -22,6 +22,8 @@ struct HomeMapLibreView: UIViewRepresentable {
     var introStart: HomeMapAvatarPoints?
     /// The intro waits for this, so it plays where the person can see it.
     var canStartIntro = true
+    /// Told while the intro waits or flies, so launch work waits for it to land.
+    var launchFlight: LaunchMapFlight?
     /// Takes the map's drags and pinches once the intro has played.
     var explorer: HomeMapExplorer?
     /// Gets told whether the map loaded, and gives the style to load.
@@ -72,6 +74,7 @@ struct HomeMapLibreView: UIViewRepresentable {
 
     static func dismantleUIView(_ map: FramingMapView, coordinator: Coordinator) {
         map.delegate = nil
+        coordinator.intro = .none
         coordinator.stopWatchingLoad()
     }
 

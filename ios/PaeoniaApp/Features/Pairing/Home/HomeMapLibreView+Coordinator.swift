@@ -13,7 +13,9 @@ extension HomeMapLibreView {
         private(set) var loadTask: Task<Void, Never>?
         private var retryTask: Task<Void, Never>?
         weak var map: MLNMapView?
-        var intro = Intro.none
+        var intro = Intro.none {
+            didSet { reportLaunchFlight() }
+        }
         /// From 0 to 1 as the intro carries the avatars to their places. 1 without an intro.
         var introProgress: Double = 1
         /// Both places on the intro's first camera. They miss the waiting avatars when the

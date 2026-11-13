@@ -126,7 +126,7 @@ extension RootView {
         // Once signed in, get an APNs token so the backend can send the silent
         // push that wakes us to sync a partner's drawing. The cold launch does
         // this after the intro instead.
-        if !isLaunchExperienceActive {
+        if isLaunchIntroComplete {
             registerForRemoteNotificationsIfSignedIn(userID)
         }
     }
@@ -157,7 +157,7 @@ extension RootView {
         } else if state != .launching {
             joinLinkOpenedDuringLaunch = false
         }
-        if !isLaunchExperienceActive {
+        if isLaunchIntroComplete {
             syncWidgetIfPaired(state)
         }
     }

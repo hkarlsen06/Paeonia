@@ -8,7 +8,7 @@ extension RootView {
     /// Runs once the cold-launch intro has finished. None of this work chooses
     /// the first screen, so it waits for the entrance animation to settle.
     func runPostLaunchWork() async {
-        guard !isLaunchExperienceActive else { return }
+        guard isLaunchIntroComplete else { return }
 
         do {
             try await Task.sleep(for: Self.postLaunchWorkDelay)

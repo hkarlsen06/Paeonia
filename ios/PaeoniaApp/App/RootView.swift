@@ -15,6 +15,9 @@ struct RootView: View {
     @State var bannerCenter = PaeoniaBannerCenter()
     @State var isLaunchExperienceActive = true
     @State var launchContentRevealed = false
+    @State private var launchMapFlight = LaunchMapFlight()
+    /// The overlay has faded and the Home map's flight has landed. Stays true.
+    @State var isLaunchIntroComplete = false
     @State var permissionPrimerCoordinator: RootPairingPermissionPrimerCoordinator
     /// Checks and joins a partner's code. One instance serves the paywall, the
     /// invite screen and the join screen, so a code typed on either of the first
@@ -118,8 +121,11 @@ struct RootView: View {
                 }
                 await viewModel.start(deferringSyncUntilLaunchCompletes: true)
             }
-            .task(id: isLaunchExperienceActive) {
+            .task(id: isLaunchIntroComplete) {
                 await runPostLaunchWork()
+            }
+            .onChange(of: !isLaunchExperienceActive && !launchMapFlight.isPlaying) { _, isSettled in
+                if isSettled { isLaunchIntroComplete = true }
             }
             .preferredColorScheme(.dark)
             // Handle deep links from an async task (fires on appear and whenever
@@ -194,7 +200,7 @@ struct RootView: View {
                         await usageSharing.refresh()
                     }
                 }
-                guard phase == .active, !isLaunchExperienceActive else {
+                guard phase == .active, isLaunchIntroComplete else {
                     return
                 }
                 runForegroundActivation()
@@ -272,7 +278,8 @@ struct RootView: View {
                 // The overlay cues the surface to bring its content in as it starts to
                 // fade, so the Home map's intro plays where the person can see it.
                 .environment(\.launchContentRevealed, launchContentRevealed)
-                .environment(\.launchIntroComplete, !isLaunchExperienceActive)
+                .environment(\.launchIntroComplete, isLaunchIntroComplete)
+                .environment(launchMapFlight)
                 .zIndex(0)
 
             if isLaunchExperienceActive {

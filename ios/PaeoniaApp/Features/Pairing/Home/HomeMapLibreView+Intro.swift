@@ -162,3 +162,13 @@ extension HomeMapLibreView.Coordinator {
         parent.show(start.toward(end, by: introProgress), on: map)
     }
 }
+
+extension HomeMapLibreView.Coordinator {
+    /// The intro changes during view updates, so the root hears about it on the next
+    /// turn. The reports run in order, so the last one wins.
+    func reportLaunchFlight() {
+        guard let flight = parent?.launchFlight else { return }
+        let isPlaying = if case .none = intro { false } else { true }
+        Task { flight.isPlaying = isPlaying }
+    }
+}
