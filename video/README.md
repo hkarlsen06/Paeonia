@@ -51,6 +51,29 @@ Repeat with `--locale no` for Norwegian. The film is `video/blender/out/paeonia-
 
 On this Mac the 3D layer takes about 0.2 s a frame as a preview, so 3 minutes for the 885 frames. At full quality it takes from 1 s a frame when the Mac is otherwise idle to 2.4 s while other builds and simulators run, so 15 to 35 minutes. `showcase.py` takes about 20 s for a preview and 2 minutes at full quality.
 
+## Render only what changed
+
+Both scripts keep what they made, so a change costs only the frames it touches. Do not render the whole 3D layer again for a change that leaves most of it alone.
+
+- `phone3d.py` writes one PNG per film frame to `video/blender/out/layer-<locale>/`. With `--stills` or `--screen` it renders only the frames you name and leaves every other PNG in that folder as it is. A full render takes about 18 minutes per language, and a part takes about 1 second per frame.
+- `showcase.py` always composites the whole film from that folder, in about 2 minutes per language.
+
+| What changed | What to run |
+|---|---|
+| Headlines, tap dots, lifted cards, the end card, the music cut | Only `showcase.py`. No Blender frames change. |
+| A new take of a recording, or the cut of one recording in `FOOTAGE` | `phone3d.py` with `--screen` and that recording, then `showcase.py`. |
+| A new still capture | `phone3d.py` with `--screen` and that capture, then `showcase.py`. |
+| The camera table or a phone's poses | `phone3d.py` with `--stills` and the range of frames between the keys you changed and their neighbours, then `showcase.py`. |
+| The phone model, the lights, the frame size, or the start of a scene that moves every scene after it | A full `phone3d.py` render. |
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P video/blender/phone3d.py -- --locale en-US --screen 02-question
+/Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P video/blender/phone3d.py -- --locale en-US --stills 84-397
+uv run video/blender/showcase.py --locale en-US
+```
+
+`--screen` covers the frames that screen is on a phone, with the dissolves into and out of it. Run each command once per language. Afterwards, look at the film's frames on both sides of the range you rendered, since a change that reached further than you thought shows there as a jump.
+
 To look at single frames, run `phone3d.py` with `--stills 0,90,150` and `showcase.py` with `--still 0 90 150`. `phone3d.py` makes the glass textures of a recording only for the frames it renders, in `footage/` in the layer folder. The second writes the frames and a contact sheet to `video/blender/out/stills/`. A sheet of every 15th frame shows the pacing of the whole film:
 
 ```bash

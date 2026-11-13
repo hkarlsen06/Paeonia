@@ -5,7 +5,8 @@ showcase.py draws the rest of the film around these frames. Run from the reposit
   /Applications/Blender.app/Contents/MacOS/Blender -b -P video/blender/phone3d.py -- [options]
 
   --preview            half size and fewer samples, for quick iterations
-  --stills F,F,...     render only these frames
+  --stills F,F-F,...   render only these frames and ranges of frames, and keep the other frames of the layer
+  --screen NAME        render only the frames that show this screen, such as 02-question after a new recording
   --track              only write track.json
   --locale en-US       captures for this locale
   --captures DIR       raw captures; default ios/ASConnectScreenshots/<version>/raw
@@ -488,13 +489,24 @@ def corners(scene, camera, models):
     return track
 
 
+def frame_list(value):
+    """Frames from a list such as 0,90,150-160, where a range includes both of its ends."""
+    frames = []
+    for part in value.split(','):
+        first, _, last = part.partition('-')
+        frames += range(int(first), int(last or first) + 1)
+    return frames
+
+
 parser = argparse.ArgumentParser(prog='phone3d.py')
 parser.add_argument('--preview', action='store_true')
-parser.add_argument('--stills', type=lambda value: [int(f) for f in value.split(',')])
+parser.add_argument('--stills', type=frame_list, default=[])
+parser.add_argument('--screen', action='append', default=[], choices=[screen for _, screen in SHOTS] + ['06-draw'])
 parser.add_argument('--track', action='store_true')
 parser.add_argument('--locale', default='en-US')
 parser.add_argument('--captures', type=Path, default=CAPTURES)
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else [])
+args.stills = sorted({*args.stills, *(f for screen in args.screen for f in showing(screen) if 0 <= f < FRAMES)})
 
 scene, camera, models = build()
 folder = layer(args.locale, args.preview)
