@@ -426,7 +426,9 @@ private enum HomeLayoutSwitchCard {
 }
 
 /// The changes that add, remove or resize a Home card. The page animates on them as a
-/// whole, so the cards under one that changes glide to their new place.
+/// whole, so the cards under one that changes glide to their new place. A card the person
+/// can close passes whether it shows, not its data: `withAnimation` in its close button does
+/// not move the map layout, so the card would vanish and the cards under it jump.
 private struct HomeCardChangeAnimations: ViewModifier {
     let animation: Animation?
     let hasUnreadChats: Bool

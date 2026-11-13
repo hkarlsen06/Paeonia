@@ -112,7 +112,7 @@ The lines say what the recording shows. A `CUT` is a bug only where the screen s
 
 1. Take a simulator with `SIM="$(scripts/lock acquire simulator)"` and open it with `device_open`.
 2. Run one command with the returned `agent-device`, such as `open com.apple.Preferences`. Its first command on a simulator can take a minute, and a tap sent then may not land.
-3. Run `scripts/scenario-record <scenario-id> --then '<agent-device> open no.paeonia.app && <agent-device> press <x> <y>'`. It waits until the scenario is on screen and still, starts recording and runs the command. `press` takes points, which are the screenshot's pixels divided by 3. The `action ran` line says when the command ran, and your motion is the line after it. When nothing follows it, the tap did not land.
+3. Run `scripts/scenario-record <scenario-id> --then "<agent-device> open no.paeonia.app && <agent-device> press 'id=\"<accessibility-identifier>\"'"`. It waits until the scenario is on screen and still, starts recording and runs the command. Tap by the control's `accessibilityIdentifier` where it has one. Otherwise `press <x> <y>` takes points, which are the screenshot's pixels divided by 3. The `action ran` line says when the command ran, and your motion is the line after it. When nothing follows it, the tap did not land.
 4. Repeat step 3 for the before and after. The script leaves a simulator you already held with you. Close the device and run `scripts/lock release simulator` when you are done.
 
 `--then` refuses to run when the worktree holds no simulator. A lock the script took itself could be a different simulator from the one your tap tool is open on, and the tap would then land on another agent's screen.
