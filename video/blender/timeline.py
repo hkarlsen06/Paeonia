@@ -72,8 +72,8 @@ TYPING = at(QUESTION, 6, 13)
 TYPED = at(QUESTION, 8, 14)
 SEND = at(QUESTION, 9, 6)
 REVEAL = at(QUESTION, 10)
-SCROLL = at(QUESTION, 15, 13)
-SCROLLED = at(QUESTION, 17, 9)
+SCROLL = at(QUESTION, 15, 7)
+SCROLLED = at(QUESTION, 17, 5)
 PICKER_DISSOLVE = 7  # frames from the photo tap to the photo in the composer, so the picker never shows
 REVEAL_DISSOLVE = 8  # frames from the sending answer to the conversation resting on today
 
