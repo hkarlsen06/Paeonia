@@ -4,6 +4,9 @@ import SwiftUI
 /// when it has joined, is the last chip in green.
 struct DrawAndGuessAttemptChips: View {
     let partnerName: String
+    /// "[Name] tried" above the chips, while the round is open. The result's
+    /// headline says who guessed, so the finished round leaves it out.
+    let showsHeading: Bool
     let wrongAttempts: [DrawAndGuessAttemptView]
     /// The right word, once it joins the row.
     let correctWord: String?
@@ -18,9 +21,11 @@ struct DrawAndGuessAttemptChips: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            Text(.gamesDrawAndGuessResultTried(partnerName))
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
+            if showsHeading {
+                Text(.gamesDrawAndGuessResultTried(partnerName))
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
             DrawAndGuessFlowLayout(
                 spacing: PaeoniaSpacing.space8,
                 lineSpacing: PaeoniaSpacing.space8

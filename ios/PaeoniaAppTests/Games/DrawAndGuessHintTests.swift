@@ -166,7 +166,6 @@ struct DrawAndGuessHintTests {
         // The queued win carries the phone's prediction: no bonuses after a hint.
         #expect(viewModel.reveal?.speedBonus == 0)
         #expect(viewModel.reveal?.firstTryBonus == 0)
-        #expect(viewModel.reveal?.hintsUsed == 2)
     }
 
     @Test func aFirstTryWithoutHintsPredictsTheFirstTryBonus() async throws {

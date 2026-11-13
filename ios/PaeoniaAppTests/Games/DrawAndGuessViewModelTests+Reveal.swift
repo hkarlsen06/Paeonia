@@ -17,24 +17,21 @@ extension DrawAndGuessViewModelTests {
                 hasDrawing: true,
                 solveMs: 18_400,
                 speedBonus: 1,
-                firstTryBonus: 1,
-                personalBest: true
+                firstTryBonus: 1
             ),
             choices: GameFixture.choices
         )
     }
 
-    @Test func theRevealShowsTimePointsAndBothBonuses() async {
+    @Test func theRevealShowsPointsAndBothBonuses() async {
         let viewModel = environment(solvedByMe).viewModel()
         await viewModel.reload()
 
         let reveal = viewModel.reveal
         #expect(viewModel.phase == .reveal)
         #expect(reveal?.outcome == .iSolvedIt)
-        #expect(reveal?.solveDuration == 18.4)
         #expect(reveal?.speedBonus == 1)
         #expect(reveal?.firstTryBonus == 1)
-        #expect(reveal?.personalBest == true)
         #expect(reveal?.pointsForMe == 4)
         #expect(reveal?.isConfirmed == true)
         #expect(viewModel.isNextTurnMine)

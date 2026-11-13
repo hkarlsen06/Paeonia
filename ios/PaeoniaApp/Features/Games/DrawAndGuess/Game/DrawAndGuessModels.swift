@@ -145,62 +145,14 @@ nonisolated struct DrawAndGuessReveal: Equatable, Sendable {
     /// 1 for a correct first attempt without hints. On a result still on this
     /// phone it is the phone's prediction.
     let firstTryBonus: Int
-    /// How many letters the hints showed.
-    let hintsUsed: Int
-    /// The guesser's fastest hint-free solve yet. Only the server says so.
-    let personalBest: Bool
-    /// How long the guess took, counted from the first look at the drawing.
-    let solveDuration: TimeInterval?
     /// What this person earned. The drawer gets the word's points. The guesser also
     /// gets the speed bonus and the first-try bonus.
     let pointsForMe: Int
     let attempts: [DrawAndGuessAttemptView]
-    /// The server has confirmed the result, so the points and the time are final.
+    /// The server has confirmed the result, so the points are final.
     let isConfirmed: Bool
 
     var isSolved: Bool {
         outcome == .iSolvedIt || outcome == .partnerSolvedIt
-    }
-
-    /// Past this, the time says more about the day than about the guess.
-    static let longestShownSolveTime: TimeInterval = 600
-
-    /// The solve time worth showing, or nil when it is missing or too long.
-    var shownSolveDuration: TimeInterval? {
-        guard let solveDuration, solveDuration <= Self.longestShownSolveTime else { return nil }
-        return solveDuration
-    }
-
-    /// How many guesses it took, the right one included.
-    var tries: Int {
-        attempts.filter { !$0.isCorrect }.count + 1
-    }
-
-    /// One sentence for the drawer: "Robin got it in 18 seconds, on the first try."
-    /// The time is left out when it is missing or too long to mean anything.
-    /// With hints it says how many instead of how many tries.
-    func solvedLine(partnerName: String) -> LocalizedStringResource {
-        if hintsUsed > 0 {
-            let hints = String(localized: .gamesDrawAndGuessHints(hintsUsed))
-            if let duration = shownSolveDuration {
-                return .gamesDrawAndGuessResultSolvedTimedHints(partnerName, Self.spokenDuration(duration), hints)
-            }
-            return .gamesDrawAndGuessResultSolvedHints(partnerName, hints)
-        }
-        return switch (shownSolveDuration, tries) {
-        case (let duration?, 1):
-            .gamesDrawAndGuessResultSolvedTimedFirstTry(partnerName, Self.spokenDuration(duration))
-        case (let duration?, let tries):
-            .gamesDrawAndGuessResultSolvedTimedTries(partnerName, Self.spokenDuration(duration), tries)
-        case (nil, 1):
-            .gamesDrawAndGuessResultSolvedFirstTry(partnerName)
-        case (nil, let tries):
-            .gamesDrawAndGuessResultSolvedTries(partnerName, tries)
-        }
-    }
-
-    /// "24 seconds" or "1 minute, 5 seconds".
-    static func spokenDuration(_ duration: TimeInterval) -> String {
-        Duration.seconds(Int(duration.rounded())).formatted(.units(allowed: [.minutes, .seconds], width: .wide))
     }
 }

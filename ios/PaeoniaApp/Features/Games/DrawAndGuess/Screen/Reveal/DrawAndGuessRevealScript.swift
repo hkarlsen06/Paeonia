@@ -14,8 +14,6 @@ nonisolated struct DrawAndGuessRevealPlan: Equatable, Sendable {
     var letterCount: Int
     /// The most points one column gains, for the count-up ticks.
     var pointsAdded: Int
-    var hasSpeedBonus: Bool
-    var hasFirstTryBonus = false
 }
 
 /// When each beat happens, in seconds after the last tile lands.
@@ -32,12 +30,8 @@ nonisolated struct DrawAndGuessRevealSchedule: Sendable {
     var countLead: TimeInterval = 0.30
     /// From the first count tick to the last.
     var countSpan: TimeInterval = 0.40
-    /// The bonus lines land after the count.
-    var speedBonus: TimeInterval = 2.30
-    /// The first-try line lands after the speed bonus.
-    var firstTryBonus: TimeInterval = 2.60
-    /// The reaction row appears.
-    var actions: TimeInterval = 2.90
+    /// The reaction row appears after the count.
+    var actions: TimeInterval = 2.40
     /// The missed round fills the answer over this long, then moves on.
     var missedFill: TimeInterval = 0.50
     var missedTitle: TimeInterval = 0.90
@@ -53,8 +47,6 @@ struct DrawAndGuessRevealHaptics {
     var answerRevealed: @MainActor () -> Void
     var soft: @MainActor () -> Void
     var scoreTick: @MainActor (CGFloat) -> Void
-    /// A bonus line lands, for the speed bonus and for the first-try bonus.
-    var speedBonus: @MainActor () -> Void
 
     static let live = Self(
         selection: {
@@ -76,10 +68,6 @@ struct DrawAndGuessRevealHaptics {
         scoreTick: {
             PaeoniaHaptics.streakTick(intensity: $0)
             GameSound.tick.play(intensity: $0)
-        },
-        speedBonus: {
-            PaeoniaHaptics.streakContinued()
-            GameSound.bonus.play()
         }
     )
 }
@@ -94,8 +82,6 @@ nonisolated enum DrawAndGuessRevealEvent: Equatable, Sendable {
     case panel
     /// The totals count one step further, to `progress` of the way, with a tick.
     case scoreTick(progress: Double, intensity: CGFloat)
-    case speedBonus
-    case firstTryBonus
     case actions
     case fillLetter(index: Int)
     case fillStart
@@ -143,12 +129,6 @@ nonisolated enum DrawAndGuessRevealScript {
                     event: .scoreTick(progress: Double(tick + 1) / Double(ticks), intensity: 0.25 + 0.6 * strength)
                 ))
             }
-        }
-        if plan.hasSpeedBonus {
-            steps.append(Step(at: schedule.speedBonus, event: .speedBonus))
-        }
-        if plan.hasFirstTryBonus {
-            steps.append(Step(at: schedule.firstTryBonus, event: .firstTryBonus))
         }
         steps.append(Step(at: schedule.actions, event: .actions))
         return steps

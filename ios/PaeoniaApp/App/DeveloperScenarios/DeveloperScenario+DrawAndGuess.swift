@@ -46,11 +46,11 @@
       "The longest custom word: slots split over two lines"
     )
     static let drawRevealSolved = drawRound(
-      "draw-reveal-solved", "Draw & Guess · reveal, solved", "You solved it: time, speed bonus, points"
+      "draw-reveal-solved", "Draw & Guess · reveal, solved", "You solved it: the word and the points"
     )
     static let drawRevealBonuses = drawRound(
       "draw-reveal-bonuses", "Draw & Guess · reveal with bonuses and reactions",
-      "Speed bonus +2, first try, your fastest solve yet, and the reaction row"
+      "A fast first-try solve: both bonuses in the points, and the reaction row"
     )
     static let drawRevealMissed = drawRound(
       "draw-reveal-missed", "Draw & Guess · reveal, missed", "You pressed Show me: the word and the drawing"

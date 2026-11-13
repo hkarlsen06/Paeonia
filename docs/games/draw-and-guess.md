@@ -40,7 +40,7 @@ Decided on 2026-10-13.
 The game never ends. A couple has one ongoing Draw & Guess game, and a turn has two halves done in one sitting.
 
 1. **Guess.** Open the game and your partner's drawing starts playing back. Guess by tapping letter tiles. You can guess while the drawing is still playing.
-2. **Reveal.** The word locks in, the rest of the drawing finishes at once, and the phone gives a success haptic. The screen shows how long the guess took.
+2. **Reveal.** The word locks in, the rest of the drawing finishes at once, and the phone gives a success haptic. The screen says who got it and how the points changed, and little else.
 3. **Result.** Either partner can react, and either partner can star the round (see "History and stars").
 4. **Draw back.** You pick a word and draw it for your partner.
 
@@ -387,25 +387,24 @@ Beats, in seconds after the last tile is tapped. The tile lands in its slot 0.16
 | 0.16 to 0.60 | The slots light up left to right, starting as the last tile lands. Each letter pops once as it lights, 1 to 1.12 to 1, and its fill turns `.paeoniaSuccess` at once, so no muddy mix of the two colors shows. Stagger is 45 ms, compressed so a long phrase still ends by 0.60. `streakTick` rises with each letter. |
 | 0.70 | `answerRevealed()`. A petal bloom bursts from the slot row, about 40 particles in `.paeoniaAccentPrimary`, `.paeoniaAccentSecondary` and `.paeoniaMemory`, over 0.9 s, drawn in a `TimelineView` + `Canvas` seeded by the round id, modeled on `PairingCelebrationParticleField` and lighter than it. A radial glow behind the canvas (`PaeoniaGlowBackground` style) rises from 0.16 to 0.30 and back. |
 | 0.70 to 1.10 | The tile grid collapses (`meaningfulMoment`). The canvas eases to 80% width. |
-| 1.10 | Title "Got it!" and the solve time fade up (`celebrationReveal`). The primary button appears. |
-| 1.40 | Two avatars (44 pt) with a `PaeoniaHeartDivider` between them appear, and the score panel fades in (below). |
+| 1.10 | Title "Got it!" fades up (`celebrationReveal`). The primary button appears. |
+| 1.40 | The score panel fades in (below). |
 | 1.70 to 2.10 | The totals count up. Each `streakTick` moves them one step, so every tick shows on the number. One point added counts at 1.70. |
-| 2.30 | "Speed bonus +2" (or +1) lands in gold with `streakContinued()`, if the guess earned it. |
-| 2.60 | "First try +1" lands with `streakContinued()`, if the guess earned it. It has its own beat after the speed bonus. |
-| 2.90 | The reaction row rises in (`cardReveal`). |
+| 2.40 | The reaction row rises in (`cardReveal`). |
 
 Everything is tappable from 1.10 s. A tap on the screen jumps to the settled state, as `PairingCelebrationTimeline.skip` does, without repeating haptics. Build a `DrawAndGuessRevealTimeline` like that timeline, with a run id, an injected schedule and injected haptics, so tests can run it fast. Reduce Motion: no ripple, bloom, glow or count-up. The settled state shows at once, with only `answerRevealed()`.
 
 Drawing still loading. When the final drawing is not on the phone yet, such as on a reveal opened after a relaunch, the square keeps its size and shows a small `ProgressView` in `.paeoniaAccentPrimary`, centered, with the VoiceOver label "Loading the drawing" / "Laster inn tegningen". The spinner waits 0.3 s before it shows, so a fast download never flashes it. The drawing then fades in (`meaningfulMoment`, opacity only, so Reduce Motion gets the same). A failed download shows "Can't load the drawing" with Try again in the same square. The drawer's result uses the same view (`DrawAndGuessRevealDrawing`). The Debug scenario `draw-reveal-loading` shows it.
 
-Solve time. "You solved it in 24 seconds" (`Duration.UnitsFormatStyle`, seconds and minutes). It uses the server's `solve_ms`. Past 10 minutes the line is dropped, because the time then says more about the day than the guess. When the server confirms `personal_best`, a second line in `.paeoniaAccentPrimary` says "Your fastest solve yet". The phone never guesses this one, so it shows only after the server answered.
+Little text. The developer found the reveal too wordy (2026-11-13), so it has one headline and no lines under it: no solve time, no "fastest solve" line and no list of where the points came from. The server still records `solve_ms` and `personal_best`, and the history shows the time.
 
 Score panel.
-- Together. The couple total counts up from the old to the new total from 1.70 to 2.10 s, one step per tick, big, in `PaeoniaTypography.countdownNumber`, with "points together" under it and "+2" in `.paeoniaAccentPrimary` beside it. Both avatars sit above. One `streakTick` per point added.
-- Against each other. The two avatars are the two columns, each with a total below. A "+3" pops on mine and a "+2" on theirs, and the totals count up. Under my column, if I am the guesser, up to three quiet lines: "The word +2", "Speed bonus +2" (gold, only when above 0) and "First try +1" (only when earned). Under theirs, "For the drawing +2". No winner banner and no comparison text. The numbers do that.
-- Queued win (offline). The panel counts the word's points plus the bonuses the phone promised: the speed bonus tier the screen showed, and the first-try bonus when no wrong word came before and no hint was used. It adds the line "Your score updates when you're online." when the move is held on the phone. The server takes the speed bonus as sent, works out the first-try bonus itself, and its numbers replace the phone's when they arrive. A line that arrives late shows without a second celebration.
+- One short row. Each total sits next to its avatar (32 pt) in `PaeoniaTypography.title`, with the points it just gained ("+3") in `.paeoniaAccentPrimary` beside it. The totals count up from 1.70 to 2.10 s, one step per tick, one `streakTick` per point added. There are no names and no list of where the points came from. VoiceOver reads the totals with the names.
+- Together. Both avatars with a small `PaeoniaHeartDivider` between them, then the couple's total.
+- Against each other. My avatar and total, then the partner's. No winner banner and no comparison text. The numbers do that. The avatars stack at accessibility text sizes.
+- Queued win (offline). The panel counts the word's points plus the bonuses the phone promised: the speed bonus tier the screen showed, and the first-try bonus when no wrong word came before and no hint was used. It adds the line "Your score updates when you're online." when the move is held on the phone. The server takes the speed bonus as sent, works out the first-try bonus itself, and its numbers replace the phone's when they arrive, without a second celebration.
 
-Reactions. Under the panel (and under the "Not this time" text on a missed round), the guesser sees a caption "Tell [Name] what you think" and the shared emoji row (`ReactionPickerRow`: the six emoji this person used last, filled up with the usual ones). Tapping an emoji selects it (a filled circle behind it, `selection()`). Tapping the selected one takes it back. The choice shows on the phone at once and goes out straight away, so the row waits until the server has confirmed the result, which is a moment after a guess queued offline reaches it. A refusal puts the earlier reaction back and says so in the top banner. What the partner chose shows under the row ("[Name] reacted ❤️"). The drawer's result screen (phase 6) has the same caption, row and line. The row arrives at 2.90 s, or at once after a tap on the screen.
+Reactions. Under the panel (and under the "Not this time" text on a missed round), the guesser sees a caption "Tell [Name] what you think" and the shared emoji row (`ReactionPickerRow`: the six emoji this person used last, filled up with the usual ones). Tapping an emoji selects it (a filled circle behind it, `selection()`). Tapping the selected one takes it back. The choice shows on the phone at once and goes out straight away, so the row waits until the server has confirmed the result, which is a moment after a guess queued offline reaches it. A refusal puts the earlier reaction back and says so in the top banner. What the partner chose shows under the row ("[Name] reacted ❤️"). The drawer's result screen (phase 6) has the same caption, row and line. The row arrives at 2.40 s, or at once after a tap on the screen.
 
 Star. Once the result's buttons appear, a star button shows in the trailing toolbar (`star`, `star.fill` when starred, `.paeoniaAccentPrimary`). It toggles my private star with `selection()`, and its label reads "Star" or "Starred" with the selected trait while starred. It sits next to the `…` menu with "Our drawings", which every Draw & Guess screen has. The first time a person stars a drawing, a quiet banner says "Only you can see your stars." with a `star.fill` glyph, so a private star never looks like it tells the partner. It shows once per phone (`games.drawAndGuess.starHintShown`). The star works on a solved and a missed round. It uses the same `FavoritesStore` as "Our drawings".
 
@@ -414,16 +413,12 @@ Hand-off. The primary button is "Your turn to draw", pinned at the bottom and al
 | Key | English | Norwegian |
 |---|---|---|
 | `reveal.title` | Got it! | Riktig! |
-| `reveal.solveTime` | You solved it in %@ | Du løste den på %@ |
-| `reveal.pointsTogether` | points together | poeng sammen |
 | `reveal.you` | You | Du |
-| `reveal.line.word` / `reveal.line.speed` / `reveal.line.firstTry` / `reveal.line.drawing` | The word +%lld / Speed bonus +%lld / First try +%lld / For the drawing +%lld | Ordet +%lld / Fartsbonus +%lld / Første forsøk +%lld / For tegningen +%lld |
-| `reveal.personalBest` | Your fastest solve yet | Din raskeste løsning så langt |
 | `reveal.offlineScore` | Your score updates when you're online. | Poengene oppdateres når du er på nett. |
 | `reaction.prompt` | Tell [Name] what you think | Si til [Name] hva du synes |
 | `handoff.draw` | Your turn to draw | Din tur til å tegne |
 
-VoiceOver. On the word landing, post one announcement, "Correct. It was CAT. 2 points." Then focus moves to the title. The bloom and glow are hidden. The count-up exposes only the final value. Dynamic Type. The avatar columns stack vertically at accessibility sizes, and the screen scrolls with the button pinned.
+VoiceOver. On the word landing, post one announcement, "Correct. It was CAT. 2 points." Then focus moves to the title. The bloom and glow are hidden. The count-up exposes only the final value. Dynamic Type. The avatars stack vertically at accessibility sizes, and the screen scrolls with the button pinned.
 
 ### 6. The drawer's result
 
@@ -432,18 +427,18 @@ Purpose. The drawer's payoff. It should feel like watching the other person thin
 Right after Done, if the round is not solved, the drawer sees the same square at the same size, static and showing the full drawing. It eases to 80% (`meaningfulMoment`) when the round ends. With it:
 1. Status line. "Sent to [Name]". The portrait shows the shared ring whenever the partner has the game open, independently of whether they have seen the drawing. Under it, one of three lines. "[Name] is looking at it" while the partner is on the guess screen (role `watching`). "[Name] has seen it" once the server has `guesser_first_seen_at` for the round and the partner has left the guess screen. "[Name] hasn't seen it yet" when the guesser has never seen the drawing, also while the partner is somewhere else in the game. Whether the partner has the drawing is separate from whether it has left this phone. While it still waits to leave, the line says "hasn't seen it yet" unless the server has `guesser_first_seen_at` or the partner watches live, which means they asked for and got this phone's whole canvas in the live room since either phone last joined (`DrawAndGuessSentStatus`).
 2. The word, as answer slots filled with its letters under "Your word" in `caption`. While the partner is on the guess screen and their phone has sent it, the partner's letters cross-fade into the same place: "[Name] is guessing", then their answer slots, read only, filling and emptying as they place tiles. A wrong word gets the same shake and outline as on their screen. Letters a hint filled keep the same pink outline too. While they replay the drawing, the square plays it at the point their replay is, at their speed. A partner who watched live sees the whole drawing, and so does the square. When the partner leaves the guess screen, the word comes back and the square shows the whole drawing again. The slots go when the round ends.
-3. Guess area. With no guesses, "No guesses yet. We'll tell you when [Name] guesses it." As guesses arrive, each wrong word is a chip (`.paeoniaSurfacePrimary`, `caption` semibold, wrapping, in order), appearing with `cardReveal` and `partnerDrawingReceived()`. The row reads "[Name] tried" in front.
+3. Guess area. With no guesses, "No guesses yet. We'll tell you when [Name] guesses it." As guesses arrive, each wrong word is a chip (`.paeoniaSurfacePrimary`, `caption` semibold, wrapping, in order), appearing with `cardReveal` and `partnerDrawingReceived()`. The row reads "[Name] tried" in front while the round is open. The result leaves that heading out, because its title says who guessed.
 4. Pinned bottom: nothing, until the round ends. The drawer may leave with back.
 
 Async open. When the drawer opens the game after a round ended, the chips play back in order, 0.5 s apart, compressed so the sequence takes 3 seconds at most, each with a soft `partnerDrawingReceived()`. The right word follows one more gap after the last wrong one, so it lands on its own beat. Tapping the screen finishes the sequence. This is the screen the doc calls the drawer's payoff, so it never appears all at once the first time. Reduce Motion: all chips at once.
 
-Solved. The correct word joins the chip row last, in `.paeoniaSuccess`, with the same letter ripple, `answerRevealed()` and a half-size bloom as phase 5. The bloom bursts from the green chip. Title "[Name] got it!". Under it one sentence, "[Name] got it in 24 seconds, on the first try." or "[Name] got it in 24 seconds and 3 tries.", without the time when it is missing or past 10 minutes. When the guesser used hints, the sentence names them instead of the tries: "[Name] got it in 24 seconds with 2 hints." When the server says it was the guesser's fastest solve so far, a second line in `.paeoniaAccentPrimary` says "[Name]'s fastest solve yet". The panel for points is phase 5's, with my column showing "For the drawing +2". Under the panel, the drawer sees the same caption and emoji row as the guesser, and what the guesser chose as a line under it: "[Name] reacted ❤️". If the reaction is already there when the screen opens, it comes in with the result at 2.90 s. If it arrives while the drawer looks at the result, it rises in (`cardReveal`, opacity only under Reduce Motion) and fires `partnerDrawingReceived()`. VoiceOver reads the line as one. The primary button "Continue" (to phase 3) follows. If the solve happens while the drawer is still drawing, the sequence is the same, and the sent drawing is the final frame.
+Solved. The correct word joins the chip row last, in `.paeoniaSuccess`, with the same letter ripple, `answerRevealed()` and a half-size bloom as phase 5. The bloom bursts from the green chip. Title "[Name] got it!", with nothing under it. The panel for points is phase 5's. Under the panel, the drawer sees the same caption and emoji row as the guesser, and what the guesser chose as a line under it: "[Name] reacted ❤️". If the reaction is already there when the screen opens, it comes in with the result at 2.40 s. If it arrives while the drawer looks at the result, it rises in (`cardReveal`, opacity only under Reduce Motion) and fires `partnerDrawingReceived()`. VoiceOver reads the line as one. The primary button "Continue" (to phase 3) follows. If the solve happens while the drawer is still drawing, the sequence is the same, and the sent drawing is the final frame.
 
 Star. The drawer's result has the same toolbar star as phase 5. It shows only once the round has ended, never while the round is still open after Done.
 
 Unseen results. The drawer may not open the game until the partner has already solved and drawn back, so the current round is then a new one. The game shows the latest finished round's result first when this person has not moved past it, with "Continue" leading to the new round. A result counts as seen when the server has the drawer's `drawer_result_seen_at` for it, or a "result seen" mark for it waits on this phone. A fresh install and a second phone therefore never show an old result again.
 
-Missed, from the drawer's side. Title "[Name] asked for the answer", then the chips of the tries, then "No points this round." The tone stays flat and kind, with no "gave up" wording. A reaction to a missed round shows the same way as on a solved one.
+Missed, from the drawer's side. The chips of the tries, then the title "[Name] asked for the answer". The tone stays flat and kind, with no "gave up" wording. A reaction to a missed round shows the same way as on a solved one.
 
 | Key | English | Norwegian |
 |---|---|---|
@@ -455,12 +450,7 @@ Missed, from the drawer's side. Title "[Name] asked for the answer", then the ch
 | `result.tried` | [Name] tried | [Name] prøvde |
 | `result.noTries` | No guesses yet. We'll tell you when [Name] guesses it. | Ingen gjetninger ennå. Vi sier fra når [Name] gjetter riktig. |
 | `result.gotIt` | [Name] got it! | [Name] gjettet riktig! |
-| `result.solvedTimedFirstTry` / `result.solvedTimedTries` | [Name] got it in %@, on the first try. / [Name] got it in %@ and %lld tries. | [Name] klarte det på %@, på første forsøk. / [Name] klarte det på %@ og %lld forsøk. |
-| `result.solvedFirstTry` / `result.solvedTries` | [Name] got it on the first try. / [Name] got it in %lld tries. | [Name] klarte det på første forsøk. / [Name] klarte det på %lld forsøk. |
-| `result.solvedTimedHints` / `result.solvedHints` | [Name] got it in %@ with 2 hints. / [Name] got it with 2 hints. | [Name] klarte det på %@ med 2 hint. / [Name] klarte det med 2 hint. |
-| `result.personalBest` | [Name]'s fastest solve yet | [Name] sin raskeste løsning så langt |
 | `result.missed` | [Name] asked for the answer | [Name] ba om å få se svaret |
-| `result.noPoints` | No points this round. | Ingen poeng denne runden. |
 | `handoff.continue` | Continue | Fortsett |
 | `handoff.watch` | Watch [Name] draw | Se [Name] tegne |
 | `handoff.seeDrawing` | See what [Name] drew | Se hva [Name] tegnet |
@@ -475,7 +465,6 @@ Purpose. A soft landing. No guilt, no lost points.
 
 After the Show me alert is confirmed, the slots fill with the answer left to right (still `.paeoniaTextPrimary` on `.paeoniaSurfacePrimary`, not green) over 0.5 s, with a single `partnerDrawingReceived()` and no bloom. The replay finishes, the canvas eases to 80%, and the panel shows:
 - Title "Not this time".
-- Line "No points this round. Ready to draw one back?"
 - The reaction row (phase 5), shown at 1.10 s. A missed round can still get a reaction.
 - Primary "Your turn to draw".
 
@@ -484,7 +473,6 @@ There is no score panel, in both styles, because nothing changed. The play style
 | Key | English | Norwegian |
 |---|---|---|
 | `missed.title` | Not this time | Ikke denne gangen |
-| `missed.line` | No points this round. Ready to draw one back? | Ingen poeng denne runden. Klar for å tegne en tilbake? |
 
 ### 8. Our drawings
 
@@ -516,7 +504,7 @@ Empty states, with `PaeoniaEmptyStateView`.
 
 The detail screen. A cell pushes it. It shows, top to bottom, the square drawing, a "Play again" button with a small hint, the word (`heroTitle`), "Drawn by Robin · Oct 12", one result line, the emoji row with what the partner chose, and a caption "Only you can see your stars."
 - The drawing plays back once at the drawn pace through `GameReplayTimeline` and `GameReplayClock`, on the same `GameReplaySurface` the guess screen uses. Holding anywhere on it plays at 4x, with a `forward.fill` glyph and a `selection()` haptic. "Play again" starts it over. With Reduce Motion the finished drawing shows at once and "Play again" plays it on request.
-- The result line reuses the drawer's result copy with the guesser's name ("You" when I guessed): "Robin got it in 24 seconds, on the first try.", "Robin got it in 24 seconds and 3 tries.", or "Robin asked for the answer". The time is left out past 10 minutes.
+- The result line uses the `result.solved*` sentences with the guesser's name ("You" when I guessed): "Robin got it in 24 seconds, on the first try.", "Robin got it in 24 seconds and 3 tries.", or "Robin asked for the answer". The time is left out past 10 minutes.
 - The toolbar star button (`star` and `star.fill`) toggles my star with `selection()`. Its label reads "Star" or "Starred", and it has the selected trait while starred.
 - A drawing that can't load shows the "Can't load the drawing" state with Try again, in the square.
 
@@ -554,7 +542,7 @@ VoiceOver. A cell is one element, "Cat, drawn by Robin, starred" or "Cat, drawn 
 | `games.star.buttonStarred` | Starred | Stjernemerket |
 | `games.star.privacy` | Only you can see your stars. | Bare du ser stjernene dine. |
 
-The detail screen also reuses `result.solvedTimedFirstTry`, `result.solvedTimedTries`, `result.solvedFirstTry`, `result.solvedTries`, `result.missed`, `reveal.you`, `games.drawing.loading`, `guess.replay.skip`, `notice.drawingUnavailable` and `choose.offline.title`.
+The detail screen also uses `result.solvedTimedFirstTry`, `result.solvedTimedTries`, `result.solvedFirstTry` and `result.solvedTries` ("[Name] got it in %@, on the first try.", "[Name] got it in %@ and %lld tries.", "[Name] got it on the first try.", "[Name] got it in %lld tries."), and reuses `result.missed`, `reveal.you`, `games.drawing.loading`, `guess.replay.skip`, `notice.drawingUnavailable` and `choose.offline.title`.
 
 ### Wide layouts and Dynamic Type
 

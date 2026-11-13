@@ -1,24 +1,10 @@
 import Foundation
 
-/// The numbers on the reveal's score panel. Each column counts from `before` to
-/// `after`, and `lines` say where the added points came from.
+/// The numbers on the reveal's score panel. Each column counts from `before` to `after`.
 nonisolated struct DrawAndGuessRevealScore: Equatable, Sendable {
-    struct Line: Equatable, Sendable {
-        enum Kind: Equatable, Sendable {
-            case word
-            case speedBonus
-            case firstTry
-            case drawing
-        }
-
-        let kind: Kind
-        let points: Int
-    }
-
     struct Column: Equatable, Sendable {
         let before: Int
         let after: Int
-        let lines: [Line]
 
         var added: Int { after - before }
     }
@@ -48,38 +34,22 @@ nonisolated struct DrawAndGuessRevealScore: Equatable, Sendable {
     /// - Returns: Nil for a round that gave no points.
     static func make(reveal: DrawAndGuessReveal, score: DrawAndGuessScore, iAmGuesser: Bool) -> Self? {
         guard reveal.isSolved else { return nil }
-        let bonus = reveal.speedBonus
-        let firstTry = reveal.firstTryBonus
-        let word = Line(kind: .word, points: reveal.wordPoints)
-        let speed = bonus > 0 ? [Line(kind: .speedBonus, points: bonus)] : []
-        let first = firstTry > 0 ? [Line(kind: .firstTry, points: firstTry)] : []
-        let drawing = Line(kind: .drawing, points: reveal.wordPoints)
+        let guesserAdded = reveal.wordPoints + reveal.speedBonus + reveal.firstTryBonus
         // A confirmed result is already in the totals. A result still on the phone is not.
-        func column(total: Int, added: Int, lines: [Line]) -> Column {
+        func column(total: Int, added: Int) -> Column {
             Column(
                 before: reveal.isConfirmed ? total - added : total,
-                after: reveal.isConfirmed ? total : total + added,
-                lines: lines
+                after: reveal.isConfirmed ? total : total + added
             )
         }
         let style: Style
         switch score {
         case let .together(total):
-            style = .together(column(total: total, added: reveal.wordPoints, lines: [word]))
+            style = .together(column(total: total, added: reveal.wordPoints))
         case let .against(mine, partner):
-            let guesserLines = [word] + speed + first
-            let guesserAdded = reveal.wordPoints + bonus + firstTry
             style = .against(
-                mine: column(
-                    total: mine,
-                    added: iAmGuesser ? guesserAdded : reveal.wordPoints,
-                    lines: iAmGuesser ? guesserLines : [drawing]
-                ),
-                partner: column(
-                    total: partner,
-                    added: iAmGuesser ? reveal.wordPoints : guesserAdded,
-                    lines: iAmGuesser ? [drawing] : guesserLines
-                )
+                mine: column(total: mine, added: iAmGuesser ? guesserAdded : reveal.wordPoints),
+                partner: column(total: partner, added: iAmGuesser ? reveal.wordPoints : guesserAdded)
             )
         }
         return Self(style: style, isEstimate: !reveal.isConfirmed)

@@ -204,6 +204,7 @@ struct DrawAndGuessDrawerResultView: View {
         if hasChips {
             DrawAndGuessAttemptChips(
                 partnerName: viewModel.partnerName,
+                showsHeading: !isRevealed,
                 wrongAttempts: visibleWrong,
                 correctWord: timeline.litLetters > 0 ? viewModel.round?.word : nil,
                 litLetters: timeline.litLetters,
@@ -229,7 +230,6 @@ struct DrawAndGuessDrawerResultView: View {
                     title: reveal.isSolved
                         ? .gamesDrawAndGuessResultGotIt(viewModel.partnerName)
                         : .gamesDrawAndGuessResultMissed(viewModel.partnerName),
-                    lines: lines(for: reveal),
                     isFocused: $isTitleFocused
                 )
                 .transition(transition)
@@ -242,8 +242,6 @@ struct DrawAndGuessDrawerResultView: View {
                     isCounting: timeline.scoreCounting,
                     countProgress: timeline.scoreProgress,
                     animates: !timeline.wasSkipped,
-                    showsSpeedBonus: timeline.speedBonusShown,
-                    showsFirstTryBonus: timeline.firstTryBonusShown,
                     isHeldOnPhone: viewModel.sendState.isHeldOnPhone
                 )
                 .transition(transition)
@@ -260,18 +258,6 @@ struct DrawAndGuessDrawerResultView: View {
     private var partnersReaction: String? {
         guard let roundID = viewModel.round?.id else { return nil }
         return reactionStore?.partnerReaction(on: .drawAndGuessRound(roundID))
-    }
-
-    private func lines(for reveal: DrawAndGuessReveal) -> [DrawAndGuessRevealTitle.Line] {
-        guard reveal.isSolved else { return [.init(text: Text(.gamesDrawAndGuessResultNoPoints))] }
-        var lines = [DrawAndGuessRevealTitle.Line(text: Text(reveal.solvedLine(partnerName: viewModel.partnerName)))]
-        if reveal.personalBest {
-            lines.append(.init(
-                text: Text(.gamesDrawAndGuessResultPersonalBest(viewModel.partnerName)),
-                isAccent: true
-            ))
-        }
-        return lines
     }
 }
 
@@ -299,16 +285,11 @@ extension DrawAndGuessDrawerResultView {
 
     private func beginReveal() {
         guard let reveal = viewModel.reveal, !timeline.hasBegun else { return }
-        let added = viewModel.revealScore?.largestGain ?? 0
-        // "Together" has no bonuses, so no bonus beat plays.
-        let isAgainst = viewModel.settings?.playStyle == .against
         timeline.begin(
             DrawAndGuessRevealTimeline.Plan(
                 kind: reveal.isSolved ? .solved : .missed,
                 letterCount: reveal.isSolved ? DrawAndGuessAnswer.letters(of: reveal.word).count : 0,
-                pointsAdded: added,
-                hasSpeedBonus: isAgainst && reveal.speedBonus > 0,
-                hasFirstTryBonus: isAgainst && reveal.firstTryBonus > 0
+                pointsAdded: viewModel.revealScore?.largestGain ?? 0
             ),
             reduceMotion: reduceMotion
         )

@@ -219,25 +219,10 @@ extension DrawAndGuessViewModel {
             wordPoints: round.points,
             speedBonus: isSolved ? round.speedBonus : 0,
             firstTryBonus: isSolved ? round.firstTryBonus : 0,
-            hintsUsed: isSolved ? round.hintsUsed : 0,
-            personalBest: isSolved && isConfirmed && round.personalBest,
-            solveDuration: isSolved ? solveDuration(for: round) : nil,
             pointsForMe: isSolved ? round.points + bonuses : 0,
             attempts: round.attempts,
             isConfirmed: isConfirmed
         )
-    }
-
-    private func solveDuration(for round: DrawAndGuessRoundView) -> TimeInterval? {
-        if let solveMs = round.solveMs {
-            return TimeInterval(solveMs) / 1_000
-        }
-        guard let solvedAt = round.localSolvedAt,
-              let first = round.guesserFirstSeenAt ?? localFirstSeenAt[round.id]
-        else {
-            return nil
-        }
-        return max(0, solvedAt.timeIntervalSince(first))
     }
 
     /// The finished drawing at the canonical size, from whichever source this phone

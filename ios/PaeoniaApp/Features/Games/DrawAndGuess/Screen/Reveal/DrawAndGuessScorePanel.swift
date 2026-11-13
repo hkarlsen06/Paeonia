@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The points of a solved round, for the guesser and for the drawer. "Together"
-/// shows the couple's total counting up. "Against each other" shows one column
-/// for each partner, with no winner banner.
+/// The points of a solved round, for the guesser and for the drawer, in one
+/// short row: the avatars, each total and the points it just gained. "Together"
+/// shows the couple's total. "Against each other" shows one total for each
+/// partner, with no winner banner. VoiceOver reads the totals with the names.
 struct DrawAndGuessScorePanel: View {
     let score: DrawAndGuessRevealScore
     let me: GamePlayer
@@ -11,25 +12,15 @@ struct DrawAndGuessScorePanel: View {
     /// How far the totals have counted, from 0 to 1. The reveal's score ticks move it.
     let countProgress: Double
     let animates: Bool
-    let showsSpeedBonus: Bool
-    let showsFirstTryBonus: Bool
     /// The result failed to send at least once. Only then does the panel say the
     /// score updates later, so a result on its normal way never flashes that line.
     let isHeldOnPhone: Bool
 
-    /// The server confirmed a result that was only on this phone, with a bonus
-    /// the reveal did not plan for. The line shows without a second celebration.
-    @State private var bonusArrivedLate = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            switch score.style {
-            case let .together(column):
-                together(column)
-            case let .against(mine, theirs):
-                against(mine: mine, theirs: theirs)
-            }
+        VStack(spacing: PaeoniaSpacing.space8) {
+            totals
             if score.isEstimate, isHeldOnPhone {
                 Text(.gamesDrawAndGuessRevealOfflineScore)
                     .font(PaeoniaTypography.caption)
@@ -38,109 +29,53 @@ struct DrawAndGuessScorePanel: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .onChange(of: score) { _, _ in
-            if isCounting { bonusArrivedLate = true }
-        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(spokenSummary))
         .accessibilityIdentifier("draw.reveal.score")
     }
 
-    // MARK: Together
-
-    private func together(_ column: DrawAndGuessRevealScore.Column) -> some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            HStack(spacing: PaeoniaSpacing.space12) {
-                GameAvatar(player: me, isMe: true, size: 44)
-                PaeoniaHeartDivider(width: 72)
-                GameAvatar(player: partner, isMe: false, size: 44)
-            }
-            HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8) {
-                DrawAndGuessSteppedNumber(
-                    from: column.before,
-                    to: column.after,
-                    progress: countProgress,
-                    animates: animates
-                )
-                .font(PaeoniaTypography.countdownNumber)
-                .foregroundStyle(.paeoniaTextPrimary)
-                DrawAndGuessAddedPoints(points: column.added, isShown: isCounting, animates: animates)
-                    .font(PaeoniaTypography.title)
-            }
-            Text(.gamesDrawAndGuessRevealPointsTogether)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-        }
-    }
-
-    // MARK: Against each other
-
     @ViewBuilder
-    private func against(mine: DrawAndGuessRevealScore.Column, theirs: DrawAndGuessRevealScore.Column) -> some View {
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space24))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space24))
-        layout {
-            column(player: me, isMe: true, name: Text(.gamesDrawAndGuessRevealYou), data: mine)
-            column(player: partner, isMe: false, name: Text(partner.name), data: theirs)
-        }
-    }
-
-    private func column(
-        player: GamePlayer,
-        isMe: Bool,
-        name: Text,
-        data: DrawAndGuessRevealScore.Column
-    ) -> some View {
-        VStack(spacing: PaeoniaSpacing.space4) {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                GameAvatar(player: player, isMe: isMe, size: 28)
-                name
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
+    private var totals: some View {
+        switch score.style {
+        case let .together(column):
+            HStack(spacing: PaeoniaSpacing.space12) {
+                HStack(spacing: PaeoniaSpacing.space4) {
+                    GameAvatar(player: me, isMe: true, size: 32)
+                    PaeoniaHeartDivider(width: 40)
+                    GameAvatar(player: partner, isMe: false, size: 32)
+                }
+                total(column)
             }
-            HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
-                DrawAndGuessSteppedNumber(
-                    from: data.before,
-                    to: data.after,
-                    progress: countProgress,
-                    animates: animates
-                )
-                .font(PaeoniaTypography.countdownNumber)
-                .foregroundStyle(.paeoniaTextPrimary)
-                DrawAndGuessAddedPoints(points: data.added, isShown: isCounting, animates: animates)
-                    .font(PaeoniaTypography.bodyEmphasis)
-            }
-            VStack(spacing: 0) {
-                ForEach(Array(data.lines.enumerated()), id: \.offset) { _, line in
-                    lineText(line)
-                        .multilineTextAlignment(.center)
+        case let .against(mine, theirs):
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space12))
+                : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space32))
+            layout {
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    GameAvatar(player: me, isMe: true, size: 32)
+                    total(mine)
+                }
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    GameAvatar(player: partner, isMe: false, size: 32)
+                    total(theirs)
                 }
             }
-            .font(PaeoniaTypography.caption)
         }
-        .frame(maxWidth: .infinity)
     }
 
-    /// The bonus lines fade in without a scale effect. A scaled Text keeps the width
-    /// it had while small and ends in "..." once it is full size.
-    @ViewBuilder
-    private func lineText(_ line: DrawAndGuessRevealScore.Line) -> some View {
-        switch line.kind {
-        case .word:
-            Text(.gamesDrawAndGuessRevealLineWord(line.points))
-                .foregroundStyle(.paeoniaTextSecondary)
-        case .drawing:
-            Text(.gamesDrawAndGuessRevealLineDrawing(line.points))
-                .foregroundStyle(.paeoniaTextSecondary)
-        case .speedBonus:
-            Text(.gamesDrawAndGuessRevealLineSpeed(line.points))
-                .foregroundStyle(Color.paeoniaInkGold)
-                .opacity(showsSpeedBonus || bonusArrivedLate ? 1 : 0)
-        case .firstTry:
-            Text(.gamesDrawAndGuessRevealLineFirstTry(line.points))
-                .foregroundStyle(.paeoniaTextSecondary)
-                .opacity(showsFirstTryBonus || bonusArrivedLate ? 1 : 0)
+    /// "12 +3".
+    private func total(_ column: DrawAndGuessRevealScore.Column) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
+            DrawAndGuessSteppedNumber(
+                from: column.before,
+                to: column.after,
+                progress: countProgress,
+                animates: animates
+            )
+            .font(PaeoniaTypography.title)
+            .foregroundStyle(.paeoniaTextPrimary)
+            DrawAndGuessAddedPoints(points: column.added, isShown: isCounting, animates: animates)
+                .font(PaeoniaTypography.bodyEmphasis)
         }
     }
 

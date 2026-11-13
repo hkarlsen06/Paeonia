@@ -33,8 +33,6 @@ final class DrawAndGuessRevealTimeline {
     private(set) var scoreCounting = false
     /// How far the totals have counted, from 0 to 1. Each score tick moves it on.
     private(set) var scoreProgress: Double = 0
-    private(set) var speedBonusShown = false
-    private(set) var firstTryBonusShown = false
     /// The rows under the result appear, such as the reaction row.
     private(set) var actionsShown = false
     private(set) var isSettled = false
@@ -124,8 +122,6 @@ final class DrawAndGuessRevealTimeline {
         panelShown = false
         scoreCounting = false
         scoreProgress = 0
-        speedBonusShown = false
-        firstTryBonusShown = false
         actionsShown = false
         isSettled = false
         wasSkipped = false
@@ -157,7 +153,7 @@ final class DrawAndGuessRevealTimeline {
         switch event {
         case .start, .lightLetter, .bloom, .glowSettle, .fillStart, .fillLetter:
             applyAnswer(event)
-        case .collapse, .title, .panel, .scoreTick, .speedBonus, .firstTryBonus, .actions:
+        case .collapse, .title, .panel, .scoreTick, .actions:
             applyResult(event)
         }
     }
@@ -219,16 +215,6 @@ final class DrawAndGuessRevealTimeline {
         case let .scoreTick(progress, intensity):
             scoreProgress = progress
             haptics.scoreTick(intensity)
-        case .speedBonus:
-            haptics.speedBonus()
-            withAnimation(PaeoniaMotion.celebrationReveal) {
-                speedBonusShown = true
-            }
-        case .firstTryBonus:
-            haptics.speedBonus()
-            withAnimation(PaeoniaMotion.celebrationReveal) {
-                firstTryBonusShown = true
-            }
         case .actions:
             withAnimation(PaeoniaMotion.cardReveal) {
                 actionsShown = true
@@ -250,8 +236,6 @@ final class DrawAndGuessRevealTimeline {
         panelShown = plan.kind == .solved && plan.pointsAdded > 0
         scoreCounting = panelShown
         scoreProgress = panelShown ? 1 : 0
-        speedBonusShown = plan.hasSpeedBonus
-        firstTryBonusShown = plan.hasFirstTryBonus
         actionsShown = true
         wasSkipped = true
         isSettled = true

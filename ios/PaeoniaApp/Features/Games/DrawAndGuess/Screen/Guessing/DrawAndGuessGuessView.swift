@@ -178,7 +178,6 @@ struct DrawAndGuessGuessView: View {
                 if timeline.titleShown {
                     DrawAndGuessRevealTitle(
                         title: reveal.isSolved ? .gamesDrawAndGuessRevealTitle : .gamesDrawAndGuessMissedTitle,
-                        lines: lines(for: reveal),
                         isFocused: $isTitleFocused
                     )
                     .transition(transition)
@@ -191,8 +190,6 @@ struct DrawAndGuessGuessView: View {
                         isCounting: timeline.scoreCounting,
                         countProgress: timeline.scoreProgress,
                         animates: !timeline.wasSkipped,
-                        showsSpeedBonus: timeline.speedBonusShown,
-                        showsFirstTryBonus: timeline.firstTryBonusShown,
                         isHeldOnPhone: viewModel.sendState.isHeldOnPhone
                     )
                     .transition(transition)
@@ -204,20 +201,6 @@ struct DrawAndGuessGuessView: View {
                 }
             }
         }
-    }
-
-    private func lines(for reveal: DrawAndGuessReveal) -> [DrawAndGuessRevealTitle.Line] {
-        guard reveal.isSolved else { return [.init(text: Text(.gamesDrawAndGuessMissedLine))] }
-        var lines: [DrawAndGuessRevealTitle.Line] = []
-        if let duration = reveal.shownSolveDuration {
-            lines.append(.init(
-                text: Text(.gamesDrawAndGuessRevealSolveTime(DrawAndGuessReveal.spokenDuration(duration)))
-            ))
-        }
-        if reveal.personalBest {
-            lines.append(.init(text: Text(.gamesDrawAndGuessRevealPersonalBest), isAccent: true))
-        }
-        return lines
     }
 
     // MARK: Bottom
@@ -256,16 +239,11 @@ struct DrawAndGuessGuessView: View {
     private func beginReveal() {
         guard let reveal = viewModel.reveal, !timeline.hasBegun else { return }
         let letters = viewModel.slots.slots.count { !$0.isGap }
-        let added = viewModel.revealScore?.largestGain ?? 0
-        // "Together" has no bonuses, so no bonus beat plays.
-        let isAgainst = viewModel.settings?.playStyle == .against
         timeline.begin(
             DrawAndGuessRevealTimeline.Plan(
                 kind: reveal.isSolved ? .solved : .missed,
                 letterCount: letters,
-                pointsAdded: added,
-                hasSpeedBonus: isAgainst && reveal.speedBonus > 0,
-                hasFirstTryBonus: isAgainst && reveal.firstTryBonus > 0
+                pointsAdded: viewModel.revealScore?.largestGain ?? 0
             ),
             reduceMotion: reduceMotion
         )
@@ -390,36 +368,19 @@ private struct DrawAndGuessReplayAccessibility: ViewModifier {
     }
 }
 
-/// "Got it!" with a line or two under it.
+/// The reveal's one headline, such as "Got it!".
 struct DrawAndGuessRevealTitle: View {
-    /// One line under the title.
-    struct Line {
-        let text: Text
-        /// The line stands out, such as "Your fastest solve yet".
-        var isAccent = false
-    }
-
     let title: LocalizedStringResource
-    let lines: [Line]
     var isFocused: AccessibilityFocusState<Bool>.Binding
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space4) {
-            Text(title)
-                .font(PaeoniaTypography.largeTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .multilineTextAlignment(.center)
-                .accessibilityAddTraits(.isHeader)
-            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                line.text
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(line.isAccent ? .paeoniaAccentPrimary : .paeoniaTextSecondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityFocused(isFocused)
-        .accessibilityIdentifier("draw.reveal.title")
+        Text(title)
+            .font(PaeoniaTypography.largeTitle)
+            .foregroundStyle(.paeoniaTextPrimary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityFocused(isFocused)
+            .accessibilityIdentifier("draw.reveal.title")
     }
 }

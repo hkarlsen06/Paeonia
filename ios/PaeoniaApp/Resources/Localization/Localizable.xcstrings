@@ -14395,48 +14395,6 @@
         }
       }
     },
-    "games.drawAndGuess.hints" : {
-      "comment" : "A number of letter hints. %lld is the count.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld hint"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld hints"
-                }
-              }
-            }
-          }
-        },
-        "nb" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld hint"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld hint"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "games.drawAndGuess.history.cell.a11y" : {
       "comment" : "VoiceOver label of a drawing in the grid. %1$@ is the word, %2$@ is who drew it (the partner's name, or you).",
       "extractionState" : "manual",
@@ -14923,24 +14881,6 @@
         }
       }
     },
-    "games.drawAndGuess.missed.line" : {
-      "comment" : "Line under the missed title.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No points this round. Ready to draw one back?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingen poeng denne runden. Klar for å tegne en tilbake?"
-          }
-        }
-      }
-    },
     "games.drawAndGuess.missed.title" : {
       "comment" : "Title when the player asked for the answer.",
       "extractionState" : "manual",
@@ -15109,24 +15049,6 @@
         }
       }
     },
-    "games.drawAndGuess.result.noPoints" : {
-      "comment" : "Line when nobody got points.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No points this round."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingen poeng denne runden."
-          }
-        }
-      }
-    },
     "games.drawAndGuess.result.noTries" : {
       "comment" : "Shown to the drawer before the partner has guessed. A notification comes only for the right guess. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -15159,24 +15081,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ har ikke sett den ennå"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.result.personalBest" : {
-      "comment" : "Line under the title on the drawer's result when the partner's solve was their fastest so far. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@'s fastest solve yet"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ sin raskeste løsning så langt"
           }
         }
       }
@@ -15235,24 +15139,6 @@
         }
       }
     },
-    "games.drawAndGuess.result.solvedHints" : {
-      "comment" : "Drawer's result line when the partner used letter hints and the time is not shown. %1$@ is the partner's name, %2$@ the hints, for example 2 hints.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ got it with %2$@."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ klarte det med %2$@."
-          }
-        }
-      }
-    },
     "games.drawAndGuess.result.solvedTimedFirstTry" : {
       "comment" : "Drawer's result line when the partner got it right on the first guess. %1$@ is the partner's name, %2$@ a duration such as 18 seconds.",
       "extractionState" : "manual",
@@ -15267,24 +15153,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ klarte det på %2$@, på første forsøk."
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.result.solvedTimedHints" : {
-      "comment" : "Drawer's result line when the partner used letter hints. %1$@ is the partner's name, %2$@ a duration such as 24 seconds, %3$@ the hints, for example 2 hints.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ got it in %2$@ with %3$@."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ klarte det på %2$@ med %3$@."
           }
         }
       }
@@ -15397,78 +15265,6 @@
         }
       }
     },
-    "games.drawAndGuess.reveal.line.drawing" : {
-      "comment" : "Points the drawer gets. %lld is the points.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For the drawing +%lld"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For tegningen +%lld"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.reveal.line.firstTry" : {
-      "comment" : "Point for guessing right on the first try. %lld is the points.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "First try +%lld"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Første forsøk +%lld"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.reveal.line.speed" : {
-      "comment" : "Points for a fast guess. %lld is the points.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Speed bonus +%lld"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fartsbonus +%lld"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.reveal.line.word" : {
-      "comment" : "Points for the word. %lld is the points.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The word +%lld"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ordet +%lld"
-          }
-        }
-      }
-    },
     "games.drawAndGuess.reveal.offlineScore" : {
       "comment" : "Shown when the result is only on the phone so far.",
       "extractionState" : "manual",
@@ -15483,60 +15279,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Poengene oppdateres når du er på nett."
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.reveal.personalBest" : {
-      "comment" : "Line under the title when this was the guesser's fastest solve so far.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your fastest solve yet"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Din raskeste løsning så langt"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.reveal.pointsTogether" : {
-      "comment" : "Under the couple's total score on the result.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "points together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "poeng sammen"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.reveal.solveTime" : {
-      "comment" : "How long the guess took. %@ is a duration such as 24 seconds.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You solved it in %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du løste den på %@"
           }
         }
       }
