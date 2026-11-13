@@ -469,6 +469,9 @@ extension HomeMapLayout {
                     HomeMapCreditsButton()
                         .layoutPriority(1)
                 }
+                // A new place pans the map over `homeLayoutDuration`. The distance rolls to
+                // match, and the info button moves with the line's new width.
+                .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: [couple.current, couple.partner])
                 .transition(.opacity)
             }
         }

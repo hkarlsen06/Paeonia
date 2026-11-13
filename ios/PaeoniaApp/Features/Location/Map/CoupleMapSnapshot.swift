@@ -368,7 +368,7 @@ struct CoupleMapSnapshot: View {
             .formatted(.measurement(width: .abbreviated, usage: .road))
     }
 
-    private static func distanceMeters(
+    static func distanceMeters(
         _ lhs: CLLocationCoordinate2D,
         _ rhs: CLLocationCoordinate2D
     ) -> CLLocationDistance {
