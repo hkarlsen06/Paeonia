@@ -37,6 +37,7 @@ struct SearchScreen: View {
             }
             .paeoniaGroupedList()
             .overlay { placeholder }
+            .closesOnSwipeRight(perform: onClose)
             .searchable(
                 text: $viewModel.query,
                 placement: .navigationBarDrawer(displayMode: .always),

@@ -61,6 +61,7 @@ struct StreakMilestoneView: View {
             .paeoniaReadableWidth()
         }
         .background(.paeoniaSurfacePrimary)
+        .closesOnSwipeRight(perform: close)
         // Waits for the app to be in front. Haptics do not play while it is opening.
         .task(id: scenePhase) {
             guard scenePhase == .active, !flameStarted else { return }

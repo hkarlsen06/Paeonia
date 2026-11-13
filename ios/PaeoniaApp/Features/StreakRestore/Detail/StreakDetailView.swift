@@ -90,6 +90,7 @@ struct StreakDetailView: View {
         .defaultScrollAnchor(.center, for: .alignment)
         .scrollBounceBehavior(.basedOnSize)
         .background(.paeoniaSurfacePrimary)
+        .closesOnSwipeRight(perform: onClose)
         // The app's petal shower draws under this sheet, so the stem's flowers need their own.
         .modifier(PaeoniaPetalShowerHost())
         .onAppear(perform: revealCelebrationDetails)

@@ -20,6 +20,7 @@ struct GuessMySpotSpotSheet: View {
             }
             .scrollContentBackground(.hidden)
             .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
+            .closesOnSwipeRight { dismiss() }
             .navigationTitle(Text(verbatim: rounds.first?.placeName ?? String(localized: .guessMySpotHistorySomewhere)))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

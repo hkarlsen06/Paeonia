@@ -87,6 +87,7 @@ struct StreakRestoreView: View {
         .padding(.vertical, PaeoniaSpacing.space32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaSurfacePrimary)
+        .closesOnSwipeRight(isEnabled: !viewModel.isPurchasing, perform: onClose)
     }
 
     private func restoredContent(count: Int) -> some View {

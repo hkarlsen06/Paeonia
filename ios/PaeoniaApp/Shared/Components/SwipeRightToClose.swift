@@ -4,7 +4,9 @@ import UIKit
 extension View {
     /// Runs `action` on a swipe right, the usual way to leave a page on iOS. The swipe
     /// needs the same distance or speed as the chat's back swipe. `isEnabled` should
-    /// follow whether the page's own Close or Back button works.
+    /// follow whether the page's own Close or Back button works. In a sheet with a
+    /// navigation stack, put it on the stack's first screen, so a pushed screen keeps
+    /// its own back swipe and never closes the sheet.
     func closesOnSwipeRight(isEnabled: Bool = true, perform action: @escaping () -> Void) -> some View {
         contentShape(.rect)
             .gesture(SwipeRightToCloseGesture(isEnabled: isEnabled, action: action))
@@ -12,8 +14,8 @@ extension View {
 }
 
 /// A pan that runs beside the page's other gestures, so buttons, fields and scrolling
-/// keep working. The page does not follow the finger, because the cover animates its
-/// own dismissal once the action closes it.
+/// keep working. The page does not follow the finger, because the cover or sheet
+/// animates its own dismissal once the action closes it.
 private struct SwipeRightToCloseGesture: UIGestureRecognizerRepresentable {
     let isEnabled: Bool
     let action: () -> Void

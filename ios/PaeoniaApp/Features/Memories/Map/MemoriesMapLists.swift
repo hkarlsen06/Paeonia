@@ -134,6 +134,7 @@ struct MemoriesUnplacedSheet: View {
                 MemoriesUnplacedList(viewModel: viewModel, records: records)
                     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             }
+            .closesOnSwipeRight { dismiss() }
             .navigationTitle(Text(.memoriesMapUnplacedTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

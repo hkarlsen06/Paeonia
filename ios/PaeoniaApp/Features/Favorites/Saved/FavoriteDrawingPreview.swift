@@ -23,6 +23,7 @@ struct FavoriteDrawingPreview: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
+            .closesOnSwipeRight { dismiss() }
             .navigationTitle(Text(.favoritesRowDrawing))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)

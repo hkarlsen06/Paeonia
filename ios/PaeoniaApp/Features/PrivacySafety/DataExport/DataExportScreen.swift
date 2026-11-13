@@ -28,6 +28,7 @@ struct DataExportScreen: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .paeoniaScreenBackground()
+            .closesOnSwipeRight { dismiss() }
             .navigationTitle(Text(.privacySafetyDataExportTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

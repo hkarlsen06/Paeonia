@@ -31,6 +31,7 @@ struct LocationMapDetails: View {
                 Button(.homeMapOpenLocations, action: openMaps)
             }
             .paeoniaGroupedList()
+            .closesOnSwipeRight { dismiss() }
             .navigationTitle(Text(.homeMapLocationDetails))
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

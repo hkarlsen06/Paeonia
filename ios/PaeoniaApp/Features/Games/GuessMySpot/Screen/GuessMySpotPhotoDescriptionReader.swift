@@ -33,6 +33,7 @@ struct GuessMySpotPhotoDescriptionReader: View {
                                             alwaysVisible: true)
                 }
                 .paeoniaGroupedList()
+                .closesOnSwipeRight { isPresented = false }
                 .navigationTitle(Text(.mediaAccessibilityPhotoDescription))
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {

@@ -53,6 +53,7 @@ struct WidgetDrawingHistoryView: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.paeoniaBackgroundSecondary)
+                .closesOnSwipeRight { dismiss() }
                 .navigationTitle(Text(.widgetHistoryTitle))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
