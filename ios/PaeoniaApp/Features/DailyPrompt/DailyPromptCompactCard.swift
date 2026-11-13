@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The daily question card once today's question is answered: a short row that leaves the
 /// screen to the other cards. The envelope sits beside the title and one line about what
-/// happens next, with the button below and the partner's waiting questions under it. The
+/// happens next, with the button below and the partner's waiting questions under it. While
+/// the partner has not answered, the row opens this person's answer and has no button. The
 /// envelope stays sealed until the partner's answers can be read, then it is open.
 struct DailyPromptCompactCard: View {
     let state: DailyChallengeCardState
@@ -34,14 +35,22 @@ struct DailyPromptCompactCard: View {
 
     private var content: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            headline
-                // Without a card, the envelope and words still line up with the content of
-                // the cards around the row.
-                .padding(.horizontal, isInline ? PaeoniaSpacing.cardContentPadding : 0)
+            if waitsForPartner {
+                Button(action: onAnswer) {
+                    headline
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.paeoniaPressableCard)
+                .accessibilityHint(Text(copy.actionTitle))
+                .accessibilityIdentifier("home.dailyPrompt.action")
                 // On the map, the row lies on it, so a drag or a pinch there moves the map.
                 .homeMapRows("questionRow", isInline ? homeMapExplorer : nil)
+            } else {
+                headline
+                    .homeMapRows("questionRow", isInline ? homeMapExplorer : nil)
 
-            actionButton
+                actionButton
+            }
 
             LockedPartnerQuestionRows(
                 state: state,
@@ -51,6 +60,12 @@ struct DailyPromptCompactCard: View {
                 onOpen: onOpenPartnerQuestion
             )
         }
+    }
+
+    /// Nothing waits for this person until the partner answers, so the row itself opens their
+    /// answer, with a chevron instead of a button that would outweigh everything below it.
+    private var waitsForPartner: Bool {
+        copy.isReviewAction && state.completeFollowUp == .waitingForPartner
     }
 
     /// The envelope beside the words. At accessibility text sizes the words get the whole
@@ -63,7 +78,7 @@ struct DailyPromptCompactCard: View {
             envelope
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                 Text(copy.title)
-                    .font(PaeoniaTypography.title)
+                    .font(waitsForPartner ? PaeoniaTypography.sectionTitle : PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .accessibilityAddTraits(.isHeader)
                 if let message = copy.message {
@@ -74,6 +89,12 @@ struct DailyPromptCompactCard: View {
             }
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
+            if waitsForPartner && !dynamicTypeSize.isAccessibilitySize {
+                Image(systemName: "chevron.right")
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextTertiary)
+                    .accessibilityHidden(true)
+            }
         }
     }
 
