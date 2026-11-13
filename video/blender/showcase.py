@@ -44,7 +44,7 @@ MUSIC, SR = ROOT / 'video/blender/music.mp3', 48000
 BRAND = ROOT / 'video/brand'
 RGBA = skia.ColorType.kRGBA_8888_ColorType
 SAMPLING = skia.SamplingOptions(skia.FilterMode.kLinear, skia.MipmapMode.kLinear)
-HEADLINE, MARK, WORDMARK, TAGLINE, SMALL, BADGE = 72, 340, 148, 46, 32, 100
+HEADLINE, MARK, WORDMARK, TAGLINE, BADGE = 72, 340, 148, 46, 100
 
 
 def hexc(h): return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
@@ -153,8 +153,8 @@ def poly(w, h, dst):
 
 def backdrop(cv, t):
     """The brand gradient and the glow behind the phone. The film drifts a little along the App Store strip's
-    gradient and comes back to where it started, so the last frame meets the first; the glow pulses with the bass."""
-    p = kf(t, (0, 0.0), (at(PLAY), 0.10), (at(MEMORIES), 0.16), (at(END), 0.22), (FADE, 0.22), (FRAMES - 2, 0.0))
+    gradient until the end card, and the glow pulses with the bass."""
+    p = kf(t, (0, 0.0), (at(PLAY), 0.10), (at(MEMORIES), 0.16), (at(END), 0.22))
     length = W / 0.18  # the frame is a sixth of the strip
     dx, dy = math.sin(ANGLE), -math.cos(ANGLE)  # CSS angles: 0deg points up, 90deg right
     x0 = -p * length
@@ -163,8 +163,7 @@ def backdrop(cv, t):
     pulse = A.pulse[min(max(round(t), 0), FRAMES - 1)]
     phone_h = 0.82 * (SUBJECT[3] - SUBJECT[1])
     subject = ((SUBJECT[0] + SUBJECT[2]) / 2, (SUBJECT[1] + SUBJECT[3]) / 2)
-    gx, gy = kf(t, (at(END), subject), (at(END, 3), (W / 2, H / 2)), (FADE, (W / 2, H / 2)),
-                (FRAMES - 2, subject))
+    gx, gy = kf(t, (at(END), subject), (at(END, 3), (W / 2, H / 2)))
     m = skia.Matrix.Translate(gx, gy)
     m.preScale(0.55 * phone_h, 0.45 * phone_h)  # CSS: radial-gradient(0.55h 0.45h at the phone, glow, transparent)
     cv.drawPaint(skia.Paint(Shader=skia.GradientShader.MakeRadial(
@@ -442,12 +441,10 @@ def svg_image(path, height):
 # The end card ------------------------------------------------------------------------------------------------------
 
 # The phone sinks away from END. The mark rises on the downbeat of the music's last chord and the wordmark right after
-# it. The tagline then rises a word every TAGLINE_GAP frames, and the subscription line only once the tagline has been
-# fully up for a moment. From FADE everything fades to the first frame's plum.
-CARD = {'mark': at(END), 'wordmark': at(END, 0, 6), 'tagline': at(END, 0, 22), 'small': at(END, 0, 82),
-        'badge': at(END, 0, 98)}
-TAGLINE_GAP, SMALL_GAP = 3.5, 3
-FADE = FRAMES - 16
+# it. The name stands alone for most of a second. The tagline then rises a word every TAGLINE_GAP frames, and the
+# badge once the tagline has been fully up for a moment. The card stays up to the last frame.
+CARD = {'mark': at(END), 'wordmark': at(END, 0, 6), 'tagline': at(END, 0, 40), 'badge': at(END, 0, 92)}
+TAGLINE_GAP = 3.5
 
 
 def wordmark():
@@ -467,13 +464,12 @@ def lockup():
     where the App Store puts its controls."""
     tag_w = TEXT[2] - TEXT[0]
     _, tag_h = layout(A.tagline, TAGLINE, tag_w, 1.2, 'center')
-    _, small_h = layout(A.small, SMALL, tag_w, 1.3, 'center')
-    gaps = 90, 40, 26, 64
-    heights = MARK / 2, A.wordmark[1].height(), tag_h, small_h, BADGE
+    gaps = 90, 40, 64
+    heights = MARK / 2, A.wordmark[1].height(), tag_h, BADGE
     total = sum(heights) + sum(gaps)
     y = min(H / 2 - total / 2, 0.85 * H - total)
     tops = {}
-    for key, height, gap in zip(('mark', 'wordmark', 'tagline', 'small', 'badge'), heights, (*gaps, 0)):
+    for key, height, gap in zip(CARD, heights, (*gaps, 0)):
         tops[key] = y
         y += height + gap
     return tops
@@ -481,12 +477,11 @@ def lockup():
 
 def endcard(cv, t):
     if t < CARD['mark'] - 1: return
-    fade = 1 - io3(prog(t, FADE, FRAMES - 2))
     lock = lockup()
 
     def rise(key, drop):
         e = spring(t - CARD[key], 0.85, 10)
-        return e, (1 - e) * drop, clamp(1.5 * e) * fade
+        return e, (1 - e) * drop, clamp(1.5 * e)
 
     e, dy, alpha = rise('mark', 40)
     if e > 0.001:
@@ -497,9 +492,7 @@ def endcard(cv, t):
         blob, ink = A.wordmark
         cv.drawTextBlob(blob, W / 2 - ink.centerX(), lock['wordmark'] + dy - ink.top(), paint(TEXT_COLOR, alpha))
     headline(cv, A.tagline, (TEXT[0], lock['tagline'], TEXT[2], 0), t, CARD['tagline'], None, size=TAGLINE,
-             align='center', leading=1.2, alpha=fade, color=ACCENT, gap=TAGLINE_GAP)
-    headline(cv, A.small, (TEXT[0], lock['small'], TEXT[2], 0), t, CARD['small'], None, size=SMALL, align='center',
-             leading=1.3, alpha=0.72 * fade, gap=SMALL_GAP)
+             align='center', leading=1.2, color=ACCENT, gap=TAGLINE_GAP)
     e, dy, alpha = rise('badge', 24)
     if e > 0.001:
         bw = A.badge.width() * BADGE / A.badge.height()
@@ -570,7 +563,7 @@ def drawing(name, locale):
 
 def load_card():
     """What the end card draws in A.locale."""
-    A.tagline, A.small = strings('app.tagline'), strings('paywall.subtitle')
+    A.tagline = strings('app.tagline')
     A.mark = svg_image(ROOT / 'ios/PaeoniaApp/Resources/Assets.xcassets/PaeoniaMark.imageset/paeonia-mark.svg',
                        MARK)
     A.wordmark = wordmark()
@@ -858,19 +851,17 @@ def check(captures):
         ok &= check_question(locale, recording(captures, locale, '02-question'), least)
     for locale in CONFIG['panels']:
         A.locale = locale
-        words = {key: len(layout(strings(string), size, TEXT[2] - TEXT[0], leading, 'center')[0])
-                 for key, string, size, leading in (('tagline', 'app.tagline', TAGLINE, 1.2),
-                                                    ('small', 'paywall.subtitle', SMALL, 1.3))}
-        tagline_up = CARD['tagline'] + (words['tagline'] - 1) * TAGLINE_GAP + settled
-        ok &= least(f'{locale} tagline fully up before the subscription line rises', CARD['small'] - tagline_up, 0.7)
-        all_up = max(CARD['mark'] + settled, CARD['wordmark'] + settled, CARD['badge'] + settled, tagline_up,
-                     CARD['small'] + (words['small'] - 1) * SMALL_GAP + settled)
-        ok &= least(f'{locale} end card fully up before it fades', FADE - all_up, 1.0)
+        words = len(layout(strings('app.tagline'), TAGLINE, TEXT[2] - TEXT[0], 1.2, 'center')[0])
+        tagline_up = CARD['tagline'] + (words - 1) * TAGLINE_GAP + settled
+        ok &= least(f'{locale} name fully up before the tagline rises', CARD['tagline'] - CARD['wordmark'] - settled,
+                    0.6)
+        ok &= least(f'{locale} tagline fully up before the badge rises', CARD['badge'] - tagline_up, 0.3)
+        ok &= least(f'{locale} end card fully up before the film ends', FRAMES - CARD['badge'] - settled, 1.8)
         # Each line of the settled end card has as much ink left of the frame's middle as right of it. The rows
         # where two lines meet are left out, since the edge of one line's ink can reach a pixel into the next.
         load_card()
         buf = np.zeros((H, W, 4), np.uint8)
-        endcard(skia.Surface(buf).getCanvas(), FADE)
+        endcard(skia.Surface(buf).getCanvas(), FRAMES - 1)
         tops = [*lockup().values(), H]
         for key, top, bottom in zip(lockup(), tops, tops[1:]):
             columns = np.flatnonzero((buf[round(top) + 2:round(bottom) - 2, :, 3] > 127).any(0))

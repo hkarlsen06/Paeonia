@@ -72,7 +72,7 @@ uv run video/blender/showcase.py --fit
 - Every headline stays fully up for at least 1.5 s.
 - Nothing moves at the poster frames 2.0 s and 5.0 s.
 - In each locale's question recording, the question stays at its full size for at least 1.2 s, until the tap on the text field. A dissolve of 6 to 8 frames goes from the photo tap to `photo staged`, the typing takes at most 1.5 s, and the conversation comes in on a beat no later than 9.5 s. Today's answers stay still for at least 1.4 s before the swipe, and the earlier day for at least 1 s before the change to Ludo. Only the card, photo, field and send taps show a dot.
-- On the end card, the subscription line rises only after the tagline has been fully up for 0.7 s, and everything is fully up for at least 1 s before the fade.
+- On the end card, the tagline rises only after the name has been fully up for 0.6 s, the badge only after the tagline has been fully up for 0.3 s, and everything is fully up for the film's last 1.8 s. The card does not fade out.
 - The cut music is 29.5 s long with every cut on the track's beat grid.
 
 ## The drawing
@@ -85,4 +85,4 @@ swift scripts/app-store-drawing.swift --strokes scripts/assets/app-store/widget-
 
 ## Other assets
 
-`brand/` holds Apple's App Store badges. The headlines, colours and font come from `scripts/assets/app-store/paeonia-3d.json`, the same file as the App Store screenshots. The tagline and the subscription line come from `ios/PaeoniaApp/Resources/Localization/Localizable.xcstrings`. The peony mark is the app's `PaeoniaMark` image.
+`brand/` holds Apple's App Store badges. The headlines, colours and font come from `scripts/assets/app-store/paeonia-3d.json`, the same file as the App Store screenshots. The tagline comes from `ios/PaeoniaApp/Resources/Localization/Localizable.xcstrings`. The peony mark is the app's `PaeoniaMark` image.
