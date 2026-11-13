@@ -21,6 +21,15 @@ extension CoupleDateEvent {
             visit.timelineTitle
         }
     }
+
+    /// The name on the Us tab calendar tile: a milestone's short name, otherwise the title.
+    func tileTitle(names: CoupleDateNames) -> String {
+        if case let .milestone(kind) = kind {
+            String(localized: kind.shortName)
+        } else {
+            title(names: names)
+        }
+    }
 }
 
 extension CoupleDateNames {

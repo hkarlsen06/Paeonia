@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The tear-off desk calendar on the Us tab countdown tile, with the day count drawn on
-/// its blank page. The text scales with the page and follows Dynamic Type.
+/// The tear-off desk calendar on the Us tab countdown tile, with the day count and "days"
+/// drawn on its blank page. The text scales with the page and follows Dynamic Type.
 struct CountdownCalendarView: View {
     enum Face: Equatable {
         case loading
@@ -48,6 +48,18 @@ struct CountdownCalendarView: View {
             }
     }
 
+    /// The count with "days" under it.
+    private func daysFace(_ days: Int, in rect: CGRect) -> some View {
+        VStack(spacing: -rect.height * 0.06) {
+            Text(days, format: .number)
+                .font(.system(size: rect.height * 0.48 * textScale, weight: .heavy, design: .rounded))
+                .contentTransition(.numericText(value: Double(days)))
+                .animation(reduceMotion ? nil : Self.countAnimation, value: days)
+            Text(days == 1 ? .homeMilestonePageDaysOne : .homeMilestonePageDays)
+                .font(.system(size: rect.height * 0.15 * textScale, weight: .bold, design: .rounded))
+        }
+    }
+
     private func pageRect(in size: CGSize) -> CGRect {
         CGRect(
             x: Self.page.minX * size.width,
@@ -66,10 +78,7 @@ struct CountdownCalendarView: View {
                 Text(verbatim: "?")
                     .font(.system(size: rect.height * 0.58 * textScale, weight: .heavy, design: .rounded))
             case let .days(days):
-                Text(days, format: .number)
-                    .font(.system(size: rect.height * 0.58 * textScale, weight: .heavy, design: .rounded))
-                    .contentTransition(.numericText(value: Double(days)))
-                    .animation(reduceMotion ? nil : Self.countAnimation, value: days)
+                daysFace(days, in: rect)
             case .today:
                 Text(.homeMilestoneToday)
                     .font(.system(size: rect.height * 0.28 * textScale, weight: .heavy))

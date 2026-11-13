@@ -21919,6 +21919,42 @@
         }
       }
     },
+    "home.milestone.page.days" : {
+      "comment" : "Word under the day count on the calendar page of the Us tab countdown tile, as in '18' over 'days'. Plural.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager"
+          }
+        }
+      }
+    },
+    "home.milestone.page.days.one" : {
+      "comment" : "Word under the day count on the calendar page of the Us tab countdown tile when the count is 1, as in '1' over 'day'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dag"
+          }
+        }
+      }
+    },
     "home.milestone.setup.accessibilityHint" : {
       "comment" : "VoiceOver hint for the milestone setup tile",
       "extractionState" : "manual",
@@ -21951,6 +21987,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Når ble dere sammen?"
+          }
+        }
+      }
+    },
+    "home.milestone.short.halfYear" : {
+      "comment" : "Short name for the couple's half-year milestone, shown on the Us tab countdown tile after 'until', as in 'until half a year'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "half a year"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "et halvt år"
           }
         }
       }
@@ -22329,6 +22383,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I dag"
+          }
+        }
+      }
+    },
+    "home.milestone.until" : {
+      "comment" : "Line under the calendar on the Us tab countdown tile. The page above it shows the day count and 'days', so together they read '18 days until 2 months'. %@ is a short event name, such as '2 months', '500 days', 'Oda's birthday' or a countdown the couple named. Keep it short so it fits on one line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "until %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "til %@"
           }
         }
       }

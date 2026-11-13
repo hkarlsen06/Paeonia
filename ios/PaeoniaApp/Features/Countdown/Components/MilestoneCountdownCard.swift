@@ -162,7 +162,7 @@ struct MilestoneCountdownCard: View {
             let title = milestone.title(names: names)
             let isToday = milestone.daysRemaining == 0
             face = isToday ? .today : .days(shownDays(milestone.daysRemaining))
-            line = isToday ? Text(verbatim: title) : Text(untilLine(for: milestone, title: title))
+            line = isToday ? Text(verbatim: title) : Text(.homeMilestoneUntil(milestone.tileTitle(names: names)))
         } else {
             face = isLoading ? .loading : .empty
             line = Text(.homeMilestoneSetupTitle)
@@ -191,7 +191,8 @@ struct MilestoneCountdownCard: View {
         .milestoneTileChrome(keepsSquare: !dynamicTypeSize.isAccessibilitySize)
     }
 
-    /// "days until 500 days together". The number sits on the calendar page above it.
+    /// "days until 500 days together", for VoiceOver. On screen the page says "days" under the
+    /// number, and the line under the calendar says only "until 500 days".
     private func untilLine(for milestone: CoupleDateEvent, title: String) -> LocalizedStringResource {
         milestone.daysRemaining == 1 ? .homeMilestoneUntilEventOne(title) : .homeMilestoneUntilEvent(title)
     }
