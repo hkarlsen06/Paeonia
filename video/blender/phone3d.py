@@ -33,8 +33,8 @@ from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).parent))
-from timeline import (CANVAS, CAPTURE, CAPTURES, CONFIG, DISSOLVE, DRAW, EDGE, END, FOOTAGE, FPS,  # noqa: E402
-                      FRAMES, GLASS_H, GLASS_W, H, MEMORIES, OFFSET, PHONE_D, PHONE_H, PHONE_R, PHONE_W, PHOTO_TAP,
+from timeline import (CANVAS, CAPTURE, CAPTURES, CONFIG, DISSOLVE, DRAW, EDGE, END, FIELD_TAP, FOOTAGE,  # noqa: E402
+                      FPS, FRAMES, GLASS_H, GLASS_W, H, MEMORIES, OFFSET, PHONE_D, PHONE_H, PHONE_R, PHONE_W, PHOTO_TAP,
                       PLAY, PX_PER_MM, QUESTION, REGIONS, REVEAL, SCREEN_RADIUS, SECOND_PHONE, SHOTS, SUBJECT,
                       TYPING, W, at, capture, footage_mix, glare, layer, recording, showing)
 
@@ -399,7 +399,7 @@ def build():
     # once more inside the question, as the camera moves in to read the answer.
     hero, hero_model = phone('phone', SHOTS, mats)
     poses = [(0, (0, 0, 0), (-3, 0, -9)), (at(QUESTION), (0, 0, 0.002), (-3, 0, 8)),
-             (PHOTO_TAP + 14, (0, 0, 0), (-2, 0, -7)), (at(PLAY), (0, 0, 0), (-3, 0, 9)),
+             (PHOTO_TAP + 14, (0, 0, 0.002), (-2, 0, -7)), (at(PLAY), (0, 0, 0), (-3, 0, 9)),
              (at(DRAW), (-0.047, 0.04, 0.004), (-3, 0, 16)), (at(MEMORIES), (0, 0, 0), (-3, 0, -8))]
 
     def drifted(rot): return rot[0], rot[1], rot[2] - math.copysign(2, rot[2])
@@ -421,10 +421,11 @@ def build():
                 (SECOND_PHONE[1] - 1, (0.40, 0.08, 0.01), (-3, 0, -36), 'linear')])
     visible([draw], *SECOND_PHONE)
 
-    # Camera shots, as (frame, aim, camera location, ease of the move to the next shot). As the photo goes in, the
-    # camera moves close enough to the main phone that 17 pt text reads, on the composer while the line is typed and
-    # on the answers for the reveal. When Draw & Guess joins, the camera follows it and holds its screen for the
-    # guess, with the Ludo phone half in the frame beside it.
+    # Camera shots, as (frame, aim, camera location, ease of the move to the next shot). As the keyboard rises, the
+    # camera moves close enough to the main phone that 17 pt text reads, in one move toward the answers, and rests
+    # there while the line is typed above them and through the reveal. The move starts once the question's headline
+    # is mostly gone, since the phone rises into its place. When Draw & Guess joins, the camera follows it and holds
+    # its screen for the guess, with the Ludo phone half in the frame beside it.
     def orbit(target, distance, yaw, pitch):
         yaw, pitch = math.radians(yaw), math.radians(pitch)
         return target + distance * Vector((math.sin(yaw) * math.cos(pitch), -math.cos(yaw) * math.cos(pitch),
@@ -435,7 +436,7 @@ def build():
         return hero_model.matrix_world @ on_glass(px, py)
 
     centre, guess = Vector((0, 0, 0)), Vector((0.034, -0.01, 0.008))
-    composer, answers = glass_point(TYPING + 15, CAPTURE[0] / 2, 1150), glass_point(REVEAL, CAPTURE[0] / 2, 1750)
+    answers = glass_point(REVEAL, CAPTURE[0] / 2, 1750)
 
     def drift(frame):
         """The straight move the camera made from 4 s to the Draw & Guess key before the question scene existed. The
@@ -444,8 +445,8 @@ def build():
                                                       (frame - at(2)) / (at(DRAW, 0, -16) - at(2)))
 
     shots = [
-        (0, centre, orbit(centre, 0.84, -3, 2), 'linear'), (PHOTO_TAP, centre, orbit(centre, 0.815, -1, 2), 'io'),
-        (TYPING + 15, composer, orbit(composer, 0.68, -5, 2), 'io'),
+        (0, centre, orbit(centre, 0.84, -3, 2), 'linear'), (FIELD_TAP + 6, centre, orbit(centre, 0.815, -1, 2), 'io'),
+        (TYPING + 15, answers, orbit(answers, 0.68, -5, 2), 'io'),
         (REVEAL, answers, orbit(answers, 0.67, -4, 2), 'linear'),
         (at(PLAY, 0, -30), answers, orbit(answers, 0.655, -3, 2), 'io'),
         (at(PLAY), centre, drift(at(PLAY)), 'linear'), (at(DRAW, 0, -16), centre, orbit(centre, 0.80, 2, 2), 'io'),
