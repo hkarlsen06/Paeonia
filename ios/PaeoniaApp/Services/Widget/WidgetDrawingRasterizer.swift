@@ -15,7 +15,7 @@ nonisolated protocol WidgetDrawingRasterizing: Sendable {
 /// Previews are derived cache data, not the canonical drawing. Rendering uses a
 /// light interface style so the literal ink colors match what the in-app canvas
 /// shows, and a transparent background so the strokes composite over the
-/// widget's plum container (and tint correctly in accessibility tinted mode).
+/// widget's plum container.
 ///
 /// Works in terms of `Data` in and `Data` out (both `Sendable`), so callers never
 /// pass PencilKit or UIKit values across an isolation boundary. It renders off the

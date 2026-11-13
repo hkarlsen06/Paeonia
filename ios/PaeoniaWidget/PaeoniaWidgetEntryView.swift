@@ -88,9 +88,12 @@ struct PaeoniaWidgetEntryView: View {
     }
 
     private func drawingImageView(_ content: PaeoniaWidgetDrawingContent) -> some View {
+        // Clear and tinted Home Screens paint every opaque pixel white, which
+        // turns a drawing with a paint bucket fill into a blank square.
         Image(uiImage: content.image)
             .resizable()
             .interpolation(.high)
+            .widgetAccentedRenderingMode(.fullColor)
             .scaledToFit()
             .clipShape(DrawingCanvasShape())
             .privacySensitive()
