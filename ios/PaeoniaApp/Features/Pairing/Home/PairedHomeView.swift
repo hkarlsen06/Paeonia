@@ -336,7 +336,6 @@ extension PairedHomeView {
                 movedVisitPrompt
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.bottom, PaeoniaSpacing.space16)
         }
         // On the whole page, so the map and the avatars move with a card that changes height.
         .modifier(cardChangeAnimations)

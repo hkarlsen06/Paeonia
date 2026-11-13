@@ -136,16 +136,18 @@ struct HomeMapScreen {
     let additionalHeaderHeight: CGFloat
     /// Where the safe area ends, at the top of the tab bar.
     let visibleBottom: CGFloat
+    /// The tab bar's height, from `visibleBottom` to the screen's bottom edge.
+    let bottomInset: CGFloat
 
     init(geo: GeometryProxy, additionalHeaderHeight: CGFloat) {
         width = geo.size.width
         topInset = geo.safeAreaInsets.top
         self.additionalHeaderHeight = additionalHeaderHeight
         visibleBottom = topInset + geo.size.height
+        bottomInset = geo.safeAreaInsets.bottom
     }
 
-    /// The page's height when the cards fit. It ends at the top of the tab bar, so the
-    /// footer's card starts level with the bar and shares its outline.
+    /// The page's height when the cards fit. It ends at the top of the tab bar.
     var fillHeight: CGFloat { visibleBottom }
     /// At least room for the avatars, plus the fade.
     var shortestBand: CGFloat { topInset + additionalHeaderHeight + 212 + HomeMapMetrics.fadeHeight }
