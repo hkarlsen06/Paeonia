@@ -65,10 +65,10 @@ class Clip(NamedTuple):
 # starts to open on their first downbeat. The question stays at its full size until the tap on the text field, the
 # keyboard rises and the photo shrinks at their own pace, the typing takes 1 s, the conversation comes in on a bar
 # line, and the swipe to the earlier day starts about 1.5 s after the partner's answer has opened. The petals burst
-# from the partner's answer 0.3 s after the conversation comes in. The simulator can stop drawing on their first frame
-# for a quarter of a second, so the film cuts from that frame to the next one that changes. The list coasts for 2.5 s
-# after the swipe, which the film plays in under 1 s. Fit these to the recording; FOOTAGE plays the stretches between
-# them.
+# from the partner's answer on the next beat, a hard hit in the music, so the still moment before them is drawn out
+# to meet it. The simulator can stop drawing on their first frame for a quarter of a second, so the film cuts from
+# that frame to the next one that changes. The list coasts for 2.5 s after the swipe, which the film plays in under
+# 1 s. Fit these to the recording; FOOTAGE plays the stretches between them.
 CARD_TAP = at(QUESTION, 2, -3)
 QUESTION_SHOWN = at(QUESTION, 3)
 PHOTO_TAP = at(QUESTION, 4, 6)
@@ -77,7 +77,7 @@ TYPING = at(QUESTION, 6, 13)
 TYPED = at(QUESTION, 8, 14)
 SEND = at(QUESTION, 9, 6)
 REVEAL = at(QUESTION, 10)
-PETALS = at(QUESTION, 10, 9)
+PETALS = at(QUESTION, 11)
 SCROLL = at(QUESTION, 15, 8)
 SCROLLED = at(QUESTION, 17, 5)
 PICKER_DISSOLVE = 7  # frames from the photo tap to the photo in the composer, so the picker never shows
