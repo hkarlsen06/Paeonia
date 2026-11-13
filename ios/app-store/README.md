@@ -39,6 +39,12 @@ Uploads skip existing matching images by default. `--replace` replaces only the 
 
 `--version 1.0.0` selects an explicit version. `--assets-dir <path>` selects an existing artwork directory. Neither option generates images or creates a remote version.
 
+## App previews
+
+The finished app preview films are in `ios/ASConnectScreenshots/<version>/app-preview/<locale>/paeonia-showcase-<locale>.mp4`, one for `en-US` and one for `no`. Git ignores that folder, like the screenshots, so the files exist only on the Mac that rendered them. [video/README.md](../../video/README.md) says how to render them again, and the screen recordings they need are in `ios/ASConnectScreenshots/<version>/raw/<locale>/`.
+
+No command uploads a preview. Add each film by hand in App Store Connect, under the version's iPhone previews for its language. Each film is 886 x 1920 and 29.5 s, in H.264 with AAC sound, which App Store Connect accepts for every iPhone size. Set the poster frame to 5.0 s, where the question holds under its headline. The frame at 2.0 s is also a clean hold.
+
 ## Native commands and verification
 
 `bun run asc <command>` uses the pinned CLI and the same credentials. This direct entry point permits writes. For read-only diagnostics, put the global flag first, as in `bun run asc --read-only apps list --bundle-id no.paeonia.app`.
