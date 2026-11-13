@@ -5,8 +5,13 @@ import SwiftUI
 /// rests on the days it does. With a visit planned it counts the days and names the place and
 /// dates. Without one it asks when they meet next, and the person can move the question under
 /// the other cards for 30 days. Each is a short row that opens the visit screen with the shared list.
+///
+/// Home works out `card` (`visitClock`), so the page's change animation covers the card appearing.
 struct HomeVisitCard: View {
     let visits: VisitsViewModel
+    let card: HomeVisitCardState
+    /// The time `card` was worked out for.
+    let now: Date
     let streak: StreakPillState
     /// The card under the other cards, which shows only the question the person moved there.
     let isBelow: Bool
@@ -14,20 +19,9 @@ struct HomeVisitCard: View {
     private static let iconSize: CGFloat = 32
 
     @State private var isDetailPresented = false
-    /// Refreshed at midnight so the count moves on, and a hidden question comes back, while the app
-    /// stays open, and when the streak starts or stops resting.
-    @State private var now = Date()
 
     var body: some View {
         content
-            .onCalendarDayChange { now = Date() }
-            .task(id: streak.changeDates) {
-                for date in streak.changeDates where date > Date() {
-                    try? await Task.sleep(for: .seconds(date.timeIntervalSinceNow))
-                    guard !Task.isCancelled else { return }
-                    now = Date()
-                }
-            }
             .sheet(isPresented: $isDetailPresented) {
                 VisitDetailView(visits: visits)
                     .analyticsScreen("visit_detail")
@@ -37,7 +31,6 @@ struct HomeVisitCard: View {
 
     @ViewBuilder
     private var content: some View {
-        let card = visits.homeCard(at: now, streak: streak)
         if isBelow {
             if card == .movedPrompt {
                 promptRow(canMoveDown: false)
@@ -166,5 +159,21 @@ struct HomeVisitCard: View {
         .buttonStyle(.plain)
         .accessibilityLabel(Text(.homeVisitPromptMoveDown))
         .accessibilityIdentifier("home.visit.moveDown")
+    }
+}
+
+extension View {
+    /// Keeps `now` on the time the visit card is worked out for. It moves on at midnight, so
+    /// the count moves on and a hidden question comes back while the app stays open, and when
+    /// the streak starts or stops resting.
+    func visitClock(_ now: Binding<Date>, streak: StreakPillState) -> some View {
+        onCalendarDayChange { now.wrappedValue = Date() }
+            .task(id: streak.changeDates) {
+                for date in streak.changeDates where date > Date() {
+                    try? await Task.sleep(for: .seconds(date.timeIntervalSinceNow))
+                    guard !Task.isCancelled else { return }
+                    now.wrappedValue = Date()
+                }
+            }
     }
 }

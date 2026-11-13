@@ -128,7 +128,10 @@ extension PairedHomeView {
     @ViewBuilder
     var visitCard: some View {
         if let visits {
-            HomeVisitCard(visits: visits, streak: dailyChallengeStreak, isBelow: false)
+            HomeVisitCard(
+                visits: visits, card: visits.homeCard(at: visitNow, streak: dailyChallengeStreak), now: visitNow,
+                streak: dailyChallengeStreak, isBelow: false
+            )
         }
     }
 
@@ -136,7 +139,10 @@ extension PairedHomeView {
     @ViewBuilder
     var movedVisitPrompt: some View {
         if let visits {
-            HomeVisitCard(visits: visits, streak: dailyChallengeStreak, isBelow: true)
+            HomeVisitCard(
+                visits: visits, card: visits.homeCard(at: visitNow, streak: dailyChallengeStreak), now: visitNow,
+                streak: dailyChallengeStreak, isBelow: true
+            )
         }
     }
 

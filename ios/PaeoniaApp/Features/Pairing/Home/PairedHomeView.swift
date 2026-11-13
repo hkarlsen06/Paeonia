@@ -72,6 +72,8 @@ struct PairedHomeView: View {
     /// A sheet from one of the cards is up (`HomeIsCoveredKey`).
     @State var isCovered = false
     @State var visitMemoryForm: VisitMemoryForm?
+    /// The time the visit card is worked out for (`visitClock`).
+    @State var visitNow = Date()
     /// `mapTiles.showsMapHeader`, changed inside an animation so the layouts cross-fade.
     @State private var showsMapHeader: Bool
     /// Both layouts are on screen while one fades into the other.
@@ -182,6 +184,7 @@ struct PairedHomeView: View {
             }
         }
         .paeoniaWideLayout($isWideLayout)
+        .visitClock($visitNow, streak: dailyChallengeStreak)
         .heartsLifecycle(hearts, ownerUserID: currentUserID, partnerName: partnerName)
         .lookBackRefresh(lookBack, userID: currentUserID, coupleID: coupleID)
         // Home shows the couple's current drawing, the streak, the story ring and the next
@@ -407,7 +410,7 @@ extension PairedHomeView {
             dailyCard: dailyChallengeCardState.kind,
             milestoneIsLoading: milestoneIsLoading,
             relationshipStartedOn: relationshipStartedOn,
-            visitCard: visits?.homeCard(at: Date(), streak: dailyChallengeStreak),
+            visitCard: visits?.homeCard(at: visitNow, streak: dailyChallengeStreak),
             waitingLetters: mail?.waiting.count ?? 0,
             visitMemoryCard: visitMemoryPrompts
         )
