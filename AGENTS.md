@@ -216,6 +216,7 @@ Read only guidance relevant to the change. Commands and source paths in these do
 - Backend, Clerk auth, or iOS auth/RPC integration: [backend/AGENTS.md](backend/AGENTS.md). Keep the explicit authorization checks. Change function contracts freely, and update the iOS callers in the same change.
 - App Store metadata or screenshot uploads: [ASC workflow](ios/app-store/README.md).
 - Marketing routes or deployment, App Store listing text, screenshots, or other marketing copy: [marketing/AGENTS.md](marketing/AGENTS.md).
+- The Paeonia film, which is the promo video and the App Store app preview: [video/README.md](video/README.md). It says which part to render again for each kind of change.
 
 ## Product-Specific Quality Bar
 
