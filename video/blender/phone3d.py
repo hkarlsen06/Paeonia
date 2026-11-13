@@ -445,9 +445,9 @@ def build():
 
     shots = [
         (0, centre, orbit(centre, 0.84, -3, 2), 'linear'), (PHOTO_TAP, centre, orbit(centre, 0.815, -1, 2), 'io'),
-        (TYPING + 15, composer, orbit(composer, 0.6, -5, 2), 'io'),
-        (REVEAL, answers, orbit(answers, 0.49, -4, 2), 'linear'),
-        (at(PLAY, 0, -30), answers, orbit(answers, 0.48, -3, 2), 'io'),
+        (TYPING + 15, composer, orbit(composer, 0.68, -5, 2), 'io'),
+        (REVEAL, answers, orbit(answers, 0.67, -4, 2), 'linear'),
+        (at(PLAY, 0, -30), answers, orbit(answers, 0.655, -3, 2), 'io'),
         (at(PLAY), centre, drift(at(PLAY)), 'linear'), (at(DRAW, 0, -16), centre, orbit(centre, 0.80, 2, 2), 'io'),
         (at(DRAW, 0, 24), guess, orbit(guess, 0.86, -2, 2), 'io'),
         (at(MEMORIES, 0, -18), guess, orbit(guess, 0.84, -2, 2), 'io'),

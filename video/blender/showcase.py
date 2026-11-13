@@ -44,7 +44,7 @@ MUSIC, SR = ROOT / 'video/blender/music.mp3', 48000
 BRAND = ROOT / 'video/brand'
 RGBA = skia.ColorType.kRGBA_8888_ColorType
 SAMPLING = skia.SamplingOptions(skia.FilterMode.kLinear, skia.MipmapMode.kLinear)
-HEADLINE, MARK, WORDMARK, TAGLINE, BADGE = 72, 340, 148, 46, 100
+HEADLINE, MARK, WORDMARK, TAGLINE, BADGE = 92, 340, 148, 46, 100
 
 
 def hexc(h): return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
@@ -86,11 +86,11 @@ class Lift(NamedTuple):
 
 
 LIFTS = {
-    'drawing widget': Lift(-RISE, at(COUNTDOWN, 0, 8), 540, (0, -10)),
-    'countdown widget': Lift(at(COUNTDOWN, 0, 6), at(QUESTION, 0, -19), 330, (70, -30)),
-    'photo 1': Lift(at(MEMORIES, 0, 8), at(END, 0, -26), 270, (-80, -40), -9),
-    'photo 2': Lift(at(MEMORIES, 0, 14), at(END, 0, -22), 280, (10, -110), 2),
-    'photo 3': Lift(at(MEMORIES, 0, 20), at(END, 0, -18), 270, (110, -40), 10),
+    'drawing widget': Lift(-RISE, at(COUNTDOWN, 0, 8), 650, (0, -12)),
+    'countdown widget': Lift(at(COUNTDOWN, 0, 6), at(QUESTION, 0, -19), 400, (84, -36)),
+    'photo 1': Lift(at(MEMORIES, 0, 8), at(END, 0, -26), 325, (-96, -48), -9),
+    'photo 2': Lift(at(MEMORIES, 0, 14), at(END, 0, -22), 335, (-20, -132), 2),
+    'photo 3': Lift(at(MEMORIES, 0, 20), at(END, 0, -18), 315, (70, -48), 10),
 }
 
 
@@ -153,7 +153,8 @@ def poly(w, h, dst):
 
 def backdrop(cv, t):
     """The brand gradient and the glow behind the phone. The film drifts a little along the App Store strip's
-    gradient until the end card, and the glow pulses with the bass."""
+    gradient until the end card, and the glow pulses with the bass. The glow rises to the middle of the frame, where
+    the end card stands, slowly while the memories phone is still up, so the move goes unnoticed."""
     p = kf(t, (0, 0.0), (at(PLAY), 0.10), (at(MEMORIES), 0.16), (at(END), 0.22))
     length = W / 0.18  # the frame is a sixth of the strip
     dx, dy = math.sin(ANGLE), -math.cos(ANGLE)  # CSS angles: 0deg points up, 90deg right
@@ -163,7 +164,7 @@ def backdrop(cv, t):
     pulse = A.pulse[min(max(round(t), 0), FRAMES - 1)]
     phone_h = 0.82 * (SUBJECT[3] - SUBJECT[1])
     subject = ((SUBJECT[0] + SUBJECT[2]) / 2, (SUBJECT[1] + SUBJECT[3]) / 2)
-    gx, gy = kf(t, (at(END), subject), (at(END, 3), (W / 2, H / 2)))
+    gx, gy = kf(t, (at(MEMORIES, 1), subject), (at(END, 0, -6), (W / 2, H / 2)))
     m = skia.Matrix.Translate(gx, gy)
     m.preScale(0.55 * phone_h, 0.45 * phone_h)  # CSS: radial-gradient(0.55h 0.45h at the phone, glow, transparent)
     cv.drawPaint(skia.Paint(Shader=skia.GradientShader.MakeRadial(

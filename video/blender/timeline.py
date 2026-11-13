@@ -19,8 +19,11 @@ LOCALES = {'en-US': 'en', 'no': 'nb'}  # the language of each film's drawing and
 
 W, H, FPS = 886, 1920, 30  # App Store Connect's app preview size for every iPhone from 5.8 to 6.9 inches
 FRAMES = 885  # 29.5 s
-SUBJECT = 0, 600, W, 1880  # pixel box (left, top, right, bottom) the camera frames the phones in
-TEXT = 64, 168, W - 64, 560  # headlines stay in this box, above the phones
+# Pixel box (left, top, right, bottom) the camera frames the phones in. Between the close-ups it puts the main phone
+# from about y 560 to y 1845, so the phone and the headline above it fill the frame of an App Store app preview. The
+# box runs past the frame's bottom edge.
+SUBJECT = 0, 447, W, 1983
+TEXT = 64, 230, W - 64, 560  # headlines stay in this box, above the phones
 
 # The music is 120 BPM and cut on its bar lines (EDIT in showcase.py), so a bar of the film is 2 s.
 BEAT = 15  # frames
@@ -72,7 +75,7 @@ TYPING = at(QUESTION, 6, 13)
 TYPED = at(QUESTION, 8, 14)
 SEND = at(QUESTION, 9, 6)
 REVEAL = at(QUESTION, 10)
-SCROLL = at(QUESTION, 15, 7)
+SCROLL = at(QUESTION, 15, 8)
 SCROLLED = at(QUESTION, 17, 5)
 PICKER_DISSOLVE = 7  # frames from the photo tap to the photo in the composer, so the picker never shows
 REVEAL_DISSOLVE = 8  # frames from the sending answer to the conversation resting on today
