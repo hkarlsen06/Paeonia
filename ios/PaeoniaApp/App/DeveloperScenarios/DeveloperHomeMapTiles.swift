@@ -68,5 +68,10 @@ nonisolated extension DeveloperScenario {
       "home-map-apart", "Home map · far apart",
       "Oslo and Tromsø, 1,150 km apart and mostly north and south of each other", .relationship
     ) { DeveloperPairedScenarioHost(scenario: $0) }
+    /// Robin's place changes while Home is open, so the map and the distance line move.
+    static let homeMapPartnerMoves = DeveloperScenario(
+      "home-map-partner-moves", "Home map · partner moves",
+      "Robin goes from Tromsø to Trondheim, Lillehammer, Oslo and Bergen, 3.5 s apart", .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
 }
 #endif

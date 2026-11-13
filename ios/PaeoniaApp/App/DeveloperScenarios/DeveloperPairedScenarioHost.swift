@@ -13,6 +13,8 @@
     @State private var memoriesViewModel: MemoriesViewModel
     @State private var gamesViewModel: GamesViewModel
     @State private var visitsViewModel: VisitsViewModel
+    /// How far Robin has got in `home-map-partner-moves`.
+    @State private var partnerStop = 0
     private let locationViewModel: LocationMapViewModel
     private let scenario: DeveloperScenario
 
@@ -58,6 +60,21 @@
       _gamesViewModel = State(initialValue: DeveloperGamesScenarioFactory.gamesViewModel(for: scenario))
       _visitsViewModel = State(initialValue: DeveloperVisitsFixture.model(for: scenario))
       locationViewModel = Self.makeLocationViewModel(operationProvider: operationProvider)
+    }
+
+    /// Tromsø, Trondheim, Lillehammer, Oslo (together) and Bergen.
+    private static let partnerStops: [(latitude: Double, longitude: Double)] = [
+      (69.6492, 18.9553), (63.4305, 10.3951), (61.1153, 10.4662), (59.9142, 10.7530), (60.3913, 5.3221),
+    ]
+    private static let partnerCapturedAt = Date.now.addingTimeInterval(-7_200)
+
+    private var partnerLocation: LocationPoint {
+      let stop: (latitude: Double, longitude: Double) = switch scenario {
+      case .homeMapApart: Self.partnerStops[0]
+      case .homeMapPartnerMoves: Self.partnerStops[partnerStop]
+      default: Self.partnerStops[3]
+      }
+      return LocationPoint(latitude: stop.latitude, longitude: stop.longitude, capturedAt: Self.partnerCapturedAt)
     }
 
     /// A store of its own, emptied once per launch, so today's question opens by itself on every run.
@@ -200,9 +217,7 @@
           // `-proto.home.mapState`.
           locationMapState: Self.protoMapState ?? .ready(
             current: LocationPoint(latitude: 59.9139, longitude: 10.7522, capturedAt: .now.addingTimeInterval(-60)),
-            partner: scenario == .homeMapApart
-              ? LocationPoint(latitude: 69.6492, longitude: 18.9553, capturedAt: .now.addingTimeInterval(-7_200))
-              : LocationPoint(latitude: 59.9142, longitude: 10.7530, capturedAt: .now.addingTimeInterval(-7_200)),
+            partner: partnerLocation,
             partnerWasStaleAtLastRefresh: false
           ),
           locationViewModel: locationViewModel,
@@ -221,6 +236,15 @@
           pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(firstSteps: scenario.firstStepsProgress),
           todaysQuestionOpenings: scenario == .pairedHomeTodayOpens ? Self.todaysQuestionOpenings : nil
         )
+        .task {
+          guard scenario == .homeMapPartnerMoves else { return }
+          // After the launch intro has landed, then one stop at a time.
+          try? await Task.sleep(for: .seconds(10))
+          for stop in 1..<Self.partnerStops.count {
+            partnerStop = stop
+            try? await Task.sleep(for: .seconds(3.5))
+          }
+        }
       }
     }
   }

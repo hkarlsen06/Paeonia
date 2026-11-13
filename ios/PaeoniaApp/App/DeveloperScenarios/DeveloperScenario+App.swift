@@ -26,7 +26,7 @@
       memoriesEmpty, memoriesPopulated, memoriesCards, memoryEditor, memoryDetail, memoryCelebration,
       countdownMissing, countdownUpcoming, countdownToday,
       locationNotSharing, locationCurrentMissing, locationLive, locationStale, homeMapOutage, homeMapOffline,
-      homeMapRecovery, homeMapSlowRender, homeMapApart,
+      homeMapRecovery, homeMapSlowRender, homeMapApart, homeMapPartnerMoves,
       widgetDrawing, widgetHistoryEmpty, widgetHistoryPopulated, widgetHistoryFocused,
       gamesSetup, gamesPartnerPicked, gamesHubYourTurn, gamesHubWaiting, gamesHubReveal, gamesHubPartnerHere,
       gamesHubBoardGames, gamesHubQuiet, liveActivityGame, liveActivityViews,
