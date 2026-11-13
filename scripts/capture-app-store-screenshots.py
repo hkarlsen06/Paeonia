@@ -844,13 +844,22 @@ def find_events(screen, actions, video, full):
                       if all(looks_like(band[j], band[settled]) for j in range(i, i + 3))), None)
         if today is None:
             raise SystemExit("The conversation never rested on today before the reveal settled.")
+        # The partner's answer opens with a burst of petals. Their first frame is a small cluster, the first change
+        # after today that is smaller than a screen change. The simulator can stop drawing on that frame for a
+        # quarter of a second, so the film cuts from it to the next frame that changes. The photo of the answer
+        # just sent can fade in meanwhile, but in steps the size of a screen change.
+        petals = next((i for i in range(today + 1, settled) if moving(full, i)
+                       and not moving(full, i, SCREEN_CHANGE_PIXELS)), None)
+        if petals is None:
+            raise SystemExit("Found no petals bursting from the partner's answer.")
         (_, _, (origin, target, seconds)), = [action for action in actions if action[0] == "swipe"]
         # In pairs, each motion's start and end, so the repeated-frame report covers them. The rest come last.
         return {"card tap": card, "question shown": motion_end(full, card) + 1, "photo tap": start("photo tap"),
                 "photo staged": staged, "field tap": start("field tap"), "keyboard up": keyboard,
                 "typing starts": typed[0], "typing done": typed[-1], "reveal starts": reveal,
                 "reveal settled": settled, "scroll starts": scroll, "scroll settled": last + 1,
-                "today shown": today, "send tap": send}, taps, [(scroll, origin, target, seconds)]
+                "today shown": today, "petals start": petals, "petals move": motion_from(full, petals + 1),
+                "send tap": send}, taps, [(scroll, origin, target, seconds)]
     if screen == "03-ludo":
         taps = [(motion_from(full, round((t - 0.5) * RECORD_FPS + offset)), point) for _, t, point in actions if point]
         # A move ends with the die hopping to the next player's tray, right as the last pawn lands.

@@ -653,7 +653,8 @@ def loudness(path):
 STAND_IN = {
     '02-question': (22, {'card tap': 2.0, 'question shown': 2.6, 'photo tap': 4.4, 'photo staged': 7.4,
                          'field tap': 8.0, 'keyboard up': 8.6, 'typing starts': 9.0, 'typing done': 13.0,
-                         'send tap': 13.4, 'reveal starts': 13.9, 'today shown': 14.4, 'reveal settled': 15.6,
+                         'send tap': 13.4, 'reveal starts': 13.9, 'today shown': 14.4, 'petals start': 14.7,
+                         'petals move': 14.75, 'reveal settled': 15.6,
                          'scroll starts': 17.2, 'scroll settled': 19.0,
                          'taps': [(2.0, 0.5, 0.4), (4.4, 0.18, 0.62), (5.6, 0.3, 0.35), (8.0, 0.5, 0.8),
                                   (13.4, 0.88, 0.6)],

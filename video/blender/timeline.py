@@ -64,9 +64,11 @@ class Clip(NamedTuple):
 # The film frames 02-question's moments fall on. The card tap comes 3 frames before the drums, so the answer cover
 # starts to open on their first downbeat. The question stays at its full size until the tap on the text field, the
 # keyboard rises and the photo shrinks at their own pace, the typing takes 1 s, the conversation comes in on a bar
-# line, and the swipe to the earlier day starts about 1.5 s after the partner's answer has opened. The list coasts
-# for 2.5 s after the swipe, which the film plays in under 1 s. Fit these to the recording; FOOTAGE plays the
-# stretches between them.
+# line, and the swipe to the earlier day starts about 1.5 s after the partner's answer has opened. The petals burst
+# from the partner's answer 0.3 s after the conversation comes in. The simulator can stop drawing on their first frame
+# for a quarter of a second, so the film cuts from that frame to the next one that changes. The list coasts for 2.5 s
+# after the swipe, which the film plays in under 1 s. Fit these to the recording; FOOTAGE plays the stretches between
+# them.
 CARD_TAP = at(QUESTION, 2, -3)
 QUESTION_SHOWN = at(QUESTION, 3)
 PHOTO_TAP = at(QUESTION, 4, 6)
@@ -75,6 +77,7 @@ TYPING = at(QUESTION, 6, 13)
 TYPED = at(QUESTION, 8, 14)
 SEND = at(QUESTION, 9, 6)
 REVEAL = at(QUESTION, 10)
+PETALS = at(QUESTION, 10, 9)
 SCROLL = at(QUESTION, 15, 8)
 SCROLLED = at(QUESTION, 17, 5)
 PICKER_DISSOLVE = 7  # frames from the photo tap to the photo in the composer, so the picker never shows
@@ -93,7 +96,8 @@ FOOTAGE = {
                     Clip(FIELD_TAP - 2, 'field tap', 2),
                     Clip(TYPING, 'typing starts', fit='typing done'),
                     Clip(TYPED, 'typing done', speed=0), Clip(SEND - 2, 'send tap', 2),
-                    Clip(REVEAL, 'today shown', dissolve=REVEAL_DISSOLVE),
+                    Clip(REVEAL, 'today shown', fit='petals start', dissolve=REVEAL_DISSOLVE),
+                    Clip(PETALS, 'petals move'),
                     Clip(SCROLL, 'scroll starts', fit='scroll settled'), Clip(SCROLLED, 'scroll settled')),
     '03-ludo': (Clip(at(PLAY, 0, 10), 'die tap'), Clip(at(PLAY, 0, 56), 'piece starts', 8),
                 Clip(at(DRAW, 0, 30), 'partner die starts', speed=0)),
