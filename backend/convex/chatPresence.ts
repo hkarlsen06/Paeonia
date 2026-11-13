@@ -7,11 +7,11 @@ import { getByUuid } from "./lib/db";
 import { visibleAnswersOf } from "./lib/dailyQuestions";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
-import { chatTypingRoom, onlineUserIds, setPresent } from "./lib/presence";
+import { chatOpenRoom, chatTypingRoom, onlineUserIds, setPresent } from "./lib/presence";
 import { isChatSubjectAvailable, subjectRoomKey, threadIdOfSubject, threadSubjectArgs, threadSubjectOf } from "./lib/threadSubjects";
 import { nowIso } from "./lib/time";
 
-// Typing dots and read receipts for chats, and the "seen" mark on a partner's answer. New in
+// Typing dots, the open chat and read receipts for chats, and the "seen" mark on a partner's answer. New in
 // Convex; there was no SQL version. A chat is named by its subject (`lib/threadSubjects.ts`): a
 // daily question, a memory, a story, a game kind, or the couple chat, which has no id. Typing is kept by the presence component
 // (lib/presence.ts), and chat reads are small rows. The app writes both while a chat is open and
@@ -24,6 +24,24 @@ import { nowIso } from "./lib/time";
  * seconds after typing ends, which covers a short gap between heartbeats.
  */
 const TYPING_TIMEOUT_MS = 4_000;
+
+/**
+ * An open chat ends this long after the last heartbeat. The app sends one every 10 seconds while
+ * the chat is on screen and says when it leaves, so this only matters when the app was killed.
+ */
+const CHAT_OPEN_TIMEOUT_MS = 30_000;
+
+/** Couple access and the subject's room key, or the failure to return. */
+async function chatRoomKey(ctx: ReaderCtx, userId: string, coupleId: string, args: Parameters<typeof threadSubjectOf>[0]) {
+  const subject = threadSubjectOf(args);
+  if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
+    return fail("42501", "active entitled couple access is required");
+  }
+  if (!(await isChatSubjectAvailable(ctx, coupleId, subject))) {
+    return fail("22023", "chat subject was not found");
+  }
+  return subjectRoomKey(subject);
+}
 
 async function instanceCoupleId(ctx: ReaderCtx, instanceId: string): Promise<string | null> {
   const instance = await getByUuid(ctx, "daily_question_instances", instanceId);
@@ -42,14 +60,24 @@ export const set_chat_typing = mutation({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const coupleId = uuidArg(args.p_couple_id);
-    const subject = threadSubjectOf(args);
-    if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
-      return fail("42501", "active entitled couple access is required");
-    }
-    if (!(await isChatSubjectAvailable(ctx, coupleId, subject))) {
-      return fail("22023", "chat subject was not found");
-    }
-    await setPresent(ctx, chatTypingRoom(coupleId, subjectRoomKey(subject)), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
+    const key = await chatRoomKey(ctx, userId, coupleId, args);
+    await setPresent(ctx, chatTypingRoom(coupleId, key), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
+    return null;
+  },
+});
+
+/**
+ * Marks the caller as having the chat on screen, or not. The app sends `true` every 10 seconds
+ * while the chat is on screen and in front, and `false` when it leaves. The partner's game screen
+ * shows it, so they know why a move takes a while. Same access rules as typing.
+ */
+export const set_chat_open = mutation({
+  args: { p_couple_id: v.string(), ...threadSubjectArgs, p_is_open: v.boolean() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = uuidArg(args.p_couple_id);
+    const key = await chatRoomKey(ctx, userId, coupleId, args);
+    await setPresent(ctx, chatOpenRoom(coupleId, key), userId, args.p_is_open, CHAT_OPEN_TIMEOUT_MS);
     return null;
   },
 });
@@ -131,19 +159,24 @@ export const mark_daily_answer_seen = mutation({
 });
 
 /**
- * The partner's typing and read state in a chat. It reads no clock: the presence component ends
- * typing `TYPING_TIMEOUT_MS` after the last heartbeat, which updates this query.
+ * Whether the partner has the chat open, is typing in it, and how far they have read. It reads no
+ * clock: the presence component ends typing and the open chat after their timeouts, which updates
+ * this query.
  */
 export const get_chat_presence = query({
   args: { p_couple_id: v.string(), ...threadSubjectArgs },
   handler: async (ctx, args) => {
-    const empty = { partner_typing: false, partner_last_read_message_id: null, partner_read_at: null };
+    const empty = { partner_in_chat: false, partner_typing: false, partner_last_read_message_id: null, partner_read_at: null };
     const userId = await requireUserId(ctx);
     const coupleId = uuidArg(args.p_couple_id);
     const subject = threadSubjectOf(args);
     if (!(await canAccessCoupleContent(ctx, userId, coupleId))) return empty;
 
-    const typing = (await onlineUserIds(ctx, chatTypingRoom(coupleId, subjectRoomKey(subject)))).some((id) => id !== userId);
+    const key = subjectRoomKey(subject);
+    const partnerIn = async (room: string) => (await onlineUserIds(ctx, room)).some((id) => id !== userId);
+    const typing = await partnerIn(chatTypingRoom(coupleId, key));
+    // Typing counts as being in the chat, so a typing heartbeat that beats the first open one still shows.
+    const inChat = typing || (await partnerIn(chatOpenRoom(coupleId, key)));
 
     const threadId = await threadIdOfSubject(ctx, coupleId, subject);
     const read = threadId
@@ -156,6 +189,7 @@ export const get_chat_presence = query({
       : undefined;
 
     return {
+      partner_in_chat: inChat,
       partner_typing: typing,
       partner_last_read_message_id: read?.last_read_message_id ?? null,
       partner_read_at: read?.read_at ?? null,

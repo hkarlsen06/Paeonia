@@ -30,7 +30,7 @@ const typing = (user: TestUser, coupleId: string, isTyping = true) =>
 const presence = (user: TestUser, coupleId: string) =>
   user.as.query(api.chatPresence.get_chat_presence, { p_couple_id: coupleId, p_subject_kind: "couple" });
 
-const noPresence = { partner_typing: false, partner_last_read_message_id: null, partner_read_at: null };
+const noPresence = { partner_in_chat: false, partner_typing: false, partner_last_read_message_id: null, partner_read_at: null };
 const deniedCouple = { code: "42501", message: "active entitled couple access is required" };
 const deniedThread = { code: "42501", message: "active entitled thread access is required" };
 

@@ -3,7 +3,7 @@ import { api, components } from "./_generated/api";
 import { answeredRound, seedQuestion } from "./dailyChat.setup";
 import { newUuid } from "./lib/ids";
 import { gameChatSubjectId } from "./lib/gameChatSubjects";
-import { chatTypingRoom, removePresenceRooms } from "./lib/presence";
+import { chatOpenRoom, chatTypingRoom, removePresenceRooms } from "./lib/presence";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { failure, op } from "./media.testing";
 import { createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple } from "./test.setup";
@@ -84,6 +84,7 @@ describe("typing", () => {
       await failure(stranger.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true })),
     ).toEqual({ code: "42501", message: "active entitled couple access is required" });
     expect(await presence(stranger, couple.coupleId, questionId)).toEqual({
+      partner_in_chat: false,
       partner_typing: false,
       partner_last_read_message_id: null,
       partner_read_at: null,
@@ -124,6 +125,76 @@ describe("typing", () => {
     await t.run((ctx) => ctx.runMutation(components.presence.public.heartbeat, { roomId: leftover, userId: couple.first.userId, sessionId: "s" }));
     await t.run((ctx) => removePresenceRooms(ctx, [couple.first.userId], ""));
     expect(await t.run((ctx) => ctx.runQuery(components.presence.public.listUser, { userId: couple.first.userId }))).toEqual([]);
+  });
+});
+
+describe("open chat", () => {
+  const gameArgs = async (couple: TestCouple) => ({
+    p_couple_id: couple.coupleId, p_subject_kind: "game" as const,
+    p_subject_id: await gameChatSubjectId(couple.coupleId, "ludo"),
+  });
+
+  test("the partner sees the open chat until it closes, and never their own", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const args = await gameArgs(couple);
+    await couple.first.as.mutation(api.chatPresence.set_chat_open, { ...args, p_is_open: true });
+    expect((await couple.second.as.query(api.chatPresence.get_chat_presence, args)).partner_in_chat).toBe(true);
+    expect((await couple.first.as.query(api.chatPresence.get_chat_presence, args)).partner_in_chat).toBe(false);
+
+    await couple.first.as.mutation(api.chatPresence.set_chat_open, { ...args, p_is_open: false });
+    expect((await couple.second.as.query(api.chatPresence.get_chat_presence, args)).partner_in_chat).toBe(false);
+  });
+
+  test("typing counts as being in the chat", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const args = await gameArgs(couple);
+    await couple.first.as.mutation(api.chatPresence.set_chat_typing, { ...args, p_is_typing: true });
+    expect(await couple.second.as.query(api.chatPresence.get_chat_presence, args)).toMatchObject({
+      partner_in_chat: true, partner_typing: true,
+    });
+  });
+
+  test("strangers, other couples and unpaid members cannot open or read it", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const other = await createCouple(t);
+    const unpaid = await createCouple(t, { entitled: false });
+    const stranger = await createSignedInUser(t);
+    const args = await gameArgs(couple);
+    expect((await failure(stranger.as.mutation(api.chatPresence.set_chat_open, { ...args, p_is_open: true }))).code).toBe("42501");
+    expect((await failure(other.first.as.mutation(api.chatPresence.set_chat_open, { ...args, p_is_open: true }))).code).toBe("42501");
+    expect((await failure(other.first.as.mutation(api.chatPresence.set_chat_open, {
+      ...args, p_couple_id: other.coupleId, p_is_open: true,
+    }))).code).toBe("22023");
+    expect((await failure(unpaid.first.as.mutation(api.chatPresence.set_chat_open, {
+      ...(await gameArgs(unpaid)), p_is_open: true,
+    }))).code).toBe("42501");
+
+    await couple.first.as.mutation(api.chatPresence.set_chat_open, { ...args, p_is_open: true });
+    expect((await stranger.as.query(api.chatPresence.get_chat_presence, args)).partner_in_chat).toBe(false);
+    expect((await other.first.as.query(api.chatPresence.get_chat_presence, args)).partner_in_chat).toBe(false);
+  });
+
+  test("the open chat ends 30 seconds after the last heartbeat, and with the relationship", async () => {
+    vi.useFakeTimers();
+    const t = newTest();
+    const couple = await createCouple(t);
+    const args = await gameArgs(couple);
+    await couple.first.as.mutation(api.chatPresence.set_chat_open, { ...args, p_is_open: true });
+    const lastHeartbeat = Date.now();
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(Date.now() - lastHeartbeat).toBeGreaterThanOrEqual(30_000);
+    expect((await couple.second.as.query(api.chatPresence.get_chat_presence, args)).partner_in_chat).toBe(false);
+
+    await couple.first.as.mutation(api.chatPresence.set_chat_open, { ...args, p_is_open: true });
+    const room = chatOpenRoom(couple.coupleId, args.p_subject_id);
+    const open = () => t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: room }));
+    expect(await open()).toHaveLength(1);
+    await t.run((ctx) => endRelationshipForPair(ctx, couple.pairId, couple.first.userId, "user_left"));
+    expect(await open()).toEqual([]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
 

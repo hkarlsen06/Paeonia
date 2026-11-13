@@ -239,6 +239,7 @@ describe("chat presence by subject", () => {
       message: "active entitled couple access is required",
     });
     expect(await presence(stranger, couple.coupleId, "memory", memoryId)).toEqual({
+      partner_in_chat: false,
       partner_typing: false,
       partner_last_read_message_id: null,
       partner_read_at: null,
