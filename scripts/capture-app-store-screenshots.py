@@ -102,7 +102,8 @@ the video.
 
 02-question starts on Home and needs the seeding of `scripts/app-store-content
 --question-film`, which leaves today's question to Hjalmar. Before it records,
-it opens the answer, taps its text field and closes it again, because the first
+it closes Home's Things to try together and When do you meet next, then opens
+the answer, taps its text field and closes it again, because the first
 keyboard in an app process stutters. Then it taps the Home card's button, the
 composer's photo button and the newest photo in the system picker, so add
 scripts/assets/app-store/photos/question-snow.jpg to the simulator's photo
@@ -199,6 +200,10 @@ ANSWER_TEXT = "daily.answer.text"
 SEND_ACTION = "daily.flow.primary"
 CHAT_CLOSE = "daily.chat.close"
 FLOW_CLOSE = "daily.flow.close"
+# The close buttons of Home's cards for a new couple, Things to try together and When do you meet next. The
+# couple in the film has been together for over a year, and the map shows more of Home without them. The app
+# remembers that they were closed.
+NEW_COUPLE_CARDS_CLOSE = ("home.firstSteps.close", "home.visit.moveDown")
 # A node's frame, in this order. The snapshot lists the keys in no fixed order.
 RECT_KEYS = ("x", "y", "width", "height")
 # The app's files, in its Application Support folder, that 02-question removes before it launches the app.
@@ -644,6 +649,15 @@ def node_center(node, screen):
     return ((rect["x"] + rect["width"] / 2) / screen[0], (rect["y"] + rect["height"] / 2) / screen[1])
 
 
+def close_new_couple_cards(agent_device):
+    """Closes the Home cards in NEW_COUPLE_CARDS_CLOSE that show."""
+    shown = {node.get("identifier") for node in snapshot_nodes(agent_device)}
+    for identifier in NEW_COUPLE_CARDS_CLOSE:
+        if identifier in shown:
+            run(*agent_device[:1], "press", f'id="{identifier}"', *agent_device[1:], stdout=subprocess.DEVNULL)
+            time.sleep(1)
+
+
 def warm_keyboard(agent_device):
     """Shows the keyboard once before the recording and closes the answer again, leaving Home as a fresh launch
     shows it. The first keyboard in an app process blocks the app for about 0.2 s, which stutters its rise."""
@@ -962,6 +976,7 @@ def main():
             path = folder / f"{name}-{screen}.mp4"
             if screen == "02-question":
                 time.sleep(wait)
+                close_new_couple_cards(agent_device)
                 warm_keyboard(agent_device)
                 recording.start()
                 film_question(recording, agent_device, args.locale, ids["film_answer"])

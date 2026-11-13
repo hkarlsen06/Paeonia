@@ -18,6 +18,8 @@
 # answers the question today and then moves that day and its answers back. It
 # writes no chat. After a take that sent Hjalmar's answer, run it again: it clears
 # today with daily:reset_daily_challenge_for_testing and has Elena answer again.
+# The earlier day is seeded only once, so on a backend seeded in the other
+# language it stops and asks for a fresh backend.
 #
 # Run it on a backend that holds only the paired test couple from
 # scripts/test-couple. The first account becomes Hjalmar and the second Elena.
@@ -495,9 +497,15 @@ def seed_film_question(convex: Convex, people: dict, couple_id: str, locale: str
     Elena's answer. Returns today's question row and day id."""
     answers = FILM_ANSWERS[locale]
     question, day_id = seed_daily_question(convex, people, couple_id, locale, (), FILM_QUESTION_KEY)
-    rounds = people["first"].query("dailyQuestionChat:get_daily_question_chat", {
-        "p_couple_id": couple_id, "p_question_id": question["question_id"]})["questions"]
-    if any(row["local_date"] < today().isoformat() for row in rounds):
+    chat = people["first"].query("dailyQuestionChat:get_daily_question_chat", {
+        "p_couple_id": couple_id, "p_question_id": question["question_id"]})
+    earlier = {row["couple_day_id"] for row in chat["questions"] if row["local_date"] < today().isoformat()}
+    if earlier:
+        texts = {row["text_body"] for row in chat["answer_details"] if row["couple_day_id"] in earlier}
+        if texts != {text for text, _ in answers["earlier"].values()}:
+            # The earlier day is seeded once, so a backend seeded in another language keeps its answers.
+            raise SystemExit(f"The question's earlier day has the answers {sorted(texts)}, not this locale's. "
+                             "Start again from a fresh backend with scripts/local-backend --reseed.")
         print("The question already has an earlier day")
         if question["own_answer_id"]:
             # A take answered for Hjalmar. Clearing today lets the next take answer again.
