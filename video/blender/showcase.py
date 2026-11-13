@@ -57,9 +57,11 @@ GRADIENT = [hexc('#' + c) for c in re.findall(r'#(\w{6})', CONFIG['background'])
 STOPS = [int(p) / 100 for p in re.findall(r'(\d+)%', CONFIG['background'])]
 ANGLE = math.radians(int(re.search(r'(\d+)deg', CONFIG['background'])[1]))
 
-# On-screen text, as (panel, line) in the "panels" of paeonia-3d.json, where line 0 is the headline and 1 the body.
-# The film reuses the approved App Store copy, so any locale the screenshots have renders here as well.
-COPY = {'drawing': (0, 0), 'drawing body': (0, 1), 'question': (1, 0), 'play': (2, 0), 'moments': (4, 0)}
+# On-screen text, as (panel, line) in the "panels" of paeonia-3d.json, where line 0 is the headline. The film shows
+# only the headlines of the approved App Store copy, so any locale the screenshots have renders here as well.
+COPY = {'drawing': (0, 0), 'question': (1, 0), 'play': (2, 0), 'moments': (4, 0)}
+# The opening headline sits higher than the others, above the drawing widget that rises off the phone.
+OPENING_TOP = 180
 # Headlines, as (copy, frame the first word rises on, frame the words leave on). A rise of None means the words are
 # already up on the first frame.
 # Each leaves just before its scene's last bar line and the next rises just before the bar, so its words have
@@ -415,12 +417,8 @@ def headline(cv, markup, box_, t, t_in, t_out=None, size=HEADLINE, align='left',
 def headlines(cv, t):
     for key, t_in, t_out in HEADLINES:
         if (t_in is None or t >= t_in - 1) and t < t_out + 30:
-            headline(cv, A.copy[key], TEXT, t, t_in, t_out)
-            if key == 'drawing':  # the only scene with a line under its headline, as in the App Store panel
-                _, height = layout(A.copy[key], HEADLINE, TEXT[2] - TEXT[0], 1.08, 'left')
-                top = TEXT[1] + height + 0.38 * HEADLINE
-                headline(cv, A.copy['drawing body'], (TEXT[0], top, TEXT[2], TEXT[3]), t, t_in, t_out + 3,
-                         size=0.48 * HEADLINE, leading=1.32, alpha=0.72)
+            box = (TEXT[0], OPENING_TOP, *TEXT[2:]) if key == 'drawing' else TEXT
+            headline(cv, A.copy[key], box, t, t_in, t_out)
 
 
 def svg_image(path, height):
