@@ -11,7 +11,8 @@
 # scripts/xcode-test-agent.sh use for this worktree, so a build by one of the
 # three serves the others. It then takes a simulator with scripts/lock,
 # installs the app, launches the scenario with its debug controls hidden, waits
-# (default 8 s, for map tiles and fade-ins), saves the screenshot, uninstalls
+# --wait seconds (default 8, for map tiles and fade-ins) and then until two
+# screenshots a second apart match, saves the screenshot, uninstalls
 # the app and releases the simulator. It prints the PNG's path last. --no-build
 # reuses the last build, from this script or from either wrapper.
 # --language runs the app in another language, such as nb, without changing
@@ -56,6 +57,19 @@ usage() {
 scenario=$1
 shift
 root=$(git rev-parse --show-toplevel)
+# The app opens the scenario list for an id it doesn't know, so a typo would
+# otherwise build, launch and screenshot the list without an error.
+scenarios_dir=$root/ios/PaeoniaApp/App/DeveloperScenarios
+if [[ $scenario != menu ]] && ! grep -rqF "\"$scenario\"" "$scenarios_dir"; then
+  echo "Unknown scenario id: $scenario" >&2
+  kebab=$(printf '%s' "$scenario" | sed -E 's/([a-z0-9])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')
+  if grep -rqF "\"$kebab\"" "$scenarios_dir"; then
+    echo "Did you mean: $kebab" >&2
+  else
+    echo "Scenario ids are the first string of each scenario in ios/PaeoniaApp/App/DeveloperScenarios/." >&2
+  fi
+  exit 64
+fi
 worktree_key=$(printf '%s' "$root" | shasum | cut -c1-10)
 scratch=/tmp/paeonia-scenario-$worktree_key
 out=$scratch/$scenario.png
@@ -164,21 +178,6 @@ launch() {
     "${launch_args[@]}" ${language_args[@]+"${language_args[@]}"} >/dev/null
 }
 
-xcrun simctl install "$sim" "$app"
-if [[ $record == 0 ]]; then
-  launch
-  sleep "$wait_seconds"
-  xcrun simctl io "$sim" screenshot "$out" >/dev/null 2>&1
-  echo "$out"
-  exit 0
-fi
-
-now() {
-  python3 -c 'import time; print("%.3f" % time.time())'
-}
-since() {
-  awk -v a="$1" -v b="$2" 'BEGIN { printf "%.3f", a - b }'
-}
 # Bash runs a trap only once the foreground command ends, but it interrupts
 # wait, so a stopped run stops the recorder at once.
 pause() {
@@ -210,6 +209,21 @@ wait_for_scenario() {
   done
 }
 
+xcrun simctl install "$sim" "$app"
+if [[ $record == 0 ]]; then
+  launch
+  wait_for_scenario
+  xcrun simctl io "$sim" screenshot "$out" >/dev/null 2>&1
+  echo "$out"
+  exit 0
+fi
+
+now() {
+  python3 -c 'import time; print("%.3f" % time.time())'
+}
+since() {
+  awk -v a="$1" -v b="$2" 'BEGIN { printf "%.3f", a - b }'
+}
 video=$out/recording.mp4
 recorder_log=$scratch/recorder.log
 start_recorder() {
