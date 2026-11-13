@@ -48,10 +48,12 @@ drawing's time and the streak match everywhere. Each locale needs a fresh local
 backend (`scripts/local-backend --reseed`), since today's answers can't change.
 Seed with `scripts/app-store-content --partner-answer-only`, so only Elena has
 answered today's question, and sign in after seeding: an app that saw the
-drawing before the seeding moved its time keeps the old time. On the first
-launch, deny location, open Elena's gift and tap Later and Not now through the
-welcome. Then clear Home the way a person would: Not now on the location card,
-the close button on Things to try together and on When will you meet next.
+drawing before the seeding moved its time keeps the old time. The script lets
+Paeonia read the simulator's location and puts the simulator in Oslo, where the
+seeding puts Hjalmar, so Home's map shows both of them. On the first launch,
+open Elena's gift and tap Later and Not now through the welcome. Then clear Home
+the way a person would: the close button on Things to try together and on When
+will you meet next.
 Leave notifications off, because an app allowed to show badges puts a number on
 its Home Screen icon. Home is captured while today's question still waits for
 Hjalmar. Then add Hjalmar's answer and the chat with `scripts/app-store-content
@@ -99,25 +101,27 @@ English. The script records through agent-device, which keeps touches out of
 the video.
 
 02-question starts on Home and needs the seeding of `scripts/app-store-content
---question-film`, which leaves today's question to Hjalmar. It taps the Home
-card's button, the composer's photo button and the newest photo in the system
-picker, so add scripts/assets/app-store/photos/question-snow.jpg to the
-simulator's photo library first with `xcrun simctl addmedia`. Then it taps the
-text field, types the film_answer from --ids one letter at a time and sends. The
-cover turns into the question's conversation. Once two accessibility snapshots
-in a row match, about 2 s after the reveal comes to rest, it swipes the
-conversation down with one SWIPE, so the earlier day shows, and records until
-the list is still. It does not take screenshots there, because an agent-device
-screenshot brings back the hidden Dynamic Island. The on-screen keyboard stays
-hidden while the simulator has a hardware keyboard, unless Automatic Keyboard
-Minimization is off: `xcrun simctl spawn "$SIM" defaults write
-com.apple.keyboard.preferences AutomaticMinimizationEnabled -bool NO`, which the
-app reads when it launches. The composer keeps a draft, so clear the photo and
-the text after a take that stopped before sending. After a take that sent, stop
-the app and run `scripts/app-store-content --question-film` again, which clears
-Hjalmar's answer. Before each take the script removes the app's QUESTION_CACHES,
-which still hold the day that reset removed. With them the conversation can open
-on the earlier day and the composer on the sent photo.
+--question-film`, which leaves today's question to Hjalmar. Before it records,
+it opens the answer, taps its text field and closes it again, because the first
+keyboard in an app process stutters. Then it taps the Home card's button, the
+composer's photo button and the newest photo in the system picker, so add
+scripts/assets/app-store/photos/question-snow.jpg to the simulator's photo
+library first with `xcrun simctl addmedia`. Then it taps the text field, types
+the film_answer from --ids one letter at a time and sends. The cover turns into
+the question's conversation. Once two accessibility snapshots in a row match,
+about 2 s after the reveal comes to rest, it swipes the conversation down with
+one SWIPE, so the earlier day shows, and records until the list is still. It
+does not take screenshots there, because an agent-device screenshot brings back
+the hidden Dynamic Island. The on-screen keyboard stays hidden while the
+simulator has a hardware keyboard, unless Automatic Keyboard Minimization is
+off: `xcrun simctl spawn "$SIM" defaults write com.apple.keyboard.preferences
+AutomaticMinimizationEnabled -bool NO`, which the app reads when it launches.
+The composer keeps a draft, so clear the photo and the text after a take that
+stopped before sending. After a take that sent, stop the app and run
+`scripts/app-store-content --question-film` again, which clears Hjalmar's
+answer. Before each take the script removes the app's QUESTION_CACHES, which
+still hold the day that reset removed. With them the conversation can open on
+the earlier day and the composer on the sent photo.
 
 03-ludo flicks Hjalmar's die (a tap on the die does nothing), taps the pawn at
 LUDO_PAWNS[0], and after a 6 flicks again and taps the other pawn. Then it makes
@@ -192,6 +196,7 @@ PHOTO_REMOVE = "daily.answer.photo.remove"
 ANSWER_TEXT = "daily.answer.text"
 SEND_ACTION = "daily.flow.primary"
 CHAT_CLOSE = "daily.chat.close"
+FLOW_CLOSE = "daily.flow.close"
 # A node's frame, in this order. The snapshot lists the keys in no fixed order.
 RECT_KEYS = ("x", "y", "width", "height")
 # The app's files, in its Application Support folder, that 02-question removes before it launches the app.
@@ -260,6 +265,8 @@ CELEBRATION_GAP = 30
 # spotlit element's accessibility label contains. The countdown card's label holds its title.
 SPOTLIGHTS = {"04-home": "countdown_title"}
 WIDGET_EXTENSION = "no.paeonia.app.widget"
+# Hjalmar's seeded location, OSLO in scripts/app-store-content, which the simulator reports as its own.
+OSLO = (59.9133, 10.7389)
 
 
 class Family(NamedTuple):
@@ -377,8 +384,10 @@ def prepare(udid, locale, family, home_screen):
     simctl("status_bar", udid, "override", "--time", "9:41", "--dataNetwork", "wifi",
            "--wifiMode", "active", "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
            "--batteryState", "discharging", "--batteryLevel", "100")
-    # Location stays off, so iOS shows no prompt and no location arrow in the status bar.
-    simctl("privacy", udid, "revoke", "location", BUNDLE_ID)
+    # Home shows its map only when Paeonia can read this phone's location. Granting it ahead
+    # means iOS asks nothing, and the status bar shows no location arrow.
+    simctl("privacy", udid, "grant", "location", BUNDLE_ID)
+    simctl("location", udid, "set", ",".join(map(str, OSLO)))
     # The Ludo board shows how to zoom until this phone has zoomed it once, and the first
     # Draw & Guess replay shows how to speed it up.
     simctl("spawn", udid, "defaults", "write", BUNDLE_ID, "paeonia.games.ludo.hasZoomedBoard.v2", "-bool", "YES")
@@ -631,6 +640,18 @@ def node_center(node, screen):
     return ((rect["x"] + rect["width"] / 2) / screen[0], (rect["y"] + rect["height"] / 2) / screen[1])
 
 
+def warm_keyboard(agent_device):
+    """Shows the keyboard once before the recording and closes the answer again, leaving Home as a fresh launch
+    shows it. The first keyboard in an app process blocks the app for about 0.2 s, which stutters its rise."""
+    for identifier in (ANSWER_ACTION, ANSWER_TEXT, FLOW_CLOSE):
+        wait_for_node(agent_device, identifier, lambda node: node.get("identifier") == identifier)
+        if identifier == FLOW_CLOSE:
+            time.sleep(2)  # The keyboard has risen.
+        run(*agent_device[:1], "press", f'id="{identifier}"', *agent_device[1:], stdout=subprocess.DEVNULL)
+    wait_for_node(agent_device, "Home's question card", lambda node: node.get("identifier") == ANSWER_ACTION)
+    wait_until_still(agent_device)
+
+
 def film_question(recording, agent_device, locale, text):
     """Hjalmar opens today's question from Home, adds the newest photo from the picker, types text and sends."""
     def find(what, match, seconds=30):
@@ -778,11 +799,12 @@ def find_events(screen, actions, video, full):
         staged = max(i for i in range(start("photo pick"), anchor["field tap"]) if moving(full, i)) + 1
         # Each letter adds white pixels to the field. Frame i of the video is index i of the counts.
         letters = bright_pixels(video, actions[[name for name, _, _ in actions].index("typing")][2])
-        # The keyboard can start rising a second after the composer takes its compact shape. Only the cursor,
-        # under MOTION_PIXELS, blinks after it has risen. The field moves through its final frame while the
-        # keyboard rises, so the letters count from after that, and until a second after the typing command
-        # returned, well before the send button lights up.
-        keyboard = max(i for i in range(start("field tap"), anchor["typing"]) if moving(full, i)) + 1
+        # The tap shows only a cursor. Then the photo shrinks to its thumbnail while the keyboard rises, one motion
+        # that starts with a change the size of a screen. Small changes, such as the keyboard's suggestions, can
+        # come seconds later. The field moves through its final frame while the keyboard rises, so the letters
+        # count from after that, and until a second after the typing command returned, well before the send
+        # button lights up.
+        keyboard = motion_end(full, motion_from(full, start("field tap"), SCREEN_CHANGE_PIXELS)) + 1
         typed = [i for i in range(max(anchor["typing"], keyboard), anchor["typed"] + RECORD_FPS)
                  if abs(letters[i] - letters[i - 1]) >= TEXT_STEP]
         if not typed:
@@ -936,6 +958,7 @@ def main():
             path = folder / f"{name}-{screen}.mp4"
             if screen == "02-question":
                 time.sleep(wait)
+                warm_keyboard(agent_device)
                 recording.start()
                 film_question(recording, agent_device, args.locale, ids["film_answer"])
             elif screen == "03-ludo":
