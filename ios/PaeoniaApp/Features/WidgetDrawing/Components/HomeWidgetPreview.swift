@@ -138,8 +138,8 @@ struct HomeWidgetCard: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("home.widgetDrawing")
         // Beside the card's button, not inside it, so a tap on the reaction does not open the drawing.
-        // At the bottom, because at the top it covers the header's name and time.
-        .overlay(alignment: .bottomTrailing) {
+        // On the drawing's bottom corner, above the line under it.
+        .overlay(alignment: Alignment(horizontal: .drawingTrailing, vertical: .drawingBottom)) {
             WidgetDrawingReactionControl(shownRevisionID: model.content.revisionID)
                 .padding(PaeoniaSpacing.space4)
         }
@@ -172,23 +172,29 @@ struct HomeWidgetCard: View {
         }
     }
 
+    /// Laid out like the calendar tile beside it: the drawing as an object with no tile around
+    /// it, and one line under it, in the same square.
     private var widget: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            header
+        VStack(spacing: PaeoniaSpacing.space8) {
             drawingSurface
+                .shadow(color: PaeoniaTileTone.plain.shadow, radius: 18, x: 0, y: 10)
+                .alignmentGuide(.drawingTrailing) { $0[.trailing] }
+                .alignmentGuide(.drawingBottom) { $0[.bottom] }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            header
+                .multilineTextAlignment(.center)
         }
-        .padding(PaeoniaSpacing.space12)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.content.image == nil)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: live?.isShowingPartnerCanvas)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, PaeoniaSpacing.space8)
         .aspectRatio(1, contentMode: .fit)
-        .paeoniaTileSurface()
+        .contentShape(Rectangle())
     }
 
     /// One short line, so the drawing keeps most of the tile. It shows the partner
     /// drawing, or who drew the saved picture and when, or a prompt to draw when
-    /// nothing is saved yet. The generic widget title is left out because the card
+    /// nothing is saved yet. The generic widget title is left out because the tile
     /// itself already says what it is.
     @ViewBuilder
     private var header: some View {
@@ -200,14 +206,14 @@ struct HomeWidgetCard: View {
                     headerTitle(Text(verbatim: authorName))
                 }
                 Text(Self.timestampText(savedAt))
-                    .font(PaeoniaTypography.caption)
+                    .font(.footnote)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .lineLimit(1)
                     .layoutPriority(1)
             }
         } else {
             Text(.homeWidgetCta)
-                .font(PaeoniaTypography.caption.weight(.semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
@@ -216,7 +222,7 @@ struct HomeWidgetCard: View {
 
     private func headerTitle(_ text: Text) -> some View {
         text
-            .font(PaeoniaTypography.caption.weight(.semibold))
+            .font(.footnote.weight(.semibold))
             .foregroundStyle(.paeoniaTextPrimary)
             .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
             .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
@@ -265,8 +271,29 @@ struct HomeWidgetCard: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
+        // A canvas, so the sample sketch and the hidden state don't float on the map.
+        .background(.paeoniaBackgroundPrimary)
         .clipShape(DrawingCanvasShape())
+        .overlay { DrawingCanvasShape().stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault) }
     }
+}
+
+private extension HorizontalAlignment {
+    enum DrawingTrailing: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat { context[.trailing] }
+    }
+
+    /// The drawing's trailing edge, which the reaction sits on.
+    static let drawingTrailing = HorizontalAlignment(DrawingTrailing.self)
+}
+
+private extension VerticalAlignment {
+    enum DrawingBottom: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat { context[.bottom] }
+    }
+
+    /// The drawing's bottom edge, which the reaction sits on.
+    static let drawingBottom = VerticalAlignment(DrawingBottom.self)
 }
 
 #if DEBUG
