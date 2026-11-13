@@ -28,6 +28,7 @@ struct GameLiveReactionFlight: Identifiable {
     let id = UUID()
     let reaction: GameLiveReaction
     let start = Date()
+    let lane = Double.random(in: 0.2...0.8)
     let tilt = Double.random(in: -14...14)
     let drift = Double.random(in: -24...24)
 }
