@@ -23,6 +23,9 @@ struct DailyPromptCompactCard: View {
 
     @Environment(\.dailyPromptIsInline) private var isInline
     @Environment(\.homeMapExplorer) private var homeMapExplorer
+    @Environment(\.homeTileExtent) private var tileExtent
+    /// The waiting row's frame in `HomeTileExtent.space`, before it narrows to the tiles.
+    @State private var rowFrame: CGRect?
 
     var body: some View {
         if isInline {
@@ -43,6 +46,12 @@ struct DailyPromptCompactCard: View {
                 .buttonStyle(.paeoniaPressableCard)
                 .accessibilityHint(Text(copy.actionTitle))
                 .accessibilityIdentifier("home.dailyPrompt.action")
+                // On the map, the row is no wider than the calendar and the drawing under it.
+                .padding(.leading, tileInsets.leading)
+                .padding(.trailing, tileInsets.trailing)
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(HomeTileExtent.space)) } action: {
+                    rowFrame = $0
+                }
                 // On the map, the row lies on it, so a drag or a pinch there moves the map.
                 .homeMapRows("questionRow", isInline ? homeMapExplorer : nil)
             } else {
@@ -60,6 +69,11 @@ struct DailyPromptCompactCard: View {
                 onOpen: onOpenPartnerQuestion
             )
         }
+    }
+
+    private var tileInsets: (leading: CGFloat, trailing: CGFloat) {
+        guard isInline, let tileExtent, let rowFrame else { return (0, 0) }
+        return tileExtent.insets(for: rowFrame)
     }
 
     /// Nothing waits for this person until the partner answers, so the row itself opens their

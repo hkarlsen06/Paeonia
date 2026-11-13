@@ -176,6 +176,7 @@ struct MilestoneCountdownCard: View {
         VStack(spacing: PaeoniaSpacing.space8) {
             CountdownCalendarView(face: face, burstID: burstID)
                 .aspectRatio(322.0 / 360.0, contentMode: .fit)
+                .homeTilePicture()
                 .frame(maxWidth: .infinity, maxHeight: dynamicTypeSize.isAccessibilitySize ? nil : .infinity)
 
             line

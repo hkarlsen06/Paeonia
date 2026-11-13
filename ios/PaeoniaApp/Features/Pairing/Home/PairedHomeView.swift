@@ -325,6 +325,7 @@ extension PairedHomeView {
             }
             // On the map layout today's question sits on the page, with no card.
             .environment(\.dailyPromptIsInline, true)
+            .sharesHomeTileExtent()
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.bottom, PaeoniaSpacing.space16)
         } footer: {

@@ -180,6 +180,7 @@ struct HomeWidgetCard: View {
                 .shadow(color: PaeoniaTileTone.plain.shadow, radius: 18, x: 0, y: 10)
                 .alignmentGuide(.drawingTrailing) { $0[.trailing] }
                 .alignmentGuide(.drawingBottom) { $0[.bottom] }
+                .homeTilePicture()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             header
                 .multilineTextAlignment(.center)
