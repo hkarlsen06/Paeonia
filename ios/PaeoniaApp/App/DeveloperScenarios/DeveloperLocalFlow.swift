@@ -54,6 +54,10 @@
             receiveButton("Receive game message", systemImage: "envelope.badge.fill", id: "receive") {
               await gameFlow.receivePartnerMessage()
             }
+            receiveButton("Partner opens the game chat and types", systemImage: "ellipsis.bubble",
+                          id: "partnerInChat") {
+              await gameFlow.playPartnerInChat()
+            }
           }
           .padding(.trailing, PaeoniaSpacing.space8)
           .padding(.top, 80)

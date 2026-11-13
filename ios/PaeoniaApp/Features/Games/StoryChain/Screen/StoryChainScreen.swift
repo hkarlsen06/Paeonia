@@ -45,7 +45,7 @@ struct StoryChainScreen: View {
     /// The game's menu, with "Our stories".
     @ToolbarContentBuilder
     private var menu: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
+        GameToolbarActions(kind: .storyChain) {
             GameMenu(history: .storyChain)
         }
     }

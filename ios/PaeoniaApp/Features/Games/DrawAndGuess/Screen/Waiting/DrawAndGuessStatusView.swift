@@ -14,7 +14,6 @@ struct DrawAndGuessStatusView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .drawAndGuessScoreToolbar(viewModel)
     }
 
     @ViewBuilder

@@ -38,6 +38,7 @@ protocol ThreadChatGateway: Actor {
     /// Sets the user's reaction to a message or an answer, or takes it back with nil.
     func setReaction(on item: ThreadChatItemID, emoji: String?) async throws
     func setTyping(coupleID: UUID, subject: ThreadChatSubject, isTyping: Bool) async throws
+    func setChatOpen(coupleID: UUID, subject: ThreadChatSubject, isOpen: Bool) async throws
     func markThreadRead(threadID: UUID, messageID: UUID) async throws
     func markAnswerSeen(instanceID: UUID) async throws
     nonisolated func livePresence(coupleID: UUID, subject: ThreadChatSubject) -> AsyncStream<ThreadChatPresence>
@@ -86,6 +87,7 @@ extension ThreadChatGateway {
     }
 
     func setTyping(coupleID _: UUID, subject _: ThreadChatSubject, isTyping _: Bool) throws {}
+    func setChatOpen(coupleID _: UUID, subject _: ThreadChatSubject, isOpen _: Bool) throws {}
     func markThreadRead(threadID _: UUID, messageID _: UUID) throws {}
     func markAnswerSeen(instanceID _: UUID) throws {}
     nonisolated func livePresence(coupleID _: UUID, subject _: ThreadChatSubject) -> AsyncStream<ThreadChatPresence> {
@@ -217,7 +219,15 @@ actor LiveThreadChatGateway: ThreadChatGateway {
         try await PaeoniaSignedIn.require(isSignedIn)
         try await client.mutation(
             "chatPresence:set_chat_typing",
-            args: TypingRequest(coupleID: coupleID, subject: subject, isTyping: isTyping)
+            args: ChatPresenceRequest(coupleID: coupleID, subject: subject, flag: .typing(isTyping))
+        )
+    }
+
+    func setChatOpen(coupleID: UUID, subject: ThreadChatSubject, isOpen: Bool) async throws {
+        try await PaeoniaSignedIn.require(isSignedIn)
+        try await client.mutation(
+            "chatPresence:set_chat_open",
+            args: ChatPresenceRequest(coupleID: coupleID, subject: subject, flag: .open(isOpen))
         )
     }
 
@@ -257,8 +267,9 @@ actor LiveThreadChatGateway: ThreadChatGateway {
                         latest = row.presence
                     case .failure:
                         // While the subscription is down, nobody can say the partner
-                        // still types. Keep the read mark.
+                        // is still in the chat. Keep the read mark.
                         latest.partnerIsTyping = false
+                        latest.partnerIsInChat = false
                     }
                     continuation.yield(latest)
                 }

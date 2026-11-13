@@ -206,7 +206,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
 
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
+        GameToolbarActions(kind: viewModel.kind) {
             GameMenu(
                 history: history,
                 editMark: viewModel.openMarkEditor,

@@ -29,7 +29,7 @@ struct PiccanteScreen: View {
                     ToolbarItem(placement: .topBarTrailing) { scoreControl(score) }
                         .sharedBackgroundVisibility(.hidden)
                 }
-                ToolbarItem(placement: .topBarTrailing) { GameMenu(history: nil, showTutorial: { tutorial = true }) }
+                GameToolbarActions(kind: .piccante) { GameMenu(history: nil, showTutorial: { tutorial = true }) }
             }
             .gameMenuInvite(
                 invite: viewModel.invite, partnerName: viewModel.partnerName, send: { await viewModel.sendInvite() },

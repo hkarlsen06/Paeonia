@@ -71,7 +71,7 @@ struct ExquisiteCorpseScreen: View {
     /// The game's menu, with "Our creatures".
     @ToolbarContentBuilder
     private var menu: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
+        GameToolbarActions(kind: .exquisiteCorpse) {
             GameMenu(history: .exquisiteCorpse, openHistory: openHistory)
         }
     }

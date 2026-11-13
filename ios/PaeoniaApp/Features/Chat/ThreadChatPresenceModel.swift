@@ -1,13 +1,24 @@
 import Foundation
 import Observation
 
-/// Typing dots and read receipts for one chat, with Tidex's timings.
+/// Whether the partner is in one chat, typing in it, and how far they have read.
+nonisolated struct ThreadChatPresence: Equatable, Sendable {
+    var partnerIsInChat = false
+    var partnerIsTyping = false
+    var partnerLastReadMessageID: UUID?
+
+    static let none = ThreadChatPresence()
+}
+
+/// Typing dots, the open chat and read receipts for one chat, with Tidex's timings.
 ///
-/// While the person types, the server hears "typing" at most every 2.5 seconds, and
-/// "stopped" after 4 seconds without a keystroke, on send, on an emptied field, or on
-/// leaving. The partner's dots show while the server says they type. The server ends
-/// that 4 seconds after their last heartbeat, such as when their app was killed. The
-/// dots hide 2 seconds after typing ends, and right away when their message arrives.
+/// While the chat is on screen, the server hears "open" every 10 seconds and "closed"
+/// when it leaves, so the partner's game can say they are in the chat. While the
+/// person types, the server hears "typing" at most every 2.5 seconds, and "stopped"
+/// after 4 seconds without a keystroke, on send, on an emptied field, or on leaving.
+/// The partner's dots show while the server says they type. The server ends that
+/// 4 seconds after their last heartbeat, such as when their app was killed. The dots
+/// hide 2 seconds after typing ends, and right away when their message arrives.
 @Observable
 final class ThreadChatPresenceModel {
     private enum Timing {
@@ -15,8 +26,11 @@ final class ThreadChatPresenceModel {
         static let typingIdleStop: Duration = .seconds(4)
         static let remoteStopGrace: Duration = .seconds(2)
         static let readDebounce: Duration = .milliseconds(200)
+        /// The server ends an open chat 30 seconds after the last heartbeat.
+        static let openHeartbeat: Duration = .seconds(10)
     }
 
+    private(set) var partnerIsInChat = false
     private(set) var partnerIsTyping = false
     private(set) var partnerLastReadMessageID: UUID?
 
@@ -25,7 +39,10 @@ final class ThreadChatPresenceModel {
     private let service: any ThreadChatServicing
     private let now: () -> Date
 
-    private var typingWrite: Task<Void, Never>?
+    /// The last presence write, so typing and open writes reach the server in order.
+    private var presenceWrite: Task<Void, Never>?
+    private var isOnScreen = false
+    private var openHeartbeat: Task<Void, Never>?
     private var didSendTypingStart = false
     private var lastTypingStartSentAt: Date?
     private var idleStopTask: Task<Void, Never>?
@@ -46,7 +63,30 @@ final class ThreadChatPresenceModel {
         self.now = now
     }
 
-    // MARK: - Own typing
+    // MARK: - Own presence
+
+    /// The chat came on screen or left it, or the app moved to or from the front.
+    func setOnScreen(_ onScreen: Bool) {
+        guard onScreen != isOnScreen else { return }
+        isOnScreen = onScreen
+        openHeartbeat?.cancel()
+        guard onScreen else {
+            enqueueWrite { service, coupleID, subject in
+                await service.setChatOpen(coupleID: coupleID, subject: subject, isOpen: false)
+            }
+            return
+        }
+        openHeartbeat = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let write = self?.enqueueWrite({ service, coupleID, subject in
+                    await service.setChatOpen(coupleID: coupleID, subject: subject, isOpen: true)
+                }) else { return }
+                // A slow server gets one heartbeat at a time, so none queue up behind the close.
+                await write.value
+                try? await Task.sleep(for: Timing.openHeartbeat)
+            }
+        }
+    }
 
     func draftChanged(_ text: String) {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -69,7 +109,9 @@ final class ThreadChatPresenceModel {
         guard didSendTypingStart else { return }
         didSendTypingStart = false
         lastTypingStartSentAt = nil
-        await enqueueTyping(false).value
+        await enqueueWrite { service, coupleID, subject in
+            await service.setTyping(coupleID: coupleID, subject: subject, isTyping: false)
+        }.value
     }
 
     private func sendTypingStartIfNeeded() {
@@ -78,17 +120,21 @@ final class ThreadChatPresenceModel {
         }
         lastTypingStartSentAt = now()
         didSendTypingStart = true
-        enqueueTyping(true)
+        enqueueWrite { service, coupleID, subject in
+            await service.setTyping(coupleID: coupleID, subject: subject, isTyping: true)
+        }
     }
 
     @discardableResult
-    private func enqueueTyping(_ isTyping: Bool) -> Task<Void, Never> {
-        let previous = typingWrite
+    private func enqueueWrite(
+        _ write: @escaping (any ThreadChatServicing, UUID, ThreadChatSubject) async -> Void
+    ) -> Task<Void, Never> {
+        let previous = presenceWrite
         let task = Task { [service, coupleID, subject] in
             await previous?.value
-            await service.setTyping(coupleID: coupleID, subject: subject, isTyping: isTyping)
+            await write(service, coupleID, subject)
         }
-        typingWrite = task
+        presenceWrite = task
         return task
     }
 
@@ -100,9 +146,11 @@ final class ThreadChatPresenceModel {
             apply(presence)
         }
         remoteTypingTask?.cancel()
+        partnerIsInChat = false
     }
 
     func apply(_ presence: ThreadChatPresence) {
+        partnerIsInChat = presence.partnerIsInChat
         partnerLastReadMessageID = presence.partnerLastReadMessageID
         guard presence.partnerIsTyping != lastRemoteTyping else { return }
         lastRemoteTyping = presence.partnerIsTyping

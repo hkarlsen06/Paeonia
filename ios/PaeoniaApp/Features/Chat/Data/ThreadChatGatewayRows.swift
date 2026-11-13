@@ -210,14 +210,18 @@ nonisolated struct ThreadMessagesPageRow: Decodable {
 }
 
 nonisolated struct PresenceRow: Decodable {
+    let partnerInChat: Bool
     let partnerTyping: Bool
     let partnerLastReadMessageID: UUID?
 
     var presence: ThreadChatPresence {
-        ThreadChatPresence(partnerIsTyping: partnerTyping, partnerLastReadMessageID: partnerLastReadMessageID)
+        ThreadChatPresence(
+            partnerIsInChat: partnerInChat, partnerIsTyping: partnerTyping,
+            partnerLastReadMessageID: partnerLastReadMessageID)
     }
 
     enum CodingKeys: String, CodingKey {
+        case partnerInChat = "partner_in_chat"
         case partnerTyping = "partner_typing"
         case partnerLastReadMessageID = "partner_last_read_message_id"
     }

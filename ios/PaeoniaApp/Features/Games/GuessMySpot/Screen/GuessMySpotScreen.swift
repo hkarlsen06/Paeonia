@@ -134,7 +134,7 @@ struct GuessMySpotScreen: View {
             GuessMySpotPointsLink(score: viewModel.score, me: viewModel.me, partner: viewModel.partner)
         }
         .sharedBackgroundVisibility(.hidden)
-        ToolbarItem(placement: .topBarTrailing) {
+        GameToolbarActions(kind: .guessMySpot) {
             GameMenu(history: nil, showTutorial: { showsTutorial = true })
         }
     }

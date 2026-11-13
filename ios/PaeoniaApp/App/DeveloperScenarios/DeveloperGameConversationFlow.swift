@@ -10,7 +10,8 @@
     private let gateway: DeveloperGameConversationGateway
 
     init(pending: any PendingSyncOperationPersisting, result: GameConversationResult? = nil) {
-      let gateway = DeveloperGameConversationGateway(result: result ?? Self.historicalResult())
+      let gateway = DeveloperGameConversationGateway(
+        result: result ?? Self.historicalResult(), presence: DeveloperChatPresenceFeed())
       self.gateway = gateway
       let cache = InMemoryThreadChatCache()
       chat = ThreadChatService(gateway: gateway, cache: cache, pendingOperationStore: pending)
@@ -39,6 +40,18 @@
       LocalStoreChanges.post(.threadChat, ownerUserID: DeveloperScenarioFixture.currentUserID)
     }
 
+    /// Plays the partner opening the Mind Meld chat, typing, then leaving, a few seconds apart.
+    func playPartnerInChat() async {
+      let steps: [ThreadChatPresence] = [
+        .init(partnerIsInChat: true), .init(partnerIsInChat: true, partnerIsTyping: true),
+        .init(partnerIsInChat: true), .none,
+      ]
+      for step in steps {
+        gateway.presence.send(step)
+        try? await Task.sleep(for: .seconds(4))
+      }
+    }
+
     private static func historicalResult() -> GameConversationResult? {
       guard let game = DeveloperMindMeldScenarioFactory.state(for: .mindMeldOver)?.current,
         case .mindMeld(let history)? = game.conversationResult,
@@ -54,15 +67,44 @@
     }
   }
 
+  /// The partner's presence in the local flow's chats, sent by the debug controls.
+  @MainActor
+  final class DeveloperChatPresenceFeed {
+    private var continuations: [UUID: AsyncStream<ThreadChatPresence>.Continuation] = [:]
+    private var latest = ThreadChatPresence.none
+
+    func send(_ presence: ThreadChatPresence) {
+      latest = presence
+      for continuation in continuations.values { continuation.yield(presence) }
+    }
+
+    nonisolated func stream() -> AsyncStream<ThreadChatPresence> {
+      AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+        let id = UUID()
+        Task { @MainActor in
+          continuations[id] = continuation
+          continuation.yield(latest)
+        }
+        continuation.onTermination = { _ in Task { @MainActor in self.continuations[id] = nil } }
+      }
+    }
+  }
+
   private actor DeveloperGameConversationGateway: ThreadChatGateway {
+    nonisolated let presence: DeveloperChatPresenceFeed
     private var summaries: [ThreadChatSummary] = []
     private var messages: [ThreadChatMessage] = []
     /// One thread per chat, such as the Mind Meld chat and the couple chat.
     private var threadIDs: [ThreadChatSubject: UUID] = [:]
     private let result: GameConversationResult?
 
-    init(result: GameConversationResult?) {
+    init(result: GameConversationResult?, presence: DeveloperChatPresenceFeed) {
       self.result = result
+      self.presence = presence
+    }
+
+    nonisolated func livePresence(coupleID _: UUID, subject _: ThreadChatSubject) -> AsyncStream<ThreadChatPresence> {
+      presence.stream()
     }
 
     func loadThreadSummaries() -> [ThreadChatSummary] { summaries }

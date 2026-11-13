@@ -76,8 +76,8 @@ final class ThreadChatViewModel {
     /// Finished results interleaved with this game's messages.
     var gameReferences: [GameChatResultReference] = []
     var gameResults: [UUID: GameConversationResult] = [:]
+    /// Results start collapsed. Opening one keeps it open for this visit.
     var expandedGameResultIDs: Set<UUID> = []
-    var collapsedGameResultIDs: Set<UUID> = []
     var gameResultLoadStates: [UUID: GameConversationLoadState] = [:]
     var focusedGameResultID: UUID?
     /// The message, answer or finished result the next send replies to.
@@ -196,7 +196,6 @@ final class ThreadChatViewModel {
     func prepare() async {
         guard let ownerUserID = participants.currentUserID, isChatAvailable else { return }
         await readStore(ownerUserID: ownerUserID)
-        await prepareCachedGameResults(ownerUserID: ownerUserID)
     }
 
     func load() async {
@@ -387,14 +386,6 @@ private extension ThreadChatViewModel {
         let validIDs = Set(gameReferences.map(\.id))
         gameResults = gameResults.filter { validIDs.contains($0.key) }
         expandedGameResultIDs.formIntersection(validIDs)
-        collapsedGameResultIDs.formIntersection(validIDs)
-        let latest = gameReferences.max { ($0.finishedAt, $0.key) < ($1.finishedAt, $1.key) }
-        let newestMessageAt = messages.map(\.createdAt).max()
-        expandedGameResultIDs.formUnion(gameReferences.filter { reference in
-            !collapsedGameResultIDs.contains(reference.id)
-                && (reference.id == latest?.id
-                    || newestMessageAt.map { $0 > reference.finishedAt } == true)
-        }.map(\.id))
         if case let .gameResult(result)? = replyTarget, !validIDs.contains(result.id) { replyTarget = nil }
     }
 }
@@ -501,6 +492,8 @@ extension ThreadChatViewModel {
     /// The chat came on screen or left it, or the app moved to or from the front.
     func setScreenActive(_ isActive: Bool) {
         isScreenActive = isActive
+        // The server refuses a question's chat until both have answered, so it waits until it opens.
+        presence.setOnScreen(isActive && isChatAvailable)
         if isActive {
             Task { await markVisibleContentAsSeen() }
             markReadOnServerIfActive()

@@ -9,6 +9,7 @@ struct DrawAndGuessScreen: View {
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         ZStack {
@@ -43,10 +44,19 @@ struct DrawAndGuessScreen: View {
         }
     }
 
-    /// The game's menu, with "Our drawings".
+    /// The score while no drawing is on screen, then the chat and the game's menu, with "Our drawings".
+    /// At accessibility text sizes the score moves into the content (`DrawAndGuessScoreHeader`).
     @ToolbarContentBuilder
     private var menu: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
+        if [.status, .chooseWord, .waiting].contains(screen), let score = viewModel.score,
+            !dynamicTypeSize.isAccessibilitySize
+        {
+            ToolbarItem(placement: .topBarTrailing) {
+                DrawAndGuessScoreCapsule(score: score, me: viewModel.me, partner: viewModel.partner)
+            }
+            .sharedBackgroundVisibility(.hidden)
+        }
+        GameToolbarActions(kind: .drawAndGuess) {
             GameMenu(history: .drawAndGuess)
         }
     }

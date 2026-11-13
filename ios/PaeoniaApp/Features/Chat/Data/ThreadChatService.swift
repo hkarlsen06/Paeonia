@@ -105,6 +105,8 @@ protocol ThreadChatServicing: Actor {
     ) async throws
     /// Tells the partner's phone this person is typing in the chat, or has stopped.
     func setTyping(coupleID: UUID, subject: ThreadChatSubject, isTyping: Bool) async
+    /// Tells the partner's phone this person has the chat on screen, or has left it.
+    func setChatOpen(coupleID: UUID, subject: ThreadChatSubject, isOpen: Bool) async
     /// Tells the server this person has read the thread up to `messageID`, for read receipts.
     func markThreadReadOnServer(threadID: UUID, messageID: UUID) async
     /// Tells the server this person has seen the partner's answer, so it stops showing
@@ -114,14 +116,6 @@ protocol ThreadChatServicing: Actor {
     func markPartnerAnswerSeenOnServer(instanceID: UUID) async -> Bool
     /// Follows the partner's typing and read state while the caller iterates.
     nonisolated func livePresence(coupleID: UUID, subject: ThreadChatSubject) -> AsyncStream<ThreadChatPresence>
-}
-
-/// The partner's typing and read state in one chat.
-nonisolated struct ThreadChatPresence: Equatable, Sendable {
-    var partnerIsTyping = false
-    var partnerLastReadMessageID: UUID?
-
-    static let none = ThreadChatPresence()
 }
 
 extension ThreadChatServicing {
@@ -185,6 +179,7 @@ extension ThreadChatServicing {
     }
 
     func setTyping(coupleID _: UUID, subject _: ThreadChatSubject, isTyping _: Bool) {}
+    func setChatOpen(coupleID _: UUID, subject _: ThreadChatSubject, isOpen _: Bool) {}
     func markThreadReadOnServer(threadID _: UUID, messageID _: UUID) {}
     @discardableResult
     func markPartnerAnswerSeenOnServer(instanceID _: UUID) -> Bool { true }
@@ -465,6 +460,10 @@ actor ThreadChatService: ThreadChatServicing {
     // queued. The next keystroke or the next message tries again.
     func setTyping(coupleID: UUID, subject: ThreadChatSubject, isTyping: Bool) async {
         try? await gateway.setTyping(coupleID: coupleID, subject: subject, isTyping: isTyping)
+    }
+
+    func setChatOpen(coupleID: UUID, subject: ThreadChatSubject, isOpen: Bool) async {
+        try? await gateway.setChatOpen(coupleID: coupleID, subject: subject, isOpen: isOpen)
     }
 
     func markThreadReadOnServer(threadID: UUID, messageID: UUID) async {

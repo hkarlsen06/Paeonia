@@ -107,7 +107,7 @@ struct ConsensioScreen: View {
             ConsensioPointsLink(points: viewModel.sharedPoints)
         }
         .sharedBackgroundVisibility(.hidden)
-        ToolbarItem(placement: .topBarTrailing) {
+        GameToolbarActions(kind: .consensio) {
             GameMenu(history: nil, showTutorial: { showsTutorial = true })
         }
     }

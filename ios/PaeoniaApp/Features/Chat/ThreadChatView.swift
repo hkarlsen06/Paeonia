@@ -125,6 +125,8 @@ struct ThreadChatView: View {
             updateVisibility()
         }
         .onChange(of: scenePhase) { updateVisibility() }
+        // A question's chat can open up while it is on screen, when the partner answers.
+        .onChange(of: viewModel.isChatAvailable) { updateVisibility() }
         .onChange(of: viewModel.presence.partnerIsTyping) { _, isTyping in
             guard isTyping else { return }
             AccessibilityNotification.Announcement(

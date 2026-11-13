@@ -50,7 +50,6 @@ struct DrawAndGuessChooseWordView: View {
             .disabled(!canStart)
             .accessibilityIdentifier("draw.choose.start")
         }
-        .drawAndGuessScoreToolbar(viewModel)
         .onChange(of: viewModel.choices) { _, new in
             if !new.isEmpty { shownChoices = new }
         }

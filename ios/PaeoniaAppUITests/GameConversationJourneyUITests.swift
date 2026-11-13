@@ -169,9 +169,11 @@ final class GameConversationJourneyUITests: XCTestCase {
         assertChatSheetOverGame(in: app)
         let result = app.buttons["game.conversation.result.a9000000-0000-4000-8000-000000000001"]
         XCTAssertTrue(result.waitForExistence(timeout: 10), app.debugDescription)
-        // The latest finished game opens with the conversation. The board under the sheet
+        // A finished game is one line until it is opened. The board under the sheet
         // shows some of the same words, so look only in the chat.
         let chat = app.tables.firstMatch
+        XCTAssertFalse(app.buttons["game.conversation.result.reply"].exists)
+        result.tap()
         for word in ["OCEAN", "SUSHI", "SALT", "FISH", "SEA", "NET", "BOAT"] {
             XCTAssertTrue(chat.staticTexts[word].firstMatch.waitForExistence(timeout: 5))
         }

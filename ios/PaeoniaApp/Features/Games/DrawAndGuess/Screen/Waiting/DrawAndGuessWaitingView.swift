@@ -64,7 +64,6 @@ struct DrawAndGuessWaitingView: View {
                 String(localized: .reactionsPartner(viewModel.partnerName, new))
             ).post()
         }
-        .drawAndGuessScoreToolbar(viewModel)
     }
 
     /// Says what the partner is doing when their phone has told us.

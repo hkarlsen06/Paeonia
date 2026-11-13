@@ -13261,6 +13261,24 @@
         }
       }
     },
+    "games.conversation.partnerInChat" : {
+      "comment" : "Spoken on a game's chat button while the partner has that chat open. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is in the chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er i samtalen"
+          }
+        }
+      }
+    },
     "games.conversation.partnerPlaying" : {
       "comment" : "Heading above chats for games the partner currently has open. Argument is the partner name.",
       "extractionState" : "manual",

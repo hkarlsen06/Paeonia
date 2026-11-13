@@ -60,30 +60,6 @@ struct DrawAndGuessScoreCapsule: View {
     }
 }
 
-extension View {
-    /// The score capsule in the trailing toolbar. At accessibility text sizes it
-    /// moves into the content instead (see `DrawAndGuessScoreHeader`).
-    func drawAndGuessScoreToolbar(_ viewModel: DrawAndGuessViewModel) -> some View {
-        modifier(DrawAndGuessScoreToolbar(viewModel: viewModel))
-    }
-}
-
-private struct DrawAndGuessScoreToolbar: ViewModifier {
-    let viewModel: DrawAndGuessViewModel
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    func body(content: Content) -> some View {
-        content.toolbar {
-            if let score = viewModel.score, !dynamicTypeSize.isAccessibilitySize {
-                ToolbarItem(placement: .topBarTrailing) {
-                    DrawAndGuessScoreCapsule(score: score, me: viewModel.me, partner: viewModel.partner)
-                }
-                .sharedBackgroundVisibility(.hidden)
-            }
-        }
-    }
-}
-
 /// The score on the first line of the content, only at accessibility text sizes.
 struct DrawAndGuessScoreHeader: View {
     let viewModel: DrawAndGuessViewModel

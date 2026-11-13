@@ -24,15 +24,22 @@ nonisolated struct DeleteThreadMessageRequest: Encodable {
     }
 }
 
-nonisolated struct TypingRequest: Encodable {
+/// `set_chat_typing` and `set_chat_open`: one flag about this person in one chat.
+nonisolated struct ChatPresenceRequest: Encodable {
+    enum Flag {
+        case typing(Bool)
+        case open(Bool)
+    }
+
     let coupleID: UUID
     let subject: ThreadChatSubject
-    let isTyping: Bool
+    let flag: Flag
     enum CodingKeys: String, CodingKey {
         case coupleID = "p_couple_id"
         case subjectKind = "p_subject_kind"
         case subjectID = "p_subject_id"
         case isTyping = "p_is_typing"
+        case isOpen = "p_is_open"
     }
 
     func encode(to encoder: any Encoder) throws {
@@ -40,7 +47,10 @@ nonisolated struct TypingRequest: Encodable {
         try container.encode(coupleID, forKey: .coupleID)
         try container.encode(subject.kind.rawValue, forKey: .subjectKind)
         if let subjectID = subject.serverID { try container.encode(subjectID, forKey: .subjectID) }
-        try container.encode(isTyping, forKey: .isTyping)
+        switch flag {
+        case let .typing(isTyping): try container.encode(isTyping, forKey: .isTyping)
+        case let .open(isOpen): try container.encode(isOpen, forKey: .isOpen)
+        }
     }
 }
 
