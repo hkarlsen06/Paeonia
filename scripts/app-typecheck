@@ -90,6 +90,25 @@ def target_arguments():
     stop(f"Xcode gave no compiler arguments for the {SCHEME} scheme")
 
 
+def for_simulator(arguments):
+    """Xcode's index arguments are for a phone whatever -destination says, and the wrappers build
+    for the simulator. Points them at the simulator build. The SDK stat cache, which only makes
+    the check faster, is named per SDK, so it is left out."""
+    result = []
+    skip = 0
+    for argument in arguments:
+        if skip:
+            skip -= 1
+        elif argument == "-ivfsstatcache" and result[-1:] == ["-Xcc"]:
+            result.pop()
+            skip = 2
+        else:
+            argument = re.sub(r"-iphoneos\b", "-iphonesimulator", argument)
+            argument = re.sub(r"iPhoneOS(?=[\d.]*\.(platform|sdk))", "iPhoneSimulator", argument)
+            result.append(re.sub(r"^(arm64-apple-ios[\d.]+)$", r"\1-simulator", argument))
+    return result
+
+
 def changed_files():
     def git(*arguments):
         return subprocess.run(["git", "-C", ROOT, "-c", "core.quotepath=off", *arguments],
@@ -144,14 +163,18 @@ requested = [os.path.abspath(path) for path in sys.argv[1:] if path != "--all"] 
 if not everything and not requested:
     print("app-typecheck: this worktree changed no Swift files")
     sys.exit(0)
-NO_BUILD = "this worktree has no build yet. Run ./scripts/xcode-build-agent.sh once. After that this check takes seconds."
+BUILD_ONCE = "Run ./scripts/xcode-build-agent.sh once. After that this check takes seconds."
 if not has_build_folder():
-    stop(NO_BUILD)
+    stop(f"this worktree has no build yet. {BUILD_ONCE}")
 arguments = target_arguments()
+device_build = next((argument for argument in arguments if "/Build/Products/Debug-iphoneos" in argument), None)
+if device_build and not os.path.isdir(device_build):
+    arguments = for_simulator(arguments)
 sources = [argument for argument in arguments if argument.endswith(".swift")]
 # The symbols a build generates are among the sources, and a build that stopped early has not written them.
-if any(not os.path.exists(path) for path in sources if not path.startswith(ROOT + "/")):
-    stop(NO_BUILD)
+missing = [path for path in sources if not path.startswith(ROOT + "/") and not os.path.exists(path)]
+if missing:
+    stop(f"the last build did not write {len(missing)} generated sources, such as {missing[0]}. {BUILD_ONCE}")
 in_target = {os.path.realpath(path): path for path in sources}
 if not everything:
     checked = sorted({in_target[os.path.realpath(path)] for path in requested if os.path.realpath(path) in in_target})
