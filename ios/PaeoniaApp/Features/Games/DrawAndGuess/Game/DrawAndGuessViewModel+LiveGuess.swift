@@ -1,8 +1,8 @@
 import PencilKit
 import QuartzCore
 
-/// The guesser's screen as the drawer sees it on the result screen: the letters
-/// in the slots, and the replay at the point the guesser is watching.
+/// The guesser's screen as the drawer sees it: the letters in the slots, and on
+/// the result screen the replay at the point the guesser is watching.
 struct DrawAndGuessPartnerGuess: Equatable {
     let roundID: UUID
     let slots: DrawAndGuessSlots
@@ -34,7 +34,7 @@ struct DrawAndGuessSentGuessScreen: Equatable {
 }
 
 // The guess screen over the live room. The guesser's phone sends it with
-// `DrawAndGuessLiveMessage`, and the drawer's result screen shows it.
+// `DrawAndGuessLiveMessage`, and the drawer's drawing and result screens show it.
 extension DrawAndGuessViewModel {
     // MARK: - Guesser
 
@@ -146,6 +146,13 @@ extension DrawAndGuessViewModel {
         let timeline = GameReplayTimeline(drawing: drawing)
         partnerReplayTimelineCache = (round.id, timeline)
         return timeline
+    }
+
+    /// The partner's guess screen once a slot holds a letter, a hint included.
+    /// Until then the drawing screen shows the word and says the partner is watching.
+    var partnerGuessWithLetters: DrawAndGuessPartnerGuess? {
+        guard let partnerGuess, !partnerGuess.slots.placedTileIDs.isEmpty else { return nil }
+        return partnerGuess
     }
 
     /// The partner's replay for `GameReplaySurface`.

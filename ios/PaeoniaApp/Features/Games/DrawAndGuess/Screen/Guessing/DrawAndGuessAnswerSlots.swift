@@ -18,12 +18,18 @@ struct DrawAndGuessAnswerSlots: View {
     var isShowingWrongGuess = false
     /// Takes the tile out of the slot at an index. Nil makes the slots read only.
     var removeTile: ((Int) -> Void)?
+    var size: DrawAndGuessTileSize = .regular
 
     @State private var availableWidth: CGFloat = 320
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ScaledMetric(relativeTo: .title2) private var slotHeight: CGFloat = 48
+    /// The regular slot height with Dynamic Type applied. Other sizes scale from it.
+    @ScaledMetric(relativeTo: .title2) private var regularHeight = DrawAndGuessTileSize.regular.height
     @Namespace private var rotorNamespace
+
+    private var slotHeight: CGFloat {
+        regularHeight / DrawAndGuessTileSize.regular.height * size.height
+    }
 
     private struct Word: Identifiable {
         let id: Int
@@ -79,10 +85,12 @@ struct DrawAndGuessAnswerSlots: View {
         slots.slots.count { !$0.isGap }
     }
 
-    /// Between 28 and 44 points wide, with a long word split over lines so no slot
+    /// Between 28 and 44 points wide for regular slots at the default text size,
+    /// and in proportion for other sizes. A long word splits over lines so no slot
     /// leaves the screen.
     private var sizing: DrawAndGuessSlotSizing.Layout {
-        let scale = slotHeight / 48 * (dynamicTypeSize.isAccessibilitySize ? 44.0 / 28.0 : 1)
+        let scale = slotHeight / DrawAndGuessTileSize.regular.height
+            * (dynamicTypeSize.isAccessibilitySize ? 44.0 / 28.0 : 1)
         let layout = DrawAndGuessSlotSizing.layout(
             wordLengths: words.map(\.slots.count),
             availableWidth: availableWidth / scale,
@@ -123,11 +131,11 @@ struct DrawAndGuessAnswerSlots: View {
         } label: {
             ZStack {
                 if let tile = slot.tile, let letter {
-                    DrawAndGuessTileFace(letter: letter, fill: fill, textColor: textColor)
+                    DrawAndGuessTileFace(letter: letter, fill: fill, textColor: textColor, size: size)
                         .frame(width: slotWidth, height: slotHeight)
                         .modifier(DrawAndGuessTileFlight(id: tile.id, namespace: namespace))
                 } else if let letter {
-                    DrawAndGuessTileFace(letter: letter, fill: fill, textColor: textColor)
+                    DrawAndGuessTileFace(letter: letter, fill: fill, textColor: textColor, size: size)
                         .frame(width: slotWidth, height: slotHeight)
                 } else {
                     emptySlot
@@ -148,11 +156,11 @@ struct DrawAndGuessAnswerSlots: View {
     /// The orange outline of a wrong word, and the accent outline of a letter a hint placed.
     private func outline(of slot: DrawAndGuessSlots.Slot) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+            RoundedRectangle(cornerRadius: size.cornerRadius, style: .continuous)
                 .strokeBorder(.paeoniaWarning, lineWidth: 2)
                 .opacity(isShowingWrongGuess && slot.tile != nil && !slot.isHint ? 1 : 0)
                 .animation(PaeoniaMotion.buttonPress, value: isShowingWrongGuess)
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+            RoundedRectangle(cornerRadius: size.cornerRadius, style: .continuous)
                 .strokeBorder(.paeoniaAccentPrimary, lineWidth: PaeoniaRadius.strokeEmphasis)
                 .opacity(slot.isHint && !isRevealed ? 1 : 0)
         }
@@ -163,7 +171,7 @@ struct DrawAndGuessAnswerSlots: View {
     }
 
     private var emptySlot: some View {
-        RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+        RoundedRectangle(cornerRadius: size.cornerRadius, style: .continuous)
             .fill(.paeoniaSurfaceSecondary)
             .overlay(alignment: .bottom) {
                 Capsule()

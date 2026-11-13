@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The drawer: the word, the canvas, the tools and Done. The partner's wrong
-/// guesses show up in a line above the canvas while they watch.
+/// The drawer: the word, the canvas, the tools and Done. The partner's letters
+/// show in the slots under the word while they guess, and their wrong guesses
+/// show up in a line above the canvas.
 struct DrawAndGuessDrawingView: View {
     @Bindable var viewModel: DrawAndGuessViewModel
 
@@ -21,6 +22,7 @@ struct DrawAndGuessDrawingView: View {
         GamePhaseLayout(sharing: .publishes, sideMemory: viewModel.squareMemory) {
             VStack(spacing: PaeoniaSpacing.space8) {
                 DrawAndGuessWordLine(word: DrawAndGuessAnswer.display(viewModel.round?.word ?? ""))
+                partnerSlots
                 liveRow
                 GameLiveReactionButtons(isAvailable: viewModel.canSendLiveReaction, identifierPrefix: "draw") {
                     viewModel.sendLiveReaction($0)
@@ -91,11 +93,27 @@ struct DrawAndGuessDrawingView: View {
 
     // MARK: Live row
 
+    /// The slots keep the word's layout whatever the partner does, so the canvas
+    /// keeps its size.
+    @ViewBuilder
+    private var partnerSlots: some View {
+        if let word = viewModel.round?.word, !word.isEmpty {
+            DrawAndGuessPartnerSlots(word: word, guess: viewModel.partnerGuessWithLetters, size: .compact)
+                .accessibilityIdentifier("draw.partnerSlots")
+        }
+    }
+
+    private var presenceLine: LocalizedStringResource {
+        viewModel.partnerGuessWithLetters == nil
+            ? viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName)
+            : .gamesDrawAndGuessResultGuessing(viewModel.partnerName)
+    }
+
     private var liveRow: some View {
         GameLiveRow {
             GamePresenceLabel(
                 player: viewModel.partner,
-                text: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName),
+                text: presenceLine,
                 isHere: viewModel.partnerPresence.isHere
             )
             .accessibilityIdentifier("draw.presence")
@@ -148,7 +166,7 @@ struct DrawAndGuessWordLine: View {
                 .paeoniaEyebrowStyle()
         } trailing: {
             Text(word)
-                .font(PaeoniaTypography.title)
+                .font(PaeoniaTypography.sectionTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .accessibilityIdentifier("draw.word")
         }

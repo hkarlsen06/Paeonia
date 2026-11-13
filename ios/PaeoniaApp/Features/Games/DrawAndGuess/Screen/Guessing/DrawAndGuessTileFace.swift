@@ -1,18 +1,48 @@
 import SwiftUI
 
+/// How big a letter tile is. Compact tiles are the drawer's read-only slots
+/// above the canvas, where the canvas needs the room.
+enum DrawAndGuessTileSize {
+    case regular
+    case compact
+
+    /// The slot height at the default text size. Dynamic Type scales it.
+    var height: CGFloat {
+        switch self {
+        case .regular: 48
+        case .compact: 32
+        }
+    }
+
+    var font: Font {
+        switch self {
+        case .regular: PaeoniaTypography.title
+        case .compact: PaeoniaTypography.sectionTitle
+        }
+    }
+
+    var cornerRadius: CGFloat {
+        switch self {
+        case .regular: PaeoniaRadius.radius12
+        case .compact: PaeoniaRadius.radius8
+        }
+    }
+}
+
 /// A letter on a rounded square. It is the same view in the tile grid and in an
 /// answer slot, so a tile can fly from one to the other.
 struct DrawAndGuessTileFace: View {
     let letter: Character
     var fill: Color = .paeoniaSurfacePrimary
     var textColor: Color = .paeoniaTextPrimary
+    var size: DrawAndGuessTileSize = .regular
 
     var body: some View {
         Text(String(letter))
-            .font(PaeoniaTypography.title)
+            .font(size.font)
             .foregroundStyle(textColor)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(fill, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+            .background(fill, in: RoundedRectangle(cornerRadius: size.cornerRadius, style: .continuous))
     }
 }
 

@@ -5,10 +5,10 @@
   /// Our drawings in `DeveloperGamesHistoryScenarioView`.
   nonisolated extension DeveloperScenario {
     static let drawAndGuess: [DeveloperScenario] = [
-      drawChooseWord, drawWaitingForWord, drawDrawing, drawSavedOffline, drawWaitingForGuess, drawWatchingHints,
-      drawWaitingForDrawing, drawWatchingLive, drawGuessingReplay, drawGuessingLongWord, drawRevealSolved,
-      drawRevealBonuses, drawRevealMissed, drawRevealAsDrawer, drawRevealPartnerDrawing, drawRevealLoading,
-      drawHistory, drawHistoryEmpty,
+      drawChooseWord, drawWaitingForWord, drawDrawing, drawDrawingPartnerGuessing, drawSavedOffline,
+      drawWaitingForGuess, drawWatchingHints, drawWaitingForDrawing, drawWatchingLive, drawGuessingReplay,
+      drawGuessingLongWord, drawRevealSolved, drawRevealBonuses, drawRevealMissed, drawRevealAsDrawer,
+      drawRevealPartnerDrawing, drawRevealLoading, drawHistory, drawHistoryEmpty,
     ]
 
     static let drawChooseWord = drawRound(
@@ -19,6 +19,10 @@
     )
     static let drawDrawing = drawRound(
       "draw-drawing", "Draw & Guess · drawing", "The canvas with Robin watching live"
+    )
+    static let drawDrawingPartnerGuessing = drawRound(
+      "draw-drawing-partner-guessing", "Draw & Guess · partner guessing while you draw",
+      "Robin's letters show in your slots as they guess"
     )
     static let drawSavedOffline = drawRound(
       "draw-saved-offline", "Draw & Guess · drawing sent offline",

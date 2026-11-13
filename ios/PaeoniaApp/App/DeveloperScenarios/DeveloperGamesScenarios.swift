@@ -81,7 +81,7 @@
           settings: mine,
           game: Fixture.game(state: .choosingWord, turn: Fixture.partner, roundID: nil)
         )
-      case .drawDrawing, .drawSavedOffline:
+      case .drawDrawing, .drawDrawingPartnerGuessing, .drawSavedOffline:
         return Fixture.state(
           settings: mine,
           game: Fixture.game(state: .drawing, turn: Fixture.partner),
@@ -264,7 +264,11 @@
       let live = WidgetLiveDrawing(connection: connection, role: .watching)
       switch scenario {
       case .drawWatchingHints:
-        showPartnerHints(in: live)
+        showPartnerGuessScreen(in: live, letters: ["U", nil, nil, nil, nil, "L", nil, nil], hintedIndexes: [0, 5])
+      case .drawDrawingPartnerGuessing:
+        showPartnerGuessScreen(
+          in: live, letters: ["U", "M", nil, nil, nil, "L", nil, nil], hintedIndexes: [5], after: .seconds(4)
+        )
       case .drawDrawing, .drawSavedOffline:
         connection.partnerRole = .watching
         connection.onStart = { simulatePartner(on: $0, role: .watching, canvas: nil) }
@@ -282,22 +286,30 @@
       return live
     }
 
-    private static func showPartnerHints(in live: WidgetLiveDrawing) {
-      let message = DrawAndGuessGuessScreenMessage(
-        round: DeveloperGamesFixture.roundID,
-        letters: ["U", nil, nil, nil, nil, "L", nil, nil],
-        isWrong: false,
-        hintedIndexes: [0, 5]
-      )
-      let data = try? JSONEncoder().encode(GameLiveEnvelope(
-        game: DrawAndGuessLiveMessage.game,
-        message: DrawAndGuessLiveMessage.guessScreen(message)
-      ))
+    /// The partner on the guess screen of the fixture round, watching live, with
+    /// `letters` in their slots, one per letter of "umbrella". Until `after` has
+    /// passed the slots are empty, so a recording catches the letters arriving.
+    private static func showPartnerGuessScreen(
+      in live: WidgetLiveDrawing, letters: [String?], hintedIndexes: [Int], after delay: Duration = .zero
+    ) {
+      func envelope(_ letters: [String?], hintedIndexes: [Int]) -> Data? {
+        try? JSONEncoder().encode(GameLiveEnvelope(
+          game: DrawAndGuessLiveMessage.game,
+          message: DrawAndGuessLiveMessage.guessScreen(DrawAndGuessGuessScreenMessage(
+            round: DeveloperGamesFixture.roundID, letters: letters, isWrong: false, hintedIndexes: hintedIndexes
+          ))
+        ))
+      }
+      let empty = envelope(letters.map { _ in nil }, hintedIndexes: [])
+      let filled = envelope(letters, hintedIndexes: hintedIndexes)
+      let start = ContinuousClock.now
       Task { @MainActor [weak live] in
         while let live {
           simulatePartner(on: live.connection, role: .watching, canvas: nil)
-          if let data { live.connection.onGameData?(data) }
-          try? await Task.sleep(for: .seconds(2))
+          if let data = ContinuousClock.now - start < delay ? empty : filled {
+            live.connection.onGameData?(data)
+          }
+          try? await Task.sleep(for: .seconds(1))
         }
       }
     }

@@ -25,22 +25,12 @@ struct DrawAndGuessDrawerSquareContent: View {
     }
 }
 
-/// The tiles under the drawer's square while the round is open. They spell the
-/// word, and while the partner guesses on their screen they show the partner's
-/// letters in the same place, so nothing moves when the partner starts.
+/// The tiles under the drawer's square on the result screen while the round is
+/// open, with a line that says whose letters they are.
 struct DrawAndGuessDrawerSlots: View {
     let word: String
     let guess: DrawAndGuessPartnerGuess?
     let partnerName: String
-
-    /// Never begins, so the slots never light up as on the reveal.
-    @State private var timeline = DrawAndGuessRevealTimeline()
-    @Namespace private var namespace
-
-    private var wordSlots: DrawAndGuessSlots {
-        let answer = DrawAndGuessSlots(answer: word).answer
-        return DrawAndGuessSlots(answer: word, letters: answer.map(Optional.some))
-    }
 
     private var label: LocalizedStringResource {
         guess == nil ? .gamesDrawAndGuessResultYourWord : .gamesDrawAndGuessResultGuessing(partnerName)
@@ -51,6 +41,32 @@ struct DrawAndGuessDrawerSlots: View {
             Text(label)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
+            DrawAndGuessPartnerSlots(word: word, guess: guess)
+        }
+        .accessibilityIdentifier("draw.result.partnerSlots")
+    }
+}
+
+/// Read-only slots that spell the drawer's word. While `guess` is set they show
+/// the partner's letters in the same place, so nothing moves when the partner
+/// starts or stops.
+struct DrawAndGuessPartnerSlots: View {
+    let word: String
+    let guess: DrawAndGuessPartnerGuess?
+    var size: DrawAndGuessTileSize = .regular
+
+    /// Never begins, so the slots never light up as on the reveal.
+    @State private var timeline = DrawAndGuessRevealTimeline()
+    @Namespace private var namespace
+
+    private var wordSlots: DrawAndGuessSlots {
+        let answer = DrawAndGuessSlots(answer: word).answer
+        return DrawAndGuessSlots(answer: word, letters: answer.map(Optional.some))
+    }
+
+    var body: some View {
+        // The word and the partner's letters cross-fade on top of each other.
+        ZStack {
             DrawAndGuessAnswerSlots(
                 slots: guess?.slots ?? wordSlots,
                 timeline: timeline,
@@ -58,13 +74,15 @@ struct DrawAndGuessDrawerSlots: View {
                 isRevealed: false,
                 litsGreen: false,
                 wrongGuessCount: guess?.wrongCount ?? 0,
-                isShowingWrongGuess: guess?.isWrong ?? false
+                isShowingWrongGuess: guess?.isWrong ?? false,
+                size: size
             )
             // A new view when the partner starts or stops, so their shake count
             // going back to 0 does not shake the word.
             .id(guess == nil)
             .transition(.opacity)
         }
-        .accessibilityIdentifier("draw.result.partnerSlots")
+        // Only opacity changes, so this also suits Reduce Motion.
+        .animation(PaeoniaMotion.stateChange, value: guess == nil)
     }
 }

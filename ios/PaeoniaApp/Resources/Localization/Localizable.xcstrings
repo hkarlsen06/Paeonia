@@ -14996,7 +14996,7 @@
       }
     },
     "games.drawAndGuess.result.guessing" : {
-      "comment" : "Above the partner's answer letters on the drawer's result screen, while the partner guesses live. %@ is the partner's name.",
+      "comment" : "Shown while the partner guesses live, above their answer letters on the drawer's result screen and next to their portrait on the drawing screen. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
