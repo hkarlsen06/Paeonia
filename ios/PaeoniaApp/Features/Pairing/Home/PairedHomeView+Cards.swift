@@ -6,12 +6,22 @@ extension PairedHomeView {
     /// streak's free save day. Each stays closed once this person closes it.
     @ViewBuilder
     var notices: some View {
+        accessNoticeCard
+        streakSaveCard
+    }
+
+    @ViewBuilder
+    var accessNoticeCard: some View {
         if let accessNotice = shownAccessNotice {
             HomeAccessNoticeCard(notice: accessNotice) {
                 dismissedAccessNoticeID = accessNotice.id
             }
             .transition(.opacity)
         }
+    }
+
+    @ViewBuilder
+    var streakSaveCard: some View {
         if let saveDeadline = shownStreakSaveDeadline {
             HomeStreakSaveCard(streak: dailyChallengeStreak, onTap: onTapStreak) {
                 dismissedStreakSaveDeadline = saveDeadline.timeIntervalSince1970
@@ -87,12 +97,16 @@ extension PairedHomeView {
     /// Only the game the partner opened last. Whose turn it is belongs on the Games tab.
     @ViewBuilder
     var partnerGameCard: some View {
-        if let games, let game = games.partnerGame,
-           let card = game.card(games.cardContext(for: game.kind, isOnHub: false), open: onOpenGame) {
+        if let card = partnerGameView, let kind = games?.partnerGame?.kind {
             card
-                .id(game.kind)
+                .id(kind)
                 .transition(.opacity)
         }
+    }
+
+    var partnerGameView: AnyView? {
+        guard let games, let game = games.partnerGame else { return nil }
+        return game.card(games.cardContext(for: game.kind, isOnHub: false), open: onOpenGame)
     }
 
     var mapCard: some View {
@@ -166,6 +180,13 @@ extension PairedHomeView {
     /// The partner's photos from a visit, waiting for this person's. Among the first cards.
     var waitingVisitMemoryCard: some View {
         visitMemoryCard(waiting: true)
+    }
+
+    var hasWaitingVisitMemory: Bool {
+        guard let visits, let memories, let currentUserID else { return false }
+        return HomeVisitMemoryCard.prompt(
+            visits: visits, memories: memories, viewerID: currentUserID, waiting: true, at: Date()
+        ) != nil
     }
 
     /// The ask for photos from a visit. Under the tiles, where it takes no room from the map.

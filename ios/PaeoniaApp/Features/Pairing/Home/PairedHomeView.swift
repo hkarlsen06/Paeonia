@@ -295,7 +295,9 @@ extension PairedHomeView {
     }
 
     private var mapHeaderContent: some View {
-        HomeMapLayout(
+        let popUps = shownPopUps
+        let lead = popUps.first
+        return HomeMapLayout(
             mapState: locationMapState,
             partnerName: partnerName,
             stories: stories,
@@ -307,19 +309,14 @@ extension PairedHomeView {
         ) {
             markAndStreakRow
         } sheet: {
+            // One pop-up card at most above the tiles, so the map keeps its height.
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                notices
-                partnerGameCard
+                leadPopUp(lead, beforeQuestion: true)
                 dailyPromptCard
                     .matchedGeometryEffect(
                         id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: usesMapHeader
                     )
-                unreadChatsCard
-                anniversaryRecapCard
-                waitingMailCard
-                firstStepsCard
-                visitCard
-                waitingVisitMemoryCard
+                leadPopUp(lead, beforeQuestion: false)
                 milestoneAndWidget
                     .matchedGeometryEffect(id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: usesMapHeader)
             }
@@ -330,6 +327,7 @@ extension PairedHomeView {
             .padding(.bottom, PaeoniaSpacing.space16)
         } footer: {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                laterPopUps(popUps)
                 visitMemoryAsk
                 laterRecapCard
                 writeMailRow
