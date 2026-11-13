@@ -108,9 +108,11 @@ composer's photo button and the newest photo in the system picker, so add
 scripts/assets/app-store/photos/question-snow.jpg to the simulator's photo
 library first with `xcrun simctl addmedia`. Then it taps the text field, types
 the film_answer from --ids one letter at a time and sends. The cover turns into
-the question's conversation. Once two accessibility snapshots in a row match,
-about 2 s after the reveal comes to rest, it swipes the conversation down with
-one SWIPE, so the earlier day shows, and records until the list is still. It
+the question's conversation. An accessibility snapshot runs on the app's main
+thread for about a second, which freezes the partner's answer opening, so the
+script takes none for REVEAL_QUIET_SECONDS after the send. Once two snapshots in
+a row then match, it swipes the conversation down with one SWIPE, so the earlier
+day shows, and records until the list is still. It
 does not take screenshots there, because an agent-device screenshot brings back
 the hidden Dynamic Island. The on-screen keyboard stays hidden while the
 simulator has a hardware keyboard, unless Automatic Keyboard Minimization is
@@ -205,6 +207,8 @@ QUESTION_CACHES = ("ThreadChatCache", "DailyChallengeSnapshotCache", "DailyAnswe
 # Milliseconds between typed letters, and the seconds the reveal gets to load both days' photos.
 TYPE_DELAY_MS = 140
 REVEAL_SECONDS = 12
+# Seconds after the send tap with no snapshots. The reveal came to rest 3.6 to 5.2 s after the send in takes on this Mac.
+REVEAL_QUIET_SECONDS = 7
 # The brightness, of 255, above which a pixel is part of the answer's white letters. The pink cursor
 # (at most 170) and the grey placeholder stay under it, so the count of such pixels in the text field
 # grows with each letter and ignores the cursor's blink. At full size a letter adds 35 such pixels or
@@ -687,8 +691,8 @@ def film_question(recording, agent_device, locale, text):
     recording.act("typed")
     time.sleep(1.5)
     recording.touch("send tap", node_center(find("send button", by_id(SEND_ACTION)), recording.screen))
+    time.sleep(REVEAL_QUIET_SECONDS)
     find("conversation", by_id(CHAT_CLOSE), REVEAL_SECONDS)
-    # Two matching snapshots and the start of the swipe take about 2 s, near the pause the film wants after the reveal.
     wait_until_still(agent_device)
     (x, y), (dx, dy), ms = SWIPE
     points = [round(value * side) for value, side in zip((x, y, dx, dy), recording.screen * 2)]
