@@ -51,9 +51,8 @@ extension MainTabView {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in
             gameChatReturn.waitsForKeyboard = false
         }
-        .onChange(of: selection.wrappedValue) { _, _ in
-            // The game under the sheet is no longer on screen.
-            gameChatSheet = nil
+        .onChange(of: selection.wrappedValue) { _, tab in
+            gameChatTabChanged(to: tab)
             gameChatReturn.isPending = false
             gameChatReturn.waitsForKeyboard = false
             gameChatReturn.layoutReadyFrame = nil
@@ -99,6 +98,8 @@ extension MainTabView {
         }
         gameChatReturn.isPending = false
         gameChatReturn.layoutReadyFrame = nil
+        // A chat waiting for Games to show its game no longer opens.
+        if tab != .games { pendingGameChatSheet = nil }
         PaeoniaKeyboard.dismiss()
         guard !gamesPath.isEmpty, selection.wrappedValue == .games || tab == .games else {
             selection.wrappedValue = tab
@@ -162,6 +163,7 @@ extension MainTabView {
         clearingGamesBadge(
             on: GamesRootView(viewModel: gamesViewModel, path: $gamesPath, tabBarVisibility: gameTabBarVisibility)
                 .gameChatPanel($gameChatSheet)
+                .environment(\.gameChatIsOpen, gameChatIsOpen)
         )
     }
 

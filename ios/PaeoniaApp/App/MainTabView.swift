@@ -192,6 +192,9 @@ struct MainTabView: View {
     @State var gameChatDestination: GameChatDestination?
     /// A game chat opened from a game screen, shown as a sheet over the game.
     @State var gameChatSheet: GameChatDestination?
+    /// A game chat opened from another tab while the switch to Games still waits. It opens
+    /// over the game once the tab is on screen.
+    @State var pendingGameChatSheet: GameChatDestination?
     @State var openingGameChatID: UUID?
     @State var gameChatReturn = GameChatReturnTransition()
     @State var visibleChatSubject: ThreadChatSubject?

@@ -106,8 +106,8 @@ struct GamesRootView: View {
     }
 }
 
-private extension GamesDestination {
-    /// The game the screen belongs to, whose chat a swipe up opens.
+extension GamesDestination {
+    /// The game the screen belongs to, whose chat opens over it.
     var gameKind: GameKind {
         switch self {
         case let .game(kind), let .boardGameHistory(kind), let .boardGameReplay(kind, _): kind

@@ -19,6 +19,8 @@ extension EnvironmentValues {
     @Entry var gameChatLift: CGFloat = 0
     /// Nil where the chat is not a panel, and while it is open.
     @Entry var gameChatPeek: GameChatPeek?
+    /// A game's chat is open over the Games tab, or on its way there from a tap elsewhere.
+    @Entry var gameChatIsOpen = false
 }
 
 /// Shrinks the game screen a little from its top and shows the top of its chat under it for a
@@ -73,6 +75,7 @@ struct GameChatScreen: ViewModifier {
     @Environment(\.gameChatShrink) private var shrink
     @Environment(\.gameChatLift) private var lift
     @Environment(\.gameChatPeek) private var peek
+    @Environment(\.gameChatIsOpen) private var chatIsOpen
     @Environment(\.threadChatContext) private var chat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The keyboard on screen is the chat's. It stays so until it is gone, which is
@@ -89,7 +92,7 @@ struct GameChatScreen: ViewModifier {
     }
 
     private var peekCanRun: Bool {
-        swipeOpensChat && peek != nil && !touched && !reduceMotion
+        swipeOpensChat && peek != nil && !chatIsOpen && !touched && !reduceMotion
     }
 
     func body(content: Content) -> some View {

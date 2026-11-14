@@ -19,6 +19,7 @@ struct MindMeldWriteView: View {
     /// melds" leaves it closed. Opened during the back animation, it covers Lock in.
     @State private var hasOpenedKeyboard = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.gameChatIsOpen) private var chatIsOpen
 
     /// How long the screen waits before it opens the keyboard, so the phase change finishes first.
     private static let focusDelay: Duration = .milliseconds(350)
@@ -49,10 +50,16 @@ struct MindMeldWriteView: View {
         .animation(stateChange, value: viewModel.draftIssue)
         .animation(stateChange, value: viewModel.showsPartnerRestartedNote)
         // The keyboard waits for the last round's words to land, so it never pushes in mid-fall.
-        .task(id: canShowKeyboard && !hidesPairWords) {
+        .task(id: canShowKeyboard && !hidesPairWords && !chatIsOpen) {
             guard canShowKeyboard, !hidesPairWords else {
                 isFieldFocused = false
                 hasOpenedKeyboard = false
+                return
+            }
+            // A chat opened with the game, from a message banner or Chats, keeps the
+            // keyboard. The game's opens once the chat closes.
+            guard !chatIsOpen else {
+                isFieldFocused = false
                 return
             }
             guard !hasOpenedKeyboard else { return }

@@ -86,9 +86,13 @@ final class GameConversationJourneyUITests: XCTestCase {
         assertUnread(conversation, true)
         dismissBanner(banner)
         conversation.tap()
+        assertChatSheetOverGame(in: app)
         let secondMove = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 2"), object: moves)
         XCTAssertEqual(XCTWaiter.wait(for: [secondMove], timeout: 10), .completed, app.debugDescription)
+        app.buttons["chat.sheet.close"].tap()
         app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(tabs.waitForExistence(timeout: 5))
+        tabs.buttons.element(boundBy: 1).tap()
         assertUnread(conversation, false)
     }
 
@@ -198,7 +202,7 @@ final class GameConversationJourneyUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["What was that?"].waitForExistence(timeout: 5))
     }
 
-    /// Leaves the game, then opens its chat from Chats, where it still opens in the tab.
+    /// Leaves the game, then opens its chat from Chats, which opens the game with its chat over it.
     @MainActor
     private func reopenFromChats(in app: XCUIApplication) {
         app.navigationBars.buttons.element(boundBy: 0).tap()
@@ -210,8 +214,9 @@ final class GameConversationJourneyUITests: XCTestCase {
         XCTAssertTrue(conversation.waitForExistence(timeout: 10), app.debugDescription)
         conversation.tap()
         XCTAssertTrue(app.staticTexts["What was that?"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["chat.sheet.close"].exists)
-        XCTAssertTrue(tabs.buttons.element(boundBy: 1).isSelected)
+        assertChatSheetOverGame(in: app)
+        app.buttons["chat.sheet.close"].tap()
+        XCTAssertTrue(app.textFields["mindMeld.field"].waitForExistence(timeout: 5), app.debugDescription)
     }
 
     /// The chat is a panel over the game: the Games tab stays selected, so its tab bar stays hidden.

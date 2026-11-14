@@ -316,6 +316,11 @@ extension GamesViewModel {
         }
     }
 
+    /// The game's screen can open now, without first-time steps before it.
+    func opensDirectly(_ kind: GameKind) -> Bool {
+        screen == .hub && neededIntro == nil && game(kind) != nil
+    }
+
     /// "Change" on what the partner picked switches the sheet to the setup step,
     /// which starts from the partner's choices.
     func changePartnerPicked() {
