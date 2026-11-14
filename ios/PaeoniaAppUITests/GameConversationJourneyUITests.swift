@@ -63,10 +63,16 @@ final class GameConversationJourneyUITests: XCTestCase {
 
         app.buttons["developer.gameChat.receive"].tap()
         assertUnread(open, true)
-        dismissBanner(banner)
+        // Opening the chat another way than the banner takes the banner away.
+        XCTAssertTrue(banner.waitForExistence(timeout: 5))
         open.tap()
         assertChatSheetOverGame(in: app)
         XCTAssertTrue(moves.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(banner.waitForNonExistence(timeout: 5), app.debugDescription)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Chat opened from the toolbar while its message banner showed"
+        attachment.lifetime = .keepAlways
+        add(attachment)
         app.buttons["chat.sheet.close"].tap()
         assertUnread(open, false)
 
@@ -86,7 +92,7 @@ final class GameConversationJourneyUITests: XCTestCase {
         assertUnread(conversation, false)
     }
 
-    /// A message banner stays until it is swiped down or opened.
+    /// A message banner stays until it is swiped down or its chat opens.
     @MainActor
     private func dismissBanner(_ banner: XCUIElement) {
         XCTAssertTrue(banner.waitForExistence(timeout: 5))
