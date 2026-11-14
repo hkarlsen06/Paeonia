@@ -28,13 +28,16 @@ extension HomeMapLayout {
         let raw = HomeMapAvatarPoints(own: mapProjection.own, partner: mapProjection.partner)
         guard mapProjection.introProgress < 1 else {
             // While the person looks around, the avatars stay on the map, off its edges too.
+            // They start from where they sat on the couple's framing, so they don't jump.
             guard let start = explorer.start else {
                 return fitted(separated(raw, isNear: couple.isNear), in: metrics)
             }
+            let framing = framing(couple, metrics)
             return raw.pinned(
                 zoomChange: pow(2, mapProjection.zoom - start.zoom),
-                turn: (start.direction - mapProjection.direction) * .pi / 180
-            ) { separated($0, isNear: couple.isNear) }
+                turn: (start.direction - mapProjection.direction) * .pi / 180,
+                around: HomeMapLibreView.midpoint(framing.own, framing.partner)
+            ) { fitted(separated($0, isNear: couple.isNear), in: metrics) }
         }
         return introPoints(raw, couple, metrics, mapProjection)
     }

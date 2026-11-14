@@ -16,15 +16,18 @@ struct HomeMapAvatarPoints: Equatable {
     }
 
     /// Where the avatars are while the person looks around, with these as their places
-    /// on the map now. Each keeps the spacing `spaced` gave it on the camera the person
-    /// started from, and that spacing turns with the map and shrinks with it as it zooms
-    /// out, so the avatars stay where they were on the map and come together when they
-    /// get small. `zoomChange` is the map's scale against that camera, and `turn` how far
-    /// it has turned on screen, clockwise in radians.
-    func pinned(zoomChange: CGFloat, turn: CGFloat, spaced: (Self) -> Self) -> Self {
+    /// on the map now. Each keeps the offset `spaced` gave it on the camera the person
+    /// started from, where the two places sat around `middle`. That offset turns with the
+    /// map and shrinks with it as it zooms out, so the avatars stay where they were on the
+    /// map and come together when they get small. `zoomChange` is the map's scale against
+    /// that camera, and `turn` how far it has turned on screen, clockwise in radians.
+    func pinned(zoomChange: CGFloat, turn: CGFloat, around middle: CGPoint, spaced: (Self) -> Self) -> Self {
         let between = CGPoint(x: partner.x - own.x, y: partner.y - own.y).rotated(by: -turn)
         let half = CGPoint(x: between.x / zoomChange / 2, y: between.y / zoomChange / 2)
-        let atStart = Self(own: CGPoint(x: -half.x, y: -half.y), partner: half)
+        let atStart = Self(
+            own: CGPoint(x: middle.x - half.x, y: middle.y - half.y),
+            partner: CGPoint(x: middle.x + half.x, y: middle.y + half.y)
+        )
         let spacedAtStart = spaced(atStart)
         let shrink = min(1, zoomChange)
         func moved(_ point: CGPoint, from start: CGPoint, to spot: CGPoint) -> CGPoint {
