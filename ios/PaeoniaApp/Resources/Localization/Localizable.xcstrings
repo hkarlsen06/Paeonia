@@ -4969,6 +4969,24 @@
         }
       }
     },
+    "common.back" : {
+      "comment" : "Accessibility label of the back button that slides a screen away to the side it came from",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilbake"
+          }
+        }
+      }
+    },
     "common.cancel" : {
       "comment" : "Generic button title for cancelling the current sheet or action.",
       "extractionState" : "manual",

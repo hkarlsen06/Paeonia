@@ -294,6 +294,8 @@ extension MainTabView {
         guard let deepLink else {
             return
         }
+        // The couple chat over the tabs would hide where any other link goes.
+        isCoupleChatSlidOver = isCoupleChatSlidOver && deepLink == .coupleChat
 
         switch deepLink {
         case .widgetDrawing, .search:

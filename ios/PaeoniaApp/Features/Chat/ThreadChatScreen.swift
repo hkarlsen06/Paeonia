@@ -12,6 +12,9 @@ struct ThreadChatScreen: View {
         /// The panel under a game (`GameChatPanel`). It has no navigation bar, so the
         /// messages get the height, and its close button floats over them.
         case panel
+        /// Pulled in from the right edge over any tab (`CoupleChatSlideOver`), with a
+        /// navigation stack of its own and a back button that slides it away again.
+        case slideOver
     }
 
     let viewModel: ThreadChatViewModel
@@ -49,7 +52,26 @@ struct ThreadChatScreen: View {
             }
             // The game's notices show over the messages, not over the shrunk game.
             .paeoniaBanner(bannerCenter)
+        case .slideOver:
+            NavigationStack {
+                chat
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) { backButton }
+                    }
+            }
+            // It covers the tab bar's banner.
+            .paeoniaBanner(bannerCenter)
         }
+    }
+
+    private var backButton: some View {
+        Button {
+            onClose?()
+        } label: {
+            Image(systemName: "chevron.backward")
+        }
+        .accessibilityLabel(Text(.commonBack))
+        .accessibilityIdentifier("chat.slideOver.back")
     }
 
     private var closeButton: some View {

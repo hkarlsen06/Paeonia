@@ -253,10 +253,11 @@ private struct GameChatPanelSurface: View {
     }
 }
 
-/// Moves the panel down by `offset`. As an `offset` modifier the move of a view with UIKit
-/// views inside lands at once instead of animating.
-private nonisolated struct PanelSlide: GeometryEffect {
+/// Moves a panel down, or right along `.horizontal`, by `offset`. As an `offset` modifier
+/// the move of a view with UIKit views inside lands at once instead of animating.
+nonisolated struct PanelSlide: GeometryEffect {
     var offset: CGFloat
+    var axis = Axis.vertical
 
     var animatableData: CGFloat {
         get { offset }
@@ -264,6 +265,9 @@ private nonisolated struct PanelSlide: GeometryEffect {
     }
 
     func effectValue(size _: CGSize) -> ProjectionTransform {
-        ProjectionTransform(CGAffineTransform(translationX: 0, y: offset))
+        ProjectionTransform(
+            axis == .vertical
+                ? CGAffineTransform(translationX: 0, y: offset) : CGAffineTransform(translationX: offset, y: 0)
+        )
     }
 }

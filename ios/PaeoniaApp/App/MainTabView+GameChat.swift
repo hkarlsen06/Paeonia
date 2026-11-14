@@ -70,6 +70,7 @@ extension MainTabView {
         kind: GameKind, source: GameConversationSource? = nil, result: GameConversationResult? = nil
     ) {
         guard let coupleID = identity.coupleID else { return }
+        isCoupleChatSlidOver = false
         let subject = GameChatSubject(coupleID: coupleID, kind: kind)
         let opensOverGame = selection.wrappedValue == .games && !gamesPath.isEmpty
         let existing = (opensOverGame ? gameChatSheet : gameChatDestination)
@@ -100,8 +101,10 @@ extension MainTabView {
         }
     }
 
-    /// Opens the couple chat in Chats, over whatever that tab had pushed.
+    /// Opens the couple chat in Chats, over whatever that tab had pushed. Already open over
+    /// the tabs, it stays there.
     func openCoupleChat() {
+        guard !isCoupleChatSlidOver else { return }
         selectTab(.questions)
         dailyChatQuestion = nil
         gameChatDestination = nil

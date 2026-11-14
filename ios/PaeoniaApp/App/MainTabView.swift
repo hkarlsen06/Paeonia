@@ -176,6 +176,8 @@ struct MainTabView: View {
     @State var requestedConversationID: UUID?
     /// Asks the Questions tab to open the couple chat, for its push and deep link.
     @State var isCoupleChatRequested = false
+    /// The couple chat is open over the tabs, pulled in from the right edge.
+    @State var isCoupleChatSlidOver = false
     /// What the Questions tab has pushed: the Topics shelf and a topic.
     @State var questionsPath: [QuestionsDestination] = []
     /// The Memories tab's stack, so the Home look-back card can open a memory in it.
@@ -291,6 +293,7 @@ struct MainTabView: View {
 
     private var tabContent: some View {
         tabNavigation
+        .coupleChatSlideOver(isPresented: $isCoupleChatSlidOver, isEnabled: allowsCoupleChatSwipe)
         .tint(.paeoniaAccentPrimary)
         // Key the load on the signed-in user alone. The partner id, display names,
         // and profile photos all populate/refresh shortly after launch; if they were
@@ -453,9 +456,9 @@ struct MainTabView: View {
 }
 
 extension MainTabView {
-    /// A sheet or full-screen cover from this screen is up. A new sheet would not
-    /// show over it, so a moment that opens by itself waits while this is true. Add
-    /// every new sheet or cover here.
+    /// A sheet or full-screen cover from this screen is up, or the couple chat covers the
+    /// tabs. A new sheet would not show over a sheet and would interrupt the chat, so a
+    /// moment that opens by itself waits while this is true. Add every new sheet or cover here.
     var isModalOpen: Bool {
         isAnswerFlowPresented
             || partnerAnswerQuestion != nil
@@ -466,6 +469,16 @@ extension MainTabView {
             || gameChatSheet != nil
             || isLookBackDrawingHistoryPresented
             || models.recap.presented != nil
+            || isCoupleChatSlidOver
+    }
+
+    /// A swipe in from the right edge opens the couple chat everywhere but in a chat, whose
+    /// rows swipe left, and on a game or the drawing screen, which take drags at the edge.
+    var allowsCoupleChatSwipe: Bool {
+        visibleChatSubject == nil
+            && !(selection.wrappedValue == .games && !gamesPath.isEmpty)
+            && !widgetDrawingPresented.wrappedValue
+            && !gameChatReturn.isPending
     }
 }
 
