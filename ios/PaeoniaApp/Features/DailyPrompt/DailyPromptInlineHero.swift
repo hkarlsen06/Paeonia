@@ -33,6 +33,9 @@ struct DailyPromptInlineHero: View {
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             envelopeAndWords
+                // No wider than the calendar and the drawing under them. The button and the
+                // rows below keep the full width.
+                .narrowsToHomeTiles()
             // The envelope and the words lie on Home's map, so a drag or a pinch on them or
             // beside them moves the map. A tap on the envelope still opens the question.
             .homeMapRows("question", homeMapExplorer)
@@ -85,15 +88,17 @@ struct DailyPromptInlineHero: View {
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .accessibilityAddTraits(.isHeader)
+                .oneLineBesideEnvelope(!isStacked)
                 .paeoniaLoadingReveal(copy.isLoading)
             ZStack(alignment: .top) {
                 Text(verbatim: copy.messageOrPlaceholder)
                     .foregroundStyle(.paeoniaTextSecondary)
+                    .oneLineBesideEnvelope(!isStacked)
                     .paeoniaLoadingReveal(copy.isLoading, delay: 0.08)
                 if copy.isLoading {
                     // Keep the loading height so the card still glides down as it fills.
                     Text(verbatim: copy.messageOrPlaceholder)
-                        .lineLimit(2, reservesSpace: true)
+                        .lineLimit(isStacked ? 2 : 1, reservesSpace: true)
                         .hidden()
                         .accessibilityHidden(true)
                 }
@@ -112,6 +117,19 @@ struct DailyPromptInlineHero: View {
                     .accessibilityLabel(Text(.dailyChallengeHomeLoadingTitle))
                     .accessibilityAddTraits(.isHeader)
             }
+        }
+    }
+}
+
+extension View {
+    /// Beside the envelope on Home's map the words keep to one line, shrinking a little
+    /// before they cut off. At accessibility text sizes they sit under it and wrap.
+    @ViewBuilder
+    func oneLineBesideEnvelope(_ isBeside: Bool) -> some View {
+        if isBeside {
+            lineLimit(1).minimumScaleFactor(0.7)
+        } else {
+            self
         }
     }
 }

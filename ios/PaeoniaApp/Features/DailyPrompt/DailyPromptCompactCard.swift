@@ -81,10 +81,12 @@ struct DailyPromptCompactCard: View {
                     .font(waitsForPartner ? PaeoniaTypography.sectionTitle : PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .accessibilityAddTraits(.isHeader)
+                    .oneLineBesideEnvelope(isOneLine)
                 if let message = copy.message {
                     Text(verbatim: message)
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaTextSecondary)
+                        .oneLineBesideEnvelope(isOneLine)
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -96,6 +98,14 @@ struct DailyPromptCompactCard: View {
                     .accessibilityHidden(true)
             }
         }
+        // On the map, no wider than the calendar and the drawing under it. The button and
+        // the rows below keep the full width.
+        .narrowsToHomeTiles()
+    }
+
+    /// On the map the words beside the envelope keep to one line.
+    private var isOneLine: Bool {
+        isInline && !dynamicTypeSize.isAccessibilitySize
     }
 
     /// The envelope sits at the bottom of a square, leaving room above for the letter to

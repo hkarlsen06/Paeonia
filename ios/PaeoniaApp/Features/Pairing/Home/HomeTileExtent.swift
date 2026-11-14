@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// How far across the Us tab's tile pictures reach: from the calendar's left edge to the
-/// drawing's right edge, in `HomeTileExtent.space`. On the map layout today's question
-/// narrows to it, so it is no wider than the tiles under it.
+/// drawing's right edge, in `HomeTileExtent.space`. On the map layout the envelope and the
+/// words of today's question narrow to it, so they are no wider than the tiles under them.
 nonisolated struct HomeTileExtent: Equatable {
     static let space = "homeTiles"
 
