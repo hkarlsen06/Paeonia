@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowDown, ArrowRight, Dice5, Hourglass, Mail, PenLine, Plus, Radio } from '@lucide/svelte';
+  import { ArrowDown, ArrowRight, Dice5, Hourglass, Mail, PenLine, Plus, Radio, Star } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
   import PageHead from '#lib/components/PageHead.svelte';
   import PhoneScreenshot from '#lib/components/PhoneScreenshot.svelte';
@@ -213,6 +213,14 @@
                   decoding="async"
                   class="max-h-[78%] max-w-[78%] object-contain drop-shadow-[0_14px_22px_rgba(60,10,40,0.45)] transition-transform duration-500 group-hover:-translate-y-1 group-hover:rotate-[-3deg] group-hover:scale-105"
                 />
+                {#if "favorite" in game}
+                  <span
+                    class="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-[#2a0b24]/75 px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/15 backdrop-blur-md sm:right-3 sm:top-3"
+                  >
+                    <Star aria-hidden="true" class="h-3.5 w-3.5 fill-[#f5c451] text-[#f5c451]" />
+                    {games.favoriteLabel}
+                  </span>
+                {/if}
               </div>
               <div class="p-4 sm:p-5">
                 <p class="text-base font-semibold tracking-[-0.01em]">{game.name}</p>
