@@ -176,6 +176,10 @@ fi
 # to one, so a recording asks for the screen people without one see.
 launch_args=(-paeonia-scenario "$scenario" -paeonia-scenario-hide-controls YES)
 [[ $record == 0 ]] || launch_args+=(-paeonia-scenario-assistive-technology none)
+# The app is installed fresh, so each game would open its how-to-play sheet over the scenario.
+while read -r kind; do
+  launch_args+=("-paeonia.games.tutorialShown.v1.$kind" YES)
+done < <(sed -nE 's/^ *case [A-Za-z]+ = "([a-z_]+)"$/\1/p' ios/PaeoniaApp/Features/Games/Models/GameKind.swift)
 launch() {
   xcrun simctl launch --terminate-running-process "$sim" "$bundle_id" \
     "${launch_args[@]}" ${language_args[@]+"${language_args[@]}"} ${partner_args[@]+"${partner_args[@]}"} >/dev/null
