@@ -119,13 +119,14 @@ struct GameMenuItems: View {
     }
 }
 
-/// The end of a game's toolbar: the game's chat, then its menu. A game puts its
-/// score before this, so the score comes first and the two buttons sit together.
+/// The end of a game's toolbar: the call button, the game's chat, then its menu. A game puts
+/// its score before this, so the score comes first and the buttons sit together.
 struct GameToolbarActions<Menu: View>: ToolbarContent {
     let kind: GameKind
     @ViewBuilder var menu: () -> Menu
 
     var body: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) { CallButton() }
         ToolbarItem(placement: .topBarTrailing) { GameConversationButton(kind: kind) }
         ToolbarItem(placement: .topBarTrailing) { menu() }
     }

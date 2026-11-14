@@ -197,6 +197,8 @@ struct GameChatPanel: ViewModifier {
             }
         }
         .ignoresSafeArea()
+        // A call's bubble moves above the open panel.
+        .callBubbleBottomEdge(mounted == nil ? nil : screen.height - height)
     }
 }
 

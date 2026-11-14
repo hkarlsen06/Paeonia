@@ -32,6 +32,8 @@ struct ThreadChatComposer: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
+    /// Voice messages cannot record while a call is on.
+    @Environment(CallCenter.self) private var callCenter: CallCenter?
     @FocusState var isFocused: Bool
     @State var recorder = DailyVoiceRecorder()
     @State var voiceTranscript = ""
@@ -155,7 +157,10 @@ struct ThreadChatComposer: View {
     }
 
     private var notice: LocalizedStringResource? {
-        switch recorder.setback {
+        if isRecordingBlockedByCall, recorder.phase == .idle, trimmedText.isEmpty, staging.staged.isEmpty {
+            return .callsRecordAfterCall
+        }
+        return switch recorder.setback {
         case .permissionDenied: .dailyChatComposerPermissionDenied
         case .takeTooShort: .dailyChallengeVoiceTooShort
         case .startFailed, nil: nil
@@ -164,6 +169,8 @@ struct ThreadChatComposer: View {
 
     /// A drag down on the composer dismisses the keyboard the same way a drag on the
     /// list does. The scroll itself is cancelled, so only the keyboard follows the finger.
+    var isRecordingBlockedByCall: Bool { callCenter?.isInCall == true }
+
     private var fieldScrollView: some View {
         ScrollView {
             VStack(spacing: PaeoniaSpacing.space8) {
@@ -301,6 +308,7 @@ extension ThreadChatComposer {
                     isProminent: false,
                     action: startRecording
                 )
+                .disabled(isRecordingBlockedByCall)
                 .transition(.opacity.combined(with: .scale(scale: 0.8)))
             } else {
                 roundButton(

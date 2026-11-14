@@ -24,6 +24,16 @@ Decided on 2026-11-14.
 - A phone call from the cellular network during a Paeonia call ends the Paeonia call. Paeonia calls do not support hold.
 - Voice notes cannot record during a call, and game sounds and other app audio do not touch the audio session while a call runs.
 
+## Call screens
+
+Built on 2026-11-14 in `ios/PaeoniaApp/Features/Calls/` (`docs/implementation-map.md` lists the files).
+
+- The full call screen and the bubble live in a window of their own above the app's window and below the app lock's cover, so they stay over sheets, covers and games. Starting or answering a call opens the full screen. The chevron or a swipe down shrinks it to the bubble, which the person can drag to any corner.
+- The phone buttons and Call back go through `CallStarter`, which opens the call screen while a call is live and asks the night question first.
+- The Us tab's phone button sits in its header row beside the streak, because the partner's avatar moves around the map.
+- An ended call shows why on the call screen until the engine clears the session. A microphone refusal adds an Open Settings button, and any other failure adds the support link.
+- "Just us" decodes a message's `call` (`outcome`, `duration_seconds`) and the thread summary's `last_message_call`, which the Just us card and the message banner read. A finished call never marks the chat unread and gets no banner.
+
 ## How it works
 
 Every part except the WebRTC library reuses something Paeonia already runs.

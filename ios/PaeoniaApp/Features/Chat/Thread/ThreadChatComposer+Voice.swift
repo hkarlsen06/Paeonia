@@ -75,6 +75,7 @@ extension ThreadChatComposer {
     }
 
     func startRecording() {
+        guard !isRecordingBlockedByCall else { return }
         isFocused = false
         Task { await recorder.startRecording() }
     }

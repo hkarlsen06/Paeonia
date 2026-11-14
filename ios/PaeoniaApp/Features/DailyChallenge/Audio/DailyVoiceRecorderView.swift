@@ -17,6 +17,8 @@ struct DailyVoiceRecorderView: View {
     @Environment(\.openURL) private var openURL
     @ScaledMetric(relativeTo: .largeTitle) private var buttonSize: CGFloat = 84
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    /// A voice answer cannot record while a call is on.
+    @Environment(CallCenter.self) private var callCenter: CallCenter?
     @State private var recorder = DailyVoiceRecorder()
     /// The last take handed to `onRecorded`, so the phase change and the disappear
     /// path can never deliver the same take twice.
@@ -81,6 +83,11 @@ struct DailyVoiceRecorderView: View {
         recorder.phase == .recording
     }
 
+    /// A take that is already going can still stop.
+    private var isBlockedByCall: Bool {
+        callCenter?.isInCall == true && !isRecording
+    }
+
     private var recordingClock: String {
         "\(voiceClock(recorder.elapsed)) / \(voiceClock(recorder.maxDuration))"
     }
@@ -102,7 +109,8 @@ struct DailyVoiceRecorderView: View {
                 .shadow(color: tint.opacity(0.45), radius: 20)
         }
         .buttonStyle(.plain)
-        .disabled(recorder.phase == .starting)
+        .disabled(recorder.phase == .starting || isBlockedByCall)
+        .opacity(isBlockedByCall ? 0.4 : 1)
         .accessibilityLabel(Text(isRecording ? .dailyChallengeVoiceStopRecording : .dailyChallengeVoiceRecord))
         .accessibilityValue(isRecording ? voiceClock(recorder.elapsed) : "")
     }
@@ -118,13 +126,17 @@ struct DailyVoiceRecorderView: View {
                         .monospacedDigit()
                         .foregroundStyle(colors.foreground)
                 }
+            } else if isBlockedByCall {
+                Text(.callsRecordAfterCall)
+                    .foregroundStyle(colors.secondary)
             } else {
                 Text(.dailyChallengeVoiceRecord)
                     .foregroundStyle(colors.secondary)
             }
         }
         .font(PaeoniaTypography.body)
-        .accessibilityHidden(true)
+        // The button speaks "Record" and the clock. Only the call's reason is new.
+        .accessibilityHidden(!isBlockedByCall)
     }
 
     private func message(_ text: LocalizedStringResource) -> some View {

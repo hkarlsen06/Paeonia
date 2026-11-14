@@ -4573,6 +4573,636 @@
         }
       }
     },
+    "calls.bubble.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the small call bubble over the app. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samtale med %@"
+          }
+        }
+      }
+    },
+    "calls.callBack" : {
+      "comment" : "Button under a missed call in the couple chat that calls the partner back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring tilbake"
+          }
+        }
+      }
+    },
+    "calls.callBack.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the Call back button under a missed call. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call %@ back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring tilbake til %@"
+          }
+        }
+      }
+    },
+    "calls.callPartner" : {
+      "comment" : "VoiceOver label of the phone button that calls the partner. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring %@"
+          }
+        }
+      }
+    },
+    "calls.control.audioRoute" : {
+      "comment" : "VoiceOver label of the button that picks where call sound plays. %@ is the device, such as AirPods.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sound plays on %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lyden spilles av på %@"
+          }
+        }
+      }
+    },
+    "calls.control.camera" : {
+      "comment" : "Call button that turns the person's camera on or off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kamera"
+          }
+        }
+      }
+    },
+    "calls.control.end" : {
+      "comment" : "Call button that ends the call.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg på"
+          }
+        }
+      }
+    },
+    "calls.control.flip" : {
+      "comment" : "Call button that switches between the front and back camera.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flip"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snu"
+          }
+        }
+      }
+    },
+    "calls.control.mute" : {
+      "comment" : "Call button that turns the person's microphone off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mute"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demp"
+          }
+        }
+      }
+    },
+    "calls.control.speaker" : {
+      "comment" : "Call button that plays the sound on the phone's speaker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speaker"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Høyttaler"
+          }
+        }
+      }
+    },
+    "calls.ended.answeredElsewhere" : {
+      "comment" : "Call screen line when the person answered or declined the call on another of their devices.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answered on another device"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besvart på en annen enhet"
+          }
+        }
+      }
+    },
+    "calls.ended.busy" : {
+      "comment" : "Call screen line when a call cannot start because the couple already has one going.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're already in a call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er allerede i en samtale"
+          }
+        }
+      }
+    },
+    "calls.ended.hungUp" : {
+      "comment" : "Call screen line after someone ended the call.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call ended"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samtalen er avsluttet"
+          }
+        }
+      }
+    },
+    "calls.ended.missed" : {
+      "comment" : "Call screen line when the person did not answer an incoming call in time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Missed call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tapt anrop"
+          }
+        }
+      }
+    },
+    "calls.ended.noAnswer" : {
+      "comment" : "Call screen line when the partner did not answer or declined.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen svar"
+          }
+        }
+      }
+    },
+    "calls.failed.couldNotConnect" : {
+      "comment" : "Call screen line when the two phones could not reach each other, or the call did not come back after it dropped.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The call couldn't connect. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samtalen kom ikke i gang. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "calls.failed.microphone" : {
+      "comment" : "Call screen line when Paeonia may not use the microphone. An Open Settings button follows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia can't use your microphone. Turn it on in Settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia får ikke bruke mikrofonen. Slå den på i Innstillinger."
+          }
+        }
+      }
+    },
+    "calls.failed.notPartner" : {
+      "comment" : "Call screen line when a call back from the Phone app or Siri goes to someone who is no longer the person's partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can only call your partner in Paeonia."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan bare ringe partneren din i Paeonia."
+          }
+        }
+      }
+    },
+    "calls.failed.offline" : {
+      "comment" : "Call screen line when the call failed because the phone has no internet connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Try again when you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett. Prøv igjen når du er på nett."
+          }
+        }
+      }
+    },
+    "calls.failed.other" : {
+      "comment" : "Call screen line when a call failed for any other reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "calls.minimize" : {
+      "comment" : "VoiceOver label of the chevron that shrinks the call screen to a small bubble.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make the call smaller"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør samtalen mindre"
+          }
+        }
+      }
+    },
+    "calls.night.call" : {
+      "comment" : "Button in the night alert that rings the partner anyway.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring"
+          }
+        }
+      }
+    },
+    "calls.night.title" : {
+      "comment" : "Alert before a call rings at night where the partner is. %1$@ is the partner's local time, such as 02:14. %2$@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's %1$@ for %2$@. Call anyway?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klokka er %1$@ hos %2$@. Vil du ringe likevel?"
+          }
+        }
+      }
+    },
+    "calls.openCall" : {
+      "comment" : "VoiceOver label of the phone button while a call is on. It opens the call screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne samtalen"
+          }
+        }
+      }
+    },
+    "calls.partnerTime" : {
+      "comment" : "Call screen line with the partner's local time. %1$@ is the time, such as 14:02. %2$@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's %1$@ for %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klokka er %1$@ hos %2$@"
+          }
+        }
+      }
+    },
+    "calls.recordAfterCall" : {
+      "comment" : "Line under a disabled record button while a call is on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can record when your call ends"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan ta opp når samtalen er ferdig"
+          }
+        }
+      }
+    },
+    "calls.row.call" : {
+      "comment" : "Row in the couple chat, and its preview, for a call that was answered.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samtale"
+          }
+        }
+      }
+    },
+    "calls.row.callLength" : {
+      "comment" : "Row in the couple chat for a call that was answered. %@ is how long it lasted, such as 12 min.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call · %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samtale · %@"
+          }
+        }
+      }
+    },
+    "calls.row.missed" : {
+      "comment" : "Row in the couple chat, and its preview, for a call nobody answered.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Missed call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tapt anrop"
+          }
+        }
+      }
+    },
+    "calls.row.noAnswer" : {
+      "comment" : "Row in the couple chat for the person's own call that the partner did not answer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen svar"
+          }
+        }
+      }
+    },
+    "calls.status.calling" : {
+      "comment" : "Call screen line while the partner's phone rings.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calling…"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ringer…"
+          }
+        }
+      }
+    },
+    "calls.status.connecting" : {
+      "comment" : "Call screen line after the partner answered, while the phones connect.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting…"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobler til…"
+          }
+        }
+      }
+    },
+    "calls.status.reconnecting" : {
+      "comment" : "Call screen line while a call that dropped tries to come back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnecting…"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobler til igjen…"
+          }
+        }
+      }
+    },
+    "calls.unmute" : {
+      "comment" : "VoiceOver label of the bubble's microphone button while it is muted.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unmute"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå på lyden"
+          }
+        }
+      }
+    },
+    "calls.yourCamera" : {
+      "comment" : "VoiceOver label of the small tile on the call screen that shows the person's own camera.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your camera"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kameraet ditt"
+          }
+        }
+      }
+    },
     "chat.header.memory" : {
       "comment" : "Small label on the card at the top of the comments on a memory",
       "extractionState" : "manual",

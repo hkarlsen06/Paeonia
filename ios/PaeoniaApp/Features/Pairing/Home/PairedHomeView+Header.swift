@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The mark and the streak, in the navigation bar or in the header Home draws itself.
+/// The mark, the call button and the streak, in the navigation bar or in the header Home draws itself.
 extension PairedHomeView {
     /// The brand mark and the streak at the corners, and both partners with their stories
     /// in the middle. The note bubbles over the avatars rise up beside the mark and the
@@ -23,6 +23,9 @@ extension PairedHomeView {
         HStack {
             brandMark(height: Self.markHeight)
             Spacer(minLength: 0)
+            // Calls the partner, on the side of the row nearest their avatar.
+            CallButton()
+                .glassEffect(.regular.interactive(), in: Circle())
             if dailyChallengeStreak.isVisible {
                 DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
                     // The label pads itself for a capsule. This adds what the
@@ -59,6 +62,10 @@ extension PairedHomeView {
         // The mark is the brand, not a control, so keep it free of the
         // system's Liquid Glass capsule and let it sit flat on the bar.
         .sharedBackgroundVisibility(.hidden)
+
+        ToolbarItem(placement: .topBarTrailing) {
+            CallButton()
+        }
 
         // Fades in when the streak count becomes available rather than popping in.
         if dailyChallengeStreak.isVisible {

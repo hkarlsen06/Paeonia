@@ -92,6 +92,12 @@ struct ThreadChatScreen: View {
             onClose: onClose,
             onOpenHeader: onOpenHeader
         )
+        .toolbar {
+            // "Just us" calls the partner from its top bar.
+            if viewModel.subject == .couple {
+                ToolbarItem(placement: .topBarTrailing) { CallButton() }
+            }
+        }
         // Here and not on the screen under the chat, which SwiftUI does not update while covered.
         .onChange(of: memoryHeader) { _, header in
             if let header { viewModel.header = header }
