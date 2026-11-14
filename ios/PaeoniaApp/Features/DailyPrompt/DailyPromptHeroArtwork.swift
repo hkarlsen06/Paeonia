@@ -38,7 +38,7 @@ struct DailyPromptEnvelope: View {
     var body: some View {
         PaeoniaEnvelope(width: width, isOpen: opening != .closed, isFlapBehind: opening == .letterOut) {
             PaeoniaEnvelopeLetter(width: width * 0.55, height: width * 0.45)
-                .offset(y: opening == .letterOut ? -width * 0.06 : width * 0.07)
+                .offset(y: opening == .letterOut ? -width * 0.14 : width * 0.07)
         }
     }
 }

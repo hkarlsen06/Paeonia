@@ -34,6 +34,8 @@ struct PaeoniaEnvelopeLayer: View {
             inside
         case .pocket:
             art(clippedTo: EnvelopePocketShape())
+                // The pocket's rim casts a little shade on the letter and the lining.
+                .shadow(color: .black.opacity(0.28), radius: width * 0.012, y: -width * 0.006)
         case let .flap(isOpen):
             flap(isOpen: isOpen)
         }
@@ -47,39 +49,30 @@ struct PaeoniaEnvelopeLayer: View {
             .accessibilityHidden(true)
     }
 
-    /// Square at the top and as wide as the open flap, so the sides run straight
-    /// through the fold. Only as tall as the opening above the pocket, so it never
-    /// peeks out around the art's rounded bottom corners.
+    /// The lining seen through the opening above the pocket, in the shade of the open
+    /// flap. It reaches only a little below the pocket's rim, so it never shows through
+    /// the art's soft edges.
     private var inside: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [.paeoniaAccentPrimary, .paeoniaAccentPrimary.opacity(0.75)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            // The shade under the fold, so the open flap reads as folded back.
+        EnvelopeOpeningShape()
+            .fill(Color.paeoniaAccentSecondary)
             .overlay {
                 LinearGradient(
-                    colors: [.black.opacity(0.22), .clear],
+                    colors: [.black.opacity(0.26), .black.opacity(0.08)],
                     startPoint: .top,
-                    endPoint: UnitPoint(x: 0.5, y: 0.3)
+                    endPoint: UnitPoint(x: 0.5, y: EnvelopeRim.tipY)
                 )
+                .clipShape(EnvelopeOpeningShape())
             }
-            .frame(width: width, height: height * 0.7)
-            .frame(height: height, alignment: .top)
+            .frame(width: width, height: height)
             .accessibilityHidden(true)
     }
 
     private func flap(isOpen: Bool) -> some View {
         art(clippedTo: EnvelopeFlapShape())
             // The back of the flap, which shows as it folds past upright. Opaque, so the
-            // art's rounded corners don't show through at the fold.
+            // front's art doesn't show through.
             .overlay {
-                EnvelopeFlapShape()
-                    .fill(Color.paeoniaAccentPrimary)
-                    .frame(width: width, height: height)
+                flapBack
                     .opacity(isOpen ? 1 : 0)
             }
             .rotation3DEffect(
@@ -90,6 +83,31 @@ struct PaeoniaEnvelopeLayer: View {
             )
             // Overlaps the body a hair when open, so no gap shows at the fold.
             .offset(y: isOpen ? height * 0.01 : 0)
+    }
+
+    /// Paper lined with pink, leaving a border of paper along the edges, like a lined
+    /// envelope. Drawn upside down, since the fold turns it over: the fold is at the top
+    /// and the tip at the bottom.
+    private var flapBack: some View {
+        ZStack {
+            LinearGradient(
+                colors: [.paeoniaAccentSecondary, .paeoniaAccentPrimary],
+                startPoint: .top,
+                endPoint: UnitPoint(x: 0.5, y: EnvelopeRim.tipY)
+            )
+            // The shade where the lining bends at the fold.
+            LinearGradient(
+                colors: [.black.opacity(0.22), .clear],
+                startPoint: .top,
+                endPoint: UnitPoint(x: 0.5, y: EnvelopeRim.cornerY * 2.5)
+            )
+            // The clip keeps the inner half of the stroke. The fold gets no border, so
+            // the lining runs on into the envelope.
+            EnvelopeFlapEdges()
+                .stroke(Color.paeoniaEnvelopePaper, style: StrokeStyle(lineWidth: width * 0.07, lineJoin: .round))
+        }
+        .frame(width: width, height: height)
+        .clipShape(EnvelopeFlapShape())
     }
 }
 
@@ -128,10 +146,26 @@ struct PaeoniaEnvelope<Letter: View>: View {
 }
 
 /// Where the flap's rim runs in the art, as fractions of its height: from near the
-/// top corners down to the tip in the middle. Measured on the asset's pixels.
+/// top corners down to the rounded tip in the middle. Measured on the asset's pixels.
 nonisolated private enum EnvelopeRim {
     static let cornerY: CGFloat = 0.09
-    static let tipY: CGFloat = 0.635
+    /// Where the rim's straight edges would meet. The tip's curve passes 0.635 down.
+    static let tipY: CGFloat = 0.665
+    static let tipRadius: CGFloat = 0.163
+    /// How far the lining reaches below the rim, out of sight behind the pocket.
+    static let insideOverlap: CGFloat = 0.06
+
+    /// From the left corner, round the tip, to the right corner, `drop` lower.
+    static func addRim(to path: inout Path, in rect: CGRect, drop: CGFloat = 0) {
+        let y = { (fraction: CGFloat) in rect.minY + rect.height * (fraction + drop) }
+        path.addLine(to: CGPoint(x: rect.minX, y: y(cornerY)))
+        path.addArc(
+            tangent1End: CGPoint(x: rect.midX, y: y(tipY)),
+            tangent2End: CGPoint(x: rect.maxX, y: y(cornerY)),
+            radius: rect.height * tipRadius
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: y(cornerY)))
+    }
 }
 
 /// The flap: the top edge down to the tip, rim included.
@@ -139,10 +173,31 @@ nonisolated private struct EnvelopeFlapShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        EnvelopeRim.addRim(to: &path, in: rect)
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * EnvelopeRim.cornerY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.minY + rect.height * EnvelopeRim.tipY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * EnvelopeRim.cornerY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// The flap's cut edges, the sides and the rim, without the fold.
+nonisolated private struct EnvelopeFlapEdges: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        EnvelopeRim.addRim(to: &path, in: rect)
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        return path
+    }
+}
+
+/// The opening above the pocket, reaching a little under its rim.
+nonisolated private struct EnvelopeOpeningShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        EnvelopeRim.addRim(to: &path, in: rect, drop: EnvelopeRim.insideOverlap)
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
         path.closeSubpath()
         return path
     }
@@ -152,24 +207,33 @@ nonisolated private struct EnvelopeFlapShape: Shape {
 nonisolated private struct EnvelopePocketShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * EnvelopeRim.cornerY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.minY + rect.height * EnvelopeRim.tipY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * EnvelopeRim.cornerY))
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        EnvelopeRim.addRim(to: &path, in: rect)
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
         path.closeSubpath()
         return path
     }
 }
 
-/// A plain sheet of paper for an envelope's pocket.
+/// A sheet of paper for an envelope's pocket, with a small heart near its top that
+/// shows above the pocket.
 struct PaeoniaEnvelopeLetter: View {
     let width: CGFloat
     let height: CGFloat
 
     var body: some View {
-        RoundedRectangle(cornerRadius: width * 0.08, style: .continuous)
-            .fill(Color.paeoniaMemory)
+        RoundedRectangle(cornerRadius: width * 0.06, style: .continuous)
+            .fill(Color.paeoniaEnvelopePaper)
+            .overlay(alignment: .top) {
+                Image(systemName: "heart.fill")
+                    .resizable()
+                    .accessibilityHidden(true)
+                    .scaledToFit()
+                    .foregroundStyle(.paeoniaAccentSecondary)
+                    .frame(width: width * 0.17)
+                    .padding(.top, height * 0.16)
+            }
+            .shadow(color: .black.opacity(0.18), radius: width * 0.03, y: width * 0.015)
             .frame(width: width, height: height)
             .accessibilityHidden(true)
     }

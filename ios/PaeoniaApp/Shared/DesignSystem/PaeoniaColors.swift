@@ -46,6 +46,8 @@ nonisolated extension Color {
     static let paeoniaStem = PaeoniaPalette.mint
     static let paeoniaPeonyPetal = PaeoniaPalette.petalWarm
     static let paeoniaPeonyHeart = PaeoniaPalette.petalMist
+    // The envelope's paper where code draws it beside its art, and the letter inside.
+    static let paeoniaEnvelopePaper = PaeoniaPalette.blush
 }
 
 nonisolated extension UIColor {
