@@ -30,7 +30,7 @@ Each of these cost a 3 to 10 minute test run to learn. Don't retry them.
 
 ## iOS Build And Test Commands
 
-Agents build, run tests and drive the app themselves to prove a change works. Work in your own git worktree off `main`, and run every build and test through the wrappers below.
+Agents build, run tests and drive the app themselves to prove a change works. Work in your thread's worktree, which [Development Defaults](../../AGENTS.md#development-defaults) says how to get, and run every build and test through the wrappers below.
 
 Before you queue a build or a test run, run `scripts/app-typecheck`. It type-checks the app files your worktree changed from `main` against the whole app target, in about 15 seconds and outside the build queue. Name files to check only those, or pass `--all` to check every app file in about a minute. Use `--all` after you change a signature, because the default reports errors only in the files it checks. It needs one earlier build in the worktree, passed or failed, and it skips files outside the app target, such as tests. A String Catalog key you added works at once. A new image or color gets its symbol at the next build.
 
