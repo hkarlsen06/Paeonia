@@ -420,29 +420,6 @@ extension MainTabView {
         gamesViewModel.open(destination)
     }
 
-    /// The partner just opened `kind`. Home already shows the game's card, and a
-    /// person already in that game, or in the middle of answering, gets no banner.
-    func announcePartnerGame(_ kind: GameKind?) {
-        guard let kind, selection.wrappedValue != .us,
-              !(selection.wrappedValue == .games && gamesPath.contains(.game(kind))),
-              !isAnswerFlowPresented, partnerAnswerQuestion == nil
-        else { return }
-
-        let gameName = String(localized: kind.name)
-        bannerCenter.show(
-            .info(
-                title: String(localized: .gamesPartnerOpenedTitle(gamesViewModel.partnerName, gameName)),
-                message: String(localized: .gamesPartnerOpenedMessage),
-                gameKind: kind,
-                imageData: PaeoniaAppGroup.partnerAvatarData(),
-                systemImage: "gamecontroller.fill",
-                action: { openGameFromHome(.game(kind)) },
-                // Longer than other notices: the invite only helps while the partner is still in the game.
-                timing: .fixed(.seconds(7))
-            )
-        )
-    }
-
     /// Links into the Questions tab refresh first, so a partner's answer or a
     /// new day is on screen before the question is focused or opened.
     /// A game's chat and the couple chat open at once. They need no refresh first.

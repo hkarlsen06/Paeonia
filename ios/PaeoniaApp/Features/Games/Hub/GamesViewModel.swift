@@ -31,6 +31,13 @@ nonisolated enum GamesDestination: Hashable, Sendable {
     case boardGameReplay(GameKind, gameNumber: Int)
 }
 
+/// The partner opened `kind`. Each opening is a new value, so opening the same game
+/// again after leaving it counts again.
+nonisolated struct PartnerOpenedGame: Equatable, Sendable {
+    let kind: GameKind
+    let id = UUID()
+}
+
 /// The Games tab: first-time setup, the hub, and the couple's game settings.
 ///
 /// It reads the Games cache, which the live feeds keep current, so the hub shows
@@ -70,6 +77,9 @@ final class GamesViewModel {
     private(set) var partnerName: String
     /// The built games the partner has open right now, freshest first.
     private(set) var partnerGameKinds: [GameKind] = []
+    /// The game the partner opened since the last read. The first read after launch or a
+    /// sign-in sets none, because it finds the partner where they already were.
+    private(set) var partnerOpenedGame: PartnerOpenedGame?
     /// When either partner last had each game open. A game neither ever opened is missing.
     private(set) var lastPlayed: [GameKind: Date] = [:]
     /// The days both partners played, for the hub's header.
@@ -211,11 +221,15 @@ extension GamesViewModel {
         guard let userID = currentUserID else { return }
         let document = await dependencies.cache.document(ownerUserID: userID)
         guard currentUserID == userID else { return }
+        let hadOverview = overview != nil
         overview = document.overview
         hasLoaded = true
         let newPartnerGameKinds = Self.partnerGames(in: overview)
             .filter { game($0) != nil }
         if partnerGameKinds != newPartnerGameKinds {
+            if hadOverview, let kind = Self.openedPartnerGame(from: partnerGameKinds, to: newPartnerGameKinds) {
+                partnerOpenedGame = PartnerOpenedGame(kind: kind)
+            }
             partnerGameKinds = newPartnerGameKinds
         }
         updatePlayHistory()
