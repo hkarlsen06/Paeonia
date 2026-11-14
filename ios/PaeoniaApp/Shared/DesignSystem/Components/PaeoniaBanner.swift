@@ -8,11 +8,12 @@ struct PaeoniaBanner: View {
     var onTap: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
+        HStack(spacing: PaeoniaSpacing.space4) {
             mainContent
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
@@ -21,10 +22,10 @@ struct PaeoniaBanner: View {
             .accessibilityIdentifier("app.banner.dismiss")
         }
         .foregroundStyle(.primary)
-        .padding(.leading, PaeoniaSpacing.space16)
+        .padding(.leading, PaeoniaSpacing.space12)
         .padding(.trailing, PaeoniaSpacing.space4)
-        .padding(.vertical, PaeoniaSpacing.space4)
-        .frame(minHeight: 56)
+        .padding(.vertical, PaeoniaSpacing.space8)
+        .frame(minHeight: 60)
         .appEntityIdentifier(content.appEntityIdentifier)
         .accessibilityElement(children: .contain)
         .accessibilityAction(named: Text(.appBannerDismissButton), onDismiss)
@@ -47,51 +48,40 @@ struct PaeoniaBanner: View {
     private var mainContentLabel: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
             leadingIcon
-            messageText
-                .font(PaeoniaTypography.body)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            if onTap != nil {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .accessibilityHidden(true)
+                .frame(width: 36, height: 36)
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+                if let title = content.titleText {
+                    Text(verbatim: title)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                }
+                Text(verbatim: content.message)
+                    .font(.subheadline)
+                    // A partner's long message shows as a preview. The whole
+                    // message is in the chat the banner opens. Errors are ours and short.
+                    .lineLimit(content.style == .info ? 3 : nil)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(.vertical, PaeoniaSpacing.space4)
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .contentShape(Rectangle())
-    }
-
-    private var messageText: Text {
-        if let title = content.titleText {
-            Text(attributedMessage(title: title))
-        } else {
-            Text(verbatim: content.message)
-        }
-    }
-
-    private func attributedMessage(title: String) -> AttributedString {
-        var heading = AttributedString(title + ": ")
-        heading.font = PaeoniaTypography.bodyEmphasis
-        return heading + AttributedString(content.message)
     }
 
     @ViewBuilder
     private var leadingIcon: some View {
         if let gameKind = content.gameKind {
             PaeoniaBannerGameIcon(kind: gameKind)
-                .frame(width: 36, height: 36)
-                .accessibilityHidden(true)
         } else if let avatar = content.avatar {
             Image(uiImage: avatar)
                 .resizable()
                 .scaledToFill()
-                .frame(width: 28, height: 28)
                 .clipShape(Circle())
                 .accessibilityHidden(true)
         } else {
             Image(systemName: content.systemImage ?? iconName)
                 .font(.system(size: 20, weight: .medium))
-                .frame(width: 24, height: 28)
                 .accessibilityHidden(true)
         }
     }
@@ -125,7 +115,8 @@ private struct PaeoniaBannerModifier: ViewModifier {
                         PaeoniaBannerPresentation(content: banner, center: center, onTap: onTap)
                             .id(banner.id)
                             .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
-                            .padding(.horizontal, PaeoniaSpacing.space8)
+                            .frame(maxWidth: 560)
+                            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                             .padding(.bottom, PaeoniaSpacing.space8
                                 + max(0, contentBottom - (bottomEdge ?? contentBottom)))
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)

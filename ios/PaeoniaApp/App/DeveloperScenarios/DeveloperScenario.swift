@@ -19,7 +19,8 @@
     static let allCases: [DeveloperScenario] =
       [gamePresenceControls, accessibilityColors, gameChatPreviews] + keyboardDiagnostics
       + app + visits + accessNotices + firstSteps + topics + memoriesMap + inviter + dailyCard + lookBack + recap
-      + drawAndGuess + storyChain + mindMeld + consensio + piccante + guessMySpot + exquisiteCorpse + boardGames
+      + banners + drawAndGuess + storyChain + mindMeld + consensio + piccante + guessMySpot + exquisiteCorpse
+      + boardGames
 
     nonisolated enum Category: String, CaseIterable, Identifiable, Sendable {
       case launchAndAuth = "State · Launch & authentication"
