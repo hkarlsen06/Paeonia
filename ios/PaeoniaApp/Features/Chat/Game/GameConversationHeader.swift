@@ -117,13 +117,16 @@ struct GameConversationHeader: View {
                 Text(verbatim: participants.partnerName).foregroundStyle(.paeoniaPartnerTwoText)
             }
             .font(PaeoniaTypography.caption.weight(.semibold))
-            MindMeldTrailView(
-                pairs: game.rounds.map {
-                    (
-                        mine: $0.myWord, theirs: $0.partnerWord,
-                        isMeld: $0.outcome == .match || $0.countedByUserID != nil, isCounted: $0.countedByUserID != nil
-                    )
-                }, style: .detail, rowSpacing: PaeoniaSpacing.space8)
+            ShrinkToFitWidth {
+                MindMeldTrailView(
+                    pairs: game.rounds.map {
+                        (
+                            mine: $0.myWord, theirs: $0.partnerWord,
+                            isMeld: $0.outcome == .match || $0.countedByUserID != nil,
+                            isCounted: $0.countedByUserID != nil
+                        )
+                    }, style: .detail, rowSpacing: PaeoniaSpacing.space8)
+            }
             Text(.mindMeldHistoryRowRounds(game.rounds.count))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
@@ -173,6 +176,32 @@ struct GameConversationHeader: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Draws its content at its own width and shrinks it, like a picture, where the
+/// card is narrower. The words keep their places instead of wrapping.
+private struct ShrinkToFitWidth<Content: View>: View {
+    @ViewBuilder let content: Content
+    @State private var natural = CGSize.zero
+    @State private var available: CGFloat = 0
+
+    private var scale: CGFloat {
+        guard natural.width > 0, available > 0 else { return 1 }
+        return min(1, available / natural.width)
+    }
+
+    var body: some View {
+        Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: natural.height * scale)
+            .onGeometryChange(for: CGFloat.self, of: \.size.width) { available = $0 }
+            .overlay(alignment: .top) {
+                content
+                    .fixedSize()
+                    .onGeometryChange(for: CGSize.self, of: \.size) { natural = $0 }
+                    .scaleEffect(scale, anchor: .top)
+            }
     }
 }
 

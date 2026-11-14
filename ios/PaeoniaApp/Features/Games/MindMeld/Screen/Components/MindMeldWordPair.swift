@@ -177,44 +177,24 @@ struct MindMeldTrailView: View {
 
     /// My word, a thin line and the partner's word. The line sits in the middle
     /// of the row and each chip touches one end of it, so a shorter line pulls
-    /// the words together. Where the words don't fit beside the line, such as in
-    /// a narrow chat card, the line shortens and then the words stack.
+    /// the words together.
     private func joinedChips(_ pair: Pair, lineWidth: CGFloat) -> some View {
-        let tints = pair.isMeld
-            ? (mine: Color.paeoniaSuccess, theirs: Color.paeoniaSuccess)
-            : (mine: Color.paeoniaPartnerOne, theirs: Color.paeoniaPartnerTwo)
-        return ViewThatFits(in: .horizontal) {
-            besideChips(pair, tints: tints, lineWidth: lineWidth)
-            besideChips(pair, tints: tints, lineWidth: Self.detailNarrowestLine)
-            VStack(spacing: 0) {
-                detailChip(pair.mine, tint: tints.mine)
-                joiningLine(tints, start: .top, end: .bottom)
-                    .frame(width: PaeoniaRadius.strokeEmphasis, height: Self.detailNarrowestLine)
-                detailChip(pair.theirs, tint: tints.theirs)
-            }
-        }
-    }
-
-    private func besideChips(_ pair: Pair, tints: (mine: Color, theirs: Color), lineWidth: CGFloat) -> some View {
-        HStack(spacing: 0) {
-            detailChip(pair.mine, tint: tints.mine)
+        let mine: Color = pair.isMeld ? .paeoniaSuccess : .paeoniaPartnerOne
+        let theirs: Color = pair.isMeld ? .paeoniaSuccess : .paeoniaPartnerTwo
+        return HStack(spacing: 0) {
+            MindMeldWordChip(word: pair.mine, tint: mine, font: PaeoniaTypography.sectionTitle, lines: 2)
                 .frame(maxWidth: .infinity, alignment: .trailing)
-            joiningLine(tints, start: .leading, end: .trailing)
+            Capsule()
+                .fill(LinearGradient(
+                    colors: [mine.opacity(0.7), theirs.opacity(0.7)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ))
                 .frame(width: lineWidth, height: PaeoniaRadius.strokeEmphasis)
-            detailChip(pair.theirs, tint: tints.theirs)
+                .accessibilityHidden(true)
+            MindMeldWordChip(word: pair.theirs, tint: theirs, font: PaeoniaTypography.sectionTitle, lines: 2)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-
-    private func joiningLine(_ tints: (mine: Color, theirs: Color), start: UnitPoint, end: UnitPoint) -> some View {
-        Capsule()
-            .fill(LinearGradient(
-                colors: [tints.mine.opacity(0.7), tints.theirs.opacity(0.7)], startPoint: start, endPoint: end))
-            .accessibilityHidden(true)
-    }
-
-    private func detailChip(_ word: String, tint: Color) -> some View {
-        MindMeldWordChip(word: word, tint: tint, font: PaeoniaTypography.sectionTitle, lines: 2)
     }
 
     private func mergedChip(_ word: String) -> some View {
