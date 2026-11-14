@@ -135,7 +135,8 @@ private struct PaeoniaBannerModifier: ViewModifier {
     }
 }
 
-/// Keeps tap-to-open and downward swipe dismissal together for every banner host.
+/// A tap or a swipe up opens a banner that opens something, and a swipe down dismisses
+/// any banner, in every banner host.
 private struct PaeoniaBannerPresentation: View {
     let content: PaeoniaBannerContent
     let center: PaeoniaBannerCenter
@@ -145,28 +146,33 @@ private struct PaeoniaBannerPresentation: View {
     @State private var dragOffset: CGFloat = 0
 
     var body: some View {
-        PaeoniaBanner(
-            content: content,
-            onDismiss: { center.dismiss(id: content.id) },
-            onTap: content.isTappable
-                ? {
-                    center.dismiss(id: content.id)
-                    (content.action ?? onTap)()
-                }
-                : nil
-        )
+        PaeoniaBanner(content: content, onDismiss: { center.dismiss(id: content.id) }, onTap: open)
         .modifier(PaeoniaBannerSurface())
         .offset(y: dragOffset)
-        .gesture(swipeDownToDismiss)
+        .gesture(swipe)
         .animation(reduceMotion ? nil : .interactiveSpring(response: 0.3, dampingFraction: 0.86), value: dragOffset)
     }
 
-    private var swipeDownToDismiss: some Gesture {
+    private var open: (() -> Void)? {
+        guard content.isTappable else { return nil }
+        return {
+            center.dismiss(id: content.id)
+            (content.action ?? onTap)()
+        }
+    }
+
+    private var swipe: some Gesture {
         DragGesture(minimumDistance: 10)
-            .onChanged { dragOffset = max($0.translation.height, 0) }
+            .onChanged { value in
+                let moved = value.translation.height
+                // Up only a little, as a pull, and only when there is something to open.
+                dragOffset = moved >= 0 ? moved : open == nil ? 0 : moved / 3
+            }
             .onEnded { value in
                 if value.translation.height > 28 {
                     center.dismiss(id: content.id)
+                } else if let open, value.translation.height < -28 || value.predictedEndTranslation.height < -80 {
+                    open()
                 }
                 dragOffset = 0
             }
