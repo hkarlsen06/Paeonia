@@ -18,10 +18,10 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-11-14.
 
-- On an iPhone held upright, a game chat opened from a game shows as a panel over the lower two thirds of the screen, and the game stays in view above it. The game screen shrinks until its stage fits between the status bar and the panel. The stage is the drawing square in Draw & Guess and Odd Creatures, the board in the four board games, and the chocolate box in Piccante. A screen without a stage, such as Mind Meld, Consensio, Guess my spot, Story Chain or a history, keeps its size, and the panel covers its lower part. The game keeps running while the panel is open, so a partner's drawing or move shows as it happens.
+- On an iPhone held upright, a game chat opened from a game or a game history shows as a panel over the lower part of the screen, and the whole screen stays in view above it, smaller, the way a video stays in view over its comments. Everything on the screen shrinks together, the navigation bar included, so nothing is cut out or hidden and every game and history behaves the same. The screen keeps running while the panel is open, so a partner's drawing or move shows as it happens. The panel takes 64% of the screen's height, which leaves the game about 30% of its size.
 - The panel has no navigation bar. It has a handle and a close button in its top corner, and the messages take the rest. The keyboard opens inside the panel, so the panel and the game above it stay where they are while the person writes.
 - A tap on the game above the panel, the close button, a swipe right, or a drag down on the handle closes the panel and gives the game its full size back. The game takes no touches while the panel is open.
-- A new game marks its stage with `gameChatStage()` (see "Adding a game"). An iPad and a phone on its side have no room above a panel, so there the chat stays a sheet over the game, at half height and at full height with the keyboard.
+- An iPad and a phone on its side have no room above a panel, so there the chat stays a sheet over the game, at half height and at full height with the keyboard.
 
 Decided on 2026-11-09.
 
@@ -309,7 +309,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 11. Shared pieces: take the reload gate (`GameReloadGate`), stars (`FavoritesStore`, `FavoriteStarButton`) and drawing pieces such as the canvas and stroke replay from `Features/Games/Shared/` instead of copying Draw & Guess code.
 12. Sounds: play a `GameSound` next to each haptic. Follow [the audio standard](game-audio.md) for imports, synthesis and playback levels. The shared level replaces per-screen volume numbers. The app's `.ambient` audio session mixes with the person's music and respects the silent switch.
 13. Turn and partner cues: next to your resolver, derive a `GameAttention` (`Features/Games/Shared/Attention/`) from the state. Its `turn` names the partner's move that made it this person's turn, and stays nil when their own move did. Its `partnerStep` names a partner move that needs them without handing over the turn. Your view model owns a `GameAttentionCue`, feeds it at the end of every `recompute()` while the screen is open, and resets it in `stop()`. The cue plays the shared knock and step haptics and their sounds, so a view never plays its own "your turn" haptic.
-14. Chat panel: mark the part of your screen worth watching while the chat is open with `gameChatStage()` (`Features/Games/Shared/Layout/GameChatStage.swift`). `GamePhaseLayout` marks its square and `BoardGameScreenLayout` its board, so a game on either has nothing to add. `GameChatStageZoom` scales the whole screen while the panel is open, so measure inside your screen with a named coordinate space instead of `.global`. Show strokes on a `LayeredCanvasView`, which swaps its PencilKit canvases for pictures while it is scaled. A `paeoniaBottomBar` already ignores the chat's keyboard.
+14. Chat panel: nothing to add. `GameChatScreen` (`Features/Games/Shared/Layout/GameChatShrink.swift`) shrinks every Games screen as a whole while its chat panel is open, and keeps the chat's keyboard from moving your layout. A `paeoniaBottomBar` already ignores the chat's keyboard.
 
 ### Ownership
 
