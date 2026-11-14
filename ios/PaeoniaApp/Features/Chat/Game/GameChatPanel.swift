@@ -16,7 +16,7 @@ extension View {
 struct GameChatPanel: ViewModifier {
     /// The share of the screen's height the panel takes.
     private static let panelFraction: CGFloat = 0.64
-    /// The room between the small game and the status bar, the panel and the screen's sides.
+    /// The room between the small game and the status bar and the screen's sides.
     private static let gamePadding = PaeoniaSpacing.space8
 
     @Binding var destination: GameChatDestination?
@@ -27,6 +27,8 @@ struct GameChatPanel: ViewModifier {
     @State private var screen = CGSize.zero
     /// The screen inside its safe area, in global coordinates.
     @State private var safeFrame = CGRect.zero
+    /// The top of the game's bottom controls, such as its action bar, in global coordinates.
+    @State private var controlsTop: CGFloat?
     /// The chat in the panel. It stays from before the panel rises until the panel is down
     /// again, so the chat is there for both slides.
     @State private var mounted: GameChatDestination?
@@ -44,6 +46,10 @@ struct GameChatPanel: ViewModifier {
         let panel = isPanel ? destination : nil
         let panelHeight = screen.height * Self.panelFraction
         content
+            // Here, before the panel joins in with its own composer.
+            .onPreferenceChange(PaeoniaBannerBottomEdgeKey.self) { edge in
+                if mounted == nil { controlsTop = edge }
+            }
             .environment(\.gameChatShrink, isRaised ? shrink(above: panelHeight) : nil)
             .allowsHitTesting(mounted == nil)
             .accessibilityHidden(mounted != nil)
@@ -76,14 +82,18 @@ struct GameChatPanel: ViewModifier {
             }
     }
 
-    /// The whole screen as large as fits between the status bar and the panel. The strips
-    /// the screen keeps clear for the status bar and the home indicator hold nothing, so
-    /// they go behind the status bar and the panel.
+    /// The screen as large as it can be with its top under the status bar and the top of
+    /// its bottom controls at the panel. The panel covers those controls, which nobody can
+    /// use while it is open, so the rest of the game shows larger. A screen that reports no
+    /// bottom controls shows whole.
     private func shrink(above panelHeight: CGFloat) -> GameChatShrink? {
         let top = safeFrame.minY + Self.gamePadding
-        let room = screen.height - panelHeight - Self.gamePadding - top
+        // Down to the panel itself, so nothing of what it covers shows above it.
+        let room = screen.height - panelHeight - top
         guard room > 0, safeFrame.height > 0, screen.width > 0 else { return nil }
-        let scale = min(room / safeFrame.height, (screen.width - 2 * Self.gamePadding) / screen.width, 1)
+        // At least the upper half of the screen stays in view.
+        let bottom = controlsTop.map { min(max($0, safeFrame.midY), safeFrame.maxY) } ?? safeFrame.maxY
+        let scale = min(room / (bottom - safeFrame.minY), (screen.width - 2 * Self.gamePadding) / screen.width, 1)
         return GameChatShrink(
             scale: scale,
             origin: CGPoint(x: (screen.width - scale * screen.width) / 2, y: top - scale * safeFrame.minY)
