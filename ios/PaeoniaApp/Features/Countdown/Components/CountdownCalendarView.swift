@@ -84,6 +84,9 @@ struct CountdownCalendarView: View {
                     .font(.system(size: rect.height * 0.28 * textScale, weight: .heavy))
             }
         }
+        // Framed before the reveal, so the blank page and the number fill the same box and
+        // the number comes into focus where it stays instead of sliding in from a corner.
+        .frame(width: rect.width * Self.numberWidthShare, height: rect.height)
         // The page stays blank while the count loads, then the number comes into focus as
         // it rolls up.
         .paeoniaLoadingReveal(face == .loading)
@@ -97,7 +100,6 @@ struct CountdownCalendarView: View {
             SpringKeyframe(1.18, duration: 0.18, spring: .snappy)
             SpringKeyframe(1, duration: 0.5, spring: .bouncy)
         }
-        .frame(width: rect.width * Self.numberWidthShare, height: rect.height)
         // Behind the word, so the hearts come out from under it.
         .background {
             if let burstID {
