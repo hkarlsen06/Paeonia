@@ -2,14 +2,14 @@ import PencilKit
 import SwiftUI
 
 extension ExquisiteCorpseRevealContent {
-    /// The finished creature as one tall picture, head on top. Nil until all three
+    /// The finished creature as one tall picture, head on top. Nil until all four
     /// drawings are on the phone.
     var shareable: PaeoniaShareable? {
         guard isReady else { return nil }
         let drawings = drawings
         let title = String(localized: .exquisiteCorpseRevealNumber(number))
         return PaeoniaShareable(title: title) {
-            let order: [ExquisiteCorpsePartKind] = [.head, .body, .legs]
+            let order = ExquisiteCorpsePartKind.allCases
             let images = order.compactMap { kind in
                 drawings[kind].flatMap {
                     PaeoniaShareRenderer.inkImage(
@@ -29,14 +29,14 @@ extension ExquisiteCorpseRevealContent {
     }
 }
 
-/// The three parts stacked with no gap on one plum canvas, with a hairline at each
+/// The four parts stacked with no gap on one plum canvas, with a hairline at each
 /// fold, like the finished figure in the game.
 private struct ExquisiteCorpseShareCard: View {
     let parts: [UIImage]
 
     /// A part is narrower than the card, so the figure fits on a phone screen
     /// when it is sent on.
-    static let side: CGFloat = 232
+    static let side: CGFloat = 200
     static let pixelSide: CGFloat = side * 3
     private static let hairline: CGFloat = 2
 

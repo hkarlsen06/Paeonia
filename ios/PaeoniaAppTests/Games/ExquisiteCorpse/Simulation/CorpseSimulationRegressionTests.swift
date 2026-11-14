@@ -30,7 +30,7 @@ struct CorpseSimulationRegressionTests {
     }
 
     /// A whole figure with both phones in the room: the watcher sees the strip while the head is drawn,
-    /// the strip carries over to the body, and both phones open the reveal after the legs.
+    /// the strip carries over to the body, and both phones open the reveal after the feet.
     @Test func aFigureGoesFromHeadToRevealLiveWithTheHandOff() async {
         await scenario { driver in
             let starter = driver.turnPhone
@@ -58,9 +58,11 @@ struct CorpseSimulationRegressionTests {
         }
     }
 
-    /// The legs, the reveal on both phones, and the next figure starting with the body drawer.
+    /// The legs and the feet, the reveal on both phones, and the next figure starting with the feet drawer.
     private func finishFigure(_ driver: CorpseSimDriver, starter: CorpseSimPhone, other: CorpseSimPhone) async throws {
         try await driver.scriptTurn(starter)
+        try driver.require(other, in: .drawing)
+        try await driver.scriptTurn(other)
         let revealStarter = try driver.require(starter, in: .reveal)
         let revealOther = try driver.require(other, in: .reveal)
         #expect(revealStarter.revealContent?.isReady == true)
@@ -125,21 +127,22 @@ struct CorpseSimulationRegressionTests {
         }
     }
 
-    /// The legs are queued offline. The drawer waits to sync and then both phones show the reveal.
-    @Test func legsQueuedOfflineShowTheRevealOnBothAfterReconnecting() async {
+    /// The feet are queued offline. The drawer waits to sync and then both phones show the reveal.
+    @Test func feetQueuedOfflineShowTheRevealOnBothAfterReconnecting() async {
         await scenario { driver in
             let starter = driver.turnPhone
             let other = driver.partner(of: starter)
             try await driver.scriptTurn(starter)
             try await driver.scriptTurn(other)
+            try await driver.scriptTurn(starter)
 
-            starter.setOnline(false)
-            try await driver.scriptDraw(starter)
-            try await driver.scriptDone(starter)
-            try driver.require(starter, in: .waitingToSync)
+            other.setOnline(false)
+            try await driver.scriptDraw(other)
+            try await driver.scriptDone(other)
+            try driver.require(other, in: .waitingToSync)
             #expect(driver.server.figures.first?.finishedAt == nil)
 
-            starter.setOnline(true)
+            other.setOnline(true)
             await driver.settle()
             try driver.require(starter, in: .reveal)
             try driver.require(other, in: .reveal)

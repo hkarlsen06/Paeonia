@@ -1,7 +1,7 @@
 import PencilKit
 import SwiftUI
 
-/// A finished figure: the three parts stacked with no gap, head on top, with a
+/// A finished figure: the four parts stacked with no gap, head on top, with a
 /// 2 pt hairline at each fold so the parts stay readable. Each part is drawn the
 /// way Draw & Guess draws a finished drawing, so strokes look the same.
 ///
@@ -11,7 +11,7 @@ import SwiftUI
 struct ExquisiteCorpseFigureView: View {
     /// The parts at the canonical side. A part that is missing is still loading.
     let parts: [ExquisiteCorpsePartKind: PKDrawing]
-    /// The side of one part. The figure is three times as tall.
+    /// The side of one part. The figure is four times as tall.
     let side: CGFloat
 
     var body: some View {
@@ -27,7 +27,7 @@ struct ExquisiteCorpseFigureView: View {
         }
     }
 
-    private static let order: [ExquisiteCorpsePartKind] = [.head, .body, .legs]
+    private static let order = ExquisiteCorpsePartKind.allCases
 
     private func part(_ drawing: PKDrawing?) -> some View {
         ZStack {
@@ -87,14 +87,16 @@ private struct ExquisiteCorpsePartSpinner: View {
                 .head: ExquisiteCorpsePreviewDrawings.head,
                 .body: ExquisiteCorpsePreviewDrawings.body,
                 .legs: ExquisiteCorpsePreviewDrawings.legs,
+                .feet: ExquisiteCorpsePreviewDrawings.feet,
             ],
             side: 100
         )
-        // The legs are still loading.
+        // The feet are still loading.
         ExquisiteCorpseFigureView(
             parts: [
                 .head: ExquisiteCorpsePreviewDrawings.head,
                 .body: ExquisiteCorpsePreviewDrawings.body,
+                .legs: ExquisiteCorpsePreviewDrawings.legs,
             ],
             side: 100
         )

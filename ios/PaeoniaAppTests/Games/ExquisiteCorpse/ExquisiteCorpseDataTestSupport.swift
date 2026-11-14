@@ -13,7 +13,7 @@ extension ExquisiteCorpseFixture {
     }
 
     /// A part of `me` with a drawing and a strip that differ, so a test can tell the uploads apart.
-    /// The drawing is `Data([1, 1, 1])` and the strip is `Data([2, 2])`. The legs have no strip.
+    /// The drawing is `Data([1, 1, 1])` and the strip is `Data([2, 2])`. The feet have no strip.
     static func distinctPart(
         figure: Int = 2,
         partIndex: Int = 0,
@@ -34,7 +34,7 @@ extension ExquisiteCorpseFixture {
             partIndex: partIndex,
             coupleID: couple,
             drawing: upload(Data([1, 1, 1]), sequence: 10),
-            strip: partIndex < 2 ? upload(Data([2, 2]), sequence: 20) : nil,
+            strip: partIndex < 3 ? upload(Data([2, 2]), sequence: 20) : nil,
             idea: idea,
             createdAt: now,
             renewedAt: renewedAt

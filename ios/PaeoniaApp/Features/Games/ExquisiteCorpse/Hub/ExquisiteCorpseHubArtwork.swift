@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The picture at the top of the Exquisite corpse card: a strip of paper in three
-/// parts with two crayons beside it, one for each partner. The parts swing open from
-/// the top one by one, and the crayon whose turn it is wiggles as its part opens.
-/// Together they show a kitten's head, a cozy sweater and duck feet. When the feet
+/// The picture of an Exquisite corpse game: a strip of paper in four parts with two
+/// crayons beside it, one for each partner. The parts swing open from the top one
+/// by one, and the crayon whose turn it is wiggles as its part opens. Together they
+/// show a kitten's head, a cozy sweater, duck legs and webbed feet. When the feet
 /// are out, the creature hops, waves and blinks, and hearts pop up. It plays once
 /// when the card appears. With Reduce Motion it starts finished.
 struct ExquisiteCorpseHubArtwork: View {
@@ -69,11 +69,12 @@ private struct ExquisiteCorpseHubScene: View, Animatable {
 
     private typealias Timing = GameHubArtworkTiming
 
-    private static let panelSize = CGSize(width: 126, height: 46)
-    private static let parts: [ExquisiteCorpsePartKind] = [.head, .body, .legs]
+    /// Four of them stack to the creature's shape (`ExquisiteCorpseHubCreature.size`).
+    private static let panelSize = CGSize(width: 104, height: 38)
+    private static let parts = ExquisiteCorpsePartKind.allCases
     /// Where the first part starts, and how much of `progress` one part takes.
     private static let firstPart = 0.08
-    private static let partStep = 0.17
+    private static let partStep = 0.13
     private static let finish = firstPart + partStep * Double(parts.count)
 
     private static let sparkles = [
@@ -140,12 +141,12 @@ private struct ExquisiteCorpseHubScene: View, Animatable {
     // MARK: Crayons
 
     /// One crayon on each side, tips toward the paper. The left one draws the head
-    /// and the feet, and the right one draws the sweater.
+    /// and the legs, and the right one draws the sweater and the feet.
     private var crayons: some View {
         GeometryReader { proxy in
             crayon(color: .paeoniaAccentPrimary, tilt: 30, parts: [.head, .legs], delay: 0)
                 .position(x: proxy.size.width * 0.15, y: proxy.size.height * 0.68)
-            crayon(color: .paeoniaInkBlue, tilt: -26, parts: [.body], delay: 0.04)
+            crayon(color: .paeoniaInkBlue, tilt: -26, parts: [.body, .feet], delay: 0.04)
                 .position(x: proxy.size.width * 0.86, y: proxy.size.height * 0.7)
         }
     }
@@ -208,7 +209,7 @@ private struct ExquisiteCorpseHubPanel: View {
             ZStack(alignment: .top) {
                 Rectangle().fill(.paeoniaWidgetDrawing)
                 creature
-                    .frame(width: size.width, height: size.height * 3)
+                    .frame(width: size.width, height: size.height * CGFloat(ExquisiteCorpsePartKind.allCases.count))
                     .offset(y: -size.height * CGFloat(part.rawValue))
                     .frame(width: size.width, height: size.height, alignment: .top)
                 Rectangle().fill(.paeoniaBackgroundSecondary.opacity(0.5 * (1 - open)))
@@ -222,7 +223,7 @@ private struct ExquisiteCorpseHubPanel: View {
     }
 
     @ViewBuilder private var crease: some View {
-        if part != .legs {
+        if part.next != nil {
             ExquisiteCorpseHorizontalLine()
                 .stroke(
                     Color.paeoniaTextInverse.opacity(0.25),
@@ -243,7 +244,7 @@ private struct ExquisiteCorpseHubPanel: View {
     /// Round only the outer corners of the strip.
     private var panelShape: UnevenRoundedRectangle {
         let isFirst = part == .head
-        let isLast = part == .legs
+        let isLast = part.next == nil
         return UnevenRoundedRectangle(
             topLeadingRadius: isFirst ? PaeoniaRadius.radius12 : 0,
             bottomLeadingRadius: isLast ? PaeoniaRadius.radius12 : 0,

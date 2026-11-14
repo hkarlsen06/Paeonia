@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// A small folded paper, 72 by 216 pt, for the waiting screen. It shows how far
+/// A small folded paper, 72 by 288 pt, for the waiting screen. It shows how far
 /// the figure has come. Done parts are paper backs, the part being drawn has a
 /// slow shimmer, and the parts after it are empty dashed outlines. It is only a
 /// picture, so VoiceOver skips it. The title above says the same in words.
 struct ExquisiteCorpseMiniFold: View {
-    static let size = CGSize(width: 72, height: 216)
+    static let size = CGSize(width: 72, height: 288)
 
-    /// How many parts are finished, from 0 to 2.
+    /// How many parts are finished, from 0 to 3.
     let partsDone: Int
     /// The part being drawn right now. Nil when nobody is drawing.
     let openPart: ExquisiteCorpsePartKind?
@@ -67,7 +67,7 @@ struct ExquisiteCorpseMiniFold: View {
         }
     }
 
-    private static let partCount = 3
+    private static let partCount = ExquisiteCorpsePartKind.allCases.count
     private static let corner = PaeoniaRadius.radius12
 }
 
@@ -107,6 +107,7 @@ private struct ExquisiteCorpseShimmer: View {
         ExquisiteCorpseMiniFold(partsDone: 0, openPart: .head)
         ExquisiteCorpseMiniFold(partsDone: 1, openPart: .body)
         ExquisiteCorpseMiniFold(partsDone: 2, openPart: .legs)
+        ExquisiteCorpseMiniFold(partsDone: 3, openPart: .feet)
     }
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)

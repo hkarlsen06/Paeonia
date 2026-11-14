@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The reveal of a finished figure. The folded paper waits for the three
+/// The reveal of a finished figure. The folded paper waits for the four
 /// drawings, then opens one fold at a time while each part replays its strokes.
-/// After the legs the view pulls back to the whole figure with the petal bloom,
+/// After the feet the view pulls back to the whole figure with the petal bloom,
 /// the title, the credits and the button.
 ///
 /// `ExquisiteCorpseRevealTimeline` runs the beats and `ExquisiteCorpseFigurePlayer`
@@ -279,7 +279,7 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
 
     // MARK: Moves
 
-    /// Begins the reveal once the three drawings are on the phone.
+    /// Begins the reveal once the four drawings are on the phone.
     private func startIfReady() {
         guard content.isReady, !timeline.hasBegun else { return }
         player.load(content.drawings)

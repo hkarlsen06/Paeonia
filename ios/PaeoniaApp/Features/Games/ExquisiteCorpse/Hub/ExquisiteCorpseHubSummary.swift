@@ -10,9 +10,9 @@ nonisolated struct ExquisiteCorpseHubSummary: Equatable, Sendable {
         case partnerDrawing(ExquisiteCorpsePartKind)
         /// A finished creature this person has not looked at. It comes before the next turn.
         case revealReady
-        /// This person's legs are saved on the phone and the creature is not finished
-        /// on the server yet. The partner starts the next one.
-        case partnerStarting
+        /// This person's feet are saved on the phone and the creature is not finished
+        /// on the server yet. Its reveal opens once the server has them.
+        case finishing
     }
 
     let status: Status
@@ -52,7 +52,7 @@ nonisolated struct ExquisiteCorpseHubSummary: Equatable, Sendable {
         case .waiting, .watching:
             return .partnerDrawing(part)
         case .waitingToSync:
-            return .partnerStarting
+            return .finishing
         }
     }
 }

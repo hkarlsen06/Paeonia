@@ -53,8 +53,8 @@ struct ExquisiteCorpseViewModelLiveTests {
         #expect(messages.filter(isDone).count == 1)
     }
 
-    @Test func doneOnTheLegsSendsNoStrip() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myLegsTurn())
+    @Test func doneOnTheFeetSendsNoStrip() async {
+        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myFeetTurn())
         let viewModel = await env.loadedViewModel()
         env.connection.partnerJoins(role: "watching")
         viewModel.recompute()
@@ -64,7 +64,7 @@ struct ExquisiteCorpseViewModelLiveTests {
         await viewModel.finishDrawing()
 
         #expect(strips(in: env.connection.gameMessages).isEmpty)
-        #expect(env.connection.gameMessages.last == .done(partID: Fixture.partID(figure: 2, partIndex: 2)))
+        #expect(env.connection.gameMessages.last == .done(partID: Fixture.partID(figure: 1, partIndex: 3)))
     }
 
     @Test func theCanvasIsNeverAttachedToTheLiveRoom() async {

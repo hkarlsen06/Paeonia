@@ -169,7 +169,7 @@ extension ExquisiteCorpseViewModel {
     }
 
     /// The figure and part ids a send needs. The figure id is the server's for a
-    /// body or legs, and the one both phones work out for a new head.
+    /// body, legs or feet, and the one both phones work out for a new head.
     var figureIDToSend: UUID? {
         guard let game = state?.game else { return nil }
         return game.figureID ?? ExquisiteCorpseIDs.figure(gameID: game.id, number: game.figureNumber)

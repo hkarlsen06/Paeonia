@@ -17,7 +17,7 @@ nonisolated enum ExquisiteCorpsePhase: Equatable, Sendable {
     case watching
     /// A finished figure this person has not moved past. Shows the unfolding.
     case reveal
-    /// This person's legs are queued on the phone. The figure is finished here,
+    /// This person's feet are queued on the phone. The figure is finished here,
     /// and the reveal waits for the server.
     case waitingToSync
 
@@ -100,8 +100,8 @@ nonisolated struct ExquisiteCorpseResolver: Sendable {
             pending: pending,
             isPartnerDrawingLive: isPartnerDrawingLive
         )
-        // The legs drawer, or the partner who drew the body, may not have moved
-        // past the last figure's reveal. That comes before the next turn.
+        // Either partner may not have moved past the last figure's reveal. That
+        // comes before the next turn, also the feet drawer's next head.
         if let unseen = unseenFigure(state: state, pending: pending) {
             return ExquisiteCorpseResolution(
                 phase: .reveal,
@@ -137,8 +137,8 @@ nonisolated struct ExquisiteCorpseResolver: Sendable {
         let partnersPhase: ExquisiteCorpsePhase = isPartnerDrawingLive ? .watching : .waiting
         if let queued = pending.parts.first(where: { isNextPart($0, of: game) }),
            let figure = figure(applying: queued, state: state, game: game) {
-            // The legs end the figure on this phone, and the next turn belongs to
-            // the server.
+            // The feet end the figure on this phone, and the reveal and the next
+            // head wait for the server.
             guard let next = kind.next else {
                 return Turn(phase: .waitingToSync, part: nil, figure: figure)
             }
@@ -161,7 +161,7 @@ nonisolated struct ExquisiteCorpseResolver: Sendable {
         return part.figureID == game.figureID
     }
 
-    /// The figure in progress with the queued part in it. The legs finish it, at
+    /// The figure in progress with the queued part in it. The feet finish it, at
     /// this phone's time until the server's replaces it. Nil when the server's
     /// figure is not the one the part belongs to.
     private func figure(
@@ -196,28 +196,28 @@ nonisolated struct ExquisiteCorpseResolver: Sendable {
         )
         let parts = (base.parts.filter { $0.partIndex != queued.partIndex } + [part])
             .sorted { $0.partIndex < $1.partIndex }
-        let isLegs = ExquisiteCorpsePartKind(rawValue: queued.partIndex)?.next == nil
+        let isLast = ExquisiteCorpsePartKind(rawValue: queued.partIndex)?.next == nil
         return RemoteExquisiteCorpseFigure(
             id: base.id,
             number: base.number,
             starterUserID: base.starterUserID,
             createdAt: base.createdAt,
-            finishedAt: isLegs ? queued.createdAt : base.finishedAt,
+            finishedAt: isLast ? queued.createdAt : base.finishedAt,
             myRevealSeenAt: base.myRevealSeenAt,
             parts: parts
         )
     }
 
     /// It is this person's turn once the partner's part hands it over, also while the
-    /// last figure's reveal is still on screen. Every part the server takes moves the
-    /// turn to the other partner, so each of this person's parts follows one of the
-    /// partner's, except the very first head, which goes to whoever started the game.
+    /// last figure's reveal is still on screen. The partner hands over every turn
+    /// but a head's: a head follows this person's own feet, or starts the game
+    /// (`RemoteExquisiteCorpseFigure.startsNextFigure`).
     static func attention(
         resolution: ExquisiteCorpseResolution,
         game: RemoteExquisiteCorpseGame?
     ) -> GameAttention {
         guard resolution.turnPhase == .drawing, let game,
-              game.figureNumber > 1 || game.partIndex > ExquisiteCorpsePartKind.head.rawValue
+              game.partIndex > ExquisiteCorpsePartKind.head.rawValue
         else {
             return GameAttention()
         }

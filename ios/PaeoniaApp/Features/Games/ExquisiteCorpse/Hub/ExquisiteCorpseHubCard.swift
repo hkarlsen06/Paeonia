@@ -68,7 +68,7 @@ extension ExquisiteCorpseHubSummary.Status {
     var isYourTurn: Bool {
         switch self {
         case .yourTurn, .revealReady: true
-        case .notStarted, .partnerDrawing, .partnerStarting: false
+        case .notStarted, .partnerDrawing, .finishing: false
         }
     }
 
@@ -82,8 +82,8 @@ extension ExquisiteCorpseHubSummary.Status {
             Self.partnerDrawingTitle(part, partnerName: partnerName)
         case .revealReady:
             .exquisiteCorpseHubStatusRevealReady
-        case .partnerStarting:
-            .exquisiteCorpseWaitNewCreature(partnerName)
+        case .finishing:
+            .exquisiteCorpseHubStatusFinishing
         }
     }
 
@@ -92,6 +92,7 @@ extension ExquisiteCorpseHubSummary.Status {
         case .head: .exquisiteCorpseHubStatusYourTurnHead
         case .body: .exquisiteCorpseHubStatusYourTurnBody
         case .legs: .exquisiteCorpseHubStatusYourTurnLegs
+        case .feet: .exquisiteCorpseHubStatusYourTurnFeet
         }
     }
 
@@ -103,6 +104,7 @@ extension ExquisiteCorpseHubSummary.Status {
         case .head: .exquisiteCorpseHubStatusPartnerDrawingHead(partnerName)
         case .body: .exquisiteCorpseHubStatusPartnerDrawingBody(partnerName)
         case .legs: .exquisiteCorpseHubStatusPartnerDrawingLegs(partnerName)
+        case .feet: .exquisiteCorpseHubStatusPartnerDrawingFeet(partnerName)
         }
     }
 
@@ -111,7 +113,7 @@ extension ExquisiteCorpseHubSummary.Status {
         case .notStarted: .exquisiteCorpseHubActionStart
         case .yourTurn: .exquisiteCorpseHubActionDraw
         case .revealReady: .exquisiteCorpseHubActionReveal
-        case .partnerDrawing, .partnerStarting: .exquisiteCorpseHubActionOpen
+        case .partnerDrawing, .finishing: .exquisiteCorpseHubActionOpen
         }
     }
 }

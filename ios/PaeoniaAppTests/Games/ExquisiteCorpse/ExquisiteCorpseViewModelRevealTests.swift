@@ -5,7 +5,7 @@ import Testing
 
 /// The reveal of a finished figure, and moving past it. The viewer is `me`.
 /// Figure 1 starts with the partner, who draws its head and legs, and `me` draws
-/// the body. Figure 2 starts with `me`.
+/// the body and the feet. Figure 2 starts with `me`.
 @MainActor
 struct ExquisiteCorpseViewModelRevealTests {
     private typealias Fixture = ExquisiteCorpseFixture
@@ -28,11 +28,12 @@ struct ExquisiteCorpseViewModelRevealTests {
         let failed = await waitUntil { viewModel.revealLoadFailed }
         #expect(failed)
         #expect(viewModel.revealContent?.isReady == false)
-        // The two drawings that did arrive are in the content already.
+        // The three drawings that did arrive are in the content already.
         let headLoaded = await waitUntil { viewModel.revealContent?.part(.head)?.drawing != nil }
         #expect(headLoaded)
         #expect(viewModel.revealContent?.part(.body)?.drawing != nil)
         #expect(viewModel.revealContent?.part(.legs)?.drawing == nil)
+        #expect(viewModel.revealContent?.part(.feet)?.drawing != nil)
 
         env.transfer.setFile(CorpseDrawings.part(2).dataRepresentation(), for: legsID)
         viewModel.retryLoadingReveal()

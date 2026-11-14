@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// The creature on the hub card, drawn as one picture across the three parts of the
-/// strip: a lavender kitten's head, a cozy sweater with a heart, and duck feet. The
-/// raised paw, the neck and the legs cross the folds, as they do in a real game.
+/// The creature of `ExquisiteCorpseHubArtwork`, drawn as one picture across the four
+/// parts of the strip: a lavender kitten's head, a cozy sweater with a heart, duck
+/// legs and webbed feet. The raised paw, the neck, the hem and the legs cross the
+/// folds, as they do in a real game. Each part is a band 48 high.
 struct ExquisiteCorpseHubCreature: View {
     /// The size the drawing is laid out in. It scales to fill its frame.
-    static let size = CGSize(width: 132, height: 144)
+    static let size = CGSize(width: 132, height: 192)
 
     /// How shut the eyes are, from 0 (open) to 1 (shut).
     var blink: Double = 0
@@ -21,6 +22,7 @@ struct ExquisiteCorpseHubCreature: View {
             // Room above the ears, so they clear the top of the paper.
             context.translateBy(x: 0, y: 4)
             drawLegs(in: context)
+            drawFeet(in: context)
             drawArms(in: context)
             drawSweater(in: context)
             drawHead(in: context)
@@ -38,30 +40,40 @@ struct ExquisiteCorpseHubCreature: View {
         )
     }
 
-    // MARK: Duck feet
+    // MARK: Duck legs and feet
 
+    private static let legXs: [CGFloat] = [56, 76]
+    private static let ankleY: CGFloat = 158
+
+    /// Two thin gold legs from under the hem, past the fold to the ankles.
     private func drawLegs(in context: GraphicsContext) {
-        // Each foot turns out a little from its leg.
-        let legs: [(leg: CGFloat, foot: CGFloat)] = [(56, 51), (76, 81)]
-        for (legX, footX) in legs {
+        for x in Self.legXs {
             let leg = Path { path in
-                path.move(to: CGPoint(x: legX, y: 96))
-                path.addLine(to: CGPoint(x: legX, y: 118))
+                path.move(to: CGPoint(x: x, y: 96))
+                path.addLine(to: CGPoint(x: x, y: Self.ankleY))
             }
-            context.stroke(leg, with: .color(Self.ink), style: StrokeStyle(lineWidth: 3, lineCap: .round))
-            paint(Self.foot(from: CGPoint(x: legX, y: 115), centeredAt: footX), .paeoniaInkGold, in: context)
+            context.stroke(leg, with: .color(Self.ink), style: StrokeStyle(lineWidth: 6.5, lineCap: .round))
+            context.stroke(leg, with: .color(.paeoniaInkGold), style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+        }
+    }
+
+    private func drawFeet(in context: GraphicsContext) {
+        // Each foot turns out a little from its leg.
+        for (legX, footX) in zip(Self.legXs, [CGFloat(49), 83]) {
+            let foot = Self.foot(from: CGPoint(x: legX, y: Self.ankleY - 3), centeredAt: footX)
+            paint(foot, .paeoniaInkGold, in: context)
         }
     }
 
     /// A webbed foot that fans out from the bottom of a leg, with three round toes.
     private static func foot(from ankle: CGPoint, centeredAt x: CGFloat) -> Path {
-        let toeY = ankle.y + 13
+        let toeY = ankle.y + 18
         return Path { path in
             path.move(to: ankle)
-            path.addLine(to: CGPoint(x: x - 12, y: toeY))
+            path.addLine(to: CGPoint(x: x - 15, y: toeY))
             for toe in 0..<3 {
-                let left = x - 12 + CGFloat(toe) * 8
-                path.addQuadCurve(to: CGPoint(x: left + 8, y: toeY), control: CGPoint(x: left + 4, y: toeY + 6))
+                let left = x - 15 + CGFloat(toe) * 10
+                path.addQuadCurve(to: CGPoint(x: left + 10, y: toeY), control: CGPoint(x: left + 5, y: toeY + 7))
             }
             path.closeSubpath()
         }

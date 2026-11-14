@@ -40,13 +40,15 @@ extension CorpseSimDriver {
         await settle()
     }
 
-    /// Plays a figure to the reveal with no faults. Returns the starter, who drew the head and the legs, and the other.
+    /// Plays a figure to the reveal with no faults. Returns the starter, who drew the head and the legs,
+    /// and the other, who drew the body and the feet.
     func scriptFigureToReveal() async throws -> (starter: CorpseSimPhone, other: CorpseSimPhone) {
         let starter = turnPhone
         let other = partner(of: starter)
         try await scriptTurn(starter)
         try await scriptTurn(other)
         try await scriptTurn(starter)
+        try await scriptTurn(other)
         return (starter, other)
     }
 }

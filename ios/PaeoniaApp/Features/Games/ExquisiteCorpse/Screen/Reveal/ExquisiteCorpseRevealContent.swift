@@ -4,7 +4,7 @@ import SwiftUI
 /// Everything the reveal needs to show one finished figure. The screen builds it
 /// and passes it in, so the reveal holds no game rules. A part whose drawing is
 /// still downloading has a nil `drawing`, and the reveal waits with the folded
-/// paper until all three are there.
+/// paper until all four are there.
 struct ExquisiteCorpseRevealContent {
     struct Part: Identifiable {
         let kind: ExquisiteCorpsePartKind
@@ -31,6 +31,7 @@ struct ExquisiteCorpseRevealContent {
             case .head: String(localized: .exquisiteCorpseRevealCreditHead(drawerName))
             case .body: String(localized: .exquisiteCorpseRevealCreditBody(drawerName))
             case .legs: String(localized: .exquisiteCorpseRevealCreditLegs(drawerName))
+            case .feet: String(localized: .exquisiteCorpseRevealCreditFeet(drawerName))
             }
         }
 
@@ -44,14 +45,14 @@ struct ExquisiteCorpseRevealContent {
     let figureID: UUID
     /// The creature's number, counting from 1.
     let number: Int
-    /// The head, the body and the legs, in that order.
+    /// The head, the body, the legs and the feet, in that order.
     let parts: [Part]
     let partnerName: String
     /// The next figure starts with me, so the button says "Draw the next head".
     let nextIsMine: Bool
     var startsSettled = false
 
-    /// All three drawings are on the phone.
+    /// All four drawings are on the phone.
     var isReady: Bool {
         parts.count == ExquisiteCorpsePartKind.allCases.count && parts.allSatisfy { $0.drawing != nil }
     }
@@ -65,7 +66,7 @@ struct ExquisiteCorpseRevealContent {
         parts.first { $0.kind == kind }
     }
 
-    /// "Head by Robin, a grandma. Body by you. Legs by Robin." for the VoiceOver
+    /// "Head by Robin, a grandma. Body by you. Legs by Robin. Feet by you." for the VoiceOver
     /// announcement.
     var spokenCredits: String {
         parts.map(\.spokenCredit).joined(separator: " ")

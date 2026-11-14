@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One finished creature in the grid: the head, body and legs stacked as one
-/// tall picture, with "Creature 12 · Oct 12" under it. A filled star shows when
+/// One finished creature in the grid: the head, body, legs and feet stacked as one
+/// tall picture, with "Creature 12" and "Oct 12" under it. A filled star shows when
 /// this person starred it.
 struct ExquisiteCorpseHistoryCell: View {
     let figure: RemoteExquisiteCorpseFigure
@@ -12,11 +12,16 @@ struct ExquisiteCorpseHistoryCell: View {
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             picture
-            Text(.exquisiteCorpseHistoryCellCaption(figure.number, shortDate))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .lineLimit(2)
-                .padding(.horizontal, PaeoniaSpacing.space4)
+            // The number and the date get a line each, because the columns are too
+            // narrow for both on one line.
+            VStack(alignment: .leading, spacing: 0) {
+                Text(.exquisiteCorpseRevealNumber(figure.number))
+                Text(shortDate)
+            }
+            .font(PaeoniaTypography.caption)
+            .foregroundStyle(.paeoniaTextSecondary)
+            .lineLimit(1)
+            .padding(.horizontal, PaeoniaSpacing.space4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
@@ -34,7 +39,7 @@ struct ExquisiteCorpseHistoryCell: View {
             : Text(.exquisiteCorpseHistoryCellA11Y(figure.number, partnerName))
     }
 
-    /// Three squares in a column. Each keeps its size while its drawing loads, so
+    /// Four squares in a column. Each keeps its size while its drawing loads, so
     /// the grid never jumps.
     private var picture: some View {
         VStack(spacing: 0) {
@@ -72,10 +77,10 @@ struct ExquisiteCorpseHistoryCell: View {
     private var folds: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
-            hairline
-            Spacer(minLength: 0)
-            hairline
-            Spacer(minLength: 0)
+            ForEach(ExquisiteCorpsePartKind.allCases.dropFirst(), id: \.self) { _ in
+                hairline
+                Spacer(minLength: 0)
+            }
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)

@@ -4,7 +4,7 @@ import SwiftUI
 /// Runs the reveal of a finished figure and owns every value the view draws
 /// from it. The folded paper opens one fold at a time. The view replays each
 /// part once its fold is open and tells the timeline when the replay ends, so
-/// holding to speed up a part moves everything after it along. When the legs
+/// holding to speed up a part moves everything after it along. When the feet
 /// are done the view zooms out to the whole figure.
 ///
 /// Every step has a run id and checks it after sleeping, so no step or haptic
@@ -21,7 +21,7 @@ final class ExquisiteCorpseRevealTimeline {
         case opening(Part)
         /// The part's fold is open and the view replays its strokes.
         case playing(Part)
-        /// The legs are done and the view pulls back to the whole figure.
+        /// The feet are done and the view pulls back to the whole figure.
         case zoomingOut
         /// Everything shows.
         case settled
@@ -40,7 +40,7 @@ final class ExquisiteCorpseRevealTimeline {
         var foldSoundLead: TimeInterval = 0.1
         /// From the end of a part's replay to the next fold opening.
         var betweenParts: TimeInterval = 0.3
-        /// From the end of the legs' replay to the zoom out, so the finished legs
+        /// From the end of the feet's replay to the zoom out, so the finished feet
         /// show for a moment before the whole figure.
         var beforeZoom: TimeInterval = 0.5
         /// From the start of the zoom out to the haptic and the bloom.
@@ -90,8 +90,9 @@ final class ExquisiteCorpseRevealTimeline {
     nonisolated static func foldIntensity(for part: Part) -> CGFloat {
         switch part {
         case .head: 0.4
-        case .body: 0.6
-        case .legs: 0.85
+        case .body: 0.55
+        case .legs: 0.7
+        case .feet: 0.85
         }
     }
 

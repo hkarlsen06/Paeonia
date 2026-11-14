@@ -77,7 +77,7 @@ final class CorpseSimServer {
     private(set) var viewVersion = 0
 
     /// Ideas for each part, 14 each. The deck is 12 of them, rotated by the part.
-    static let ideas: [[RemoteExquisiteCorpseIdea]] = ["head", "body", "legs"].map { name in
+    static let ideas: [[RemoteExquisiteCorpseIdea]] = ["head", "body", "legs", "feet"].map { name in
         (1...14).map { RemoteExquisiteCorpseIdea(id: "\(name)-\($0)", text: "\(name) idea \($0)") }
     }
 
@@ -170,9 +170,9 @@ final class CorpseSimServer {
         operation: SyncClientOperation
     ) throws -> RemoteExquisiteCorpseSubmitPartResult {
         let index = payload.partIndex
-        guard (0...2).contains(index) else { throw fail("22023", "part index must be 0, 1, or 2") }
-        if index < 2, stripAssetID == nil { throw fail("22023", "the head and the body need a strip") }
-        if index == 2, stripAssetID != nil { throw fail("22023", "the legs take no strip") }
+        guard (0...3).contains(index) else { throw fail("22023", "part index must be 0, 1, 2, or 3") }
+        if index < 3, stripAssetID == nil { throw fail("22023", "the head, the body and the legs need a strip") }
+        if index == 3, stripAssetID != nil { throw fail("22023", "the feet take no strip") }
         if let ideaID = payload.idea?.id, !Self.ideas[index].contains(where: { $0.id == ideaID }) {
             throw fail("22023", "the idea is not on the list for this part")
         }
@@ -186,9 +186,10 @@ final class CorpseSimServer {
         }
     }
 
-    /// `progressAfter`: the legs finish the figure and the next one starts with the head.
+    /// `progressAfter`: the turn passes to the partner, except after the feet. They finish the
+    /// figure, and their drawer keeps the turn to start the next one with the head.
     private func advance(_ game: inout Game, after index: Int, figureID: UUID, by user: UUID) -> Bool {
-        let isFinished = index == 2
+        let isFinished = index == 3
         if isFinished, let at = figures.firstIndex(where: { $0.id == figureID }) {
             figures[at].finishedAt = now
         }
@@ -196,7 +197,7 @@ final class CorpseSimServer {
         game.figureNumber += isFinished ? 1 : 0
         game.partIndex = isFinished ? 0 : index + 1
         game.figuresFinished += isFinished ? 1 : 0
-        game.turnUser = partner(of: user)
+        game.turnUser = isFinished ? user : partner(of: user)
         game.turnStartedAt = now
         game.updatedAt = now
         game.version += 1

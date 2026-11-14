@@ -9,7 +9,7 @@ extension ExquisiteCorpseViewModel {
            let head = next.part(at: ExquisiteCorpsePartKind.head.rawValue), head.drawerUserID != userID {
             return GameContinuation(id: "figure \(next.id) head sent", status: .drew)
         }
-        if figure.starterUserID != userID, live?.partnerActivity == .watching,
+        if figure.startsNextFigure(userID), live?.partnerActivity == .watching,
            game.figureNumber == figure.number + 1, game.partIndex == ExquisiteCorpsePartKind.head.rawValue {
             return GameContinuation(id: "figure \(figure.id) partner waiting", status: .waiting)
         }

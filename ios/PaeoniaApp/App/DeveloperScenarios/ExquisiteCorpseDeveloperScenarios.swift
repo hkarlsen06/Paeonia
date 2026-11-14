@@ -18,9 +18,9 @@
     /// A scenario that opens one Exquisite corpse screen on its own.
     var isExquisiteCorpseScreen: Bool {
       switch self {
-      case .exquisiteCorpseDrawHead, .exquisiteCorpseDrawBody, .exquisiteCorpseDrawLegs, .exquisiteCorpseWaiting,
-        .exquisiteCorpseWatching, .exquisiteCorpseHandoff, .exquisiteCorpseWaitingToSync, .exquisiteCorpseReveal,
-        .exquisiteCorpseRevealLoading, .exquisiteCorpseHistory, .exquisiteCorpseHistoryEmpty,
+      case .exquisiteCorpseDrawHead, .exquisiteCorpseDrawBody, .exquisiteCorpseDrawLegs, .exquisiteCorpseDrawFeet,
+        .exquisiteCorpseWaiting, .exquisiteCorpseWatching, .exquisiteCorpseHandoff, .exquisiteCorpseWaitingToSync,
+        .exquisiteCorpseReveal, .exquisiteCorpseRevealLoading, .exquisiteCorpseHistory, .exquisiteCorpseHistoryEmpty,
         .exquisiteCorpseHistoryStarred, .exquisiteCorpseHistoryDetail:
         true
       default:
@@ -56,8 +56,10 @@
         return Fixture.headTurn()
       case .exquisiteCorpseDrawBody:
         return Fixture.bodyTurn()
-      case .exquisiteCorpseDrawLegs, .exquisiteCorpseWaitingToSync:
+      case .exquisiteCorpseDrawLegs:
         return Fixture.legsTurn()
+      case .exquisiteCorpseDrawFeet, .exquisiteCorpseWaitingToSync:
+        return Fixture.feetTurn()
       case .exquisiteCorpseWaiting, .exquisiteCorpseWatching, .exquisiteCorpseHandoff:
         return Fixture.partnerBodyTurn()
       case .exquisiteCorpseHistoryEmpty:
@@ -114,13 +116,16 @@
         keep(figure: 2, partIndex: 0, isStrip: true)
       case .exquisiteCorpseDrawLegs:
         keep(figure: 3, partIndex: 1, isStrip: true)
+      case .exquisiteCorpseDrawFeet:
+        keep(figure: 4, partIndex: 2, isStrip: true)
       case .exquisiteCorpseReveal:
         for index in 0..<ExquisiteCorpsePartKind.allCases.count {
           keep(figure: 2, partIndex: index, isStrip: false)
         }
       case .exquisiteCorpseRevealLoading:
-        // Alex's own body is on the phone. Robin's head and legs never finish downloading.
+        // Alex's own body and feet are on the phone. Robin's head and legs never finish downloading.
         keep(figure: 2, partIndex: ExquisiteCorpsePartKind.body.rawValue, isStrip: false)
+        keep(figure: 2, partIndex: ExquisiteCorpsePartKind.feet.rawValue, isStrip: false)
       default:
         break
       }
@@ -139,7 +144,7 @@
       let role: WidgetLivePresence.Role?
       var plan: ExquisiteCorpseDeveloperConnection.Plan?
       switch scenario {
-      case .exquisiteCorpseDrawHead, .exquisiteCorpseDrawBody, .exquisiteCorpseDrawLegs:
+      case .exquisiteCorpseDrawHead, .exquisiteCorpseDrawBody, .exquisiteCorpseDrawLegs, .exquisiteCorpseDrawFeet:
         // Robin has the game open and waits for Alex's part.
         role = .watching
       case .exquisiteCorpseWatching, .exquisiteCorpseHandoff:
@@ -198,7 +203,7 @@
         figureID: payload.figureID,
         partID: payload.partID,
         partIndex: payload.partIndex,
-        figureFinished: payload.partIndex == ExquisiteCorpsePartKind.legs.rawValue,
+        figureFinished: ExquisiteCorpsePartKind(rawValue: payload.partIndex)?.next == nil,
         createdAt: ExquisiteCorpseDeveloperFixture.now
       )
     }
@@ -420,7 +425,7 @@
           ownerUserID: ExquisiteCorpseDeveloperFixture.me
         )
       case .exquisiteCorpseWaitingToSync:
-        await queueLegs(on: game)
+        await queueFeet(on: game)
       case .exquisiteCorpseHistoryStarred:
         viewModel.exquisiteCorpse.history.filter = .starred
       default:
@@ -428,9 +433,9 @@
       }
     }
 
-    /// Alex's legs, saved on the phone after a try that did not get through.
-    private func queueLegs(on game: ExquisiteCorpseViewModel) async {
-      let payload = ExquisiteCorpseDeveloperFixture.queuedLegs()
+    /// Alex's feet, saved on the phone after a try that did not get through.
+    private func queueFeet(on game: ExquisiteCorpseViewModel) async {
+      let payload = ExquisiteCorpseDeveloperFixture.queuedFeet()
       guard let data = try? JSONEncoder().encode(payload) else { return }
       let store = game.dependencies.pendingOperationStore
       let operation = SyncClientOperation(

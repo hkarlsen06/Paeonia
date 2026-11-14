@@ -2,7 +2,7 @@ import Observation
 import PencilKit
 import QuartzCore
 
-/// Plays the strokes of the three parts of one figure. Each part has its own
+/// Plays the strokes of the four parts of one figure. Each part has its own
 /// `GameReplayTimeline` and `GameReplayClock`. A part that has not
 /// started shows nothing, the part that plays shows the strokes drawn so far, and
 /// a part that finished shows all of them.
@@ -129,7 +129,7 @@ final class ExquisiteCorpseFigurePlayer {
         generation += 1
     }
 
-    /// Plays the head, the body and the legs one after the other, with no folds.
+    /// Plays the head, the body, the legs and the feet one after the other, with no folds.
     /// For Reduce Motion and the "Play again" actions.
     func playInSequence() {
         reset()

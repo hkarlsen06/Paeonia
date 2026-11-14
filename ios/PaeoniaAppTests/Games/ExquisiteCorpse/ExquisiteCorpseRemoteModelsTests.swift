@@ -44,19 +44,19 @@ struct ExquisiteCorpseRemoteModelsTests {
         {
           "id": "88888888-8888-4888-8888-888888888888",
           "number": 2,
-          "starter_user_id": "11111111-1111-4111-8111-111111111111",
+          "starter_user_id": "22222222-2222-4222-8222-222222222222",
           "created_at": "2026-10-12T09:00:00.000Z",
           "finished_at": "2026-10-12T09:30:00.000Z",
           "my_reveal_seen_at": "2026-10-12T10:00:00Z",
           "parts": [
             {
               "id": "99999999-9999-4999-8999-999999999999",
-              "part_index": 2,
+              "part_index": 3,
               "drawer_user_id": "11111111-1111-4111-8111-111111111111",
               "created_at": "2026-10-12T09:30:00.000Z",
               "strip_media_asset_id": null,
               "drawing_media_asset_id": "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
-              "idea": { "id": "legs-frog-legs", "text": "frog legs" }
+              "idea": { "id": "feet-duck-feet", "text": "duck feet" }
             }
           ]
         }
@@ -94,10 +94,10 @@ struct ExquisiteCorpseRemoteModelsTests {
         let finished = try #require(state.recentFigures.first)
         #expect(finished.isFinished)
         #expect(finished.myRevealSeenAt != nil)
-        let legs = try #require(finished.part(at: 2))
-        #expect(legs.kind == .legs)
-        #expect(legs.stripMediaAssetID == nil)
-        #expect(legs.idea == RemoteExquisiteCorpseIdea(id: "legs-frog-legs", text: "frog legs"))
+        let feet = try #require(finished.part(at: 3))
+        #expect(feet.kind == .feet)
+        #expect(feet.stripMediaAssetID == nil)
+        #expect(feet.idea == RemoteExquisiteCorpseIdea(id: "feet-duck-feet", text: "duck feet"))
 
         #expect(state.ideas.map(\.text) == ["a teapot", "a robot"])
     }

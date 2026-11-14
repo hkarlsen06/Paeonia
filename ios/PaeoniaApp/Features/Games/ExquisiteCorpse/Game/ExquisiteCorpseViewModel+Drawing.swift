@@ -79,8 +79,10 @@ extension ExquisiteCorpseViewModel {
     private func ownRecentPartIDs(ownerUserID: UUID) -> [UUID] {
         guard let game = state?.game, game.figureNumber >= 1 else { return [] }
         return (1...game.figureNumber).flatMap { number in
-            (0...2).map { index in
-                ExquisiteCorpseIDs.part(gameID: game.id, figureNumber: number, partIndex: index, drawerID: ownerUserID)
+            ExquisiteCorpsePartKind.allCases.map { kind in
+                ExquisiteCorpseIDs.part(
+                    gameID: game.id, figureNumber: number, partIndex: kind.rawValue, drawerID: ownerUserID
+                )
             }
         }
     }

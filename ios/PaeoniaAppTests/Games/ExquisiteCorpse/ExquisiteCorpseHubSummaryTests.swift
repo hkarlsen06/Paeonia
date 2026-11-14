@@ -4,7 +4,7 @@ import Testing
 
 /// What the Games hub says about Exquisite corpse, and whether the game waits for
 /// this person. The viewer is `me`. Figure 1 starts with the partner, who draws
-/// its head and legs, and figure 2 starts with `me`.
+/// its head and legs. `me` draws its body and feet and starts figure 2.
 @MainActor
 struct ExquisiteCorpseHubSummaryTests {
     private typealias Fixture = ExquisiteCorpseFixture
@@ -29,7 +29,8 @@ struct ExquisiteCorpseHubSummaryTests {
         #expect(summary(Fixture.myHeadTurn()).status == .yourTurn(.head))
         #expect(summary(Fixture.myBodyTurn()).status == .yourTurn(.body))
         #expect(summary(Fixture.myLegsTurn()).status == .yourTurn(.legs))
-        for state in [Fixture.myHeadTurn(), Fixture.myBodyTurn(), Fixture.myLegsTurn()] {
+        #expect(summary(Fixture.myFeetTurn()).status == .yourTurn(.feet))
+        for state in [Fixture.myHeadTurn(), Fixture.myBodyTurn(), Fixture.myLegsTurn(), Fixture.myFeetTurn()] {
             #expect(summary(state).status.isYourTurn)
         }
     }
@@ -42,7 +43,12 @@ struct ExquisiteCorpseHubSummaryTests {
             current: Fixture.figure(1, parts: 2)
         )
         #expect(summary(legs).status == .partnerDrawing(.legs))
-        for state in [Fixture.partnerHeadTurn(), Fixture.partnerBodyTurn(), legs] {
+        let feet = Fixture.state(
+            game: Fixture.game(figure: 2, partIndex: 3, turn: Fixture.partner),
+            current: Fixture.figure(2, parts: 3)
+        )
+        #expect(summary(feet).status == .partnerDrawing(.feet))
+        for state in [Fixture.partnerHeadTurn(), Fixture.partnerBodyTurn(), legs, feet] {
             #expect(!summary(state).status.isYourTurn)
         }
     }
@@ -86,12 +92,12 @@ struct ExquisiteCorpseHubSummaryTests {
         #expect(!result.status.isYourTurn)
     }
 
-    @Test func legsSavedOnThePhoneWaitForTheCreatureToFinish() {
-        let legs = Fixture.pending(parts: [Fixture.queuedPart(figure: 2, partIndex: 2)])
+    @Test func feetSavedOnThePhoneWaitForTheCreatureToFinish() {
+        let feet = Fixture.pending(parts: [Fixture.queuedPart(figure: 1, partIndex: 3)])
 
-        let result = summary(Fixture.myLegsTurn(), pending: legs)
+        let result = summary(Fixture.myFeetTurn(), pending: feet)
 
-        #expect(result.status == .partnerStarting)
+        #expect(result.status == .finishing)
         #expect(!result.status.isYourTurn)
     }
 

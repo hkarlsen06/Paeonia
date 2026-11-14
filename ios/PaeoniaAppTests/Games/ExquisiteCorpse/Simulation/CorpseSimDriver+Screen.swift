@@ -132,7 +132,7 @@ extension CorpseSimDriver {
         }
     }
 
-    /// A reveal shows the three parts as the server holds them.
+    /// A reveal shows the four parts as the server holds them.
     private func checkReveal(_ phone: CorpseSimPhone, _ viewModel: ExquisiteCorpseViewModel) throws {
         guard let figure = viewModel.figure, let content = viewModel.revealContent, content.figureID == figure.id,
               content.isReady

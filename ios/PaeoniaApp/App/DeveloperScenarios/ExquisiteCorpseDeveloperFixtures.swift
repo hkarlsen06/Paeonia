@@ -7,8 +7,8 @@
   /// Robin the even ones, so Alex drew the first head. Every date counts from
   /// `DeveloperScenarioFixture.now`.
   ///
-  /// Every file is one of the preview drawings: a cat's head, a striped sweater
-  /// and chicken legs. `drawing(forAsset:)` finds the drawing for an asset id.
+  /// Every file is one of the preview drawings: a cat's head, a striped sweater,
+  /// thin legs and three-toed feet. `drawing(forAsset:)` finds the drawing for an asset id.
   enum ExquisiteCorpseDeveloperFixture {
     nonisolated static let gameID = UUID(uuidString: "aaaaaaaa-0000-4000-8000-0000000000c1") ?? UUID()
     nonisolated static let me = DeveloperGamesFixture.me
@@ -21,10 +21,11 @@
       number.isMultiple(of: 2) ? partner : me
     }
 
-    /// The starter draws the head and the legs. The other person draws the body.
+    /// The starter draws the head and the legs. The other person draws the body
+    /// and the feet, and starts the next creature.
     nonisolated static func drawer(ofFigure number: Int, partIndex: Int) -> UUID {
       let starter = starter(ofFigure: number)
-      guard partIndex == ExquisiteCorpsePartKind.body.rawValue else { return starter }
+      guard !partIndex.isMultiple(of: 2) else { return starter }
       return starter == me ? partner : me
     }
 
@@ -67,6 +68,7 @@
       case .head: ExquisiteCorpsePreviewDrawings.head
       case .body: ExquisiteCorpsePreviewDrawings.body
       case .legs: ExquisiteCorpsePreviewDrawings.legs
+      case .feet: ExquisiteCorpsePreviewDrawings.feet
       }
     }
 
@@ -89,18 +91,20 @@
         id: partID(figure: number, partIndex: partIndex),
         partIndex: partIndex,
         drawerUserID: drawer,
-        createdAt: now.addingTimeInterval(-Double(3 - partIndex) * 3_600 - Double(number) * 86_400),
-        stripMediaAssetID: partIndex < ExquisiteCorpsePartKind.legs.rawValue
+        createdAt: now.addingTimeInterval(
+          -Double(ExquisiteCorpsePartKind.allCases.count - partIndex) * 3_600 - Double(number) * 86_400
+        ),
+        stripMediaAssetID: ExquisiteCorpsePartKind(rawValue: partIndex)?.hasStrip == true
           ? assetID(figure: number, partIndex: partIndex, isStrip: true) : nil,
         drawingMediaAssetID: isReadable ? assetID(figure: number, partIndex: partIndex, isStrip: false) : nil,
         idea: isReadable ? idea.map { RemoteExquisiteCorpseIdea(id: "idea-\($0)", text: $0) } : nil
       )
     }
 
-    /// A figure with its first `parts` parts. A finished figure has all three.
+    /// A figure with its first `parts` parts. A finished figure has all four.
     nonisolated static func figure(
       _ number: Int,
-      parts count: Int = 3,
+      parts count: Int = ExquisiteCorpsePartKind.allCases.count,
       ideas: [String?] = [],
       isRevealSeen: Bool = true
     ) -> RemoteExquisiteCorpseFigure {
@@ -171,7 +175,7 @@
       state(
         game: game(figure: 2, partIndex: 1, turn: me, figuresFinished: figuresFinished, version: version),
         current: figure(2, parts: 1),
-        recent: figuresFinished > 0 ? [figure(1, ideas: ["a cat", nil, "chicken legs"])] : [],
+        recent: figuresFinished > 0 ? [figure(1, ideas: ["a cat", nil, "a flamingo", "duck feet"])] : [],
         ideas: ideas
       )
     }
@@ -182,6 +186,17 @@
         game: game(figure: 3, partIndex: 2, turn: me, figuresFinished: 2, version: version),
         current: figure(3, parts: 2),
         recent: [figure(2)],
+        ideas: ideas
+      )
+    }
+
+    /// Robin drew the head and the legs of creature 4, and Alex the body. Alex
+    /// draws the feet, and then starts creature 5.
+    nonisolated static func feetTurn() -> RemoteExquisiteCorpseState {
+      state(
+        game: game(figure: 4, partIndex: 3, turn: me, figuresFinished: 3),
+        current: figure(4, parts: 3),
+        recent: [figure(3)],
         ideas: ideas
       )
     }
@@ -204,12 +219,12 @@
       )
     }
 
-    /// Creature 2 is finished and Alex has not seen it. Alex drew its body, so
-    /// Alex starts creature 3.
+    /// Creature 2 is finished and Alex has not seen it. Alex drew its body and
+    /// its feet, so Alex keeps the turn and starts creature 3.
     nonisolated static func unseenReveal(figuresFinished: Int = 2) -> RemoteExquisiteCorpseState {
       state(
         game: game(figure: 3, partIndex: 0, turn: me, figuresFinished: figuresFinished),
-        recent: [figure(2, ideas: ["a cat", nil, "chicken legs"], isRevealSeen: false), figure(1)]
+        recent: [figure(2, ideas: ["a cat", nil, "a flamingo", "duck feet"], isRevealSeen: false), figure(1)]
       )
     }
 
@@ -221,7 +236,9 @@
     // MARK: History
 
     nonisolated private static let historyIdeas: [[String?]] = [
-      ["a cat", nil, "chicken legs"], [nil, "a sweater", nil], ["a robot", "a teapot", nil],
+      ["a cat", nil, "a flamingo", "duck feet"],
+      [nil, "a sweater", nil, nil],
+      ["a robot", "a teapot", nil, "roller skates"],
     ]
 
     /// Newest first, creature 12 down to creature 1.
@@ -282,12 +299,12 @@
       )
     }
 
-    // MARK: Queued legs
+    // MARK: Queued feet
 
-    /// Alex's legs for creature 3, saved on the phone and not sent. They match the
-    /// next part the server waits for in `legsTurn()`.
+    /// Alex's feet for creature 4, saved on the phone and not sent. They match the
+    /// next part the server waits for in `feetTurn()`.
     @MainActor
-    static func queuedLegs() -> ExquisiteCorpseSubmitPartPayload {
+    static func queuedFeet() -> ExquisiteCorpseSubmitPartPayload {
       func upload(_ data: Data, sequence: Int64) -> ExquisiteCorpseQueuedUpload {
         ExquisiteCorpseQueuedUpload(
           data: data,
@@ -297,11 +314,11 @@
       }
       return ExquisiteCorpseSubmitPartPayload(
         gameID: gameID,
-        figureID: figureID(3),
-        partID: partID(figure: 3, partIndex: ExquisiteCorpsePartKind.legs.rawValue),
-        partIndex: ExquisiteCorpsePartKind.legs.rawValue,
+        figureID: figureID(4),
+        partID: partID(figure: 4, partIndex: ExquisiteCorpsePartKind.feet.rawValue),
+        partIndex: ExquisiteCorpsePartKind.feet.rawValue,
         coupleID: DeveloperScenarioFixture.coupleID,
-        drawing: upload(ExquisiteCorpsePreviewDrawings.legs.dataRepresentation(), sequence: 101),
+        drawing: upload(ExquisiteCorpsePreviewDrawings.feet.dataRepresentation(), sequence: 101),
         strip: nil,
         idea: nil,
         createdAt: now.addingTimeInterval(-120)

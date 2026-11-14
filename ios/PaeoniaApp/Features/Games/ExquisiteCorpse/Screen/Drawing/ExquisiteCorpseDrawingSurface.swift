@@ -7,7 +7,7 @@ nonisolated enum ExquisiteCorpseHandoff: Hashable {
     case strip
 }
 
-/// The drawer's surface: the strip of the part above (body and legs), then the
+/// The drawer's surface: the strip of the part above (body, legs and feet), then the
 /// canvas, on one rounded surface. The canvas is square-cornered inside it, so a
 /// line that ends at the bottom edge of the strip continues at the top edge of the
 /// canvas, also in the corners. `GameDrawingCanvas` rounds its own corners, which
@@ -38,6 +38,10 @@ struct ExquisiteCorpseDrawingSurface: View {
             Color.clear.frame(width: side, height: side)
         }
         .frame(width: side)
+        // The canvas is transparent, so the guide shows behind the ink.
+        .overlay(alignment: .bottom) {
+            ExquisiteCorpseBodyGuide(part: part, side: side)
+        }
         .overlay(alignment: .bottom) {
             canvas
         }

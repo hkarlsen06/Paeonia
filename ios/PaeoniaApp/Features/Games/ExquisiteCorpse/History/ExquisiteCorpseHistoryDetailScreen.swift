@@ -141,7 +141,7 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
     // MARK: - Figure
 
     /// The side of one part: as wide as the space allows, and no taller than a
-    /// third of the height left under the text, so the whole creature is in view.
+    /// quarter of the height left under the text, so the whole creature is in view.
     /// A tall text block (large text sizes) makes the screen scroll instead.
     private func side(in size: CGSize) -> CGFloat {
         let width = size.width - PaeoniaSpacing.screenHorizontalPadding * 2

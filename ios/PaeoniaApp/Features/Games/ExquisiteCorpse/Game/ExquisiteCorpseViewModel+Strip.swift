@@ -1,7 +1,7 @@
 import PencilKit
 import SwiftUI
 
-// The strip above the canvas of a body or legs drawer: the bottom 12% of the
+// The strip above the canvas of a body, legs or feet drawer: the bottom 12% of the
 // partner's part before. The strip file is the real thing. If the partner drew
 // the part while this phone watched, the live strip fills in until the file has
 // loaded. The two are the same drawing.

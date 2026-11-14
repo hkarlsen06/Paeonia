@@ -71,27 +71,29 @@ struct ExquisiteCorpseWatchView: View {
     }
 
     /// "Robin is drawing the head", and "Robin finished the head" after Done. The
-    /// legs have no line of their own for Done, because the reveal opens next.
+    /// feet have no line of their own for Done, because the reveal opens next.
     private var title: LocalizedStringResource {
         let name = viewModel.partnerName
         if viewModel.partnerFinishedPart != nil {
             switch watchedPart {
             case .head: return .exquisiteCorpseWaitFinishedHead(name)
             case .body: return .exquisiteCorpseWaitFinishedBody(name)
-            case .legs: return .exquisiteCorpseWaitOpening
+            case .legs: return .exquisiteCorpseWaitFinishedLegs(name)
+            case .feet: return .exquisiteCorpseWaitOpening
             }
         }
         switch watchedPart {
         case .head: return .exquisiteCorpseWaitDrawingNowHead(name)
         case .body: return .exquisiteCorpseWaitDrawingNowBody(name)
         case .legs: return .exquisiteCorpseWaitDrawingNowLegs(name)
+        case .feet: return .exquisiteCorpseWaitDrawingNowFeet(name)
         }
     }
 
-    /// Nothing follows the legs, so there are no lines to connect to, and the
+    /// Nothing follows the feet, so there are no lines to connect to, and the
     /// whole creature opens next.
     private var hint: some View {
-        Text(watchedPart.next == nil ? .exquisiteCorpseWaitHintLiveLegs : .exquisiteCorpseWaitHintLive)
+        Text(watchedPart.next == nil ? .exquisiteCorpseWaitHintLiveFeet : .exquisiteCorpseWaitHintLive)
             .font(PaeoniaTypography.caption)
             .foregroundStyle(.paeoniaTextSecondary)
             .multilineTextAlignment(.center)

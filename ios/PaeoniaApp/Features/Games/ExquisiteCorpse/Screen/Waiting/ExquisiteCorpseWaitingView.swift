@@ -5,7 +5,7 @@ import SwiftUI
 /// - `.waiting`: the partner draws out of sight, or is not here.
 /// - `.watching`: the partner draws now, and this person sees the folded paper
 ///   (`ExquisiteCorpseWatchView`).
-/// - `.waitingToSync`: this person's legs are queued, and the reveal opens once
+/// - `.waitingToSync`: this person's feet are queued, and the reveal opens once
 ///   the server has them.
 struct ExquisiteCorpseWaitingView: View {
     let viewModel: ExquisiteCorpseViewModel
@@ -54,8 +54,8 @@ struct ExquisiteCorpseAwayView: View {
                         Text(.exquisiteCorpseWaitHint)
                             .font(PaeoniaTypography.body)
                             .foregroundStyle(.paeoniaTextSecondary)
-                        if showsLegsNextHint {
-                            Text(.exquisiteCorpseWaitHintLegsNext)
+                        if let nextPartHint {
+                            Text(nextPartHint)
                                 .font(PaeoniaTypography.body)
                                 .foregroundStyle(.paeoniaTextSecondary)
                         }
@@ -96,18 +96,26 @@ struct ExquisiteCorpseAwayView: View {
             case .head: return .exquisiteCorpseWaitDrawingNowHead(name)
             case .body: return .exquisiteCorpseWaitDrawingNowBody(name)
             case .legs: return .exquisiteCorpseWaitDrawingNowLegs(name)
+            case .feet: return .exquisiteCorpseWaitDrawingNowFeet(name)
             }
         }
         switch part {
         case .head: return .exquisiteCorpseWaitWaitingHead(name)
         case .body: return .exquisiteCorpseWaitWaitingBody(name)
         case .legs: return .exquisiteCorpseWaitWaitingLegs(name)
+        case .feet: return .exquisiteCorpseWaitWaitingFeet(name)
         }
     }
 
-    /// In the first figure the head drawer is also told the legs are theirs.
-    private var showsLegsNextHint: Bool {
-        figureNumber == 1 && part == .body
+    /// In the first figure each partner is also told which part comes back to
+    /// them: the legs to the head drawer, the feet to the body drawer.
+    private var nextPartHint: LocalizedStringResource? {
+        guard figureNumber == 1 else { return nil }
+        switch part {
+        case .body: return .exquisiteCorpseWaitHintLegsNext
+        case .legs: return .exquisiteCorpseWaitHintFeetNext
+        default: return nil
+        }
     }
 
     private var partsDone: Int {
@@ -119,7 +127,7 @@ struct ExquisiteCorpseAwayView: View {
     }
 }
 
-/// This person's legs are queued. The reveal opens once the server has them, and
+/// This person's feet are queued. The reveal opens once the server has them, and
 /// until then the folded figure waits.
 struct ExquisiteCorpseSyncingView: View {
     let viewModel: ExquisiteCorpseViewModel

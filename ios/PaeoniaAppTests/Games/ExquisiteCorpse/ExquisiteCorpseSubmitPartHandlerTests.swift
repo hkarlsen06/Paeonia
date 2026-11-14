@@ -61,10 +61,10 @@ struct ExquisiteCorpseSubmitPartHandlerTests {
         ])
     }
 
-    @Test func theLegsHaveNoStrip() async throws {
-        let legs = Fixture.distinctPart(partIndex: 2)
+    @Test func theFeetHaveNoStrip() async throws {
+        let feet = Fixture.distinctPart(figure: 1, partIndex: 3)
 
-        let result = try await send(legs)
+        let result = try await send(feet)
 
         #expect(result == .succeeded)
         #expect(environment.transfer.uploads.map(\.parent.purpose) == ["exquisite_corpse_drawing"])
@@ -173,7 +173,7 @@ struct ExquisiteCorpseSubmitPartHandlerTests {
     }
 
     @Test func aWrongArgumentThatIsNotTheIdeaKeepsTheIdea() async throws {
-        environment.gateway.setSubmitError(Fixture.refusal("22023", "the legs take no strip"))
+        environment.gateway.setSubmitError(Fixture.refusal("22023", "the feet take no strip"))
         let head = Fixture.distinctPart()
         await environment.cache.saveIdea("idea-a-grandma", partID: head.partID, ownerUserID: Fixture.me)
 

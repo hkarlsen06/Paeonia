@@ -49,9 +49,9 @@ struct ExquisiteCorpseViewModelPhaseTests {
         #expect(env.room.role == .watching)
     }
 
-    @Test func aQueuedLegsStaysDrawingWhileTheRevealWaitsForTheServer() async throws {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myLegsTurn())
-        try await env.queue(Fixture.queuedPart(figure: 2, partIndex: 2))
+    @Test func queuedFeetStayDrawingWhileTheRevealWaitsForTheServer() async throws {
+        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myFeetTurn())
+        try await env.queue(Fixture.queuedPart(figure: 1, partIndex: 3))
         let viewModel = env.viewModel()
         await viewModel.reload()
 
@@ -61,14 +61,14 @@ struct ExquisiteCorpseViewModelPhaseTests {
         #expect(viewModel.revealContent == nil)
     }
 
-    @Test func theLegsDrawerSeesTheRevealOnceTheServerHasTheLegs() async throws {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myLegsTurn())
-        try await env.queue(Fixture.queuedPart(figure: 2, partIndex: 2))
+    @Test func theFeetDrawerSeesTheRevealOnceTheServerHasTheFeet() async throws {
+        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myFeetTurn())
+        try await env.queue(Fixture.queuedPart(figure: 1, partIndex: 3))
         let viewModel = env.viewModel()
         await viewModel.reload()
         #expect(viewModel.phase == .waitingToSync)
 
-        let finished = Fixture.unseenReveal(figure: 2)
+        let finished = Fixture.unseenReveal(figure: 1)
         env.seedDrawings(of: finished.recentFigures[0])
         let queued = try #require(await env.queued(.exquisiteCorpseSubmitPart).first)
         try await env.pending.markSucceeded(clientOperationID: queued.operation.id, at: Fixture.now)
@@ -79,6 +79,8 @@ struct ExquisiteCorpseViewModelPhaseTests {
         #expect(env.room.role == .result)
         let ready = await waitUntil { viewModel.revealContent?.isReady == true }
         #expect(ready)
+        // The feet drawer keeps the turn and starts the next figure.
+        #expect(viewModel.revealContent?.nextIsMine == true)
     }
 
     @Test func messagesAboutAnotherPartAreIgnored() async {

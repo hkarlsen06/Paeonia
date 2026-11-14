@@ -11143,6 +11143,24 @@
         }
       }
     },
+    "exquisiteCorpse.draw.feet" : {
+      "comment" : "Instruction on the drawing screen when the player draws the feet of the creature, the last of its four parts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw the feet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn føttene"
+          }
+        }
+      }
+    },
     "exquisiteCorpse.draw.firstHint" : {
       "comment" : "One line of teaching under the instruction on the very first head. %@ is the partner's name. The partner draws the body next and only sees the bottom edge of this head.",
       "extractionState" : "manual",
@@ -11180,7 +11198,7 @@
       }
     },
     "exquisiteCorpse.draw.head" : {
-      "comment" : "Instruction on the drawing screen when the player draws the head of the creature. A creature has a head, a body and legs.",
+      "comment" : "Instruction on the drawing screen when the player draws the head of the creature. A creature has a head, a body, legs and feet.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11301,24 +11319,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skapning %1$lld, av deg og %2$@"
-          }
-        }
-      }
-    },
-    "exquisiteCorpse.history.cell.caption" : {
-      "comment" : "Line under a creature in the grid. %1$lld is its number and %2$@ is a short date such as Oct 12.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Creature %1$lld · %2$@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skapning %1$lld · %2$@"
           }
         }
       }
@@ -11641,6 +11641,24 @@
         }
       }
     },
+    "exquisiteCorpse.hub.status.finishing" : {
+      "comment" : "Status line on the Games hub card when the player drew the feet, the last part, and the phone has not sent them yet. The whole creature opens once they are sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your creature is almost ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skapningen deres er nesten klar"
+          }
+        }
+      }
+    },
     "exquisiteCorpse.hub.status.notStarted" : {
       "comment" : "Status line on the Games hub card before the couple has drawn a creature together.",
       "extractionState" : "manual",
@@ -11673,6 +11691,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ tegner kroppen"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.hub.status.partnerDrawing.feet" : {
+      "comment" : "Status line on the Games hub card while the partner draws the feet. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is drawing the feet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegner føttene"
           }
         }
       }
@@ -11745,6 +11781,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Din tur: tegn kroppen"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.hub.status.yourTurn.feet" : {
+      "comment" : "Status line on the Games hub card when it is the player's turn to draw the feet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn: draw the feet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur: tegn føttene"
           }
         }
       }
@@ -11929,6 +11983,24 @@
         }
       }
     },
+    "exquisiteCorpse.reveal.credit.feet" : {
+      "comment" : "Credit line that says who drew the feet. %@ is the partner's name, or the word for you.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feet by %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Føtter av %@"
+          }
+        }
+      }
+    },
     "exquisiteCorpse.reveal.credit.head" : {
       "comment" : "Credit line that says who drew the head. %@ is the partner's name, or the word for you.",
       "extractionState" : "manual",
@@ -12051,6 +12123,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kropp"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.bodyAndFeet" : {
+      "comment" : "Compact combined body part credit beside the avatar of the person who drew both.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Body and feet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kropp og føtter"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.reveal.parts.feet" : {
+      "comment" : "Compact body part credit beside its drawer avatar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Føtter"
           }
         }
       }
@@ -12217,6 +12325,24 @@
         }
       }
     },
+    "exquisiteCorpse.wait.drawingNow.feet" : {
+      "comment" : "Title on the waiting screen while the partner is drawing the feet right now. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is drawing the feet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegner føttene"
+          }
+        }
+      }
+    },
     "exquisiteCorpse.wait.drawingNow.head" : {
       "comment" : "Title on the waiting screen while the partner is drawing the head right now. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -12289,6 +12415,24 @@
         }
       }
     },
+    "exquisiteCorpse.wait.finished.legs" : {
+      "comment" : "Line on the watch screen when the partner taps Done on the legs while the player watches. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ finished the legs"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er ferdig med beina"
+          }
+        }
+      }
+    },
     "exquisiteCorpse.wait.hint" : {
       "comment" : "Hint under the waiting title. The player gets a push notification when it is their turn.",
       "extractionState" : "manual",
@@ -12303,6 +12447,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi sier fra når det er din tur."
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.wait.hintFeetNext" : {
+      "comment" : "Extra hint on the waiting screen for the person who drew the body. They also draw the feet after the partner draws the legs.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll draw the feet after that."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du tegner føttene etter det."
           }
         }
       }
@@ -12343,20 +12505,20 @@
         }
       }
     },
-    "exquisiteCorpse.wait.hintLiveLegs" : {
-      "comment" : "Exquisite corpse: hint under the folded paper while the partner draws the legs live. The whole figure opens right after.",
+    "exquisiteCorpse.wait.hintLiveFeet" : {
+      "comment" : "Exquisite corpse: hint under the folded paper while the partner draws the feet live. The whole figure opens right after.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You'll both see the whole creature when the legs are done."
+            "value" : "You'll both see the whole creature when the feet are done."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dere ser hele skapningen når beina er tegnet."
+            "value" : "Dere ser hele skapningen når føttene er tegnet."
           }
         }
       }
@@ -12429,6 +12591,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Venter på at %@ skal tegne kroppen"
+          }
+        }
+      }
+    },
+    "exquisiteCorpse.wait.waiting.feet" : {
+      "comment" : "Title on the waiting screen when it is the partner's turn to draw the feet and they are not drawing right now. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@ to draw the feet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på at %@ skal tegne føttene"
           }
         }
       }

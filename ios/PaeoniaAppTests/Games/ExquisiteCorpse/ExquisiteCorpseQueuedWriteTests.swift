@@ -45,7 +45,7 @@ struct ExquisiteCorpseQueuedWriteTests {
     // MARK: Reveal seen
 
     @Test func theMarkWaitsForThePartQueuedForTheSameFigure() async throws {
-        try await environment.enqueue(.exquisiteCorpseSubmitPart, Fixture.queuedPart(figure: 1, partIndex: 2))
+        try await environment.enqueue(.exquisiteCorpseSubmitPart, Fixture.queuedPart(figure: 1, partIndex: 3))
 
         let result = try await environment.revealSeenHandler().send(
             try corpseSnapshot(.exquisiteCorpseRevealSeen, revealSeen(figure: 1), operation: makeOperation(2)),

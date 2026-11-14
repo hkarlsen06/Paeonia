@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The figure of the reveal: three squares stacked head, body, legs, each under a
+/// The figure of the reveal: four squares stacked head, body, legs, feet, each under a
 /// flap of folded paper. A flap swings up around its top edge to open its fold.
 ///
 /// The figure is laid out once at `camera.layoutSide` per part. The camera scales

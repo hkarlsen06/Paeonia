@@ -4,7 +4,7 @@ import Testing
 
 /// The phase a state puts the person in, from the server's rows and the parts
 /// saved on the phone. The viewer is `me`. Figure 1 starts with the partner,
-/// who draws its head and legs, and figure 2 starts with `me`.
+/// who draws its head and legs. `me` draws its body and feet and starts figure 2.
 struct ExquisiteCorpsePhaseTests {
     private typealias Fixture = ExquisiteCorpseFixture
     private typealias Resolution = ExquisiteCorpseResolution
@@ -68,8 +68,8 @@ struct ExquisiteCorpsePhaseTests {
 
     // MARK: Reveal
 
-    @Test func theLegsDrawerSeesTheRevealOnceTheServerHasTheFigureThenWaitsForTheNextHead() {
-        // Figure 2 started with me, so I drew its legs. Figure 3 starts with the partner.
+    @Test func theStarterSeesTheRevealOnceTheServerHasTheFigureThenWaitsForTheNextHead() {
+        // Figure 2 started with me. The partner drew its feet, so the partner starts figure 3.
         let finished = Fixture.figure(2)
         let game = Fixture.game(figure: 3, partIndex: 0, turn: Fixture.partner)
         let state = Fixture.state(game: game, recent: [finished])
@@ -87,8 +87,8 @@ struct ExquisiteCorpsePhaseTests {
         #expect(afterContinue.figure == nil)
     }
 
-    @Test func thePartnerSeesTheRevealBeforeDrawingTheNextHead() {
-        // Figure 1 started with the partner. I drew its body, so I start figure 2.
+    @Test func theFeetDrawerSeesTheRevealBeforeDrawingTheNextHead() {
+        // Figure 1 started with the partner. I drew its feet, so I keep the turn and start figure 2.
         let finished = Fixture.figure(1)
         let state = Fixture.state(game: Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me), recent: [finished])
 
@@ -126,20 +126,25 @@ struct ExquisiteCorpsePhaseTests {
 // MARK: - Attention
 
 extension ExquisiteCorpsePhaseTests {
-    /// The partner's legs hand me the next head, named by the part, also while the
-    /// figure's reveal waits. My own queued head ends it. The game's very first head is
-    /// the starter's own, so it is no handover.
+    /// The partner's legs hand me the feet, named by the part. My own queued feet end it.
+    /// A head follows my own feet, or starts the game, so it is no handover, also while
+    /// the finished figure's reveal waits.
     @Test func thePartnersPartMakesItMyTurnUntilMyPartIsIn() {
         func attention(_ state: RemoteExquisiteCorpseState, pending: ExquisiteCorpsePendingWork = .none) -> String? {
             ExquisiteCorpseResolver.attention(resolution: resolve(state, pending: pending), game: state.game).turn
         }
-        let myHead = Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me)
-        let state = Fixture.state(game: myHead, recent: [Fixture.figure(1)])
-
-        let turn = attention(state)
+        let feet = Fixture.myFeetTurn()
+        let turn = attention(feet)
         #expect(turn != nil)
-        #expect(attention(state, pending: Fixture.pending(revealsSeen: [Fixture.figureID(1)])) == turn)
-        #expect(attention(state, pending: Fixture.pending(parts: [Fixture.queuedPart(figure: 2, partIndex: 0)])) == nil)
+        #expect(attention(Fixture.myBodyTurn()) != nil)
+        #expect(attention(feet, pending: Fixture.pending(parts: [Fixture.queuedPart(figure: 1, partIndex: 3)])) == nil)
+
+        let headAfterMyFeet = Fixture.state(
+            game: Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me),
+            recent: [Fixture.figure(1)]
+        )
+        #expect(attention(headAfterMyFeet) == nil)
+        #expect(attention(headAfterMyFeet, pending: Fixture.pending(revealsSeen: [Fixture.figureID(1)])) == nil)
         #expect(attention(Fixture.state(game: Fixture.game(figure: 1, partIndex: 0, turn: Fixture.me))) == nil)
     }
 }

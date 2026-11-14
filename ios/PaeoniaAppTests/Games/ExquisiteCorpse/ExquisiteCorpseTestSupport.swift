@@ -3,7 +3,8 @@ import Foundation
 
 /// Deterministic Exquisite corpse state for the tests. The viewer is `me`. Figure
 /// 1 is started by the partner, so the partner draws its head and legs and `me`
-/// draws the body. Figure 2 is started by `me`, and so on.
+/// draws the body and the feet. `me` keeps the turn after the feet and starts
+/// figure 2, and so on.
 enum ExquisiteCorpseFixture {
     static let me = UUID(uuidString: "11111111-1111-4111-8111-111111111111") ?? UUID()
     static let partner = UUID(uuidString: "22222222-2222-4222-8222-222222222222") ?? UUID()
@@ -22,10 +23,10 @@ enum ExquisiteCorpseFixture {
         number.isMultiple(of: 2) ? me : partner
     }
 
-    /// The head and the legs belong to the starter and the body to the other one.
+    /// The head and the legs belong to the starter, and the body and the feet to the other one.
     static func drawer(ofFigure number: Int, partIndex: Int) -> UUID {
         let starter = starter(ofFigure: number)
-        return partIndex == 1 ? (starter == me ? partner : me) : starter
+        return partIndex.isMultiple(of: 2) ? starter : (starter == me ? partner : me)
     }
 
     static func partID(figure number: Int, partIndex: Int) -> UUID {
@@ -51,7 +52,7 @@ enum ExquisiteCorpseFixture {
             partIndex: index,
             drawerUserID: drawer(ofFigure: number, partIndex: index),
             createdAt: now.addingTimeInterval(Double(index)),
-            stripMediaAssetID: index < 2 ? assetID(figure: number, index: index, isStrip: true) : nil,
+            stripMediaAssetID: index < 3 ? assetID(figure: number, index: index, isStrip: true) : nil,
             drawingMediaAssetID: assetID(figure: number, index: index, isStrip: false),
             idea: idea
         )
@@ -63,10 +64,10 @@ enum ExquisiteCorpseFixture {
         return UUID(uuid: (0xA5, seed, 0, 0, 0, 0, 0x40, 0, 0x80, 0, 0, 0, 0, 0, 0, seed))
     }
 
-    /// A figure with its first `parts` parts. A finished figure has all three.
+    /// A figure with its first `parts` parts. A finished figure has all four.
     static func figure(
         _ number: Int,
-        parts: Int = 3,
+        parts: Int = 4,
         revealSeen: Bool = false
     ) -> RemoteExquisiteCorpseFigure {
         RemoteExquisiteCorpseFigure(
@@ -74,7 +75,7 @@ enum ExquisiteCorpseFixture {
             number: number,
             starterUserID: starter(ofFigure: number),
             createdAt: now,
-            finishedAt: parts == 3 ? now.addingTimeInterval(3) : nil,
+            finishedAt: parts == 4 ? now.addingTimeInterval(4) : nil,
             myRevealSeenAt: revealSeen ? now.addingTimeInterval(10) : nil,
             parts: (0..<parts).map { part(figure: number, index: $0) }
         )
@@ -134,7 +135,7 @@ enum ExquisiteCorpseFixture {
             partIndex: partIndex,
             coupleID: couple,
             drawing: upload(),
-            strip: partIndex < 2 ? upload() : nil,
+            strip: partIndex < 3 ? upload() : nil,
             idea: idea,
             createdAt: now.addingTimeInterval(100)
         )

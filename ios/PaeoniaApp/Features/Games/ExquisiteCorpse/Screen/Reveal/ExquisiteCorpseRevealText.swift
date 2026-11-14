@@ -90,20 +90,29 @@ struct ExquisiteCorpseRevealCredits: View {
         let label: LocalizedStringResource
     }
 
+    /// One credit per drawer, such as "Head and legs" and "Body and feet". A
+    /// drawer whose parts have no combined label gets one credit per part.
     private var credits: [Credit] {
-        let head = parts.first { $0.kind == .head }
-        let legs = parts.first { $0.kind == .legs }
-        let combinesHeadAndLegs = head != nil && legs != nil && head?.drawerIsMe == legs?.drawerIsMe
-        return parts.compactMap { part in
-            if combinesHeadAndLegs, part.kind == .legs { return nil }
-            if combinesHeadAndLegs, part.kind == .head {
-                return Credit(
-                    first: part,
-                    label: .exquisiteCorpseRevealPartsHeadAndLegs
-                )
+        var byDrawer: [[ExquisiteCorpseRevealContent.Part]] = []
+        for part in parts {
+            if let index = byDrawer.firstIndex(where: { $0[0].drawerIsMe == part.drawerIsMe }) {
+                byDrawer[index].append(part)
+            } else {
+                byDrawer.append([part])
             }
-            return Credit(first: part, label: partLabel(part.kind))
         }
+        return byDrawer.flatMap { drawn -> [Credit] in
+            if let label = Self.combinedLabel(drawn.map(\.kind)) {
+                return [Credit(first: drawn[0], label: label)]
+            }
+            return drawn.map { Credit(first: $0, label: partLabel($0.kind)) }
+        }
+    }
+
+    private static func combinedLabel(_ kinds: [ExquisiteCorpsePartKind]) -> LocalizedStringResource? {
+        if kinds == [.head, .legs] { return .exquisiteCorpseRevealPartsHeadAndLegs }
+        if kinds == [.body, .feet] { return .exquisiteCorpseRevealPartsBodyAndFeet }
+        return nil
     }
 
     private func partLabel(_ kind: ExquisiteCorpsePartKind) -> LocalizedStringResource {
@@ -111,6 +120,7 @@ struct ExquisiteCorpseRevealCredits: View {
         case .head: .exquisiteCorpseRevealPartsHead
         case .body: .exquisiteCorpseRevealPartsBody
         case .legs: .exquisiteCorpseRevealPartsLegs
+        case .feet: .exquisiteCorpseRevealPartsFeet
         }
     }
 }

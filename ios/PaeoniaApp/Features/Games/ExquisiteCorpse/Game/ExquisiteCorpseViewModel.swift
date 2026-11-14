@@ -50,7 +50,7 @@ final class ExquisiteCorpseViewModel {
     var idea: RemoteExquisiteCorpseIdea?
     /// The server dealt ideas for this part, so the chip can come.
     var hasIdeas = false
-    /// The strip of the part above, for a body or legs drawer. It is the file once
+    /// The strip of the part above, for a body, legs or feet drawer. It is the file once
     /// that has loaded, and the live strip from before until then.
     var strip: PKDrawing?
     var isLoadingStrip = false

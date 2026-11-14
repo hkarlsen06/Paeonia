@@ -65,6 +65,7 @@ struct ExquisiteCorpseScreen: View {
         case .head: return .exquisiteCorpseDrawHead
         case .body: return .exquisiteCorpseDrawBody
         case .legs: return .exquisiteCorpseDrawLegs
+        case .feet: return .exquisiteCorpseDrawFeet
         }
     }
 

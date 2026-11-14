@@ -7,9 +7,9 @@
     static let exquisiteCorpse: [DeveloperScenario] = [
       exquisiteCorpseHubYourTurn, exquisiteCorpseHubPartnerDrawing, exquisiteCorpseHubReveal,
       exquisiteCorpseHubNotStarted, exquisiteCorpseDrawHead, exquisiteCorpseDrawBody, exquisiteCorpseDrawLegs,
-      exquisiteCorpseWaiting, exquisiteCorpseWatching, exquisiteCorpseHandoff, exquisiteCorpseWaitingToSync,
-      exquisiteCorpseReveal, exquisiteCorpseRevealLoading, exquisiteCorpseHistory, exquisiteCorpseHistoryEmpty,
-      exquisiteCorpseHistoryStarred, exquisiteCorpseHistoryDetail,
+      exquisiteCorpseDrawFeet, exquisiteCorpseWaiting, exquisiteCorpseWatching, exquisiteCorpseHandoff,
+      exquisiteCorpseWaitingToSync, exquisiteCorpseReveal, exquisiteCorpseRevealLoading, exquisiteCorpseHistory,
+      exquisiteCorpseHistoryEmpty, exquisiteCorpseHistoryStarred, exquisiteCorpseHistoryDetail,
     ]
 
     static let exquisiteCorpseHubYourTurn = exquisiteCorpseHub(
@@ -40,6 +40,10 @@
       "corpse-draw-legs", "Exquisite corpse · drawing the legs",
       "The legs with the bottom of Robin's body above them and an idea chip"
     )
+    static let exquisiteCorpseDrawFeet = exquisiteCorpseScreen(
+      "corpse-draw-feet", "Exquisite corpse · drawing the feet",
+      "The last part, with the bottom of Robin's legs above it and no fold line"
+    )
     static let exquisiteCorpseWaiting = exquisiteCorpseScreen(
       "corpse-waiting", "Exquisite corpse · waiting for Robin",
       "Robin is not in the game: the progress paper and the invite button"
@@ -53,8 +57,8 @@
       "Watch Robin finish the body, then the strip slides into your canvas for the legs"
     )
     static let exquisiteCorpseWaitingToSync = exquisiteCorpseScreen(
-      "corpse-waiting-to-sync", "Exquisite corpse · legs saved offline",
-      "Your legs are saved on the phone and not sent yet"
+      "corpse-waiting-to-sync", "Exquisite corpse · feet saved offline",
+      "Your feet are saved on the phone and not sent yet"
     )
     static let exquisiteCorpseReveal = exquisiteCorpseScreen(
       "corpse-reveal", "Exquisite corpse · reveal", "A finished creature unfolds part by part, with the credits"

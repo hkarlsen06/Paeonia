@@ -55,10 +55,10 @@ struct ExquisiteCorpseQueuedPartTests {
         #expect(figure?.isFinished == false)
     }
 
-    @Test func queuedLegsFinishTheFigureHereAndWaitForTheServer() {
-        let queued = Fixture.queuedPart(figure: 2, partIndex: 2)
-        let current = Fixture.figure(2, parts: 2)
-        let state = Fixture.state(game: Fixture.game(figure: 2, partIndex: 2, turn: Fixture.me), current: current)
+    @Test func queuedFeetFinishTheFigureHereAndWaitForTheServer() {
+        let queued = Fixture.queuedPart(figure: 1, partIndex: 3)
+        let current = Fixture.figure(1, parts: 3)
+        let state = Fixture.state(game: Fixture.game(figure: 1, partIndex: 3, turn: Fixture.me), current: current)
 
         let resolution = resolve(state, pending: Fixture.pending(parts: [queued]))
 
@@ -69,19 +69,19 @@ struct ExquisiteCorpseQueuedPartTests {
         let figure = resolution.figure
         #expect(figure?.isFinished == true)
         #expect(figure?.finishedAt == queued.createdAt)
-        #expect(figure?.parts.map(\.partIndex) == [0, 1, 2])
+        #expect(figure?.parts.map(\.partIndex) == [0, 1, 2, 3])
     }
 
     @Test func aQueuedPartWithTheRevealOfAnEarlierFigureStillWaitingKeepsTheRevealFirst() {
-        let earlier = Fixture.figure(1)
-        let current = Fixture.figure(2, parts: 2)
+        let earlier = Fixture.figure(2)
+        let current = Fixture.figure(3, parts: 3)
         let state = Fixture.state(
-            game: Fixture.game(figure: 2, partIndex: 2, turn: Fixture.me),
+            game: Fixture.game(figure: 3, partIndex: 3, turn: Fixture.me),
             current: current,
             recent: [earlier]
         )
 
-        let resolution = resolve(state, pending: Fixture.pending(parts: [Fixture.queuedPart(figure: 2, partIndex: 2)]))
+        let resolution = resolve(state, pending: Fixture.pending(parts: [Fixture.queuedPart(figure: 3, partIndex: 3)]))
 
         #expect(resolution.phase == .reveal)
         #expect(resolution.figure == earlier)

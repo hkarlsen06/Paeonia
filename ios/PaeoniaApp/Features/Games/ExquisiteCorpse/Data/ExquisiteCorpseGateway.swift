@@ -9,7 +9,7 @@ nonisolated protocol ExquisiteCorpseGateway: Sendable {
     /// One-shot read of what the live feed follows.
     func loadExquisiteCorpse() async throws -> RemoteExquisiteCorpseState
     /// Sends a part whose files are already uploaded. `stripAssetID` is set for the
-    /// head and the body and nil for the legs.
+    /// head, the body and the legs and nil for the feet.
     func submitExquisiteCorpsePart(
         _ payload: ExquisiteCorpseSubmitPartPayload,
         drawingAssetID: UUID,
@@ -94,7 +94,7 @@ nonisolated private struct SubmitPartRequest: Encodable {
     let partID: UUID
     let partIndex: Int
     let drawingAssetID: UUID
-    /// Nil for the legs, so the key is left out.
+    /// Nil for the feet, so the key is left out.
     let stripAssetID: UUID?
     /// Nil when the part has no idea, so the key is left out.
     let ideaID: String?

@@ -7,7 +7,7 @@ import SwiftUI
 /// A soft glow moves behind the paper where the partner's pen is, so the player
 /// feels the drawing happen without seeing it. The strip shows the strokes that
 /// reach the bottom 12%. `pulse` goes up when the partner taps Done, and the paper
-/// gives one soft pulse. The legs leave no strip, so while they are drawn the paper
+/// gives one soft pulse. The feet leave no strip, so while they are drawn the paper
 /// covers the whole square (`showsStrip` false). The square clips nothing, so wrap
 /// it in `GameSquare` for the rounded corners and the border.
 struct ExquisiteCorpseFoldedPaper: View {

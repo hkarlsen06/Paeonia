@@ -3,14 +3,14 @@ import PencilKit
 import Testing
 @testable import PaeoniaApp
 
-/// One creature from "Our creatures": loading its three drawings, the credits, the
+/// One creature from "Our creatures": loading its four drawings, the credits
 /// and the replay.
 @MainActor
 struct ExquisiteCorpseHistoryDetailTests {
     private typealias Fixture = ExquisiteCorpseFixture
 
     private let environment = ExquisiteCorpseTestEnvironment(state: nil)
-    /// Figure 2 starts with `me`, so `me` drew its head and legs and the partner its body.
+    /// Figure 2 starts with `me`, so `me` drew its head and legs and the partner its body and feet.
     private let figure = Fixture.figure(2, revealSeen: true)
 
     private func makeDetail() -> ExquisiteCorpseHistoryDetailViewModel {
@@ -39,6 +39,7 @@ struct ExquisiteCorpseHistoryDetailTests {
         let detail = makeDetail()
         try keep(0)
         try keep(1)
+        try keep(3)
 
         await detail.load(showsAtOnce: false)
         #expect(detail.drawingState == .failed)
@@ -56,6 +57,7 @@ struct ExquisiteCorpseHistoryDetailTests {
         let detail = makeDetail()
         try keep(0)
         try keep(2)
+        try keep(3)
         let partnersBody = try assetID(1)
         environment.transfer.setFile(CorpseDrawings.part(1).dataRepresentation(), for: partnersBody)
 

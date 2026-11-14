@@ -2,7 +2,7 @@
 import SwiftUI
 
 extension ExquisiteCorpseRevealContent {
-    /// Creature 12 for previews. The viewer drew the body, Robin the head and the legs.
+    /// Creature 12 for previews. The viewer drew the body and the feet, Robin the head and the legs.
     /// With `isLoaded` false the drawings are still on their way.
     static func preview(isLoaded: Bool = true, nextIsMine: Bool = true) -> Self {
         let robin = GamePlayer(name: "Robin")
@@ -30,7 +30,14 @@ extension ExquisiteCorpseRevealContent {
                     drawing: isLoaded ? ExquisiteCorpsePreviewDrawings.legs : nil,
                     drawerIsMe: false,
                     drawer: robin,
-                    idea: "frog legs"
+                    idea: "a flamingo"
+                ),
+                Part(
+                    kind: .feet,
+                    drawing: isLoaded ? ExquisiteCorpsePreviewDrawings.feet : nil,
+                    drawerIsMe: true,
+                    drawer: me,
+                    idea: "duck feet"
                 ),
             ],
             partnerName: "Robin",

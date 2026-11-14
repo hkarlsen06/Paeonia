@@ -98,7 +98,8 @@ extension CorpseSimDriver {
         try checkProgress()
     }
 
-    /// Turns strictly alternate, and the parts cycle head, body, legs.
+    /// The parts cycle head, body, legs, feet. The turn passes to the partner after
+    /// every part but the feet, whose drawer keeps it and starts the next figure.
     private func checkPartOrder() throws {
         guard let game = server.game else { return }
         var previous: CorpseSimServer.Part?
@@ -107,10 +108,17 @@ extension CorpseSimDriver {
             previous = part
         }
         if let last = previous {
-            guard game.turnUser == server.partner(of: last.drawer), game.partIndex == (last.index + 1) % 3 else {
+            guard game.turnUser == nextDrawer(after: last), game.partIndex == (last.index + 1) % Self.partCount else {
                 throw fail("the game's turn does not follow the last part")
             }
         }
+    }
+
+    private static let partCount = ExquisiteCorpsePartKind.allCases.count
+    private static let feetIndex = ExquisiteCorpsePartKind.feet.rawValue
+
+    private func nextDrawer(after part: CorpseSimServer.Part) -> UUID {
+        part.index == Self.feetIndex ? part.drawer : server.partner(of: part.drawer)
     }
 
     private func checkPart(
@@ -119,10 +127,11 @@ extension CorpseSimDriver {
         game: CorpseSimServer.Game
     ) throws {
         if let previous {
-            guard previous.drawer != part.drawer else {
-                throw fail("\(name(of: part.drawer)) drew two parts in a row")
+            guard part.drawer == nextDrawer(after: previous) else {
+                let after = "part \(previous.index) of \(name(of: previous.drawer))"
+                throw fail("\(name(of: part.drawer)) drew part \(part.index) after \(after)")
             }
-            guard part.index == (previous.index + 1) % 3 else {
+            guard part.index == (previous.index + 1) % Self.partCount else {
                 throw fail("part \(part.index) follows part \(previous.index)")
             }
         } else {
@@ -138,8 +147,8 @@ extension CorpseSimDriver {
         }
     }
 
-    /// A figure is a head, a body and legs, with the head and the legs by its starter. The next figure
-    /// starts with the previous body drawer.
+    /// A figure is a head, a body, legs and feet, with the head and the legs by its starter and the
+    /// body and the feet by the partner. The next figure starts with the previous feet drawer.
     private func checkFigureShapes() throws {
         guard let game = server.game else { return }
         var nextStarter = game.creator
@@ -151,13 +160,13 @@ extension CorpseSimDriver {
             guard figure.starter == nextStarter else {
                 throw fail("figure \(figure.number) starts with the wrong person")
             }
-            for part in own where (part.drawer == figure.starter) != (part.index != 1) {
+            for part in own where (part.drawer == figure.starter) != part.index.isMultiple(of: 2) {
                 throw fail("part \(part.index) of figure \(figure.number) is by the wrong person")
             }
-            guard (figure.finishedAt != nil) == (own.count == 3) else {
+            guard (figure.finishedAt != nil) == (own.count == Self.partCount) else {
                 throw fail("figure \(figure.number) is finished wrongly")
             }
-            nextStarter = own.first { $0.index == 1 }?.drawer ?? nextStarter
+            nextStarter = own.first { $0.index == Self.feetIndex }?.drawer ?? nextStarter
         }
         guard game.figuresFinished == server.figures.filter({ $0.finishedAt != nil }).count else {
             throw fail("the game counts \(game.figuresFinished) finished figures")
@@ -168,7 +177,7 @@ extension CorpseSimDriver {
     private func checkStrips() throws {
         for part in server.parts {
             guard let stripID = part.stripAssetID else {
-                guard part.index == 2 else { throw fail("part \(part.index) has no strip") }
+                guard part.index == Self.feetIndex else { throw fail("part \(part.index) has no strip") }
                 continue
             }
             guard let full = drawing(of: part.drawingAssetID), let strip = drawing(of: stripID) else {

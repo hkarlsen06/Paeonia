@@ -58,7 +58,7 @@ final class ExquisiteCorpseHistoryDetailViewModel {
 
     // MARK: - Loading
 
-    /// Loads the three drawings and opens the paper once. With `showsAtOnce`
+    /// Loads the four drawings and opens the paper once. With `showsAtOnce`
     /// (Reduce Motion) the finished creature shows and "Play again" replays it.
     func load(showsAtOnce: Bool) async {
         guard drawingState != .ready else { return }
@@ -168,8 +168,7 @@ final class ExquisiteCorpseHistoryDetailViewModel {
             number: figure.number,
             parts: parts,
             partnerName: participants.partnerName,
-            // The partner who drew the body starts the next creature.
-            nextIsMine: figure.starterUserID != participants.currentUserID
+            nextIsMine: figure.startsNextFigure(participants.currentUserID)
         )
     }
 }

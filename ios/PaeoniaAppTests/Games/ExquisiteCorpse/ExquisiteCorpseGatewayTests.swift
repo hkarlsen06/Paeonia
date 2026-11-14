@@ -53,16 +53,16 @@ struct ExquisiteCorpseGatewayTests {
         #expect(args["p_local_created_at"] is String)
     }
 
-    @Test func theLegsLeaveOutTheStripAndAMissingIdea() async throws {
+    @Test func theFeetLeaveOutTheStripAndAMissingIdea() async throws {
         let recorder = CorpseRequestRecorder()
         CorpseStubURLProtocol.handler = { request in
             recorder.record(request)
             return Data(Self.submitAnswer.utf8)
         }
-        let legs = Fixture.queuedPart(figure: 2, partIndex: 2)
+        let feet = Fixture.queuedPart(figure: 1, partIndex: 3)
 
         _ = try await Self.makeGateway().submitExquisiteCorpsePart(
-            legs,
+            feet,
             drawingAssetID: Fixture.drawingAssetID,
             stripAssetID: nil,
             operation: operation
@@ -70,7 +70,7 @@ struct ExquisiteCorpseGatewayTests {
 
         let body = try Self.body(of: #require(recorder.last))
         let args = try #require(body["args"] as? [String: Any])
-        #expect(args["p_part_index"] as? Int == 2)
+        #expect(args["p_part_index"] as? Int == 3)
         #expect(args["p_strip_media_asset_id"] == nil)
         #expect(args["p_idea_id"] == nil)
     }

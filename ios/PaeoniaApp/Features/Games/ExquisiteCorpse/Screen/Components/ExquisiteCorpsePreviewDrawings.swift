@@ -57,14 +57,24 @@ enum ExquisiteCorpsePreviewDrawings {
         return PKDrawing(strokes: strokes)
     }
 
-    /// Thin legs with three-toed feet.
+    /// Thin legs with round knees. They cross the bottom fold.
     static var legs: PKDrawing {
         var strokes: [PKStroke] = []
         for x in legX {
-            strokes.append(stroke([CGPoint(x: x, y: 0), CGPoint(x: x, y: 230)], .paeoniaInkGold))
-            let foot = [CGPoint(x: x - 30, y: 285), CGPoint(x: x, y: 230), CGPoint(x: x + 30, y: 285)]
+            strokes.append(stroke([CGPoint(x: x, y: 0), CGPoint(x: x, y: side)], .paeoniaInkGold))
+            strokes.append(stroke(ellipse(CGPoint(x: x, y: 150), 14, 14), .paeoniaInkLavender))
+        }
+        return PKDrawing(strokes: strokes)
+    }
+
+    /// Three-toed feet at the end of the legs.
+    static var feet: PKDrawing {
+        var strokes: [PKStroke] = []
+        for x in legX {
+            strokes.append(stroke([CGPoint(x: x, y: 0), CGPoint(x: x, y: 200)], .paeoniaInkGold))
+            let foot = [CGPoint(x: x - 35, y: 280), CGPoint(x: x, y: 200), CGPoint(x: x + 35, y: 280)]
             strokes.append(stroke(foot, .paeoniaInkGold))
-            strokes.append(stroke([CGPoint(x: x, y: 230), CGPoint(x: x, y: 290)], .paeoniaInkGold))
+            strokes.append(stroke([CGPoint(x: x, y: 200), CGPoint(x: x, y: 290)], .paeoniaInkGold))
         }
         return PKDrawing(strokes: strokes)
     }

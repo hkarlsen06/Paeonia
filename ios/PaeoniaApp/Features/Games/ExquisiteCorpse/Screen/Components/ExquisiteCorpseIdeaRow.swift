@@ -97,7 +97,7 @@ struct ExquisiteCorpseIdeaRow: View {
 
 #if DEBUG
 private struct ExquisiteCorpseIdeaRowPreview: View {
-    private static let ideas = ["a grandma", "a robot", "a very tired knight", "frog legs"]
+    private static let ideas = ["a grandma", "a robot", "a very tired knight", "duck feet"]
     @State private var index: Int?
 
     var body: some View {

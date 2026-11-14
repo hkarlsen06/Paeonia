@@ -1,7 +1,7 @@
 import PencilKit
 import SwiftUI
 
-// The reveal: getting the three drawings of the finished figure onto the phone,
+// The reveal: getting the four drawings of the finished figure onto the phone,
 // and moving past it.
 //
 // This person's own parts are on the phone already. The submit handler keeps each
@@ -12,7 +12,7 @@ extension ExquisiteCorpseViewModel {
 
     /// Builds the content for the finished figure from the drawings that are on
     /// the phone. Drawings that are still loading are nil, and the reveal waits
-    /// with the folded paper until all three are there.
+    /// with the folded paper until all four are there.
     func updateReveal(_ resolution: ExquisiteCorpseResolution) {
         guard resolution.phase == .reveal, let figure = resolution.figure else {
             if revealFigureID != nil {
@@ -69,8 +69,7 @@ extension ExquisiteCorpseViewModel {
             number: figure.number,
             parts: parts,
             partnerName: partnerName,
-            // The partner who drew the body starts the next figure.
-            nextIsMine: figure.starterUserID != userID,
+            nextIsMine: figure.startsNextFigure(userID),
             startsSettled: lastSettledRevealFigureID == figure.id
         )
         revealContent = content
