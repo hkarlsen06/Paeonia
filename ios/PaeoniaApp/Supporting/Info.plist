@@ -40,7 +40,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Paeonia uses your camera so you can take photos for your answers, messages, and memories.</string>
+	<string>Paeonia uses your camera so you can take photos for your answers, messages, and memories, and so your partner can see you on video calls.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Paeonia uses Face ID to unlock the app when you turn on the app lock.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -48,7 +48,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Paeonia uses your location only when you turn on sharing. Your partner sees your latest location, and on a day your phones are less than 1 km apart, your streak can rest.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Paeonia uses your microphone so you can record voice answers and voice messages for your partner.</string>
+	<string>Paeonia uses your microphone so you can talk to your partner on calls and record voice answers and voice messages.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Paeonia saves a picture to your photo library when you tap Save to Photos.</string>
 	<key>NSSupportsLiveActivities</key>
@@ -56,6 +56,7 @@
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>INSendMessageIntent</string>
+		<string>INStartCallIntent</string>
 	</array>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>Paeonia tells you when your partner answers, sends a message, or takes a turn in a game, and reminds you about the daily question.</string>
@@ -74,7 +75,9 @@
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>audio</string>
 		<string>remote-notification</string>
+		<string>voip</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict>

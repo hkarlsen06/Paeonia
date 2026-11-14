@@ -20,6 +20,8 @@ nonisolated struct PushRegistrationInputs: Sendable {
     let locale: String
     let timeZoneID: String
     let appVersion: String?
+    /// The PushKit token that rings this phone for calls. Only the device channel has one.
+    var voipToken: String?
 }
 
 /// Decides whether a device / widget push-registration RPC needs to be sent.
@@ -62,7 +64,8 @@ nonisolated enum PushRegistrationGate {
             inputs.apnsEnvironment,
             inputs.locale,
             inputs.timeZoneID,
-            inputs.appVersion ?? "-"
+            inputs.appVersion ?? "-",
+            inputs.voipToken ?? "-"
         ].joined(separator: "|")
         let digest = SHA256.hash(data: Data(material.utf8))
         return digest.paeoniaHexString

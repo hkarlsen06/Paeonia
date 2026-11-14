@@ -32,13 +32,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Paeonia uses your camera so you can take photos for your answers, messages, and memories."
+            "value" : "Paeonia uses your camera so you can take photos for your answers, messages, and memories, and so your partner can see you on video calls."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia bruker kameraet ditt så du kan ta bilder til svar, meldinger og minner."
+            "value" : "Paeonia bruker kameraet ditt så du kan ta bilder til svar, meldinger og minner, og så partneren din kan se deg i videosamtaler."
           }
         }
       }
@@ -103,13 +103,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia uses your microphone so you can record voice answers and voice messages for your partner."
+            "value" : "Paeonia uses your microphone so you can talk to your partner on calls and record voice answers and voice messages."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia bruker mikrofonen din så du kan spille inn lydsvar og talemeldinger til partneren din."
+            "value" : "Paeonia bruker mikrofonen din så du kan snakke med partneren din i samtaler og spille inn lydsvar og talemeldinger."
           }
         }
       }

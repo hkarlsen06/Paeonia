@@ -4,9 +4,12 @@ import OSLog
 #endif
 
 /// Registers this device's APNs token so the backend can send the silent push
-/// that wakes the app to sync a partner's new drawing.
+/// that wakes the app to sync a partner's new drawing, and its PushKit token so
+/// the partner's calls ring it.
 nonisolated protocol PushRegistering: Sendable {
     func registerDevice(pushToken: String) async
+    /// PushKit gave this phone a new VoIP token, or took it away (nil).
+    func updateVoIPPushToken(_ token: String?) async
 }
 
 actor ConvexPushRegistrationService: PushRegistering {
@@ -23,6 +26,9 @@ actor ConvexPushRegistrationService: PushRegistering {
     private let client: PaeoniaConvexClient
     private let currentAccountID: @Sendable () async -> String?
     private let fingerprintStore: PushRegistrationFingerprintStore
+    /// The APNs token iOS delivered last in this run. A new VoIP token registers again with it.
+    private var pushToken: String?
+    private var voipPushToken: String?
 
     #if DEBUG
     private let logger = Logger(
@@ -41,7 +47,19 @@ actor ConvexPushRegistrationService: PushRegistering {
         self.fingerprintStore = fingerprintStore
     }
 
+    func updateVoIPPushToken(_ token: String?) async {
+        guard token != voipPushToken else {
+            return
+        }
+        voipPushToken = token
+        // The APNs token usually arrives first. If it has not, its registration sends both.
+        if let pushToken {
+            await registerDevice(pushToken: pushToken)
+        }
+    }
+
     func registerDevice(pushToken: String) async {
+        self.pushToken = pushToken
         // iOS re-delivers the APNs token on every foreground; without an active
         // session there is nobody to register for, so skip rather than send an
         // anonymous request and let a later authenticated activation register.
@@ -67,7 +85,8 @@ actor ConvexPushRegistrationService: PushRegistering {
                     apnsEnvironment: Self.apnsEnvironment,
                     locale: Locale.current.identifier,
                     timeZoneID: TimeZone.current.identifier,
-                    appVersion: Self.appVersion
+                    appVersion: Self.appVersion,
+                    voipPushToken: voipPushToken
                 )
             )
             fingerprintStore.recordSent(
@@ -91,7 +110,8 @@ actor ConvexPushRegistrationService: PushRegistering {
                 apnsEnvironment: Self.apnsEnvironment,
                 locale: Locale.current.identifier,
                 timeZoneID: TimeZone.current.identifier,
-                appVersion: Self.appVersion
+                appVersion: Self.appVersion,
+                voipToken: voipPushToken
             )
         )
     }
@@ -137,9 +157,14 @@ actor ConvexPushRegistrationService: PushRegistering {
 /// Used when no Convex client is configured.
 nonisolated struct NoOpPushRegistration: PushRegistering {
     func registerDevice(pushToken: String) {}
+    func updateVoIPPushToken(_ token: String?) {}
 }
 
 nonisolated enum PushRegistrationServiceFactory {
+    /// The one registration for the app, shared by the APNs callback and PushKit, so a
+    /// registration always carries both tokens.
+    static let shared: any PushRegistering = makeDefault()
+
     static func makeDefault() -> any PushRegistering {
         guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return NoOpPushRegistration()
@@ -163,6 +188,7 @@ nonisolated private struct RegisterDeviceRequest: Encodable {
     let locale: String?
     let timeZoneID: String?
     let appVersion: String?
+    let voipPushToken: String?
 
     enum CodingKeys: String, CodingKey {
         case platform = "p_platform"
@@ -171,5 +197,6 @@ nonisolated private struct RegisterDeviceRequest: Encodable {
         case locale = "p_locale"
         case timeZoneID = "p_time_zone_id"
         case appVersion = "p_app_version"
+        case voipPushToken = "p_voip_push_token"
     }
 }

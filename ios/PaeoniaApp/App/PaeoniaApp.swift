@@ -1,5 +1,6 @@
 import AppIntents
 import ClerkKit
+import Intents
 import SwiftUI
 
 @main
@@ -57,6 +58,9 @@ struct PaeoniaApp: App {
             .modifier(PaeoniaSymbolMotionPreferences())
             .modifier(PaeoniaPetalShowerHost())
             .modifier(PaeoniaContrastPreference())
+            .environment(CallCenter.shared)
+            // A call back from the Phone app's Recents, or a call asked of Siri.
+            .onContinueUserActivity(String(describing: INStartCallIntent.self), perform: CallCenter.shared.continueCall)
             .onOpenURL { url in
                 if let deepLink = PaeoniaDeepLink(url) {
                     self.deepLink = deepLink
@@ -89,7 +93,7 @@ struct PaeoniaApp: App {
 
     /// Unit tests run inside this app. The real app would sign in, sync and write
     /// the same local stores the tests use, and slow every test run down.
-    private static let isHostingUnitTests =
+    static let isHostingUnitTests =
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
     /// Whether the app opens the real root. Developer scenarios open their own

@@ -1,0 +1,383 @@
+import Foundation
+import Network
+@preconcurrency import WebRTC
+
+/// The audio and video connection between the two phones for one call, set up over the relay.
+///
+/// Both media sections are in the first offer, so turning a camera on or off swaps the video
+/// sender's track and never needs a new offer. The caller offers whenever the partner's phone is
+/// in the relay room and the phones are not connected. A later offer restarts the network path
+/// (an ICE restart), which is how the call recovers after a drop or a network change.
+final class CallMediaSession {
+    nonisolated enum Role: Sendable {
+        /// Sends the offers. The phone that started the call.
+        case offerer
+        case answerer
+    }
+
+    /// True when the phones reached each other, false when the connection dropped.
+    var onConnectionChange: ((Bool) -> Void)?
+    var onPartnerCamera: ((Bool) -> Void)?
+
+    private let role: Role
+    private let relay: CallRelay
+    private let peerConnection: RTCPeerConnection
+    private let observer: PeerConnectionObserver
+    private let audioTrack: RTCAudioTrack
+    private let videoTrack: RTCVideoTrack
+    private let camera: CallCamera
+    private let partnerFeed: CallVideoFeed
+    private let localFeed: CallVideoFeed
+    private var videoTransceiver: RTCRtpTransceiver?
+    private var remoteVideoTrack: RTCVideoTrack?
+    private var isCameraOn: Bool
+    private var isConnected = false
+    private var offersSent = 0
+    /// Candidates that arrived before a session description they belong to.
+    private var pendingCandidates: [RTCIceCandidate] = []
+    /// Every relay message and every reason to offer, handled one at a time in order, so a
+    /// candidate never overtakes the description it belongs to.
+    private let work: AsyncStream<Work>.Continuation
+    private var workTask: Task<Void, Never>?
+    private let pathMonitor = NWPathMonitor()
+    private var lastInterface: NWInterface.InterfaceType?
+    private var pathMonitorHasReported = false
+
+    private enum Work {
+        case signal(CallSignal.Message)
+        case partnerPresent
+    }
+
+    init(
+        callID: UUID,
+        role: Role,
+        servers: CallIceServers,
+        backend: CallBackend,
+        partnerFeed: CallVideoFeed,
+        localFeed: CallVideoFeed,
+        isMuted: Bool,
+        isCameraOn: Bool,
+        isFrontCamera: Bool
+    ) throws {
+        let factory = CallMediaFactory.shared
+        let observer = PeerConnectionObserver()
+        self.role = role
+        peerConnection = try Self.makePeerConnection(servers: servers, observer: observer)
+        self.observer = observer
+        self.partnerFeed = partnerFeed
+        self.localFeed = localFeed
+        self.isCameraOn = isCameraOn
+        relay = CallRelay(callID: callID, backend: backend)
+        audioTrack = factory.audioTrack(
+            with: factory.audioSource(with: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)),
+            trackId: "audio"
+        )
+        audioTrack.isEnabled = !isMuted
+        let videoSource = factory.videoSource()
+        videoTrack = factory.videoTrack(with: videoSource, trackId: "video")
+        camera = CallCamera(source: videoSource)
+        let (stream, continuation) = AsyncStream.makeStream(of: Work.self)
+        work = continuation
+
+        videoTrack.add(localFeed)
+        if role == .offerer {
+            addTransceivers()
+        }
+        if isCameraOn {
+            camera.start(front: isFrontCamera)
+        }
+        observer.session = self
+        relay.onSignal = { continuation.yield(.signal($0)) }
+        relay.onPartnerPresent = { continuation.yield(.partnerPresent) }
+        workTask = Task { [weak self] in
+            for await item in stream {
+                await self?.handle(item)
+            }
+        }
+    }
+
+    private static func makePeerConnection(
+        servers: CallIceServers,
+        observer: PeerConnectionObserver
+    ) throws -> RTCPeerConnection {
+        let configuration = RTCConfiguration()
+        configuration.iceServers = servers.iceServers.map {
+            RTCIceServer(urlStrings: $0.urls, username: $0.username, credential: $0.credential)
+        }
+        configuration.iceTransportPolicy = servers.relayOnly ? .relay : .all
+        configuration.sdpSemantics = .unifiedPlan
+        configuration.bundlePolicy = .maxBundle
+        configuration.rtcpMuxPolicy = .require
+        configuration.continualGatheringPolicy = .gatherContinually
+        guard let peerConnection = CallMediaFactory.shared.peerConnection(
+            with: configuration,
+            constraints: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil),
+            delegate: observer
+        ) else {
+            throw CallMediaError.couldNotCreateConnection
+        }
+        return peerConnection
+    }
+
+    func start() {
+        relay.start()
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            MainActor.assumeIsolated { self?.networkChanged(path) }
+        }
+        pathMonitor.start(queue: .main)
+    }
+
+    func close() {
+        pathMonitor.cancel()
+        work.finish()
+        workTask?.cancel()
+        relay.stop()
+        camera.stop()
+        videoTrack.remove(localFeed)
+        remoteVideoTrack?.remove(partnerFeed)
+        observer.session = nil
+        peerConnection.close()
+    }
+
+    /// Reconnects the relay now. When the partner is back in the room, the caller offers again.
+    func restart() {
+        relay.reconnectNow()
+    }
+
+    func setMuted(_ isMuted: Bool) {
+        audioTrack.isEnabled = !isMuted
+    }
+
+    func setCamera(isOn: Bool, front: Bool) {
+        isCameraOn = isOn
+        if isOn {
+            camera.start(front: front)
+        } else {
+            camera.stop()
+        }
+        videoTransceiver?.sender.track = isOn ? videoTrack : nil
+        relay.send(.camera(isOn: isOn))
+    }
+
+    // MARK: Signaling
+
+    private func handle(_ item: Work) async {
+        switch item {
+        case .partnerPresent:
+            // The partner may have missed the last camera message while their phone reconnected.
+            relay.send(.camera(isOn: isCameraOn))
+            guard !isConnected else { return }
+            switch role {
+            case .offerer:
+                await sendOffer()
+            case .answerer where peerConnection.remoteDescription != nil:
+                relay.send(.restart)
+            case .answerer:
+                break
+            }
+        case let .signal(message):
+            await receive(message)
+        }
+    }
+
+    private func receive(_ message: CallSignal.Message) async {
+        switch message {
+        case let .offer(sdp) where role == .answerer:
+            await acceptOffer(sdp)
+        case let .answer(sdp) where role == .offerer:
+            guard peerConnection.signalingState == .haveLocalOffer else { return }
+            try? await peerConnection.setRemoteDescription(RTCSessionDescription(type: .answer, sdp: sdp))
+            await addPendingCandidates()
+        case let .candidate(candidate):
+            let iceCandidate = RTCIceCandidate(
+                sdp: candidate.sdp,
+                sdpMLineIndex: candidate.sdpMLineIndex,
+                sdpMid: candidate.sdpMid
+            )
+            if peerConnection.remoteDescription == nil || peerConnection.signalingState == .haveLocalOffer {
+                pendingCandidates.append(iceCandidate)
+            } else {
+                try? await peerConnection.add(iceCandidate)
+            }
+        case let .camera(isOn):
+            onPartnerCamera?(isOn)
+        case .restart where role == .offerer:
+            await sendOffer()
+        case .offer, .answer, .restart:
+            break
+        }
+    }
+
+    private func sendOffer() async {
+        do {
+            if peerConnection.signalingState == .haveLocalOffer {
+                // The partner's phone rejoined before it answered, so the last offer is lost.
+                try await peerConnection.setLocalDescription(RTCSessionDescription(type: .rollback, sdp: ""))
+            }
+            if offersSent > 0 {
+                peerConnection.restartIce()
+            }
+            let offer = try await peerConnection.offer(
+                for: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
+            )
+            try await peerConnection.setLocalDescription(offer)
+            offersSent += 1
+            relay.send(.offer(sdp: offer.sdp))
+        } catch {
+            // The next time the partner joins, or the call's connect timer, tries again.
+        }
+    }
+
+    private func acceptOffer(_ sdp: String) async {
+        do {
+            try await peerConnection.setRemoteDescription(RTCSessionDescription(type: .offer, sdp: sdp))
+            if videoTransceiver == nil {
+                attachAnswererTracks()
+            }
+            await addPendingCandidates()
+            let answer = try await peerConnection.answer(
+                for: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
+            )
+            try await peerConnection.setLocalDescription(answer)
+            relay.send(.answer(sdp: answer.sdp))
+        } catch {
+            // The caller offers again when the connection does not come up.
+        }
+    }
+
+    private func addPendingCandidates() async {
+        let candidates = pendingCandidates
+        pendingCandidates = []
+        for candidate in candidates {
+            try? await peerConnection.add(candidate)
+        }
+    }
+
+    private static let streamID = "paeonia"
+}
+
+// MARK: Tracks
+
+extension CallMediaSession {
+    /// The caller's first offer carries audio and video both ways.
+    private func addTransceivers() {
+        let audioInit = RTCRtpTransceiverInit()
+        audioInit.direction = .sendRecv
+        audioInit.streamIds = [Self.streamID]
+        peerConnection.addTransceiver(with: audioTrack, init: audioInit)
+
+        let videoInit = RTCRtpTransceiverInit()
+        videoInit.direction = .sendRecv
+        videoInit.streamIds = [Self.streamID]
+        guard let transceiver = peerConnection.addTransceiver(of: .video, init: videoInit) else { return }
+        useVideoTransceiver(transceiver)
+    }
+
+    /// The answering phone uses the transceivers the offer created, so nothing needs a new offer.
+    private func attachAnswererTracks() {
+        for transceiver in peerConnection.transceivers {
+            transceiver.setDirection(.sendRecv, error: nil)
+            transceiver.sender.streamIds = [Self.streamID]
+            switch transceiver.mediaType {
+            case .audio:
+                transceiver.sender.track = audioTrack
+            case .video:
+                useVideoTransceiver(transceiver)
+            default:
+                break
+            }
+        }
+    }
+
+    private func useVideoTransceiver(_ transceiver: RTCRtpTransceiver) {
+        videoTransceiver = transceiver
+        transceiver.sender.track = isCameraOn ? videoTrack : nil
+        remoteVideoTrack = transceiver.receiver.track as? RTCVideoTrack
+        remoteVideoTrack?.add(partnerFeed)
+    }
+
+    // MARK: Connection
+
+    fileprivate func sendCandidate(_ candidate: CallIceCandidate) {
+        relay.send(.candidate(candidate))
+    }
+
+    fileprivate func connectionStateChanged(_ state: RTCPeerConnectionState) {
+        switch state {
+        case .connected:
+            guard !isConnected else { return }
+            isConnected = true
+            onConnectionChange?(true)
+        case .disconnected, .failed:
+            guard isConnected else { return }
+            isConnected = false
+            onConnectionChange?(false)
+        default:
+            break
+        }
+    }
+
+    private func networkChanged(_ path: NWPath) {
+        let interface = path.availableInterfaces.first?.type
+        defer { lastInterface = interface }
+        // The first update is the network the call started on.
+        guard pathMonitorHasReported, path.status == .satisfied, interface != lastInterface else {
+            pathMonitorHasReported = true
+            return
+        }
+        restart()
+    }
+}
+
+nonisolated enum CallMediaError: Error {
+    case couldNotCreateConnection
+}
+
+/// One factory for the app's lifetime. WebRTC's audio runs in manual mode (`CallAudio`).
+enum CallMediaFactory {
+    static let shared: RTCPeerConnectionFactory = {
+        RTCInitializeSSL()
+        return RTCPeerConnectionFactory(
+            encoderFactory: RTCDefaultVideoEncoderFactory(),
+            decoderFactory: RTCDefaultVideoDecoderFactory()
+        )
+    }()
+}
+
+/// WebRTC calls its delegate on its own thread. This moves each event to the main thread.
+private nonisolated final class PeerConnectionObserver: NSObject, RTCPeerConnectionDelegate, @unchecked Sendable {
+    /// Set and read on the main thread only.
+    nonisolated(unsafe) weak var session: CallMediaSession?
+
+    func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate) {
+        let value = CallIceCandidate(
+            sdp: candidate.sdp,
+            sdpMid: candidate.sdpMid,
+            sdpMLineIndex: candidate.sdpMLineIndex
+        )
+        onMain { $0.sendCandidate(value) }
+    }
+
+    func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCPeerConnectionState) {
+        onMain { $0.connectionStateChanged(newState) }
+    }
+
+    private func onMain(_ body: @escaping @MainActor (CallMediaSession) -> Void) {
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                if let session = self.session {
+                    body(session)
+                }
+            }
+        }
+    }
+
+    func peerConnection(_ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState) {}
+    func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {}
+    func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {}
+    func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {}
+    func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {}
+    func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {}
+    func peerConnection(_ peerConnection: RTCPeerConnection, didRemove candidates: [RTCIceCandidate]) {}
+    func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {}
+}

@@ -19,6 +19,7 @@
 		2A2D07012FE3000000A7BE1A /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D07042FE3000000A7BE1A /* ConvexMobile */; };
 		2A2D08012FE4000000A7BE1A /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D08032FE4000000A7BE1A /* PostHog */; };
 		2A2D09012FE5000000A7BE1A /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D09032FE5000000A7BE1A /* MapLibre */; };
+		2A2D0A012FE6000000A7BE1A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D0A032FE6000000A7BE1A /* WebRTC */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -173,6 +174,7 @@
 				2A2D07012FE3000000A7BE1A /* ConvexMobile in Frameworks */,
 				2A2D08012FE4000000A7BE1A /* PostHog in Frameworks */,
 				2A2D09012FE5000000A7BE1A /* MapLibre in Frameworks */,
+				2A2D0A012FE6000000A7BE1A /* WebRTC in Frameworks */,
 				2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */,
 				2A2D04142FE0000000A7BE1A /* TOCropViewController in Frameworks */,
 			);
@@ -274,6 +276,7 @@
 				2A2D07042FE3000000A7BE1A /* ConvexMobile */,
 				2A2D08032FE4000000A7BE1A /* PostHog */,
 				2A2D09032FE5000000A7BE1A /* MapLibre */,
+				2A2D0A032FE6000000A7BE1A /* WebRTC */,
 				2A2D04132FE0000000A7BE1A /* CropViewController */,
 				2A2D04152FE0000000A7BE1A /* TOCropViewController */,
 			);
@@ -408,6 +411,7 @@
 				2A2D07032FE3000000A7BE1A /* XCRemoteSwiftPackageReference "convex-swift" */,
 				2A2D08022FE4000000A7BE1A /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				2A2D09022FE5000000A7BE1A /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */,
+				2A2D0A022FE6000000A7BE1A /* XCRemoteSwiftPackageReference "WebRTC" */,
 				2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 			);
 			preferredProjectObjectVersion = 90;
@@ -1057,6 +1061,14 @@
 				minimumVersion = 7.0.0;
 			};
 		};
+		2A2D0A022FE6000000A7BE1A /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stasel/WebRTC";
+			requirement = {
+				kind = exactVersion;
+				version = 157.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1094,6 +1106,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A2D09022FE5000000A7BE1A /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */;
 			productName = MapLibre;
+		};
+		2A2D0A032FE6000000A7BE1A /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A2D0A022FE6000000A7BE1A /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

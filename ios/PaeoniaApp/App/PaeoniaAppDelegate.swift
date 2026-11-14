@@ -9,7 +9,7 @@ import OSLog
 /// callbacks, so these go through a `UIApplicationDelegate` bridged via
 /// `@UIApplicationDelegateAdaptor`.
 final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-    private let pushRegistration: any PushRegistering = PushRegistrationServiceFactory.makeDefault()
+    private let pushRegistration = PushRegistrationServiceFactory.shared
     private let widgetSync: any WidgetCanvasSyncing = WidgetCanvasSyncServiceFactory.makeDefault()
     private let identityStore = WidgetSyncIdentityStore.shared
 
@@ -32,6 +32,9 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         // move. The location manager must be ready before this returns so the
         // position reaches it.
         LocationUpdateController.shared.resumeAfterLaunch()
+        // A VoIP push launches a closed app to ring. PushKit and the system call UI must
+        // exist before this returns, signed in or not.
+        _ = CallCenter.shared
         // Off the main thread, because setting the category can block for a moment.
         Task.detached(priority: .utility) { PaeoniaAudioSession.useAmbient() }
         return true

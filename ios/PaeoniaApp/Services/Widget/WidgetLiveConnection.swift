@@ -22,18 +22,21 @@ class WidgetLiveConnection {
     }
 
     private static let pingInterval: Duration = .seconds(25)
-    private static let maxBackoff: Duration = .seconds(30)
 
     var onMessage: ((WidgetLiveMessage) -> Void)?
     /// A game's own message, as the JSON of a `GameLiveEnvelope`. `GameLiveChannel`
     /// decodes it.
     var onGameData: ((Data) -> Void)?
+    /// A call setup message, as the JSON of a `CallLiveEnvelope`. `CallRelay` decodes it.
+    var onCallData: ((Data) -> Void)?
     /// The socket closed. Not called after `stop()`.
     var onDisconnect: (() -> Void)?
 
     private let coupleID: UUID
     private let ticketProvider: TicketProvider
     private let session: URLSession
+    /// The longest wait between reconnects. A call keeps it short.
+    private let maxBackoff: Duration
     private var runTask: Task<Void, Never>?
     private var socket: URLSessionWebSocketTask?
     private let encoder = JSONEncoder()
@@ -41,11 +44,13 @@ class WidgetLiveConnection {
     init(
         coupleID: UUID,
         ticketProvider: @escaping TicketProvider = defaultTicketProvider,
-        session: URLSession = .paeonia
+        session: URLSession = .paeonia,
+        maxBackoff: Duration = .seconds(30)
     ) {
         self.coupleID = coupleID
         self.ticketProvider = ticketProvider
         self.session = session
+        self.maxBackoff = maxBackoff
     }
 
     func start() {
@@ -64,6 +69,12 @@ class WidgetLiveConnection {
         socket = nil
     }
 
+    /// Drops the socket and connects again now, without waiting out a backoff.
+    func reconnectNow() {
+        stop()
+        start()
+    }
+
     /// Sends when connected. A message sent while offline is dropped: the next
     /// connect sends the whole drawing again.
     func send(_ message: WidgetLiveMessage) {
@@ -79,7 +90,16 @@ class WidgetLiveConnection {
     /// Sends a game's own message, the JSON of a `GameLiveEnvelope`. Dropped
     /// while offline, like `send(_:)`.
     func send(gameData: Data) {
-        guard let socket, let text = String(data: gameData, encoding: .utf8) else {
+        send(text: gameData)
+    }
+
+    /// Sends a call setup message, the JSON of a `CallLiveEnvelope`. Dropped while offline.
+    func send(callData: Data) {
+        send(text: callData)
+    }
+
+    private func send(text data: Data) {
+        guard let socket, let text = String(data: data, encoding: .utf8) else {
             return
         }
         socket.send(.string(text)) { _ in }
@@ -93,7 +113,7 @@ class WidgetLiveConnection {
                 ticket = try await ticketProvider(coupleID)
             } catch {
                 try? await Task.sleep(for: backoff)
-                backoff = min(backoff * 2, Self.maxBackoff)
+                backoff = min(backoff * 2, maxBackoff)
                 continue
             }
             // No relay is set up on the server. Drawing works as before.
@@ -132,7 +152,7 @@ class WidgetLiveConnection {
             self.socket = nil
             onDisconnect?()
             try? await Task.sleep(for: backoff)
-            backoff = min(backoff * 2, Self.maxBackoff)
+            backoff = min(backoff * 2, maxBackoff)
         }
     }
 
@@ -156,6 +176,8 @@ class WidgetLiveConnection {
             switch incoming {
             case let .game(data):
                 onGameData?(data)
+            case let .call(data):
+                onCallData?(data)
             case let .live(decoded):
                 onMessage?(decoded)
             case nil:
@@ -168,10 +190,11 @@ class WidgetLiveConnection {
     /// What one relay message holds, parsed off the main actor.
     nonisolated enum Incoming: Sendable {
         case game(Data)
+        case call(Data)
         case live(WidgetLiveMessage)
     }
 
-    /// Decodes a message once. A game message keeps its JSON for the channel. A
+    /// Decodes a message once. A game or call message keeps its JSON for its channel. A
     /// drawing message also gets its strokes decoded, which can take long for a
     /// whole-canvas snapshot.
     @concurrent
@@ -180,6 +203,8 @@ class WidgetLiveConnection {
         switch try? JSONDecoder().decode(IncomingWrapper.self, from: data) {
         case .game:
             return .game(data)
+        case .call:
+            return .call(data)
         case var .live(message):
             message.preparedUpserts = message.decodeUpserts()
             return .live(message)
@@ -189,14 +214,17 @@ class WidgetLiveConnection {
     }
 }
 
-/// Tells a game message from a drawing message in the same parse that decodes it.
+/// Tells a game or call message from a drawing message in the same parse that decodes it.
 private nonisolated enum IncomingWrapper: Decodable {
     case game
+    case call
     case live(WidgetLiveMessage)
 
     init(from decoder: any Decoder) throws {
         if (try? GameLiveEnvelopeTag(from: decoder)) != nil {
             self = .game
+        } else if (try? CallLiveEnvelopeTag(from: decoder)) != nil {
+            self = .call
         } else {
             self = try .live(WidgetLiveMessage(from: decoder))
         }
