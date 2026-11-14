@@ -1,11 +1,5 @@
 import SwiftUI
 
-/// The picture of an Exquisite corpse game: a strip of paper in four parts with two
-/// crayons beside it, one for each partner. The parts swing open from the top one
-/// by one, and the crayon whose turn it is wiggles as its part opens. Together they
-/// show a kitten's head, a cozy sweater, duck legs and webbed feet. When the feet
-/// are out, the creature hops, waves and blinks, and hearts pop up. It plays once
-/// when the card appears. With Reduce Motion it starts finished.
 struct ExquisiteCorpseHubArtwork: View {
     static let height: CGFloat = 200
     private static let playDuration: TimeInterval = 4.2
@@ -69,9 +63,12 @@ private struct ExquisiteCorpseHubScene: View, Animatable {
 
     private typealias Timing = GameHubArtworkTiming
 
-    /// Four of them stack to the creature's shape (`ExquisiteCorpseHubCreature.size`).
-    private static let panelSize = CGSize(width: 104, height: 38)
     private static let parts = ExquisiteCorpsePartKind.allCases
+    private static let panelSize: CGSize = {
+        let creature = ExquisiteCorpseHubCreature.size
+        let height: CGFloat = 38
+        return CGSize(width: creature.width * height * CGFloat(parts.count) / creature.height, height: height)
+    }()
     /// Where the first part starts, and how much of `progress` one part takes.
     private static let firstPart = 0.08
     private static let partStep = 0.13
@@ -140,8 +137,6 @@ private struct ExquisiteCorpseHubScene: View, Animatable {
 
     // MARK: Crayons
 
-    /// One crayon on each side, tips toward the paper. The left one draws the head
-    /// and the legs, and the right one draws the sweater and the feet.
     private var crayons: some View {
         GeometryReader { proxy in
             crayon(color: .paeoniaAccentPrimary, tilt: 30, parts: [.head, .legs], delay: 0)
