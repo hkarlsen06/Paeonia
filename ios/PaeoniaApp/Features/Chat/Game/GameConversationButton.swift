@@ -47,7 +47,10 @@ struct GameConversationButton: View {
     /// A plain button with its own drawing, because a toolbar keeps only a label's symbol name and
     /// drops its effects. The fixed frame keeps the score beside it still when the state changes.
     private var button: some View {
-        Button { context.openGameChat?(kind, source, result) } label: {
+        Button {
+            GameChatSwipeLessons.saved.openedWithButton()
+            context.openGameChat?(kind, source, result)
+        } label: {
             icon
                 .font(.system(size: 19, weight: .medium))
                 .foregroundStyle(partnerIsInChat ? .paeoniaPresence : .paeoniaTextPrimary)

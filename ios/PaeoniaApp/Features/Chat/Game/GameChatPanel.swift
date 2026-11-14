@@ -18,12 +18,15 @@ struct GameChatPanel: ViewModifier {
     private static let panelFraction: CGFloat = 0.64
     /// The room between the small game and the status bar and the screen's sides.
     private static let gamePadding = PaeoniaSpacing.space8
+    /// How far the bottom of the game rises while its chat peeks up under it.
+    private static let peekLift: CGFloat = 56
 
     @Binding var destination: GameChatDestination?
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @State private var screen = CGSize.zero
     /// The screen inside its safe area, in global coordinates.
     @State private var safeFrame = CGRect.zero
@@ -36,6 +39,9 @@ struct GameChatPanel: ViewModifier {
     /// again, so the chat is there for both slides.
     @State private var mounted: GameChatDestination?
     @State private var isRaised = false
+    /// The game whose chat peeks up. It stays until the peek is down again.
+    @State private var peekKind: GameKind?
+    @State private var isPeekRaised = false
 
     private var isPanel: Bool {
         horizontalSizeClass == .compact && verticalSizeClass == .regular
@@ -57,10 +63,12 @@ struct GameChatPanel: ViewModifier {
                 if mounted == nil { contentTop = top }
             }
             .environment(\.gameChatShrink, isRaised ? shrink(above: panelHeight) : nil)
+            .environment(\.gameChatLift, isPeekRaised ? Self.peekLift : 0)
+            .environment(\.gameChatPeek, isPanel && mounted == nil ? GameChatPeek(show: showPeek, hide: hidePeek) : nil)
             .allowsHitTesting(mounted == nil)
             .accessibilityHidden(mounted != nil)
-            // Shows around the small game.
-            .background { if mounted != nil { Color.black.ignoresSafeArea() } }
+            // Shows around the small game, and around its corners while its chat peeks up.
+            .background { if mounted != nil || peekKind != nil { Color.black.ignoresSafeArea() } }
             .overlay {
                 Color.clear
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { safeFrame = $0 }
@@ -71,6 +79,7 @@ struct GameChatPanel: ViewModifier {
             .ignoresSafeArea(.keyboard, edges: mounted == nil ? [] : .bottom)
             .onChange(of: panel?.id) {
                 if let panel {
+                    hidePeek()
                     raise(panel)
                 } else {
                     lower()
@@ -135,6 +144,31 @@ struct GameChatPanel: ViewModifier {
             mounted = nil
             AccessibilityNotification.ScreenChanged().post()
         }
+        // Over the game the swipe works on, for someone who keeps opening the chat with its button.
+        if GameChatSwipeLessons.saved.takeTip() {
+            bannerCenter.show(
+                .info(message: String(localized: .gamesChatSwipeTip), systemImage: "bubble.left.and.bubble.right")
+            )
+        }
+    }
+
+    private func showPeek(_ kind: GameKind) {
+        guard mounted == nil else { return }
+        peekKind = kind
+        // Built under the screen's bottom edge first, like the panel.
+        DispatchQueue.main.async {
+            guard peekKind == kind, mounted == nil else { return }
+            withAnimation(slide) { isPeekRaised = true }
+        }
+    }
+
+    private func hidePeek() {
+        guard peekKind != nil else { return }
+        withAnimation(slide) {
+            isPeekRaised = false
+        } completion: {
+            if !isPeekRaised { peekKind = nil }
+        }
     }
 
     /// The panel at the bottom of the whole screen, where it keeps its place when the
@@ -143,6 +177,12 @@ struct GameChatPanel: ViewModifier {
         ZStack(alignment: .bottom) {
             Color.clear
                 .onGeometryChange(for: CGSize.self) { $0.size } action: { screen = $0 }
+            if mounted == nil, let peekKind {
+                GameChatPeekStrip(kind: peekKind)
+                    .frame(height: height)
+                    .modifier(PanelSlide(offset: height - (isPeekRaised ? Self.peekLift : 0)))
+                    .allowsHitTesting(false)
+            }
             if let mounted {
                 // A tap on the game goes back to it. The panel has the close button.
                 Color.clear
@@ -156,6 +196,33 @@ struct GameChatPanel: ViewModifier {
             }
         }
         .ignoresSafeArea()
+    }
+}
+
+/// The top of a game's chat while it peeks up under the game. It shows the chat's latest
+/// message, so it reads as the chat the swipe up opens.
+private struct GameChatPeekStrip: View {
+    let kind: GameKind
+
+    @Environment(\.threadChatContext) private var context
+
+    private var line: String {
+        let subject = context.coupleID.map { ThreadChatSubject.game(GameChatSubject(coupleID: $0, kind: kind)) }
+        return subject.flatMap { context.summaries?.summary(for: $0)?.lastMessagePreview }
+            ?? String(localized: .gamesConversationStart)
+    }
+
+    var body: some View {
+        Label(line, systemImage: "bubble.left.and.bubble.right")
+            .font(PaeoniaTypography.body)
+            .foregroundStyle(.paeoniaTextSecondary)
+            .lineLimit(1)
+            .padding(.horizontal, PaeoniaSpacing.space24)
+            .padding(.top, PaeoniaSpacing.space16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(.paeoniaBackgroundPrimary)
+            .clipShape(.rect(topLeadingRadius: PaeoniaRadius.radius28, topTrailingRadius: PaeoniaRadius.radius28))
+            .accessibilityHidden(true)
     }
 }
 

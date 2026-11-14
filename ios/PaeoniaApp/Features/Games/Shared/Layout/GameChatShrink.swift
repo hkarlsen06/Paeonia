@@ -15,6 +15,17 @@ nonisolated struct GameChatShrink: Equatable, Sendable {
 extension EnvironmentValues {
     /// Set while the game chat panel is open (`GameChatPanel`).
     @Entry var gameChatShrink: GameChatShrink?
+    /// How far the bottom of a game screen rises while its chat peeks up under it (`GameChatPeek`).
+    @Entry var gameChatLift: CGFloat = 0
+    /// Nil where the chat is not a panel, and while it is open.
+    @Entry var gameChatPeek: GameChatPeek?
+}
+
+/// Shrinks the game screen a little from its top and shows the top of its chat under it for a
+/// moment, the way the swipe up opens it, so the person finds the swipe (`GameChatSwipeLessons`).
+struct GameChatPeek {
+    let show: @MainActor (GameKind) -> Void
+    let hide: @MainActor () -> Void
 }
 
 /// A game screen's navigation bar shows something about the game, such as the score, and
@@ -60,6 +71,8 @@ struct GameChatScreen: ViewModifier {
     let kind: GameKind
 
     @Environment(\.gameChatShrink) private var shrink
+    @Environment(\.gameChatLift) private var lift
+    @Environment(\.gameChatPeek) private var peek
     @Environment(\.threadChatContext) private var chat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The keyboard on screen is the chat's. It stays so until it is gone, which is
@@ -68,6 +81,16 @@ struct GameChatScreen: ViewModifier {
     @State private var toolbarShowsInfo = false
     /// The screen's top edge under the navigation bar, in global coordinates at full size.
     @State private var contentTop: CGFloat?
+    /// The person has touched the screen since it opened. A peek would move what they touch.
+    @State private var touched = false
+
+    private var swipeOpensChat: Bool {
+        shrink == nil && chat.isAvailable && chat.openGameChat != nil
+    }
+
+    private var peekCanRun: Bool {
+        swipeOpensChat && peek != nil && !touched && !reduceMotion
+    }
 
     func body(content: Content) -> some View {
         let keyboardIsChats = shrink != nil || chatHasKeyboard
@@ -79,12 +102,16 @@ struct GameChatScreen: ViewModifier {
             }
             .preference(key: GameChatContentTopKey.self, value: toolbarShowsInfo ? nil : contentTop)
             .environment(\.keyboardBelongsElsewhere, keyboardIsChats)
-            .background { GameScreenShrinker(shrink: shrink, animates: !reduceMotion) }
+            .background { GameScreenShrinker(shrink: shrink, lift: lift, animates: !reduceMotion) }
             .background {
-                GameChatSwipeUp(isEnabled: shrink == nil && chat.isAvailable && chat.openGameChat != nil) {
+                GameChatSwipeUp(isEnabled: swipeOpensChat) {
+                    if !touched { touched = true }
+                } open: {
+                    GameChatSwipeLessons.saved.swiped()
                     chat.openGameChat?(kind, nil, nil)
                 }
             }
+            .task(id: peekCanRun) { await runPeek() }
             // The chat's keyboard would squeeze the game above the panel, and again on its way out.
             .ignoresSafeArea(.keyboard, edges: keyboardIsChats ? .bottom : [])
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -96,6 +123,22 @@ struct GameChatScreen: ViewModifier {
     }
 }
 
+extension GameChatScreen {
+    /// A moment after the screen opens, the chat peeks up under it and goes back down. A
+    /// touch, or the screen going away, ends the peek early.
+    private func runPeek() async {
+        guard peekCanRun, let peek, GameChatSwipeLessons.saved.peekIsDue(at: .now, calendar: .current) else { return }
+        // After the zoom into the game has settled.
+        do { try await Task.sleep(for: .seconds(1.6)) } catch { return }
+        // A sheet such as the how-to-play cards would hide it.
+        guard !GameChatSwipeRules.appIsCovered() else { return }
+        GameChatSwipeLessons.saved.peeked(at: .now)
+        peek.show(kind)
+        try? await Task.sleep(for: .seconds(1.4))
+        peek.hide()
+    }
+}
+
 /// Shrinks the navigation stack a game screen is in, on its layer.
 ///
 /// The stack's view keeps its frame, and only the layer above it draws it smaller
@@ -104,6 +147,8 @@ struct GameChatScreen: ViewModifier {
 /// area and the game lays itself out again.
 private struct GameScreenShrinker: UIViewRepresentable {
     let shrink: GameChatShrink?
+    /// Draws the screen this much shorter, from its top, in its own proportions.
+    let lift: CGFloat
     let animates: Bool
 
     func makeCoordinator() -> Coordinator {
@@ -118,10 +163,11 @@ private struct GameScreenShrinker: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {
         let shrink = shrink
+        let lift = lift
         let animates = animates
         // The navigation controller is found once the view is in a window.
         DispatchQueue.main.async {
-            context.coordinator.apply(shrink, from: uiView, animates: animates)
+            context.coordinator.apply(shrink, lift: lift, from: uiView, animates: animates)
         }
     }
 
@@ -136,20 +182,20 @@ private struct GameScreenShrinker: UIViewRepresentable {
         private static let animationKey = "gameChatShrink"
         private weak var stack: UIView?
 
-        func apply(_ shrink: GameChatShrink?, from view: UIView, animates: Bool) {
+        func apply(_ shrink: GameChatShrink?, lift: CGFloat, from view: UIView, animates: Bool) {
             // A screen under another one is out of the window and leaves the stack to that one.
             guard view.window != nil, let stack = stack ?? view.gameNavigationController()?.view,
                 let host = stack.superview
             else { return }
             self.stack = stack
-            let transform = shrink.map { Self.transform($0, in: host) } ?? CATransform3DIdentity
+            let transform = shrink.map { Self.transform($0, in: host) } ?? Self.transform(lift: lift, in: host)
             let layer = host.layer
             guard !CATransform3DEqualToTransform(layer.sublayerTransform, transform) else { return }
             let shown = layer.presentation()?.sublayerTransform ?? layer.sublayerTransform
             let mask = stack.layer.mask as? CAShapeLayer ?? Self.addMask(to: stack)
             let shownPath = mask.presentation()?.path ?? mask.path
             let top = shrink.map { stack.convert(CGPoint(x: 0, y: $0.top), from: nil).y }
-            let path = Self.maskPath(for: stack, top: top)
+            let path = Self.maskPath(for: stack, top: top, rounded: shrink != nil || lift > 0)
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             CATransaction.setCompletionBlock { [weak stack, weak layer] in
@@ -184,23 +230,32 @@ private struct GameScreenShrinker: UIViewRepresentable {
             return animation
         }
 
-        /// The mask gives the small screen round corners, like the phone's own, and cuts
-        /// off what is above its first row.
+        /// The mask gives the small or lifted screen round corners, like the phone's own, and
+        /// cuts off what is above its first row.
         private static func addMask(to stack: UIView) -> CAShapeLayer {
             let mask = CAShapeLayer()
             mask.frame = stack.bounds
-            mask.path = maskPath(for: stack, top: nil)
+            mask.path = maskPath(for: stack, top: nil, rounded: false)
             stack.layer.mask = mask
             return mask
         }
 
-        private static func maskPath(for stack: UIView, top: CGFloat?) -> CGPath {
+        private static func maskPath(for stack: UIView, top: CGFloat?, rounded: Bool) -> CGPath {
             var rect = stack.bounds
             if let top {
                 rect.size.height -= top - rect.minY
                 rect.origin.y = top
             }
-            return UIBezierPath(roundedRect: rect, cornerRadius: top == nil ? 0.1 : cornerRadius).cgPath
+            return UIBezierPath(roundedRect: rect, cornerRadius: rounded ? cornerRadius : 0.1).cgPath
+        }
+
+        /// The screen's top stays where it is, so its navigation bar stays clear of the status bar.
+        private static func transform(lift: CGFloat, in host: UIView) -> CATransform3D {
+            let bounds = host.bounds
+            guard lift > 0, bounds.height > lift else { return CATransform3DIdentity }
+            let scale = (bounds.height - lift) / bounds.height
+            let origin = host.convert(CGPoint(x: bounds.minX + bounds.width * (1 - scale) / 2, y: bounds.minY), to: nil)
+            return transform(GameChatShrink(scale: scale, origin: origin, top: 0), in: host)
         }
 
         /// A sublayer transform works around its layer's anchor point, so the move makes

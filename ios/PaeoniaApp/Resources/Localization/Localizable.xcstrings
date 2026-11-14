@@ -13009,6 +13009,24 @@
         }
       }
     },
+    "games.chat.swipeTip" : {
+      "comment" : "Tip that shows once over a game, after the person has opened the game's conversation with its button several times and never with the swipe up",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next time, swipe up on the game to open the conversation."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste gang kan du sveipe opp på spillet for å åpne samtalen."
+          }
+        }
+      }
+    },
     "games.continue.partnerDrawing" : {
       "comment" : "Continue button on a drawing result. The partner is drawing the next round. %@ is the partner name or private nickname.",
       "extractionState" : "manual",

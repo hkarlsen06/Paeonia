@@ -78,6 +78,13 @@ enum GameChatSwipeRules {
         return showsLaterContent ? scroll.contentOffset.y < last - 1 : scroll.contentOffset.y > first + 1
     }
 
+    /// A sheet or cover is over the app's screens.
+    static func appIsCovered() -> Bool {
+        UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow?.rootViewController }
+            .contains { $0.presentedViewController != nil }
+    }
+
     /// The finger moves mostly up or mostly down.
     static func isVertical(_ velocity: CGPoint, up: Bool) -> Bool {
         abs(velocity.y) > abs(velocity.x) * 1.5 && (up ? velocity.y < 0 : velocity.y > 0)
@@ -88,6 +95,8 @@ enum GameChatSwipeRules {
 /// the swipe for. It starts on a button as well as on empty space.
 struct GameChatSwipeUp: UIViewRepresentable {
     let isEnabled: Bool
+    /// A finger touched the screen, whatever it goes on to do.
+    let onTouch: () -> Void
     let open: () -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -102,6 +111,7 @@ struct GameChatSwipeUp: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {
         context.coordinator.open = open
+        context.coordinator.onTouch = onTouch
         context.coordinator.isEnabled = isEnabled
         // The screen's own view is found once this view is in a window.
         DispatchQueue.main.async {
@@ -121,6 +131,7 @@ struct GameChatSwipeUp: UIViewRepresentable {
         private static let flickSpeed: CGFloat = 300
 
         var open: () -> Void = {}
+        var onTouch: () -> Void = {}
         var isEnabled = false {
             didSet { recognizer?.isEnabled = isEnabled }
         }
@@ -157,6 +168,11 @@ struct GameChatSwipeUp: UIViewRepresentable {
             default:
                 break
             }
+        }
+
+        func gestureRecognizer(_: UIGestureRecognizer, shouldReceive _: UITouch) -> Bool {
+            onTouch()
+            return true
         }
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
