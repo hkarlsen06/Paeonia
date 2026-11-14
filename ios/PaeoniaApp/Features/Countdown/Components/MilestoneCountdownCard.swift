@@ -175,7 +175,9 @@ struct MilestoneCountdownCard: View {
     private func tile(face: CountdownCalendarView.Face, burstID: Int?, line: Text) -> some View {
         VStack(spacing: PaeoniaSpacing.space8) {
             CountdownCalendarView(face: face, burstID: burstID)
-                .aspectRatio(336.0 / 450.0, contentMode: .fit)
+                .aspectRatio(450.0 / 447.0, contentMode: .fit)
+                // A solid pale block outweighs the outlined drawing beside it at the same size.
+                .scaleEffect(0.88)
                 .homeTilePicture()
                 .frame(maxWidth: .infinity, maxHeight: dynamicTypeSize.isAccessibilitySize ? nil : .infinity)
 

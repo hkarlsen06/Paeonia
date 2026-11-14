@@ -23,8 +23,8 @@ struct CountdownCalendarView: View {
     /// and not again when the burst ends.
     @State private var popCount = 0
 
-    /// The blank page's face as fractions of `HomeCalendar.png` (336 by 450 pixels).
-    private static let page = CGRect(x: 0.030, y: 0.250, width: 0.940, height: 0.680)
+    /// The blank page's face as fractions of `HomeCalendar.png` (450 by 447 pixels).
+    private static let page = CGRect(x: 0.040, y: 0.270, width: 0.920, height: 0.680)
     /// How much of the page's width the number may use. The rest is margin.
     private static let numberWidthShare: CGFloat = 0.88
     /// One roll of the digits when the count changes: the first showing after launch and the
