@@ -181,6 +181,22 @@ export const hide_waiting_game = mutation({
   },
 });
 
+/**
+ * The caller has the Games tab open. What waits for them now stops counting toward the badges, and
+ * its games stay under "Right now". A new turn, result or invite counts again. Safe to repeat.
+ * Returns null.
+ */
+export const mark_waiting_games_seen = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    await assertNoPendingAccountDeletion(ctx, userId);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    await ctx.runMutation(internal.gameHooks.mark_waiting_games_seen, { couple_id: coupleId, user_id: userId });
+    return null;
+  },
+});
+
 // --- Play together ----------------------------------------------------------
 
 /** "Tell [Name] you want to play". One invite per sender per game every 15 minutes. */

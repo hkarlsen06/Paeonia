@@ -1,6 +1,7 @@
 // Tests for `gamesWaitingFor` in gameRegistry.ts: the games part of the app icon badge. Each case
 // drives real moves and checks that only what waits for a user counts for them, and that "Not now"
-// (`games:hide_waiting_game`) holds a wait back until it changes.
+// (`games:hide_waiting_game`) and a visit to the Games tab (`games:mark_waiting_games_seen`) hold a
+// wait back until it changes.
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../_generated/api";
 import { op, setMediaEnv, uploadAsset } from "../media.testing";
@@ -194,5 +195,37 @@ describe("Not now", () => {
     const [queued] = await reminders();
     expect((await deliverDuePushes(s.t)).map((push) => push.outbox_id)).not.toContain(queued.id);
     expect((await reminders())[0].last_error).toBe("notification is out of date");
+  });
+});
+
+describe("seen on the Games tab", () => {
+  test("a seen turn stops counting but stays under Right now, and the partner's next move counts again", async () => {
+    const s = await startCouple();
+    let game = await s.a.as.mutation(api.boardGames.ensure_board_game, { p_kind: "connect_four" });
+    await s.b.as.mutation(api.games.send_game_invite, { p_kind: "mind_meld" });
+    expect(await counts(s)).toEqual([2, 0]);
+
+    await s.a.as.mutation(api.games.mark_waiting_games_seen, {});
+    await s.a.as.mutation(api.games.mark_waiting_games_seen, {});
+    expect(await counts(s)).toEqual([0, 0]);
+    expect((await s.a.as.query(api.games.get_games_overview, {})).hidden_kinds).toEqual([]);
+
+    game = await s.a.as.mutation(api.boardGames.make_move, { ...op(), p_game_id: game.id, p_expected_version: game.version, p_move: 0 });
+    expect(await counts(s)).toEqual([0, 1]);
+    await s.b.as.mutation(api.boardGames.make_move, { ...op(), p_game_id: game.id, p_expected_version: game.version, p_move: 1 });
+    expect(await counts(s)).toEqual([1, 0]);
+  });
+
+  test("a seen turn still gets its reminder", async () => {
+    const s = await startCouple();
+    await addDevice(s.t, s.a.userId);
+    await s.a.as.mutation(api.boardGames.ensure_board_game, { p_kind: "connect_four" });
+    await s.a.as.mutation(api.games.mark_waiting_games_seen, {});
+
+    tick(73 * 60);
+    await s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {});
+    const [queued] = (await s.t.run((ctx) => ctx.db.query("notification_outbox").collect()))
+      .filter((row) => row.kind === "game_turn_reminder");
+    expect((await deliverDuePushes(s.t)).map((push) => push.outbox_id)).toContain(queued.id);
   });
 });

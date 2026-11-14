@@ -32,7 +32,7 @@ const BADGE_UPDATE_LOOKBACK_MS = 10 * 60 * 1000;
 export type BadgeCounts = {
   /** Distinct chats and question conversations with an unread message or an outstanding answer. */
   questions: number;
-  /** Games that wait on this person, and open invites. */
+  /** Games that wait on this person, and open invites, that came after they last saw the Games tab. */
   games: number;
   /** The partner's stories still on the Us tab that this person has not opened, and their delivered unopened letters. */
   us: number;

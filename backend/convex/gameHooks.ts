@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { queueBadgeUpdate } from "./lib/badges";
-import { gameLanguageChanged, gameTurn, hiddenGameKinds, hideGameWaits, sendDueGameTurnReminders } from "./lib/gameRegistry";
+import { gameLanguageChanged, gameTurn, hiddenGameKinds, hideGameWaits, markGameWaitsSeen, sendDueGameTurnReminders } from "./lib/gameRegistry";
 import { nowIso } from "./lib/time";
 import { gameKind, gameLanguage } from "./lib/validators";
 
@@ -45,6 +45,15 @@ export const hide_waiting_game = internalMutation({
   handler: async (ctx, args): Promise<null> => {
     await hideGameWaits(ctx, args.couple_id, args.user_id, args.kind);
     await queueBadgeUpdate(ctx, args.user_id);
+    return null;
+  },
+});
+
+/** The Games tab showed, run by `games.mark_waiting_games_seen` after its access check. Updates the icon badge on the user's other phones. */
+export const mark_waiting_games_seen = internalMutation({
+  args: { couple_id: v.string(), user_id: v.string() },
+  handler: async (ctx, args): Promise<null> => {
+    if (await markGameWaitsSeen(ctx, args.couple_id, args.user_id)) await queueBadgeUpdate(ctx, args.user_id);
     return null;
   },
 });

@@ -28,7 +28,7 @@ export type GameBackend = {
     payload: Record<string, unknown>,
     recipientUserId: string,
   ): Promise<boolean>;
-  /** Deletes the couple's rows in this game's own tables and returns how many. Shared rows (settings, presence, invites, play times, hidden waits) are deleted for it. */
+  /** Deletes the couple's rows in this game's own tables and returns how many. Shared rows (settings, presence, invites, play times, hidden and seen waits) are deleted for it. */
   deleteCoupleRows(ctx: WriterCtx, coupleId: string): Promise<number>;
   /** Sends the single reminder for each turn that waited TURN_REMINDER_AFTER_MS. Returns the pushes queued. Leave out for a game without turns. */
   sendDueTurnReminders?(ctx: WriterCtx, now: string): Promise<number>;
@@ -139,13 +139,50 @@ async function hiddenWaitKeys(ctx: ReaderCtx, coupleId: string, userId: string):
   return new Map(rows.map((row) => [row.kind, new Set(row.wait_keys)]));
 }
 
+/** One wait as `game_seen_waits` stores it. Keys are only unique within a kind. */
+const seenKey = (wait: GameWait) => `${wait.kind}:${wait.key}`;
+
+/** The waits `userId` has seen on the Games tab, as `seenKey`s. */
+async function seenWaitKeys(ctx: ReaderCtx, coupleId: string, userId: string): Promise<Set<string>> {
+  const row = await ctx.db
+    .query("game_seen_waits")
+    .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
+    .unique();
+  return new Set(row?.wait_keys ?? []);
+}
+
 /**
  * How many games wait for `userId` in the couple, for the app icon badge and the Games tab badge.
- * A wait the person hid with "Not now" does not count. The caller checks couple access.
+ * A wait the person hid with "Not now" or already saw on the Games tab does not count. The caller
+ * checks couple access.
  */
 export async function gamesWaitingFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
   const hidden = await hiddenWaitKeys(ctx, coupleId, userId);
-  return (await gameWaits(ctx, coupleId, userId)).filter((wait) => !hidden.get(wait.kind)?.has(wait.key)).length;
+  const seen = await seenWaitKeys(ctx, coupleId, userId);
+  return (await gameWaits(ctx, coupleId, userId))
+    .filter((wait) => !hidden.get(wait.kind)?.has(wait.key) && !seen.has(seenKey(wait))).length;
+}
+
+/**
+ * The Games tab showed: what waits for `userId` now stops counting toward the badges, and stays
+ * under "Right now". Returns whether anything new was marked. Safe to repeat.
+ */
+export async function markGameWaitsSeen(ctx: WriterCtx, coupleId: string, userId: string): Promise<boolean> {
+  const keys = (await gameWaits(ctx, coupleId, userId)).map(seenKey);
+  const row = await ctx.db
+    .query("game_seen_waits")
+    .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
+    .unique();
+  if (!row) {
+    if (keys.length === 0) return false;
+    await ctx.db.insert("game_seen_waits", { couple_id: coupleId, user_id: userId, wait_keys: keys, seen_at: nowIso() });
+    return true;
+  }
+  // Only the waits there now are kept, so the row never grows.
+  if (row.wait_keys.join("\n") === keys.join("\n")) return false;
+  const marked = keys.some((key) => !row.wait_keys.includes(key));
+  await ctx.db.patch(row._id, { wait_keys: keys, seen_at: nowIso() });
+  return marked;
 }
 
 /**
@@ -190,7 +227,7 @@ export async function sendDueGameTurnReminders(ctx: WriterCtx, now: string): Pro
 }
 
 /**
- * Deletes every game row of a couple: the shared settings, invites, play times, play days and hidden waits, then each game's own rows.
+ * Deletes every game row of a couple: the shared settings, invites, play times, play days, hidden and seen waits, then each game's own rows.
  * Returns the number of rows deleted. Presence went when the relationship ended
  * (`endRelationshipForPair`). Drawing media is queued for deletion by the couple media sweep in
  * `cleanupCoupleContent`.
@@ -203,6 +240,7 @@ export async function deleteCoupleGameRows(ctx: WriterCtx, coupleId: string): Pr
     ...(await ctx.db.query("game_plays").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect()),
     ...(await ctx.db.query("game_play_days").withIndex("by_couple_id_day", (q) => q.eq("couple_id", coupleId)).collect()),
     ...(await ctx.db.query("game_hidden_waits").withIndex("by_couple_id_user_id_kind", (q) => q.eq("couple_id", coupleId)).collect()),
+    ...(await ctx.db.query("game_seen_waits").withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId)).collect()),
   ];
   for (const row of shared) {
     await ctx.db.delete(row._id);

@@ -1811,7 +1811,7 @@ export default defineSchema({
 
   // ---- games (new in Convex, see games.ts and docs/games/draw-and-guess.md) ----
   // Every games table has a couple_id index. Relationship cleanup deletes the rows (lib/gameRegistry.ts).
-  // game_settings, game_invites, game_plays, game_play_days, and game_hidden_waits are shared by every game kind. The presence component keeps who
+  // game_settings, game_invites, game_plays, game_play_days, game_hidden_waits, and game_seen_waits are shared by every game kind. The presence component keeps who
   // has a game open (lib/presence.ts). games, game_moves, game_guesses, and
   // game_used_words belong to Draw & Guess (lib/drawAndGuess.ts).
 
@@ -2029,6 +2029,17 @@ export default defineSchema({
     wait_keys: v.array(v.string()),
     hidden_at: ts,
   }).index("by_couple_id_user_id_kind", ["couple_id", "user_id", "kind"]),
+
+  // What a person has seen on the Games tab: the keys of every wait (`GameWait` in lib/games.ts) as
+  // `<kind>:<key>` when the tab last showed. A seen wait no longer counts toward the badges, but its
+  // game stays under "Right now". A new turn, result or invite has a new key, so it counts again.
+  // Each visit overwrites the row. (couple_id, user_id) is unique.
+  game_seen_waits: defineTable({
+    couple_id: uuid,
+    user_id: uuid,
+    wait_keys: v.array(v.string()),
+    seen_at: ts,
+  }).index("by_couple_id_user_id", ["couple_id", "user_id"]),
 
   // Story Chain (storyChain.ts, lib/storyChain.ts). Rows are deleted with the couple's other game
   // rows through the game registry.

@@ -55,6 +55,7 @@ describe("access", () => {
     expect((await failure(loner.as.query(api.games.get_games_overview, {}))).code).toBe("42501");
     expect((await failure(loner.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" }))).code).toBe("42501");
     expect((await failure(loner.as.mutation(api.games.mark_game_settings_seen, {}))).code).toBe("42501");
+    expect((await failure(loner.as.mutation(api.games.mark_waiting_games_seen, {}))).code).toBe("42501");
     for (const kind of GAME_KINDS) {
       expect((await failure(loner.as.mutation(api.games.send_game_invite, { p_kind: kind }))).code).toBe("42501");
       expect((await failure(loner.as.mutation(api.games.set_game_presence, { p_kind: kind, p_present: true }))).code).toBe("42501");
@@ -71,6 +72,7 @@ describe("access", () => {
     expect((await failure(couple.first.as.mutation(api.games.mark_game_settings_seen, {}))).code).toBe("42501");
     expect((await failure(couple.first.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true }))).code).toBe("42501");
     expect((await failure(couple.first.as.mutation(api.games.hide_waiting_game, { p_kind: "mind_meld" }))).code).toBe("42501");
+    expect((await failure(couple.first.as.mutation(api.games.mark_waiting_games_seen, {}))).code).toBe("42501");
   });
 
   test("a kind outside the catalog is refused", async () => {
