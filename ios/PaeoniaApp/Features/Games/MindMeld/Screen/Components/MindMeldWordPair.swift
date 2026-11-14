@@ -177,13 +177,13 @@ struct MindMeldTrailView: View {
 
     /// My word, a thin line and the partner's word. The line sits in the middle
     /// of the row and each chip touches one end of it, so a shorter line pulls
-    /// the words together.
+    /// the words together. Both halves are as wide as the wider chip, so the
+    /// row's own width keeps both words on one line.
     private func joinedChips(_ pair: Pair, lineWidth: CGFloat) -> some View {
         let mine: Color = pair.isMeld ? .paeoniaSuccess : .paeoniaPartnerOne
         let theirs: Color = pair.isMeld ? .paeoniaSuccess : .paeoniaPartnerTwo
         return HStack(spacing: 0) {
-            MindMeldWordChip(word: pair.mine, tint: mine, font: PaeoniaTypography.sectionTitle, lines: 2)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+            detailSide(pair.mine, beside: pair.theirs, tint: mine, alignment: .trailing)
             Capsule()
                 .fill(LinearGradient(
                     colors: [mine.opacity(0.7), theirs.opacity(0.7)],
@@ -192,9 +192,16 @@ struct MindMeldTrailView: View {
                 ))
                 .frame(width: lineWidth, height: PaeoniaRadius.strokeEmphasis)
                 .accessibilityHidden(true)
-            MindMeldWordChip(word: pair.theirs, tint: theirs, font: PaeoniaTypography.sectionTitle, lines: 2)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            detailSide(pair.theirs, beside: pair.mine, tint: theirs, alignment: .leading)
         }
+    }
+
+    private func detailSide(_ word: String, beside other: String, tint: Color, alignment: Alignment) -> some View {
+        ZStack(alignment: alignment) {
+            MindMeldWordChip(word: other, tint: tint, font: PaeoniaTypography.sectionTitle, lines: 2).hidden()
+            MindMeldWordChip(word: word, tint: tint, font: PaeoniaTypography.sectionTitle, lines: 2)
+        }
+        .frame(maxWidth: .infinity, alignment: alignment)
     }
 
     private func mergedChip(_ word: String) -> some View {
