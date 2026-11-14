@@ -159,8 +159,10 @@ extension MainTabView {
     }
 
     private var gamesTab: some View {
-        GamesRootView(viewModel: gamesViewModel, path: $gamesPath, tabBarVisibility: gameTabBarVisibility)
-            .gameChatPanel($gameChatSheet)
+        clearingGamesBadge(
+            on: GamesRootView(viewModel: gamesViewModel, path: $gamesPath, tabBarVisibility: gameTabBarVisibility)
+                .gameChatPanel($gameChatSheet)
+        )
     }
 
     var gamesParticipants: GameParticipants {

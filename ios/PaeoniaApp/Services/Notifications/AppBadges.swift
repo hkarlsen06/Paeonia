@@ -6,7 +6,7 @@ import Observation
 nonisolated struct AppBadgeCounts: Decodable, Equatable, Sendable {
     /// Unread chats (questions, memories and stories), today's answers to open, and Topics questions that wait.
     var questions: Int
-    /// Games that wait on this person, and open invites.
+    /// Games that wait on this person, and open invites, that came after they last saw the Games tab.
     var games: Int
     /// The partner's stories still on the Us tab that this person has not opened.
     var us: Int
