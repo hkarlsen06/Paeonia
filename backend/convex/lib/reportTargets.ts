@@ -238,6 +238,8 @@ export async function resolveContentReportTarget(
     case "thread_message": {
       const message = await getByUuid(ctx, "thread_messages", targetId);
       if (!message || message.deleted_at !== undefined || message.moderation_status !== "visible") return null;
+      // A call's row in the chat holds nothing anyone wrote.
+      if (message.call !== undefined) return fail("23514", "calls cannot be reported");
       const thread = await getByUuid(ctx, "conversation_threads", message.thread_id);
       if (!thread || thread.deleted_at !== undefined || thread.moderation_status !== "visible") return null;
       const pairId = await pairIdOf(ctx, thread.couple_id);

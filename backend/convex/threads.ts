@@ -32,7 +32,7 @@ import {
   type ThreadSubjectKind,
 } from "./lib/threadSubjects";
 import { gameKind } from "./lib/validators";
-import { projectThreadMessages } from "./lib/threadMessageProjection";
+import { callOfMessage, projectThreadMessages } from "./lib/threadMessageProjection";
 import { topicOfQuestion } from "./lib/topics";
 
 import { finishedGameForChat, gameChatSource, gameChatSubjectId, normalizeGameChatSource, type GameChatSource } from "./lib/gameChatSubjects";
@@ -196,6 +196,7 @@ function threadPushRoute(subject: ThreadSubject): Record<string, string> {
 async function assertReplyTargetAllowed(ctx: ReaderCtx, threadId: string, replyToMessageId: string): Promise<void> {
   const target = await getByUuid(ctx, "thread_messages", replyToMessageId);
   if (!target || target.thread_id !== threadId) fail("23514", "reply target must be in the same thread");
+  if (target.call !== undefined) fail("23514", "calls cannot be replied to");
   if (target.deleted_at !== undefined || target.moderation_status !== "visible") {
     fail("23514", "reply target is not available");
   }
@@ -397,6 +398,7 @@ export const edit_thread_message = mutation({
     if (message.deleted_at !== undefined || message.moderation_status !== "visible") {
       fail("23514", "message is not available");
     }
+    if (message.call !== undefined) fail("23514", "calls cannot be edited");
     if (Date.now() - Date.parse(message.created_at) > MESSAGE_EDIT_WINDOW_MS) {
       fail("23514", "messages can only be edited for 5 minutes after sending");
     }
@@ -845,6 +847,7 @@ export const get_conversation_threads = query({
         last_message_moderation_status: last?.moderation_status ?? null,
         last_message_body: visible ? last.body ?? null : null,
         last_message_media_type: lastMediaAsset?.media_type ?? null,
+        last_message_call: visible ? callOfMessage(last) : null,
         viewer_read_through_at: viewerRead?.last_read_message_created_at ?? null,
         viewer_read_through_message_id: viewerRead?.last_read_message_id ?? null,
         topic_key: topic?.key ?? null,

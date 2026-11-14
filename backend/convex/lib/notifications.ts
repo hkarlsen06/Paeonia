@@ -51,6 +51,8 @@ const NOTIFICATION_PAYLOAD_FIELDS = {
     "memory_id", "story_id", "game_chat_id", "game_kind",
   ],
   thread_message_deleted: ["type", "couple_id", "actor_user_id", "thread_id", "message_id"],
+  // The callee missed a call (lib/calls.ts). `message_id` is the call's row in the couple chat, which is also the call id.
+  missed_call: ["type", "couple_id", "actor_user_id", "route", "deeplink", "thread_id", "message_id"],
   game_turn_ready: GAME_PUSH_FIELDS,
   game_result: GAME_PUSH_FIELDS,
   game_invite: GAME_PUSH_FIELDS,
@@ -269,6 +271,7 @@ export function preferenceAllows(
       return preference.memories_enabled;
     case "thread_message_sent":
     case "thread_message_deleted":
+    case "missed_call":
       return preference.messages_enabled;
     case "game_turn_ready":
     case "game_result":

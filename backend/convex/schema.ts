@@ -49,6 +49,12 @@ const optUuid = v.optional(uuid);
 const optTs = v.optional(ts);
 const optString = v.optional(v.string());
 
+/** What a call left in the couple chat: missed, or completed with its length in whole seconds. */
+const callRecord = v.object({
+  outcome: literals("missed", "completed"),
+  duration_seconds: v.optional(v.number()),
+});
+
 const moderation = {
   moderation_status: moderationStatus,
   moderated_at: optTs,
@@ -1670,6 +1676,29 @@ export default defineSchema({
     .index("by_message_id_sort_order", ["message_id", "sort_order"])
     .index("by_media_asset_id", ["media_asset_id"]),
 
+  // FK: couple_id -> couples, caller_user_id and callee_user_id -> users. Holds a couple's live call
+  // only, while it rings or runs: at most one row per couple, deleted when the call ends (`lib/calls.ts`).
+  calls: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    caller_user_id: uuid,
+    callee_user_id: uuid,
+    state: literals("ringing", "active"),
+    // The callee's phone that answered. Their other phones stop ringing.
+    answered_device_id: optUuid,
+    ring_expires_at: ts,
+    answered_at: optTs,
+    // Each member's last heartbeat while the call runs. The heartbeat sweep ends a call that lost one.
+    caller_seen_at: optTs,
+    callee_seen_at: optTs,
+    // The Cloudflare TURN usernames handed out for this call, revoked when it ends.
+    turn_usernames: v.array(v.string()),
+    created_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id", ["couple_id"])
+    .index("by_state", ["state"]),
+
   // FK: thread_id -> conversation_threads cascade. reply_to_message_id -> thread_messages
   // in the same thread, kept when that message is removed (the reader hides its text).
   // reply_to_answer_id -> daily_question_answers of the thread's question, kept the same way.
@@ -1684,6 +1713,9 @@ export default defineSchema({
     reply_to_message_id: optUuid,
     reply_to_answer_id: optUuid,
     reply_to_game_result_source: v.optional(gameChatSource),
+    // Set on the row a call leaves in the couple chat when it ends (`lib/calls.ts`). Its id is the
+    // call's id, its sender the caller, and it has no body. It cannot be edited, replied to or reported.
+    call: v.optional(callRecord),
     created_at: ts,
     updated_at: ts,
     edited_at: optTs,
@@ -1714,6 +1746,8 @@ export default defineSchema({
     locale: optString,
     time_zone_id: optString,
     app_version: optString,
+    // The PushKit token that rings this phone for a call (`push:send_call_ring`).
+    voip_push_token: optString,
     last_seen_at: ts,
     revision: v.number(),
     created_at: ts,

@@ -3,6 +3,7 @@ import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { action, internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { requestAccountDeletion, runDeleteAccount } from "./accountDeletion";
+import { endLiveCallOfUser } from "./lib/calls";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { readAccessSnapshot } from "./lib/accessSnapshot";
 import { fetchLinkedSignInProviders } from "./lib/accountDeletionProviders";
@@ -148,6 +149,8 @@ export const register_user_device = mutation({
     p_locale: optionalText,
     p_time_zone_id: optionalText,
     p_app_version: optionalText,
+    // The PushKit token that rings this phone for calls, or null when it has none.
+    p_voip_push_token: v.union(v.null(), v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -162,6 +165,10 @@ export const register_user_device = mutation({
     const environment = args.p_apns_environment;
     if (environment !== "sandbox" && environment !== "production") {
       return fail("23514", "unsupported APNs environment");
+    }
+    const voipToken = args.p_voip_push_token ?? undefined;
+    if (voipToken !== undefined && (charLength(voipToken) < 20 || charLength(voipToken) > 4096)) {
+      return fail("23514", "invalid voip push token");
     }
 
     const locale = deviceText("locale", args.p_locale);
@@ -202,6 +209,7 @@ export const register_user_device = mutation({
         locale,
         time_zone_id: timeZoneId,
         app_version: appVersion,
+        voip_push_token: voipToken,
         last_seen_at: now,
         revision: 1,
         created_at: now,
@@ -225,6 +233,7 @@ export const register_user_device = mutation({
         locale,
         time_zone_id: timeZoneId,
         app_version: appVersion,
+        voip_push_token: voipToken,
         last_seen_at: now,
         disabled_at: undefined,
       }),
@@ -254,6 +263,8 @@ export const disable_user_device = mutation({
       return false;
     }
     await assertNoPendingAccountDeletion(ctx, userId);
+    // Signing out ends the person's live call first, so the partner's phone does not wait on it.
+    await endLiveCallOfUser(ctx, userId);
     const disabledAt = device.disabled_at ?? nowIso();
     await ctx.db.patch(device._id, withTouch(device, { disabled_at: disabledAt }));
     await refreshStreakAfterDeviceTimeZoneChange(ctx, userId, { ...device, disabled_at: disabledAt }, device);

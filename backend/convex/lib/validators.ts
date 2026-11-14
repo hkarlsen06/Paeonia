@@ -98,6 +98,7 @@ export const notificationKind = literals(
   "data_export_ready",
   "letter_arrived",
   "letter_opened",
+  "missed_call",
 );
 /** Every game, in catalog order. A new game adds its kind here and an entry in `GAME_BACKENDS` (lib/gameRegistry.ts). */
 export const GAME_KINDS = [

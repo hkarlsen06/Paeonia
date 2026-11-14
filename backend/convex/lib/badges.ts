@@ -97,11 +97,7 @@ async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Pr
   const waiting = new Set<string>();
   for (const thread of threads) {
     if (thread.deleted_at !== undefined || thread.moderation_status !== "visible") continue;
-    const last = await ctx.db
-      .query("thread_messages")
-      .withIndex("by_thread_id_created_at_id", (q) => q.eq("thread_id", thread.id))
-      .order("desc")
-      .first();
+    const last = await newestCountedMessage(ctx, thread.id);
     if (!last || last.sender_user_id === userId || last.deleted_at !== undefined || last.moderation_status !== "visible") {
       continue;
     }
@@ -123,6 +119,20 @@ async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Pr
     }
   }
   return waiting;
+}
+
+/**
+ * The thread's newest message, passing over the rows of completed calls, which never mark a chat
+ * unread. A missed call counts like a message.
+ */
+async function newestCountedMessage(ctx: ReaderCtx, threadId: string): Promise<Doc<"thread_messages"> | null> {
+  for await (const message of ctx.db
+    .query("thread_messages")
+    .withIndex("by_thread_id_created_at_id", (q) => q.eq("thread_id", threadId))
+    .order("desc")) {
+    if (message.call?.outcome !== "completed") return message;
+  }
+  return null;
 }
 
 /**

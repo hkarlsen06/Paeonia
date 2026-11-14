@@ -15,6 +15,10 @@ crons.interval("send-due-game-turn-reminders", { minutes: 15 }, internal.gameHoo
 // and keeps a running one from going stale. See liveActivities.ts.
 crons.interval("check-game-activities", { seconds: 30 }, internal.liveActivities.check_game_activities, {});
 
+// New in Convex: ends a running call that lost one member's heartbeat for 60 seconds, and a ringing
+// call whose scheduled timeout was lost. See calls.ts.
+crons.interval("sweep-calls", { seconds: 15 }, internal.calls.sweep_calls, {});
+
 // pg_cron 'paeonia-push-notification-drain' has no entry: each outbox row is a pushWorkpool
 // work item that runs at its scheduled_for and retries itself. See lib/notifications.ts.
 

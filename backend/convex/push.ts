@@ -13,6 +13,7 @@ import {
   apnsHost,
   buildAppRequest,
   buildLiveActivityRequest,
+  buildVoipRequest,
   buildWidgetRequest,
   cachedProviderTokens,
   readApnsConfig,
@@ -150,5 +151,45 @@ export const send_push = internalAction({
       confirmed_environment:
         result.ok && result.environment && result.environment !== queuedEnvironment ? result.environment : undefined,
     };
+  },
+});
+
+/**
+ * Rings the callee's phones for a call that `calls:start_call` started: one PushKit push to each active
+ * phone with a VoIP token, sent once. It has no outbox row and no retry, because a late ring is worse
+ * than none, and APNs drops it at the ring deadline. A dead token turns its device off like any push.
+ * Without APNs keys (a local backend) it logs and sends nothing, and the app rings from its subscription.
+ */
+export const send_call_ring = internalAction({
+  args: { call_id: v.string() },
+  handler: async (ctx, { call_id }) => {
+    const config = readApnsConfig(process.env);
+    if (config.missing.length > 0) {
+      console.error("call ring delivery is not configured", { missing: config.missing });
+      return null;
+    }
+    const rings = await ctx.runQuery(internal.calls.prepare_call_ring, { call_id });
+    if (rings.length === 0) return null;
+    const transport = createTransport(config);
+    const deadDevices: string[] = [];
+    try {
+      await Promise.all(
+        rings.map(async (ring) => {
+          try {
+            const result = await sendWithEnvironmentFallback(buildVoipRequest(ring, config.bundleId), transport);
+            if (result.invalidToken) deadDevices.push(ring.device_id);
+            else if (!result.ok) console.error("call ring failed", { error: result.error });
+          } catch (error) {
+            console.error("call ring failed", { error: String(error) });
+          }
+        }),
+      );
+    } finally {
+      transport.close();
+    }
+    if (deadDevices.length > 0) {
+      await ctx.runMutation(internal.pushQueue.disable_dead_devices, { device_ids: deadDevices });
+    }
+    return null;
   },
 });

@@ -74,7 +74,7 @@ describe("profile", () => {
       t.mutation(api.identity.register_user_device, {
         p_platform: "ios",
         p_push_token: "x".repeat(30),
-        p_apns_environment: "sandbox",
+        p_apns_environment: "sandbox", p_voip_push_token: null,
       }),
       "42501",
     );
@@ -296,7 +296,7 @@ describe("devices", () => {
   test("register_user_device validates input and trims optional text", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
-    const base = { p_platform: "ios", p_push_token: token("a"), p_apns_environment: "sandbox" };
+    const base = { p_platform: "ios", p_push_token: token("a"), p_apns_environment: "sandbox", p_voip_push_token: null };
     await expectFail(user.as.mutation(api.identity.register_user_device, { ...base, p_platform: "android" }), "23514", "unsupported device platform");
     await expectFail(user.as.mutation(api.identity.register_user_device, { ...base, p_push_token: "short" }), "23514", "invalid push token");
     await expectFail(user.as.mutation(api.identity.register_user_device, { ...base, p_apns_environment: "dev" }), "23514", "unsupported APNs environment");
@@ -323,7 +323,7 @@ describe("devices", () => {
   test("registering the same token again updates the device, and a disabled device gets a new row", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
-    const args = { p_platform: "ios", p_push_token: token("a"), p_apns_environment: "sandbox" };
+    const args = { p_platform: "ios", p_push_token: token("a"), p_apns_environment: "sandbox", p_voip_push_token: null };
     const id = await user.as.mutation(api.identity.register_user_device, args);
     vi.setSystemTime(new Date("2026-10-10T12:05:00.000Z"));
     expect(await user.as.mutation(api.identity.register_user_device, { ...args, p_locale: "en-US" })).toBe(id);
@@ -342,7 +342,7 @@ describe("devices", () => {
     const t = newTest();
     const first = await createSignedInUser(t, {});
     const second = await createSignedInUser(t, {});
-    const args = { p_platform: "ios", p_push_token: token("shared"), p_apns_environment: "sandbox" };
+    const args = { p_platform: "ios", p_push_token: token("shared"), p_apns_environment: "sandbox", p_voip_push_token: null };
     const firstId = await first.as.mutation(api.identity.register_user_device, args);
     const secondId = await second.as.mutation(api.identity.register_user_device, args);
     expect(secondId).not.toBe(firstId);
@@ -356,7 +356,7 @@ describe("devices", () => {
   test("registration disables duplicate tokens while preserving the other APNs environment", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
-    const args = { p_platform: "ios", p_push_token: token("shared"), p_apns_environment: "sandbox" };
+    const args = { p_platform: "ios", p_push_token: token("shared"), p_apns_environment: "sandbox", p_voip_push_token: null };
     await user.as.mutation(api.identity.register_user_device, args);
     await t.run(async (ctx) => {
       const original = (await ctx.db.query("user_devices").first())!;

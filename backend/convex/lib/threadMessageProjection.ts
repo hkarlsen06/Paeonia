@@ -4,6 +4,11 @@ import { getByUuid } from "./db";
 import { reactionsOf } from "./reactions";
 import { isUsableMediaAsset } from "./mediaAssetState";
 
+/** What a call left in the chat (`lib/calls.ts`), or null for a message. */
+export function callOfMessage(message: Doc<"thread_messages">) {
+  return message.call ? { outcome: message.call.outcome, duration_seconds: message.call.duration_seconds ?? null } : null;
+}
+
 /** The shared safe wire projection for a message page or a merged game timeline. */
 export async function projectThreadMessages(ctx: ReaderCtx, thread: Doc<"conversation_threads">, messages: Doc<"thread_messages">[]) {
   const threadVisible = thread.deleted_at === undefined && thread.moderation_status === "visible";
@@ -27,6 +32,7 @@ export async function projectThreadMessages(ctx: ReaderCtx, thread: Doc<"convers
         media: [],
         media_states: [],
         reactions: [],
+        call: null,
       });
       continue;
     }
@@ -87,6 +93,7 @@ export async function projectThreadMessages(ctx: ReaderCtx, thread: Doc<"convers
       media,
       media_states: mediaStates,
       reactions,
+      call: messageVisible ? callOfMessage(message) : null,
     });
   }
   return rows;

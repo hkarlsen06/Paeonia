@@ -232,7 +232,7 @@ describe("request_account_deletion", () => {
       first.as.mutation(api.identity.register_user_device, {
         p_platform: "ios",
         p_push_token: "account-deletion-recreated-push-token",
-        p_apns_environment: "sandbox",
+        p_apns_environment: "sandbox", p_voip_push_token: null,
       }),
       "42501",
       "account deletion is in progress",

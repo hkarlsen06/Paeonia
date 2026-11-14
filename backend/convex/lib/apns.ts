@@ -148,6 +148,8 @@ const NOTIFICATION_CATEGORY: Record<
   string
 > = {
   thread_message_sent: "message",
+  // A missed call lands in the couple chat, so it shares the chat's category.
+  missed_call: "message",
   widget_updated: "drawing",
   partner_answered: "answer",
   daily_challenge_completed: "answer",
@@ -180,6 +182,7 @@ const NOTIFICATION_CATEGORY: Record<
 export function notificationThreadId(payload: Record<string, unknown>): string | null {
   switch (payload.type) {
     case "thread_message_sent":
+    case "missed_call":
       return typeof payload.thread_id === "string" ? `chat:${payload.thread_id}` : "chat";
     case "game_turn_ready":
     case "game_turn_reminder":
@@ -379,6 +382,42 @@ export function buildLiveActivityRequest(push: PreparedLiveActivityPush, bundleI
     expiration: String(timestamp + lifetime),
     collapseId: null,
     body: JSON.stringify(buildLiveActivityApsPayload(push)),
+  };
+}
+
+/** One ring of a call on one of the callee's phones, read when `start_call` schedules it (`prepare_call_ring` in calls.ts). */
+export type PreparedCallRing = {
+  device_id: string;
+  voip_push_token: string;
+  apns_environment: ApnsEnvironment;
+  call_id: string;
+  caller_user_id: string;
+  ring_expires_at: string;
+  /** The callee's choice. "private" makes the phone show "Paeonia" instead of the caller's name. */
+  lock_screen_detail_level: LockScreenDetailLevel;
+};
+
+/**
+ * A PushKit push that rings the callee's phone. It holds ids and the ring deadline only, and the
+ * phone takes the partner's name from its own store. APNs drops it at the ring deadline, because a
+ * late ring is worse than none.
+ */
+export function buildVoipRequest(ring: PreparedCallRing, bundleId: string): ApnsSendRequest {
+  return {
+    token: ring.voip_push_token,
+    preferredEnvironment: ring.apns_environment,
+    topic: `${bundleId}.voip`,
+    pushType: "voip",
+    priority: "10",
+    expiration: String(Math.floor(Date.parse(ring.ring_expires_at) / 1000)),
+    collapseId: null,
+    body: JSON.stringify({
+      type: "call",
+      call_id: ring.call_id,
+      caller_user_id: ring.caller_user_id,
+      ring_expires_at: ring.ring_expires_at,
+      lock_screen_detail_level: ring.lock_screen_detail_level,
+    }),
   };
 }
 

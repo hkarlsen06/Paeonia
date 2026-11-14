@@ -249,7 +249,7 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       en: "The phones you use Paeonia on: model type, language, time zone, app version and when each was last used. The secret notification codes are left out.",
       nb: "Telefonene du bruker Paeonia på: type, språk, tidssone, appversjon og når hver sist ble brukt. De hemmelige varslingskodene er utelatt.",
     },
-    hide: ["push_token", "push_token_hash"],
+    hide: ["push_token", "push_token_hash", "voip_push_token"],
   }),
   widget_push_devices: own("user_id", "by_user_id_disabled_at", {
     group: "settings",
@@ -836,6 +836,9 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   // ---- not exported ----
   account_deletion_jobs: excluded(
     "Exists only after account deletion has started, and then the person can no longer sign in to ask.",
+  ),
+  calls: excluded(
+    "A call that rings or runs right now, deleted when it ends. The call's row in the couple chat is exported with the chat.",
   ),
   client_operations: excluded(
     "Short-lived copies of what the phone sent, kept 30 days to stop a write from running twice. The content is exported from the real tables.",

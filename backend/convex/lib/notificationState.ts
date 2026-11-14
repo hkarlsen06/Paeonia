@@ -37,7 +37,8 @@ export async function notificationStillWanted(
     return { wanted: false, reason: "out_of_date" };
   }
   // A message its sender took back before the alert went out needs no alert.
-  if (row.kind === "thread_message_sent" && typeof payload.message_id === "string") {
+  // A missed call the callee already saw in the chat needs no alert either.
+  if ((row.kind === "thread_message_sent" || row.kind === "missed_call") && typeof payload.message_id === "string") {
     const message = await getByUuid(ctx, "thread_messages", payload.message_id);
     const thread = message ? await getByUuid(ctx, "conversation_threads", message.thread_id) : null;
     if (!message || message.deleted_at !== undefined || message.moderation_status !== "visible" ||

@@ -331,6 +331,8 @@ export function notificationAlertBody(
       return nb ? "Åpne det i Oss-fanen." : "Open it in the Us tab.";
     case "letter_opened":
       return nb ? "Se det blant brevene du har sendt." : "See it in the letters you sent.";
+    case "missed_call":
+      return nb ? "Åpne chatten for å ringe tilbake." : "Open your chat to call back.";
     case "thread_message_sent":
       // Every chat push has the same shape and never names the topic, so a Flirt chat looks like any other.
       return nb ? "Sendte deg en melding" : "Sent you a message";
@@ -491,6 +493,8 @@ export async function notificationAlertTitle(
       return name;
     case "topics_waiting":
       return nb ? `Nye svar fra ${name}` : `New answers from ${name}`;
+    case "missed_call":
+      return nb ? `Tapt anrop fra ${name}` : `Missed call from ${name}`;
     case "reaction_added": {
       const emoji = typeof payload.emoji === "string" ? ` ${payload.emoji}` : "";
       return nb ? `${name} reagerte${emoji}` : `${name} reacted${emoji}`;

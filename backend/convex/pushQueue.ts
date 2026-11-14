@@ -99,6 +99,7 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
       return preference?.memories_enabled ?? false;
     case "thread_message_sent":
     case "thread_message_deleted":
+    case "missed_call":
       return preference?.messages_enabled ?? false;
     case "game_turn_ready":
     case "game_result":
@@ -464,3 +465,12 @@ async function disableDevice(ctx: WriterCtx, kind: "app" | "widget", deviceId: s
     }
   }
 }
+
+/** Turns off the app devices whose token APNs called dead outside the outbox, such as a call ring (`push:send_call_ring`). */
+export const disable_dead_devices = internalMutation({
+  args: { device_ids: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    for (const deviceId of args.device_ids) await disableDevice(ctx, "app", deviceId);
+    return null;
+  },
+});

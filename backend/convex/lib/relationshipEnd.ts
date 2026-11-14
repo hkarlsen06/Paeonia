@@ -1,6 +1,7 @@
 import type { WriterCtx } from "./db";
 import { withUpdatedAt } from "./db";
 import { fail } from "./errors";
+import { endLiveCallOfCouple } from "./calls";
 import { deleteHeartsForCouple } from "./hearts";
 import { endCoupleGameActivities } from "./liveActivities";
 import { queueBadgeUpdate } from "./badges";
@@ -81,6 +82,8 @@ export async function endRelationshipForPair(
     return fail("42501", "initiating user is not an active member of the relationship");
   }
 
+  // The live call ends first, while its row can still go in the couple chat.
+  await endLiveCallOfCouple(ctx, couple.id);
   await ctx.db.patch(couple._id, withUpdatedAt({ status: "ended" as const, ended_at: now, delete_after: cleanupDeadline }));
   await deleteLatestLocationsForCouple(ctx, couple.id);
   // The privacy text promises that the dates noted from location and visits go now, not at cleanup.

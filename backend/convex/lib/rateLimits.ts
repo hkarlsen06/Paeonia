@@ -32,6 +32,8 @@ const LIMITS = {
   welcomeStep: { kind: "token bucket", rate: 6000, period: HOUR, capacity: 1000 },
   // Live Activity tokens and the ends a phone reports. A phone sends a few per launch and per game session.
   liveActivity: { kind: "token bucket", rate: 120, period: HOUR, capacity: 60 },
+  // Starting a call. A retry of the same call and answering a ringing call count too.
+  startCall: { kind: "token bucket", rate: 60, period: HOUR, capacity: 20 },
 } as const;
 
 export const rateLimiter = new RateLimiter(components.rateLimiter, LIMITS);

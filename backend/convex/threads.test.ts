@@ -954,6 +954,7 @@ describe("reads", () => {
       last_message_moderation_status: "visible",
       last_message_body: "latest",
       last_message_media_type: null,
+      last_message_call: null,
       viewer_read_through_at: null,
       viewer_read_through_message_id: null,
     });
@@ -1064,6 +1065,7 @@ describe("reads", () => {
       media: [],
       media_states: [],
       reactions: [],
+      call: null,
     });
     expect(rows[1]).toMatchObject({ body: null, moderation_status: "hidden" });
   });

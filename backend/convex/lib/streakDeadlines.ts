@@ -51,6 +51,11 @@ export function lastHourReminderAllowed(now: string, timeZone: string): boolean 
  * valid zone, else the profile zone, else UTC.
  */
 export async function resolveMemberStreakTimeZone(ctx: ReaderCtx, userId: string): Promise<string> {
+  return (await knownMemberTimeZone(ctx, userId)) ?? "UTC";
+}
+
+/** The member's zone from their newest active device with a valid zone, else their profile, else null. */
+export async function knownMemberTimeZone(ctx: ReaderCtx, userId: string): Promise<string | null> {
   const devices = await ctx.db
     .query("user_devices")
     .withIndex("by_user_id_disabled_at", (q) => q.eq("user_id", userId).eq("disabled_at", undefined))
@@ -69,7 +74,7 @@ export async function resolveMemberStreakTimeZone(ctx: ReaderCtx, userId: string
     .query("profiles")
     .withIndex("by_user_id", (q) => q.eq("user_id", userId))
     .unique();
-  return isValidTimeZone(profile?.time_zone_id) ? profile.time_zone_id : "UTC";
+  return isValidTimeZone(profile?.time_zone_id) ? profile.time_zone_id : null;
 }
 
 /**

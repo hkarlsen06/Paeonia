@@ -40,6 +40,17 @@ Every part except the WebRTC library reuses something Paeonia already runs.
 - **Leaving.** Sign-out, leaving the relationship and account deletion end the live call first, in the existing purge paths.
 - **App setup.** The app adds the `audio` and `voip` background modes next to `remote-notification`. `NSMicrophoneUsageDescription` and `NSCameraUsageDescription` in `ios/PaeoniaApp/Supporting/Info.plist` mention calls as well as voice messages and photos.
 
+## Backend
+
+Built on 2026-11-14 in `backend/convex/calls.ts`, `lib/calls.ts`, `push:send_call_ring` and the relay's `call` channel. `backend/AGENTS.md` lists the functions and their errors.
+
+- `start_call` takes the call id the app proposes and the phone's device id. A retry with the same id returns the same call, and an id whose call already ended is refused, because the call's row in "Just us" uses the call id as its message id.
+- The call's row in "Just us" is a `thread_messages` row with `call: { outcome, duration_seconds }`, the caller as sender and no body. Every message read returns `call` (null for a message), and `get_conversation_threads` returns `last_message_call`. The server refuses to edit, reply to or report it.
+- The missed-call push is the `missed_call` kind under the Messages switch. It opens `paeonia://chat` and uses the chat's `message` category, so the lock screen says "New message" when previews are hidden. It goes out for a caller cancel or a ring timeout, not for a decline, and not when the person already read the chat.
+- A `sweep-calls` cron every 15 seconds ends a running call that lost one side's heartbeat for 60 seconds, and a ringing call whose scheduled timeout was lost.
+- Sign-out (`disable_user_device`) ends the person's live call whichever phone signs out. Ending the relationship, which account deletion and bans also do, ends it before the couple ends, so its row still lands in "Just us".
+- TURN credentials come from Cloudflare's `generate-ice-servers` endpoint with a 24-hour TTL and the call id as `customIdentifier`. The call row keeps their usernames, and the call's end revokes them.
+
 ## Call states
 
 | Event | Rule |
