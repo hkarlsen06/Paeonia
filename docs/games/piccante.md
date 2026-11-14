@@ -33,7 +33,7 @@ Game projection keys: `id`, `game_number`, `version`, `starter_user_id`, `turn_u
 
 ## Screens and integration
 
-Size choice, hiding with optional note, waiting, biting with selection and sniff, held queued bite, burn reveal and finished box. The game chat owns past results, with no separate history screen. The main screen uses shared presence, invite, reactions, attention and tutorial components. The relay carries game number, version and the public lifted tile only during biting. Reaction messages also carry that selection. It never carries chilis, notes or private sniff positions. Offline hides and bites queue in the shared outbox. A sniff requires a connection. A queued bite never predicts its outcome.
+Size choice, hiding with optional note, waiting, biting with selection, sniff mode on the same board, held queued bite, burn reveal and finished box. The game chat owns past results, with no separate history screen. The main screen uses shared presence, invite, reactions, attention and tutorial components. The relay carries game number, version and the public lifted tile only during biting. Reaction messages also carry that selection. It never carries chilis, notes or private sniff positions. Offline hides and bites queue in the shared outbox. A sniff requires a connection. A queued bite never predicts its outcome.
 
 The hub follows Ultimate Tic-Tac-Toe in the catalog. Its illustration is an open chocolate box with a warm glowing chocolate and small chili. Three tutorial cards teach hiding with a note, biting and own-chili danger, and the sniff. Every uneaten tile reads its row, column and illustrated variety to VoiceOver. Eaten wrappers say "Eaten". Own chili, lifted selection, the partner's latest bite and private sniff marks add their spoken states. Extra controls open a native Board controls list.
 
@@ -49,7 +49,13 @@ The finished box keeps its play size, with scrolling space for the note and acti
 
 ## Private sniff selection
 
-Sniff opens its own private board picker. Extra controls keep a native list of available positions below the board. From Board controls, the picker presents inside that sheet. It never reuses or broadcasts the lifted bite selection. Otherwise the partner could infer the sniffed tile when the used indicator appears. Closing the picker leaves the public bite selection unchanged. The partner learns only that a sniff was used. After confirmation, the sniffed chocolate has a private check for safe or a flame with a warm glow for hot. Shapes distinguish these states without color. Neither the draft selection nor the confirmed tile goes over the relay.
+Sniff happens on the main board. `PiccanteViewModel.boardMode` is `.bite` or `.sniff(target:)`. The Sniff button switches the board to sniff mode. The title becomes "Sniff a chocolate", and a hint under the board says that only this person learns whether the chocolate hides the partner's chili. In sniff mode a tap lifts the sniff target with a selection haptic and no lift sound. The person's own chili and eaten pieces cannot be chosen. "Sniff this one" sends the sniff, and Cancel returns to biting.
+
+The sniff target is local to the phone. It never changes the lifted bite selection, which the relay shares, and nothing about it goes over the relay. Otherwise the partner could work out the sniffed chocolate when the used indicator appears. While sniffing, the board lifts the target in place of the bite selection. Cancel or a successful sniff shows the bite selection again. A failed sniff keeps sniff mode and the target, so the person can try again. A new turn, a new game or a used sniff returns the board to biting. The partner learns only that a sniff was used.
+
+After a sniff, a result card under the board stays until the game ends. A safe chocolate gets a checkmark, "Safe to bite" and a calm card. The partner's chili gets a flame, "That's <partner>'s chili" and the warm warning colors of the board's flame mark. VoiceOver reads the card as one element. The sniffed chocolate also carries a private badge, a check for safe or a flame with a warm glow for hot. The badge is at least 28 points wide and 0.4 of a tile. Shapes distinguish these states without color.
+
+Board controls has no second sheet. Its Sniff button switches the same list to sniff mode. Only chocolates that can be sniffed stay enabled, and the list shows the hint, "Sniff this one" and Cancel.
 
 ## Storage and results
 
@@ -202,7 +208,7 @@ Imported from `same-one.wav`.
 | `piccante-choose` | Either partner chooses the box size |
 | `piccante-choose-second` | The second opener also sees the choices |
 | `piccante-hub` | Isolated hub card with an unseen result |
-| `piccante-sniff-hot` | Private flame mark on the sniffed chocolate |
+| `piccante-sniff-hot` | Private flame mark and hot result card |
 | `piccante-hide` | Hide one chili with an optional note |
 | `piccante-biting` | Choose and confirm a bite |
 | `piccante-partner-lifted` | Partner's live lifted chocolate |
@@ -213,4 +219,4 @@ Imported from `same-one.wav`.
 
 Piccante scenarios accept `-paeonia-scenario-piccante-size 3`, `4` or `5`, `-paeonia-scenario-piccante-compact YES` for a 320-point play area, `-paeonia-scenario-piccante-winner YES` for the winner's result perspective, and `-paeonia-scenario-piccante-together YES` for the shared completed-game count.
 
-Pure iOS tests cover selection legality, one sniff, note scalars, restored epochs, held bites and queued seen/size/hide ordering. The UI journeys check that a successful private sniff preserves the public lifted chocolate and that sniffing opens from Board controls. The pending-operation regression covers a lost rematch race without consuming a game version. Backend tests cover access to every public function, rules, private projections, stale moves, idempotency, rematches, waiting keys and cleanup.
+Pure iOS tests cover selection legality, one sniff, note scalars, restored epochs, held bites and queued seen/size/hide ordering. The UI journeys check that sniffing on the main board leaves the public lifted chocolate in place, and that a sniff works inside the Board controls list. The pending-operation regression covers a lost rematch race without consuming a game version. Backend tests cover access to every public function, rules, private projections, stale moves, idempotency, rematches, waiting keys and cleanup.
