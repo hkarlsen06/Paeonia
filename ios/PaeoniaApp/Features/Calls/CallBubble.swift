@@ -28,7 +28,6 @@ struct CallBubble: View {
         .onTapGesture(perform: open)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(named: Text(.callsOpenCall), open)
-        .accessibilityIdentifier("calls.bubble")
     }
 
     private var voice: some View {
@@ -48,6 +47,8 @@ struct CallBubble: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(.callsBubbleAccessibilityLabel(participants.partnerName)))
             .accessibilityAddTraits(.isButton)
+            // Here and not on the whole bubble, where it would replace the mute and end buttons' own.
+            .accessibilityIdentifier("calls.bubble")
 
             if !isEnded {
                 bubbleButton(
@@ -77,6 +78,7 @@ struct CallBubble: View {
             .accessibilityElement()
             .accessibilityLabel(Text(.callsBubbleAccessibilityLabel(participants.partnerName)))
             .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("calls.bubble")
     }
 
     private func bubbleButton(

@@ -125,10 +125,11 @@ struct CallScreen: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                     .multilineTextAlignment(.center)
                 CallStatusLine(phase: session.phase)
-                    .accessibilityIdentifier("calls.status")
                 partnerTime
             }
             .accessibilityElement(children: .combine)
+            // On the combined element, because the children it merges are not exposed.
+            .accessibilityIdentifier("calls.status")
         }
     }
 

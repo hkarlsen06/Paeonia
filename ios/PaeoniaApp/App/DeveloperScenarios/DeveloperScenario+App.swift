@@ -9,6 +9,7 @@
       relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
       localFlowGameConversation, localFlowGameChatDrawing, localFlowGameChatBoard, localFlowGameChatFinishedRuns,
+      localFlowCall,
       avatarStoriesNew, avatarStoriesSeen, avatarStoriesEmpty,
       mailEmpty, mailMailbox, mailSent, mailComposerTemplates, mailComposerDelivery, mailComposerTogether,
       mailComposerTogetherUnchecked, mailComposerNoVisit, mailComposerVisitTooSoon, mailComposerBirthday,

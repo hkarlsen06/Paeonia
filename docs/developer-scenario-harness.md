@@ -32,6 +32,10 @@ replaced with in-memory implementations.
 - `local-flow-game-chat-drawing` and `local-flow-game-chat-board`: begin inside Draw & Guess
   while the partner draws, and inside Four in a Row on the partner's turn. Open the chat from
   the toolbar to see its panel over the game.
+- `local-flow-call`: begin inside Four in a Row with a partner who answers calls
+  (`DeveloperAnsweringCallEngine`). A call rings for a second, connects for a second and runs
+  until it ends, and its row then lands in "Just us". `CallJourneyUITests` starts one from the
+  toolbar, shrinks it to the bubble and ends it from "Just us".
 
 The purchase button grants local entitlement, invite acceptance creates the local
 relationship, sign-out and deletion clear the local session, leaving the

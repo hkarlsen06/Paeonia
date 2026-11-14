@@ -46,6 +46,16 @@
       LocalStoreChanges.post(.threadChat, ownerUserID: DeveloperScenarioFixture.currentUserID)
     }
 
+    /// Adds a finished call's row to "Just us", as the server does when a call ends.
+    func recordCall(_ call: ThreadChatCall) async {
+      let owner = DeveloperScenarioFixture.currentUserID
+      let threadID = await gateway.recordCall(call)
+      _ = try? await chat.refreshThreadSummaries(ownerUserID: owner)
+      _ = try? await chat.refreshMessages(
+        ownerUserID: owner, subjectID: ThreadChatSubject.couple.id, threadID: threadID)
+      LocalStoreChanges.post(.threadChat, ownerUserID: owner)
+    }
+
     /// Plays the partner opening the Mind Meld chat, typing, then leaving, a few seconds apart.
     func playPartnerInChat() async {
       let steps: [ThreadChatPresence] = [
@@ -166,6 +176,17 @@
         senderUserID: DeveloperScenarioFixture.partnerUserID)
     }
 
+    func recordCall(_ call: ThreadChatCall) -> UUID {
+      let threadID = threadIDs[.couple] ?? UUID()
+      append(
+        ThreadChatMessage(
+          id: UUID(), threadID: threadID, subjectID: ThreadChatSubject.couple.id,
+          senderUserID: DeveloperScenarioFixture.currentUserID, body: "", createdAt: .now, clientOperationID: nil,
+          delivery: .sent, call: call),
+        subject: .couple, coupleID: DeveloperScenarioFixture.coupleID)
+      return threadID
+    }
+
     func loadGameResult(coupleID _: UUID, source: GameConversationSource) -> GameConversationResult?
     {
       references.contains { $0.source == source } ? result : nil
@@ -215,12 +236,19 @@
       -> ThreadChatMessageResponse
     {
       let threadID = threadIDs[subject] ?? UUID()
-      threadIDs[subject] = threadID
       let message = ThreadChatMessage(
         id: UUID(), threadID: threadID, subjectID: subject.id, senderUserID: senderUserID,
         body: body, createdAt: operation.localCreatedAt, clientOperationID: operation.id,
         delivery: .sent, replyTo: replyTo
       )
+      append(message, subject: subject, coupleID: coupleID)
+      return ThreadChatMessageResponse(threadID: threadID, messageID: message.id)
+    }
+
+    /// Adds `message` to its thread and makes it the thread's newest line.
+    private func append(_ message: ThreadChatMessage, subject: ThreadChatSubject, coupleID: UUID) {
+      guard let threadID = message.threadID else { return }
+      threadIDs[subject] = threadID
       messages.append(message)
       let firstInThread = messages.first { $0.threadID == threadID } ?? message
       summaries.removeAll { $0.subject == subject }
@@ -229,9 +257,9 @@
           threadID: threadID, coupleID: coupleID, subject: subject,
           createdAt: firstInThread.createdAt, updatedAt: message.createdAt,
           lastMessageID: message.id, lastMessageAt: message.createdAt,
-          lastMessageSenderUserID: message.senderUserID, lastMessageBody: body
+          lastMessageSenderUserID: message.senderUserID, lastMessageBody: message.body,
+          lastMessageCall: message.call
         ))
-      return ThreadChatMessageResponse(threadID: threadID, messageID: message.id)
     }
   }
 
