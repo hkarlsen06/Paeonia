@@ -1,28 +1,34 @@
 import SwiftUI
 
-/// The soft light behind the top of every tab's first screen. Pink from the left and lavender
-/// from the right, the same two lights as the Games room (`GameHubBackdrop`), meeting in the
-/// middle. Both fade out to the plain plum by half the screen's height. Quiet on purpose: it
-/// shows around the cards and behind the top bar. Every tab draws the same light in the same
-/// place, so switching tabs leaves it still.
+/// The soft light behind the top of every tab's first screen, on the plain plum. Every tab
+/// draws the same light in the same place, so switching tabs leaves it still.
 struct PaeoniaTabBackdrop: View {
-    /// How far down the light reaches, as a share of the screen height.
-    private static let reach: CGFloat = 0.5
-    private static let glowOpacity = 0.22
-
     var body: some View {
         ZStack(alignment: .top) {
             Color.paeoniaBackgroundPrimary
             GeometryReader { proxy in
-                ZStack {
-                    glow(.paeoniaAccentPrimary, from: .topLeading)
-                    glow(.paeoniaBackdropGlow, from: .topTrailing)
-                }
-                .frame(height: proxy.size.height * Self.reach)
+                PaeoniaTabLight()
+                    .frame(height: proxy.size.height * PaeoniaTabLight.reach)
             }
         }
         .ignoresSafeArea()
         .accessibilityHidden(true)
+    }
+}
+
+/// Pink from the left and lavender from the right, the same two lights as the Games room
+/// (`GameHubBackdrop`), meeting in the middle. Quiet on purpose: it shows around the cards
+/// and behind the top bar. Home's map draws it over itself, so the Us tab has it too.
+struct PaeoniaTabLight: View {
+    /// How far down the light reaches, as a share of the screen height.
+    static let reach: CGFloat = 0.5
+    var strength = 0.22
+
+    var body: some View {
+        ZStack {
+            glow(.paeoniaAccentPrimary, from: .topLeading)
+            glow(.paeoniaBackdropGlow, from: .topTrailing)
+        }
     }
 
     /// An ellipse of light centered on a top corner. The stops ease out, so the edge
@@ -30,10 +36,10 @@ struct PaeoniaTabBackdrop: View {
     private func glow(_ color: Color, from corner: UnitPoint) -> some View {
         EllipticalGradient(
             stops: [
-                .init(color: color.opacity(Self.glowOpacity), location: 0),
-                .init(color: color.opacity(Self.glowOpacity * 0.6), location: 0.25),
-                .init(color: color.opacity(Self.glowOpacity * 0.28), location: 0.5),
-                .init(color: color.opacity(Self.glowOpacity * 0.08), location: 0.75),
+                .init(color: color.opacity(strength), location: 0),
+                .init(color: color.opacity(strength * 0.6), location: 0.25),
+                .init(color: color.opacity(strength * 0.28), location: 0.5),
+                .init(color: color.opacity(strength * 0.08), location: 0.75),
                 .init(color: color.opacity(0), location: 1),
             ],
             center: corner,

@@ -221,6 +221,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
             // Always as tall as the map can get, so the map view never resizes while
             // the map grows or shrinks. Only the fade moves.
             .frame(height: screen.mapHeight)
+            .overlay(alignment: .top) { tabLight(screen) }
             .mask(alignment: .top) { fadeMask(metrics) }
             .opacity(mapOpacity)
 
@@ -359,6 +360,19 @@ extension HomeMapLayout {
     }
 
     var mapProjection: HomeMapProjection? { camera.projection }
+
+    /// The other tabs' light from the top, drawn over the map so Home has it too. The map is
+    /// darker than the plain background, so the light is stronger here to look the same. It
+    /// stays put while the map scrolls away, like the light behind the cards.
+    private func tabLight(_ screen: HomeMapScreen) -> some View {
+        PaeoniaTabLight(strength: 0.35)
+            .frame(height: (screen.visibleBottom + screen.bottomInset) * PaeoniaTabLight.reach)
+            .visualEffect { content, proxy in
+                content.offset(y: max(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY))
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
 
     private var reservesMapSpace: Bool { mapState == .loading || couple != nil }
 
