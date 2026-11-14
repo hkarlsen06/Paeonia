@@ -160,8 +160,10 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
         .frame(width: screen.width)
         // With the map, the page fills the screen down to the top of the tab bar, and
         // the map takes whatever the cards leave. One layout pass sizes both, so they
-        // move together when a card changes height.
-        .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)
+        // move together when a card changes height. A tall card makes the page longer
+        // by most of its height, so it pushes the cards under it down instead of
+        // shrinking the map.
+        .modifier(HomeMapPageHeight(minHeight: reservesMapSpace ? screen.fillHeight : nil))
     }
 
     // MARK: Top

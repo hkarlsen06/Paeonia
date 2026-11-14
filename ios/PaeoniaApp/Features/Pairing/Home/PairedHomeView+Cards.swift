@@ -215,6 +215,9 @@ extension PairedHomeView {
                 onClose: onCloseFirstSteps,
                 onFinished: onCloseFirstSteps
             )
+            // The card is tall, so on the map layout it pushes the tiles down instead of
+            // taking the map's height.
+            .homeMapPushesDown()
             .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
             // In front of the cards around it, so they don't hide the petals of its finish moment.
             .zIndex(1)
