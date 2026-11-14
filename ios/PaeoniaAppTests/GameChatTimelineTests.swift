@@ -174,6 +174,90 @@ struct GameChatTimelineTests {
         #expect(model.gameResultCards.allSatisfy { !$0.isExpanded })
     }
 
+    @Test func resultsNextToEachOtherFoldIntoRunsThatAMessageEnds() {
+        let day = Calendar.current.startOfDay(for: Date(timeIntervalSince1970: 1_800_000_000))
+        let first = result(at: day, hour: 10, minute: 0)
+        let second = result(at: day, hour: 10, minute: 5)
+        let between = message(at: day.addingTimeInterval(10 * 3_600 + 10 * 60))
+        let third = result(at: day, hour: 10, minute: 15)
+        let fourth = result(at: day, hour: 10, minute: 20)
+        let last = message(at: day.addingTimeInterval(10 * 3_600 + 25 * 60))
+        let lone = result(at: day, hour: 10, minute: 30)
+        let projection = gameProjection(
+            messages: [between, last], results: [first, second, third, fourth, lone])
+        #expect(
+            projection.exyteMessages.map(\.id) == [
+                ThreadChatProjection.gameRunRowID(first.id),
+                ThreadChatProjection.rowID(for: between),
+                ThreadChatProjection.gameRunRowID(third.id),
+                ThreadChatProjection.rowID(for: last),
+                ThreadChatProjection.gameResultRowID(lone.id),
+            ])
+        #expect(runResultIDs(projection, first) == [first.id, second.id])
+        #expect(runResultIDs(projection, third) == [third.id, fourth.id])
+    }
+
+    @Test func aRunEndsWhereANewDayBegins() throws {
+        let day = Calendar.current.startOfDay(for: Date(timeIntervalSince1970: 1_800_000_000))
+        let nextDay = try #require(Calendar.current.date(byAdding: .day, value: 1, to: day))
+        let late = result(at: day, hour: 23, minute: 0)
+        let later = result(at: day, hour: 23, minute: 50)
+        let afterMidnight = result(at: nextDay, hour: 0, minute: 10)
+        let projection = gameProjection(messages: [], results: [late, later, afterMidnight])
+        #expect(
+            projection.exyteMessages.map(\.id) == [
+                ThreadChatProjection.gameRunRowID(late.id),
+                ThreadChatProjection.gameResultRowID(afterMidnight.id),
+            ])
+        #expect(runResultIDs(projection, late) == [late.id, later.id])
+    }
+
+    /// An opened run lists its games, and a game opened inside it keeps the run open.
+    @Test func anOpenRunListsItsGamesInOrder() {
+        let day = Calendar.current.startOfDay(for: Date(timeIntervalSince1970: 1_800_000_000))
+        let first = result(at: day, hour: 9, minute: 0)
+        let second = result(at: day, hour: 9, minute: 4)
+        let expectedIDs = [
+            ThreadChatProjection.gameRunRowID(first.id),
+            ThreadChatProjection.gameResultRowID(first.id),
+            ThreadChatProjection.gameResultRowID(second.id),
+        ]
+        let openedRun = gameProjection(messages: [], results: [first, second], expandedRunIDs: [first.id])
+        #expect(openedRun.exyteMessages.map(\.id) == expectedIDs)
+        let openedGame = gameProjection(messages: [], results: [first, second], expandedResultIDs: [second.id])
+        #expect(openedGame.exyteMessages.map(\.id) == expectedIDs)
+    }
+
+    private func gameProjection(
+        messages: [ThreadChatMessage],
+        results: [GameChatResultReference],
+        expandedRunIDs: Set<UUID> = [],
+        expandedResultIDs: Set<UUID> = []
+    ) -> ThreadChatProjection {
+        ThreadChatProjection.make(
+            input: .init(
+                rounds: [], messages: messages, currentUserID: ownerID, partnerName: "Robin", youName: "You",
+                gameResults: results.map {
+                    .init(
+                        reference: $0, result: nil, isExpanded: expandedResultIDs.contains($0.id),
+                        loadState: .loading)
+                },
+                expandedGameRunIDs: expandedRunIDs))
+    }
+
+    private func runResultIDs(_ projection: ThreadChatProjection, _ oldest: GameChatResultReference) -> [UUID]? {
+        guard case let .gameResultRun(run)? = projection.rowsByID[ThreadChatProjection.gameRunRowID(oldest.id)]?.kind
+        else { return nil }
+        return run.results.map(\.reference.id)
+    }
+
+    private func result(at day: Date, hour: Int, minute: Int) -> GameChatResultReference {
+        let source = GameConversationSource.mindMeld(UUID())
+        return .init(
+            source: source, finishedAt: day.addingTimeInterval(TimeInterval(hour * 3_600 + minute * 60)),
+            key: source.id.uuidString.lowercased())
+    }
+
     private func result(at time: TimeInterval) -> GameChatResultReference {
         let source = GameConversationSource.mindMeld(UUID())
         return .init(
