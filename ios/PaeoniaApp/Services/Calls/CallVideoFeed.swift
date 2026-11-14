@@ -23,8 +23,8 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
     @MainActor private var frameSize: CGSize = .zero
 
     @MainActor
-    func makeView() -> CallVideoView {
-        let view = CallVideoView()
+    func makeView() -> CallVideoLayerView {
+        let view = CallVideoLayerView()
         view.isMirrored = isMirrored
         views.removeAll { $0.view == nil }
         views.append(WeakVideoView(view: view))
@@ -38,7 +38,7 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
         frameSize = .zero
     }
 
-    @MainActor private var liveViews: [CallVideoView] {
+    @MainActor private var liveViews: [CallVideoLayerView] {
         views.compactMap(\.view)
     }
 
@@ -156,15 +156,15 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
     }
 
     private struct WeakVideoView {
-        weak var view: CallVideoView?
+        weak var view: CallVideoLayerView?
     }
 }
 
 /// Shows one side's video, filled to its bounds and turned the way the sender held the phone.
-final class CallVideoView: UIView {
+final class CallVideoLayerView: UIView {
     /// Called when the view enters or leaves a window, so Picture in Picture can follow the
     /// partner's video on screen.
-    var onWindowChange: ((CallVideoView) -> Void)?
+    var onWindowChange: ((CallVideoLayerView) -> Void)?
     var isMirrored = false {
         didSet { setNeedsLayout() }
     }
