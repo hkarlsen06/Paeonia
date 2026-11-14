@@ -36,7 +36,7 @@ final class PiccanteJourneyUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = [
             "-paeonia-scenario", "piccante-biting", "-paeonia-scenario-hide-controls", "YES",
-            "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+            "-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-paeonia.games.tutorialShown.v1.piccante", "YES",
         ]
         app.launchWithExtraAccessibilityTools()
         let controls = app.buttons["piccante.controls.open"]
