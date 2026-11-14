@@ -39,6 +39,8 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
     /// Runs on tap instead of the host's tap handler. Setting it makes the banner tappable.
     let action: (() -> Void)?
     var appEntityIdentifier: EntityIdentifier?
+    /// The chat whose message this banner announces. The banner leaves when that chat opens.
+    var chat: ThreadChatSubject?
     let timing: PaeoniaBannerTiming
 
     init(
@@ -64,6 +66,7 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
         self.systemImage = systemImage
         self.action = action
         self.appEntityIdentifier = nil
+        self.chat = nil
         self.timing = timing
     }
 
@@ -80,12 +83,13 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
             && lhs.systemImage == rhs.systemImage
             && lhs.timing == rhs.timing
             && lhs.appEntityIdentifier == rhs.appEntityIdentifier
+            && lhs.chat == rhs.chat
     }
 
     /// True when `other` would look the same to the user, even with a different id.
     func hasSameText(as other: PaeoniaBannerContent) -> Bool {
         style == other.style && title == other.title && message == other.message && gameKind == other.gameKind
-            && appEntityIdentifier == other.appEntityIdentifier
+            && appEntityIdentifier == other.appEntityIdentifier && chat == other.chat
     }
 
     static func error(
@@ -192,6 +196,15 @@ final class PaeoniaBannerCenter {
     /// late timer or swipe for an old banner cannot remove a newer one.
     func dismiss(id: UUID) {
         guard content?.id == id else {
+            return
+        }
+
+        dismiss()
+    }
+
+    /// Dismisses the banner if it announces a message in `chat`, which is now on screen.
+    func dismiss(announcing chat: ThreadChatSubject) {
+        guard content?.chat == chat else {
             return
         }
 

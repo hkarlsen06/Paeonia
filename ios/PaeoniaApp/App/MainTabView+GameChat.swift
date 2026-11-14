@@ -45,6 +45,7 @@ extension MainTabView {
         context.chatVisibilityChanged = { subject, isVisible in
             if isVisible {
                 visibleChatSubject = subject
+                bannerCenter.dismiss(announcing: subject)
             } else if visibleChatSubject == subject {
                 visibleChatSubject = nil
             }
@@ -131,13 +132,13 @@ extension MainTabView {
                     localized: .gamesChatMessageTitle(reactionPartnerName, String(localized: game.kind.name))
                 )
             }
-            bannerCenter.show(
-                .info(
-                    title: title, message: preview, gameKind: gameKind,
-                    imageData: PaeoniaAppGroup.partnerAvatarData(),
-                    systemImage: "bubble.left.and.bubble.right.fill", action: openChatAction(for: summary.subject)
-                )
+            var banner = PaeoniaBannerContent.info(
+                title: title, message: preview, gameKind: gameKind,
+                imageData: PaeoniaAppGroup.partnerAvatarData(),
+                systemImage: "bubble.left.and.bubble.right.fill", action: openChatAction(for: summary.subject)
             )
+            banner.chat = summary.subject
+            bannerCenter.show(banner)
         }
     }
 
