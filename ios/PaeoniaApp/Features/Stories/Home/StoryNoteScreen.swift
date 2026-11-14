@@ -1,15 +1,15 @@
 import SwiftUI
 
 /// A note, full screen. The person's avatar flies from its place on Home to the middle of
-/// the screen with the bubble above it. Closing uses the native cover dismissal.
+/// the screen with the bubble above it, and closing flies it back.
 ///
 /// Editing your own note, the bubble is the text field and the row on the keyboard says
 /// who sees it and shares it. A tap on empty space closes it, keyboard up or not. A
 /// failed save keeps the text here, and the error shows in the banner. Reading your
 /// partner's note, the bubble shows all of it and the row says when it was shared.
 ///
-/// Present it without an opening cover animation and with a clear background.
-/// `HomeStoriesStrip` dismisses it through the native cover.
+/// Present and dismiss it with animations turned off and a clear background, so this
+/// view runs the whole move itself: see `HomeStoriesStrip`.
 struct StoryNoteScreen: View {
     enum Mode {
         /// Your note, which starts as the one on Home now, if any.
@@ -23,7 +23,7 @@ struct StoryNoteScreen: View {
     let people: StoryPeople
     /// Where the avatar sits on Home, ring included, in global coordinates.
     let sourceFrame: CGRect
-    /// Removes the cover without waiting for an animation callback.
+    /// Removes the cover once the avatar is back on Home.
     let onClose: () -> Void
 
     @State private var draft: StoryNoteDraft
@@ -104,9 +104,7 @@ struct StoryNoteScreen: View {
         // Everything here works with the keyboard up, so a tap on empty space closes the
         // screen instead of only putting the keyboard away.
         .contentShape(Rectangle())
-        .onTapGesture {
-            if !viewModel.isSavingNote { close() }
-        }
+        .onTapGesture { if !viewModel.isSavingNote { close() } }
         .keyboardDoneToolbar()
         .paeoniaBanner(bannerCenter)
         .preferredColorScheme(.dark)
@@ -316,8 +314,7 @@ struct StoryNoteScreen: View {
 
     private func close() {
         isFocused = false
-        // Native dismissal owns the exit. Saving and navigation never wait for an animation callback.
-        onClose()
+        withAnimation(motion) { isOpen = false } completion: { onClose() }
     }
 
     private func save(_ note: String) async {

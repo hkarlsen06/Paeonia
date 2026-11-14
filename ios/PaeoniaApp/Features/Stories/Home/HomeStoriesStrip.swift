@@ -35,7 +35,6 @@ struct HomeStoriesStrip: View {
     @Environment(\.avatarStyling) private var avatarStyling
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Center to center, wide enough that the two bubbles never touch, and narrow enough
     /// that the partner's bubble stays clear of the streak in the corner.
     private var avatarSpacing: CGFloat { StoryNoteBubble.maxWidth - avatarSize + PaeoniaSpacing.space8 }
@@ -84,7 +83,8 @@ struct HomeStoriesStrip: View {
                 }
             }
         }
-        // The note owns its opening. Native cover dismissal does not wait for that animation.
+        // The note screen flies the avatar between Home and the middle of the screen both
+        // ways, so the cover appears and leaves without animation.
         .fullScreenCover(item: $openNote) { open in
             StoryNoteScreen(
                 mode: open.mode,
@@ -92,7 +92,7 @@ struct HomeStoriesStrip: View {
                 people: people,
                 sourceFrame: open.sourceFrame
             ) {
-                if reduceMotion { withoutAnimation { openNote = nil } } else { openNote = nil }
+                withoutAnimation { openNote = nil }
             }
             .analyticsScreen("story_note")
             .presentationBackground(.clear)
