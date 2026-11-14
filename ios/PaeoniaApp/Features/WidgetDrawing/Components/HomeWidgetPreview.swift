@@ -272,8 +272,9 @@ struct HomeWidgetCard: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
-        // A canvas, so the sample sketch and the hidden state don't float on the map.
-        .background(.paeoniaBackgroundPrimary)
+        // A raised canvas, so the sample sketch and the hidden state don't float on the map,
+        // and a line drawing has as much weight as the solid calendar beside it.
+        .background(.paeoniaSurfacePrimary)
         .clipShape(DrawingCanvasShape())
         .overlay { DrawingCanvasShape().stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault) }
     }
