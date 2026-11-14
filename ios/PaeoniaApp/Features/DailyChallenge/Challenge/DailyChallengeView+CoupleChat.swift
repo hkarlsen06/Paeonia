@@ -10,7 +10,10 @@ extension DailyChallengeScreen {
                 participants: viewModel.participants,
                 summary: chatContext.summaries?.summary(for: .couple),
                 isUnread: chatContext.summaries?.isUnread(.couple) ?? false,
-                onOpen: openCoupleChat
+                onOpen: {
+                    SwipeLessons[.justUs].openedWithButton()
+                    openCoupleChat()
+                }
             )
         }
     }

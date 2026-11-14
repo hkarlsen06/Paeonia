@@ -296,7 +296,9 @@ struct MainTabView: View {
 
     private var tabContent: some View {
         tabNavigation
-        .coupleChatSlideOver(isPresented: $isCoupleChatSlidOver, isEnabled: allowsCoupleChatSwipe)
+        .coupleChatSlideOver(
+            isPresented: $isCoupleChatSlidOver, isEnabled: allowsCoupleChatSwipe, peeks: coupleChatPeekIsWelcome
+        )
         .tint(.paeoniaAccentPrimary)
         // Key the load on the signed-in user alone. The partner id, display names,
         // and profile photos all populate/refresh shortly after launch; if they were
@@ -480,6 +482,13 @@ extension MainTabView {
     /// person comes back to the same turn or the same stroke.
     var allowsCoupleChatSwipe: Bool {
         visibleChatSubject == nil && !gameChatReturn.isPending
+    }
+
+    /// Home is in front with nothing over it, so the couple chat may peek in from the edge to
+    /// show its swipe. Games show their own chat's swipe.
+    var coupleChatPeekIsWelcome: Bool {
+        selection.wrappedValue == .us && !isModalOpen && !widgetDrawingPresented.wrappedValue
+            && launchIntroComplete && scenePhase == .active
     }
 }
 

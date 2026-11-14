@@ -180,8 +180,10 @@ launch_args=(-paeonia-scenario "$scenario" -paeonia-scenario-hide-controls YES)
 while read -r kind; do
   launch_args+=("-paeonia.games.tutorialShown.v1.$kind" YES)
 done < <(sed -nE 's/^ *case [A-Za-z]+ = "([a-z_]+)"$/\1/p' ios/PaeoniaApp/Features/Games/Models/GameKind.swift)
-# The chat would peek up under each game screen once, as on a new phone (GameChatSwipeLessons).
-launch_args+=(-paeonia.games.chatSwipeLessons.v1 "<$(printf '%s' '{"peekCount":0,"hasSwiped":true,"buttonOpensAfterPeeks":0,"tipIsDue":false,"tipShown":false}' | xxd -p | tr -d '\n')>")
+# The game chat would peek up under each game screen once, and Just us would peek in
+# from the right edge on Home, as on a new phone (SwipeLessons).
+learned_swipe="<$(printf '%s' '{"peekCount":0,"hasSwiped":true,"buttonOpensAfterPeeks":0,"tipIsDue":false,"tipShown":false}' | xxd -p | tr -d '\n')>"
+launch_args+=(-paeonia.games.chatSwipeLessons.v1 "$learned_swipe" -paeonia.chats.justUsSwipeLessons.v1 "$learned_swipe")
 launch() {
   xcrun simctl launch --terminate-running-process "$sim" "$bundle_id" \
     "${launch_args[@]}" ${language_args[@]+"${language_args[@]}"} ${partner_args[@]+"${partner_args[@]}"} >/dev/null

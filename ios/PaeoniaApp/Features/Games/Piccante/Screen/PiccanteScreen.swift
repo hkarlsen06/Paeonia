@@ -149,7 +149,7 @@ extension PiccanteScreen {
     @ViewBuilder fileprivate func scoreControl(_ score: BoardGameScore) -> some View {
         if chatContext.isAvailable, let open = chatContext.openGameChat {
             Button {
-                GameChatSwipeLessons.saved.openedWithButton()
+                SwipeLessons[.gameChat].openedWithButton()
                 open(.piccante, nil, nil)
             } label: {
                 BoardGameScoreCapsule(score: score, me: viewModel.meInfo, partner: viewModel.partnerInfo)

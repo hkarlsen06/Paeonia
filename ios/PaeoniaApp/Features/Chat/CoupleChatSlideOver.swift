@@ -10,14 +10,19 @@ extension View {
     /// over this view, on any tab. The chat follows the finger, and lets go open past a
     /// third of the screen or on a flick. Its back button and a swipe right slide it away
     /// again, back to the screen it covered. `isPresented` is true while it is open.
-    func coupleChatSlideOver(isPresented: Binding<Bool>, isEnabled: Bool) -> some View {
-        modifier(CoupleChatSlideOver(isPresented: isPresented, isEnabled: isEnabled))
+    ///
+    /// While `peeks` is true the chat's edge peeks in from the right a moment and goes back,
+    /// the way the swipe pulls it, as `SwipeLessons` allows.
+    func coupleChatSlideOver(isPresented: Binding<Bool>, isEnabled: Bool, peeks: Bool) -> some View {
+        modifier(CoupleChatSlideOver(isPresented: isPresented, isEnabled: isEnabled, peeks: peeks))
     }
 }
 
 /// Where the couple chat is between the right edge and covering the screen.
 private enum CoupleChatSlidePosition: Equatable {
     case hidden
+    /// Just its edge, for a moment, so the person finds the swipe.
+    case peeking
     /// Following a finger that has come this far in from the edge.
     case dragging(CGFloat)
     case shown
@@ -27,9 +32,12 @@ private struct CoupleChatSlideOver: ViewModifier {
     /// Past this share of the screen, counting where the finger's speed would carry it,
     /// the chat stays open when the finger lets go.
     private static let openFraction: CGFloat = 1 / 3
+    /// How much of the chat shows while it peeks in.
+    private static let peekWidth: CGFloat = 64
 
     @Binding var isPresented: Bool
     let isEnabled: Bool
+    let peeks: Bool
 
     @Environment(\.threadChatContext) private var chatContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -39,6 +47,9 @@ private struct CoupleChatSlideOver: ViewModifier {
     /// Read once and kept, so the next swipe shows the chat from its first frame.
     @State private var chat: ThreadChatViewModel?
     @State private var width: CGFloat = 0
+    /// The peek's strip is on screen instead of the chat, from the peek until it has gone
+    /// back or a swipe has taken it over. The peek never reads the chat, so it marks nothing read.
+    @State private var showsPeek = false
 
     private var slide: Animation? {
         reduceMotion ? nil : .spring(duration: PaeoniaMotion.motionDefault, bounce: 0)
@@ -52,6 +63,7 @@ private struct CoupleChatSlideOver: ViewModifier {
     private var offset: CGFloat {
         switch position {
         case .hidden: width
+        case .peeking: width - Self.peekWidth
         case .dragging(let distance): max(0, width - distance)
         case .shown: 0
         }
@@ -66,13 +78,15 @@ private struct CoupleChatSlideOver: ViewModifier {
                 // for the whole of a swipe, which shows the chat and so ends the screen's
                 // `isEnabled`.
                 RightEdgeSwipe(
-                    isEnabled: isDragging || (isEnabled && chatContext.isAvailable && !isMounted),
+                    isEnabled: isDragging || position == .peeking
+                        || (isEnabled && chatContext.isAvailable && !isMounted),
                     onBegan: begin,
                     onChanged: { position = .dragging($0) },
                     onEnded: end(projectedDistance:)
                 )
             }
             .overlay { if isMounted { slideOver } }
+            .task(id: peeks && isEnabled && chatContext.isAvailable) { await peek() }
             .onChange(of: chatContext.coupleID) { _, _ in
                 chat = nil
                 hide()
@@ -88,22 +102,59 @@ private struct CoupleChatSlideOver: ViewModifier {
             Color.black.opacity(0.3 * progress)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
-            Group {
-                if let chat {
-                    ThreadChatScreen(viewModel: chat, presentation: .slideOver, onClose: hide)
-                } else {
-                    Color.paeoniaBackgroundPrimary.ignoresSafeArea()
+            if showsPeek {
+                CoupleChatPeekStrip(participants: chatContext.participants, width: Self.peekWidth)
+                    .shadow(color: .black.opacity(0.3), radius: 16)
+                    .modifier(PanelSlide(offset: offset, axis: .horizontal))
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            } else {
+                Group {
+                    if let chat {
+                        ThreadChatScreen(viewModel: chat, presentation: .slideOver, onClose: hide)
+                    } else {
+                        Color.paeoniaBackgroundPrimary.ignoresSafeArea()
+                    }
                 }
+                .shadow(color: .black.opacity(0.25 * progress), radius: 16)
+                .modifier(PanelSlide(offset: offset, axis: .horizontal))
+                .accessibilityAddTraits(.isModal)
+                .accessibilityAction(.escape, hide)
             }
-            .shadow(color: .black.opacity(0.25 * progress), radius: 16)
-            .modifier(PanelSlide(offset: offset, axis: .horizontal))
-            .accessibilityAddTraits(.isModal)
-            .accessibilityAction(.escape, hide)
+        }
+    }
+
+    /// A moment after a screen that welcomes it settles, the chat's edge peeks in and goes
+    /// back. The screen changing, or a sheet over it, ends the peek early. A swipe that
+    /// starts during the peek takes the chat from where it is.
+    private func peek() async {
+        guard peeks, isEnabled, chatContext.isAvailable, !reduceMotion, !isMounted,
+              SwipeLessons[.justUs].peekIsDue(at: .now, calendar: .current)
+        else { return }
+        do { try await Task.sleep(for: .seconds(1.6)) } catch { return }
+        guard !isMounted, !GameChatSwipeRules.appIsCovered() else { return }
+        SwipeLessons[.justUs].peeked(at: .now)
+        showsPeek = true
+        isMounted = true
+        // Built at the edge first, then slid in once it is on screen.
+        try? await Task.sleep(for: .milliseconds(50))
+        if position == .hidden, !Task.isCancelled {
+            withAnimation(slide) { position = .peeking }
+            try? await Task.sleep(for: .seconds(1.4))
+        }
+        guard position == .peeking || position == .hidden, showsPeek else { return }
+        withAnimation(slide) {
+            position = .hidden
+        } completion: {
+            guard position == .hidden else { return }
+            isMounted = false
+            showsPeek = false
         }
     }
 
     private func begin() {
         PaeoniaKeyboard.dismiss()
+        showsPeek = false
         isMounted = true
         position = .dragging(0)
         guard chat == nil, let coupleID = chatContext.coupleID else { return }
@@ -120,6 +171,7 @@ private struct CoupleChatSlideOver: ViewModifier {
             hide()
             return
         }
+        SwipeLessons[.justUs].swiped()
         withAnimation(slide) { position = .shown }
         isPresented = true
         AccessibilityNotification.ScreenChanged().post()
@@ -137,6 +189,30 @@ private struct CoupleChatSlideOver: ViewModifier {
             isMounted = false
             if wasShown { AccessibilityNotification.ScreenChanged().post() }
         }
+    }
+}
+
+/// The chat's left edge while it peeks in: the partner's face on the chat's background, so it
+/// reads as the chat the swipe opens.
+private struct CoupleChatPeekStrip: View {
+    let participants: DailyChallengeParticipants
+    /// How much of the strip shows.
+    let width: CGFloat
+
+    var body: some View {
+        Color.paeoniaBackgroundPrimary
+            .clipShape(.rect(topLeadingRadius: PaeoniaRadius.radius28, bottomLeadingRadius: PaeoniaRadius.radius28))
+            .overlay(alignment: .leading) {
+                PaeoniaCoupleAvatar(
+                    mediaAssetID: participants.partnerProfilePhotoAssetID,
+                    name: participants.partnerName,
+                    tint: .paeoniaPartnerTwo,
+                    size: 40,
+                    isCurrentUser: false
+                )
+                .frame(width: width)
+            }
+            .ignoresSafeArea()
     }
 }
 

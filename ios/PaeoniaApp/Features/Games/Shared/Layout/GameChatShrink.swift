@@ -24,7 +24,7 @@ extension EnvironmentValues {
 }
 
 /// Shrinks the game screen a little from its top and shows the top of its chat under it for a
-/// moment, the way the swipe up opens it, so the person finds the swipe (`GameChatSwipeLessons`).
+/// moment, the way the swipe up opens it, so the person finds the swipe (`SwipeLessons`).
 struct GameChatPeek {
     let show: @MainActor (GameKind) -> Void
     let hide: @MainActor () -> Void
@@ -110,7 +110,7 @@ struct GameChatScreen: ViewModifier {
                 GameChatSwipeUp(isEnabled: swipeOpensChat) {
                     if !touched { touched = true }
                 } open: {
-                    GameChatSwipeLessons.saved.swiped()
+                    SwipeLessons[.gameChat].swiped()
                     chat.openGameChat?(kind, nil, nil)
                 }
             }
@@ -130,12 +130,12 @@ extension GameChatScreen {
     /// A moment after the screen opens, the chat peeks up under it and goes back down. A
     /// touch, or the screen going away, ends the peek early.
     private func runPeek() async {
-        guard peekCanRun, let peek, GameChatSwipeLessons.saved.peekIsDue(at: .now, calendar: .current) else { return }
+        guard peekCanRun, let peek, SwipeLessons[.gameChat].peekIsDue(at: .now, calendar: .current) else { return }
         // After the zoom into the game has settled.
         do { try await Task.sleep(for: .seconds(1.6)) } catch { return }
         // A sheet such as the how-to-play cards would hide it.
         guard !GameChatSwipeRules.appIsCovered() else { return }
-        GameChatSwipeLessons.saved.peeked(at: .now)
+        SwipeLessons[.gameChat].peeked(at: .now)
         peek.show(kind)
         try? await Task.sleep(for: .seconds(1.4))
         peek.hide()

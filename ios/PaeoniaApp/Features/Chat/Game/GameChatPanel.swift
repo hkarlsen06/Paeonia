@@ -146,7 +146,7 @@ struct GameChatPanel: ViewModifier {
             AccessibilityNotification.ScreenChanged().post()
         }
         // Over the game the swipe works on, for someone who keeps opening the chat with its button.
-        if GameChatSwipeLessons.saved.takeTip() {
+        if SwipeLessons[.gameChat].takeTip() {
             bannerCenter.show(
                 .info(message: String(localized: .gamesChatSwipeTip), systemImage: "bubble.left.and.bubble.right")
             )

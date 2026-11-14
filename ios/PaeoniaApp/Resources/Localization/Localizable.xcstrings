@@ -4825,6 +4825,24 @@
         }
       }
     },
+    "chats.coupleChat.swipeTip" : {
+      "comment" : "Tip that shows once on the Chats tab, as Just us closes, after the person has opened Just us with its card several times and never with the swipe in from the right edge",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next time, swipe in from the right edge of the screen to open Just us from anywhere."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste gang kan du sveipe inn fra høyre kant av skjermen for å åpne Bare oss uansett hvor du er."
+          }
+        }
+      }
+    },
     "chats.coupleChat.title" : {
       "comment" : "Name of the couple's own chat, which is not about any question or memory. Shown on the card pinned at the top of the Chats tab and as the title of that chat.",
       "extractionState" : "manual",

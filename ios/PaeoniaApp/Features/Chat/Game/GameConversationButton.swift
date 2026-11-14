@@ -48,7 +48,7 @@ struct GameConversationButton: View {
     /// drops its effects. The fixed frame keeps the score beside it still when the state changes.
     private var button: some View {
         Button {
-            GameChatSwipeLessons.saved.openedWithButton()
+            SwipeLessons[.gameChat].openedWithButton()
             context.openGameChat?(kind, source, result)
         } label: {
             icon
