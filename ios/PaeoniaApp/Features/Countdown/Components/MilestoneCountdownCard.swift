@@ -176,6 +176,9 @@ struct MilestoneCountdownCard: View {
         VStack(spacing: PaeoniaSpacing.space8) {
             CountdownCalendarView(face: face, burstID: burstID)
                 .aspectRatio(450.0 / 447.0, contentMode: .fit)
+                // The solid calendar looks bigger than the outlined drawing frame at the same
+                // size, so it is drawn a little smaller. The label stays where the drawing's is.
+                .scaleEffect(0.9)
                 .homeTilePicture()
                 .frame(maxWidth: .infinity, maxHeight: dynamicTypeSize.isAccessibilitySize ? nil : .infinity)
 
