@@ -72,7 +72,7 @@
 <PageHead title={meta.title} description={meta.description} url={`https://paeonia.no/${data.locale}/`} />
 
 <SiteShell locale={data.locale}>
-  <main class="pb-[calc(7rem+env(safe-area-inset-bottom))] text-text-primary lg:pb-0">
+  <main class="text-text-primary">
     <section class="relative isolate overflow-hidden px-5 sm:px-8">
       {@render glow('right-[-30%] top-[30%] h-[36rem] w-[36rem] lg:right-[2%] lg:top-[4%] lg:h-[46rem] lg:w-[46rem]')}
       <div aria-hidden="true" class="petal-field pointer-events-none absolute inset-0 -z-10 overflow-hidden">
@@ -131,13 +131,6 @@
         </div>
       </div>
     </section>
-
-    <div
-      class="fixed inset-x-0 bottom-0 z-30 border-t border-white/8 bg-background/85 px-5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-xl lg:hidden"
-    >
-      {@render mailButton(hero.primaryCta, 'w-full')}
-      <p class="mt-2 text-center text-xs text-text-muted">{hero.note}</p>
-    </div>
 
     <section id="film" aria-label={film.label} class="relative isolate scroll-mt-4 overflow-x-clip px-5 pb-10 pt-6 sm:px-8 lg:pb-16 lg:pt-12">
       {@render glow('left-1/2 top-1/2 h-[40rem] w-[40rem] -translate-x-1/2 -translate-y-1/2 lg:h-[56rem] lg:w-[56rem]')}
@@ -454,5 +447,12 @@
         {@render mailButton(contact.button, 'mt-8')}
       </div>
     </section>
+
+    <div
+      class="sticky bottom-0 z-30 border-t border-white/8 bg-background/85 px-5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-xl lg:hidden"
+    >
+      {@render mailButton(hero.primaryCta, 'w-full')}
+      <p class="mt-2 text-center text-xs text-text-muted">{hero.note}</p>
+    </div>
   </main>
 </SiteShell>
