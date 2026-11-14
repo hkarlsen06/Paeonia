@@ -1,5 +1,4 @@
 import Foundation
-@preconcurrency import LiveCommunicationKit
 import UIKit
 
 /// What the call screens ask for, and the call state they show.
@@ -10,7 +9,7 @@ extension CallEngine: CallEngineActions {
 
     func answer() {
         guard let run, !run.isFinished else { return }
-        requestSystem(JoinConversationAction(conversationUUID: run.conversationID)) { [weak self] in
+        requestSystem { try await $0.requestJoin(run.conversationID) } ifRefused: { [weak self] in
             self?.send(.failed(.other), to: run)
         }
     }
@@ -21,15 +20,14 @@ extension CallEngine: CallEngineActions {
 
     func end() {
         guard let run, !run.isFinished else { return }
-        requestSystem(EndConversationAction(conversationUUID: run.conversationID)) { [weak self] in
+        requestSystem { try await $0.requestEnd(run.conversationID) } ifRefused: { [weak self] in
             self?.send(.hangUp, to: run)
         }
     }
 
     func setMuted(_ isMuted: Bool) {
         guard let run, !run.isFinished else { return }
-        let action = MuteConversationAction(conversationUUID: run.conversationID, isMuted: isMuted)
-        requestSystem(action) { [weak self] in
+        requestSystem { try await $0.requestMute(run.conversationID, isMuted: isMuted) } ifRefused: { [weak self] in
             self?.applyMute(isMuted, in: run)
         }
     }
@@ -87,11 +85,14 @@ extension CallEngine: CallEngineActions {
     }
 
     /// Asks the system to do something to the call, so its call UI stays in step. The system
-    /// hands the action back to `handle(_:)`. `ifRefused` runs when the system has no such call.
-    private func requestSystem(_ action: ConversationAction, ifRefused: @escaping () -> Void) {
+    /// hands the request back to `handle(_:)`. `ifRefused` runs when the system has no such call.
+    private func requestSystem(
+        _ request: @escaping (any CallSystem) async throws -> Void,
+        ifRefused: @escaping () -> Void
+    ) {
         Task {
             do {
-                try await manager.perform([action])
+                try await request(system)
             } catch {
                 ifRefused()
             }

@@ -89,7 +89,7 @@ Only a call that is still in the expected state can move. Answer, decline, cance
 
 ## Testing
 
-Two simulators on a local backend cover starting, answering, declining and ending a call, the call screen and the bubble. The required UI test covers one call journey. The simulators get no VoIP pushes, so the developer tests the rest on two real phones: ringing a locked phone, answering from the Lock Screen, a closed app, AirPods and car audio, a network change mid-call, and the side button. The backend tests cover every call state above.
+Two simulators on a local backend cover starting, answering, declining and ending a call, the call screen and the bubble. The simulator has no system call UI, so iOS ends every LiveCommunicationKit call there at once. Simulator builds use `SimulatorCallSystem` instead, which hands each request straight back to the engine and activates the audio session itself, and the call screen shows Answer and Decline for an incoming call. The required UI test covers one call journey. The simulators get no VoIP pushes, so the developer tests the rest on two real phones: ringing a locked phone, answering from the Lock Screen, a closed app, AirPods and car audio, a network change mid-call, and the side button. The backend tests cover every call state above.
 
 ## Open questions
 

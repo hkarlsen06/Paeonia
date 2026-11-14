@@ -32,22 +32,17 @@ extension CallEngine {
             return
         }
         guard run === self.run, !run.isFinished else { return }
-        let action = StartConversationAction(
-            conversationUUID: callID,
-            handles: [partner.handle(showsName: true)],
-            isVideo: false
-        )
         do {
-            // The system hands the action back to `handleStart`, which calls the server.
-            try await manager.perform([action])
+            // The system hands the request back to `handleStart`, which calls the server.
+            try await system.startOutgoing(callID, to: partner.handle(showsName: true))
         } catch {
             send(.failed(.other), to: run)
         }
     }
 
-    func handleStart(_ action: StartConversationAction) {
-        guard let run, run.conversationID == action.conversationUUID, run.machine.phase == .ringing else {
-            action.fail()
+    func handleStart(_ request: CallSystemRequest) {
+        guard let run, run.conversationID == request.conversationID, run.machine.phase == .ringing else {
+            request.fail()
             return
         }
         Task {
@@ -55,11 +50,11 @@ extension CallEngine {
                 let started = try await backend.startCall(callID: run.callID, deviceID: deviceID)
                 guard run === self.run, !run.isFinished else {
                     // The person hung up while the server started the call. Stop it ringing.
-                    action.fail()
+                    request.fail()
                     try? await backend.endCall(callID: started.callID)
                     return
                 }
-                action.fulfill(dateStarted: .now)
+                request.fulfill()
                 if started.answeredIncoming {
                     // The partner called first. Their phone sends the offer.
                     run.role = .answerer
@@ -67,7 +62,7 @@ extension CallEngine {
                 send(.registered(callID: started.callID, answeredIncoming: started.answeredIncoming), to: run)
                 reportCapabilities(of: run)
             } catch {
-                action.fail()
+                request.fail()
                 let isBusy = CallBackend.isServerError(error, code: CallBackend.busyCode)
                 send(isBusy ? .ended(.busy) : .failed(CallFailure(error)), to: run)
             }
@@ -156,10 +151,7 @@ extension CallEngine {
         )
         let run = begin(CallRun(machine: machine, conversationID: ring.callID, role: .answerer), effects: effects)
         do {
-            try await manager.reportNewIncomingConversation(
-                uuid: ring.callID,
-                update: Conversation.Update(members: [handle], capabilities: [])
-            )
+            try await system.reportIncoming(ring.callID, from: handle)
         } catch {
             // The system did not ring, such as under a Focus that silences calls.
             send(.ended(.missed), to: run)
@@ -169,46 +161,41 @@ extension CallEngine {
     /// Reports a call and ends it at once, for a push iOS requires a report for.
     private func reportEndedCall(_ callID: UUID, handle: Handle) async {
         reportedCallIDs.insert(callID)
-        try? await manager.reportNewIncomingConversation(
-            uuid: callID,
-            update: Conversation.Update(members: [handle], capabilities: [])
-        )
-        if let conversation = manager.conversations.first(where: { $0.uuid == callID }) {
-            manager.reportConversationEvent(.conversationEnded(.now, .unanswered), for: conversation)
-        }
+        try? await system.reportIncoming(callID, from: handle)
+        system.reportEnded(callID, reason: .missed)
     }
 
-    func handleJoin(_ action: JoinConversationAction) {
-        guard let run, run.conversationID == action.conversationUUID,
+    func handleJoin(_ request: CallSystemRequest) {
+        guard let run, run.conversationID == request.conversationID,
               run.machine.direction == .incoming, run.machine.phase == .ringing
         else {
-            action.fail()
+            request.fail()
             return
         }
         // Answering from a closed app before the first unlock after a restart: the sign-in
         // cannot be read, so the server cannot be told.
         guard ClerkKeychainState.current() != .locked else {
-            action.fail()
+            request.fail()
             send(.failed(.other), to: run)
             return
         }
         Task {
             guard await CallAudio.microphoneAllowed() else {
-                action.fail()
+                request.fail()
                 send(.failed(.microphoneDenied), to: run)
                 return
             }
             do {
                 try await backend.answerCall(callID: run.callID, deviceID: deviceID)
                 guard run === self.run, run.machine.phase == .ringing else {
-                    action.fail()
+                    request.fail()
                     return
                 }
-                action.fulfill(dateConnected: .now)
+                request.fulfill()
                 send(.answered, to: run)
             } catch {
                 // A failed answer never joins the call.
-                action.fail()
+                request.fail()
                 let stoppedRinging = CallBackend.isServerError(error, code: CallBackend.notRingingCode)
                 send(stoppedRinging ? .ended(.missed) : .failed(CallFailure(error)), to: run)
             }

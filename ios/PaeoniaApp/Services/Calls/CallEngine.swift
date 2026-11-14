@@ -1,13 +1,16 @@
 import AVFoundation
 import Foundation
-@preconcurrency import LiveCommunicationKit
 import UIKit
 
 extension CallCenter {
     /// The app's one call center. The app delegate creates it at launch, so PushKit and the system
     /// call UI are ready before any screen exists, even when signed out.
     static let shared: CallCenter = {
-        let engine = CallEngine()
+        #if targetEnvironment(simulator)
+        let engine = CallEngine(system: SimulatorCallSystem())
+        #else
+        let engine = CallEngine(system: LiveCommunicationCallSystem())
+        #endif
         let center = CallCenter(engine: engine)
         engine.center = center
         if !PaeoniaApp.isHostingUnitTests {
@@ -22,7 +25,7 @@ extension CallCenter {
     }
 }
 
-/// Runs calls with the partner: the system call UI (LiveCommunicationKit), VoIP pushes, the
+/// Runs calls with the partner: the system call UI (`CallSystem`), VoIP pushes, the
 /// server's call row, call setup over the relay, and the WebRTC media. `CallMachine` decides
 /// every phase change. This class carries out what it asks and publishes the result in
 /// `CallCenter.session`. `docs/calling-plan.md` has the design.
@@ -37,9 +40,7 @@ final class CallEngine {
     weak var center: CallCenter?
     let backend = CallBackend()
     let deviceID = CallDeviceID.current
-    /// LiveCommunicationKit's manager is safe to call from any thread, but is not marked
-    /// `Sendable`, and its async methods leave the main actor.
-    nonisolated(unsafe) let manager: ConversationManager
+    let system: any CallSystem
     let partnerVideo = CallVideoFeed()
     let localVideo = CallVideoFeed()
     private(set) lazy var pictureInPicture = CallPictureInPicture(feed: partnerVideo)
@@ -49,27 +50,17 @@ final class CallEngine {
     var reportedCallIDs: Set<UUID> = []
     /// Calls that ended on this phone, so a late push for one is reported and ended at once.
     var finishedCallIDs: Set<UUID> = []
-    private let systemDelegate = CallConversationDelegate()
     private var pushRegistry: CallPushRegistry?
     private var routeObserver: (any NSObjectProtocol)?
     private var clearTask: Task<Void, Never>?
 
-    init() {
-        manager = ConversationManager(configuration: ConversationManager.Configuration(
-            ringtoneName: nil,
-            iconTemplateImageData: nil,
-            maximumConversationGroups: 1,
-            maximumConversationsPerConversationGroup: 1,
-            includesConversationInRecents: true,
-            supportsVideo: true,
-            supportedHandleTypes: [.generic]
-        ))
+    init(system: any CallSystem) {
+        self.system = system
     }
 
     func start() {
         CallAudio.configureAtLaunch()
-        systemDelegate.engine = self
-        manager.delegate = systemDelegate
+        system.start(delegate: self)
         pushRegistry = CallPushRegistry(
             onToken: { token in
                 Task { await PushRegistrationServiceFactory.shared.updateVoIPPushToken(token) }
@@ -237,8 +228,8 @@ final class CallEngine {
                 }
             }
         }
-        if !run.isEndingFromSystem, let conversation = conversation(of: run) {
-            manager.reportConversationEvent(.conversationEnded(.now, Self.systemReason(reason)), for: conversation)
+        if !run.isEndingFromSystem {
+            system.reportEnded(run.conversationID, reason: reason)
         }
         scheduleClear(of: run)
     }

@@ -61,6 +61,28 @@ struct CallControls: View {
     }
 }
 
+#if targetEnvironment(simulator)
+/// Answer and decline for an incoming call. Only the simulator shows them, because on a phone the
+/// system's call screen rings.
+struct CallAnswerControls: View {
+    let engine: any CallEngineActions
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            CallControlButton(
+                systemImage: "phone.down.fill", title: .callsControlDecline, fill: .paeoniaError,
+                identifier: "calls.decline"
+            ) { engine.decline() }
+
+            CallControlButton(
+                systemImage: "phone.fill", title: .callsControlAnswer, fill: .paeoniaSuccess,
+                identifier: "calls.answer"
+            ) { engine.answer() }
+        }
+    }
+}
+#endif
+
 /// A round call button with its name under it. A switch that is on turns white.
 struct CallControlButton: View {
     static let size: CGFloat = 60

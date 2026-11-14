@@ -4645,6 +4645,24 @@
         }
       }
     },
+    "calls.control.answer" : {
+      "comment" : "Call button that answers the partner's incoming call.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar"
+          }
+        }
+      }
+    },
     "calls.control.audioRoute" : {
       "comment" : "VoiceOver label of the button that picks where call sound plays. %@ is the device, such as AirPods.",
       "extractionState" : "manual",
@@ -4677,6 +4695,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kamera"
+          }
+        }
+      }
+    },
+    "calls.control.decline" : {
+      "comment" : "Call button that declines the partner's incoming call.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decline"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvis"
           }
         }
       }

@@ -183,8 +183,21 @@ struct CallScreen: View {
             endedActions
                 .frame(minHeight: CallControlButton.size + PaeoniaSpacing.space32)
         } else {
+            controls
+        }
+    }
+
+    @ViewBuilder
+    private var controls: some View {
+        #if targetEnvironment(simulator)
+        if session.direction == .incoming, session.phase == .ringing {
+            CallAnswerControls(engine: center.engine)
+        } else {
             CallControls(session: session, engine: center.engine)
         }
+        #else
+        CallControls(session: session, engine: center.engine)
+        #endif
     }
 
     /// What the person can do about a call that could not go through. Waiting does not help with

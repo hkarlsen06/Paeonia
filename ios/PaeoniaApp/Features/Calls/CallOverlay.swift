@@ -69,9 +69,12 @@ final class CallOverlayModel {
     }
 
     /// An incoming call that still rings shows nothing in the app, because the system shows it.
+    /// The simulator has no system call UI, so there the call screen answers it.
     var layer: Layer {
         guard let session = center.session else { return .hidden }
+        #if !targetEnvironment(simulator)
         if session.direction == .incoming, session.phase == .ringing { return .hidden }
+        #endif
         return center.presentation == .full ? .screen : .bubble
     }
 }
