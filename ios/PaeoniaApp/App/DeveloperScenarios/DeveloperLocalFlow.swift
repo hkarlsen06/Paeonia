@@ -13,7 +13,7 @@
     /// `gameConversation` is a game scenario. The Games tab then shows its state, and game
     /// chats work. `launchLink` opens when the flow starts, unless the app was launched with one.
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil,
-         gameConversation: DeveloperScenario? = nil, launchLink: String? = nil,
+         gameConversation: DeveloperScenario? = nil, finishedGameRuns: Bool = false, launchLink: String? = nil,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
          mail: DeveloperMailSeed = .none) {
       // A link the app was launched with, such as a push tapped while the app was not running.
@@ -23,7 +23,8 @@
       )
       _environment = State(
         initialValue: DeveloperLocalFlowEnvironment(
-          seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation, avatarStories: avatarStories,
+          seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation,
+          finishedGameRuns: finishedGameRuns, avatarStories: avatarStories,
           mapTiles: mapTiles, mail: mail))
     }
 
@@ -111,7 +112,8 @@
     // This is the single Debug composition boundary for the full local app graph.
     // swiftlint:disable:next function_body_length
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: DeveloperScenario?,
-         avatarStories: StoryRingState?, mapTiles: DeveloperHomeMapTiles, mail: DeveloperMailSeed) {
+         finishedGameRuns: Bool, avatarStories: StoryRingState?, mapTiles: DeveloperHomeMapTiles,
+         mail: DeveloperMailSeed) {
       self.homeLaunch = homeLaunch
       let store = DeveloperLocalFlowStore(seed: seed, avatarScenario: avatarStories != nil)
       let authService = DeveloperLocalFlowAuthService(store: store)
@@ -128,7 +130,9 @@
           daily: DeveloperLocalFlowSnapshotCache()
         )
       )
-      let gameFlow = gameConversation.map { DeveloperGameConversationFlow(pending: pendingOperationStore, games: $0) }
+      let gameFlow = gameConversation.map {
+        DeveloperGameConversationFlow(pending: pendingOperationStore, games: $0, finishedGameRuns: finishedGameRuns)
+      }
       gameConversationFlow = gameFlow
       let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
       let storeKitService = DeveloperScenarioStoreKitService()

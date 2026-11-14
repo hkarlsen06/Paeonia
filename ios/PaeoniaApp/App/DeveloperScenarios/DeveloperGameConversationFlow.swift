@@ -9,13 +9,15 @@
     let games: GamesViewModel
     private let gateway: DeveloperGameConversationGateway
 
-    /// `games` is the game scenario whose state the Games tab shows.
+    /// `games` is the game scenario whose state the Games tab shows. `finishedGameRuns` adds
+    /// two runs of quick finished games to the Mind Meld chat, with a message between them.
     init(
       pending: any PendingSyncOperationPersisting, games scenario: DeveloperScenario = .mindMeldWrite,
-      result: GameConversationResult? = nil
+      result: GameConversationResult? = nil, finishedGameRuns: Bool = false
     ) {
       let gateway = DeveloperGameConversationGateway(
-        result: result ?? Self.historicalResult(), presence: DeveloperChatPresenceFeed())
+        result: result ?? Self.historicalResult(), finishedGameRuns: finishedGameRuns,
+        presence: DeveloperChatPresenceFeed())
       self.gateway = gateway
       let cache = InMemoryThreadChatCache()
       chat = ThreadChatService(gateway: gateway, cache: cache, pendingOperationStore: pending)
@@ -100,10 +102,43 @@
     /// One thread per chat, such as the Mind Meld chat and the couple chat.
     private var threadIDs: [ThreadChatSubject: UUID] = [:]
     private let result: GameConversationResult?
+    private var references: [GameChatResultReference] = []
 
-    init(result: GameConversationResult?, presence: DeveloperChatPresenceFeed) {
+    init(result: GameConversationResult?, finishedGameRuns: Bool, presence: DeveloperChatPresenceFeed) {
       self.result = result
       self.presence = presence
+      guard case .mindMeld(let game)? = result else { return }
+      references = [
+        GameChatResultReference(
+          source: .mindMeld(game.id), finishedAt: result?.date ?? game.createdAt,
+          key: game.id.uuidString.lowercased())
+      ]
+      guard finishedGameRuns else { return }
+      let start = Calendar.current.startOfDay(for: .now).addingTimeInterval(10 * 60)
+      // Five games before the message at 00:12:30 and four after it.
+      let minutes = [0, 0, 1, 2, 2, 3, 36, 37, 58]
+      references = minutes.enumerated().compactMap { index, minute in
+        guard let id = UUID(uuidString: String(format: "a9100000-0000-4000-8000-%012d", index)) else { return nil }
+        return GameChatResultReference(
+          source: .mindMeld(id), finishedAt: start.addingTimeInterval(TimeInterval(minute * 60 + index)),
+          key: id.uuidString.lowercased())
+      }
+      let subject = ThreadChatSubject.game(
+        GameChatSubject(coupleID: DeveloperScenarioFixture.coupleID, kind: .mindMeld))
+      let threadID = UUID()
+      let message = ThreadChatMessage(
+        id: UUID(), threadID: threadID, subjectID: subject.id, senderUserID: DeveloperScenarioFixture.currentUserID,
+        body: "How did you get that one?", createdAt: start.addingTimeInterval(2 * 60 + 30),
+        clientOperationID: UUID(), delivery: .sent, replyTo: nil)
+      threadIDs[subject] = threadID
+      messages = [message]
+      summaries = [
+        ThreadChatSummary(
+          threadID: threadID, coupleID: DeveloperScenarioFixture.coupleID, subject: subject,
+          createdAt: message.createdAt, updatedAt: message.createdAt, lastMessageID: message.id,
+          lastMessageAt: message.createdAt, lastMessageSenderUserID: message.senderUserID,
+          lastMessageBody: message.body)
+      ]
     }
 
     nonisolated func livePresence(coupleID _: UUID, subject _: ThreadChatSubject) -> AsyncStream<ThreadChatPresence> {
@@ -124,15 +159,7 @@
 
     func loadGameResult(coupleID _: UUID, source: GameConversationSource) -> GameConversationResult?
     {
-      guard reference?.source == source else { return nil }
-      return result
-    }
-
-    private var reference: GameChatResultReference? {
-      guard case .mindMeld(let game)? = result else { return nil }
-      return GameChatResultReference(
-        source: .mindMeld(game.id), finishedAt: result?.date ?? game.createdAt,
-        key: game.id.uuidString.lowercased())
+      references.contains { $0.source == source } ? result : nil
     }
 
     func loadGameTimeline(subject: GameChatSubject, before _: GameChatTimelineCursor?)
@@ -141,7 +168,7 @@
       GameChatTimeline(
         threadID: summaries.first { $0.subject == .game(subject) }?.threadID,
         messages: messages.filter { $0.subjectID == subject.id },
-        results: reference.flatMap { $0.source.kind == subject.kind ? [$0] : nil } ?? [], hasMore: false)
+        results: references.filter { $0.source.kind == subject.kind }, hasMore: false)
     }
 
     func loadMessages(threadID: UUID, subjectID _: UUID, before _: ThreadChatMessageCursor?)
@@ -215,6 +242,15 @@
     ) { _ in
       DeveloperLocalFlowHost(
         seed: .paired, gameConversation: .connectFourPartnerTurn, launchLink: "paeonia://games/connect-four")
+    }
+
+    static let localFlowGameChatFinishedRuns = DeveloperScenario(
+      "local-flow-game-chat-finished-runs", "Local flow · many finished games in a chat",
+      "The Mind Meld chat after nine quick games, with a message between two runs of them", .localFlows
+    ) { _ in
+      DeveloperLocalFlowHost(
+        seed: .paired, gameConversation: .mindMeldWrite, finishedGameRuns: true,
+        launchLink: "paeonia://daily/game-chat?kind=mind_meld")
     }
   }
 #endif

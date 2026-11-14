@@ -8,7 +8,7 @@
       launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled, onboardingUsage,
       relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
-      localFlowGameConversation, localFlowGameChatDrawing, localFlowGameChatBoard,
+      localFlowGameConversation, localFlowGameChatDrawing, localFlowGameChatBoard, localFlowGameChatFinishedRuns,
       avatarStoriesNew, avatarStoriesSeen, avatarStoriesEmpty,
       mailEmpty, mailMailbox, mailSent, mailComposerTemplates, mailComposerDelivery, mailComposerTogether,
       mailComposerTogetherUnchecked, mailComposerNoVisit, mailComposerVisitTooSoon, mailComposerBirthday,
