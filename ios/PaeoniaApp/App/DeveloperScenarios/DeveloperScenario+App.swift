@@ -8,7 +8,8 @@
       launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled, onboardingUsage,
       relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
-      localFlowGameConversation, avatarStoriesNew, avatarStoriesSeen, avatarStoriesEmpty,
+      localFlowGameConversation, localFlowGameChatDrawing, localFlowGameChatBoard,
+      avatarStoriesNew, avatarStoriesSeen, avatarStoriesEmpty,
       mailEmpty, mailMailbox, mailSent, mailComposerTemplates, mailComposerDelivery, mailComposerTogether,
       mailComposerTogetherUnchecked, mailComposerNoVisit, mailComposerVisitTooSoon, mailComposerBirthday,
       mailComposerChange, mailReader, mailReaderSealedSent, mailReaderGone, homeMailDraft, homeMailWaiting,
@@ -117,7 +118,7 @@
     static let localFlowGameConversation = DeveloperScenario(
       "local-flow-game-conversation", "Local flow · game conversation",
       "Open a finished Mind Meld, write about it, and find the conversation in Chats", .localFlows
-    ) { _ in DeveloperLocalFlowHost(seed: .paired, gameConversation: true) }
+    ) { _ in DeveloperLocalFlowHost(seed: .paired, gameConversation: .mindMeldWrite) }
 
     // MARK: Pairing
 

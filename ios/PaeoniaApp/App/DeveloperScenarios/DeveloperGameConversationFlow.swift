@@ -9,7 +9,11 @@
     let games: GamesViewModel
     private let gateway: DeveloperGameConversationGateway
 
-    init(pending: any PendingSyncOperationPersisting, result: GameConversationResult? = nil) {
+    /// `games` is the game scenario whose state the Games tab shows.
+    init(
+      pending: any PendingSyncOperationPersisting, games scenario: DeveloperScenario = .mindMeldWrite,
+      result: GameConversationResult? = nil
+    ) {
       let gateway = DeveloperGameConversationGateway(
         result: result ?? Self.historicalResult(), presence: DeveloperChatPresenceFeed())
       self.gateway = gateway
@@ -26,8 +30,7 @@
         pendingOperationStore: pending,
         localPrivacyPurger: NoOpLocalPrivacyPurger()
       )
-      games = GamesViewModel(
-        dependencies: DeveloperGamesScenarioFactory.dependencies(for: .mindMeldWrite))
+      games = GamesViewModel(dependencies: DeveloperGamesScenarioFactory.dependencies(for: scenario))
     }
 
     func receivePartnerMessage() async {
@@ -193,6 +196,25 @@
           lastMessageSenderUserID: message.senderUserID, lastMessageBody: body
         ))
       return ThreadChatMessageResponse(threadID: threadID, messageID: message.id)
+    }
+  }
+
+  /// Local flows that open straight into a game, to see its chat panel over it.
+  nonisolated extension DeveloperScenario {
+    static let localFlowGameChatDrawing = DeveloperScenario(
+      "local-flow-game-chat-drawing", "Local flow · chat over Draw & Guess",
+      "Open the chat while Robin draws. The drawing stays in view above it", .localFlows
+    ) { _ in
+      DeveloperLocalFlowHost(
+        seed: .paired, gameConversation: .drawWatchingLive, launchLink: "paeonia://games/draw-and-guess")
+    }
+
+    static let localFlowGameChatBoard = DeveloperScenario(
+      "local-flow-game-chat-board", "Local flow · chat over Four in a Row",
+      "Open the chat on Robin's turn. The board stays in view above it", .localFlows
+    ) { _ in
+      DeveloperLocalFlowHost(
+        seed: .paired, gameConversation: .connectFourPartnerTurn, launchLink: "paeonia://games/connect-four")
     }
   }
 #endif

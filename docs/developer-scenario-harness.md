@@ -27,6 +27,11 @@ replaced with in-memory implementations.
   the first day, with local questions, memories, settings, countdown, visits, location, an
   anniversary recap, and widget dependencies. `AccountJourneyUITests` logs out, leaves, and deletes the
   account from here.
+- `local-flow-game-conversation`: the paired app with a Mind Meld in progress and working
+  game chats.
+- `local-flow-game-chat-drawing` and `local-flow-game-chat-board`: begin inside Draw & Guess
+  while the partner draws, and inside Four in a Row on the partner's turn. Open the chat from
+  the toolbar to see its panel over the game.
 
 The purchase button grants local entitlement, invite acceptance creates the local
 relationship, sign-out and deletion clear the local session, leaving the

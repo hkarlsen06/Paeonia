@@ -10,12 +10,15 @@
     @State private var pendingInviteCode: String?
     @State private var environment: DeveloperLocalFlowEnvironment
 
-    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil, gameConversation: Bool = false,
+    /// `gameConversation` is a game scenario. The Games tab then shows its state, and game
+    /// chats work. `launchLink` opens when the flow starts, unless the app was launched with one.
+    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil,
+         gameConversation: DeveloperScenario? = nil, launchLink: String? = nil,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
          mail: DeveloperMailSeed = .none) {
       // A link the app was launched with, such as a push tapped while the app was not running.
       _deepLink = State(
-        initialValue: ProcessInfo.processInfo.environment["PAEONIA_LAUNCH_LINK"]
+        initialValue: (ProcessInfo.processInfo.environment["PAEONIA_LAUNCH_LINK"] ?? launchLink)
           .flatMap(URL.init(string:)).flatMap(PaeoniaDeepLink.init)
       )
       _environment = State(
@@ -107,7 +110,7 @@
 
     // This is the single Debug composition boundary for the full local app graph.
     // swiftlint:disable:next function_body_length
-    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: Bool,
+    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: DeveloperScenario?,
          avatarStories: StoryRingState?, mapTiles: DeveloperHomeMapTiles, mail: DeveloperMailSeed) {
       self.homeLaunch = homeLaunch
       let store = DeveloperLocalFlowStore(seed: seed, avatarScenario: avatarStories != nil)
@@ -125,7 +128,7 @@
           daily: DeveloperLocalFlowSnapshotCache()
         )
       )
-      let gameFlow = gameConversation ? DeveloperGameConversationFlow(pending: pendingOperationStore) : nil
+      let gameFlow = gameConversation.map { DeveloperGameConversationFlow(pending: pendingOperationStore, games: $0) }
       gameConversationFlow = gameFlow
       let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
       let storeKitService = DeveloperScenarioStoreKitService()
