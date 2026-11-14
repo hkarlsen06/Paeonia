@@ -29398,79 +29398,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ counted it."
+            "value" : "%@ said it was close enough."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ telte det med."
-          }
-        }
-      }
-    },
-    "mindMeld.reveal.meld.countedByYou" : {
-      "comment" : "Reveal line when the player counted a near miss as a match.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You counted it."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du telte det med."
-          }
-        }
-      }
-    },
-    "mindMeld.reveal.meld.fewest" : {
-      "comment" : "Second part of the stats line after a meld. %lld is the fewest rounds a meld has taken the couple.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Your fewest is %lld round."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Your fewest is %lld rounds."
-                }
-              }
-            }
-          }
-        },
-        "nb" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Det raskeste dere har klart er %lld runde."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Det raskeste dere har klart er %lld runder."
-                }
-              }
-            }
+            "value" : "%@ sa at det var nært nok."
           }
         }
       }
     },
     "mindMeld.reveal.meld.first" : {
-      "comment" : "Mind Meld reveal: line under 'You melded!' for the couple's very first meld",
+      "comment" : "Reveal line, in the accent color, on the couple's first meld ever.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -29487,38 +29427,38 @@
         }
       }
     },
-    "mindMeld.reveal.meld.number" : {
-      "comment" : "First part of the stats line after a meld. %lld is how many times the couple has melded. A second sentence follows it.",
+    "mindMeld.reveal.meld.firstTry" : {
+      "comment" : "Reveal line under the meld title when both said the same word in round 1, instead of the round count.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Meld number %lld."
+            "value" : "On the first try"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Treff nummer %lld."
+            "value" : "På første forsøk"
           }
         }
       }
     },
     "mindMeld.reveal.meld.record" : {
-      "comment" : "Reveal line, shown in the accent color, when this meld took fewer rounds than any earlier one.",
+      "comment" : "Reveal line, in the accent color, when this meld took fewer rounds than every earlier one.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your fewest rounds yet."
+            "value" : "New record!"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Det raskeste dere har klart så langt."
+            "value" : "Ny rekord!"
           }
         }
       }

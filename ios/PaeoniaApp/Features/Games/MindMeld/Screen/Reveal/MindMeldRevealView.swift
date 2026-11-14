@@ -189,36 +189,29 @@ struct MindMeldRevealView: View {
         }
     }
 
-    /// How many rounds it took, who counted a near miss, and the couple's numbers.
+    /// How many rounds it took, the partner's say when they counted a near miss,
+    /// and a first meld or a record. The meld count is already in the toolbar,
+    /// and an ordinary meld needs no numbers.
     private var meldLines: [MindMeldRevealTitle.Line] {
-        var lines = [MindMeldRevealTitle.Line(text: Text(.mindMeldRevealMeldRounds(viewModel.resolution.roundNumber)))]
-        if let countedBy = viewModel.round?.countedByUserID {
-            let text = countedBy == viewModel.currentUserID
-                ? Text(.mindMeldRevealMeldCountedByYou)
-                : Text(.mindMeldRevealMeldCounted(viewModel.partnerName))
-            lines.append(.init(text: text))
+        let rounds = viewModel.resolution.roundNumber
+        var lines = [MindMeldRevealTitle.Line(
+            text: Text(rounds == 1 ? .mindMeldRevealMeldFirstTry : .mindMeldRevealMeldRounds(rounds))
+        )]
+        if let countedBy = viewModel.round?.countedByUserID, countedBy != viewModel.currentUserID {
+            lines.append(.init(text: Text(.mindMeldRevealMeldCounted(viewModel.partnerName))))
         }
-        if timeline.statsShown, let stats = statsLine {
-            lines.append(.init(text: Text(verbatim: stats.text), isAccent: stats.isAccent))
+        if timeline.statsShown, let milestone {
+            lines.append(.init(text: Text(milestone), isAccent: true))
         }
         return lines
     }
 
-    /// "Your fewest rounds yet." on a record, else "Meld number 3. Your fewest is 2 rounds."
     /// Nothing until the server has numbered the meld.
-    private var statsLine: (text: String, isAccent: Bool)? {
+    private var milestone: LocalizedStringResource? {
         guard let game = viewModel.game, game.state == .melded, let number = game.meldNumber else { return nil }
-        if game.isRecord {
-            return (String(localized: .mindMeldRevealMeldRecord), true)
-        }
-        if number == 1 {
-            return (String(localized: .mindMeldRevealMeldFirst), false)
-        }
-        var sentences = [String(localized: .mindMeldRevealMeldNumber(number))]
-        if let fewest = viewModel.stats?.fewestRounds {
-            sentences.append(String(localized: .mindMeldRevealMeldFewest(fewest)))
-        }
-        return (sentences.joined(separator: " "), false)
+        if game.isRecord { return .mindMeldRevealMeldRecord }
+        if number == 1 { return .mindMeldRevealMeldFirst }
+        return nil
     }
 
     // MARK: Actions

@@ -6,7 +6,8 @@
     static let mindMeld: [DeveloperScenario] = [
       mindMeldFirstRound, mindMeldWrite, mindMeldWriteAway, mindMeldWriteTyping,
       mindMeldWaiting, mindMeldWaitingOffline,
-      mindMeldRevealMiss, mindMeldRevealNear, mindMeldRevealMeld, mindMeldRevealRecord, mindMeldRevealGotAway,
+      mindMeldRevealMiss, mindMeldRevealNear, mindMeldRevealMeld, mindMeldRevealCounted, mindMeldRevealRecord,
+      mindMeldRevealGotAway,
       mindMeldOver, mindMeldPartnerRestarted, mindMeldHistory, mindMeldHistoryEmpty,
     ]
 
@@ -44,6 +45,10 @@
     )
     static let mindMeldRevealMeld = mindMeldScreen(
       "mind-meld-reveal-meld", "Mind Meld · reveal, meld", "Round 4 melds. Meld number 3, not a record"
+    )
+    static let mindMeldRevealCounted = mindMeldScreen(
+      "mind-meld-reveal-counted", "Mind Meld · reveal, counted by Robin",
+      "Round 3 was a near miss, BOAT and BOATS, and Robin counted it"
     )
     static let mindMeldRevealRecord = mindMeldScreen(
       "mind-meld-reveal-record", "Mind Meld · reveal, record meld",

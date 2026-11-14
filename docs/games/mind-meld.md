@@ -273,7 +273,7 @@ Beats, in seconds after the reveal starts.
 
 Verdict.
 
-- **Meld.** At 2.10 the cards speed up into each other (0.24 s, an ease-in curve, like two magnets). The partner's card stays solid and slides under mine. At 2.34 they touch: the partner's card hides, the card swells to 1.07 and back, the borders turn `.paeoniaSuccess`, the glow peaks at 0.40, and a big petal bloom bursts from the merged card (`GamePetalBloom` at intensity 1.6, seeded by the round id). `streakCelebrated()` and the win sound play on the touch, not at 2.10. At 2.60 the title "You melded!" and "In 4 rounds". At 2.90 the stats line, with `streakContinued()`: "Meld number 3. Your fewest is 2 rounds.", "Your first meld." for the first one, or, on a new record, "Your fewest rounds yet." in `.paeoniaAccentPrimary`.
+- **Meld.** At 2.10 the cards speed up into each other (0.24 s, an ease-in curve, like two magnets). The partner's card stays solid and slides under mine. At 2.34 they touch: the partner's card hides, the card swells to 1.07 and back, the borders turn `.paeoniaSuccess`, the glow peaks at 0.40, and a big petal bloom bursts from the merged card (`GamePetalBloom` at intensity 1.6, seeded by the round id). `streakCelebrated()` and the win sound play on the touch, not at 2.10. At 2.60 the title "You melded!" and "In 4 rounds", or "On the first try" for a meld in round 1. When the partner counted a near miss, "Robin said it was close enough." follows. The person who tapped Count it needs no line. At 2.90, with `streakContinued()`, "Your first meld." for the couple's first, or "New record!" when it took fewer rounds than every earlier meld, both in `.paeoniaAccentPrimary`. An ordinary meld shows no numbers, because the toolbar capsule already counts the melds and "Our melds" keeps the records.
 - **Near miss.** The cards reach for each other on a bouncy spring, nearly touch, and settle 13 pt closer each, and their borders turn `.paeoniaAccentPrimary`. `streakContinued()`. Title "So close!", line "OCEAN and OCEANS are almost the same word.", and a quiet "Count it" button next to the primary.
 - **Miss.** The cards stay apart and a thin line draws between them with a small `plus` in the middle (`motionMorph`). `partnerDrawingReceived()`. The title "Now find the link" and the line "What connects OCEAN and SUSHI?" show only with VoiceOver on.
 - **Got away** (round 10, miss). As a miss, then title "This one got away" and line "You came close. Want to try another?". A near miss in round 10 shows "So close!" with "Count it" and "Play again".
@@ -297,12 +297,10 @@ VoiceOver. On the verdict, one announcement: "You said OCEAN. Robin said SUSHI. 
 | `reveal.you` | You | Du |
 | `reveal.meld.title` | You melded! | Dere tenkte likt! |
 | `reveal.meld.rounds` | In %lld round / In %lld rounds | På %lld runde / På %lld runder |
-| `reveal.meld.counted` | %@ counted it. | %@ telte det med. |
-| `reveal.meld.countedByYou` | You counted it. | Du telte det med. |
-| `reveal.meld.number` | Meld number %lld. | Treff nummer %lld. |
-| `reveal.meld.fewest` | Your fewest is %lld round. / Your fewest is %lld rounds. | Det raskeste dere har klart er %lld runde. / ... %lld runder. |
+| `reveal.meld.firstTry` | On the first try | På første forsøk |
+| `reveal.meld.counted` | %@ said it was close enough. | %@ sa at det var nært nok. |
 | `reveal.meld.first` | Your first meld. | Deres første treff. |
-| `reveal.meld.record` | Your fewest rounds yet. | Det raskeste dere har klart så langt. |
+| `reveal.meld.record` | New record! | Ny rekord! |
 | `reveal.near.title` | So close! | Så nære! |
 | `reveal.near.line` | %1$@ and %2$@ are almost the same word. | %1$@ og %2$@ er nesten samme ord. |
 | `reveal.near.count` | Count it | Tell det med |

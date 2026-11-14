@@ -77,6 +77,13 @@
           meldNumber: 3,
           stats: RemoteMindMeldStats(melds: 3, fewestRounds: 3, games: 5)
         )
+      case .mindMeldRevealCounted:
+        return melded(
+          Fixture.revealedRounds(2)
+            + [Fixture.revealed(3, ("boat", "boats"), outcome: .near, seen: false, countedBy: Fixture.partner)],
+          meldNumber: 3,
+          stats: RemoteMindMeldStats(melds: 3, fewestRounds: 2, games: 5)
+        )
       case .mindMeldRevealRecord:
         return melded(
           Fixture.revealedRounds(1) + [Fixture.revealed(2, ("fish", "fish"), outcome: .match, seen: false)],
