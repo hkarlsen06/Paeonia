@@ -184,6 +184,7 @@ struct DotsAndBoxesBoardView: View {
     private func touchLayer(_ geometry: DotsAndBoxesBoardGeometry) -> some View {
         Color.clear
             .contentShape(Rectangle())
+            .keepsVerticalDrags()
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .updating($stroke) { value, state, _ in

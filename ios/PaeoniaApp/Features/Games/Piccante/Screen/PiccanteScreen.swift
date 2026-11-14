@@ -29,6 +29,7 @@ struct PiccanteScreen: View {
                 }
                 GameToolbarActions(kind: .piccante) { GameMenu(history: nil, showTutorial: { tutorial = true }) }
             }
+            .gameToolbarShowsInfo(viewModel.visibleScore != nil && !dynamicTypeSize.isAccessibilitySize)
             .gameMenuInvite(
                 invite: viewModel.invite, partnerName: viewModel.partnerName, send: { await viewModel.sendInvite() },
                 identifier: "piccante.invite"

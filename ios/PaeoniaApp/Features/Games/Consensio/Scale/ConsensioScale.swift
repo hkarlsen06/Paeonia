@@ -111,6 +111,7 @@ struct ConsensioScale: View {
             }
             .frame(width: width, height: areaHeight)
             .contentShape(Rectangle())
+            .keepsVerticalDrags(editable != nil)
             .gesture(editable.map { dragGesture($0, width: width) })
         }
         .frame(height: areaHeight)

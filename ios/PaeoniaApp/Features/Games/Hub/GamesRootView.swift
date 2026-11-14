@@ -18,7 +18,7 @@ struct GamesRootView: View {
                 .toolbarVisibility(tabBarVisibility, for: .tabBar)
                 .navigationDestination(for: GamesDestination.self) { destination in
                     viewModel.screen(for: destination)
-                        .gameChatScreen()
+                        .gameChatScreen(kind: destination.gameKind)
                         .analyticsScreen(destination.analyticsName)
                 }
         }
@@ -107,6 +107,19 @@ struct GamesRootView: View {
 }
 
 private extension GamesDestination {
+    /// The game the screen belongs to, whose chat a swipe up opens.
+    var gameKind: GameKind {
+        switch self {
+        case let .game(kind), let .boardGameHistory(kind), let .boardGameReplay(kind, _): kind
+        case .drawAndGuessHistory, .drawAndGuessHistoryDetail: .drawAndGuess
+        case .storyChainHistory, .storyChainHistoryDetail: .storyChain
+        case .mindMeldHistory, .mindMeldHistoryDetail: .mindMeld
+        case .consensioHistory, .consensioHistoryDetail: .consensio
+        case .guessMySpotHistory: .guessMySpot
+        case .exquisiteCorpseHistory, .exquisiteCorpseHistoryDetail: .exquisiteCorpse
+        }
+    }
+
     /// The screen's name in usage statistics, such as `game_ludo`.
     var analyticsName: String {
         switch self {

@@ -35,6 +35,7 @@ struct ConnectFourInputLayer: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             Color.clear.contentShape(Rectangle())
+                .keepsVerticalDrags(canPlay)
                 .gesture(dragGesture, including: canPlay ? .all : .none)
             columnElements
                 .allowsHitTesting(false)

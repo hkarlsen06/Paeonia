@@ -26,6 +26,7 @@ struct DrawAndGuessScreen: View {
         .gameLiveReactions(viewModel.liveReactions)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { menu }
+        .gameToolbarShowsInfo(showsScoreInToolbar)
         .gameMenuInviteHost()
         .preferredColorScheme(.dark)
         .task { await viewModel.start() }
@@ -48,9 +49,7 @@ struct DrawAndGuessScreen: View {
     /// At accessibility text sizes the score moves into the content (`DrawAndGuessScoreHeader`).
     @ToolbarContentBuilder
     private var menu: some ToolbarContent {
-        if [.status, .chooseWord, .waiting].contains(screen), let score = viewModel.score,
-            !dynamicTypeSize.isAccessibilitySize
-        {
+        if showsScoreInToolbar, let score = viewModel.score {
             ToolbarItem(placement: .topBarTrailing) {
                 DrawAndGuessScoreCapsule(score: score, me: viewModel.me, partner: viewModel.partner)
             }
@@ -59,6 +58,11 @@ struct DrawAndGuessScreen: View {
         GameToolbarActions(kind: .drawAndGuess) {
             GameMenu(history: .drawAndGuess)
         }
+    }
+
+    private var showsScoreInToolbar: Bool {
+        [.status, .chooseWord, .waiting].contains(screen) && viewModel.score != nil
+            && !dynamicTypeSize.isAccessibilitySize
     }
 
     /// The old screen fades out fast and the new one fades in with a 12 point rise

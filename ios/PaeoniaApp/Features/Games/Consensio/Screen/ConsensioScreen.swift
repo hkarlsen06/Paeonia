@@ -27,6 +27,7 @@ struct ConsensioScreen: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { toolbarItems }
+        .gameToolbarShowsInfo()
         .gameMenuInviteHost()
         .preferredColorScheme(.dark)
         .task { await viewModel.start() }

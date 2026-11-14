@@ -113,6 +113,7 @@ private struct BoardGameScoreToolbar: ViewModifier {
                 .sharedBackgroundVisibility(.hidden)
             }
         }
+        .gameToolbarShowsInfo(score?.isEmpty == false && !dynamicTypeSize.isAccessibilitySize)
     }
 }
 

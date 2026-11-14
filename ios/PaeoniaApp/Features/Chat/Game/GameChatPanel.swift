@@ -29,6 +29,9 @@ struct GameChatPanel: ViewModifier {
     @State private var safeFrame = CGRect.zero
     /// The top of the game's bottom controls, such as its action bar, in global coordinates.
     @State private var controlsTop: CGFloat?
+    /// Where the game's content starts under a navigation bar that holds nothing about the
+    /// game, in global coordinates. Nil when the bar stays in view.
+    @State private var contentTop: CGFloat?
     /// The chat in the panel. It stays from before the panel rises until the panel is down
     /// again, so the chat is there for both slides.
     @State private var mounted: GameChatDestination?
@@ -49,6 +52,9 @@ struct GameChatPanel: ViewModifier {
             // Here, before the panel joins in with its own composer.
             .onPreferenceChange(PaeoniaBannerBottomEdgeKey.self) { edge in
                 if mounted == nil { controlsTop = edge }
+            }
+            .onPreferenceChange(GameChatContentTopKey.self) { top in
+                if mounted == nil { contentTop = top }
             }
             .environment(\.gameChatShrink, isRaised ? shrink(above: panelHeight) : nil)
             .allowsHitTesting(mounted == nil)
@@ -82,21 +88,25 @@ struct GameChatPanel: ViewModifier {
             }
     }
 
-    /// The screen as large as it can be with its top under the status bar and the top of
-    /// its bottom controls at the panel. The panel covers those controls, which nobody can
-    /// use while it is open, so the rest of the game shows larger. A screen that reports no
-    /// bottom controls shows whole.
+    /// The screen as large as it can be with its first row under the status bar and the top
+    /// of its bottom controls at the panel. The first row is the top of the content when
+    /// the navigation bar holds nothing about the game, and the bar is then cut off. The
+    /// panel covers the bottom controls, which nobody can use while it is open. A screen
+    /// that reports neither shows whole.
     private func shrink(above panelHeight: CGFloat) -> GameChatShrink? {
-        let top = safeFrame.minY + Self.gamePadding
+        let roomTop = safeFrame.minY + Self.gamePadding
         // Down to the panel itself, so nothing of what it covers shows above it.
-        let room = screen.height - panelHeight - top
+        let room = screen.height - panelHeight - roomTop
         guard room > 0, safeFrame.height > 0, screen.width > 0 else { return nil }
-        // At least the upper half of the screen stays in view.
+        // At least the middle half of the screen stays in view.
+        let top = contentTop.map { min(max($0, safeFrame.minY), safeFrame.minY + safeFrame.height / 4) }
         let bottom = controlsTop.map { min(max($0, safeFrame.midY), safeFrame.maxY) } ?? safeFrame.maxY
-        let scale = min(room / (bottom - safeFrame.minY), (screen.width - 2 * Self.gamePadding) / screen.width, 1)
+        let first = top ?? safeFrame.minY
+        let scale = min(room / (bottom - first), (screen.width - 2 * Self.gamePadding) / screen.width, 1)
         return GameChatShrink(
             scale: scale,
-            origin: CGPoint(x: (screen.width - scale * screen.width) / 2, y: top - scale * safeFrame.minY)
+            origin: CGPoint(x: (screen.width - scale * screen.width) / 2, y: roomTop - scale * first),
+            top: top ?? 0
         )
     }
 
@@ -149,10 +159,8 @@ struct GameChatPanel: ViewModifier {
     }
 }
 
-/// The chat panel itself. Its handle drags it down to close it.
+/// The chat panel itself. A drag down on it closes it (`GameChatPanelDrag`).
 private struct GameChatPanelSurface: View {
-    private static let closeDistance: CGFloat = 120
-
     let destination: GameChatDestination
     let close: () -> Void
 
@@ -164,7 +172,16 @@ private struct GameChatPanelSurface: View {
             .overlay(alignment: .top) { handle }
             .background(.paeoniaBackgroundPrimary)
             .clipShape(.rect(topLeadingRadius: PaeoniaRadius.radius28, topTrailingRadius: PaeoniaRadius.radius28))
-            .offset(y: dragOffset)
+            .background {
+                GameChatPanelDrag { dragOffset = $0 } onEnded: { closes in
+                    if closes {
+                        close()
+                    } else {
+                        withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { dragOffset = 0 }
+                    }
+                }
+            }
+            .modifier(PanelSlide(offset: dragOffset))
             .accessibilityAddTraits(.isModal)
             .accessibilityAction(.escape, close)
     }
@@ -174,20 +191,7 @@ private struct GameChatPanelSurface: View {
             .fill(.paeoniaTextSecondary.opacity(0.5))
             .frame(width: 36, height: 5)
             .padding(.top, PaeoniaSpacing.space8)
-            // Narrower than the panel, so it leaves the close button in the corner alone.
-            .frame(width: 160, height: 28, alignment: .top)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(coordinateSpace: .global)
-                    .onChanged { dragOffset = max(0, $0.translation.height) }
-                    .onEnded { value in
-                        if max(value.translation.height, value.predictedEndTranslation.height) > Self.closeDistance {
-                            close()
-                        } else {
-                            withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { dragOffset = 0 }
-                        }
-                    }
-            )
+            .allowsHitTesting(false)
             .accessibilityHidden(true)
     }
 }
