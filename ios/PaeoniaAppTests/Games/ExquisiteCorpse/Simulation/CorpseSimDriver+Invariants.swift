@@ -98,8 +98,6 @@ extension CorpseSimDriver {
         try checkProgress()
     }
 
-    /// The parts cycle head, body, legs, feet. The turn passes to the partner after
-    /// every part but the feet, whose drawer keeps it and starts the next figure.
     private func checkPartOrder() throws {
         guard let game = server.game else { return }
         var previous: CorpseSimServer.Part?
@@ -147,8 +145,6 @@ extension CorpseSimDriver {
         }
     }
 
-    /// A figure is a head, a body, legs and feet, with the head and the legs by its starter and the
-    /// body and the feet by the partner. The next figure starts with the previous feet drawer.
     private func checkFigureShapes() throws {
         guard let game = server.game else { return }
         var nextStarter = game.creator

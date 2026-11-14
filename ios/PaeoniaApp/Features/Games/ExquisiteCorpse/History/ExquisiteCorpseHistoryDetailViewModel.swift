@@ -58,8 +58,6 @@ final class ExquisiteCorpseHistoryDetailViewModel {
 
     // MARK: - Loading
 
-    /// Loads the four drawings and opens the paper once. With `showsAtOnce`
-    /// (Reduce Motion) the finished creature shows and "Play again" replays it.
     func load(showsAtOnce: Bool) async {
         guard drawingState != .ready else { return }
         self.showsAtOnce = showsAtOnce

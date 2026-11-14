@@ -28,7 +28,6 @@ struct ExquisiteCorpseViewModelRevealTests {
         let failed = await waitUntil { viewModel.revealLoadFailed }
         #expect(failed)
         #expect(viewModel.revealContent?.isReady == false)
-        // The three drawings that did arrive are in the content already.
         let headLoaded = await waitUntil { viewModel.revealContent?.part(.head)?.drawing != nil }
         #expect(headLoaded)
         #expect(viewModel.revealContent?.part(.body)?.drawing != nil)

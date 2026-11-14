@@ -5,9 +5,6 @@ import SwiftUI
 struct ExquisiteCorpseHistoryScreen: View {
     @Bindable var viewModel: ExquisiteCorpseHistoryViewModel
 
-    /// Four columns on a phone 393 pt wide or wider, more where there is room. A
-    /// creature is four squares tall, so narrower cells keep the grid short. It
-    /// grows with the caption, so large text gets fewer, wider cells.
     @ScaledMetric(relativeTo: .caption) private var columnMinimum: CGFloat = 76
 
     var body: some View {

@@ -11,7 +11,6 @@ import SwiftUI
 struct ExquisiteCorpseFigureView: View {
     /// The parts at the canonical side. A part that is missing is still loading.
     let parts: [ExquisiteCorpsePartKind: PKDrawing]
-    /// The side of one part. The figure is four times as tall.
     let side: CGFloat
 
     var body: some View {
@@ -91,7 +90,6 @@ private struct ExquisiteCorpsePartSpinner: View {
             ],
             side: 100
         )
-        // The feet are still loading.
         ExquisiteCorpseFigureView(
             parts: [
                 .head: ExquisiteCorpsePreviewDrawings.head,

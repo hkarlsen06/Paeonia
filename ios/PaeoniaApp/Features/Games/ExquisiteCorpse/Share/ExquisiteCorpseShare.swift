@@ -2,8 +2,6 @@ import PencilKit
 import SwiftUI
 
 extension ExquisiteCorpseRevealContent {
-    /// The finished creature as one tall picture, head on top. Nil until all four
-    /// drawings are on the phone.
     var shareable: PaeoniaShareable? {
         guard isReady else { return nil }
         let drawings = drawings
@@ -29,8 +27,6 @@ extension ExquisiteCorpseRevealContent {
     }
 }
 
-/// The four parts stacked with no gap on one plum canvas, with a hairline at each
-/// fold, like the finished figure in the game.
 private struct ExquisiteCorpseShareCard: View {
     let parts: [UIImage]
 

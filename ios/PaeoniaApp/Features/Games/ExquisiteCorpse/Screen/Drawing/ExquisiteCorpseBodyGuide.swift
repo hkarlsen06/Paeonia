@@ -1,12 +1,7 @@
 import SwiftUI
 
-/// A faint dashed outline of the part behind the drawer's ink: a head, a body,
-/// legs or feet. It only helps the drawer see where the part sits. It is not in
-/// the drawing, so it never reaches the strip, the partner, the reveal or the
-/// history. It takes no touches, and VoiceOver skips it.
 struct ExquisiteCorpseBodyGuide: View {
     let part: ExquisiteCorpsePartKind
-    /// The canvas side.
     let side: CGFloat
 
     var body: some View {
@@ -25,11 +20,6 @@ struct ExquisiteCorpseBodyGuide: View {
     )
 }
 
-/// The outline of a part in its square. The parts meet at the same x positions
-/// on each fold, so the outline of one part continues in the next: the neck
-/// joins the head to the body, the hips the body to the legs, and the ankles
-/// the legs to the feet. Every outline is symmetric, so each part draws its left
-/// half and mirrors it.
 nonisolated struct ExquisiteCorpseBodyGuideShape: Shape {
     let part: ExquisiteCorpsePartKind
 
@@ -39,13 +29,11 @@ nonisolated struct ExquisiteCorpseBodyGuideShape: Shape {
         )
     }
 
-    // The left edges of the joins, as a share of the side. The right edges mirror them.
     private static let neckX: CGFloat = 0.41
     private static let hipX: CGFloat = 0.30
     private static let ankleOuterX: CGFloat = 0.33
     private static let ankleInnerX: CGFloat = 0.43
 
-    /// The outline in a square of side 1.
     static func unitPath(for part: ExquisiteCorpsePartKind) -> Path {
         switch part {
         case .head: head
@@ -64,7 +52,6 @@ nonisolated struct ExquisiteCorpseBodyGuideShape: Shape {
             width: radius.width * 2,
             height: radius.height * 2
         ))
-        // The neck starts where it meets the bottom of the head.
         let offset = (neckX - center.x) / radius.width
         let chinY = center.y + radius.height * (1 - offset * offset).squareRoot()
         var neck = Path()
@@ -74,7 +61,6 @@ nonisolated struct ExquisiteCorpseBodyGuideShape: Shape {
         return path
     }
 
-    /// The neck, a shoulder, an arm hanging down, and the side of the torso down to the hip.
     private static var bodyHalf: Path {
         var half = Path()
         half.move(to: CGPoint(x: neckX, y: 0))
@@ -87,7 +73,6 @@ nonisolated struct ExquisiteCorpseBodyGuideShape: Shape {
         return half
     }
 
-    /// One leg, from the hip and the crotch down to the ankle.
     private static var legsHalf: Path {
         var half = Path()
         half.move(to: CGPoint(x: hipX, y: 0))
@@ -97,7 +82,6 @@ nonisolated struct ExquisiteCorpseBodyGuideShape: Shape {
         return half
     }
 
-    /// One foot, from the ankle down to a toe that points outward.
     private static var footHalf: Path {
         var half = Path()
         half.move(to: CGPoint(x: ankleOuterX, y: 0))
@@ -110,7 +94,6 @@ nonisolated struct ExquisiteCorpseBodyGuideShape: Shape {
         return half
     }
 
-    /// `half` and its mirror image across the middle of the square.
     private static func mirrored(_ half: Path) -> Path {
         var both = half
         both.addPath(half.applying(CGAffineTransform(a: -1, b: 0, c: 0, d: 1, tx: 1, ty: 0)))

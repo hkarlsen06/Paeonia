@@ -1,10 +1,6 @@
 import Foundation
 @testable import PaeoniaApp
 
-/// Deterministic Exquisite corpse state for the tests. The viewer is `me`. Figure
-/// 1 is started by the partner, so the partner draws its head and legs and `me`
-/// draws the body and the feet. `me` keeps the turn after the feet and starts
-/// figure 2, and so on.
 enum ExquisiteCorpseFixture {
     static let me = UUID(uuidString: "11111111-1111-4111-8111-111111111111") ?? UUID()
     static let partner = UUID(uuidString: "22222222-2222-4222-8222-222222222222") ?? UUID()
@@ -23,7 +19,6 @@ enum ExquisiteCorpseFixture {
         number.isMultiple(of: 2) ? me : partner
     }
 
-    /// The head and the legs belong to the starter, and the body and the feet to the other one.
     static func drawer(ofFigure number: Int, partIndex: Int) -> UUID {
         let starter = starter(ofFigure: number)
         return partIndex.isMultiple(of: 2) ? starter : (starter == me ? partner : me)
@@ -64,7 +59,6 @@ enum ExquisiteCorpseFixture {
         return UUID(uuid: (0xA5, seed, 0, 0, 0, 0, 0x40, 0, 0x80, 0, 0, 0, 0, 0, 0, seed))
     }
 
-    /// A figure with its first `parts` parts. A finished figure has all four.
     static func figure(
         _ number: Int,
         parts: Int = 4,

@@ -279,7 +279,6 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
 
     // MARK: Moves
 
-    /// Begins the reveal once the four drawings are on the phone.
     private func startIfReady() {
         guard content.isReady, !timeline.hasBegun else { return }
         player.load(content.drawings)

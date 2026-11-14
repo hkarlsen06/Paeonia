@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// The drawer: the part to draw, an optional idea, the strip of the part above
-/// for a body, legs or feet, the canvas, the tools and Done.
 struct ExquisiteCorpseDrawingView: View {
     let viewModel: ExquisiteCorpseViewModel
     /// Matches the strip to the watched square on the way in. Nil with Reduce Motion.

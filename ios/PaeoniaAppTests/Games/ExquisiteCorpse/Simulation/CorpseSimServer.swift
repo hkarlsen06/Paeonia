@@ -186,8 +186,6 @@ final class CorpseSimServer {
         }
     }
 
-    /// `progressAfter`: the turn passes to the partner, except after the feet. They finish the
-    /// figure, and their drawer keeps the turn to start the next one with the head.
     private func advance(_ game: inout Game, after index: Int, figureID: UUID, by user: UUID) -> Bool {
         let isFinished = index == 3
         if isFinished, let at = figures.firstIndex(where: { $0.id == figureID }) {

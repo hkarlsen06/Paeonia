@@ -12,8 +12,6 @@ extension ExquisiteCorpseFixture {
         .server(code: code, message: message)
     }
 
-    /// A part of `me` with a drawing and a strip that differ, so a test can tell the uploads apart.
-    /// The drawing is `Data([1, 1, 1])` and the strip is `Data([2, 2])`. The feet have no strip.
     static func distinctPart(
         figure: Int = 2,
         partIndex: Int = 0,

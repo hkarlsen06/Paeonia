@@ -378,8 +378,6 @@ extension ExquisiteCorpseFixture {
         )
     }
 
-    /// Figure 1: the partner drew the head and the legs, `me` the body, and the feet
-    /// are `me`'s. `me` keeps the turn after them and starts figure 2.
     static func myFeetTurn(
         ideas: [RemoteExquisiteCorpseIdea] = ExquisiteCorpseFixture.ideas
     ) -> RemoteExquisiteCorpseState {
@@ -400,8 +398,6 @@ extension ExquisiteCorpseFixture {
         state(game: game(figure: 1, partIndex: 0, turn: partner))
     }
 
-    /// A finished figure `me` has not moved past. The next head belongs to whoever
-    /// drew the feet.
     static func unseenReveal(figure number: Int) -> RemoteExquisiteCorpseState {
         let nextTurn = starter(ofFigure: number + 1)
         return state(

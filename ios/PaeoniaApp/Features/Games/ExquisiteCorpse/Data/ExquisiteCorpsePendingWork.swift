@@ -21,13 +21,10 @@ nonisolated struct ExquisiteCorpseSubmitPartPayload: Codable, Equatable, Sendabl
     let gameID: UUID
     let figureID: UUID
     let partID: UUID
-    /// 0 for the head, 1 for the body, 2 for the legs and 3 for the feet.
     let partIndex: Int
     let coupleID: UUID
     /// The whole part.
     let drawing: ExquisiteCorpseQueuedUpload
-    /// The part clipped to the strip (`ExquisiteCorpseFold`). Set for the head, the
-    /// body and the legs and nil for the feet.
     let strip: ExquisiteCorpseQueuedUpload?
     /// The idea on the chip when the drawer tapped Done. It stays with the part.
     let idea: RemoteExquisiteCorpseIdea?

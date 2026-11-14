@@ -2,8 +2,6 @@
 import SwiftUI
 
 extension ExquisiteCorpseRevealContent {
-    /// Creature 12 for previews. The viewer drew the body and the feet, Robin the head and the legs.
-    /// With `isLoaded` false the drawings are still on their way.
     static func preview(isLoaded: Bool = true, nextIsMine: Bool = true) -> Self {
         let robin = GamePlayer(name: "Robin")
         let me = GamePlayer(name: "Hjalmar")

@@ -38,7 +38,6 @@ struct ExquisiteCorpseDrawingSurface: View {
             Color.clear.frame(width: side, height: side)
         }
         .frame(width: side)
-        // The canvas is transparent, so the guide shows behind the ink.
         .overlay(alignment: .bottom) {
             ExquisiteCorpseBodyGuide(part: part, side: side)
         }

@@ -107,8 +107,6 @@ struct ExquisiteCorpseAwayView: View {
         }
     }
 
-    /// In the first figure each partner is also told which part comes back to
-    /// them: the legs to the head drawer, the feet to the body drawer.
     private var nextPartHint: LocalizedStringResource? {
         guard figureNumber == 1 else { return nil }
         switch part {
@@ -127,8 +125,6 @@ struct ExquisiteCorpseAwayView: View {
     }
 }
 
-/// This person's feet are queued. The reveal opens once the server has them, and
-/// until then the folded figure waits.
 struct ExquisiteCorpseSyncingView: View {
     let viewModel: ExquisiteCorpseViewModel
 

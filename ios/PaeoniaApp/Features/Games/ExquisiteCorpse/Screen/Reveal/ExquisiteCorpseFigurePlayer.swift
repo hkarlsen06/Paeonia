@@ -129,8 +129,6 @@ final class ExquisiteCorpseFigurePlayer {
         generation += 1
     }
 
-    /// Plays the head, the body, the legs and the feet one after the other, with no folds.
-    /// For Reduce Motion and the "Play again" actions.
     func playInSequence() {
         reset()
         isPlayingInSequence = true

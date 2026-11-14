@@ -1,9 +1,5 @@
 import SwiftUI
 
-/// The creature of `ExquisiteCorpseHubArtwork`, drawn as one picture across the four
-/// parts of the strip: a lavender kitten's head, a cozy sweater with a heart, duck
-/// legs and webbed feet. The raised paw, the neck, the hem and the legs cross the
-/// folds, as they do in a real game. Each part is a band 48 high.
 struct ExquisiteCorpseHubCreature: View {
     /// The size the drawing is laid out in. It scales to fill its frame.
     static let size = CGSize(width: 132, height: 192)
@@ -40,12 +36,9 @@ struct ExquisiteCorpseHubCreature: View {
         )
     }
 
-    // MARK: Duck legs and feet
-
     private static let legXs: [CGFloat] = [56, 76]
     private static let ankleY: CGFloat = 158
 
-    /// Two thin gold legs from under the hem, past the fold to the ankles.
     private func drawLegs(in context: GraphicsContext) {
         for x in Self.legXs {
             let leg = Path { path in
@@ -58,7 +51,6 @@ struct ExquisiteCorpseHubCreature: View {
     }
 
     private func drawFeet(in context: GraphicsContext) {
-        // Each foot turns out a little from its leg.
         for (legX, footX) in zip(Self.legXs, [CGFloat(49), 83]) {
             let foot = Self.foot(from: CGPoint(x: legX, y: Self.ankleY - 3), centeredAt: footX)
             paint(foot, .paeoniaInkGold, in: context)

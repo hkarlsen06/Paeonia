@@ -21,7 +21,6 @@ final class ExquisiteCorpseRevealTimeline {
         case opening(Part)
         /// The part's fold is open and the view replays its strokes.
         case playing(Part)
-        /// The feet are done and the view pulls back to the whole figure.
         case zoomingOut
         /// Everything shows.
         case settled
@@ -40,8 +39,6 @@ final class ExquisiteCorpseRevealTimeline {
         var foldSoundLead: TimeInterval = 0.1
         /// From the end of a part's replay to the next fold opening.
         var betweenParts: TimeInterval = 0.3
-        /// From the end of the feet's replay to the zoom out, so the finished feet
-        /// show for a moment before the whole figure.
         var beforeZoom: TimeInterval = 0.5
         /// From the start of the zoom out to the haptic and the bloom.
         var zoomToBloom: TimeInterval = 0.3

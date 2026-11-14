@@ -73,7 +73,6 @@ function upload(s: Setup, user: TestUser, partId: string, purpose: Purpose) {
 
 type PartSpec = { figureId: string; index: 0 | 1 | 2 | 3; partId?: string; ideaId?: string };
 
-/** Uploads the drawing (and the strip for the head, body and legs) and builds the submit arguments. */
 async function prepare(s: Setup, user: TestUser, spec: PartSpec) {
   const partId = spec.partId ?? newUuid();
   const drawing = await upload(s, user, partId, "exquisite_corpse_drawing");
@@ -99,7 +98,6 @@ async function send(s: Setup, user: TestUser, spec: PartSpec) {
   return { ...prepared, result: await submit(user, prepared.args) };
 }
 
-/** A whole figure: `starter` draws the head and the legs, `other` the body and the feet, and keeps the turn. */
 async function playFigure(
   s: Setup,
   starter: TestUser,
@@ -341,7 +339,6 @@ describe("submit_exquisite_corpse_part", () => {
     tick(60);
     const feet = await send(s, s.b, { figureId, index: 3 });
     expect(feet.result).toMatchObject({ part_index: 3, figure_finished: true });
-    // b drew the feet and keeps the turn for the next head, as a new turn.
     expect(await turn()).toBe(s.b.userId);
     const finished = await view(s.a);
     expect(finished.game).toMatchObject({ figure_id: null, figure_number: 2, part_index: 0, figures_finished: 1, version: 5 });
@@ -354,7 +351,6 @@ describe("submit_exquisite_corpse_part", () => {
     expect((await view(s.b)).ideas).toHaveLength(12);
     expect((await view(s.a)).ideas).toEqual([]);
 
-    // b starts the next figure and draws its head and legs. a draws the body and the feet.
     const next = newUuid();
     await send(s, s.b, { figureId: next, index: 0 });
     await send(s, s.a, { figureId: next, index: 1 });
@@ -881,7 +877,6 @@ describe("pushes", () => {
       body: "Your turn to draw the feet.",
     });
 
-    // The feet drawer keeps the turn, so only the partner hears about the finished figure.
     const results = rows.filter((row) => row.kind === "game_result");
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
@@ -925,7 +920,6 @@ describe("pushes", () => {
     await send(s, s.b, { figureId, index: 3 });
     expect(await outbox(s.t)).toHaveLength(0);
 
-    // A screen that stopped its heartbeats does not count. b drew the feet and starts the next figure.
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "exquisite_corpse", p_present: true });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     await send(s, s.b, { figureId: newUuid(), index: 0 });
@@ -951,7 +945,6 @@ describe("pushes", () => {
   test("the drain drops a turn push once the figure is finished, and a result push once the reveal was seen", async () => {
     const s = await startGame();
     await playFigure(s, s.a, s.b);
-    // The body, legs and feet pushes are out of date. a's result push is current until a has seen the reveal.
     expect(kinds(await claim(s))).toEqual(["game_result"]);
     expect(await errorsOf(s, "game_turn_ready")).toEqual(Array(3).fill("notification is out of date"));
 
@@ -1093,7 +1086,6 @@ describe("relationship end", () => {
         (asset) => asset.reserved_parent_kind === "exquisite_corpse_part" && asset.couple_id === s.couple.coupleId,
       ),
     );
-    // Five parts with a drawing each, and a strip for each head, body and legs.
     expect(drawings).toHaveLength(5 + 4);
     expect(drawings.every((asset) => asset.storage_delete_status === "pending")).toBe(true);
     await s.t.mutation(internal.media.cleanup_media_storage, {});

@@ -1,8 +1,5 @@
 import SwiftUI
 
-/// One finished creature in the grid: the head, body, legs and feet stacked as one
-/// tall picture, with "Creature 12" and "Oct 12" under it. A filled star shows when
-/// this person starred it.
 struct ExquisiteCorpseHistoryCell: View {
     let figure: RemoteExquisiteCorpseFigure
     let partnerName: String
@@ -12,8 +9,6 @@ struct ExquisiteCorpseHistoryCell: View {
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             picture
-            // The number and the date get a line each, because the columns are too
-            // narrow for both on one line.
             VStack(alignment: .leading, spacing: 0) {
                 Text(.exquisiteCorpseRevealNumber(figure.number))
                 Text(shortDate)
@@ -39,8 +34,6 @@ struct ExquisiteCorpseHistoryCell: View {
             : Text(.exquisiteCorpseHistoryCellA11Y(figure.number, partnerName))
     }
 
-    /// Four squares in a column. Each keeps its size while its drawing loads, so
-    /// the grid never jumps.
     private var picture: some View {
         VStack(spacing: 0) {
             ForEach(ExquisiteCorpsePartKind.allCases, id: \.self) { kind in

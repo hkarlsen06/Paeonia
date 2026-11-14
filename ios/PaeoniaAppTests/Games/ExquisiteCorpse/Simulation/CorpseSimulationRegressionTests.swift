@@ -29,8 +29,6 @@ struct CorpseSimulationRegressionTests {
         data.flatMap { try? PKDrawing(data: $0) } ?? PKDrawing()
     }
 
-    /// A whole figure with both phones in the room: the watcher sees the strip while the head is drawn,
-    /// the strip carries over to the body, and both phones open the reveal after the feet.
     @Test func aFigureGoesFromHeadToRevealLiveWithTheHandOff() async {
         await scenario { driver in
             let starter = driver.turnPhone
@@ -58,7 +56,6 @@ struct CorpseSimulationRegressionTests {
         }
     }
 
-    /// The legs and the feet, the reveal on both phones, and the next figure starting with the feet drawer.
     private func finishFigure(_ driver: CorpseSimDriver, starter: CorpseSimPhone, other: CorpseSimPhone) async throws {
         try await driver.scriptTurn(starter)
         try driver.require(other, in: .drawing)
@@ -127,7 +124,6 @@ struct CorpseSimulationRegressionTests {
         }
     }
 
-    /// The feet are queued offline. The drawer waits to sync and then both phones show the reveal.
     @Test func feetQueuedOfflineShowTheRevealOnBothAfterReconnecting() async {
         await scenario { driver in
             let starter = driver.turnPhone

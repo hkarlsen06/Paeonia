@@ -90,8 +90,6 @@ struct ExquisiteCorpseRevealCredits: View {
         let label: LocalizedStringResource
     }
 
-    /// One credit per drawer, such as "Head and legs" and "Body and feet". A
-    /// drawer whose parts have no combined label gets one credit per part.
     private var credits: [Credit] {
         var byDrawer: [[ExquisiteCorpseRevealContent.Part]] = []
         for part in parts {

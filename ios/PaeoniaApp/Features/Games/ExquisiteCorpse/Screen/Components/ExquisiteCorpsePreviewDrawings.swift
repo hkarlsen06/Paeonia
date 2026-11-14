@@ -57,7 +57,6 @@ enum ExquisiteCorpsePreviewDrawings {
         return PKDrawing(strokes: strokes)
     }
 
-    /// Thin legs with round knees. They cross the bottom fold.
     static var legs: PKDrawing {
         var strokes: [PKStroke] = []
         for x in legX {
@@ -67,7 +66,6 @@ enum ExquisiteCorpsePreviewDrawings {
         return PKDrawing(strokes: strokes)
     }
 
-    /// Three-toed feet at the end of the legs.
     static var feet: PKDrawing {
         var strokes: [PKStroke] = []
         for x in legX {

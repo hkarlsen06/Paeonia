@@ -46,8 +46,6 @@ struct ExquisiteCorpseRevealCamera: Equatable {
         min(stage.height, viewportHeight)
     }
 
-    /// The side of a part when the whole figure shows: the smaller of the width and
-    /// a quarter of the height.
     var fitSide: CGFloat {
         max(1, min(stage.width, (overviewHeight - Self.margin * 2) / partCount))
     }

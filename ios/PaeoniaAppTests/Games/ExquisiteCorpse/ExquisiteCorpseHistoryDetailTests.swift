@@ -3,14 +3,11 @@ import PencilKit
 import Testing
 @testable import PaeoniaApp
 
-/// One creature from "Our creatures": loading its four drawings, the credits
-/// and the replay.
 @MainActor
 struct ExquisiteCorpseHistoryDetailTests {
     private typealias Fixture = ExquisiteCorpseFixture
 
     private let environment = ExquisiteCorpseTestEnvironment(state: nil)
-    /// Figure 2 starts with `me`, so `me` drew its head and legs and the partner its body and feet.
     private let figure = Fixture.figure(2, revealSeen: true)
 
     private func makeDetail() -> ExquisiteCorpseHistoryDetailViewModel {

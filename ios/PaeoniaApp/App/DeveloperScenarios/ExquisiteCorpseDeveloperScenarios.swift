@@ -123,7 +123,6 @@
           keep(figure: 2, partIndex: index, isStrip: false)
         }
       case .exquisiteCorpseRevealLoading:
-        // Alex's own body and feet are on the phone. Robin's head and legs never finish downloading.
         keep(figure: 2, partIndex: ExquisiteCorpsePartKind.body.rawValue, isStrip: false)
         keep(figure: 2, partIndex: ExquisiteCorpsePartKind.feet.rawValue, isStrip: false)
       default:
@@ -433,7 +432,6 @@
       }
     }
 
-    /// Alex's feet, saved on the phone after a try that did not get through.
     private func queueFeet(on game: ExquisiteCorpseViewModel) async {
       let payload = ExquisiteCorpseDeveloperFixture.queuedFeet()
       guard let data = try? JSONEncoder().encode(payload) else { return }

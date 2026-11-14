@@ -79,7 +79,6 @@ struct ExquisiteCorpseViewModelPhaseTests {
         #expect(env.room.role == .result)
         let ready = await waitUntil { viewModel.revealContent?.isReady == true }
         #expect(ready)
-        // The feet drawer keeps the turn and starts the next figure.
         #expect(viewModel.revealContent?.nextIsMine == true)
     }
 

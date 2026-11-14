@@ -21,8 +21,6 @@
       number.isMultiple(of: 2) ? partner : me
     }
 
-    /// The starter draws the head and the legs. The other person draws the body
-    /// and the feet, and starts the next creature.
     nonisolated static func drawer(ofFigure number: Int, partIndex: Int) -> UUID {
       let starter = starter(ofFigure: number)
       guard !partIndex.isMultiple(of: 2) else { return starter }
@@ -101,7 +99,6 @@
       )
     }
 
-    /// A figure with its first `parts` parts. A finished figure has all four.
     nonisolated static func figure(
       _ number: Int,
       parts count: Int = ExquisiteCorpsePartKind.allCases.count,
@@ -190,8 +187,6 @@
       )
     }
 
-    /// Robin drew the head and the legs of creature 4, and Alex the body. Alex
-    /// draws the feet, and then starts creature 5.
     nonisolated static func feetTurn() -> RemoteExquisiteCorpseState {
       state(
         game: game(figure: 4, partIndex: 3, turn: me, figuresFinished: 3),
@@ -219,8 +214,6 @@
       )
     }
 
-    /// Creature 2 is finished and Alex has not seen it. Alex drew its body and
-    /// its feet, so Alex keeps the turn and starts creature 3.
     nonisolated static func unseenReveal(figuresFinished: Int = 2) -> RemoteExquisiteCorpseState {
       state(
         game: game(figure: 3, partIndex: 0, turn: me, figuresFinished: figuresFinished),
@@ -299,10 +292,6 @@
       )
     }
 
-    // MARK: Queued feet
-
-    /// Alex's feet for creature 4, saved on the phone and not sent. They match the
-    /// next part the server waits for in `feetTurn()`.
     @MainActor
     static func queuedFeet() -> ExquisiteCorpseSubmitPartPayload {
       func upload(_ data: Data, sequence: Int64) -> ExquisiteCorpseQueuedUpload {

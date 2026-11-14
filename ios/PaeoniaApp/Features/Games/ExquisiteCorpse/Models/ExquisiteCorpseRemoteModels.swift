@@ -14,12 +14,9 @@ nonisolated struct RemoteExquisiteCorpseIdea: Codable, Equatable, Identifiable, 
 
 nonisolated struct RemoteExquisiteCorpsePart: Codable, Equatable, Identifiable, Sendable {
     let id: UUID
-    /// 0 for the head, 1 for the body, 2 for the legs and 3 for the feet.
     let partIndex: Int
     let drawerUserID: UUID
     let createdAt: Date
-    /// The bottom of the part, clipped on the drawer's phone. Head, body and legs only.
-    /// Both partners may read it as soon as the part is sent.
     let stripMediaAssetID: UUID?
     /// Nil until the figure is finished, unless this person drew the part.
     let drawingMediaAssetID: UUID?
@@ -50,7 +47,6 @@ nonisolated struct RemoteExquisiteCorpseFigure: Codable, Equatable, Identifiable
     let id: UUID
     /// Counts up from 1 for the couple.
     let number: Int
-    /// Draws the head and the legs. The partner draws the body and the feet.
     let starterUserID: UUID
     let createdAt: Date
     let finishedAt: Date?
@@ -88,7 +84,6 @@ nonisolated struct RemoteExquisiteCorpseGame: Codable, Equatable, Sendable {
     let figureID: UUID?
     /// Of the figure in progress, or of the next one when `figureID` is nil.
     let figureNumber: Int
-    /// The part the turn is about: 0, 1, 2 or 3.
     let partIndex: Int
     let figuresFinished: Int
     let version: Int
@@ -154,7 +149,6 @@ nonisolated struct RemoteExquisiteCorpseSubmitPartResult: Decodable, Equatable, 
     let figureID: UUID
     let partID: UUID
     let partIndex: Int
-    /// The feet were the last part.
     let figureFinished: Bool
     let createdAt: Date
 

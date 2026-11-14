@@ -7,7 +7,6 @@ import SwiftUI
 struct ExquisiteCorpseMiniFold: View {
     static let size = CGSize(width: 72, height: 288)
 
-    /// How many parts are finished, from 0 to 3.
     let partsDone: Int
     /// The part being drawn right now. Nil when nobody is drawing.
     let openPart: ExquisiteCorpsePartKind?

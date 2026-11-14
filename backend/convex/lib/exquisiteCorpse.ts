@@ -35,7 +35,6 @@ export function isPartIndex(value: number): boolean {
   return Number.isInteger(value) && value >= 0 && value <= FEET_INDEX;
 }
 
-/** The head, body and legs leave a strip for the next drawer. The feet leave none. */
 export function hasStrip(partIndex: number): boolean {
   return partIndex < FEET_INDEX;
 }
@@ -48,12 +47,6 @@ export function turnPushPart(partIndex: number): IdeaPart {
   return PART_NAMES[partIndex + 1];
 }
 
-/**
- * The game's progress once `drawer` sends part `partIndex` of figure `figureId`. Every part passes
- * the turn to the partner, except the feet: they finish the figure, clear `figure_id`, and the feet
- * drawer keeps the turn to start the next figure with its head. So the starter draws the head and the
- * legs, the partner draws the body and the feet, and the next figure starts with the partner.
- */
 export function progressAfter(
   game: Pick<CorpseGame, "figure_number" | "figures_finished">,
   partIndex: number,
@@ -331,13 +324,6 @@ export function reminderStep(game: Pick<CorpseGame, "figure_number" | "part_inde
  * to the couple media sweep in `cleanupCoupleContent`.
  */
 export const exquisiteCorpseBackend: GameBackend = {
-  /**
-   * `payload.round_id` is the figure id. A turn push is wanted while the turn is still the recipient's in
-   * that figure. Every part but the feet passes the turn, and the feet clear `figure_id`, so the push
-   * stops being wanted once the recipient sends their part, also when the feet drawer keeps the turn.
-   * A result push is wanted until the recipient has seen the reveal. A reminder is wanted while the
-   * reminded turn still waits (a new turn clears `turn_reminder_sent_at`).
-   */
   async pushStillWanted(ctx, push, payload, recipientUserId) {
     const figureId = typeof payload.round_id === "string" ? payload.round_id : null;
     const gameId = typeof payload.game_id === "string" ? payload.game_id : null;
