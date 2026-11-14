@@ -21,9 +21,10 @@ struct GameChatResultRow: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// The open result keeps the pill's width, so it reads as the pill grown downward.
+    /// The open result grows down from the pill, at least wide enough for a game's
+    /// labels to fit, and narrower than the screen so it stays easy to scroll past.
     private var expanded: some View {
-        PillWidthStack {
+        PillWidthStack(minimumWidth: 300) {
             toggle
             VStack(spacing: PaeoniaSpacing.space8) {
                 GameConversationHeader(
@@ -95,16 +96,19 @@ struct GameChatResultLine<Title: View, Time: View>: View {
     }
 }
 
-/// Stacks its views at the first view's own width, which the rest fill and wrap to.
+/// Stacks its views at the first view's own width, or `minimumWidth` if that is
+/// wider, but never wider than offered. The rest fill that width and wrap to it.
 private struct PillWidthStack: Layout {
+    let minimumWidth: CGFloat
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = width(of: subviews)
+        let width = width(of: subviews, offered: proposal.width)
         let height = subviews.reduce(0) { $0 + $1.sizeThatFits(.init(width: width, height: nil)).height }
         return CGSize(width: width, height: height)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let width = width(of: subviews)
+        let width = width(of: subviews, offered: bounds.width)
         var y = bounds.minY
         for subview in subviews {
             let size = ProposedViewSize(width: width, height: nil)
@@ -113,7 +117,8 @@ private struct PillWidthStack: Layout {
         }
     }
 
-    private func width(of subviews: Subviews) -> CGFloat {
-        subviews.first?.sizeThatFits(.unspecified).width ?? 0
+    private func width(of subviews: Subviews, offered: CGFloat?) -> CGFloat {
+        let pill = subviews.first?.sizeThatFits(.unspecified).width ?? 0
+        return min(max(pill, minimumWidth), offered ?? .infinity)
     }
 }

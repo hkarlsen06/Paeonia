@@ -18,6 +18,7 @@ struct GameConversationDrawing: View {
                 }
             }
             .clipped()
+            .frame(maxWidth: GameConversationHeader.pictureWidth)
             .task(id: assetID) { await loadImage() }
     }
 

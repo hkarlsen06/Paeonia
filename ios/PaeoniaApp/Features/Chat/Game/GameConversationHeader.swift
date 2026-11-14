@@ -11,6 +11,10 @@ struct GameConversationHeader: View {
     var loadState = GameConversationLoadState.loading
     var onRetry: () -> Void = {}
 
+    /// Drawings and boards stay this wide, so a picture doesn't make the card tall
+    /// to scroll past.
+    static let pictureWidth: CGFloat = 200
+
     private var people: GameConversationPeople { GameConversationPeople(participants: participants) }
 
     var body: some View {

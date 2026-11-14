@@ -70,7 +70,7 @@ private struct GameConversationBoardReplay<Board: BoardGameRules, Content: View>
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
             content(replay)
-                .frame(maxWidth: 260)
+                .frame(maxWidth: GameConversationHeader.pictureWidth)
             HStack {
                 Button {
                     if model.isPlaying { model.pause() } else { model.play() }
