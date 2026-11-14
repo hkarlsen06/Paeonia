@@ -4,9 +4,9 @@ import SwiftUI
 /// the screen with the bubble above it. Closing uses the native cover dismissal.
 ///
 /// Editing your own note, the bubble is the text field and the row on the keyboard says
-/// who sees it and shares it. A failed save keeps the text here, and the error shows in
-/// the banner. Reading your partner's note, the bubble shows all of it and the row says
-/// when it was shared.
+/// who sees it and shares it. A tap on empty space closes it, keyboard up or not. A
+/// failed save keeps the text here, and the error shows in the banner. Reading your
+/// partner's note, the bubble shows all of it and the row says when it was shared.
 ///
 /// Present it without an opening cover animation and with a clear background.
 /// `HomeStoriesStrip` dismisses it through the native cover.
@@ -83,6 +83,8 @@ struct StoryNoteScreen: View {
     }
 
     var body: some View {
+        // The tap on empty space is a shortcut. VoiceOver closes through the close button.
+        // swiftlint:disable:next accessibility_trait_for_button
         GeometryReader { proxy in
             let origin = proxy.frame(in: .global).origin
             ZStack {
@@ -99,7 +101,13 @@ struct StoryNoteScreen: View {
         // which makes room for the keyboard.
         .ignoresSafeArea()
         .overlay { controls }
-        .keyboardDismissable()
+        // Everything here works with the keyboard up, so a tap on empty space closes the
+        // screen instead of only putting the keyboard away.
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !viewModel.isSavingNote { close() }
+        }
+        .keyboardDoneToolbar()
         .paeoniaBanner(bannerCenter)
         .preferredColorScheme(.dark)
     }
@@ -164,6 +172,8 @@ struct StoryNoteScreen: View {
     /// character more, so the caret and the next typed character fit before the bubble
     /// grows instead of wrapping.
     private var bubbleField: some View {
+        // The tap only focuses the field, which VoiceOver already does.
+        // swiftlint:disable:next accessibility_trait_for_button
         TextField(
             text: Binding(get: { text }, set: { text = $0 }),
             prompt: Text(.storiesNoteFieldPrompt), axis: .vertical
@@ -188,6 +198,9 @@ struct StoryNoteScreen: View {
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { textWidth = $0 }
         }
         .modifier(BubbleTextStyle())
+        // A tap on the bubble around the text focuses the field instead of closing.
+        .contentShape(Rectangle())
+        .onTapGesture { isFocused = true }
     }
 
     private struct BubbleTextStyle: ViewModifier {
