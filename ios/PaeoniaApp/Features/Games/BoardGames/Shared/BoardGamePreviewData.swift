@@ -36,13 +36,11 @@ enum BoardGamePreviewData {
     static func result(
         winner: BoardGameWinner = .me,
         playStyle: GamePlayStyle = .against,
-        stake: String? = "Loser makes coffee",
         isMissedEnding: Bool = false
     ) -> BoardGameResultContent {
         BoardGameResultContent(
             winner: winner,
             playStyle: playStyle,
-            stake: stake,
             myWins: 4,
             partnerWins: 3,
             gamesFinished: 13,

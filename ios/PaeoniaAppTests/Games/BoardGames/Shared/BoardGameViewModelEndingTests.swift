@@ -25,7 +25,6 @@ struct BoardGameViewModelEndingTests {
         BoardGameResultContent(
             winner: .partner,
             playStyle: .against,
-            stake: "Loser makes coffee",
             myWins: 0,
             partnerWins: 1,
             gamesFinished: 1,
@@ -103,7 +102,6 @@ struct BoardGameViewModelEndingTests {
         #expect(viewModel.showsOutcome)
         #expect(viewModel.result?.isMissedEnding == true)
         #expect(viewModel.result?.winner == .partner)
-        #expect(viewModel.result?.stake == "Loser makes coffee")
         #expect(viewModel.stakeState == .fixed("Loser makes coffee"))
         #expect(!viewModel.canPlay)
         // The hub already reports the new game, where I move first.

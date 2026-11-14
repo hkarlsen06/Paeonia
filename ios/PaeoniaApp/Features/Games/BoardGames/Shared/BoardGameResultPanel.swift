@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The result of a finished game: who won, who claimed the stake, the score
+/// The result of a finished game: who won, the score
 /// counting up, and the button for the next game. The panel rises from the
 /// bottom when it appears. The chevron collapses it to the title and the button,
 /// so the board shows above it. A tap while the count runs jumps to the final
@@ -72,7 +72,7 @@ struct BoardGameResultPanel: View {
 
     // MARK: Info
 
-    /// The title and, unless collapsed, the stake and the score. At
+    /// The title and, unless collapsed, the score. At
     /// accessibility text sizes it scrolls, so the button stays on screen.
     @ViewBuilder
     private var info: some View {
@@ -130,9 +130,6 @@ struct BoardGameResultPanel: View {
 
     private var details: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            if let line = content.stakeLine(partnerName: partner.name) {
-                stakeLine(line)
-            }
             switch content.playStyle {
             case .against:
                 againstScore
@@ -140,20 +137,6 @@ struct BoardGameResultPanel: View {
                 togetherScore
             }
         }
-    }
-
-    private func stakeLine(_ line: LocalizedStringResource) -> some View {
-        Label {
-            Text(line)
-        } icon: {
-            Image(systemName: "gift")
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .accessibilityHidden(true)
-        }
-        .font(PaeoniaTypography.body)
-        .foregroundStyle(.paeoniaTextPrimary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityIdentifier("boardGames.result.stake")
     }
 
     // MARK: Score
@@ -298,8 +281,8 @@ private struct BoardGameResultPreview: View {
     BoardGameResultPreview(content: BoardGamePreviewData.result())
 }
 
-#Preview("Partner won, no stake") {
-    BoardGameResultPreview(content: BoardGamePreviewData.result(winner: .partner, stake: nil))
+#Preview("Partner won") {
+    BoardGameResultPreview(content: BoardGamePreviewData.result(winner: .partner))
 }
 
 #Preview("Draw") {

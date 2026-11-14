@@ -335,7 +335,7 @@ Verdict.
 
 Once the partner's pin has landed, a small legend right under the line names the pins: a dot in each color with "You" and "[Name]". Captions under the pins would collide when the pins stand close.
 
-Score line (from 2.65). Both avatars, slightly overlapping, next to the shared total counting up one point at a time, with "+4" beside it in `.paeoniaAccentPrimary` and "points together" under it. At 0 points only the total shows.
+Score line (from 2.65). Both avatars, slightly overlapping, next to the shared total counting up one point at a time, with "+4" beside it in `.paeoniaAccentPrimary` and "points together" under it. At 0 points the line is left out, because the toolbar capsule already shows the total.
 
 Everything is tappable from 2.30. A tap on the screen jumps to the settled state, as `DrawAndGuessRevealTimeline.skip` does, without repeating haptics. Reduce Motion: no pulses, drop, thread draw or bloom. The settled state shows at once, with only the verdict haptic and sound.
 

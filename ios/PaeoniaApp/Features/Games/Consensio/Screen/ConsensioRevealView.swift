@@ -202,13 +202,16 @@ struct ConsensioRevealView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityFocused($isTitleFocused)
                 .accessibilityIdentifier("consensio.reveal.title")
-                ConsensioRevealScoreLine(
-                    me: viewModel.me,
-                    partner: viewModel.partner,
-                    sharedPoints: viewModel.sharedPoints,
-                    points: plan.points,
-                    countedPoints: timeline.countedPoints
-                )
+                // Without points the line would only repeat the toolbar's total.
+                if plan.points > 0 {
+                    ConsensioRevealScoreLine(
+                        me: viewModel.me,
+                        partner: viewModel.partner,
+                        sharedPoints: viewModel.sharedPoints,
+                        points: plan.points,
+                        countedPoints: timeline.countedPoints
+                    )
+                }
             }
             .opacity(timeline.titleShown ? 1 : 0)
             .offset(y: timeline.titleShown || reduceMotion ? 0 : 12)

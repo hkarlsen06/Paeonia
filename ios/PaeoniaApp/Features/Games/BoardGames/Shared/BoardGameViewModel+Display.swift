@@ -343,11 +343,9 @@ extension BoardGameViewModel {
         } else {
             .draw
         }
-        let stake = isShowingMissedEnding ? missedEnding?.stake : snapshot.stake
         return BoardGameResultContent(
             winner: winner,
             playStyle: overview?.settings?.playStyle ?? .against,
-            stake: stake,
             myWins: snapshot.myWins,
             partnerWins: snapshot.partnerWins,
             gamesFinished: snapshot.gamesFinished,

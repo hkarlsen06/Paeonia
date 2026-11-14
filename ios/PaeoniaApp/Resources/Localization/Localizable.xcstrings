@@ -4111,60 +4111,6 @@
         }
       }
     },
-    "boardGames.result.stake.nobody" : {
-      "comment" : "Result line after a draw, so nobody won the stake. %@ is the stake.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nobody claimed: %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingen vant: %@"
-          }
-        }
-      }
-    },
-    "boardGames.result.stake.partner" : {
-      "comment" : "Result line when the partner won the stake. %1$@ is the partner's name, %2$@ the stake.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ claimed: %2$@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ vant: %2$@"
-          }
-        }
-      }
-    },
-    "boardGames.result.stake.you" : {
-      "comment" : "Result line when this person won the stake. %@ is the stake, such as \"Loser makes coffee\".",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You claimed: %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du vant: %@"
-          }
-        }
-      }
-    },
     "boardGames.result.title.draw" : {
       "comment" : "Result title when the game ended without a winner.",
       "extractionState" : "manual",

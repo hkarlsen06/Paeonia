@@ -47,7 +47,6 @@ nonisolated enum BoardGameWinner: Equatable, Sendable {
 nonisolated struct BoardGameResultContent: Equatable, Sendable {
     let winner: BoardGameWinner
     let playStyle: GamePlayStyle
-    let stake: String?
     /// Tallies after this game. The panel counts the winner's (or the couple's games) up from one less.
     let myWins: Int
     let partnerWins: Int

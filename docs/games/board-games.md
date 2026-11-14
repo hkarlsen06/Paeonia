@@ -11,7 +11,7 @@ Keep this file current. When a decision lands or the design changes, update it i
 Decided on 2026-10-13.
 
 - **Your own mark.** Each partner draws a mark once on the Paeonia canvas. It is printed on every Four in a Row disc they drop, fills every box they close in Dots and Boxes, and replaces X and O in Ultimate Tic-Tac-Toe. Until a partner draws one, their initial is their mark, so the first game starts at once. Either partner can redraw their own mark at any time.
-- **A bet.** The partner who starts a game can write a small bet, such as "Loser makes coffee". It sits under the board while they play, and the result says who claimed it.
+- **A bet.** The partner who starts a game can write a small bet, such as "Loser makes coffee". It sits under the board while they play and stays there with the result, whose title says who won it.
 - **A hidden photo under Dots and Boxes.** The board sits over a random photo the couple shared: a Memories photo, a story, or a Guess my spot photo. Each closed box uncovers its piece of the photo, tinted in the color of the partner who closed it, and the last box shows the whole picture. A couple with no photos gets plain boxes.
 - **Play style changes only the score.** The board is always head to head. "Against each other" shows each partner's wins, which grow forever. "Together" hides the tally and shows how many games the couple has finished together, and the result says who won this one without keeping score.
 - **Dots and Boxes is 4 by 4 boxes.** That is 5 by 5 dots and 40 lines.
@@ -97,7 +97,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 - Before the first move the starter sees a quiet "Add a bet" button ("Legg til et veddemål") under the board, above the pinned bottom. Tapping it opens a one-line text field that rises with the keyboard, with the keyboard's Done button. The text can be changed until the first move. The code calls the bet a stake.
 - A stake holds 1 to 60 characters on one line. It is optional.
 - While playing, the stake shows under the board in a capsule: "Bet: Loser makes coffee".
-- The result names who claimed it (see "Result"). A draw says nobody claimed it.
+- The capsule stays above the result panel, so the panel does not repeat the stake. Its title already says who won.
 - Push notifications and the lock screen never show the stake.
 
 ### The hidden photo
@@ -185,10 +185,9 @@ The moment the last move lands.
 | 0.00 | The last move's own animation finishes, whether the move was made on this phone or arrived. Input locks. |
 | 0.15 | The winning pieces light up one after another, starting from the piece that won, and the rest of the board dims to 40%. A glowing line draws from that piece through the winning run (Four in a Row and Ultimate Tic-Tac-Toe). In Dots and Boxes the tints lift off the photo and it shows whole. |
 | 0.70 | `answerRevealed()` and the petal bloom from the middle of the winning line, as in Draw & Guess. A draw gets one soft `partnerDrawingReceived()` and no bloom. |
-| 1.10 | The result panel rises from the bottom: the title, the stake line, the score and "Play again". The board glides smaller and up to make room for it, and the bet moves up with it (`meaningfulMoment`). |
+| 1.10 | The result panel rises from the bottom: the title, the score and "Play again". The board glides smaller and up to make room for it, and the bet moves up with it (`meaningfulMoment`). |
 
 - Titles. Against each other: "You won!", "[Name] won" or "It's a draw". Together: "You won this one", "[Name] won this one" or "It's a draw".
-- Stake line. "You claimed: Loser makes coffee", "[Name] claimed: Loser makes coffee", or after a draw "Nobody claimed: Loser makes coffee".
 - Score. Against each other: the two avatars with their wins, and the winner's count goes up by one with `streakTick`. Together: "13 games together", counting up by one.
 - A tap jumps to the settled state. Reduce Motion shows the settled state at once with only the haptic.
 - "Play again" is the primary action. The board stays visible above the panel, and the panel can be collapsed to look at the board.

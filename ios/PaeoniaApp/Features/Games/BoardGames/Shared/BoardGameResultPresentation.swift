@@ -58,25 +58,12 @@ extension BoardGameResultContent {
         }
     }
 
-    /// Who claimed the stake. Nil when the game was played for nothing.
-    func stakeLine(partnerName: String) -> LocalizedStringResource? {
-        guard let stake else { return nil }
-        let line: LocalizedStringResource = switch winner {
-        case .me: .boardGamesResultStakeYou(stake)
-        case .partner: .boardGamesResultStakePartner(partnerName, stake)
-        case .draw: .boardGamesResultStakeNobody(stake)
-        }
-        return line
-    }
-
     /// The whole result in one sentence for VoiceOver.
     func spokenSummary(partnerName: String) -> String {
         [
             String(localized: title(partnerName: partnerName)),
-            stakeLine(partnerName: partnerName).map { String(localized: $0) },
             String(localized: score.spoken(partnerName: partnerName)),
         ]
-        .compactMap { $0 }
         .joined(separator: " ")
     }
 }
