@@ -3,7 +3,7 @@ import SwiftUI
 /// How far across the Us tab's tile pictures reach: from the calendar's left edge to the
 /// drawing's right edge, in `HomeTileExtent.space`. On the map layout the waiting question
 /// row narrows to it, so it is no wider than the tiles under it.
-struct HomeTileExtent: Equatable {
+nonisolated struct HomeTileExtent: Equatable {
     static let space = "homeTiles"
 
     var minX: CGFloat
