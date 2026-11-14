@@ -111,7 +111,8 @@ extension PiccanteScreen {
         } else {
             VStack(spacing: PaeoniaSpacing.space16) {
                 status
-                box(game).frame(maxWidth: 480).gameChatStage()
+                box(game)
+                    .frame(maxWidth: 480)
                 controls(game)
                     // A turn, a sniff or a failed send adds or removes a control. The rest glide to make room.
                     .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: game)

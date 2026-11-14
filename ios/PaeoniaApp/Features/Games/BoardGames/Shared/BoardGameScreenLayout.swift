@@ -52,7 +52,6 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     @State private var wideRowsHeight: CGFloat = 0
     @State private var wideBottomHeight: CGFloat = 0
     /// Where a board that bleeds fits, in the column's coordinates (`BoardGameGlide.space`).
-    /// Global coordinates would shrink with the screen under the game's chat panel.
     @State private var bleedSlotFrame: CGRect = .zero
 
     var body: some View {
@@ -213,7 +212,6 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 maxHeight: boardBleeds ? .infinity : nil
             )
             .padding(.horizontal, boardBleeds ? -PaeoniaSpacing.screenHorizontalPadding : 0)
-            .gameChatStage()
             // A board that bleeds glides to its new space on its own. At accessibility
             // sizes the column scrolls, and the board stays put.
             .modifier(BoardGameGlide(isEnabled: !boardBleeds && !reduceMotion && !dynamicTypeSize.isAccessibilitySize))
@@ -252,7 +250,6 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     private var bleedSlot: some View {
         Color.clear
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .gameChatStage()
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(BoardGameGlide.space)) } action: { frame in
                 // The bottom bar grows past its held room when a result comes, and the
                 // board glides to its new space instead of jumping. The first layout and a

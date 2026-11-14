@@ -7,15 +7,17 @@ extension View {
     }
 }
 
-/// A game's chat as a panel under the game. The game screen shrinks to its stage above the
-/// panel (`GameChatStageZoom`), so the board or the drawing stays in view while the couple
-/// writes. The keyboard opens inside the panel, so the game does not move again.
+/// A game's chat as a panel under the game. The whole game screen shows smaller above the
+/// panel and keeps running (`GameChatScreen`), so the couple sees the game while they write.
+/// The keyboard opens inside the panel, so the game does not move again.
 ///
 /// A wide window and a landscape phone have no room above a panel. There the chat is a
 /// sheet over the game, which stays where it is.
 struct GameChatPanel: ViewModifier {
     /// The share of the screen's height the panel takes.
-    private static let panelFraction: CGFloat = 0.68
+    private static let panelFraction: CGFloat = 0.64
+    /// The room between the small game and the status bar, the panel and the screen's sides.
+    private static let gamePadding = PaeoniaSpacing.space8
 
     @Binding var destination: GameChatDestination?
 
@@ -23,8 +25,8 @@ struct GameChatPanel: ViewModifier {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var screen = CGSize.zero
-    /// The bottom of the status bar, in global coordinates.
-    @State private var safeTop: CGFloat = 0
+    /// The screen inside its safe area, in global coordinates.
+    @State private var safeFrame = CGRect.zero
     /// The chat in the panel. It stays from before the panel rises until the panel is down
     /// again, so the chat is there for both slides.
     @State private var mounted: GameChatDestination?
@@ -41,14 +43,15 @@ struct GameChatPanel: ViewModifier {
     func body(content: Content) -> some View {
         let panel = isPanel ? destination : nil
         let panelHeight = screen.height * Self.panelFraction
-        let room = CGRect(x: 0, y: safeTop, width: screen.width, height: screen.height - panelHeight - safeTop)
         content
-            .environment(\.gameChatStageRoom, isRaised ? room : nil)
+            .environment(\.gameChatShrink, isRaised ? shrink(above: panelHeight) : nil)
             .allowsHitTesting(mounted == nil)
             .accessibilityHidden(mounted != nil)
+            // Shows around the small game.
+            .background { if mounted != nil { Color.black.ignoresSafeArea() } }
             .overlay {
                 Color.clear
-                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { safeTop = $0 }
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { safeFrame = $0 }
                     .allowsHitTesting(false)
             }
             .overlay { panelLayer(height: panelHeight) }
@@ -71,6 +74,20 @@ struct GameChatPanel: ViewModifier {
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.scrolls)
             }
+    }
+
+    /// The whole screen as large as fits between the status bar and the panel. The strips
+    /// the screen keeps clear for the status bar and the home indicator hold nothing, so
+    /// they go behind the status bar and the panel.
+    private func shrink(above panelHeight: CGFloat) -> GameChatShrink? {
+        let top = safeFrame.minY + Self.gamePadding
+        let room = screen.height - panelHeight - Self.gamePadding - top
+        guard room > 0, safeFrame.height > 0, screen.width > 0 else { return nil }
+        let scale = min(room / safeFrame.height, (screen.width - 2 * Self.gamePadding) / screen.width, 1)
+        return GameChatShrink(
+            scale: scale,
+            origin: CGPoint(x: (screen.width - scale * screen.width) / 2, y: top - scale * safeFrame.minY)
+        )
     }
 
     /// Builds the chat under the screen's bottom edge, then slides it up one turn later,
@@ -114,7 +131,7 @@ struct GameChatPanel: ViewModifier {
                     .accessibilityHidden(true)
                 GameChatPanelSurface(destination: mounted) { destination = nil }
                     .frame(height: height)
-                    .modifier(GameChatTransform(offset: CGSize(width: 0, height: isRaised ? 0 : height)))
+                    .modifier(PanelSlide(offset: isRaised ? 0 : height))
                     .id(mounted.id)
             }
         }
@@ -162,5 +179,20 @@ private struct GameChatPanelSurface: View {
                     }
             )
             .accessibilityHidden(true)
+    }
+}
+
+/// Moves the panel down by `offset`. As an `offset` modifier the move of a view with UIKit
+/// views inside lands at once instead of animating.
+private nonisolated struct PanelSlide: GeometryEffect {
+    var offset: CGFloat
+
+    var animatableData: CGFloat {
+        get { offset }
+        set { offset = newValue }
+    }
+
+    func effectValue(size _: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX: 0, y: offset))
     }
 }

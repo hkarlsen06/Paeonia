@@ -18,7 +18,7 @@ struct GamesRootView: View {
                 .toolbarVisibility(tabBarVisibility, for: .tabBar)
                 .navigationDestination(for: GamesDestination.self) { destination in
                     viewModel.screen(for: destination)
-                        .gameChatStageZoom()
+                        .gameChatScreen()
                         .analyticsScreen(destination.analyticsName)
                 }
         }
