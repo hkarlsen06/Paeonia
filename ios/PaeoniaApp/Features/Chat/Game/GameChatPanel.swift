@@ -55,9 +55,10 @@ struct GameChatPanel: ViewModifier {
         let panel = isPanel ? destination : nil
         let panelHeight = screen.height * Self.panelFraction
         content
-            // Here, before the panel joins in with its own composer.
+            // Here, before the panel joins in with its own composer. The edge is followed while
+            // the panel is open, since a game opened together with its chat is still settling.
             .onPreferenceChange(PaeoniaBannerBottomEdgeKey.self) { edge in
-                if mounted == nil { controlsTop = edge }
+                controlsTop = edge
             }
             .onPreferenceChange(GameChatContentTopKey.self) { top in
                 if mounted == nil { contentTop = top }

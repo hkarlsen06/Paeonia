@@ -194,7 +194,9 @@ private struct GameScreenShrinker: UIViewRepresentable {
             let shown = layer.presentation()?.sublayerTransform ?? layer.sublayerTransform
             let mask = stack.layer.mask as? CAShapeLayer ?? Self.addMask(to: stack)
             let shownPath = mask.presentation()?.path ?? mask.path
-            let top = shrink.map { stack.convert(CGPoint(x: 0, y: $0.top), from: nil).y }
+            // Through the host, which the shrink does not move, so a screen already shrunk
+            // or lifted gets the same first row.
+            let top = shrink.map { host.convert(CGPoint(x: 0, y: $0.top), from: nil).y - stack.frame.minY }
             let path = Self.maskPath(for: stack, top: top, rounded: shrink != nil || lift > 0)
             CATransaction.begin()
             CATransaction.setDisableActions(true)
