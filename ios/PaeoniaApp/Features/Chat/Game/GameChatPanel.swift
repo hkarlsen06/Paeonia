@@ -42,7 +42,7 @@ struct GameChatPanel: ViewModifier {
     }
 
     private var slide: Animation? {
-        reduceMotion ? nil : .spring(duration: PaeoniaMotion.motionMorph, bounce: 0)
+        reduceMotion ? nil : .spring(duration: PaeoniaMotion.motionSlow, bounce: 0)
     }
 
     func body(content: Content) -> some View {
