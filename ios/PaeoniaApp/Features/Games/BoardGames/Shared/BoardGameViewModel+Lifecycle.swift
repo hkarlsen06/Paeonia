@@ -66,7 +66,6 @@ extension BoardGameViewModel {
         isShowingMissedEnding = false
         showsOutcome = false
         result = nil
-        isResultCollapsed = false
         stagedOutcomeGame = nil
         lastMove = nil
         lastMoveSettles = nil

@@ -150,7 +150,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             score: viewModel.score,
             hint: hint,
             colorChoice: viewModel.colorChoice,
-            history: history?.destination
+            history: history?.destination,
+            result: viewModel.result
         )
     }
 
@@ -159,12 +160,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
     @ViewBuilder
     private var bottom: some View {
         if let result = viewModel.result {
-            BoardGameResultPanel(
-                content: result,
-                me: viewModel.meInfo,
-                partner: viewModel.partnerInfo,
-                isCollapsed: $viewModel.isResultCollapsed
-            ) {
+            BoardGameResultPanel(content: result, partner: viewModel.partnerInfo) {
                 if result.isMissedEnding {
                     viewModel.continueAfterMissedEnding()
                 } else {

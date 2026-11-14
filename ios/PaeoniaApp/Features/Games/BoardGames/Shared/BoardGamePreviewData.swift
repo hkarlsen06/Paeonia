@@ -19,7 +19,8 @@ enum BoardGamePreviewData {
         turn: BoardGameTurnLabel = .yourTurn,
         stake: BoardGameStakeState = .fixed("Loser makes coffee"),
         partnerStatus: BoardGamePartnerStatus = .here,
-        colorChoice: BoardGameColorChoice? = nil
+        colorChoice: BoardGameColorChoice? = nil,
+        result: BoardGameResultContent? = nil
     ) -> BoardGameShellContent {
         BoardGameShellContent(
             me: me,
@@ -29,7 +30,8 @@ enum BoardGamePreviewData {
             partnerStatus: partnerStatus,
             extraTurnCount: 0,
             score: .against(mine: 4, partner: 3),
-            colorChoice: colorChoice
+            colorChoice: colorChoice,
+            result: result
         )
     }
 

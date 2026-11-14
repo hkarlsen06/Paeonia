@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// Plain player portraits with names, turn emphasis and partner presence.
+/// Plain player portraits with names, turn emphasis and partner presence. Once a
+/// game ends, each name has the player's wins under it, or the couple's games sit
+/// between the two.
 struct GamePlayersRow: View {
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
@@ -9,6 +11,7 @@ struct GamePlayersRow: View {
     let partnerIsHere: Bool
 
     var showsMarks = false
+    var result: BoardGameResultContent?
 
     @Environment(\.showsBoardOwnerSymbols) private var showsOwnerSymbols
     @ScaledMetric(relativeTo: .caption) private var ownerSymbolSide: CGFloat = 10
@@ -21,9 +24,13 @@ struct GamePlayersRow: View {
                 stacked
             } else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .top) {
+                    HStack {
                         portrait(me, isMe: true)
                         Spacer(minLength: PaeoniaSpacing.space24)
+                        if let together {
+                            together
+                            Spacer(minLength: PaeoniaSpacing.space24)
+                        }
                         portrait(partner, isMe: false)
                     }
                     stacked
@@ -32,13 +39,20 @@ struct GamePlayersRow: View {
         }
         .frame(maxWidth: .infinity)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: turn)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: result == nil)
     }
 
     private var stacked: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             portrait(me, isMe: true)
             portrait(partner, isMe: false)
+            together
         }
+    }
+
+    private var together: BoardGameTogetherCount? {
+        guard let result, result.playStyle == .together else { return nil }
+        return BoardGameTogetherCount(result: result, partnerName: partnerName)
     }
 
     private func portrait(_ player: BoardGamePlayerInfo, isMe: Bool) -> some View {
@@ -62,11 +76,22 @@ struct GamePlayersRow: View {
             .foregroundStyle(active ? Color.paeoniaTextPrimary : .paeoniaTextSecondary)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: true)
+            if let count = result?.winCount(isMe: isMe) {
+                BoardGameResultCount(count: count)
+                    .transition(.opacity)
+            }
         }
         .padding(PaeoniaSpacing.space8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(isMe ? Text(.boardGamesPlayerYou) : partnerIsHere
             ? Text(.boardGamesStatusHere(partnerName)) : Text(verbatim: partnerName))
-        .accessibilityValue(active ? turn.spoken(partnerName: partnerName).map { Text($0) } ?? Text("") : Text(""))
+        .accessibilityValue(spokenValue(isMe: isMe, active: active))
+    }
+
+    /// "You won, 5 wins": the turn or the winner, and the wins once the game ends.
+    private func spokenValue(isMe: Bool, active: Bool) -> Text {
+        let turnLine = active ? turn.spoken(partnerName: partnerName).map { String(localized: $0) } : nil
+        let wins = result?.winCount(isMe: isMe).map { String(localized: .boardGamesScoreWins($0.after)) }
+        return Text(verbatim: [turnLine, wins].compactMap { $0 }.joined(separator: ", "))
     }
 }

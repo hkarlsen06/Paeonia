@@ -119,7 +119,6 @@ extension BoardGameViewModel {
         outcomeTask?.cancel()
         showsOutcome = false
         result = nil
-        isResultCollapsed = false
         stagedOutcomeGame = nil
         lastMove = nil
         lastMoveSettles = nil
@@ -156,7 +155,6 @@ extension BoardGameViewModel {
         if gameNumber != displayedGameNumber {
             showsOutcome = false
             result = nil
-            isResultCollapsed = false
             stagedOutcomeGame = nil
         }
         displayedGameNumber = gameNumber

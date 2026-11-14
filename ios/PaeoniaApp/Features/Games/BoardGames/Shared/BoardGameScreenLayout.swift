@@ -75,13 +75,15 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         if boardBleeds {
             LudoPlayersRow(
                 me: content.me, partner: content.partner, turn: content.turn,
-                partnerName: content.partner.name, partnerIsHere: content.partnerStatus == .here
+                partnerName: content.partner.name, partnerIsHere: content.partnerStatus == .here,
+                result: content.result
             )
         } else {
             GamePlayersRow(
                 me: content.me, partner: content.partner, turn: content.turn,
                 partnerName: content.partner.name, partnerIsHere: content.partnerStatus == .here,
-                showsMarks: true
+                showsMarks: true,
+                result: content.result
             )
         }
     }
@@ -352,9 +354,7 @@ extension BoardGameScreenLayout {
 #if DEBUG
 private struct BoardGameLayoutPreview: View {
     let shell: BoardGameShellContent
-    var showsResult = false
     @State private var draft = ""
-    @State private var isCollapsed = false
 
     var body: some View {
         BoardGameScreenLayout(
@@ -364,14 +364,8 @@ private struct BoardGameLayoutPreview: View {
             onPickColor: { _ in },
             board: { BoardGamePreviewData.board },
             bottom: {
-                if showsResult {
-                    BoardGameResultPanel(
-                        content: BoardGamePreviewData.result(),
-                        me: shell.me,
-                        partner: shell.partner,
-                        isCollapsed: $isCollapsed,
-                        onPrimary: {}
-                    )
+                if let result = shell.result {
+                    BoardGameResultPanel(content: result, partner: shell.partner, onPrimary: {})
                 }
             }
         )
@@ -415,10 +409,7 @@ private struct BoardGameLayoutPreview: View {
 
 #Preview("Phone, result") {
     NavigationStack {
-        BoardGameLayoutPreview(
-            shell: BoardGamePreviewData.shell(turn: .youWon),
-            showsResult: true
-        )
+        BoardGameLayoutPreview(shell: BoardGamePreviewData.shell(turn: .youWon, result: BoardGamePreviewData.result()))
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("Four in a Row")
     }
@@ -435,7 +426,7 @@ private struct BoardGameLayoutPreview: View {
 
 #Preview("Wide", traits: .landscapeLeft) {
     NavigationStack {
-        BoardGameLayoutPreview(shell: BoardGamePreviewData.shell(), showsResult: true)
+        BoardGameLayoutPreview(shell: BoardGamePreviewData.shell(turn: .youWon, result: BoardGamePreviewData.result()))
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Four in a Row")
     }

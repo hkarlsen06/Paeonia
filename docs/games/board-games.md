@@ -185,12 +185,13 @@ The moment the last move lands.
 | 0.00 | The last move's own animation finishes, whether the move was made on this phone or arrived. Input locks. |
 | 0.15 | The winning pieces light up one after another, starting from the piece that won, and the rest of the board dims to 40%. A glowing line draws from that piece through the winning run (Four in a Row and Ultimate Tic-Tac-Toe). In Dots and Boxes the tints lift off the photo and it shows whole. |
 | 0.70 | `answerRevealed()` and the petal bloom from the middle of the winning line, as in Draw & Guess. A draw gets one soft `partnerDrawingReceived()` and no bloom. |
-| 1.10 | The result panel rises from the bottom: the title, the score and "Play again". The board glides smaller and up to make room for it, and the bet moves up with it (`meaningfulMoment`). |
+| 1.10 | The result panel rises from the bottom with the title and "Play again", and the score fades in under the players. The board glides to the space that is left, and the bet moves with it (`meaningfulMoment`). |
+| 1.55 | The number that went up counts up by one, with "+1" at its corner and `streakTick`. |
 
 - Titles. Against each other: "You won!", "[Name] won" or "It's a draw". Together: "You won this one", "[Name] won this one" or "It's a draw".
-- Score. Against each other: the two avatars with their wins, and the winner's count goes up by one with `streakTick`. Together: "13 games together", counting up by one.
-- A tap jumps to the settled state. Reduce Motion shows the settled state at once with only the haptic.
-- "Play again" is the primary action. The board stays visible above the panel, and the panel can be collapsed to look at the board.
+- Score. It sits in the players row, so the panel holds only the title and the button and the board keeps its room. Against each other: each player's wins under their name. Together: a heart, the couple's games and "games together" between the two players. VoiceOver reads the wins with each player, and the result's announcement reads the whole score.
+- Reduce Motion shows the final numbers at once with only the haptic.
+- "Play again" is the primary action. The board stays visible above the panel.
 
 ### Four in a Row
 

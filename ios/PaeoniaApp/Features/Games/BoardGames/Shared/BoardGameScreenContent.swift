@@ -72,6 +72,8 @@ struct BoardGameShellContent: Equatable {
     var colorChoice: BoardGameColorChoice?
     /// "Past games", which the score opens. Nil for a game without them.
     var history: GamesDestination?
+    /// The finished game while its result shows. The players row shows its score.
+    var result: BoardGameResultContent?
 }
 
 // MARK: Turn label

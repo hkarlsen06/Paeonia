@@ -4057,24 +4057,6 @@
         }
       }
     },
-    "boardGames.result.hide" : {
-      "comment" : "VoiceOver label of the button that folds the result panel so the board is visible.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hide the result"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skjul resultatet"
-          }
-        }
-      }
-    },
     "boardGames.result.playAgain" : {
       "comment" : "Main button on the result. Starts a new game.",
       "extractionState" : "manual",
@@ -4089,24 +4071,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spill igjen"
-          }
-        }
-      }
-    },
-    "boardGames.result.show" : {
-      "comment" : "VoiceOver label of the button that unfolds the result panel.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show the result"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vis resultatet"
           }
         }
       }

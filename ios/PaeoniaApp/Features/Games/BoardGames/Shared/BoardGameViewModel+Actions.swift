@@ -73,7 +73,6 @@ extension BoardGameViewModel {
         outcomeTask?.cancel()
         showsOutcome = false
         result = nil
-        isResultCollapsed = false
         stakeDraft = ""
         colorDraft = nil
         extraTurnCount = 0

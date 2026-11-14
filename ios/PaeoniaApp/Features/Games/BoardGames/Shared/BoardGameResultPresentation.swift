@@ -18,8 +18,8 @@ nonisolated struct BoardGameCount: Equatable, Sendable {
     }
 }
 
-/// What the result panel counts and says. The content holds the tallies after
-/// the game, so the panel works out where each count starts.
+/// What the result counts and says. The content holds the tallies after
+/// the game, and a count that went up starts one below it.
 extension BoardGameResultContent {
     /// My wins. They count up when I won.
     var myCount: BoardGameCount {
@@ -33,11 +33,6 @@ extension BoardGameResultContent {
     /// The couple's finished games, which every game adds to, a draw too.
     var gamesCount: BoardGameCount {
         .counting(to: gamesFinished)
-    }
-
-    /// Whether any number on the panel counts up. A draw adds to no one's wins.
-    var countsUp: Bool {
-        playStyle == .together || winner != .draw
     }
 
     /// The score as the couple's play style shows it, after this game.

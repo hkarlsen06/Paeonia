@@ -3,13 +3,16 @@ import SwiftUI
 /// Ludo players. My avatar is on the leading side, my partner's on the trailing
 /// side. Whoever's turn it is, or whoever won, gets glass in their piece color, a
 /// slightly larger avatar and a bold name. A steady green ring on my partner's avatar shows
-/// they have the game open. At accessibility text sizes the row stacks.
+/// they have the game open. Once a game ends, each name has the player's wins
+/// under it, or the couple's games sit between the two. At accessibility text
+/// sizes the row stacks.
 struct LudoPlayersRow: View {
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
     let turn: BoardGameTurnLabel
     let partnerName: String
     let partnerIsHere: Bool
+    var result: BoardGameResultContent?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -29,6 +32,7 @@ struct LudoPlayersRow: View {
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: turn)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: partnerIsHere)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: result == nil)
     }
 
     // MARK: Layouts
@@ -37,6 +41,12 @@ struct LudoPlayersRow: View {
         HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
             column(for: me, isMe: true)
             Spacer(minLength: 0)
+            if let together {
+                together
+                    .padding(PaeoniaSpacing.space8)
+                    .backdrop(color: .paeoniaBackgroundSecondary, isActive: false)
+                Spacer(minLength: 0)
+            }
             column(for: partner, isMe: false)
         }
         .frame(maxWidth: .infinity)
@@ -46,8 +56,14 @@ struct LudoPlayersRow: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             row(for: me, isMe: true)
             row(for: partner, isMe: false)
+            together
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var together: BoardGameTogetherCount? {
+        guard let result, result.playStyle == .together else { return nil }
+        return BoardGameTogetherCount(result: result, partnerName: partnerName)
     }
 
     /// Avatar over name.
@@ -57,6 +73,7 @@ struct LudoPlayersRow: View {
             styledName(isMe: isMe)
                 .lineLimit(1)
                 .truncationMode(.tail)
+            winCount(isMe: isMe)
         }
         .padding(PaeoniaSpacing.space8)
         .backdrop(color: player.style.color, isActive: isActive(isMe: isMe))
@@ -71,6 +88,8 @@ struct LudoPlayersRow: View {
         HStack(spacing: PaeoniaSpacing.space12) {
             avatar(for: player, isMe: isMe)
             styledName(isMe: isMe)
+            Spacer(minLength: 0)
+            winCount(isMe: isMe)
         }
         .padding(PaeoniaSpacing.space8)
         .backdrop(color: player.style.color, isActive: isActive(isMe: isMe))
@@ -88,6 +107,14 @@ struct LudoPlayersRow: View {
             isHere: !isMe && partnerIsHere,
             size: Self.avatarSize
         )
+    }
+
+    @ViewBuilder
+    private func winCount(isMe: Bool) -> some View {
+        if let count = result?.winCount(isMe: isMe) {
+            BoardGameResultCount(count: count)
+                .transition(.opacity)
+        }
     }
 
     private func isActive(isMe: Bool) -> Bool {
@@ -118,12 +145,12 @@ struct LudoPlayersRow: View {
     }
 
     /// "Your turn", "[Name]'s turn", "You won" or "[Name] won" for the active
-    /// player, so VoiceOver hears what the colored glass shows. Nothing for the other.
+    /// player, so VoiceOver hears what the colored glass shows, then the wins once
+    /// the game ends.
     private func spokenTurn(isMe: Bool) -> Text {
-        guard isActive(isMe: isMe), let spoken = turn.spoken(partnerName: partnerName) else {
-            return Text(verbatim: "")
-        }
-        return Text(spoken)
+        let turnLine = isActive(isMe: isMe) ? turn.spoken(partnerName: partnerName).map { String(localized: $0) } : nil
+        let wins = result?.winCount(isMe: isMe).map { String(localized: .boardGamesScoreWins($0.after)) }
+        return Text(verbatim: [turnLine, wins].compactMap { $0 }.joined(separator: ", "))
     }
 }
 

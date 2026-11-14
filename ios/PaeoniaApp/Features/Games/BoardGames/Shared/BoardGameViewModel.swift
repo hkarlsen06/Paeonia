@@ -46,7 +46,6 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     var showsOutcome = false
     /// Set once the result panel should show.
     var result: BoardGameResultContent?
-    var isResultCollapsed = false
     /// The ending of the last game, shown before the next one because this
     /// person did not see it.
     var isShowingMissedEnding = false
