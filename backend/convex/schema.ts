@@ -2110,7 +2110,7 @@ export default defineSchema({
   // Guess my spot: guess_my_spot_games, guess_my_spot_rounds (lib/guessMySpot.ts, docs/games/guess-my-spot.md).
   ...guessMySpotTables,
   // Exquisite corpse (docs/games/exquisite-corpse.md). Four tables, deleted with the couple's other game rows (lib/exquisiteCorpse.ts).
-  // FK: couple_id -> couples cascade. couple_id is unique. part_index (0 head, 1 body, 2 legs) is the next part.
+  // FK: couple_id -> couples cascade. couple_id is unique. part_index (0 head, 1 body, 2 legs, 3 feet) is the next part.
   exquisite_corpse_games: defineTable({
     id: uuid,
     couple_id: uuid,
@@ -2148,7 +2148,7 @@ export default defineSchema({
     .index("by_couple_id_number", ["couple_id", "number"])
     .index("by_couple_id_finished_at_id", ["couple_id", "finished_at", "id"]),
 
-  // FK: figure_id -> exquisite_corpse_figures cascade; media_assets restrict. The client makes the id. The strip is for the head and body only.
+  // FK: figure_id -> exquisite_corpse_figures cascade; media_assets restrict. The client makes the id. The strip is for the head, body and legs only.
   exquisite_corpse_parts: defineTable({
     id: uuid,
     couple_id: uuid,

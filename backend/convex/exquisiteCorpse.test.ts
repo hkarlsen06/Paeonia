@@ -71,13 +71,13 @@ function upload(s: Setup, user: TestUser, partId: string, purpose: Purpose) {
   });
 }
 
-type PartSpec = { figureId: string; index: 0 | 1 | 2; partId?: string; ideaId?: string };
+type PartSpec = { figureId: string; index: 0 | 1 | 2 | 3; partId?: string; ideaId?: string };
 
-/** Uploads the drawing (and the strip for the head and body) and builds the submit arguments. */
+/** Uploads the drawing (and the strip for the head, body and legs) and builds the submit arguments. */
 async function prepare(s: Setup, user: TestUser, spec: PartSpec) {
   const partId = spec.partId ?? newUuid();
   const drawing = await upload(s, user, partId, "exquisite_corpse_drawing");
-  const strip = spec.index < 2 ? await upload(s, user, partId, "exquisite_corpse_strip") : undefined;
+  const strip = spec.index < 3 ? await upload(s, user, partId, "exquisite_corpse_strip") : undefined;
   const args = {
     ...op(),
     p_game_id: s.gameId,
@@ -99,13 +99,19 @@ async function send(s: Setup, user: TestUser, spec: PartSpec) {
   return { ...prepared, result: await submit(user, prepared.args) };
 }
 
-/** A whole figure: `starter` draws the head and the legs, `other` the body. */
-async function playFigure(s: Setup, starter: TestUser, other: TestUser, ideas: { head?: string; body?: string; legs?: string } = {}) {
+/** A whole figure: `starter` draws the head and the legs, `other` the body and the feet, and keeps the turn. */
+async function playFigure(
+  s: Setup,
+  starter: TestUser,
+  other: TestUser,
+  ideas: { head?: string; body?: string; legs?: string; feet?: string } = {},
+) {
   const figureId = newUuid();
   const head = await send(s, starter, { figureId, index: 0, ideaId: ideas.head });
   const body = await send(s, other, { figureId, index: 1, ideaId: ideas.body });
   const legs = await send(s, starter, { figureId, index: 2, ideaId: ideas.legs });
-  return { figureId, head, body, legs };
+  const feet = await send(s, other, { figureId, index: 3, ideaId: ideas.feet });
+  return { figureId, head, body, legs, feet };
 }
 
 const signed = (user: TestUser, assetId: string) =>
@@ -274,8 +280,9 @@ describe("ideas", () => {
     expect([bodyPart.idea_id, bodyPart.idea_text]).toEqual([undefined, undefined]);
 
     await send(s, s.a, { figureId, index: 2 });
+    await send(s, s.b, { figureId, index: 3 });
     const parts = (await view(s.b)).recent_figures[0].parts;
-    expect(parts.map((part: { idea: unknown }) => part.idea)).toEqual([{ id: idea.id, text: idea.text }, null, null]);
+    expect(parts.map((part: { idea: unknown }) => part.idea)).toEqual([{ id: idea.id, text: idea.text }, null, null, null]);
     await settle(s);
   });
 
@@ -290,6 +297,7 @@ describe("ideas", () => {
     // The same the other way round, once the language changed and the next figure starts with the partner.
     await send(s, s.b, { figureId: first.args.p_figure_id, index: 1 });
     await send(s, s.a, { figureId: first.args.p_figure_id, index: 2 });
+    await send(s, s.b, { figureId: first.args.p_figure_id, index: 3 });
     await s.a.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "nb" });
     await send(s, s.b, { figureId: newUuid(), index: 0, ideaId: english.id });
     expect((await currentOf(s.b)).parts[0].idea).toEqual({ id: english.id, text: english.text });
@@ -308,7 +316,7 @@ describe("ideas", () => {
 });
 
 describe("submit_exquisite_corpse_part", () => {
-  test("three parts make a figure, the turn alternates, and the next figure starts with the body drawer", async () => {
+  test("four parts make a figure, the turn passes after each part but the feet, and the feet drawer starts the next figure", async () => {
     const s = await startGame();
     const turn = async () => (await gameOf(s.a)).turn_user_id;
     expect(await turn()).toBe(s.a.userId);
@@ -325,21 +333,33 @@ describe("submit_exquisite_corpse_part", () => {
     expect(await gameOf(s.a)).toMatchObject({ part_index: 2, version: 3 });
 
     const legs = await send(s, s.a, { figureId, index: 2 });
-    expect(legs.result).toMatchObject({ part_index: 2, figure_finished: true });
+    expect(legs.result).toMatchObject({ part_index: 2, figure_finished: false });
+    expect(await turn()).toBe(s.b.userId);
+    expect(await gameOf(s.a)).toMatchObject({ part_index: 3, version: 4 });
+    const legsTurnStartedAt = (await gameOf(s.a)).turn_started_at;
+
+    tick(60);
+    const feet = await send(s, s.b, { figureId, index: 3 });
+    expect(feet.result).toMatchObject({ part_index: 3, figure_finished: true });
+    // b drew the feet and keeps the turn for the next head, as a new turn.
     expect(await turn()).toBe(s.b.userId);
     const finished = await view(s.a);
-    expect(finished.game).toMatchObject({ figure_id: null, figure_number: 2, part_index: 0, figures_finished: 1, version: 4 });
+    expect(finished.game).toMatchObject({ figure_id: null, figure_number: 2, part_index: 0, figures_finished: 1, version: 5 });
+    expect(finished.game!.turn_started_at).not.toBe(legsTurnStartedAt);
     expect(finished.current_figure).toBeNull();
     expect(finished.recent_figures).toHaveLength(1);
     expect(finished.recent_figures[0]).toMatchObject({ id: figureId, number: 1, starter_user_id: s.a.userId });
     expect(finished.recent_figures[0].finished_at).not.toBeNull();
-    expect(finished.recent_figures[0].parts.map((part: { id: string }) => part.id)).toEqual([head.partId, body.partId, legs.partId]);
+    expect(finished.recent_figures[0].parts.map((part: { id: string }) => part.id)).toEqual([head.partId, body.partId, legs.partId, feet.partId]);
+    expect((await view(s.b)).ideas).toHaveLength(12);
+    expect((await view(s.a)).ideas).toEqual([]);
 
-    // b drew the body, so b starts the next figure and draws its head and legs.
+    // b starts the next figure and draws its head and legs. a draws the body and the feet.
     const next = newUuid();
     await send(s, s.b, { figureId: next, index: 0 });
     await send(s, s.a, { figureId: next, index: 1 });
     await send(s, s.b, { figureId: next, index: 2 });
+    await send(s, s.a, { figureId: next, index: 3 });
     const after = await view(s.a);
     expect(after.game).toMatchObject({ turn_user_id: s.a.userId, figure_number: 3, figures_finished: 2 });
     expect(after.recent_figures.map((figure: { number: number }) => figure.number)).toEqual([2, 1]);
@@ -378,15 +398,23 @@ describe("submit_exquisite_corpse_part", () => {
     expect((await currentOf(s.b)).parts[1]).toMatchObject({ drawing_media_asset_id: body.drawing.assetId });
 
     const legs = await send(s, s.a, { figureId, index: 2 });
-    expect(legs.strip).toBeUndefined();
+    expect((await currentOf(s.b)).parts[2]).toMatchObject({ drawing_media_asset_id: null, strip_media_asset_id: legs.strip!.assetId });
+    const feet = await send(s, s.b, { figureId, index: 3 });
+    expect(feet.strip).toBeUndefined();
     for (const user of [s.a, s.b]) {
       const parts = (await view(user)).recent_figures[0].parts;
       expect(parts.map((part: { drawing_media_asset_id: string | null }) => part.drawing_media_asset_id)).toEqual([
         head.drawing.assetId,
         body.drawing.assetId,
         legs.drawing.assetId,
+        feet.drawing.assetId,
       ]);
-      expect(parts.map((part: { strip_media_asset_id: string | null }) => part.strip_media_asset_id)).toEqual([head.strip!.assetId, body.strip!.assetId, null]);
+      expect(parts.map((part: { strip_media_asset_id: string | null }) => part.strip_media_asset_id)).toEqual([
+        head.strip!.assetId,
+        body.strip!.assetId,
+        legs.strip!.assetId,
+        null,
+      ]);
     }
     await settle(s);
   });
@@ -442,7 +470,7 @@ describe("submit_exquisite_corpse_part", () => {
     // The head is next, not the body.
     const skipped = await prepare(s, s.a, { figureId, index: 1 });
     expect((await failure(submit(s.a, skipped.args))).code).toBe("23514");
-    for (const index of [-1, 3, 1.5]) {
+    for (const index of [-1, 4, 1.5]) {
       const odd = await prepare(s, s.a, { figureId, index: index as 0 });
       expect((await failure(submit(s.a, odd.args))).code).toBe("22023");
     }
@@ -461,6 +489,7 @@ describe("submit_exquisite_corpse_part", () => {
 
     await send(s, s.b, { figureId, index: 1 });
     await send(s, s.a, { figureId, index: 2 });
+    await send(s, s.b, { figureId, index: 3 });
     // The next head cannot reuse a figure id or a part id.
     const reusedFigure = await prepare(s, s.b, { figureId, index: 0 });
     expect((await failure(submit(s.b, reusedFigure.args))).code).toBe("23505");
@@ -469,7 +498,7 @@ describe("submit_exquisite_corpse_part", () => {
     await settle(s);
   });
 
-  test("the strip is required for the head and body and refused for the legs", async () => {
+  test("the strip is required for the head, body and legs and refused for the feet", async () => {
     const s = await startGame();
     const figureId = newUuid();
     const noStrip = await prepare(s, s.a, { figureId, index: 0 });
@@ -483,9 +512,14 @@ describe("submit_exquisite_corpse_part", () => {
     await submit(s.b, body.args);
 
     const legs = await prepare(s, s.a, { figureId, index: 2 });
-    const extra = await upload(s, s.a, legs.partId, "exquisite_corpse_strip");
-    expect((await failure(submit(s.a, { ...legs.args, p_strip_media_asset_id: extra.assetId }))).code).toBe("22023");
-    expect(await gameOf(s.a)).toMatchObject({ part_index: 2, version: 3 });
+    const { p_strip_media_asset_id: _legsUnused, ...legsWithoutStrip } = legs.args;
+    expect((await failure(submit(s.a, legsWithoutStrip))).code).toBe("22023");
+    await submit(s.a, legs.args);
+
+    const feet = await prepare(s, s.b, { figureId, index: 3 });
+    const extra = await upload(s, s.b, feet.partId, "exquisite_corpse_strip");
+    expect((await failure(submit(s.b, { ...feet.args, p_strip_media_asset_id: extra.assetId }))).code).toBe("22023");
+    expect(await gameOf(s.a)).toMatchObject({ part_index: 3, version: 4 });
     await settle(s);
   });
 
@@ -620,6 +654,7 @@ describe("media", () => {
     expect((await failure(signed(s.a, body.drawing.assetId))).code).toBe("42501");
     expect(await signed(s.a, body.strip!.assetId)).toHaveLength(1);
     await send(s, s.a, { figureId, index: 2 });
+    await send(s, s.b, { figureId, index: 3 });
 
     for (const user of [s.a, s.b]) {
       expect(await signed(user, head.drawing.assetId)).toHaveLength(1);
@@ -724,7 +759,7 @@ describe("history", () => {
       expect(page.next_before_figure_number).toBeNull();
       expect(page.figures[0].id).toBe(two.figureId);
       for (const figure of page.figures) {
-        expect(figure.parts).toHaveLength(3);
+        expect(figure.parts).toHaveLength(4);
         expect(figure.parts.every((part: { drawing_media_asset_id: string | null }) => part.drawing_media_asset_id !== null)).toBe(true);
       }
     }
@@ -809,13 +844,13 @@ describe("pushes", () => {
   const claim = (s: Setup) => deliverDuePushes(s.t);
   const errorsOf = async (s: Setup, kind: string) => (await outbox(s.t)).filter((row) => row.kind === kind).map((row) => row.last_error ?? null);
 
-  test("a head or body queues a lock-screen-safe turn push, and the legs queue a result push", async () => {
+  test("a head, body or legs queues a lock-screen-safe turn push, and the feet queue a result push", async () => {
     const s = await startGame();
-    const { figureId, head, body, legs } = await playFigure(s, s.a, s.b, { head: EXQUISITE_CORPSE_IDEAS.en.head[0].id });
+    const { figureId, head, body, legs, feet } = await playFigure(s, s.a, s.b, { head: EXQUISITE_CORPSE_IDEAS.en.head[0].id });
     const rows = await outbox(s.t);
 
     const turns = rows.filter((row) => row.kind === "game_turn_ready");
-    expect(turns).toHaveLength(2);
+    expect(turns).toHaveLength(3);
     expect(turns[0]).toMatchObject({
       recipient_user_id: s.b.userId,
       apns_push_type: "alert",
@@ -839,20 +874,27 @@ describe("pushes", () => {
       payload: { actor_user_id: s.b.userId, step: "legs" },
       body: "Your turn to draw the legs.",
     });
+    expect(turns[2]).toMatchObject({
+      recipient_user_id: s.b.userId,
+      dedupe_key: expect.stringContaining(`exquisite_corpse:turn:${legs.partId}`),
+      payload: { actor_user_id: s.a.userId, step: "feet" },
+      body: "Your turn to draw the feet.",
+    });
 
+    // The feet drawer keeps the turn, so only the partner hears about the finished figure.
     const results = rows.filter((row) => row.kind === "game_result");
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
-      recipient_user_id: s.b.userId,
+      recipient_user_id: s.a.userId,
       dedupe_key: expect.stringContaining(`exquisite_corpse:finished:${figureId}`),
-      payload: { type: "game_result", game_kind: "exquisite_corpse", round_id: figureId, actor_user_id: s.a.userId },
+      payload: { type: "game_result", game_kind: "exquisite_corpse", round_id: figureId, actor_user_id: s.b.userId },
       body: "See the whole creature.",
     });
     expect(results[0].payload).not.toHaveProperty("step");
     // The payload holds ids only. It never names a drawing, a strip, or an idea.
     for (const row of rows) {
       const text = JSON.stringify(row);
-      for (const secret of [head.drawing.assetId, head.strip!.assetId, legs.drawing.assetId, EXQUISITE_CORPSE_IDEAS.en.head[0].text]) {
+      for (const secret of [head.drawing.assetId, head.strip!.assetId, legs.drawing.assetId, feet.drawing.assetId, EXQUISITE_CORPSE_IDEAS.en.head[0].text]) {
         expect(text).not.toContain(secret);
       }
     }
@@ -878,7 +920,12 @@ describe("pushes", () => {
     await send(s, s.a, { figureId, index: 2 });
     expect(await outbox(s.t)).toHaveLength(0);
 
-    // A screen that stopped its heartbeats does not count.
+    await s.b.as.mutation(api.games.set_game_presence, { p_kind: "exquisite_corpse", p_present: false });
+    await s.a.as.mutation(api.games.set_game_presence, { p_kind: "exquisite_corpse", p_present: true });
+    await send(s, s.b, { figureId, index: 3 });
+    expect(await outbox(s.t)).toHaveLength(0);
+
+    // A screen that stopped its heartbeats does not count. b drew the feet and starts the next figure.
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "exquisite_corpse", p_present: true });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     await send(s, s.b, { figureId: newUuid(), index: 0 });
@@ -904,13 +951,13 @@ describe("pushes", () => {
   test("the drain drops a turn push once the figure is finished, and a result push once the reveal was seen", async () => {
     const s = await startGame();
     await playFigure(s, s.a, s.b);
-    // a's body push and b's head push are out of date. b's result push is current until b has seen the reveal.
+    // The body, legs and feet pushes are out of date. a's result push is current until a has seen the reveal.
     expect(kinds(await claim(s))).toEqual(["game_result"]);
-    expect(await errorsOf(s, "game_turn_ready")).toEqual(["notification is out of date", "notification is out of date"]);
+    expect(await errorsOf(s, "game_turn_ready")).toEqual(Array(3).fill("notification is out of date"));
 
     const again = await startGame();
     const second = await playFigure(again, again.a, again.b);
-    await again.b.as.mutation(api.exquisiteCorpse.mark_exquisite_corpse_reveal_seen, { p_figure_id: second.figureId });
+    await again.a.as.mutation(api.exquisiteCorpse.mark_exquisite_corpse_reveal_seen, { p_figure_id: second.figureId });
     expect(await claim(again)).toEqual([]);
     expect(await errorsOf(again, "game_result")).toEqual(["notification is out of date"]);
     await settle(s);
@@ -1028,7 +1075,7 @@ describe("relationship end", () => {
     expect(await count(s.t, s.couple.coupleId)).toEqual({
       exquisite_corpse_games: 1,
       exquisite_corpse_figures: 2,
-      exquisite_corpse_parts: 4,
+      exquisite_corpse_parts: 5,
       favorites: 1,
     });
 
@@ -1038,7 +1085,7 @@ describe("relationship end", () => {
     expect(await count(keep.t, keep.couple.coupleId)).toMatchObject({
       exquisite_corpse_games: 1,
       exquisite_corpse_figures: 1,
-      exquisite_corpse_parts: 3,
+      exquisite_corpse_parts: 4,
     });
 
     const drawings = await s.t.run(async (ctx) =>
@@ -1046,8 +1093,8 @@ describe("relationship end", () => {
         (asset) => asset.reserved_parent_kind === "exquisite_corpse_part" && asset.couple_id === s.couple.coupleId,
       ),
     );
-    // Four parts with a drawing each, and a strip for each head and body.
-    expect(drawings).toHaveLength(4 + 3);
+    // Five parts with a drawing each, and a strip for each head, body and legs.
+    expect(drawings).toHaveLength(5 + 4);
     expect(drawings.every((asset) => asset.storage_delete_status === "pending")).toBe(true);
     await s.t.mutation(internal.media.cleanup_media_storage, {});
     const after = await s.t.run(async (ctx) => (await ctx.db.query("media_assets").collect()).find((asset) => asset.id === head.drawing.assetId));

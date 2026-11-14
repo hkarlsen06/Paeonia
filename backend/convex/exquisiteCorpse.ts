@@ -106,7 +106,7 @@ export const ensure_exquisite_corpse_game = mutation({
  * `number`, `starter_user_id`, `created_at`, `finished_at`, `my_reveal_seen_at`, `starred_by_me`, and
  * `parts` in drawing order. A part has `id`, `part_index`, `drawer_user_id`, `created_at`,
  * `strip_media_asset_id`, `drawing_media_asset_id`, and `idea`. The drawing id and the idea are null
- * unless the caller drew the part or the figure is finished. The strip id is there for the head and body.
+ * unless the caller drew the part or the figure is finished. The strip id is there for the head, body and legs.
  *
  * `ideas` is a deck of 12 `{ id, text }` for the next part in the game language while it is the
  * caller's turn, and empty otherwise. The shuffle is seeded with the game, the figure number, and the
@@ -155,12 +155,13 @@ export const get_exquisite_corpse = query({
 
 /**
  * Sends the caller's part. The head (index 0) starts the figure `p_figure_id`, which the phone made up,
- * and the body and legs join it. The turn passes to the partner after every part, and the legs finish
- * the figure. The partner gets a push unless the game is open on their phone. Every part counts as the
+ * and the body, legs and feet join it. The turn moves as `progressAfter` says: to the partner after
+ * every part but the feet, which finish the figure and leave the turn with their drawer for the next
+ * head. The partner gets a push unless the game is open on their phone. Every part counts as the
  * streak activity.
  *
  * `p_drawing_media_asset_id` is the full part. `p_strip_media_asset_id` is its bottom, clipped on the
- * phone: required for the head and body, refused for the legs. `p_idea_id` is the idea on the chip, if
+ * phone: required for the head, body and legs, refused for the feet. `p_idea_id` is the idea on the chip, if
  * any. Its text is stored with the part. The request hash covers every argument.
  *
  * Result: `{ figure_id, part_id, part_index, figure_finished, created_at }`.
@@ -185,9 +186,9 @@ export const submit_exquisite_corpse_part = mutation({
     const drawingId = uuidArg(args.p_drawing_media_asset_id);
     const stripId = optionalUuidArg(args.p_strip_media_asset_id);
     const ideaId = args.p_idea_id ?? undefined;
-    if (!isPartIndex(partIndex)) fail("22023", "part index must be 0, 1, or 2");
-    if (hasStrip(partIndex) && stripId === undefined) fail("22023", "the head and the body need a strip");
-    if (!hasStrip(partIndex) && stripId !== undefined) fail("22023", "the legs take no strip");
+    if (!isPartIndex(partIndex)) fail("22023", "part index must be 0, 1, 2, or 3");
+    if (hasStrip(partIndex) && stripId === undefined) fail("22023", "the head, the body and the legs need a strip");
+    if (!hasStrip(partIndex) && stripId !== undefined) fail("22023", "the feet take no strip");
     if (ideaId !== undefined && findIdea(partIndex, ideaId, "en") === null) fail("22023", "the idea is not on the list for this part");
 
     return await runClientOperation(
@@ -244,7 +245,7 @@ export const submit_exquisite_corpse_part = mutation({
           idea_text: idea?.text,
           created_at: now,
         });
-        const next = progressAfter(game, partIndex, figureId);
+        const next = progressAfter(game, partIndex, figureId, { drawer: userId, partner: partnerId });
         if (next.figureFinished) {
           const figure = await requireByUuid(ctx, "exquisite_corpse_figures", figureId);
           await ctx.db.patch(figure._id, { finished_at: now, updated_at: now });
@@ -254,7 +255,7 @@ export const submit_exquisite_corpse_part = mutation({
           figure_number: next.figure_number,
           part_index: next.part_index,
           figures_finished: next.figures_finished,
-          turn_user_id: partnerId,
+          turn_user_id: next.turn_user_id,
           turn_started_at: now,
           turn_reminder_sent_at: undefined,
         });

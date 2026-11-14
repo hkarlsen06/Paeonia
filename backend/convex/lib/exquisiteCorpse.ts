@@ -20,8 +20,8 @@ export type CorpseFigure = Doc<"exquisite_corpse_figures">;
 export type CorpsePart = Doc<"exquisite_corpse_parts">;
 
 /** The parts of a figure in drawing order. The index is the part's `part_index`. */
-export const PART_NAMES = ["head", "body", "legs"] as const satisfies readonly IdeaPart[];
-const LEGS_INDEX = 2;
+export const PART_NAMES = ["head", "body", "legs", "feet"] as const satisfies readonly IdeaPart[];
+const FEET_INDEX = 3;
 /** How many ideas the server deals for one part. */
 export const DECK_SIZE = 12;
 /** The finished figures `get_exquisite_corpse` returns. */
@@ -32,16 +32,16 @@ export const MAX_HISTORY_PAGE = 50;
 // --- Rules (no database) ----------------------------------------------------
 
 export function isPartIndex(value: number): boolean {
-  return Number.isInteger(value) && value >= 0 && value <= LEGS_INDEX;
+  return Number.isInteger(value) && value >= 0 && value <= FEET_INDEX;
 }
 
-/** The head and the body leave a strip for the next drawer. The legs leave none. */
+/** The head, body and legs leave a strip for the next drawer. The feet leave none. */
 export function hasStrip(partIndex: number): boolean {
-  return partIndex < LEGS_INDEX;
+  return partIndex < FEET_INDEX;
 }
 
 /**
- * The step token of the turn push after part `partIndex` (0 or 1): the part that is now the
+ * The step token of the turn push after part `partIndex` (0 to 2): the part that is now the
  * partner's turn. The push copy turns "body" into "Robin drew the head" and "Your turn to draw the body."
  */
 export function turnPushPart(partIndex: number): IdeaPart {
@@ -49,17 +49,21 @@ export function turnPushPart(partIndex: number): IdeaPart {
 }
 
 /**
- * The game's progress once part `partIndex` of figure `figureId` is sent. The legs finish the
- * figure, clear `figure_id`, and the next figure starts with the head.
+ * The game's progress once `drawer` sends part `partIndex` of figure `figureId`. Every part passes
+ * the turn to the partner, except the feet: they finish the figure, clear `figure_id`, and the feet
+ * drawer keeps the turn to start the next figure with its head. So the starter draws the head and the
+ * legs, the partner draws the body and the feet, and the next figure starts with the partner.
  */
 export function progressAfter(
   game: Pick<CorpseGame, "figure_number" | "figures_finished">,
   partIndex: number,
   figureId: string,
+  people: { drawer: string; partner: string },
 ) {
-  const figureFinished = partIndex === LEGS_INDEX;
+  const figureFinished = partIndex === FEET_INDEX;
   return {
     figureFinished,
+    turn_user_id: figureFinished ? people.drawer : people.partner,
     figure_id: figureFinished ? undefined : figureId,
     figure_number: figureFinished ? game.figure_number + 1 : game.figure_number,
     part_index: figureFinished ? 0 : partIndex + 1,
@@ -140,7 +144,7 @@ export function revealSeenAt(
 /**
  * One part for `userId`. The full drawing and the idea stay null until the caller drew the part or the
  * figure is finished, so a hidden part never reaches the partner's phone. The strip is always there for
- * the head and body.
+ * the head, body and legs.
  */
 export function partJson(
   part: Pick<
@@ -329,9 +333,10 @@ export function reminderStep(game: Pick<CorpseGame, "figure_number" | "part_inde
 export const exquisiteCorpseBackend: GameBackend = {
   /**
    * `payload.round_id` is the figure id. A turn push is wanted while the turn is still the recipient's in
-   * that figure. Turns alternate and a figure ends after the legs, so the turn leaves the recipient once
-   * they send their part. A result push is wanted until the recipient has seen the reveal. A reminder
-   * is wanted while the reminded turn still waits (a new turn clears `turn_reminder_sent_at`).
+   * that figure. Every part but the feet passes the turn, and the feet clear `figure_id`, so the push
+   * stops being wanted once the recipient sends their part, also when the feet drawer keeps the turn.
+   * A result push is wanted until the recipient has seen the reveal. A reminder is wanted while the
+   * reminded turn still waits (a new turn clears `turn_reminder_sent_at`).
    */
   async pushStillWanted(ctx, push, payload, recipientUserId) {
     const figureId = typeof payload.round_id === "string" ? payload.round_id : null;

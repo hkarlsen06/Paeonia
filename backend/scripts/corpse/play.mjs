@@ -33,7 +33,7 @@ client.setAdminAuth(process.env.CONVEX_SELF_HOSTED_ADMIN_KEY, {
 
 const SIDE = 320;
 const FOLD_Y = SIDE * 0.88;
-const PARTS = ["head", "body", "legs"];
+const PARTS = ["head", "body", "legs", "feet"];
 
 const op = () => ({
   p_client_operation_id: randomUUID(),
@@ -143,7 +143,7 @@ async function sendPart(screen, strokes, ideaArg) {
   const partId = partIdFor(game, screen.user_id);
   const drawingId = await upload(makeDrawing(strokes, "part"), screen, game, partId, "exquisite_corpse_drawing");
   const stripId =
-    game.part_index < 2
+    game.part_index < 3
       ? await upload(makeDrawing(clipToStrip(strokes), "strip"), screen, game, partId, "exquisite_corpse_strip")
       : null;
   const idea = ideaArg === undefined || ideaArg === "none" ? null : screen.ideas[Number(ideaArg)] ?? null;

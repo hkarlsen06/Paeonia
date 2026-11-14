@@ -77,21 +77,25 @@ describe("idea decks", () => {
 
 describe("part progression", () => {
   const start = { figure_number: 1, figures_finished: 0 };
+  const people = { drawer: "alice", partner: "bob" };
 
-  test("the head and the body move on inside the same figure", () => {
-    expect(progressAfter(start, 0, "fig")).toEqual({
+  test("the head, the body and the legs move on inside the same figure and pass the turn", () => {
+    expect(progressAfter(start, 0, "fig", people)).toEqual({
       figureFinished: false,
+      turn_user_id: "bob",
       figure_id: "fig",
       figure_number: 1,
       part_index: 1,
       figures_finished: 0,
     });
-    expect(progressAfter(start, 1, "fig")).toMatchObject({ figureFinished: false, figure_id: "fig", part_index: 2 });
+    expect(progressAfter(start, 1, "fig", people)).toMatchObject({ figureFinished: false, turn_user_id: "bob", figure_id: "fig", part_index: 2 });
+    expect(progressAfter(start, 2, "fig", people)).toMatchObject({ figureFinished: false, turn_user_id: "bob", figure_id: "fig", part_index: 3 });
   });
 
-  test("the legs finish the figure, and the next one starts with the head", () => {
-    expect(progressAfter(start, 2, "fig")).toEqual({
+  test("the feet finish the figure, and the feet drawer keeps the turn to start the next one with the head", () => {
+    expect(progressAfter(start, 3, "fig", people)).toEqual({
       figureFinished: true,
+      turn_user_id: "alice",
       figure_id: undefined,
       figure_number: 2,
       part_index: 0,
@@ -99,25 +103,37 @@ describe("part progression", () => {
     });
   });
 
-  test("three parts make one figure and the count keeps going", () => {
+  test("the starter draws the head and the legs, the partner the body and the feet, and the roles swap each figure", () => {
     let game = { ...start };
+    let turn = "alice";
+    const drawers: string[][] = [];
     for (let figure = 1; figure <= 2; figure++) {
-      for (const partIndex of [0, 1, 2]) {
-        const next = progressAfter(game, partIndex, `fig-${figure}`);
+      const parts: string[] = [];
+      for (const partIndex of [0, 1, 2, 3]) {
+        parts.push(turn);
+        const next = progressAfter(game, partIndex, `fig-${figure}`, { drawer: turn, partner: turn === "alice" ? "bob" : "alice" });
         game = { figure_number: next.figure_number, figures_finished: next.figures_finished };
+        turn = next.turn_user_id;
       }
+      drawers.push(parts);
     }
+    expect(drawers).toEqual([
+      ["alice", "bob", "alice", "bob"],
+      ["bob", "alice", "bob", "alice"],
+    ]);
     expect(game).toEqual({ figure_number: 3, figures_finished: 2 });
+    expect(turn).toBe("alice");
   });
 
-  test("only the head and the body leave a strip", () => {
-    expect([0, 1, 2].map(hasStrip)).toEqual([true, true, false]);
-    expect([-1, 0, 2, 3, 1.5, Number.NaN].map(isPartIndex)).toEqual([false, true, true, false, false, false]);
+  test("only the head, the body and the legs leave a strip", () => {
+    expect([0, 1, 2, 3].map(hasStrip)).toEqual([true, true, true, false]);
+    expect([-1, 0, 3, 4, 1.5, Number.NaN].map(isPartIndex)).toEqual([false, true, true, false, false, false]);
   });
 
-  test("the turn push names the part that was just drawn", () => {
+  test("the turn push names the part that is now the partner's turn", () => {
     expect(turnPushPart(0)).toBe("body");
     expect(turnPushPart(1)).toBe("legs");
+    expect(turnPushPart(2)).toBe("feet");
   });
 });
 
@@ -154,9 +170,9 @@ describe("hiding", () => {
     expect(partJson(part, "bob", true)).toMatchObject({ drawing_media_asset_id: "drawing-1", idea: { text: "a robot" } });
   });
 
-  test("the legs have no strip, and a part without an idea shows none", () => {
-    const legs = { ...part, part_index: 2, strip_media_asset_id: undefined, idea_id: undefined, idea_text: undefined };
-    expect(partJson(legs, "alice", true)).toMatchObject({ strip_media_asset_id: null, idea: null });
+  test("the feet have no strip, and a part without an idea shows none", () => {
+    const feet = { ...part, part_index: 3, strip_media_asset_id: undefined, idea_id: undefined, idea_text: undefined };
+    expect(partJson(feet, "alice", true)).toMatchObject({ strip_media_asset_id: null, idea: null });
   });
 
   test("a finished figure shows everything to both partners", () => {
@@ -169,8 +185,8 @@ describe("hiding", () => {
 describe("idea lookup", () => {
   const lists = (en: Idea[], nb: Idea[]) =>
     ({
-      en: { head: en, body: [], legs: [] },
-      nb: { head: nb, body: [], legs: [] },
+      en: { head: en, body: [], legs: [], feet: [] },
+      nb: { head: nb, body: [], legs: [], feet: [] },
     }) satisfies Record<IdeaLanguage, Record<IdeaPart, readonly Idea[]>>;
 
   test("finds an idea in the preferred language first", () => {

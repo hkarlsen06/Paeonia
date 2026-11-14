@@ -95,10 +95,10 @@ async function seedGames(t: TestConvex, couple: TestCouple): Promise<GameChatSou
     await ctx.db.insert("exquisite_corpse_figures", {
       ...common, id: figure, game_id: newUuid(), number: 1, starter_user_id: a, finished_at: now,
     });
-    for (let part = 0; part < 3; part++) {
+    for (let part = 0; part < 4; part++) {
       await ctx.db.insert("exquisite_corpse_parts", {
         couple_id: couple.coupleId, created_at: now, id: newUuid(), figure_id: figure, game_id: newUuid(), figure_number: 1,
-        part_index: part, drawer_user_id: part === 1 ? b : a, drawing_media_asset_id: newUuid(),
+        part_index: part, drawer_user_id: part % 2 === 1 ? b : a, drawing_media_asset_id: newUuid(),
       });
     }
     sources.push({ kind: "exquisite_corpse", id: figure });

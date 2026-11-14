@@ -43,11 +43,11 @@ async function creature() {
   return { t, couple, gameId: game_id, figureId: newUuid() };
 }
 
-async function part(s: Awaited<ReturnType<typeof creature>>, index: 0 | 1 | 2, text: string) {
-  const author = index === 1 ? s.couple.second : s.couple.first;
+async function part(s: Awaited<ReturnType<typeof creature>>, index: 0 | 1 | 2 | 3, text: string) {
+  const author = index % 2 === 1 ? s.couple.second : s.couple.first;
   const id = newUuid();
   const full = await drawing(s.t, s.couple, author, s.gameId, id, "exquisite_corpse_drawing", text);
-  const strip = index < 2 ? await drawing(s.t, s.couple, author, s.gameId, id, "exquisite_corpse_strip") : undefined;
+  const strip = index < 3 ? await drawing(s.t, s.couple, author, s.gameId, id, "exquisite_corpse_strip") : undefined;
   await author.as.mutation(api.exquisiteCorpse.submit_exquisite_corpse_part, {
     ...op(), p_game_id: s.gameId, p_figure_id: s.figureId, p_part_id: id, p_part_index: index,
     p_drawing_media_asset_id: full.assetId, ...(strip ? { p_strip_media_asset_id: strip.assetId } : {}),
@@ -105,11 +105,13 @@ test("Odd Creatures full descriptions never accompany an unfinished fold strip",
   expect((await failure(s.couple.second.as.mutation(api.media.get_media_signed_url,
     { p_media_asset_id: head.full.assetId }))).code).toBe("42501");
   await part(s, 1, "A square purple body with two arms.");
-  await part(s, 2, "Two blue legs wearing boots.");
+  await part(s, 2, "Two blue legs with striped socks.");
+  await part(s, 3, "Two big boots with laces.");
   const revealed = await s.couple.second.as.query(api.exquisiteCorpse.get_exquisite_corpse, {});
   const figure = revealed.recent_figures.find(f => f.id === s.figureId) ?? revealed.current_figure;
   expect(figure?.parts.map(p => p.drawing_accessibility_text)).toEqual([
-    "A hidden smiling head with three green eyes.", "A square purple body with two arms.", "Two blue legs wearing boots.",
+    "A hidden smiling head with three green eyes.", "A square purple body with two arms.", "Two blue legs with striped socks.",
+    "Two big boots with laces.",
   ]);
 });
 

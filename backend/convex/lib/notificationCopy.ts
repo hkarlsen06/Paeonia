@@ -86,6 +86,7 @@ export const GAME_PUSH_COPY: Record<GameKind, Record<"en" | "nb", GamePushCopy>>
       steps: {
         body: { title: (actor) => `${actor} drew the head`, body: "Your turn to draw the body." },
         legs: { title: (actor) => `${actor} drew the body`, body: "Your turn to draw the legs." },
+        feet: { title: (actor) => `${actor} drew the legs`, body: "Your turn to draw the feet." },
       },
     },
     nb: {
@@ -95,6 +96,7 @@ export const GAME_PUSH_COPY: Record<GameKind, Record<"en" | "nb", GamePushCopy>>
       steps: {
         body: { title: (actor) => `${actor} har tegnet hodet`, body: "Din tur til å tegne kroppen." },
         legs: { title: (actor) => `${actor} har tegnet kroppen`, body: "Din tur til å tegne beina." },
+        feet: { title: (actor) => `${actor} har tegnet beina`, body: "Din tur til å tegne føttene." },
       },
     },
   },
