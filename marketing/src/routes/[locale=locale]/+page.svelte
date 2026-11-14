@@ -7,7 +7,7 @@
   import { buildLocalizedPath } from '#lib/paths.ts';
 
   let { data } = $props();
-  const { meta, hero, games, moment, live, features, extras, privacy, faq, contact } = $derived(data.dictionary.marketing);
+  const { meta, hero, film, games, moment, live, features, extras, privacy, faq, contact } = $derived(data.dictionary.marketing);
   const mailtoHref = $derived(
     `mailto:${data.dictionary.legal.contactEmail}?subject=${encodeURIComponent(contact.emailSubject)}&body=${encodeURIComponent(contact.emailBody)}`,
   );
@@ -113,22 +113,21 @@
           <p class="mt-4 hidden pl-7 text-sm text-text-muted lg:block">{hero.note}</p>
         </div>
 
-        <div class="relative isolate mx-auto w-[min(80vw,22rem)] lg:w-[min(100%,calc((100dvh-10rem)*886/1920))]">
-          <video
-            src={`/film/paeonia-${data.locale}.mp4`}
-            poster={`/film/paeonia-${data.locale}.webp`}
-            width="886"
-            height="1920"
-            autoplay
-            muted
-            loop
-            playsinline
-            controls
-            aria-label={hero.filmLabel}
-            class="block h-auto w-full rounded-[2rem] shadow-[0_40px_90px_-24px_rgba(8,1,5,0.85)] ring-1 ring-white/12"
-          ></video>
-          {@render sticker('peony-pair', '-bottom-6 -left-16 z-10 w-[46%] sm:-left-24', -6)}
-          {@render sticker('heart', '-top-6 -right-8 z-10 w-[20%] [animation-delay:-2s]', 12)}
+        <div class="relative isolate mx-auto flex w-[min(92vw,26rem)] items-start lg:w-full">
+          <PhoneScreenshot
+            src={screen(hero.screenshots[0].src)}
+            alt={hero.screenshots[0].alt}
+            priority
+            class="w-[58%] -rotate-3"
+          />
+          <PhoneScreenshot
+            src={screen(hero.screenshots[1].src)}
+            alt={hero.screenshots[1].alt}
+            priority
+            class="-ml-[16%] mt-[14%] w-[58%] rotate-2"
+          />
+          {@render sticker('peony-pair', '-bottom-6 -left-10 z-10 w-[42%] sm:-left-14', -6)}
+          {@render sticker('heart', '-top-4 right-2 z-10 w-[16%] [animation-delay:-2s]', 12)}
         </div>
       </div>
     </section>
@@ -139,6 +138,28 @@
       {@render mailButton(hero.primaryCta, 'w-full')}
       <p class="mt-2 text-center text-xs text-text-muted">{hero.note}</p>
     </div>
+
+    <section id="film" aria-label={film.label} class="relative isolate scroll-mt-4 overflow-x-clip px-5 pb-10 pt-6 sm:px-8 lg:pb-16 lg:pt-12">
+      {@render glow('left-1/2 top-1/2 h-[40rem] w-[40rem] -translate-x-1/2 -translate-y-1/2 lg:h-[56rem] lg:w-[56rem]')}
+      <div class="reveal relative mx-auto w-[min(80vw,22rem)] lg:w-[calc((100dvh-6rem)*886/1920)]">
+        <video
+          src={`/film/paeonia-${data.locale}.mp4`}
+          poster={`/film/paeonia-${data.locale}.webp`}
+          width="886"
+          height="1920"
+          autoplay
+          muted
+          loop
+          playsinline
+          controls
+          aria-label={film.label}
+          class="block h-auto w-full rounded-[2rem] shadow-[0_40px_90px_-24px_rgba(8,1,5,0.85)] ring-1 ring-white/12"
+        ></video>
+        {@render sticker('peony', '-left-14 bottom-[12%] z-10 w-[34%] sm:-left-24', -8)}
+        {@render sticker('petal-pink', '-right-8 top-[18%] z-10 w-[12%] [animation-delay:-2s]', 20)}
+        {@render sticker('petal-lavender', '-right-6 top-[60%] z-10 w-[10%] sm:-right-14 [animation-delay:-4s]', -15)}
+      </div>
+    </section>
 
     <section id="games" aria-labelledby="games-heading" class="scroll-mt-4 overflow-x-clip px-3 pt-6 sm:px-6 lg:pt-12">
       <div

@@ -5,9 +5,10 @@
     src: string;
     alt: string;
     class?: ClassValue;
+    priority?: boolean;
   }
 
-  let { src, alt, class: className = '' }: Props = $props();
+  let { src, alt, class: className = '', priority = false }: Props = $props();
 </script>
 
 <!-- A real simulator screenshot in a thin bezel. Sizes are in container units, so the
@@ -19,7 +20,8 @@
       {alt}
       width="780"
       height="1696"
-      loading="lazy"
+      loading={priority ? 'eager' : 'lazy'}
+      fetchpriority={priority ? 'high' : undefined}
       decoding="async"
       class="block h-auto w-full rounded-[13.1cqw]"
     />

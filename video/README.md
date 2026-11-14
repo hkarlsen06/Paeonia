@@ -108,7 +108,7 @@ swift scripts/app-store-drawing.swift --strokes scripts/assets/app-store/widget-
 
 ## The website
 
-The hero of paeonia.no plays the film in the page's language. After a full-quality render of both languages, make the website's 3 MB copies and their posters in `marketing/static/film/`:
+paeonia.no plays the film in the page's language, in a section below the hero. After a full-quality render of both languages, make the website's 3 MB copies and their posters in `marketing/static/film/`:
 
 ```bash
 scripts/marketing-film

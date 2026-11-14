@@ -62,7 +62,7 @@ Current behavior: `functions/index.js` sends the visitor to `/no/` when the brow
 
 Purpose: localized landing pages.
 
-Current behavior: the marketing page in English and Norwegian. The hero plays the Paeonia film in the page's language from `static/film/`, muted and looping, with the browser's controls for sound and pause. The screenshots in `static/screens/` are real app screens from the Hjalmar and Elena test accounts, in English for both locales.
+Current behavior: the marketing page in English and Norwegian. A section after the hero plays the Paeonia film in the page's language from `static/film/`, muted and looping, with the browser's controls for sound and pause. The screenshots in `static/screens/` are real app screens from the Hjalmar and Elena test accounts, in English for both locales.
 
 Production behavior: localized marketing pages.
 
