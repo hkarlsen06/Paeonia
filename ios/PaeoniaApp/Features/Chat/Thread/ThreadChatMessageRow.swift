@@ -68,8 +68,8 @@ struct ThreadChatMessageRow: View {
         case let .gameResult(card):
             GameChatResultRow(card: card, participants: participants, onToggle: { onToggleGameResult(card.reference) },
                 onReply: { onReplyGameResult(card.reference) }, onRetry: { onReloadGameResult(card.reference) })
-        case let .gameResultRun(run):
-            GameChatResultRunRow(run: run, onToggle: { onToggleGameRun(run) })
+        case let .gameResultRun(run): GameChatResultRunRow(run: run, onToggle: { onToggleGameRun(run) })
+        case let .message(message) where message.call != nil: ThreadChatCallRow(message: message, isOwn: isCurrentUser)
         default:
             bubbleRow
         }

@@ -178,6 +178,7 @@ extension MainTabView {
                 && previous[summary.subject]?.lastMessageID != messageID
                 && date >= messageNoticeStartedAt
                 && summary.isPrivateTopic != true
+                && summary.lastMessageCall?.outcome != .completed
                 && visibleChatSubject != summary.subject
         }.sorted { ($0.lastMessageAt ?? .distantPast) < ($1.lastMessageAt ?? .distantPast) }
         for summary in arrivals {

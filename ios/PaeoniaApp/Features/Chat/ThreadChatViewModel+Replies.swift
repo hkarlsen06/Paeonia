@@ -4,8 +4,9 @@ import Foundation
 
 extension ThreadChatViewModel {
     /// Only messages the server has can be replied to. A message still sending has no id there yet.
+    /// A call's row takes no replies, and so no reactions either.
     func canReply(to message: ThreadChatMessage) -> Bool {
-        message.delivery == .sent && !message.isDeleted && message.threadID != nil
+        message.delivery == .sent && !message.isDeleted && message.threadID != nil && message.call == nil
     }
 
     /// Either answer on the page can be replied to, once the user can read it.

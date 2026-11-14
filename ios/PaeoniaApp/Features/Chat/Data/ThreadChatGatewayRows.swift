@@ -24,6 +24,7 @@ nonisolated struct ConversationThreadRow: Decodable {
     let viewerReadThroughMessageID: UUID?
     let topicKey: String?
     let privateTopic: Bool?
+    let lastMessageCall: ThreadChatCall?
 
     /// What the chat is about, from the id that matches its kind.
     private var subject: ThreadChatSubject? {
@@ -57,7 +58,8 @@ nonisolated struct ConversationThreadRow: Decodable {
             viewerReadThroughAt: viewerReadThroughAt,
             viewerReadThroughMessageID: viewerReadThroughMessageID,
             topicKey: topicKey,
-            isPrivateTopic: privateTopic
+            isPrivateTopic: privateTopic,
+            lastMessageCall: previewIsVisible ? lastMessageCall : nil
         )
     }
 
@@ -84,6 +86,7 @@ nonisolated struct ConversationThreadRow: Decodable {
         case viewerReadThroughMessageID = "viewer_read_through_message_id"
         case topicKey = "topic_key"
         case privateTopic = "private_topic"
+        case lastMessageCall = "last_message_call"
     }
 }
 
@@ -102,6 +105,8 @@ nonisolated struct ThreadMessageRow: Decodable {
     let replyToAnswerID: UUID?
     var replyToGameResultSource: GameConversationSource?
     let reactions: [EmojiReaction]
+    /// Set on a call's row in "Just us".
+    var call: ThreadChatCall?
 
     nonisolated struct MediaRow: Decodable {
         let mediaAssetID: UUID
@@ -154,7 +159,7 @@ nonisolated struct ThreadMessageRow: Decodable {
         }
         let voice = media.first { $0.mediaType == "voice" }?.voice
         let photos = media.filter { $0.mediaType == "image" }.map(\.photo)
-        guard body != nil || voice != nil || !photos.isEmpty else { return nil }
+        guard body != nil || voice != nil || !photos.isEmpty || call != nil else { return nil }
         return ThreadChatMessage(
             id: messageID,
             threadID: threadID,
@@ -169,7 +174,8 @@ nonisolated struct ThreadMessageRow: Decodable {
             replyTo: replyToGameResultSource.map(ThreadChatItemID.gameResult)
                 ?? ThreadChatItemID(messageID: replyToMessageID, answerID: replyToAnswerID),
             editedAt: editedAt,
-            reactions: reactions
+            reactions: reactions,
+            call: call
         )
     }
 
@@ -188,6 +194,7 @@ nonisolated struct ThreadMessageRow: Decodable {
         case replyToAnswerID = "reply_to_answer_id"
         case replyToGameResultSource = "reply_to_game_result_source"
         case reactions
+        case call
     }
 }
 

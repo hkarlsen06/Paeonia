@@ -30,10 +30,11 @@ extension ThreadChatProjection {
     static func make(input: Input) -> ThreadChatProjection {
         // The dots join the partner's newest message when it is the last one, like Tidex.
         let typingJoinsPrevious = input.partnerIsTyping && input.messages.last.map {
-            $0.senderUserID != input.currentUserID && !$0.hasMedia && !$0.isDeleted
+            $0.senderUserID != input.currentUserID && !$0.hasMedia && !$0.isDeleted && $0.call == nil
         } == true
+        // A call's row shows no Sent or Read under it.
         let lastSentOwnMessage = input.messages.last {
-            $0.senderUserID == input.currentUserID && $0.delivery == .sent && !$0.isDeleted
+            $0.senderUserID == input.currentUserID && $0.delivery == .sent && !$0.isDeleted && $0.call == nil
         }
 
         let sections = input.rounds.map {
@@ -455,6 +456,7 @@ extension ThreadChatProjection {
             message.senderUserID == input.currentUserID
                 && message.delivery == .sent
                 && !message.isDeleted
+                && message.call == nil
                 && (message.createdAt, message.id.uuidString) <= (readThrough.createdAt, readThrough.id.uuidString)
         }?.id
     }
@@ -493,6 +495,7 @@ extension ThreadChatProjection {
         let hasLocalPhotos: Bool
         let isEdited: Bool
         let isDeleted: Bool
+        let call: ThreadChatCall?
         let groupContext: ThreadChatGroupContext
         let status: ThreadChatMessageStatus?
         let quotedPreview: ThreadChatReplyPreview?
@@ -513,6 +516,7 @@ extension ThreadChatProjection {
             hasLocalPhotos = (message.photos ?? []).contains { $0.data != nil }
             isEdited = message.editedAt != nil
             isDeleted = message.isDeleted
+            call = message.call
             self.groupContext = groupContext
             self.status = status
             self.quotedPreview = quotedPreview

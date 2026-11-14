@@ -67,7 +67,7 @@ enum ThreadChatGrouping {
     static func shouldGroup(_ lhs: ThreadChatMessage, _ rhs: ThreadChatMessage) -> Bool {
         guard lhs.senderUserID == rhs.senderUserID else { return false }
         guard !lhs.hasMedia, !rhs.hasMedia, lhs.replyTo == nil, rhs.replyTo == nil,
-              !lhs.isDeleted, !rhs.isDeleted else {
+              !lhs.isDeleted, !rhs.isDeleted, lhs.call == nil, rhs.call == nil else {
             return false
         }
         let gap = rhs.createdAt.timeIntervalSince(lhs.createdAt)
@@ -190,6 +190,8 @@ struct ThreadChatProjection {
     static let noteRowPrefix = "note-"
     /// A message its sender took back. The long-press menu has nothing to offer on it.
     static let deletedRowPrefix = "deleted-"
+    /// A call's row in "Just us", with no long-press menu.
+    static let callRowPrefix = "call-"
 
     /// The row that opens a day, which the page scrolls to.
     static func questionRowID(for instanceID: UUID) -> String {
@@ -201,7 +203,7 @@ struct ThreadChatProjection {
         id == typingRowID || id == headerRowID || id.hasPrefix(gameResultRowPrefix)
             || id.hasPrefix(gameRunRowPrefix)
             || id.hasPrefix(matchRowPrefix) || id.hasPrefix(waitingRowPrefix) || id.hasPrefix(noteRowPrefix)
-            || id.hasPrefix(pendingAnswerRowPrefix)
+            || id.hasPrefix(pendingAnswerRowPrefix) || id.hasPrefix(callRowPrefix)
     }
 
     let exyteMessages: [ExyteChat.Message]
@@ -212,6 +214,7 @@ struct ThreadChatProjection {
     /// A message keeps its row id when the server confirms it.
     static func rowID(for message: ThreadChatMessage) -> String {
         let id = (message.clientOperationID ?? message.id).uuidString
+        if message.call != nil { return callRowPrefix + id }
         return message.isDeleted ? deletedRowPrefix + id : id
     }
 

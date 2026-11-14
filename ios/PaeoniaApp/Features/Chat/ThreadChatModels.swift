@@ -20,6 +20,8 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
     var topicKey: String?
     /// The chat belongs to a private topic (Flirt), so nothing about it shows outside it.
     var isPrivateTopic: Bool?
+    /// Set when the newest message is a call's row in "Just us".
+    var lastMessageCall: ThreadChatCall?
 
     /// The question the chat is about, nil for a memory's or a story's chat.
     var questionID: UUID? {
@@ -29,6 +31,7 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
     /// What to show for the newest message. A shown message with no text has an
     /// attachment, because the server only leaves out the text of hidden messages.
     var lastMessagePreview: String? {
+        if let lastMessageCall { return lastMessageCall.preview }
         if let body = lastMessageBody?.trimmedNonEmpty { return body }
         guard lastMessageID != nil else { return nil }
         return String(localized: lastMessageMediaType == "image" ? .dailyChatPhotoPreview : .dailyChatVoicePreview)
@@ -36,7 +39,9 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
 
     /// The newest message came from the partner after the user last read the chat:
     /// `readThrough` on this phone, or `viewerReadThroughAt` on any of their devices.
+    /// A finished call never makes the chat unread. A missed one does.
     func isUnread(by userID: UUID, readThrough: ThreadChatMessageCursor?) -> Bool {
+        guard lastMessageCall?.outcome != .completed else { return false }
         guard let lastMessageAt, let lastMessageID,
               let sender = lastMessageSenderUserID, sender != userID else { return false }
         guard let newestRead = latestReadCursor(onThisPhone: readThrough) else { return true }
@@ -110,6 +115,9 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
     /// when, so the chat can say it was deleted. A pending delete on this phone sets it
     /// too, before the server has heard.
     var deletedAt: Date?
+    /// Set when the message is a call's row in "Just us". The sender is the caller, and there
+    /// is no text. Nobody can reply to, react to, edit or delete it.
+    var call: ThreadChatCall?
 
     var isDeleted: Bool { deletedAt != nil }
 
@@ -132,7 +140,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
     /// text, photos and voice messages, with no time limit. A message that is still
     /// sending or failed is removed from this phone instead (`isUnsent`).
     func canDelete(by userID: UUID?) -> Bool {
-        senderUserID == userID && !isDeleted && (isUnsent || threadID != nil)
+        senderUserID == userID && !isDeleted && call == nil && (isUnsent || threadID != nil)
     }
 
     /// Not on the server yet. It waits in the send queue, or the queue gave up on it.
@@ -306,7 +314,8 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
             replyTo: replyTo,
             editedAt: editedAt,
             reactions: reactions,
-            deletedAt: deletedAt
+            deletedAt: deletedAt,
+            call: call
         )
     }
 
@@ -413,6 +422,49 @@ nonisolated struct ThreadChatPhotosPayload: Codable, Equatable, Sendable {
                 data: item.data, width: item.width, height: item.height, accessibilityText: item.accessibilityText
             )
         }
+    }
+}
+
+/// A call between the partners, which the server writes into "Just us" when the call ends.
+nonisolated struct ThreadChatCall: Codable, Equatable, Hashable, Sendable {
+    nonisolated enum Outcome: String, Codable, Sendable {
+        /// Nobody answered, the partner declined, or the caller gave up.
+        case missed
+        case completed
+    }
+
+    let outcome: Outcome
+    /// How long a completed call lasted.
+    let durationSeconds: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case outcome
+        case durationSeconds = "duration_seconds"
+    }
+
+    /// The line outside the chat, such as on the Just us card: "Missed call" or "Call".
+    var preview: String {
+        String(localized: outcome == .missed ? .callsRowMissed : .callsRowCall)
+    }
+
+    /// The row's title for the person reading it: "Missed call" from the partner, "No answer"
+    /// for their own call, and "Call · 12 min" for one that was answered.
+    func title(isFromCurrentUser: Bool) -> String {
+        switch outcome {
+        case .missed:
+            String(localized: isFromCurrentUser ? .callsRowNoAnswer : .callsRowMissed)
+        case .completed:
+            durationSeconds.map { String(localized: .callsRowCallLength(Self.length(seconds: $0))) }
+                ?? String(localized: .callsRowCall)
+        }
+    }
+
+    /// "12 min", "45 sec", or "1 hr, 5 min", in the person's language.
+    static func length(seconds: Int) -> String {
+        let duration = Duration.seconds(max(0, seconds))
+        return seconds < 60
+            ? duration.formatted(.units(allowed: [.seconds], width: .abbreviated))
+            : duration.formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
     }
 }
 

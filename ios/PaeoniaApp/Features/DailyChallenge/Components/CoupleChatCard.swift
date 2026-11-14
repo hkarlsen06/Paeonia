@@ -130,12 +130,17 @@ struct CoupleChatCard: View {
         .accessibilityHidden(true)
     }
 
-    /// "Robin: Miss you" for the newest message, or the line that invites the first one.
+    /// "Robin: Miss you" for the newest message, or the line that invites the first one. A call
+    /// reads as its row does, such as "Missed call" or "Call · 12 min".
     private var previewLine: String {
         guard let summary, let text = summary.lastMessagePreview else {
             return String(localized: .chatsCoupleChatEmpty(participants.partnerName))
         }
-        let name = summary.lastMessageSenderUserID == participants.currentUserID
+        let isOwn = summary.lastMessageSenderUserID == participants.currentUserID
+        if let call = summary.lastMessageCall {
+            return call.title(isFromCurrentUser: isOwn)
+        }
+        let name = isOwn
             ? String(localized: .chatsCoupleChatYou)
             : participants.partnerName
         return String(localized: .chatsCoupleChatPreview(name, text))
