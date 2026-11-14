@@ -50,9 +50,9 @@ struct HomeMapDistanceLine: View {
         let age = PartnerLocationRecordedStatus.shortAge(capturedAt: partner.capturedAt, now: date)
         return VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
             HStack(spacing: PaeoniaSpacing.space4) {
-                // Without a compass reading the icon fades out as it was, instead of turning
-                // into an arrow that points nowhere.
-                Image(systemName: !isTogether && direction != nil ? "location.north.fill" : "person.2.fill")
+                // Apart, the arrow stays hidden until the first compass reading, so the
+                // together icon never shows on the way to it.
+                Image(systemName: isTogether ? "person.2.fill" : "location.north.fill")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.paeoniaAccentPrimary)
                     .contentTransition(.symbolEffect(.replace))
