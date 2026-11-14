@@ -133,11 +133,11 @@ struct PiccanteTile: View {
     @ViewBuilder private func sniffMarker(side: CGFloat) -> some View {
         if let sniff, !isEaten {
             Image(systemName: sniff.hasChili ? "flame.fill" : "checkmark")
-                .font(.system(size: max(11, side * 0.18), weight: .bold))
+                .font(.system(size: max(14, side * 0.22), weight: .heavy))
                 .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: max(22, side * 0.32), height: max(22, side * 0.32))
+                .frame(width: max(28, side * 0.4), height: max(28, side * 0.4))
                 .background(sniff.hasChili ? Color.paeoniaWarning : .paeoniaSurfacePrimary, in: Circle())
-                .overlay { Circle().strokeBorder(Color.paeoniaTextPrimary, lineWidth: 1.5) }
+                .overlay { Circle().strokeBorder(Color.paeoniaTextPrimary, lineWidth: 2) }
                 .shadow(color: .paeoniaWarning.opacity(sniff.hasChili ? 0.8 : 0), radius: 9)
                 .accessibilityHidden(true)
         }

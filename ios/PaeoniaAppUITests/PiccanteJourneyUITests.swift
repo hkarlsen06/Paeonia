@@ -16,17 +16,22 @@ final class PiccanteJourneyUITests: XCTestCase {
         if !sniff.isHittable { app.swipeUp() }
         XCTAssertTrue(sniff.waitForExistence(timeout: 5))
         sniff.tap()
-        let choice = app.buttons["piccante.sniff.tile.8"]
-        XCTAssertTrue(choice.waitForExistence(timeout: 5))
+        let choice = app.buttons["piccante.tile.8"]
+        if !choice.isHittable { app.swipeDown() }
         choice.tap()
-        app.buttons["piccante.sniff.confirm"].tap()
-        XCTAssertTrue(app.staticTexts["piccante.sniff.answer"].waitForExistence(timeout: 5))
+        XCTAssertTrue(choice.isSelected)
+        XCTAssertFalse(tile.isSelected)
+        let confirm = app.buttons["piccante.sniff.confirm"]
+        if !confirm.isHittable { app.swipeUp() }
+        confirm.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["piccante.sniff.answer"].waitForExistence(timeout: 5))
         if !tile.isHittable { app.swipeDown() }
         XCTAssertTrue(tile.isSelected)
+        XCTAssertFalse(choice.isSelected)
         app.terminate()
     }
 
-    @MainActor func testPrivateSniffOpensInsideBoardControls() {
+    @MainActor func testPrivateSniffWorksInsideBoardControls() {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = [
@@ -42,10 +47,13 @@ final class PiccanteJourneyUITests: XCTestCase {
         for _ in 0..<4 where !sniff.isHittable { app.swipeUp() }
         XCTAssertTrue(sniff.isHittable)
         sniff.tap()
-        let tile = app.buttons["piccante.sniff.tile.8"]
-        XCTAssertTrue(tile.waitForExistence(timeout: 5))
+        let tile = app.buttons["piccante.sniff.list.8"]
+        for _ in 0..<4 where !(tile.exists && tile.isHittable) { app.swipeDown() }
+        XCTAssertTrue(tile.isHittable)
         tile.tap()
-        app.buttons["piccante.sniff.confirm"].tap()
+        let confirm = app.buttons["piccante.controls.sniff.confirm"]
+        for _ in 0..<4 where !confirm.isHittable { app.swipeUp() }
+        confirm.tap()
         XCTAssertTrue(app.buttons["piccante.controls.sniff"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["piccante.controls.sniff"].isEnabled)
         app.terminate()

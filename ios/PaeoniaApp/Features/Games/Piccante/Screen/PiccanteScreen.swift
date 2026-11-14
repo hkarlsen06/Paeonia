@@ -10,8 +10,6 @@ struct PiccanteScreen: View {
     @AccessibilityPresentation(.controls) private var showsControls
     @State private var tutorial = false
     @State private var boardControls = false
-    @State private var sniffPicker = false
-    @State private var nativeSniffPicker = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -39,7 +37,6 @@ struct PiccanteScreen: View {
             .gameTutorial(GameTutorial(kind: .piccante, partnerName: viewModel.partnerName), isPresented: $tutorial)
             .gameLiveReactions(viewModel.reactions)
             .sheet(isPresented: $boardControls) { nativeControls }
-            .sheet(isPresented: $sniffPicker) { PiccanteSniffPicker(viewModel: viewModel) }
             .task {
                 viewModel.reduceMotion = reduceMotion
                 await viewModel.start()
@@ -118,6 +115,7 @@ extension PiccanteScreen {
                     .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: game)
                     .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.heldTile)
                     .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.sendState.isFailing)
+                    .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: viewModel.boardMode)
             }
         }
     }
@@ -179,11 +177,13 @@ extension PiccanteScreen {
     private func box(_ game: RemotePiccanteGame) -> PiccanteBox {
         PiccanteBox(
             game: game, shownBites: viewModel.shownBites, revealsChilis: viewModel.revealSettled,
-            selected: viewModel.selected, partnerSelected: viewModel.partnerSelected, pendingTile: viewModel.heldTile,
+            selected: viewModel.boardSelection, partnerSelected: viewModel.partnerSelected,
+            pendingTile: viewModel.heldTile,
             player: { $0 == viewModel.userID ? viewModel.meInfo : viewModel.partnerInfo },
             select: { viewModel.select($0) }, canSelect: viewModel.canAct,
             revealsBurn: viewModel.burnRevealed,
-            burnShake: viewModel.burnShake, currentUserID: viewModel.userID)
+            burnShake: viewModel.burnShake, currentUserID: viewModel.userID,
+            selectable: viewModel.boardMode == .bite ? nil : { viewModel.canSniff($0) })
     }
     @ViewBuilder private func controls(_ game: RemotePiccanteGame) -> some View {
         VStack(spacing: PaeoniaSpacing.space16) {
@@ -252,52 +252,17 @@ extension PiccanteScreen {
     }
     @ViewBuilder private func bitingControls(_ game: RemotePiccanteGame) -> some View {
         if viewModel.isMyTurn && viewModel.heldTile == nil {
-            if viewModel.showsBiteHint {
-                Text(.piccanteBiteHint).foregroundStyle(.paeoniaTextSecondary)
-            }
-            Button {
-                Task { await viewModel.act(.bite) }
-            } label: {
-                Text(.piccanteBiteAction)
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-            .disabled(!viewModel.canAct || viewModel.selected == nil)
-            .accessibilityIdentifier("piccante.bite")
-            if game.mySniff == nil {
-                Button {
-                    sniffPicker = true
-                } label: {
-                    Label {
-                        Text(.piccanteSniffAction)
-                    } icon: {
-                        Image(systemName: "wind")
-                    }
-                }
-                .buttonStyle(PaeoniaSecondaryButtonStyle())
-                .disabled(!viewModel.canAct)
-                .accessibilityIdentifier("piccante.sniff")
-            }
+            PiccanteTurnButtons(viewModel: viewModel, game: game)
         }
         if let sniff = game.mySniff {
-            Label {
-                Text(sniffLabel(sniff, size: game.size ?? 3))
-            } icon: {
-                Image(systemName: sniff.hasChili ? "flame" : "checkmark.shield")
-            }
-            .font(PaeoniaTypography.body).foregroundStyle(.paeoniaTextPrimary)
-            .accessibilityIdentifier("piccante.sniff.answer")
+            PiccanteSniffResultCard(sniff: sniff, partnerName: viewModel.partnerName)
+                .transition(reduceMotion ? .opacity : .scale(scale: 0.9).combined(with: .opacity))
         }
         if game.partnerSniffUsed {
             Text(.piccantePartnerSniffed(viewModel.partnerName)).font(PaeoniaTypography.caption).foregroundStyle(
                 .paeoniaTextSecondary)
         }
         GameLiveReactionButtons(isAvailable: viewModel.partnerHere, identifierPrefix: "piccante", send: viewModel.react)
-    }
-    private func sniffLabel(_ sniff: PiccanteSniff, size: Int) -> LocalizedStringResource {
-        let row = sniff.tile / size + 1
-        let column = sniff.tile % size + 1
-        if sniff.hasChili { return .piccanteSniffHot(row, column) }
-        return .piccanteSniffSafe(row, column)
     }
     @ViewBuilder private func resultControls(_ game: RemotePiccanteGame) -> some View {
         PiccanteResultNotes(game: game, userID: viewModel.userID, partnerName: viewModel.partnerName)
@@ -325,45 +290,68 @@ extension PiccanteScreen {
     private var nativeControlList: some View {
         List {
             if let game = viewModel.game {
+                if viewModel.boardMode != .bite {
+                    Text(.piccanteSniffHint(viewModel.partnerName))
+                }
                 ForEach(0..<((game.size ?? 3) * (game.size ?? 3)), id: \.self) { tile in
-                    Button {
-                        viewModel.select(tile)
-                    } label: {
-                        Text(verbatim: box(game).label(tile))
-                    }
-                    .disabled(!viewModel.canAct || game.bites.contains { $0.tile == tile })
+                    nativeTileButton(tile, in: game)
                 }
                 if game.phase == .hiding && viewModel.isMyTurn { hidingControls }
-                if game.phase == .biting { nativeBiteButtons(game) }
+                if game.phase == .biting { nativeBiteButtons }
             }
         }
     }
-    @ViewBuilder private func nativeBiteButtons(_ game: RemotePiccanteGame) -> some View {
-
+    @ViewBuilder private func nativeTileButton(_ tile: Int, in game: RemotePiccanteGame) -> some View {
+        let sniffing = viewModel.boardMode != .bite
         Button {
-            Task {
-                await viewModel.act(.bite)
-                boardControls = false
+            viewModel.select(tile)
+        } label: {
+            Text(verbatim: box(game).label(tile))
+        }
+        .disabled(
+            !viewModel.canAct || game.bites.contains { $0.tile == tile } || (sniffing && !viewModel.canSniff(tile)))
+        .accessibilityIdentifier(sniffing ? "piccante.sniff.list.\(tile)" : "piccante.controls.tile.\(tile)")
+    }
+    @ViewBuilder private var nativeBiteButtons: some View {
+        switch viewModel.boardMode {
+        case .bite:
+            Button {
+                Task {
+                    await viewModel.act(.bite)
+                    boardControls = false
+                }
+            } label: {
+                Text(.piccanteBiteAction)
             }
-        } label: {
-            Text(.piccanteBiteAction)
+            .disabled(viewModel.selected == nil || !viewModel.canAct)
+            Button {
+                viewModel.startSniff()
+            } label: {
+                Text(.piccanteSniffAction)
+            }
+            .disabled(!viewModel.canStartSniff)
+            .accessibilityIdentifier("piccante.controls.sniff")
+        case .sniff(let target):
+            Button {
+                Task { await viewModel.confirmSniff() }
+            } label: {
+                Text(.piccanteSniffConfirm)
+            }
+            .disabled(target == nil || !viewModel.canAct)
+            .accessibilityIdentifier("piccante.controls.sniff.confirm")
+            Button {
+                viewModel.cancelSniff()
+            } label: {
+                Text(.commonCancel)
+            }
+            .accessibilityIdentifier("piccante.controls.sniff.cancel")
         }
-        .disabled(viewModel.selected == nil || !viewModel.canAct)
-        Button {
-            nativeSniffPicker = true
-        } label: {
-            Text(.piccanteSniffAction)
-        }
-        .disabled(game.mySniff != nil || !viewModel.canAct)
-        .accessibilityIdentifier("piccante.controls.sniff")
-
     }
     private var nativeControls: some View {
         NavigationStack {
             nativeControlList
                 .paeoniaGroupedList()
                 .navigationTitle(Text(.piccanteBoardControls))
-                .sheet(isPresented: $nativeSniffPicker) { PiccanteSniffPicker(viewModel: viewModel) }
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button {

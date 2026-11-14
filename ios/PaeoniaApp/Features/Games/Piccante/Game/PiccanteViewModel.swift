@@ -7,6 +7,7 @@ final class PiccanteViewModel {
     var game: RemotePiccanteGame?
     var participants = GameParticipants()
     var selected: Int?
+    var boardMode = PiccanteBoardMode.bite
     var partnerSelected: Int?
     var note = "" {
         didSet {
@@ -77,7 +78,7 @@ final class PiccanteViewModel {
         switch game.phase {
         case .choosing: return .piccanteChooseTitle
         case .hiding: return .piccanteHideTitle
-        case .biting: return .piccanteBiteTitle
+        case .biting: return boardMode == .bite ? .piccanteBiteTitle : .piccanteSniffTitle
         case .finished: return .piccanteFinished
         }
     }
@@ -90,6 +91,7 @@ final class PiccanteViewModel {
             state = nil
             game = nil
             selected = nil
+            boardMode = .bite
             partnerSelected = nil
             note = ""
             deferredResult = nil
@@ -196,7 +198,9 @@ final class PiccanteViewModel {
             selected = nil
             partnerSelected = nil
             lastHeartbeatLift = nil
+            boardMode = .bite
         }
+        if next?.mySniff != nil { boardMode = .bite }
         game = next
         if versionChanged { sendSelection() }
         if let game, replayTask == nil, shownBites != game.bites.count || !revealSettled && game.phase == .finished {
@@ -228,6 +232,12 @@ final class PiccanteViewModel {
     }
     func select(_ tile: Int) {
         guard let game, canAct, !game.bites.contains(where: { $0.tile == tile }) else { return }
+        if case .sniff = boardMode {
+            guard canSniff(tile) else { return }
+            boardMode = .sniff(target: tile)
+            PaeoniaHaptics.selection()
+            return
+        }
         selected = tile
         PaeoniaHaptics.selection()
         GameSound.piccanteLift.play()

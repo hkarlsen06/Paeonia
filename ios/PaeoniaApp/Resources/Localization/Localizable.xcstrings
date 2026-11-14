@@ -34103,6 +34103,24 @@
         }
       }
     },
+    "piccante.sniff.confirm" : {
+      "comment" : "Piccante button that sniffs the chosen chocolate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sniff this one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lukt på denne"
+          }
+        }
+      }
+    },
     "piccante.sniff.failed.offline" : {
       "comment" : "Piccante sniff failure. Do not reveal the chocolate or its contents.",
       "extractionState" : "manual",
@@ -34139,20 +34157,56 @@
         }
       }
     },
-    "piccante.sniff.hot" : {
-      "comment" : "Piccante game. sniff hot.",
+    "piccante.sniff.hint" : {
+      "comment" : "Piccante hint under the board while picking a chocolate to sniff. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Row %1$lld, column %2$lld hides a chili."
+            "value" : "Tap the one you want to sniff. Only you find out if it hides %@'s chili."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rad %1$lld, kolonne %2$lld skjuler en chili."
+            "value" : "Trykk på den du vil lukte på. Bare du får vite om den skjuler chilien til %@."
+          }
+        }
+      }
+    },
+    "piccante.sniff.hot.message" : {
+      "comment" : "Piccante private sniff result when the chocolate hides the partner's chili. The flame marks it on the board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't bite the chocolate with the flame. Only you know it's there."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke bit i sjokoladen med flammen. Bare du vet at den er der."
+          }
+        }
+      }
+    },
+    "piccante.sniff.hot.title" : {
+      "comment" : "Piccante private sniff result title when the chocolate hides the partner's chili. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That's %@'s chili"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der er chilien til %@"
           }
         }
       }
@@ -34193,38 +34247,56 @@
         }
       }
     },
-    "piccante.sniff.private" : {
-      "comment" : "Explanation in the private Piccante sniff picker.",
+    "piccante.sniff.safe.message" : {
+      "comment" : "Piccante private sniff result when the chocolate has no chili. The box is the board of chocolates.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pick one privately. Your partner will only know that you used your sniff."
+            "value" : "No chili in the chocolate you sniffed. It has a check on the box."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg en bit i skjul. Partneren din får bare vite at du har brukt nesen."
+            "value" : "Det er ingen chili i sjokoladen du luktet på. Den har en hake i esken."
           }
         }
       }
     },
-    "piccante.sniff.safe" : {
-      "comment" : "Piccante game. sniff safe.",
+    "piccante.sniff.safe.title" : {
+      "comment" : "Piccante private sniff result title when the chocolate has no chili.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Row %1$lld, column %2$lld is safe."
+            "value" : "Safe to bite"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rad %1$lld, kolonne %2$lld er trygg."
+            "value" : "Trygg å bite i"
+          }
+        }
+      }
+    },
+    "piccante.sniff.title" : {
+      "comment" : "Piccante title above the board while the person picks a chocolate to sniff.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sniff a chocolate"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lukt på en sjokoladebit"
           }
         }
       }
