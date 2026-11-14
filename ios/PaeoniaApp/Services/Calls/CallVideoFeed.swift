@@ -45,17 +45,12 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
     func setSize(_ size: CGSize) {}
 
     func renderFrame(_ frame: RTCVideoFrame?) {
-        guard let frame, let pixelBuffer = pixelBuffer(for: frame),
-              let sampleBuffer = Self.sampleBuffer(pixelBuffer, timeStampNs: frame.timeStampNs)
-        else {
-            return
-        }
+        guard let frame, let sample = sampleBuffer(for: frame) else { return }
         let rotation = frame.rotation
         let isQuarterTurn = rotation == ._90 || rotation == ._270
         let size = isQuarterTurn
             ? CGSize(width: Int(frame.height), height: Int(frame.width))
             : CGSize(width: Int(frame.width), height: Int(frame.height))
-        nonisolated(unsafe) let sample = sampleBuffer
         DispatchQueue.main.async {
             MainActor.assumeIsolated {
                 self.show(sample, rotation: rotation, size: size)
@@ -64,14 +59,25 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
     }
 
     @MainActor
-    private func show(_ sampleBuffer: CMSampleBuffer, rotation: RTCVideoRotation, size: CGSize) {
+    private func show(_ sample: CallVideoSample, rotation: RTCVideoRotation, size: CGSize) {
         if size != frameSize {
             frameSize = size
             onFrameSize?(size)
         }
         for view in liveViews {
-            view.enqueue(sampleBuffer, rotation: rotation)
+            view.enqueue(sample, rotation: rotation)
         }
+    }
+
+    private func sampleBuffer(for frame: RTCVideoFrame) -> CallVideoSample? {
+        guard let pixelBuffer = pixelBuffer(for: frame) else { return nil }
+        var sample = CMReadySampleBuffer(
+            pixelBuffer: CVReadOnlyPixelBuffer(unsafeBuffer: pixelBuffer),
+            presentationTimeStamp: CMTime(value: frame.timeStampNs, timescale: 1_000_000_000)
+        )
+        // The renderer's synchronizer never runs, so each frame shows as soon as it arrives.
+        sample.sampleAttachments.displayImmediately = true
+        return CallVideoSample(sample)
     }
 
     private func pixelBuffer(for frame: RTCVideoFrame) -> CVPixelBuffer? {
@@ -133,32 +139,12 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
         return created
     }
 
-    private static func sampleBuffer(_ pixelBuffer: CVPixelBuffer, timeStampNs: Int64) -> CMSampleBuffer? {
-        guard let format = try? CMVideoFormatDescription(imageBuffer: pixelBuffer) else {
-            return nil
-        }
-        let timing = CMSampleTimingInfo(
-            duration: .invalid,
-            presentationTimeStamp: CMTime(value: timeStampNs, timescale: 1_000_000_000),
-            decodeTimeStamp: .invalid
-        )
-        guard let sample = try? CMSampleBuffer(
-            imageBuffer: pixelBuffer,
-            formatDescription: format,
-            sampleTiming: timing
-        ) else {
-            return nil
-        }
-        if !sample.sampleAttachments.isEmpty {
-            sample.sampleAttachments[0][.displayImmediately] = true
-        }
-        return sample
-    }
-
     private struct WeakVideoView {
         weak var view: CallVideoLayerView?
     }
 }
+
+typealias CallVideoSample = CMReadySampleBuffer<CMSampleBuffer.DynamicContent>
 
 /// Shows one side's video, filled to its bounds and turned the way the sender held the phone.
 final class CallVideoLayerView: UIView {
@@ -169,10 +155,18 @@ final class CallVideoLayerView: UIView {
         didSet { setNeedsLayout() }
     }
 
-    private let displayLayer = AVSampleBufferDisplayLayer()
+    private let displayLayer: AVSampleBufferDisplayLayer
+    /// The display layer's renderer takes frames only through a synchronizer's receiver.
+    private let synchronizer: AVSampleBufferRenderSynchronizer
+    private let receiver: AVSampleBufferVideoRenderer.Receiver
     private var rotation: RTCVideoRotation = ._0
 
     override init(frame: CGRect) {
+        let displayLayer = AVSampleBufferDisplayLayer()
+        let synchronizer = AVSampleBufferRenderSynchronizer()
+        receiver = synchronizer.sampleBufferReceiver(adding: displayLayer.sampleBufferRenderer)
+        self.displayLayer = displayLayer
+        self.synchronizer = synchronizer
         super.init(frame: frame)
         backgroundColor = .black
         clipsToBounds = true
@@ -209,20 +203,22 @@ final class CallVideoLayerView: UIView {
         CATransaction.commit()
     }
 
-    func enqueue(_ sampleBuffer: CMSampleBuffer, rotation: RTCVideoRotation) {
+    func enqueue(_ sample: CallVideoSample, rotation: RTCVideoRotation) {
         if rotation != self.rotation {
             self.rotation = rotation
             setNeedsLayout()
         }
-        let renderer = displayLayer.sampleBufferRenderer
-        // The layer stops after the app was in the background. A flush starts it again.
-        if renderer.status == .failed || renderer.requiresFlushToResumeDecoding {
-            renderer.flush()
+        switch receiver.enqueueImmediately(sample) {
+        case .cancelledDueToFlushRequiredToResume, .cancelledDueToError:
+            // The renderer stops after the app was in the background. A flush starts it again.
+            receiver.flush()
+            _ = receiver.enqueueImmediately(sample)
+        default:
+            break
         }
-        renderer.enqueue(sampleBuffer)
     }
 
     func flush() {
-        displayLayer.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
+        Task { await receiver.flush(removingDisplayedImage: true) }
     }
 }
