@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// How far across the Us tab's tile pictures reach: from the calendar's left edge to the
-/// drawing's right edge, in `HomeTileExtent.space`. On the map layout the waiting question
-/// row narrows to it, so it is no wider than the tiles under it.
+/// drawing's right edge, in `HomeTileExtent.space`. On the map layout today's question
+/// narrows to it, so it is no wider than the tiles under it.
 nonisolated struct HomeTileExtent: Equatable {
     static let space = "homeTiles"
 
@@ -42,6 +42,12 @@ extension View {
         }
     }
 
+    /// Narrows this view to the tile pictures' edges where `sharesHomeTileExtent` hands them
+    /// down. Elsewhere it keeps its width.
+    func narrowsToHomeTiles() -> some View {
+        modifier(HomeTileNarrowing())
+    }
+
     /// Hands the tile pictures' edges inside this view to the views around them.
     func sharesHomeTileExtent() -> some View {
         modifier(HomeTileExtentSharing())
@@ -56,5 +62,22 @@ private struct HomeTileExtentSharing: ViewModifier {
             .environment(\.homeTileExtent, extent)
             .onPreferenceChange(HomeTileExtentKey.self) { extent = $0 }
             .coordinateSpace(.named(HomeTileExtent.space))
+    }
+}
+
+private struct HomeTileNarrowing: ViewModifier {
+    @Environment(\.homeTileExtent) private var extent
+    /// This view's frame in `HomeTileExtent.space` before it narrows. The insets sit inside
+    /// the measured frame, so narrowing doesn't change what is measured.
+    @State private var frame: CGRect?
+
+    func body(content: Content) -> some View {
+        let insets = if let extent, let frame { extent.insets(for: frame) } else { (leading: 0.0, trailing: 0.0) }
+        content
+            .padding(.leading, insets.leading)
+            .padding(.trailing, insets.trailing)
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(HomeTileExtent.space)) } action: {
+                frame = $0
+            }
     }
 }

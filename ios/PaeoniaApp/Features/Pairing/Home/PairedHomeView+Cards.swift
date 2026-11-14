@@ -264,6 +264,8 @@ extension PairedHomeView {
             onAnswer: onOpenDailyChallenge,
             onOpenPartnerQuestion: onOpenPartnerQuestion
         )
+        // On the map layout, no wider than the calendar and the drawing under it.
+        .narrowsToHomeTiles()
         .zoomSource(DailyFlowZoom.us, in: zoomNamespace)
     }
 
