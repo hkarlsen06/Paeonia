@@ -176,8 +176,6 @@ struct MilestoneCountdownCard: View {
         VStack(spacing: PaeoniaSpacing.space8) {
             CountdownCalendarView(face: face, burstID: burstID)
                 .aspectRatio(450.0 / 447.0, contentMode: .fit)
-                // A solid pale block outweighs the outlined drawing beside it at the same size.
-                .scaleEffect(0.88)
                 .homeTilePicture()
                 .frame(maxWidth: .infinity, maxHeight: dynamicTypeSize.isAccessibilitySize ? nil : .infinity)
 
@@ -187,7 +185,11 @@ struct MilestoneCountdownCard: View {
                 .contentTransition(.opacity)
                 .paeoniaLoadingReveal(isLoading, delay: 0.1)
                 .multilineTextAlignment(.center)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                // One line that shrinks a little instead of ending in "…", like the drawing's
+                // label beside it. Text drawn on a phone can come out a hair wider than it was
+                // measured, which cut "until 2 months" to "until 2 mon…".
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .milestoneTileChrome(keepsSquare: !dynamicTypeSize.isAccessibilitySize)
