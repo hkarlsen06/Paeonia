@@ -13297,6 +13297,48 @@
         }
       }
     },
+    "games.conversation.result.run.title" : {
+      "comment" : "Compact card for several games finished one after another in their shared chat, opened to list each game. %lld is the number of games, always 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld game finished"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld games finished"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld spill er ferdig"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld spill er ferdig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "games.conversation.result.title" : {
       "comment" : "Compact card for a finished game result in its shared chat",
       "extractionState" : "manual",

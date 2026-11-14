@@ -158,7 +158,8 @@ struct ThreadChatView: View {
             reactions: viewModel.chatReactions,
             header: viewModel.header,
             pendingAnswer: pendingAnswer,
-            gameResults: viewModel.gameResultCards
+            gameResults: viewModel.gameResultCards,
+            expandedGameRunIDs: viewModel.expandedGameRunIDs
         )
     }
 
@@ -285,6 +286,7 @@ struct ThreadChatView: View {
             onOpenPhoto: openPhoto,
             onOpenHeader: onOpenHeader,
             onToggleGameResult: { reference in Task { await viewModel.toggleGameResult(reference) } },
+            onToggleGameRun: { viewModel.toggleGameRun($0) },
             onReplyGameResult: { viewModel.setReplyTarget($0) },
             onReloadGameResult: { reference in Task { await viewModel.loadGameResult(reference.source) } },
             timestampReveal: timestampReveal,
@@ -394,7 +396,8 @@ extension ThreadChatView {
             onReport?(.dailyAnswer(answerID: answer.answerID))
         case let .message(target):
             onReport?(.threadMessage(messageID: target.id))
-        case .question, .partnerChoiceMatch, .waiting, .subjectHeader, .note, .typing, .pendingAnswer, .gameResult:
+        case .question, .partnerChoiceMatch, .waiting, .subjectHeader, .note, .typing, .pendingAnswer, .gameResult,
+             .gameResultRun:
             break
         }
     }

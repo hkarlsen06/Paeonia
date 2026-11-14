@@ -63,6 +63,8 @@ extension ThreadChatViewModel {
             }
         }
         guard gameReferences.contains(where: { $0.source == source }) else { return }
+        // Its run stays open when the person closes the result again.
+        expandedGameRunIDs.insert(source.id)
         expandedGameResultIDs.insert(source.id)
         await loadGameResult(source)
         focusedGameResultID = source.id
@@ -74,6 +76,17 @@ extension ThreadChatViewModel {
         } else {
             expandedGameResultIDs.insert(reference.id)
             await loadGameResult(reference.source)
+        }
+    }
+
+    /// Closing a run closes the games opened inside it too, so it folds back to one line.
+    func toggleGameRun(_ run: GameChatResultRun) {
+        if run.isExpanded {
+            let ids = Set(run.results.map(\.reference.id))
+            expandedGameRunIDs.subtract(ids)
+            expandedGameResultIDs.subtract(ids)
+        } else {
+            expandedGameRunIDs.insert(run.id)
         }
     }
 
@@ -113,4 +126,12 @@ nonisolated struct GameChatResultCard: Hashable, Sendable {
     let result: GameConversationResult?
     let isExpanded: Bool
     let loadState: GameConversationLoadState
+}
+
+nonisolated struct GameChatResultRun: Hashable, Sendable {
+    /// Oldest first, always two or more.
+    let results: [GameChatResultCard]
+    let isExpanded: Bool
+
+    var id: UUID { results[0].reference.id }
 }

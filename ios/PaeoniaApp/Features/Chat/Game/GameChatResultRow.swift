@@ -17,7 +17,6 @@ struct GameChatResultRow: View {
             }
         }
         .padding(.horizontal, PaeoniaSpacing.space12)
-        .padding(.vertical, PaeoniaSpacing.space4)
         .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
         .frame(maxWidth: .infinity)
     }
@@ -55,15 +54,32 @@ struct GameChatResultRow: View {
 
     /// The day divider above already names the day, so the line shows only the time.
     private var line: some View {
+        GameChatResultLine(isExpanded: card.isExpanded, isFilled: !card.isExpanded) {
+            Text(.gamesConversationResultTitle)
+        } time: {
+            Text(card.reference.finishedAt, format: .dateTime.hour().minute())
+        }
+    }
+}
+
+/// The quiet line a finished game, or a run of them, shows among the messages.
+struct GameChatResultLine<Title: View, Time: View>: View {
+    let isExpanded: Bool
+    /// False when the line heads an open result, whose card draws the background.
+    let isFilled: Bool
+    @ViewBuilder let title: Title
+    @ViewBuilder let time: Time
+
+    var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
             Image(systemName: "flag.checkered")
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .accessibilityHidden(true)
-            Text(.gamesConversationResultTitle)
+            title
                 .foregroundStyle(.paeoniaTextPrimary)
-            Text(card.reference.finishedAt, format: .dateTime.hour().minute())
+            time
                 .foregroundStyle(.paeoniaTextSecondary)
-            Image(systemName: card.isExpanded ? "chevron.up" : "chevron.down")
+            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                 .imageScale(.small)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .accessibilityHidden(true)
@@ -72,7 +88,7 @@ struct GameChatResultRow: View {
         .padding(.horizontal, PaeoniaSpacing.space12)
         .padding(.vertical, PaeoniaSpacing.space4)
         .background {
-            if !card.isExpanded { Capsule().fill(.paeoniaSurfaceSecondary) }
+            if isFilled { Capsule().fill(.paeoniaSurfaceSecondary) }
         }
         .frame(minHeight: 44)
         .contentShape(Rectangle())

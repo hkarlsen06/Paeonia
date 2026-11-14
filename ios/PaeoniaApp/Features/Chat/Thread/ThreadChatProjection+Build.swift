@@ -60,6 +60,7 @@ extension ThreadChatProjection {
                 let rhsKey = resultKeys[$1.row.id] ?? $1.row.message?.id.uuidString.lowercased() ?? $1.row.id
                 return ($0.row.createdAt, lhsKind, lhsKey) < ($1.row.createdAt, rhsKind, rhsKey)
             }
+            placed = foldingResultRuns(placed, input: input)
         }
         if let header = input.header, header.gameSubject == nil {
             placed.insert(contentsOf: subjectRows(header, before: placed, input: input), at: 0)
@@ -87,6 +88,44 @@ extension ThreadChatProjection {
         status: ExyteChat.Message.Status? = nil
     ) -> PlacedRow {
         PlacedRow(row: row, user: user, redrawToken: redrawToken(of: redrawKey), text: text, status: status)
+    }
+
+    /// Two or more finished games with nothing between them fold into one run row, which
+    /// lists them when opened. ExyteChat starts each day with `Calendar.current`, so a run
+    /// never crosses a day line.
+    private static func foldingResultRuns(_ rows: [PlacedRow], input: Input) -> [PlacedRow] {
+        var folded: [PlacedRow] = []
+        var run: [(placed: PlacedRow, card: GameChatResultCard)] = []
+        func endRun() {
+            defer { run = [] }
+            guard run.count > 1, let first = run.first else {
+                folded += run.map(\.placed)
+                return
+            }
+            let cards = run.map(\.card)
+            let isExpanded = cards.contains {
+                $0.isExpanded || input.expandedGameRunIDs.contains($0.reference.id)
+            }
+            let group = GameChatResultRun(results: cards, isExpanded: isExpanded)
+            folded.append(placedRow(
+                decoration(gameRunRowID(group.id), .gameResultRun(group), at: first.placed.row.createdAt),
+                user: first.placed.user, redrawKey: group))
+            if isExpanded { folded += run.map(\.placed) }
+        }
+        for placed in rows {
+            guard case let .gameResult(card) = placed.row.kind else {
+                endRun()
+                folded.append(placed)
+                continue
+            }
+            if let last = run.last,
+                !Calendar.current.isDate(last.placed.row.createdAt, inSameDayAs: placed.row.createdAt) {
+                endRun()
+            }
+            run.append((placed, card))
+        }
+        endRun()
+        return folded
     }
 
     // MARK: - One day

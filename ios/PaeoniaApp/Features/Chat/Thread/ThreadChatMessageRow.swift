@@ -32,6 +32,7 @@ struct ThreadChatMessageRow: View {
     /// Opens the memory or story a header row shows. Nil leaves the header without a tap.
     var onOpenHeader: (() -> Void)?
     var onToggleGameResult: (GameChatResultReference) -> Void = { _ in }
+    var onToggleGameRun: (GameChatResultRun) -> Void = { _ in }
     var onReplyGameResult: (GameChatResultReference) -> Void = { _ in }
     var onReloadGameResult: (GameChatResultReference) -> Void = { _ in }
     /// Read only by the row views, so a swipe redraws them and not the page around them.
@@ -65,9 +66,10 @@ struct ThreadChatMessageRow: View {
         case let .subjectHeader(header):
             ThreadChatHeaderCard(header: header, onOpen: onOpenHeader)
         case let .gameResult(card):
-            GameChatResultRow(card: card, participants: participants,
-                onToggle: { onToggleGameResult(card.reference) },
+            GameChatResultRow(card: card, participants: participants, onToggle: { onToggleGameResult(card.reference) },
                 onReply: { onReplyGameResult(card.reference) }, onRetry: { onReloadGameResult(card.reference) })
+        case let .gameResultRun(run):
+            GameChatResultRunRow(run: run, onToggle: { onToggleGameRun(run) })
         default:
             bubbleRow
         }
@@ -189,7 +191,7 @@ struct ThreadChatMessageRow: View {
             }
             .accessibilityElement(children: .contain)
             .accessibilityActions { itemAccessibilityActions }
-        case .partnerChoiceMatch, .waiting, .subjectHeader, .pendingAnswer, .gameResult:
+        case .partnerChoiceMatch, .waiting, .subjectHeader, .pendingAnswer, .gameResult, .gameResultRun:
             EmptyView()
         case .typing:
             bubble(fill: .paeoniaSurfacePrimary) {

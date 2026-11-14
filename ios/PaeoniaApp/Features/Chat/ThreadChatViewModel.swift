@@ -78,6 +78,8 @@ final class ThreadChatViewModel {
     var gameResults: [UUID: GameConversationResult] = [:]
     /// Results start collapsed. Opening one keeps it open for this visit.
     var expandedGameResultIDs: Set<UUID> = []
+    /// Runs of finished games opened this visit, by the id of a game in the run.
+    var expandedGameRunIDs: Set<UUID> = []
     var gameResultLoadStates: [UUID: GameConversationLoadState] = [:]
     var focusedGameResultID: UUID?
     /// The message, answer or finished result the next send replies to.
@@ -386,6 +388,7 @@ private extension ThreadChatViewModel {
         let validIDs = Set(gameReferences.map(\.id))
         gameResults = gameResults.filter { validIDs.contains($0.key) }
         expandedGameResultIDs.formIntersection(validIDs)
+        expandedGameRunIDs.formIntersection(validIDs)
         if case let .gameResult(result)? = replyTarget, !validIDs.contains(result.id) { replyTarget = nil }
     }
 }
