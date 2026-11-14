@@ -7,8 +7,9 @@ import UIKit.UIGestureRecognizerSubclass
 @Observable
 final class HomeMapExplorer {
     private(set) var isExploring = false
-    /// The map's zoom and direction when the person started moving it.
-    @ObservationIgnored private(set) var start: (zoom: Double, direction: Double)?
+    /// The map's zoom and direction when the person started moving it. Kept until the map
+    /// lands back on the couple, so the avatars grow and turn with it on the way back.
+    private(set) var start: (zoom: Double, direction: Double)?
     /// Set by the map once its intro has played. Gestures do nothing without it.
     @ObservationIgnored private(set) weak var map: MLNMapView?
     /// Moves the map back to the couple's framing.
@@ -73,8 +74,13 @@ final class HomeMapExplorer {
 
     func showBoth() {
         isExploring = false
-        start = nil
         reframe()
+    }
+
+    /// The map has landed on the couple's framing.
+    func landed() {
+        guard !isExploring else { return }
+        start = nil
     }
 
     func pan(horizontal: CGFloat, vertical: CGFloat) {
@@ -104,7 +110,8 @@ final class HomeMapExplorer {
         _ coordinate: CLLocationCoordinate2D, at point: CGPoint, zoom: Double, direction: Double, on map: MLNMapView
     ) {
         if !isExploring {
-            start = (map.zoomLevel, map.direction)
+            // Caught on its way back, the map still measures from where the couple sits.
+            if start == nil { start = (map.zoomLevel, map.direction) }
             isExploring = true
         }
         map.tileLodZoomShift = HomeMapLibreView.tileDetailShift(zoom: zoom)

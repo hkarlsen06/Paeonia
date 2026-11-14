@@ -98,6 +98,7 @@ struct HomeMapLibreView: UIViewRepresentable {
         map.tileLodZoomShift = Self.tileDetailShift(zoom: camera.zoom)
         guard animated else {
             map.setCenter(camera.center, zoomLevel: camera.zoom, direction: heading, animated: false)
+            explorer?.landed()
             return
         }
         // A timed camera move takes an altitude, not a zoom. At the same view size and no
@@ -115,6 +116,7 @@ struct HomeMapLibreView: UIViewRepresentable {
             guard let map, isCurrent() else { return }
             // Lands exactly on the worked-out zoom.
             map.setCenter(camera.center, zoomLevel: camera.zoom, direction: heading, animated: false)
+            explorer?.landed()
         }
     }
 
