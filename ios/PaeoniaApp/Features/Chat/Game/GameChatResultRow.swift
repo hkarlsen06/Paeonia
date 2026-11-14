@@ -22,24 +22,25 @@ struct GameChatResultRow: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// The open result keeps the pill's width, so it reads as the pill grown downward.
     private var expanded: some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            HStack(spacing: PaeoniaSpacing.space4) {
-                toggle
+        PillWidthStack {
+            toggle
+            VStack(spacing: PaeoniaSpacing.space8) {
+                GameConversationHeader(
+                    result: card.result, participants: participants,
+                    loadState: card.loadState, onRetry: onRetry)
                 Button(action: onReply) {
-                    Image(systemName: "arrowshape.turn.up.left")
-                        .frame(minWidth: 44, minHeight: 44)
+                    Label(.dailyChatActionReply, systemImage: "arrowshape.turn.up.left")
+                        .font(PaeoniaTypography.caption.weight(.semibold))
+                        .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.paeoniaAccentPrimary)
-                .accessibilityLabel(Text(.dailyChatActionReply))
                 .accessibilityIdentifier("game.conversation.result.reply")
             }
-            GameConversationHeader(
-                result: card.result, participants: participants,
-                loadState: card.loadState, onRetry: onRetry)
+            .padding([.horizontal, .bottom], PaeoniaSpacing.space12)
         }
-        .padding(PaeoniaSpacing.space12)
         .background(.paeoniaSurfaceSecondary, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
     }
 
@@ -73,7 +74,30 @@ struct GameChatResultRow: View {
         .background {
             if !card.isExpanded { Capsule().fill(.paeoniaSurfaceSecondary) }
         }
-        .frame(maxWidth: card.isExpanded ? .infinity : nil, minHeight: 44, alignment: .leading)
+        .frame(minHeight: 44)
         .contentShape(Rectangle())
+    }
+}
+
+/// Stacks its views at the first view's own width, which the rest fill and wrap to.
+private struct PillWidthStack: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = width(of: subviews)
+        let height = subviews.reduce(0) { $0 + $1.sizeThatFits(.init(width: width, height: nil)).height }
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let width = width(of: subviews)
+        var y = bounds.minY
+        for subview in subviews {
+            let size = ProposedViewSize(width: width, height: nil)
+            subview.place(at: CGPoint(x: bounds.midX, y: y), anchor: .top, proposal: size)
+            y += subview.sizeThatFits(size).height
+        }
+    }
+
+    private func width(of subviews: Subviews) -> CGFloat {
+        subviews.first?.sizeThatFits(.unspecified).width ?? 0
     }
 }
