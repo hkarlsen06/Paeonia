@@ -47,14 +47,17 @@ final class GameHubPalettes {
         GameHubPalette(images: images)
     }
 
-    /// Drawings and photos load on their own, so their palette comes from the loaded images.
+    /// Drawings load on their own, so their palette comes from the loaded images.
     private static func images(
         of source: GameHubPaletteSource, drawings: GameHistoryDrawings?, render: () -> CGImage?
     ) async -> [CGImage] {
-        switch source {
+        if case .content(.spot(let preview)) = source {
+            // The rendered picture shows the map only once its still is made.
+            _ = await GuessMySpotPreviewMaps.shared.load(preview)
+        }
+        return switch source {
         case .content(.drawing(let id)): await Self.drawings([id], from: drawings)
         case .content(.creature(let ids)): await Self.drawings(ids, from: drawings)
-        case .content(.photo(let id)): await photo(id)
         case .illustration, .content: render().map { [$0] } ?? []
         }
     }
@@ -66,13 +69,6 @@ final class GameHubPalettes {
             if let image = await drawings.thumbnail(for: id)?.cgImage { images.append(image) }
         }
         return images
-    }
-
-    private static func photo(_ id: UUID) async -> [CGImage] {
-        guard let data = await MemoryMediaImageProviderFactory.shared?.imageData(for: id),
-              let image = await MemoryImageDecoding.downsample(data, maxPixelSize: 64)?.cgImage
-        else { return [] }
-        return [image]
     }
 
     /// `view` drawn 96 pixels wide, enough to read its colors.

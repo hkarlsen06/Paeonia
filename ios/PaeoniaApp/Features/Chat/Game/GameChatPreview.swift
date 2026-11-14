@@ -5,7 +5,7 @@ nonisolated enum GameChatPreview: Equatable, Sendable {
     case board(GameChatBoardPreview)
     case drawing(UUID)
     case creature([UUID])
-    case photo(UUID)
+    case spot(GuessMySpotPreview)
     case words(String, String)
     case story(String)
     case scale(spot: Int, guess: Int)
@@ -20,6 +20,15 @@ nonisolated struct GameChatBoardPreview: Equatable, Sendable {
     let moves: [Int]
     let me: BoardPlayer
     var colors = LudoColorPair.standard
+}
+
+/// A revealed Guess my spot round: the guess, the real spot and the line between them.
+nonisolated struct GuessMySpotPreview: Hashable, Sendable {
+    let guess: GuessMySpotCoordinate
+    let spot: GuessMySpotCoordinate
+    /// This person made the guess, so the guess pin is theirs and the spot pin the partner's.
+    let guessedByMe: Bool
+    let isFar: Bool
 }
 
 struct GameChatPreviewLoader {
@@ -39,8 +48,7 @@ struct GameChatPreviewLoader {
             guard let figure = figures.first(where: \.isFinished) else { return nil }
             return .creature(figure.parts.sorted { $0.partIndex < $1.partIndex }.compactMap(\.drawingMediaAssetID))
         case .guessMySpot:
-            let state = await dependencies.guessMySpotCache.document(ownerUserID: userID).state
-            return (state?.currentRound ?? state?.previousRound).map { .photo($0.photoMediaAssetID) }
+            return await loadSpot(userID: userID)
         case .mindMeld:
             return await loadWords(userID: userID)
         case .storyChain:
@@ -50,6 +58,23 @@ struct GameChatPreviewLoader {
         case .consensio:
             return await loadScale(userID: userID)
         }
+    }
+
+    /// The newest round whose reveal this person has seen, so the hub never spoils one.
+    private func loadSpot(userID: UUID) async -> GameChatPreview? {
+        let state = await dependencies.guessMySpotCache.document(ownerUserID: userID).state
+        let pending =
+            await GuessMySpotPendingWork.load(from: dependencies.pendingOperationStore, ownerUserID: userID) ?? .none
+        for round in [state?.currentRound, state?.previousRound].compactMap({ $0 }) {
+            guard let guess = round.guess, let spot = round.spot,
+                round.myRevealSeenAt != nil || pending.seenReveals.contains(round.id)
+            else { continue }
+            return .spot(
+                GuessMySpotPreview(
+                    guess: guess, spot: spot, guessedByMe: round.guesserUserID == userID,
+                    isFar: GuessMySpotRules.verdict(distanceMeters: round.knownDistance ?? 0) == .far))
+        }
+        return nil
     }
 
     private func loadPiccante(userID: UUID) async -> GameChatPreview? {

@@ -26,8 +26,8 @@ struct GameChatPreviewContent<Fallback: View>: View {
             drawing([id])
         case .creature(let ids):
             drawing(ids)
-        case .photo(let id):
-            MemoryMediaImageView(mediaAssetID: id, height: GameChatPreview.side, cornerRadius: 0, allowsViewing: false)
+        case .spot(let preview):
+            GuessMySpotPreviewMap(preview: preview)
         case .words(let mine, let theirs):
             VStack(spacing: PaeoniaSpacing.space12) {
                 word(mine, color: .boardGameMine).rotationEffect(.degrees(-5))
