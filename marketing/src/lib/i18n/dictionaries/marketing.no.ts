@@ -16,16 +16,8 @@ export const marketingNo = {
     primaryCta: 'Jeg er interessert',
     secondaryCta: 'Se spillene',
     note: 'Kommer snart til iPhone og iPad',
-    screenshots: [
-      {
-        src: 'home',
-        alt: 'Hjemskjermen i Paeonia med bildene og notatene til begge, nedtelling til neste besøk, en felles tegning og et kart.',
-      },
-      {
-        src: 'ludo',
-        alt: 'Et parti Ludo på et trebord med croissanter, en liten plante og en kopp kakao til hver av dem. Brikkene til hver av dem har merket de tegnet selv.',
-      },
-    ],
+    filmLabel:
+      'En film på 30 sekunder om Paeonia: en liten tegning i en widget på hjemskjermen, dagens spørsmål med bildesvarene til begge, Ludo, Tegn og gjett og minnene deres.',
   },
   games: {
     title: 'Spillkveld for to, hvilken kveld som helst',

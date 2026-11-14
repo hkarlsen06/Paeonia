@@ -16,16 +16,8 @@ export const marketingEn = {
     primaryCta: "I'm interested",
     secondaryCta: 'See the games',
     note: 'Coming soon to iPhone and iPad',
-    screenshots: [
-      {
-        src: 'home',
-        alt: 'The Paeonia home screen with both partners\' photos and notes, a countdown to the next visit, a shared drawing, and a map.',
-      },
-      {
-        src: 'ludo',
-        alt: 'A game of Ludo on a wooden table with croissants, a small plant and a mug of hot chocolate for each partner. Each partner\'s pieces carry the mark they drew.',
-      },
-    ],
+    filmLabel:
+      'A 30-second film of Paeonia: a little drawing in a Home Screen widget, the daily question with both partners\' photo answers, Ludo, Draw & Guess, and your memories.',
   },
   games: {
     title: 'Game night for two, any night',

@@ -106,6 +106,16 @@ The film replays the strokes of the widget drawing in `scripts/assets/app-store/
 swift scripts/app-store-drawing.swift --strokes scripts/assets/app-store/widget-drawing-plane-*.pkdrawing
 ```
 
+## The website
+
+The hero of paeonia.no plays the film in the page's language. After a full-quality render of both languages, make the website's 3 MB copies and their posters in `marketing/static/film/`:
+
+```bash
+scripts/marketing-film
+```
+
+In a worktree, where the renders are missing, point `PAEONIA_FILMS` at the folder that holds them, such as the main checkout's `video/blender/out`.
+
 ## Other assets
 
 `brand/` holds Apple's App Store badges. The headlines, colours and font come from `scripts/assets/app-store/paeonia-3d.json`, the same file as the App Store screenshots. The tagline comes from `ios/PaeoniaApp/Resources/Localization/Localizable.xcstrings`. The peony mark is the app's `PaeoniaMark` image.

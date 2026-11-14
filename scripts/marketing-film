@@ -1,0 +1,26 @@
+#!/bin/bash
+# Encodes the rendered Paeonia films for the marketing site: a 3 MB H.264 copy of each
+# language and a poster from the 2.0 s poster frame, in marketing/static/film/.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+films="${PAEONIA_FILMS:-$root/video/blender/out}"
+out="$root/marketing/static/film"
+mkdir -p "$out"
+
+# Film locale, then the site locale it plays on.
+for pair in en-US:en no:no; do
+  film="$films/paeonia-showcase-${pair%%:*}.mp4"
+  name="$out/paeonia-${pair##*:}"
+  if [[ ! -f "$film" ]]; then
+    echo "Missing $film. Render the full-quality film first (video/README.md)." >&2
+    exit 1
+  fi
+  ffmpeg -v error -y -i "$film" -map_metadata -1 \
+    -c:v libx264 -preset veryslow -crf 28 -profile:v high -pix_fmt yuv420p \
+    -c:a aac -b:a 128k -movflags +faststart "$name.mp4"
+  ffmpeg -v error -y -ss 2 -i "$film" -frames:v 1 "$name.png"
+  cwebp -quiet -q 82 "$name.png" -o "$name.webp"
+  rm "$name.png"
+  echo "$name.mp4 $(du -h "$name.mp4" | cut -f1)"
+done
