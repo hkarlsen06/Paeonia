@@ -160,16 +160,7 @@ extension MainTabView {
 
     private var gamesTab: some View {
         GamesRootView(viewModel: gamesViewModel, path: $gamesPath, tabBarVisibility: gameTabBarVisibility)
-            .sheet(item: $gameChatSheet) { destination in
-                ThreadChatScreen(
-                    viewModel: destination.viewModel,
-                    embedsNavigationStack: true,
-                    onClose: { gameChatSheet = nil }
-                )
-                // Half height leaves the board visible. The keyboard raises the sheet to full height.
-                .presentationDetents([.medium, .large])
-                .presentationContentInteraction(.scrolls)
-            }
+            .gameChatPanel($gameChatSheet)
     }
 
     var gamesParticipants: GameParticipants {

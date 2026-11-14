@@ -59,7 +59,7 @@ extension StoryViewer {
             // The story is under the sheet, so its header card closes the sheet.
             ThreadChatScreen(
                 viewModel: chat,
-                embedsNavigationStack: true,
+                presentation: .sheet,
                 onOpenHeader: { isShowingReplies = false },
                 onClose: { isShowingReplies = false }
             )

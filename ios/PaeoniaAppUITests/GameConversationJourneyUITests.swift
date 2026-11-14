@@ -178,7 +178,7 @@ final class GameConversationJourneyUITests: XCTestCase {
             XCTAssertTrue(chat.staticTexts[word].firstMatch.waitForExistence(timeout: 5))
         }
         let reply = app.buttons["game.conversation.result.reply"]
-        // The half-height sheet can leave the card's header under its navigation bar.
+        // The opened card can be taller than the panel, which leaves its reply button out of view.
         for _ in 0..<5 where !reply.isHittable {
             let center = chat.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             let distance: CGFloat = reply.frame.midY < chat.frame.midY ? 150 : -150
@@ -208,19 +208,21 @@ final class GameConversationJourneyUITests: XCTestCase {
         XCTAssertTrue(tabs.buttons.element(boundBy: 1).isSelected)
     }
 
-    /// The chat is a sheet over the game: the Games tab stays selected, so its tab bar stays hidden.
+    /// The chat is a panel over the game: the Games tab stays selected, so its tab bar stays hidden.
     @MainActor
     private func assertChatSheetOverGame(in app: XCUIApplication) {
         XCTAssertTrue(app.buttons["chat.sheet.close"].waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertFalse(app.tabBars.firstMatch.exists)
     }
 
+    /// Drags the panel's handle down. The handle is in the middle of the panel's top edge,
+    /// level with the close button in its corner.
     @MainActor
     private func swipeDownChatSheet(in app: XCUIApplication) {
         let close = app.buttons["chat.sheet.close"]
-        let bar = close.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            .withOffset(CGVector(dx: 120, dy: 0))
-        bar.press(forDuration: 0.1, thenDragTo: bar.withOffset(CGVector(dx: 0, dy: 700)))
+        let handle = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+            .withOffset(CGVector(dx: 0, dy: close.frame.minY + 8))
+        handle.press(forDuration: 0.1, thenDragTo: handle.withOffset(CGVector(dx: 0, dy: 500)))
         XCTAssertTrue(close.waitForNonExistence(timeout: 5))
     }
 

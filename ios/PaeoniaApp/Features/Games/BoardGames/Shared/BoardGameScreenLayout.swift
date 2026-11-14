@@ -51,7 +51,8 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     /// The height of the right column's rows in the wide layout.
     @State private var wideRowsHeight: CGFloat = 0
     @State private var wideBottomHeight: CGFloat = 0
-    /// Where a board that bleeds fits, in global coordinates.
+    /// Where a board that bleeds fits, in the column's coordinates (`BoardGameGlide.space`).
+    /// Global coordinates would shrink with the screen under the game's chat panel.
     @State private var bleedSlotFrame: CGRect = .zero
 
     var body: some View {
@@ -212,6 +213,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 maxHeight: boardBleeds ? .infinity : nil
             )
             .padding(.horizontal, boardBleeds ? -PaeoniaSpacing.screenHorizontalPadding : 0)
+            .gameChatStage()
             // A board that bleeds glides to its new space on its own. At accessibility
             // sizes the column scrolls, and the board stays put.
             .modifier(BoardGameGlide(isEnabled: !boardBleeds && !reduceMotion && !dynamicTypeSize.isAccessibilitySize))
@@ -250,7 +252,8 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     private var bleedSlot: some View {
         Color.clear
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+            .gameChatStage()
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(BoardGameGlide.space)) } action: { frame in
                 // The bottom bar grows past its held room when a result comes, and the
                 // board glides to its new space instead of jumping. The first layout and a
                 // turned screen snap.
@@ -268,7 +271,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     /// and the board fits there. Past the slot's top and bottom its scene shows behind the rows.
     private var bleedingBoard: some View {
         GeometryReader { proxy in
-            let screen = proxy.frame(in: .global)
+            let screen = proxy.frame(in: .named(BoardGameGlide.space))
             BoardGameAnimatedSlot(slot: bleedSlotFrame.offsetBy(dx: -screen.minX, dy: -screen.minY)) { slot in
                 // ponytail: the view runs past the nearer screen edge and draws pixels nobody sees.
                 // Shift the camera's lens off center instead if that costs frames on an iPad.

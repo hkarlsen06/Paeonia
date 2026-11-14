@@ -50,7 +50,8 @@ struct GameEdgeSwipeOnly: UIViewRepresentable {
     }
 }
 
-private extension UIView {
+extension UIView {
+    /// The navigation controller of the game screen this view is in.
     func gameNavigationController() -> UINavigationController? {
         var responder: UIResponder? = self
         while let current = responder {

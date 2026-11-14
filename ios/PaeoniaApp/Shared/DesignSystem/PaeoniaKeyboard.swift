@@ -83,16 +83,23 @@ extension View {
     }
 }
 
+extension EnvironmentValues {
+    /// The keyboard on screen belongs to something shown over this view, such as the chat
+    /// panel over a game. The view keeps its layout as if no keyboard were up.
+    @Entry var keyboardBelongsElsewhere = false
+}
+
 private struct PaeoniaBottomBarModifier<Bar: View>: ViewModifier {
     let spacing: CGFloat?
     let bar: Bar
 
+    @Environment(\.keyboardBelongsElsewhere) private var keyboardBelongsElsewhere
     @State private var isKeyboardDocked = false
 
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .bottom, spacing: spacing) {
-                if !isKeyboardDocked {
+                if !isKeyboardDocked || keyboardBelongsElsewhere {
                     bar
                         .paeoniaBannerBottomEdge()
                 }

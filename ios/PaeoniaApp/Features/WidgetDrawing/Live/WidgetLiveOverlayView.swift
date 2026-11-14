@@ -8,6 +8,7 @@ import SwiftUI
 /// upper one holds the strokes in progress, which change on every frame.
 struct WidgetLiveOverlayView: UIViewRepresentable {
     let live: WidgetLiveDrawing
+    @Environment(\.gameChatStageScale) private var stageScale
 
     func makeUIView(context: Context) -> LayeredCanvasView {
         let container = LayeredCanvasView()
@@ -15,7 +16,9 @@ struct WidgetLiveOverlayView: UIViewRepresentable {
         return container
     }
 
-    func updateUIView(_: LayeredCanvasView, context _: Context) {}
+    func updateUIView(_ container: LayeredCanvasView, context _: Context) {
+        container.surroundingScale = stageScale
+    }
 
     static func dismantleUIView(_: LayeredCanvasView, coordinator: Coordinator) {
         coordinator.stop()
@@ -73,13 +76,13 @@ struct WidgetLiveOverlayView: UIViewRepresentable {
             }
             let side = WidgetDrawingViewModel.canvasSide(for: container.bounds.size)
             if live.roomVersion != shownRoomVersion || side != shownSide {
-                container.lowerCanvas.drawing = PKDrawing(strokes: live.roomStrokes(side: side))
+                container.lowerDrawing = PKDrawing(strokes: live.roomStrokes(side: side))
                 shownRoomVersion = live.roomVersion
                 shownSide = side
             }
             let liveStrokes = live.liveStrokes(at: CACurrentMediaTime(), side: side)
             if !liveStrokes.isEmpty || wasShowingLiveStrokes {
-                container.upperCanvas.drawing = PKDrawing(strokes: liveStrokes)
+                container.upperDrawing = PKDrawing(strokes: liveStrokes)
             }
             wasShowingLiveStrokes = !liveStrokes.isEmpty
             if !live.hasLiveStrokes {

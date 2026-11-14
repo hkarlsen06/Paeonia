@@ -8,6 +8,7 @@ import SwiftUI
 struct GameReplaySurface: UIViewRepresentable {
     let frames: GameReplayFrames
     let side: CGFloat
+    @Environment(\.gameChatStageScale) private var stageScale
 
     func makeUIView(context: Context) -> LayeredCanvasView {
         let container = LayeredCanvasView()
@@ -15,7 +16,8 @@ struct GameReplaySurface: UIViewRepresentable {
         return container
     }
 
-    func updateUIView(_: LayeredCanvasView, context: Context) {
+    func updateUIView(_ container: LayeredCanvasView, context: Context) {
+        container.surroundingScale = stageScale
         context.coordinator.side = side
         context.coordinator.frames = frames
     }
@@ -83,12 +85,12 @@ struct GameReplaySurface: UIViewRepresentable {
             let timeline = fittedTimeline(playback.timeline)
             let progress = timeline.progress(at: playback.time)
             if progress.finishedCount != shownFinishedCount {
-                container.lowerCanvas.drawing = PKDrawing(strokes: timeline.finishedStrokes(at: playback.time))
+                container.lowerDrawing = PKDrawing(strokes: timeline.finishedStrokes(at: playback.time))
                 shownFinishedCount = progress.finishedCount
             }
             let partialKey = progress.partials.flatMap { [$0.index, $0.stroke.path.count] }
             if partialKey != shownPartialKey {
-                container.upperCanvas.drawing = PKDrawing(strokes: progress.partials.map(\.stroke))
+                container.upperDrawing = PKDrawing(strokes: progress.partials.map(\.stroke))
                 shownPartialKey = partialKey
             }
             finishedDrawing = isFinished

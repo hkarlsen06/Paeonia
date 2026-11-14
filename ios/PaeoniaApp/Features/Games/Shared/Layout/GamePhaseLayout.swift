@@ -118,7 +118,7 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
         return ScrollView {
             VStack(spacing: PaeoniaSpacing.space12) {
                 header
-                square(side)
+                square(side).gameChatStage()
                 footer
                 if dynamicTypeSize.isAccessibilitySize {
                     pinnedBottomContent
