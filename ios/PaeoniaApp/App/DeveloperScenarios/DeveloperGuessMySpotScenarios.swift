@@ -224,6 +224,12 @@
         return state(game: game(turn: Fixture.me), current: lakeRound(sender: Fixture.partner, hidden: true))
       case .gamesHubWaiting:
         return state(game: game(turn: Fixture.partner), current: harbor(sender: Fixture.me))
+      case .gamesHubQuiet:
+        // Robin guessed Alex's harbor photo about 9 km off, both saw it, and Robin picks the next one.
+        return state(
+          game: game(turn: Fixture.partner),
+          current: harbor(sender: Fixture.me, guess: Spot(latitude: 60.3400, longitude: 5.2200), seen: true)
+        )
       default:
         // The other hub scenarios show the card of a couple that has not played yet.
         return scenario.rawValue.hasPrefix("games-hub") ? state(game: nil) : nil
