@@ -11,12 +11,13 @@
 
     /// `games` is the game scenario whose state the Games tab shows. `finishedGameRuns` adds
     /// two runs of quick finished games to the Mind Meld chat, with a message between them.
+    /// `coupleCalls` fills "Just us" with call rows (`DeveloperCallFixture.coupleChat`).
     init(
       pending: any PendingSyncOperationPersisting, games scenario: DeveloperScenario = .mindMeldWrite,
-      result: GameConversationResult? = nil, finishedGameRuns: Bool = false
+      result: GameConversationResult? = nil, finishedGameRuns: Bool = false, coupleCalls: Bool = false
     ) {
       let gateway = DeveloperGameConversationGateway(
-        result: result ?? Self.historicalResult(), finishedGameRuns: finishedGameRuns,
+        result: result ?? Self.historicalResult(), finishedGameRuns: finishedGameRuns, coupleCalls: coupleCalls,
         presence: DeveloperChatPresenceFeed())
       self.gateway = gateway
       let cache = InMemoryThreadChatCache()
@@ -104,9 +105,17 @@
     private let result: GameConversationResult?
     private var references: [GameChatResultReference] = []
 
-    init(result: GameConversationResult?, finishedGameRuns: Bool, presence: DeveloperChatPresenceFeed) {
+    init(
+      result: GameConversationResult?, finishedGameRuns: Bool, coupleCalls: Bool, presence: DeveloperChatPresenceFeed
+    ) {
       self.result = result
       self.presence = presence
+      if coupleCalls {
+        let chat = DeveloperCallFixture.coupleChat()
+        threadIDs[.couple] = chat.summary.threadID
+        messages = chat.messages
+        summaries = [chat.summary]
+      }
       guard case .mindMeld(let game)? = result else { return }
       references = [
         GameChatResultReference(
@@ -131,8 +140,8 @@
         body: "How did you get that one?", createdAt: start.addingTimeInterval(2 * 60 + 30),
         clientOperationID: UUID(), delivery: .sent, replyTo: nil)
       threadIDs[subject] = threadID
-      messages = [message]
-      summaries = [
+      messages.append(message)
+      summaries += [
         ThreadChatSummary(
           threadID: threadID, coupleID: DeveloperScenarioFixture.coupleID, subject: subject,
           createdAt: message.createdAt, updatedAt: message.createdAt, lastMessageID: message.id,

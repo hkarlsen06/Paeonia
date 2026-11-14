@@ -11,9 +11,11 @@
     @State private var environment: DeveloperLocalFlowEnvironment
 
     /// `gameConversation` is a game scenario. The Games tab then shows its state, and game
-    /// chats work. `launchLink` opens when the flow starts, unless the app was launched with one.
+    /// chats work. `coupleCalls` puts a finished, a missed and an unanswered call in "Just us".
+    /// `launchLink` opens when the flow starts, unless the app was launched with one.
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil,
-         gameConversation: DeveloperScenario? = nil, finishedGameRuns: Bool = false, launchLink: String? = nil,
+         gameConversation: DeveloperScenario? = nil, finishedGameRuns: Bool = false, coupleCalls: Bool = false,
+         launchLink: String? = nil,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
          mail: DeveloperMailSeed = .none) {
       // A link the app was launched with, such as a push tapped while the app was not running.
@@ -24,7 +26,7 @@
       _environment = State(
         initialValue: DeveloperLocalFlowEnvironment(
           seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation,
-          finishedGameRuns: finishedGameRuns, avatarStories: avatarStories,
+          finishedGameRuns: finishedGameRuns, coupleCalls: coupleCalls, avatarStories: avatarStories,
           mapTiles: mapTiles, mail: mail))
     }
 
@@ -112,7 +114,7 @@
     // This is the single Debug composition boundary for the full local app graph.
     // swiftlint:disable:next function_body_length
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: DeveloperScenario?,
-         finishedGameRuns: Bool, avatarStories: StoryRingState?, mapTiles: DeveloperHomeMapTiles,
+         finishedGameRuns: Bool, coupleCalls: Bool, avatarStories: StoryRingState?, mapTiles: DeveloperHomeMapTiles,
          mail: DeveloperMailSeed) {
       self.homeLaunch = homeLaunch
       let store = DeveloperLocalFlowStore(seed: seed, avatarScenario: avatarStories != nil)
@@ -131,7 +133,8 @@
         )
       )
       let gameFlow = gameConversation.map {
-        DeveloperGameConversationFlow(pending: pendingOperationStore, games: $0, finishedGameRuns: finishedGameRuns)
+        DeveloperGameConversationFlow(
+          pending: pendingOperationStore, games: $0, finishedGameRuns: finishedGameRuns, coupleCalls: coupleCalls)
       }
       gameConversationFlow = gameFlow
       let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()

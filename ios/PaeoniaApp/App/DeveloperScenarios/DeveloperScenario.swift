@@ -20,7 +20,7 @@
       [gamePresenceControls, accessibilityColors, gameChatPreviews] + keyboardDiagnostics
       + app + visits + accessNotices + firstSteps + topics + memoriesMap + inviter + dailyCard + lookBack + recap
       + banners + drawAndGuess + storyChain + mindMeld + consensio + piccante + guessMySpot + exquisiteCorpse
-      + boardGames
+      + boardGames + calls
 
     nonisolated enum Category: String, CaseIterable, Identifiable, Sendable {
       case launchAndAuth = "State · Launch & authentication"
@@ -32,6 +32,7 @@
       case memories = "State · Memories"
       case relationship = "State · Countdown & location"
       case games = "State · Games"
+      case calls = "State · Calls"
       case widget = "State · Widget"
       case settings = "State · Settings & privacy"
       case deepLinks = "State · Deep links & notifications"
