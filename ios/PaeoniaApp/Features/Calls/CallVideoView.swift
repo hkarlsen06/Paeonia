@@ -15,6 +15,11 @@ struct CallVideoView: UIViewRepresentable {
     }
 
     func updateUIView(_: UIView, context _: Context) {}
+
+    /// Takes the offered size, never the video's own, so a large frame cannot widen the call screen.
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView _: UIView, context _: Context) -> CGSize? {
+        proposal.replacingUnspecifiedDimensions()
+    }
 }
 
 /// The system's picker for AirPods, a headset or a car, which the call screen shows in place of
