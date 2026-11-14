@@ -47,8 +47,14 @@ test("every game kind is an allowed channel", async () => {
   }
 });
 
+test("a call ticket joins the couple's call room", async () => {
+  const ticket = await verifyTicket(sign({ c: "couple-1", u: "user-1", e: now + 60_000, ch: "call" }), secret, now);
+  assert.deepEqual(ticket, { coupleId: "couple-1", userId: "user-1", expiresAt: now + 60_000, channel: "call" });
+  assert.equal(roomName(ticket!), "couple-1:call");
+});
+
 test("rejects a channel that is not on the allowlist, or is not a string", async () => {
-  for (const ch of ["canvas", "chess", "", "mind_meld:x", "Mind_Meld", "draw_and_guess:x", "../couple-2", 7, null, ["draw_and_guess"]]) {
+  for (const ch of ["canvas", "chess", "", "Call", "call:x", "mind_meld:x", "Mind_Meld", "draw_and_guess:x", "../couple-2", 7, null, ["draw_and_guess"]]) {
     assert.equal(await verifyTicket(sign({ c: "couple-1", u: "user-1", e: now + 60_000, ch }), secret, now), null, JSON.stringify(ch));
   }
 });

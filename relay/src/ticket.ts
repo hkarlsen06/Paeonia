@@ -1,15 +1,18 @@
 /**
- * Tickets come from `widget:create_widget_live_ticket` and `games:create_game_live_ticket` in Convex:
+ * Tickets come from `widget:create_widget_live_ticket`, `games:create_game_live_ticket` and
+ * `calls:create_call_live_ticket` in Convex:
  * `base64url(JSON {c: coupleId, u: userId, e: expiresAtMs, ch?: channel}).hex(hmacSha256(payload))`.
  * Convex already checked that the user may draw with this couple.
  * Without `ch` the socket joins the couple's widget canvas room. With `ch` it joins the
- * couple's room for that channel, so a game does not share the canvas room's socket cap.
+ * couple's room for that channel, so a game or a call does not share the canvas room's socket cap.
  */
 export type Ticket = { coupleId: string; userId: string; expiresAt: number; channel?: string };
 
 /**
- * The channels a ticket may name. The channel is the game kind, and Convex issues tickets for every
- * kind in `GAME_KINDS` (backend/convex/lib/validators.ts). Keep the two lists the same.
+ * The channels a ticket may name: every game kind, and `call`. A game's channel is its kind, and
+ * Convex issues tickets for every kind in `GAME_KINDS` (backend/convex/lib/validators.ts), so keep
+ * the game kinds here the same as that list. `call` carries the setup messages of a voice or video
+ * call, and `calls:create_call_live_ticket` issues it.
  */
 export const ALLOWED_CHANNELS: readonly string[] = [
   "draw_and_guess",
@@ -23,6 +26,7 @@ export const ALLOWED_CHANNELS: readonly string[] = [
   "consensio",
   "piccante",
   "guess_my_spot",
+  "call",
 ];
 
 /** The Durable Object name for a ticket's room. */
