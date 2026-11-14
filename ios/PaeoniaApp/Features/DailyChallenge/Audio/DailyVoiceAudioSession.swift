@@ -4,6 +4,8 @@ import os
 
 /// Every change to the shared audio session goes through one actor, so a release
 /// that is still waiting can never land on top of the next recording or playback.
+/// A Paeonia call owns the session while it runs: recording fails, and playback and
+/// releases leave the session as the call set it.
 nonisolated enum DailyVoiceAudioSession {
     private static let errorDomain = "no.paeonia.app.dailyVoice.audioSession"
     private static let gate = Gate()
@@ -12,6 +14,9 @@ nonisolated enum DailyVoiceAudioSession {
     private static let requests = OSAllocatedUnfairLock(initialState: 0)
 
     static func configureForRecording() async throws {
+        guard !PaeoniaAudioSession.isCallActive else {
+            throw sessionError("A call is using the microphone.")
+        }
         // Asking for the session cancels any release still waiting (see `deactivate`).
         _ = nextRequest()
         try await gate.activate { session in
@@ -55,6 +60,7 @@ nonisolated enum DailyVoiceAudioSession {
 
     private actor Gate {
         func activate(configure: @Sendable (AVAudioSession) throws -> Void) async throws {
+            guard !PaeoniaAudioSession.isCallActive else { return }
             let session = AVAudioSession.sharedInstance()
             try configure(session)
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -73,7 +79,7 @@ nonisolated enum DailyVoiceAudioSession {
         }
 
         func deactivate(request: Int) async {
-            guard DailyVoiceAudioSession.isLatest(request) else { return }
+            guard DailyVoiceAudioSession.isLatest(request), !PaeoniaAudioSession.isCallActive else { return }
             let session = AVAudioSession.sharedInstance()
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
                 session.deactivate(options: [.notifyOthersOnDeactivation]) { _, _ in

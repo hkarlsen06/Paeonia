@@ -83,8 +83,13 @@ nonisolated final class GameSoundPlayer: @unchecked Sendable {
 
     /// Starts the engine if it is not running. A call, Siri or a route change stops it,
     /// and the next sound starts it again. The files share one format, which the voices
-    /// are connected with once.
+    /// are connected with once. A Paeonia call owns the audio session, so no sound plays
+    /// while one runs.
     private func start(format: AVAudioFormat) -> Bool {
+        guard !PaeoniaAudioSession.isCallActive else {
+            engine.pause()
+            return false
+        }
         guard !engine.isRunning else { return true }
         do {
             if voices.isEmpty {

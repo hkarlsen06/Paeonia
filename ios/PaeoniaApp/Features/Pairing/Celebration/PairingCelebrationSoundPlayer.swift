@@ -10,6 +10,8 @@ nonisolated final class PairingCelebrationSoundPlayer: @unchecked Sendable {
 
     func prepare() {
         queue.async {
+            // A Paeonia call owns the audio session, so the celebration stays silent.
+            guard !PaeoniaAudioSession.isCallActive else { return }
             PaeoniaAudioSession.useAmbient()
             try? AVAudioSession.sharedInstance().setActive(true)
             for name in ["Gather", "Release"] {
@@ -54,7 +56,8 @@ nonisolated final class PairingCelebrationSoundPlayer: @unchecked Sendable {
     }
 
     private func play(_ name: String, offset: Double = 0, at deviceTime: Double? = nil) {
-        guard let player = players[name], offset < player.duration else { return }
+        guard !PaeoniaAudioSession.isCallActive,
+              let player = players[name], offset < player.duration else { return }
         player.currentTime = offset
         player.volume = 1
         if let deviceTime {
