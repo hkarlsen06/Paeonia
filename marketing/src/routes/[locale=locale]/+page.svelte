@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowDown, ArrowRight, Dice5, Hourglass, Mail, PenLine, Plus, Radio, Star } from '@lucide/svelte';
+  import { ArrowDown, ArrowRight, Dice5, Hourglass, Mail, PenLine, Plus, Radio } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
   import PageHead from '#lib/components/PageHead.svelte';
   import PhoneScreenshot from '#lib/components/PhoneScreenshot.svelte';
@@ -215,9 +215,9 @@
                 />
                 {#if "favorite" in game}
                   <span
-                    class="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-[#2a0b24]/75 px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/15 backdrop-blur-md sm:right-3 sm:top-3"
+                    class="absolute right-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full bg-[linear-gradient(180deg,#5a2544,#3a1230)] py-1 pl-1.5 pr-3 text-xs font-semibold text-text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_6px_14px_rgba(30,4,22,0.45)] ring-1 ring-[#f27eb2]/30 sm:right-3 sm:top-3"
                   >
-                    <Star aria-hidden="true" class="h-3.5 w-3.5 fill-[#f5c451] text-[#f5c451]" />
+                    <img src={art('favorite-star')} alt="" width="20" height="19" class="h-[19px] w-5 drop-shadow-[0_1px_2px_rgba(30,4,22,0.5)]" />
                     {games.favoriteLabel}
                   </span>
                 {/if}
