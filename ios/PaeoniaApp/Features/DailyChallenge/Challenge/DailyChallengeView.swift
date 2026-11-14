@@ -206,14 +206,6 @@ struct DailyChallengeScreen: View {
         }
     }
 
-    /// The seal moment is over. The card folds away and today's question row, now in the
-    /// list, lights up for a moment so the person sees where the conversation went.
-    private func finishHeroMoment() {
-        heroHold.release()
-        guard isDayComplete, let todayID = viewModel.snapshot.todayQuestion?.id else { return }
-        focusedQuestionIDs.wrappedValue = [todayID]
-    }
-
     /// Pull to refresh reloads today's questions and the earlier days together.
     private func refresh() async {
         async let earlier: Void = reloadEarlierDays()
@@ -315,6 +307,19 @@ struct DailyChallengeScreen: View {
 }
 
 extension DailyChallengeScreen {
+    /// The seal moment is over. The card folds away and today's question row, now in the
+    /// list, lights up for a moment so the person sees where the conversation went.
+    private func finishHeroMoment() {
+        // Scroll once the list has settled. A scroll started while the card folds aims at
+        // the old layout, and the next update snaps the list to where it should be.
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
+            heroHold.release()
+        } completion: {
+            guard isDayComplete, let todayID = viewModel.snapshot.todayQuestion?.id else { return }
+            focusedQuestionIDs.wrappedValue = [todayID]
+        }
+    }
+
     @ViewBuilder
     func todayRow(_ row: QuestionsTabRow) -> some View {
         switch row {
