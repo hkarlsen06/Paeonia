@@ -76,6 +76,8 @@ struct GameChatScreen: ViewModifier {
     @Environment(\.gameChatLift) private var lift
     @Environment(\.gameChatPeek) private var peek
     @Environment(\.gameChatIsOpen) private var chatIsOpen
+    /// Something over the Games tab, such as Just us, has the keyboard.
+    @Environment(\.keyboardBelongsElsewhere) private var keyboardIsAnothers
     @Environment(\.threadChatContext) private var chat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The keyboard on screen is the chat's. It stays so until it is gone, which is
@@ -96,7 +98,7 @@ struct GameChatScreen: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        let keyboardIsChats = shrink != nil || chatHasKeyboard
+        let keyboardIsChats = shrink != nil || chatHasKeyboard || keyboardIsAnothers
         content
             .onPreferenceChange(GameToolbarInfoKey.self) { toolbarShowsInfo = $0 }
             // Only at full size. The shrink also scales what a screen reports.

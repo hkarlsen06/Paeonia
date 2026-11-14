@@ -50,6 +50,9 @@ private struct CoupleChatSlideOver: ViewModifier {
     /// The peek's strip is on screen instead of the chat, from the peek until it has gone
     /// back or a swipe has taken it over. The peek never reads the chat, so it marks nothing read.
     @State private var showsPeek = false
+    /// The keyboard on screen is the chat's. It stays so until it is gone, which can be
+    /// after the chat has slid away.
+    @State private var chatHasKeyboard = false
 
     private var slide: Animation? {
         reduceMotion ? nil : .spring(duration: PaeoniaMotion.motionDefault, bounce: 0)
@@ -70,7 +73,12 @@ private struct CoupleChatSlideOver: ViewModifier {
     }
 
     func body(content: Content) -> some View {
+        // The screens under the chat keep their layout while its keyboard is up, so a game
+        // or a drawing is not squeezed, and drawn again smaller, out of sight.
+        let keyboardIsChats = (isMounted && !showsPeek) || chatHasKeyboard
         content
+            .environment(\.keyboardBelongsElsewhere, keyboardIsChats)
+            .ignoresSafeArea(.keyboard, edges: keyboardIsChats ? .bottom : [])
             .accessibilityHidden(position == .shown)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
             .background {
@@ -87,6 +95,12 @@ private struct CoupleChatSlideOver: ViewModifier {
             }
             .overlay { if isMounted { slideOver } }
             .task(id: peeks && isEnabled && chatContext.isAvailable) { await peek() }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                if isMounted, !showsPeek { chatHasKeyboard = true }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in
+                chatHasKeyboard = false
+            }
             .onChange(of: chatContext.coupleID) { _, _ in
                 chat = nil
                 hide()
