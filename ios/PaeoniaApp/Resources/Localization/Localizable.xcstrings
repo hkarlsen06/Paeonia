@@ -13135,24 +13135,6 @@
         }
       }
     },
-    "games.conversation.guess" : {
-      "comment" : "A Consensio result. Arguments are the guesser name and the scale value.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ guessed %2$@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ gjettet %2$@"
-          }
-        }
-      }
-    },
     "games.conversation.guesses" : {
       "comment" : "Heading for every guess in a finished drawing game. The argument is the guesser, You or the partner name.",
       "extractionState" : "manual",
@@ -13329,24 +13311,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spillet er ferdig"
-          }
-        }
-      }
-    },
-    "games.conversation.spot" : {
-      "comment" : "A Consensio result. Arguments are the placer name and the scale value.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ placed it at %2$@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ plasserte den på %2$@"
           }
         }
       }

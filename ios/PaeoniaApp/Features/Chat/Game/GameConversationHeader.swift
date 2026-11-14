@@ -127,9 +127,6 @@ struct GameConversationHeader: View {
                         )
                     }, style: .detail, rowSpacing: PaeoniaSpacing.space8)
             }
-            Text(.mindMeldHistoryRowRounds(game.rounds.count))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
         }
     }
 
@@ -145,12 +142,10 @@ struct GameConversationHeader: View {
                 ],
                 thread: .init(from: guess, to: spot, progress: 1)
             )
-            Text(
-                .gamesConversationSpot(
-                    people.name(for: round.placerUserID), ConsensioScaleValue.string(spot, in: round)))
-            Text(
-                .gamesConversationGuess(
-                    people.name(for: round.guesserUserID), ConsensioScaleValue.string(guess, in: round)))
+            .accessibilityValue(
+                Text(
+                    .consensioRevealStageA11Y(
+                        ConsensioScaleValue.string(spot, in: round), ConsensioScaleValue.string(guess, in: round))))
         }
     }
 
