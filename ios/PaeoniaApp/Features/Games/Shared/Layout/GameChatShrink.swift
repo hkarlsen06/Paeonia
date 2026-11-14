@@ -177,7 +177,7 @@ private struct GameScreenShrinker: UIViewRepresentable {
         }
 
         private static func animation(_ keyPath: String, from: Any?, to: Any?) -> CAAnimation {
-            let animation = CASpringAnimation(perceptualDuration: PaeoniaMotion.motionSlow, bounce: 0)
+            let animation = CASpringAnimation(perceptualDuration: PaeoniaMotion.motionDefault, bounce: 0)
             animation.keyPath = keyPath
             animation.fromValue = from
             animation.toValue = to
