@@ -46,7 +46,7 @@ The app runs on iPhone and iPad, and on iPad it can be any width from a narrow S
 
 ### List Rows
 
-Every row in a list or settings screen uses primary text and tints its icon with `paeoniaAccentPrimary`. Only irreversible destructive actions, such as leaving the relationship or deleting the account, are red. Do not use system blue, warning colours or per-row accents. `paeoniaGroupedList()` sets the brand tint for native `List` and `Form` screens.
+Every row in a list or settings screen uses primary text and tints its icon with `paeoniaAccentPrimary`. Rows on the More tab's menu draw their label with `SettingsMenuLabel`, which puts the symbol on a soft plum tile and shows the row's state in secondary text at the end. Pushed settings screens keep plain glyphs, except the date rows that the Important dates screen reuses from the menu. Only irreversible destructive actions, such as leaving the relationship or deleting the account, are red. Do not use system blue, warning colours or per-row accents. `paeoniaGroupedList()` sets the brand tint for native `List` and `Form` screens.
 
 ### Brand Wordmark
 
