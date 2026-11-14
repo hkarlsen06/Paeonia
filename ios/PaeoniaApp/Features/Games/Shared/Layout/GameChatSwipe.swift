@@ -6,7 +6,8 @@ import UIKit
 
 extension View {
     /// Marks a part of a game screen whose own gesture uses vertical drags, such as a board
-    /// that lines are drawn on. A swipe that starts there never opens the game's chat.
+    /// that lines are drawn on. A swipe that starts there never opens the game's chat, and a
+    /// swipe in from the right edge there never opens Just us (`CoupleChatSlideOver`).
     /// Pass false while the gesture is off, such as on the partner's turn.
     func keepsVerticalDrags(_ keeps: Bool = true) -> some View {
         background { if keeps { GameDragRegion() } }

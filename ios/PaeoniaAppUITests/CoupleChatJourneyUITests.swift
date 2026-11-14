@@ -42,20 +42,29 @@ final class CoupleChatJourneyUITests: XCTestCase {
         attach(app, named: "Just us pinned with the newest message")
     }
 
-    /// A swipe in from the right edge pulls Just us over the tab in front, and its back
-    /// button leaves the person on that same tab.
+    /// A swipe in from the right edge pulls Just us over a game in progress, and its back
+    /// button returns to the game as it was, unfinished word included.
     @MainActor
-    func testSwipingInFromTheRightEdgeOpensJustUsOverGames() throws {
+    func testSwipingInFromTheRightEdgeOpensJustUsOverAGame() throws {
         let app = launchApp()
         let tabs = app.tabBars.firstMatch
         XCTAssertTrue(tabs.waitForExistence(timeout: 10))
-        let games = tabs.buttons.element(boundBy: 2)
-        games.tap()
+        tabs.buttons.element(boundBy: 2).tap()
+        let game = app.buttons["games.hub.mindMeld"]
+        XCTAssertTrue(game.waitForExistence(timeout: 10))
+        game.tap()
+        let tutorial = app.buttons["games.tutorial.next"]
+        for _ in 0..<3 where tutorial.waitForExistence(timeout: 1) { tutorial.tap() }
+        let word = app.textFields["mindMeld.field"]
+        XCTAssertTrue(word.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        word.tap()
+        word.typeText("CLOUD")
 
-        let edge = app.coordinate(withNormalizedOffset: CGVector(dx: 0.995, dy: 0.45))
+        let edge = app.coordinate(withNormalizedOffset: CGVector(dx: 0.995, dy: 0.3))
         edge.press(
             forDuration: 0.1,
-            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.45)),
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.3)),
             withVelocity: .fast,
             thenHoldForDuration: 0
         )
@@ -72,11 +81,12 @@ final class CoupleChatJourneyUITests: XCTestCase {
         send.tap()
         let sent = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "See you at the station"))
         XCTAssertTrue(sent.firstMatch.waitForExistence(timeout: 5), app.debugDescription)
-        attach(app, named: "Just us pulled in over Games")
+        attach(app, named: "Just us pulled in over Mind Meld")
 
         app.buttons["chat.slideOver.back"].tap()
         XCTAssertTrue(field.waitForNonExistence(timeout: 5), app.debugDescription)
-        XCTAssertTrue(games.isSelected, tabs.debugDescription)
+        XCTAssertTrue(word.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertEqual(word.value as? String, "CLOUD")
     }
 
     @MainActor

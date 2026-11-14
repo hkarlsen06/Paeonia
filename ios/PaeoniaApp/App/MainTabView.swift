@@ -473,12 +473,10 @@ extension MainTabView {
     }
 
     /// A swipe in from the right edge opens the couple chat everywhere but in a chat, whose
-    /// rows swipe left, and on a game or the drawing screen, which take drags at the edge.
+    /// rows swipe left. Over a game or the drawing screen it leaves them as they are, so the
+    /// person comes back to the same turn or the same stroke.
     var allowsCoupleChatSwipe: Bool {
-        visibleChatSubject == nil
-            && !(selection.wrappedValue == .games && !gamesPath.isEmpty)
-            && !widgetDrawingPresented.wrappedValue
-            && !gameChatReturn.isPending
+        visibleChatSubject == nil && !gameChatReturn.isPending
     }
 }
 

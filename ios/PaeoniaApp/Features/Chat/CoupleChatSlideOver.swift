@@ -1,6 +1,7 @@
 import MapKit
 import MapLibre
 import PencilKit
+import RealityKit
 import SwiftUI
 import UIKit
 
@@ -227,15 +228,17 @@ private struct RightEdgeSwipe: UIViewRepresentable {
             }
         }
 
-        /// Only a touch at the right edge of the tabs. A drawing, a map and a slider keep a
-        /// drag that starts on them, even there.
+        /// Only a finger at the right edge of the tabs. A drawing, a map, a game's 3D scene or
+        /// board, and a slider keep a drag that starts on them, even there.
         func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-            guard let screens, let window = screens.window, let view = touch.view, view.isDescendant(of: screens),
-                touch.location(in: nil).x >= window.bounds.maxX - Self.edgeWidth
+            let point = touch.location(in: nil)
+            guard touch.type == .direct, let screens, let window = screens.window, let view = touch.view,
+                view.isDescendant(of: screens), point.x >= window.bounds.maxX - Self.edgeWidth,
+                !GameDragRegionView.holds(point)
             else { return false }
             return !touch.startsInView { view in
                 (view is PKCanvasView && view.isUserInteractionEnabled) || view is MKMapView || view is MLNMapView
-                    || view is UISlider
+                    || view is ARView || view is UISlider
             }
         }
 
