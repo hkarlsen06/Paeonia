@@ -215,14 +215,14 @@ final class GameConversationJourneyUITests: XCTestCase {
         XCTAssertFalse(app.tabBars.firstMatch.exists)
     }
 
-    /// Drags the panel's handle down. The handle is in the middle of the panel's top edge,
-    /// level with the close button in its corner.
+    /// Drags the panel down from the middle of its top edge, level with the close button
+    /// in its corner.
     @MainActor
     private func swipeDownChatSheet(in app: XCUIApplication) {
         let close = app.buttons["chat.sheet.close"]
-        let handle = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+        let top = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
             .withOffset(CGVector(dx: 0, dy: close.frame.minY + 8))
-        handle.press(forDuration: 0.1, thenDragTo: handle.withOffset(CGVector(dx: 0, dy: 500)))
+        top.press(forDuration: 0.1, thenDragTo: top.withOffset(CGVector(dx: 0, dy: 500)))
         XCTAssertTrue(close.waitForNonExistence(timeout: 5))
     }
 

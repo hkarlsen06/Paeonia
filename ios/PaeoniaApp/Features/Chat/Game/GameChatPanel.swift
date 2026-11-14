@@ -169,7 +169,6 @@ private struct GameChatPanelSurface: View {
 
     var body: some View {
         ThreadChatScreen(viewModel: destination.viewModel, presentation: .panel, onClose: close)
-            .overlay(alignment: .top) { handle }
             .background(.paeoniaBackgroundPrimary)
             .clipShape(.rect(topLeadingRadius: PaeoniaRadius.radius28, topTrailingRadius: PaeoniaRadius.radius28))
             .background {
@@ -184,15 +183,6 @@ private struct GameChatPanelSurface: View {
             .modifier(PanelSlide(offset: dragOffset))
             .accessibilityAddTraits(.isModal)
             .accessibilityAction(.escape, close)
-    }
-
-    private var handle: some View {
-        Capsule()
-            .fill(.paeoniaTextSecondary.opacity(0.5))
-            .frame(width: 36, height: 5)
-            .padding(.top, PaeoniaSpacing.space8)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
     }
 }
 

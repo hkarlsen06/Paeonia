@@ -176,8 +176,8 @@ struct GameChatSwipeUp: UIViewRepresentable {
 }
 
 /// Drags the game chat panel down from anywhere on it that nothing else needs the drag
-/// for. The messages scroll first. While the keyboard is up, a drag on them takes the
-/// keyboard away instead, as it does in every chat.
+/// for, and from the small game above it. The messages scroll first. While the keyboard
+/// is up, a drag on them takes the keyboard away instead, as it does in every chat.
 struct GameChatPanelDrag: UIViewRepresentable {
     /// How far down the panel has been dragged.
     let onChanged: (CGFloat) -> Void
@@ -218,6 +218,8 @@ struct GameChatPanelDrag: UIViewRepresentable {
         private weak var panel: UIView?
         private var recognizer: UIPanGestureRecognizer?
         private var isKeyboardUp = false
+        /// The touch began above the panel, on the small game.
+        private var startedOnGame = false
         private var keyboardObservers: [NSObjectProtocol] = []
 
         /// The recognizer sits on the window, because the panel is SwiftUI with a
@@ -262,15 +264,21 @@ struct GameChatPanelDrag: UIViewRepresentable {
             }
         }
 
+        /// On the panel, and on the game above it, where a drag down pulls the panel along.
         func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
             guard let panel, panel.window != nil else { return false }
-            return panel.convert(panel.bounds, to: nil).contains(touch.location(in: nil))
+            let frame = panel.convert(panel.bounds, to: nil)
+            let point = touch.location(in: nil)
+            startedOnGame = point.y < frame.minY
+            return startedOnGame || frame.contains(point)
         }
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             guard let pan = gestureRecognizer as? UIPanGestureRecognizer, let window = pan.view as? UIWindow,
                 GameChatSwipeRules.isVertical(pan.velocity(in: nil), up: false)
             else { return false }
+            // The game takes no touches while the panel is open, so nothing there wants the drag.
+            if startedOnGame { return true }
             return GameChatSwipeRules.isFree(
                 at: pan.location(in: nil), in: window, fingerMovesUp: false, scrollsAlwaysWin: isKeyboardUp)
         }
