@@ -5,11 +5,7 @@ struct AccessibilitySettingsRow: View {
         NavigationLink {
             AccessibilitySettingsView()
         } label: {
-            Label {
-                Text(.settingsAccessibilityTitle)
-            } icon: {
-                Image(systemName: "accessibility")
-            }
+            SettingsMenuLabel(.settingsAccessibilityTitle, systemImage: "accessibility")
         }
         .accessibilityIdentifier("settings.accessibility")
     }

@@ -3,8 +3,8 @@ import SwiftUI
 /// The More tab: the couple at the top, then a menu rather than a control panel.
 ///
 /// Every switch lives one push away on its own screen, so this stays short enough
-/// to scan. The account actions sit last, and each one only opens a centered
-/// confirmation, so nothing important happens on a stray tap.
+/// to scan. The account actions are on the profile screen, and each one only opens
+/// a centered confirmation, so nothing important happens on a stray tap.
 struct SettingsView: View {
     @State private var viewModel: SettingsViewModel
     let currentUserID: UUID?
@@ -48,6 +48,7 @@ struct SettingsView: View {
     private let privacyOperationProvider: (any SyncClientOperationProviding)?
     private let adminGateway: (any AdminGateway)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.scenePhase) private var scenePhase
     /// A screen opened from a photo in the couple header.
     @State private var headerDestination: HeaderDestination?
 
@@ -134,6 +135,7 @@ struct SettingsView: View {
             Group {
                 youSection
                 SettingsRelationshipSection(
+                    nicknameRow: partner.map { PartnerNicknameSettingsRow(editor: nicknameEditor, partner: $0) },
                     relationshipDateRow: RelationshipDateSettingsRow(
                         relationshipStartedOn: relationshipStartedOn,
                         isSaving: milestoneIsSaving,
@@ -146,7 +148,15 @@ struct SettingsView: View {
                 )
                 appSection
                 AdminSettingsSection(access: adminAccess, gateway: adminGateway)
-                helpSection
+                SettingsSubscriptionHelpSection(
+                    viewModel: viewModel,
+                    onPurchasesRestored: onPurchasesRestored,
+                    partnerUserID: partnerUserID,
+                    partnerName: partnerName,
+                    privacySafetyService: privacySafetyService,
+                    privacyOperationProvider: privacyOperationProvider,
+                    onLeftRelationship: onLeftRelationship
+                )
             }
             .listRowBackground(Color.paeoniaSurfacePrimary)
         }
@@ -164,6 +174,21 @@ struct SettingsView: View {
         }
         .task {
             await adminAccess.refresh()
+        }
+        // Runs when the menu appears and again when the app becomes active, because
+        // the person may come back from iOS Settings with notifications turned on.
+        .task(id: scenePhase) {
+            if scenePhase == .active {
+                await viewModel.refreshSystemNotificationStatus()
+            }
+        }
+        // For the Subscription row. Opening another screen cancels a running read
+        // and leaves it failed, so the menu reads again until one has loaded.
+        .task {
+            if case .loaded = viewModel.subscriptionDetailsState {
+                return
+            }
+            await viewModel.loadSubscriptionDetails()
         }
         // The notices come from screens pushed on top of this one, but this view
         // owns the view model and stays alive underneath them, so the banner keeps
@@ -227,8 +252,8 @@ extension SettingsView {
                 name: profileRowName,
                 photoAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID
             )
-            if partner != nil {
-                PartnerNicknameSettingsRow(editor: nicknameEditor, partner: partner)
+            if let loadMarkEditor {
+                SettingsMarkRow(loadEditor: { await loadMarkEditor() })
             }
         } header: {
             Text(.settingsSectionYou)
@@ -242,16 +267,7 @@ extension SettingsView {
         NavigationLink {
             profileScreen
         } label: {
-            Label {
-                Text(.settingsProfileSectionTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
-            } icon: {
-                PaeoniaProfilePhotoAvatar(
-                    mediaAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID,
-                    name: profileRowName, tint: .paeoniaPartnerOne, size: 28
-                )
-                .accessibilityHidden(true)
-            }
+            SettingsMenuLabel(.settingsProfileSectionTitle, systemImage: "person.fill")
         }
         .accessibilityIdentifier("settings.profile")
     }
@@ -298,91 +314,25 @@ extension SettingsView {
                 NotificationSettingsView(viewModel: viewModel, partnerName: partnerName)
                     .analyticsScreen("settings_notifications")
             } label: {
-                Label {
-                    Text(.settingsNotificationsSectionTitle)
-                } icon: {
-                    Image(systemName: "bell.badge.fill")
-                }
-            }
-
-            if let loadMarkEditor {
-                SettingsMarkRow(loadEditor: { await loadMarkEditor() })
+                SettingsMenuLabel(
+                    .settingsNotificationsSectionTitle,
+                    systemImage: "bell.fill",
+                    value: notificationsValue
+                )
             }
 
             AppLockSettingsRow()
 
             AccessibilitySettingsRow()
-
-            NavigationLink {
-                PurchaseSettingsView(
-                    viewModel: viewModel,
-                    onPurchasesRestored: { [onPurchasesRestored] in
-                        await onPurchasesRestored()
-                    }
-                )
-                .analyticsScreen("settings_purchases")
-            } label: {
-                Label {
-                    Text(.settingsPurchasesSectionTitle)
-                } icon: {
-                    Image(systemName: "creditcard")
-                }
-            }
         } header: {
             Text(.settingsSectionApp)
         }
     }
 
-    /// Privacy requests and reporting share one screen. Reporting ends the
-    /// relationship, so it waits there behind a deliberate tap instead of sitting
-    /// on the menu.
-    private var helpSection: some View {
-        Section {
-            NavigationLink {
-                PrivacySafetyView(
-                    partnerUserID: partnerUserID,
-                    partnerName: partnerName,
-                    service: privacySafetyService,
-                    operationProvider: privacyOperationProvider,
-                    onReportedAndLeft: onLeftRelationship
-                )
-                .analyticsScreen("privacy_safety")
-            } label: {
-                Label {
-                    Text(.privacySafetyTitle)
-                } icon: {
-                    Image(systemName: "checkmark.shield.fill")
-                }
-            }
-            .accessibilityIdentifier("settings.privacy")
-
-            supportRow
-        } footer: {
-            PaeoniaLegalLinksView()
-                .frame(maxWidth: .infinity)
-                .padding(.top, PaeoniaSpacing.space16)
-        }
-    }
-
-    @ViewBuilder
-    private var supportRow: some View {
-        if let supportURL = URL(string: "https://paeonia.no/support") {
-            Link(destination: supportURL) {
-                LabeledContent {
-                    Image(systemName: "arrow.up.right")
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                        .accessibilityHidden(true)
-                } label: {
-                    Label {
-                        Text(.authSignInSupport)
-                            .foregroundStyle(.paeoniaTextPrimary)
-                    } icon: {
-                        Image(systemName: "questionmark.circle")
-                    }
-                }
-            }
-        }
+    /// Says Off only when iOS blocks notifications. With iOS allowing them the
+    /// screen holds many separate switches, so one word could not describe them.
+    private var notificationsValue: Text? {
+        viewModel.systemNotificationPermission == .allowed ? nil : Text(.settingsValueOff)
     }
 }
 

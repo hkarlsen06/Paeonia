@@ -9,17 +9,24 @@ struct SettingsMarkRow: View {
     @State private var isLoading = false
 
     var body: some View {
-        SettingsActionRow(
-            title: .settingsGameMarkTitle,
-            systemImage: "scribble.variable",
-            isBusy: isLoading
-        ) {
+        Button {
             Task {
                 isLoading = true
                 editor = await loadEditor()
                 isLoading = false
             }
+        } label: {
+            HStack {
+                SettingsMenuLabel(.settingsGameMarkTitle, systemImage: "gamecontroller.fill")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if isLoading {
+                    ProgressView()
+                        .accessibilityHidden(true)
+                }
+            }
         }
+        .disabled(isLoading)
         .accessibilityIdentifier("settings.gameMark")
         .sheet(isPresented: isEditing) {
             if let editor {

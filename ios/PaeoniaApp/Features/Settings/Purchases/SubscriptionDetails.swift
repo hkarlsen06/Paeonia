@@ -88,3 +88,27 @@ nonisolated struct SubscriptionDetails: Equatable, Sendable {
         }
     }
 }
+
+extension SubscriptionDetails.Status {
+    /// The status in a word or two, for the subscription screen and the More tab's Subscription row.
+    var title: LocalizedStringResource {
+        switch self {
+        case .active:
+            .settingsPurchasesDetailsStatusActive
+        case .freeTrial:
+            .settingsPurchasesDetailsStatusFreeTrial
+        case .paymentProblem:
+            .settingsPurchasesDetailsStatusPaymentProblem
+        case .ended:
+            .settingsPurchasesDetailsStatusEnded
+        case .refunded:
+            .settingsPurchasesDetailsStatusRefunded
+        case .lifetime:
+            .settingsPurchasesDetailsStatusLifetime
+        case .freeAccess:
+            .settingsPurchasesDetailsStatusFreeAccess
+        case .none:
+            .settingsPurchasesDetailsStatusNone
+        }
+    }
+}

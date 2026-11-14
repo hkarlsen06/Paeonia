@@ -19,20 +19,11 @@ struct RelationshipDateSettingsRow: View {
             selectedDate = relationshipStartDate ?? Date()
             isEditing = true
         } label: {
-            LabeledContent {
-                if let relationshipStartDate {
-                    Text(relationshipStartDate, format: .dateTime.day().month().year())
-                }
-            } label: {
-                // A Button row draws its label in the tint color, so match the
-                // NavigationLink rows.
-                Label {
-                    Text(.settingsRelationshipDateTitle)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                } icon: {
-                    Image(systemName: "calendar")
-                }
-            }
+            SettingsMenuLabel(
+                .settingsRelationshipDateTitle,
+                systemImage: "heart.fill",
+                value: relationshipStartDate.map { Text($0, format: .dateTime.day().month().year()) }
+            )
         }
         .sheet(isPresented: $isEditing) {
             RelationshipDateEditorView(

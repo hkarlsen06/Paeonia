@@ -1640,6 +1640,24 @@
         }
       }
     },
+    "appLock.rowTitle" : {
+      "comment" : "Title of the More tab row that opens the app lock settings. The row shows Face ID, Touch ID, On or Off after it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App lock"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applås"
+          }
+        }
+      }
+    },
     "appLock.screenTitle" : {
       "comment" : "Title of the app lock screen in Settings",
       "extractionState" : "manual",
@@ -1654,42 +1672,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lås Paeonia"
-          }
-        }
-      }
-    },
-    "appLock.state.off" : {
-      "comment" : "Settings row value when the app lock is off",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Off"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Av"
-          }
-        }
-      }
-    },
-    "appLock.state.on" : {
-      "comment" : "Settings row value when the app lock is on",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "On"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "På"
           }
         }
       }
@@ -40022,8 +40004,26 @@
         }
       }
     },
+    "settings.section.subscriptionHelp" : {
+      "comment" : "Header of the last More tab section, with the subscription, privacy and safety, and support rows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscription and help"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonnement og hjelp"
+          }
+        }
+      }
+    },
     "settings.section.you" : {
-      "comment" : "Header of the More tab section with your profile, your photo decoration and your partner's nickname.",
+      "comment" : "Header of the More tab section with your profile, your photo decoration and your mark in games.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -40360,6 +40360,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Forlat forholdet"
+          }
+        }
+      }
+    },
+    "settings.value.off" : {
+      "comment" : "Short value at the end of a More tab row when a setting is off, such as location sharing, notifications or the app lock.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Av"
+          }
+        }
+      }
+    },
+    "settings.value.on" : {
+      "comment" : "Short value at the end of a More tab row when a setting is on, such as location sharing or the app lock.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På"
+          }
+        }
+      }
+    },
+    "settings.value.paused" : {
+      "comment" : "Short value at the end of the More tab's Location row while location sharing is paused for a while.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På pause"
+          }
+        }
+      }
+    },
+    "settings.version" : {
+      "comment" : "Small line under the legal links at the bottom of the More tab. The first %@ is the app version, such as 1.2. The second %@ is the build number, such as 345.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@ (%@)"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versjon %@ (%@)"
           }
         }
       }

@@ -81,9 +81,9 @@ struct AppLockSettingsView: View {
     }
 }
 
-/// The App section row that opens the lock screen. It names what this phone
-/// unlocks with, and says whether the lock is on. Previews and developer flows
-/// have no lock, and the row is not shown there.
+/// The App section row that opens the lock screen. Its value names what the lock
+/// opens with, or says Off. Previews and developer flows have no lock, and the
+/// row is not shown there.
 struct AppLockSettingsRow: View {
     @Environment(AppLockModel.self) private var model: AppLockModel?
 
@@ -93,18 +93,20 @@ struct AppLockSettingsRow: View {
                 AppLockSettingsView(model: model)
                     .analyticsScreen("settings_app_lock")
             } label: {
-                LabeledContent {
-                    Text(model.isEnabled ? LocalizedStringResource.appLockStateOn : .appLockStateOff)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                } label: {
-                    Label {
-                        Text(.appLockLockWith(model.capability.biometry.name))
-                    } icon: {
-                        Image(systemName: model.capability.biometry.systemImage)
-                    }
-                }
+                SettingsMenuLabel(.appLockRowTitle, systemImage: "lock.fill", value: value(model))
             }
             .accessibilityIdentifier("settings.appLock")
         }
+    }
+
+    /// The passcode's name is lowercase prose, so a phone without Face ID, Touch ID
+    /// or Optic ID says On instead.
+    private func value(_ model: AppLockModel) -> Text {
+        guard model.isEnabled else {
+            return Text(.settingsValueOff)
+        }
+        return model.capability.biometry == .passcode
+            ? Text(.settingsValueOn)
+            : Text(verbatim: model.capability.biometry.name)
     }
 }

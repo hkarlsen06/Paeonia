@@ -9,20 +9,11 @@ struct PartnerNicknameSettingsRow: View {
         NavigationLink {
             Self.destination(editor: editor, partner: partner)
         } label: {
-            LabeledContent {
-                if let nickname = partner?.nickname {
-                    Text(verbatim: nickname)
-                } else {
-                    Text(.settingsPartnerNicknameRowEmpty)
-                }
-            } label: {
-                Label {
-                    Text(.settingsPartnerNicknameRowTitle(nameForCopy))
-                        .foregroundStyle(.paeoniaTextPrimary)
-                } icon: {
-                    Image(systemName: "heart.text.square.fill")
-                }
-            }
+            SettingsMenuLabel(
+                .settingsPartnerNicknameRowTitle(nameForCopy),
+                systemImage: "quote.bubble.fill",
+                value: partner?.nickname.map { Text(verbatim: $0) } ?? Text(.settingsPartnerNicknameRowEmpty)
+            )
         }
         .accessibilityIdentifier("settings.partnerNickname")
     }

@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// The More tab's relationship section: the couple's dates and location sharing. A date
-/// that isn't set yet gets its own row here so it's easy to find. Set dates move to
-/// the Important dates screen, since they rarely change.
+/// The More tab's relationship section: the partner's nickname, the couple's dates and
+/// location sharing. A date that isn't set yet gets its own row here so it's easy to
+/// find. Set dates move to the Important dates screen, since they rarely change.
 struct SettingsRelationshipSection: View {
+    /// Hidden while there is no partner.
+    let nicknameRow: PartnerNicknameSettingsRow?
     let relationshipDateRow: RelationshipDateSettingsRow
     /// Hidden while there is no couple dates model. The partner's row is also hidden
     /// while there is no partner.
@@ -14,6 +16,10 @@ struct SettingsRelationshipSection: View {
 
     var body: some View {
         Section {
+            if let nicknameRow {
+                nicknameRow
+            }
+
             if hasSetDate {
                 datesLink
             }
@@ -37,11 +43,7 @@ struct SettingsRelationshipSection: View {
                 )
                 .analyticsScreen("settings_location")
             } label: {
-                Label {
-                    Text(.settingsLocationSectionTitle)
-                } icon: {
-                    Image(systemName: "location.fill")
-                }
+                SettingsMenuLabel(.settingsLocationSectionTitle, systemImage: "location.fill", value: locationValue)
             }
         } header: {
             Text(.settingsRelationshipSectionTitle)
@@ -57,12 +59,20 @@ struct SettingsRelationshipSection: View {
             )
             .analyticsScreen("settings_dates")
         } label: {
-            Label {
-                Text(.settingsRelationshipDatesTitle)
-            } icon: {
-                Image(systemName: "calendar")
-            }
+            SettingsMenuLabel(.settingsRelationshipDatesTitle, systemImage: "calendar")
         }
+    }
+
+    /// Reads the same state as the location screen. Nothing shows until the saved
+    /// choice has loaded, so the row never shows a guess.
+    private var locationValue: Text? {
+        guard locationViewModel.isSharingLoaded else {
+            return nil
+        }
+        if !locationViewModel.sharingEnabled || locationViewModel.authorizationState == .denied {
+            return Text(.settingsValueOff)
+        }
+        return Text(locationViewModel.isSharingPaused ? .settingsValuePaused : .settingsValueOn)
     }
 
     private var hasSetDate: Bool {

@@ -12,11 +12,7 @@ struct AdminSettingsSection: View {
                 NavigationLink {
                     AdminHubView(gateway: gateway)
                 } label: {
-                    Label {
-                        Text(.adminEntryTitle)
-                    } icon: {
-                        Image(systemName: "shield.lefthalf.filled")
-                    }
+                    SettingsMenuLabel(.adminEntryTitle, systemImage: "wrench.and.screwdriver.fill")
                 }
             }
         }

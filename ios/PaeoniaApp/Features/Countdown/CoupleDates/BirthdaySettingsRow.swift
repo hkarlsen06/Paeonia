@@ -15,22 +15,11 @@ struct BirthdaySettingsRow: View {
     var body: some View {
         // A modal task (Cancel/Save), so it presents as a sheet like the relationship date.
         Button { isEditing = true } label: {
-            LabeledContent {
-                if let birthday {
-                    Text(birthday, format: .dateTime.day().month().year())
-                } else {
-                    Text(.settingsBirthdayAdd)
-                }
-            } label: {
-                // A Button row draws its label in the tint color, so match the
-                // NavigationLink rows.
-                Label {
-                    Text(verbatim: CoupleDateNames.birthdayTitle(for: userID, names: names))
-                        .foregroundStyle(.paeoniaTextPrimary)
-                } icon: {
-                    Image(systemName: "gift")
-                }
-            }
+            SettingsMenuLabel(
+                verbatim: CoupleDateNames.birthdayTitle(for: userID, names: names),
+                systemImage: "gift.fill",
+                value: birthday.map { Text($0, format: .dateTime.day().month().year()) } ?? Text(.settingsBirthdayAdd)
+            )
         }
         .sheet(isPresented: $isEditing) {
             CoupleDateEditorSheet(editor: .birthday(userID), coupleDates: coupleDates, names: names)

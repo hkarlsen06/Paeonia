@@ -103,7 +103,7 @@ struct PurchaseSettingsView: View {
     @ViewBuilder
     private func detailRows(_ details: SubscriptionDetails) -> some View {
         LabeledContent {
-            Text(statusText(details.status))
+            Text(details.status.title)
         } label: {
             Text(.settingsPurchasesDetailsStatus)
         }
@@ -145,27 +145,6 @@ struct PurchaseSettingsView: View {
             return .settingsPurchasesDetailsTrialEnds
         }
         return periodEnd > .now ? .settingsPurchasesDetailsAccessUntil : .settingsPurchasesDetailsEndedOn
-    }
-
-    private func statusText(_ status: SubscriptionDetails.Status) -> LocalizedStringResource {
-        switch status {
-        case .active:
-            .settingsPurchasesDetailsStatusActive
-        case .freeTrial:
-            .settingsPurchasesDetailsStatusFreeTrial
-        case .paymentProblem:
-            .settingsPurchasesDetailsStatusPaymentProblem
-        case .ended:
-            .settingsPurchasesDetailsStatusEnded
-        case .refunded:
-            .settingsPurchasesDetailsStatusRefunded
-        case .lifetime:
-            .settingsPurchasesDetailsStatusLifetime
-        case .freeAccess:
-            .settingsPurchasesDetailsStatusFreeAccess
-        case .none:
-            .settingsPurchasesDetailsStatusNone
-        }
     }
 
     private func restorePurchases() {
