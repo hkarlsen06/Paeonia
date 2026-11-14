@@ -67,8 +67,10 @@ private struct HomeTileExtentSharing: ViewModifier {
 
 private struct HomeTileNarrowing: ViewModifier {
     @Environment(\.homeTileExtent) private var extent
-    /// This view's frame in `HomeTileExtent.space` before it narrows. The insets sit inside
-    /// the measured frame, so narrowing doesn't change what is measured.
+    /// The width this view is offered, in `HomeTileExtent.space`. The frame takes exactly
+    /// that width, so content that can't narrow as far as the tiles overflows it instead of
+    /// moving it. A measured frame that moved would change the insets, and those would
+    /// move it again on every frame.
     @State private var frame: CGRect?
 
     func body(content: Content) -> some View {
@@ -76,6 +78,7 @@ private struct HomeTileNarrowing: ViewModifier {
         content
             .padding(.leading, insets.leading)
             .padding(.trailing, insets.trailing)
+            .frame(minWidth: 0, maxWidth: .infinity)
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(HomeTileExtent.space)) } action: {
                 frame = $0
             }
