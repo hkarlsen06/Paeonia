@@ -4,6 +4,7 @@ import {
   buildAppApsPayload,
   buildAppRequest,
   buildProviderJwt,
+  buildVoipRequest,
   buildWidgetApsPayload,
   buildWidgetRequest,
   cachedProviderTokens,
@@ -237,6 +238,42 @@ describe("request builders", () => {
     expect(buildAppRequest({ ...alert, apns_push_type: "background" }, "no.paeonia.app")).toMatchObject({
       pushType: "background",
       priority: "5",
+    });
+  });
+
+  test("a call ring is a PushKit push on the voip topic that APNs drops at the ring deadline", () => {
+    const ring = {
+      device_id: "d1",
+      voip_push_token: "voiptok",
+      apns_environment: "production" as const,
+      call_id: "c1",
+      caller_user_id: "u1",
+      ring_expires_at: "2026-10-10T12:00:45.000Z",
+      lock_screen_detail_level: "private" as const,
+    };
+    const request = buildVoipRequest(ring, "no.paeonia.app");
+    expect(request).toMatchObject({
+      token: "voiptok",
+      preferredEnvironment: "production",
+      topic: "no.paeonia.app.voip",
+      pushType: "voip",
+      priority: "10",
+      expiration: String(Date.parse("2026-10-10T12:00:45Z") / 1000),
+      collapseId: null,
+    });
+    // Ids, the deadline and the callee's lock screen choice, nothing anyone wrote.
+    expect(JSON.parse(request.body)).toEqual({
+      type: "call",
+      call_id: "c1",
+      caller_user_id: "u1",
+      ring_expires_at: "2026-10-10T12:00:45.000Z",
+      lock_screen_detail_level: "private",
+    });
+    expect(apnsHeaders("jwt", request)).toMatchObject({
+      "apns-topic": "no.paeonia.app.voip",
+      "apns-push-type": "voip",
+      "apns-priority": "10",
+      "apns-expiration": String(Date.parse("2026-10-10T12:00:45Z") / 1000),
     });
   });
 

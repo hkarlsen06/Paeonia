@@ -135,6 +135,42 @@ describe("get_badges", () => {
     expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0, icon: 0 });
   });
 
+  test("a missed call counts in the couple chat until it is read, and a completed call never does", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const device = newUuid();
+    const missed = newUuid();
+    await couple.first.as.mutation(api.calls.start_call, { p_call_id: missed, p_device_id: device });
+    await couple.first.as.mutation(api.calls.end_call, { p_call_id: missed });
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1, icon: 1 });
+    // The caller sent it, so it waits for nobody else.
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0, icon: 0 });
+    const threadId = (await t.run((ctx) => ctx.db.query("conversation_threads").first()))!.id;
+    await couple.second.as.mutation(api.chatPresence.mark_thread_read, { p_thread_id: threadId, p_message_id: missed });
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0, icon: 0 });
+
+    // Each call a second later, so the rows keep their order.
+    const later = () => vi.setSystemTime(new Date(Date.now() + 1000));
+    later();
+    const completed = newUuid();
+    await couple.first.as.mutation(api.calls.start_call, { p_call_id: completed, p_device_id: device });
+    await couple.second.as.mutation(api.calls.answer_call, { p_call_id: completed, p_device_id: newUuid() });
+    await couple.second.as.mutation(api.calls.end_call, { p_call_id: completed });
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0, icon: 0 });
+
+    // A completed call after an unread missed one leaves the missed one counting.
+    later();
+    const missedAgain = newUuid();
+    await couple.first.as.mutation(api.calls.start_call, { p_call_id: missedAgain, p_device_id: device });
+    await couple.first.as.mutation(api.calls.end_call, { p_call_id: missedAgain });
+    later();
+    const another = newUuid();
+    await couple.first.as.mutation(api.calls.start_call, { p_call_id: another, p_device_id: device });
+    await couple.second.as.mutation(api.calls.answer_call, { p_call_id: another, p_device_id: newUuid() });
+    await couple.first.as.mutation(api.calls.end_call, { p_call_id: another });
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1, icon: 1 });
+  });
+
   test("counts a story reply on Questions for the story's author, not on Home, until it is read", async () => {
     const t = newTest();
     const couple = await createCouple(t);
