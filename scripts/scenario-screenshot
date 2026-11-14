@@ -3,8 +3,8 @@
 # simulator, to check how a change looks. scripts/scenario-record records it
 # instead, to check how a change moves.
 #
-#   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--no-build]
-#   scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--no-build]
+#   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--no-build]
+#   scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--no-build]
 #
 # It builds the App scheme through the machine-wide build queue, into the
 # derived data folder that scripts/xcode-build-agent.sh and
@@ -16,7 +16,8 @@
 # the app and releases the simulator. It prints the PNG's path last. --no-build
 # reuses the last build, from this script or from either wrapper.
 # --language runs the app in another language, such as nb, without changing
-# the shared simulator's settings.
+# the shared simulator's settings. --partner-name gives the partner in the Games
+# scenarios another name than Robin, such as a longer one.
 #
 # For a before and after, run it once with your change stashed and once without,
 # with a different --out each time. Do both in one worktree, because a second
@@ -46,9 +47,9 @@ if [[ ${1:-} == --record ]]; then
 fi
 usage() {
   if [[ $record == 1 ]]; then
-    echo "usage: scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--no-build]" >&2
+    echo "usage: scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--no-build]" >&2
   else
-    echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--no-build]" >&2
+    echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--no-build]" >&2
   fi
   exit 64
 }
@@ -106,6 +107,7 @@ cleanup() {
 trap cleanup EXIT
 xa_install_signal_traps
 language_args=()
+partner_args=()
 while [[ $# -gt 0 ]]; do
   case $1 in
     --out) [[ $# -ge 2 ]] || usage; out=$2; shift 2 ;;
@@ -113,6 +115,7 @@ while [[ $# -gt 0 ]]; do
     --seconds) [[ $record == 1 && $# -ge 2 ]] || usage; record_seconds=$2; shift 2 ;;
     --then) [[ $record == 1 && $# -ge 2 ]] || usage; then_command=$2; shift 2 ;;
     --language) [[ $# -ge 2 ]] || usage; language_args=(-AppleLanguages "($2)" -AppleLocale "$2"); shift 2 ;;
+    --partner-name) [[ $# -ge 2 ]] || usage; partner_args=(-paeonia-scenario-partner-name "$2"); shift 2 ;;
     --no-build) build=0; shift ;;
     *) usage ;;
   esac
@@ -175,7 +178,7 @@ launch_args=(-paeonia-scenario "$scenario" -paeonia-scenario-hide-controls YES)
 [[ $record == 0 ]] || launch_args+=(-paeonia-scenario-assistive-technology none)
 launch() {
   xcrun simctl launch --terminate-running-process "$sim" "$bundle_id" \
-    "${launch_args[@]}" ${language_args[@]+"${language_args[@]}"} >/dev/null
+    "${launch_args[@]}" ${language_args[@]+"${language_args[@]}"} ${partner_args[@]+"${partner_args[@]}"} >/dev/null
 }
 
 # Bash runs a trap only once the foreground command ends, but it interrupts
