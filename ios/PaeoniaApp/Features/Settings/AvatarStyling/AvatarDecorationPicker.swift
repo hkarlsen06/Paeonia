@@ -1,18 +1,25 @@
 import SwiftUI
 
+/// Pushed from the More tab, and shown in a sheet from the stories on Home.
+///
+/// Pushed, it works like the nickname screen: while the choice is unsaved, Cancel takes
+/// the back button's place, so a stray swipe never drops it. A sheet always shows Cancel,
+/// because it has no back button.
 struct AvatarDecorationPicker: View {
     let model: AvatarStylingModel
     let name: String
     let photoAssetID: UUID?
+    let isSheet: Bool
     @State private var selection: AvatarDecoration
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(PaeoniaBannerCenter.self) private var banners
 
-    init(model: AvatarStylingModel, name: String, photoAssetID: UUID?) {
+    init(model: AvatarStylingModel, name: String, photoAssetID: UUID?, isSheet: Bool = false) {
         self.model = model
         self.name = name
         self.photoAssetID = photoAssetID
+        self.isSheet = isSheet
         _selection = State(initialValue: model.decorations.own)
     }
 
@@ -45,11 +52,14 @@ struct AvatarDecorationPicker: View {
         .paeoniaBanner(banners)
         .navigationTitle(Text(.avatarDecorationTitle))
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(holdsUnsavedChoice)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button { dismiss() } label: { Text(.commonCancel) }
-                    .disabled(model.isSaving)
-                    .accessibilityIdentifier("avatarDecoration.cancel")
+            if isSheet || holdsUnsavedChoice {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: cancel) { Text(.commonCancel) }
+                        .disabled(model.isSaving)
+                        .accessibilityIdentifier("avatarDecoration.cancel")
+                }
             }
         }
         .paeoniaBottomBar {
@@ -65,8 +75,33 @@ struct AvatarDecorationPicker: View {
             .disabled(model.isSaving || selection == model.decorations.own)
             .accessibilityIdentifier("avatarDecoration.save")
             .padding(PaeoniaSpacing.screenHorizontalPadding)
+            // Pushed on the More tab, Save sits above the tab bar, and the choices
+            // would show between the two.
+            .background {
+                LinearGradient(
+                    stops: [
+                        .init(color: .paeoniaBackgroundPrimary.opacity(0), location: 0),
+                        .init(color: .paeoniaBackgroundPrimary, location: 0.25)
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+                .ignoresSafeArea(edges: .bottom)
+            }
         }
         .interactiveDismissDisabled(model.isSaving)
+    }
+
+    /// Also true during a save, so the person cannot leave before it reports back.
+    private var holdsUnsavedChoice: Bool {
+        selection != model.decorations.own || model.isSaving
+    }
+
+    private func cancel() {
+        if isSheet {
+            dismiss()
+        } else {
+            selection = model.decorations.own
+        }
     }
 
     private var columns: [GridItem] {

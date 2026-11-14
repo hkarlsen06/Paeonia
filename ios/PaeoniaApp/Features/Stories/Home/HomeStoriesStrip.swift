@@ -78,7 +78,8 @@ struct HomeStoriesStrip: View {
             if let avatarStyling {
                 NavigationStack {
                     AvatarDecorationPicker(
-                        model: avatarStyling, name: people.currentName, photoAssetID: people.currentPhotoAssetID
+                        model: avatarStyling, name: people.currentName, photoAssetID: people.currentPhotoAssetID,
+                        isSheet: true
                     )
                 }
             }

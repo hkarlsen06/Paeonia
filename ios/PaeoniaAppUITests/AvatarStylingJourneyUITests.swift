@@ -59,6 +59,10 @@ final class AvatarStylingJourneyUITests: XCTestCase {
         XCTAssertTrue(ribbon.waitForExistence(timeout: 5))
         XCTAssertTrue(ribbon.isSelected)
         app.buttons["avatarDecoration.choice.none"].tap()
-        app.buttons["avatarDecoration.cancel"].tap()
+        let cancel = app.buttons["avatarDecoration.cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+        cancel.tap()
+        XCTAssertTrue(ribbon.isSelected)
+        XCTAssertFalse(cancel.exists)
     }
 }

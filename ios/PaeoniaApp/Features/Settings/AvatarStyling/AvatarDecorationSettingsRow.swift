@@ -4,28 +4,15 @@ struct AvatarDecorationSettingsRow: View {
     let name: String
     let photoAssetID: UUID?
     @Environment(\.avatarStyling) private var model
-    @State private var isPresented = false
 
     var body: some View {
         if let model {
-            Button { isPresented = true } label: {
-                Label {
-                    Text(.avatarDecorationTitle).foregroundStyle(.paeoniaTextPrimary)
-                } icon: {
-                    PaeoniaDecoratedAvatar(
-                        mediaAssetID: photoAssetID, name: name, tint: .paeoniaPartnerOne,
-                        size: 28, decoration: model.decorations.own == .none ? .peony : model.decorations.own
-                    )
-                    .padding(28 * AvatarDecoration.maximumOutset)
-                    .accessibilityHidden(true)
-                }
+            NavigationLink {
+                AvatarDecorationPicker(model: model, name: name, photoAssetID: photoAssetID)
+            } label: {
+                SettingsMenuLabel(.avatarDecorationTitle, systemImage: "sparkles")
             }
             .accessibilityIdentifier("settings.avatarDecoration")
-            .sheet(isPresented: $isPresented) {
-                NavigationStack {
-                    AvatarDecorationPicker(model: model, name: name, photoAssetID: photoAssetID)
-                }
-            }
         }
     }
 }
