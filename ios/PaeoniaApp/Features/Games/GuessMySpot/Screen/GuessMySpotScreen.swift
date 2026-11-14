@@ -110,12 +110,24 @@ struct GuessMySpotScreen: View {
         if case .reveal = viewModel.phase { true } else { false }
     }
 
+    private var pointsLink: some View {
+        GuessMySpotPointsLink(score: viewModel.score, me: viewModel.me, partner: viewModel.partner)
+    }
+
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
-        // The reveal has no live row, so presence stays in the toolbar.
+        // The reveal has no live row, so presence stays in the toolbar. It shares
+        // one item with the score, because separate items each take the width
+        // they ask for and overlap when the partner's name is long.
         if isReveal {
             ToolbarItem(placement: .principal) {
-                GuessMySpotToolbarPresence(partner: viewModel.partner, isHere: viewModel.partnerStatus != .away)
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    GuessMySpotToolbarPresence(partner: viewModel.partner, isHere: viewModel.partnerStatus != .away)
+                    pointsLink
+                }
+                // Asks for the whole bar, so the score stays where it sits in the
+                // other phases instead of following a centered name.
+                .frame(idealWidth: .greatestFiniteMagnitude)
             }
         }
         if viewModel.showsCheck {
@@ -130,10 +142,10 @@ struct GuessMySpotScreen: View {
                 .accessibilityIdentifier("guessMySpot.check.another")
             }
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            GuessMySpotPointsLink(score: viewModel.score, me: viewModel.me, partner: viewModel.partner)
+        if !isReveal {
+            ToolbarItem(placement: .topBarTrailing) { pointsLink }
+                .sharedBackgroundVisibility(.hidden)
         }
-        .sharedBackgroundVisibility(.hidden)
         GameToolbarActions(kind: .guessMySpot) {
             GameMenu(history: nil, showTutorial: { showsTutorial = true })
         }
@@ -143,21 +155,31 @@ struct GuessMySpotScreen: View {
 // MARK: - Presence
 
 /// The partner's portrait and name, with the shared ring while they have the game open.
+/// The name drops out when there is no room for it next to the score.
 private struct GuessMySpotToolbarPresence: View {
     let partner: GamePlayer
     let isHere: Bool
 
     var body: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            GameAvatar(player: partner, isMe: false, size: 24)
-                .gamePresenceRing(isHere)
-            Text(verbatim: partner.name)
-                .font(.headline)
-                .fixedSize(horizontal: false, vertical: true)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                avatar
+                Text(verbatim: partner.name)
+                    .font(.headline)
+                    .lineLimit(1)
+            }
+            avatar
         }
-        .accessibilityElement(children: .combine)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: partner.name))
         .accessibilityValue(Text(isHere ? .gamesPresenceHere : .gamesPresenceAway))
         .accessibilityIdentifier("guessMySpot.reveal.presence")
+    }
+
+    private var avatar: some View {
+        GameAvatar(player: partner, isMe: false, size: 24)
+            .gamePresenceRing(isHere)
     }
 }
 
@@ -171,7 +193,9 @@ struct GuessMySpotPointsLink: View {
 
     var body: some View {
         NavigationLink(value: GamesDestination.guessMySpotHistory) {
+            // The score keeps its full width, so the partner's name gives way instead.
             GuessMySpotScoreCapsule(score: score, me: me, partner: partner)
+                .fixedSize()
                 .contentShape(Capsule(style: .continuous))
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(.guessMySpotHistoryTitle))
