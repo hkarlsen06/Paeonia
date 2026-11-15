@@ -14,6 +14,9 @@ struct CallScreen: View {
     @State private var dragOffset: CGFloat = 0
 
     private static let avatarSize: CGFloat = 132
+    /// The glow at its largest. It breathes between `glowScales`, which never go past 1.
+    private static let glowSize = avatarSize * 1.45
+    private static let glowScales: [CGFloat] = [0.86, 1]
     private static let localTileSize = CGSize(width: 104, height: 152)
     /// How far a drag goes before letting go shrinks the screen.
     private static let minimizeDistance: CGFloat = 120
@@ -141,6 +144,9 @@ struct CallScreen: View {
             size: Self.avatarSize,
             isCurrentUser: false
         )
+        // The frame holds the glow at its largest in every phase, so it never reaches the name
+        // and the name stays put when the call connects.
+        .frame(width: Self.glowSize, height: Self.glowSize)
         .background { ringingGlow }
         .accessibilityHidden(true)
     }
@@ -148,14 +154,13 @@ struct CallScreen: View {
     /// A soft glow that breathes while the call rings or connects.
     @ViewBuilder
     private var ringingGlow: some View {
-        let glow = Circle().fill(Color.paeoniaPartnerTwo.opacity(0.22)).frame(
-            width: Self.avatarSize * 1.45, height: Self.avatarSize * 1.45)
+        let glow = Circle().fill(Color.paeoniaPartnerTwo.opacity(0.22))
         switch session.phase {
         case .ringing, .connecting, .reconnecting:
             if reduceMotion {
                 glow
             } else {
-                glow.phaseAnimator([0.9, 1.08]) { view, scale in
+                glow.phaseAnimator(Self.glowScales) { view, scale in
                     view.scaleEffect(scale)
                 } animation: { _ in
                     .easeInOut(duration: 1.1)
