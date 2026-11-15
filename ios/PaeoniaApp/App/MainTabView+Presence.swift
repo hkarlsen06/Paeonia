@@ -61,9 +61,13 @@ extension MainTabView {
 
     /// What this person has on screen, so the avatar leaves out the chat and the game they are in.
     private var presenceViewer: PresenceViewerPlace {
-        PresenceViewerPlace(
+        let openGame = selection.wrappedValue == .games ? gamesPath.last?.gameKind : nil
+        return PresenceViewerPlace(
             visibleChat: visibleChatSubject,
-            openGame: selection.wrappedValue == .games ? gamesPath.last?.gameKind : nil,
+            openGame: openGame,
+            gameChat: identity.coupleID.flatMap { coupleID in
+                openGame.map { GameChatSubject(coupleID: coupleID, kind: $0) }
+            },
             // Open on the Us tab whichever tab shows, so a trip to another tab doesn't tell the
             // partner again that this person opened it.
             isDrawing: widgetDrawingPresented.wrappedValue
@@ -75,9 +79,15 @@ extension MainTabView {
     private func openPresenceRequest() {
         switch presenceModel.takeOpenRequest() {
         case .chat(.couple):
-            // With no chat on screen, "Just us" slides over what is there. Another chat would stay
-            // open under it and mark the partner's messages read, so it opens in Chats instead.
-            if visibleChatSubject == nil { slideOverCoupleChat() } else { openCoupleChat() }
+            // With no chat on screen, or only the game's chat that it closes, "Just us" slides over
+            // what is there. Another chat would stay open under it and mark the partner's messages
+            // read, so it opens in Chats instead.
+            let chatOverGame = gameChatSheet.map { ThreadChatSubject.game($0.subject) }
+            if visibleChatSubject == nil || visibleChatSubject == chatOverGame {
+                slideOverCoupleChat()
+            } else {
+                openCoupleChat()
+            }
         case let .chat(subject):
             openChatAction(for: subject)()
         case let .game(kind):

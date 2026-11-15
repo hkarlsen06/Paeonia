@@ -41,6 +41,7 @@ Decisions and rules for the Games tab. Each game has its own doc in `docs/games/
 - One ongoing chat per game type, available before, during and after play, opened from a toolbar button over the game rather than switching to Chats.
 - On an upright iPhone it is a panel over the lower screen with the game still visible above, opened by a swipe up (except where the game needs the swipe, such as a canvas or map). A tap on the game, the close button, a swipe right or a drag down closes it. On iPad and a phone on its side it is a sheet.
 - The app shows the swipe up instead of explaining it, at most once a day.
+- In a game, Message on the partner's floating avatar opens the game's chat too. Once that chat is open, Message opens "Just us", and a swipe in from the right edge still opens "Just us" over the game.
 - Game chats show a miniature of the current visible game content, never a hidden answer.
 
 ### Queued moves and replays

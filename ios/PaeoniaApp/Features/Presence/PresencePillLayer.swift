@@ -139,9 +139,11 @@ struct PresencePillLayer: View {
                 if let destination = callout.destination { open(destination, clearingNotice: true) }
             }
         case let .actions(join):
+            let messageChat = model.viewer.messageChat
             PresenceActions(
-                partnerName: partnerName, showsMessage: model.viewer.visibleChat != .couple, join: join,
-                call: call, message: { open(.chat(.couple)) }, open: { open($0, clearingNotice: true) }
+                partnerName: partnerName, messageChat: model.viewer.visibleChat == messageChat ? nil : messageChat,
+                join: join, call: call, message: { open(.chat(messageChat)) },
+                open: { open($0, clearingNotice: true) }
             )
             .accessibilityAction(.escape) { model.collapse() }
         case .place:

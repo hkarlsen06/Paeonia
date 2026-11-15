@@ -36047,6 +36047,24 @@
         }
       }
     },
+    "presence.toolbar.messageGame.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the Message button under the partner's floating picture while a game is open. It opens that game's chat. The first value is the partner's name, the second the game's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write to %1$@ in the %2$@ chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv til %1$@ i chatten i %2$@"
+          }
+        }
+      }
+    },
     "privacySafety.correction.action" : {
       "comment" : "Button that opens the personal data correction form",
       "extractionState" : "manual",

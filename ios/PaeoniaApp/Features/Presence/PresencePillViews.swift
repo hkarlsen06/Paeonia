@@ -182,8 +182,9 @@ struct PresenceActions: View {
     static let buttonSize: CGFloat = 32
 
     let partnerName: String
-    /// Hidden while "Just us" is already on screen.
-    let showsMessage: Bool
+    /// The chat Message opens, the game's own chat in a game. Nil hides Message while that chat is
+    /// already on screen.
+    let messageChat: ThreadChatSubject?
     /// A game or the drawing.
     let join: PresenceDestination?
     let call: () -> Void
@@ -196,10 +197,9 @@ struct PresenceActions: View {
                 Image(systemName: "phone.fill")
                     .accessibilityHidden(true)
             }
-            if showsMessage {
+            if let messageChat {
                 PresenceActionButton(
-                    label: .presenceToolbarMessageAccessibilityLabel(partnerName), identifier: "presence.message",
-                    action: message
+                    label: messageLabel(messageChat), identifier: "presence.message", action: message
                 ) {
                     Image(systemName: "bubble.left.fill")
                         .accessibilityHidden(true)
@@ -208,6 +208,13 @@ struct PresenceActions: View {
             joinButton
         }
         .padding(.horizontal, PaeoniaSpacing.space4)
+    }
+
+    private func messageLabel(_ chat: ThreadChatSubject) -> LocalizedStringResource {
+        if case let .game(game) = chat {
+            return .presenceToolbarMessageGameAccessibilityLabel(partnerName, String(localized: game.kind.name))
+        }
+        return .presenceToolbarMessageAccessibilityLabel(partnerName)
     }
 
     @ViewBuilder

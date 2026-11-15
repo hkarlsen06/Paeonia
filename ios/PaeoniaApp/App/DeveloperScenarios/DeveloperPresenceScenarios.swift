@@ -7,7 +7,7 @@
     static let presence: [DeveloperScenario] = [
       presenceUsTab, presencePlaying, presenceMessage, presenceTyping, presenceTucked, presenceOverCover,
       presenceInChat, presenceLetter, presenceUnread, presenceOpenedGame, presenceOpenedDrawing,
-      localFlowPresence,
+      localFlowPresence, localFlowPresenceGameChat,
     ]
 
     static let presenceUsTab = DeveloperScenario(
@@ -83,6 +83,17 @@
       "local-flow-presence", "Local flow · Robin in Mind Meld",
       "Tap Robin's picture over Us, write in Just us from Message, and join Robin's game", .localFlows
     ) { _ in DeveloperPresenceFlow(partner: PartnerPresence(games: [.mindMeld]), noticeDuration: .seconds(5)) }
+
+    static let localFlowPresenceGameChat = DeveloperScenario(
+      "local-flow-presence-game-chat", "Local flow · Message in Four in a Row",
+      "Message from Robin's picture opens the game's chat over the board, and Message again opens Just us",
+      .localFlows
+    ) { _ in
+      DeveloperLocalFlowHost(
+        seed: .paired, gameConversation: .connectFourPartnerTurn, launchLink: "paeonia://games/connect-four",
+        avatarStories: .noStory,
+        presence: DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.connectFour])))
+    }
   }
 
   nonisolated enum DeveloperPresenceFixture {

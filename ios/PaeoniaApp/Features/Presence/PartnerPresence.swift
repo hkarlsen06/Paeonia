@@ -85,8 +85,17 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
 nonisolated struct PresenceViewerPlace: Equatable, Sendable {
     var visibleChat: ThreadChatSubject?
     var openGame: GameKind?
+    /// The chat of the game on screen. Nil outside a game.
+    var gameChat: GameChatSubject?
     /// The couple's widget drawing is open on the Us tab.
     var isDrawing = false
+
+    /// Where the avatar's Message button goes. In a game it opens that game's chat, whose swipe up
+    /// is easy to miss, and "Just us" once that chat is open. Elsewhere it opens "Just us".
+    var messageChat: ThreadChatSubject {
+        if let gameChat, visibleChat != .game(gameChat) { return .game(gameChat) }
+        return .couple
+    }
 }
 
 /// What the avatar calls out in its capsule. A tap opens the chat, the game or the screen it is about.
