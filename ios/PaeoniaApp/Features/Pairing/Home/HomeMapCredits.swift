@@ -14,7 +14,9 @@ struct HomeMapCreditsButton: View {
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
-                .padding(.leading, PaeoniaSpacing.space4)
+                // A round outline reads closer to the text than the filled icon on the other side does,
+                // so it gets 2 points more.
+                .padding(.leading, PaeoniaSpacing.space4 + PaeoniaSpacing.space2)
                 .frame(
                     minWidth: PaeoniaSpacing.compactButtonHeight,
                     minHeight: PaeoniaSpacing.compactButtonHeight,
