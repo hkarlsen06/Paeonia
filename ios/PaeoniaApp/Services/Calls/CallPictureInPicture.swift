@@ -78,16 +78,15 @@ final class CallPictureInPicture {
         controller?.canStartPictureInPictureAutomaticallyFromInline = true
         guard visible !== sourceView || controller == nil else { return }
         sourceView = visible
-        let source = AVPictureInPictureController.ContentSource(
+        // AVKit watches only the view a controller was made with. Given a new `contentSource`, it
+        // never sees the new view as visible and Picture in Picture cannot start, so a new
+        // controller takes over. The old one goes first, since both share `contentController`.
+        controller = nil
+        controller = AVPictureInPictureController(contentSource: .init(
             activeVideoCallSourceView: visible,
             contentViewController: contentController
-        )
-        if let controller {
-            controller.contentSource = source
-        } else {
-            controller = AVPictureInPictureController(contentSource: source)
-            controller?.canStartPictureInPictureAutomaticallyFromInline = true
-        }
+        ))
+        controller?.canStartPictureInPictureAutomaticallyFromInline = true
     }
 
     /// In a shown window, not hidden or transparent anywhere up to it, and at least partly on it.
