@@ -7,11 +7,20 @@ nonisolated struct TodaysQuestionOpening: Codable, Equatable {
     let day: String
     let partnerHadAnswered: Bool
 
-    /// Whether today's question may open by itself on `day`. It opens once a couple day,
-    /// and once more when the partner has answered since it last opened.
-    static func mayOpen(on day: String, partnerHasAnswered: Bool, after last: TodaysQuestionOpening?) -> Bool {
-        guard let last, last.day == day else { return true }
-        return !last.partnerHadAnswered && partnerHasAnswered
+    /// Why today's question opens by itself on `day`, or nil when it doesn't. It opens once
+    /// a couple day, and once more when the partner has answered since it last opened.
+    static func occasion(
+        on day: String, partnerHasAnswered: Bool, after last: TodaysQuestionOpening?
+    ) -> Occasion? {
+        guard let last, last.day == day else { return .firstOfDay }
+        return !last.partnerHadAnswered && partnerHasAnswered ? .partnerAnswered : nil
+    }
+
+    enum Occasion: Equatable {
+        /// It has not opened yet this couple day.
+        case firstOfDay
+        /// It opened today before the partner answered, and the partner has answered since.
+        case partnerAnswered
     }
 }
 

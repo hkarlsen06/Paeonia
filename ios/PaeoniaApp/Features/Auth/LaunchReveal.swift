@@ -17,6 +17,11 @@ extension EnvironmentValues {
     /// and loads that shouldn't compete with the intro (e.g. streak celebrations)
     /// wait on this. Defaults to true so anything outside the cold launch behaves normally.
     @Entry var launchIntroComplete = true
+
+    /// True while the cold-launch overlay still covers the app or fades over it. Something
+    /// that opens in place of the first screen meanwhile starts under the launch screen, so
+    /// the overlay seems to fade straight into it. Defaults to false outside the cold launch.
+    @Entry var launchOverlayShowing = false
 }
 
 /// Whether the Home map is waiting for or playing its intro flight. The root counts

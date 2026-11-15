@@ -10,8 +10,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     /// in particular. A message push in it opens it.
     case coupleChat
     case dailyToday(coupleDayID: UUID?)
-    /// "Answer now" at the end of the first day sequence. Opens today's question over Home,
-    /// so closing it lands on Home with the things to try. No URL opens it.
+    /// "Answer now" at the end of the first day sequence. Opens today's question in place of
+    /// the sequence, and closing it lands on Home with the things to try. No URL opens it.
     case firstDayAnswer
     /// `paeonia://topics`: the partner answered topic questions. Opens the Topics shelf.
     case topics

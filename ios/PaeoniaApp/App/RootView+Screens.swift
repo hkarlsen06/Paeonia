@@ -239,23 +239,28 @@ extension RootView {
                             removal: reduceMotion ? .opacity : .scale(scale: 0.96).combined(with: .opacity)
                         )
                     )
-            } else if viewModel.isFirstDayPresented {
-                postPairingSequence
-                    .transition(.opacity)
             } else {
-                mainTabs
-                    .transition(
-                        .asymmetric(
-                            insertion: reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity),
-                            removal: .opacity
+                if !viewModel.isFirstDayPresented {
+                    mainTabs
+                        .transition(
+                            .asymmetric(
+                                insertion: reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity),
+                                removal: .opacity
+                            )
                         )
-                    )
+                }
+                if showsFirstDay {
+                    postPairingSequence
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaBackgroundPrimary)
         .animation(pairedScreenAnimation, value: viewModel.isPairingCelebrationPresented)
         .animation(pairedScreenAnimation, value: viewModel.isFirstDayPresented)
+        .animation(pairedScreenAnimation, value: showsFirstDay)
         // Starts loading the first day steps while the celebration plays.
         .onChange(of: postPairingContext, initial: true) { _, context in
             if let context {
@@ -270,6 +275,12 @@ extension RootView {
         .onDisappear {
             postPairingFlow.reset()
         }
+    }
+
+    /// The first day sequence is up. After "Answer now" it stays over the tabs until they
+    /// have opened today's question in its place, so Home never shows in between.
+    private var showsFirstDay: Bool {
+        viewModel.isFirstDayPresented || deepLink == .firstDayAnswer
     }
 
     /// Who the first day sequence is for, while the celebration or the sequence is up.
@@ -315,6 +326,7 @@ extension RootView {
             pairingCelebrationStore: viewModel.pairingCelebrationStore,
             todaysQuestionOpenings: allowsSystemIntegrations ? TodaysQuestionOpeningStore() : nil
         )
+        .environment(\.launchOverlayShowing, isLaunchExperienceActive)
     }
 
     private var mainTabIdentity: MainTabIdentity {

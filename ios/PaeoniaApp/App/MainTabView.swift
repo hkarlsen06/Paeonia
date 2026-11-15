@@ -154,6 +154,7 @@ struct MainTabView: View {
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
     /// Questions-tab hero card), so the cover grows from the one the user tapped.
     @State var dailyFlowSource: DailyFlowSource = .us
+    @State var dailyFlowEntrance = DailyFlowEntrance.zoom
     /// Streak-restore offer opened from the streak badge when a lost streak can still
     /// be bought back, outside the answer flow.
     @State var showStreakRestore = false
@@ -211,6 +212,8 @@ struct MainTabView: View {
     /// False while the cold-launch intro still covers the app. The streak milestone
     /// moment waits for it.
     @Environment(\.launchIntroComplete) var launchIntroComplete
+    @Environment(\.launchContentRevealed) var launchContentRevealed
+    @Environment(\.launchOverlayShowing) var launchOverlayShowing
 
     init(
         tabs: [MainTab] = MainTab.allCases,

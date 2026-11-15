@@ -93,8 +93,9 @@ extension RootView {
         }
     }
 
-    /// The first day sequence ended. "Answer now" goes on to the answer flow,
-    /// which `MainTabView` opens over Home for the deep link.
+    /// The first day sequence ended. "Answer now" goes on to the answer flow, which
+    /// `MainTabView` opens in place for the deep link. The sequence stays over the tabs
+    /// until then (`showsFirstDay`).
     func finishFirstDay(_ outcome: PostPairingOutcome) {
         if outcome == .answerQuestions {
             deepLink = .firstDayAnswer

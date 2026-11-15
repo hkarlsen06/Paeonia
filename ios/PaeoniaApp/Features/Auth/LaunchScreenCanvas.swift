@@ -4,18 +4,20 @@ import UIKit
 
 /// The system launch screen drawn again: `LaunchBackground` with `PaeoniaLaunchPetalMark`
 /// centered at its own size, as `UILaunchScreen` in Info.plist shows them. Setting
-/// `isFading` fades it out with Core Animation.
+/// `isFading` fades it out with Core Animation. Without the mark it is the plain app
+/// background, which has the same color.
 ///
 /// The first app surface builds in the same update that starts the fade, which took
 /// 80 to 117 ms on an iPhone. A SwiftUI animation would lose that much of the fade.
 /// Core Animation starts the fade when that update is drawn and plays all of it.
 struct LaunchScreenCanvas: UIViewRepresentable {
+    var showsMark = true
     let isFading: Bool
     /// The fade has played out, or was cut off.
     let onFaded: () -> Void
 
     func makeUIView(context: Context) -> LaunchScreenCanvasView {
-        LaunchScreenCanvasView()
+        LaunchScreenCanvasView(showsMark: showsMark)
     }
 
     func updateUIView(_ view: LaunchScreenCanvasView, context: Context) {
@@ -30,9 +32,10 @@ final class LaunchScreenCanvasView: UIView {
     var onFaded: () -> Void = {}
     private var hasFaded = false
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    init(showsMark: Bool) {
+        super.init(frame: .zero)
         backgroundColor = UIColor(resource: .launchBackground)
+        guard showsMark else { return }
         let mark = UIImageView(image: UIImage(resource: .paeoniaLaunchPetalMark))
         mark.contentMode = .center
         mark.frame = bounds

@@ -43,3 +43,61 @@ extension View {
         contentShape(Rectangle()).onTapGesture(perform: action)
     }
 }
+
+/// How the answer flow's cover appears.
+enum DailyFlowEntrance: Equatable {
+    /// It zooms out of the card that opened it (`DailyFlowSource`).
+    case zoom
+    /// It is there at once in place of the screen, with no zoom, under `curtain` while
+    /// that fades. Closing it still zooms into the card.
+    case inPlace(curtain: DailyFlowCurtain?)
+}
+
+/// What covers the answer flow when it opens in place of the screen, before it fades
+/// away. It looks like the screen that was there, so that screen seems to fade into the flow.
+enum DailyFlowCurtain: Equatable {
+    /// The launch screen, while the cold launch's own launch screen still shows.
+    case launchScreen
+    /// The plain app background, after the first day sequence.
+    case background
+}
+
+/// Shows `curtain` over the flow and fades it out once. Core Animation plays the fade
+/// (`LaunchScreenCanvas`), so building the flow in the same update can't cut it short.
+struct DailyFlowCurtainView: View {
+    let curtain: DailyFlowCurtain
+
+    @State private var hasFaded = false
+
+    var body: some View {
+        if !hasFaded {
+            LaunchScreenCanvas(showsMark: curtain == .launchScreen, isFading: true) {
+                hasFaded = true
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+    }
+}
+
+/// Presents a cover with no animation. A SwiftUI transaction does not turn off a
+/// full-screen cover's slide, so UIKit animations stay off from the change until the
+/// cover's content appears, or for `limit` at most.
+@MainActor
+enum PresentingInPlace {
+    private static let limit: Duration = .milliseconds(500)
+
+    static func begin(_ change: () -> Void) {
+        UIView.setAnimationsEnabled(false)
+        change()
+        Task {
+            try? await Task.sleep(for: limit)
+            end()
+        }
+    }
+
+    static func end() {
+        UIView.setAnimationsEnabled(true)
+    }
+}

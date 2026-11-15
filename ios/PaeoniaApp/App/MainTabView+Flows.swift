@@ -16,15 +16,22 @@ enum DailyFlowSource {
 /// The daily answer flows, the streak sheets, and notification deep links.
 extension MainTabView {
     /// The answer flow is a full-screen cover that zooms out of the card that opened
-    /// it (covering the floating tab bar). Reduce Motion drops the zoom for the
-    /// cover's plain cross-fade. Each cover mounts the
-    /// shared banner, because the root's banner would sit behind it.
+    /// it (covering the floating tab bar), or opens in place of the screen
+    /// (`DailyFlowEntrance`). Reduce Motion drops the zoom for the cover's plain
+    /// cross-fade. Each cover mounts the shared banner, because the root's banner
+    /// would sit behind it.
     func presentingDailyFlows(on content: some View) -> some View {
         presentingStreakMilestones(on: content)
             // The Home card waits for the flow to close before its seal breaks.
             .environment(\.dailyFlowIsPresented, isAnswerFlowPresented)
             .fullScreenCover(isPresented: $isAnswerFlowPresented, onDismiss: offerNotificationsIfAnswered) {
                 dailyAnswerFlow(questionID: nil, onClose: closeAnswerFlow)
+                    .onAppear { PresentingInPlace.end() }
+                    .overlay {
+                        if case let .inPlace(curtain?) = dailyFlowEntrance {
+                            DailyFlowCurtainView(curtain: curtain)
+                        }
+                    }
                     .zoomTransition(dailyFlowSource.zoomSourceID, in: zoomNamespace, enabled: !reduceMotion)
                     .environment(bannerCenter)
                     .paeoniaBanner(bannerCenter)
@@ -245,6 +252,7 @@ extension MainTabView {
         }
         withAnimation(zoomPresentationAnimation) {
             dailyFlowSource = source
+            dailyFlowEntrance = .zoom
             isAnswerFlowPresented = true
         }
     }
@@ -261,7 +269,7 @@ extension MainTabView {
         focusedDailyQuestionIDs = dailyChallengeViewModel.snapshot.earlierQuestionsAwaitingAnswer.map(\.id)
     }
 
-    private func closeAnswerFlow() {
+    func closeAnswerFlow() {
         isAnswerFlowPresented = false
     }
 
@@ -321,16 +329,16 @@ extension MainTabView {
 
     /// Opens Home. A link to one story also opens it in the viewer, once the stories are read.
     /// The dates timeline opens on top for a date reminder. "Answer now" after the first day
-    /// opens today's question over Home, after the same refresh as a question link, so
-    /// closing it shows the things to try on Home.
+    /// opens today's question in place at once. The root keeps the first day sequence over
+    /// the tabs until this link is done, so Home never shows in between, and closing the
+    /// question shows the things to try on Home.
     private func openUs(for deepLink: PaeoniaDeepLink) async {
         selection.wrappedValue = .us
         if deepLink == .dates {
             coupleDatesViewModel.requestTimeline()
         }
-        if deepLink == .firstDayAnswer {
-            guard await refreshStillCurrent(for: deepLink) else { return }
-            openTodayAnswerIfNeeded(source: .us)
+        if deepLink == .firstDayAnswer, dailyChallengeViewModel.homeCardState.kind != .complete {
+            openTodaysQuestionInPlace(curtain: .background)
         }
         if case let .story(storyID, showsReplies) = deepLink {
             await storiesViewModel.reload()
