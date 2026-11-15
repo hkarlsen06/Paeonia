@@ -108,7 +108,7 @@ export const legalNo = {
       description: 'Slik samler Paeonia inn, bruker, deler og beskytter personopplysninger.',
     },
     title: 'Personvern',
-    updated: 'Sist oppdatert 11. november 2026',
+    updated: 'Sist oppdatert 15. november 2026',
     sections: [
       {
         heading: 'Hvem personvernteksten gjelder for',
@@ -123,6 +123,7 @@ export const legalNo = {
           'Konto- og profilopplysninger omfatter konto-ID, innloggingsleverandør, e-postadresse og navn når Apple eller Google gjør dem tilgjengelige, valgt visningsnavn, profilbilde, språk, tidssone og kontostatus. Et profilbilde fra innloggingsleverandøren kan brukes som reserve hvis du ikke har lagt til et Paeonia-bilde.',
           'Forholdsopplysninger omfatter invitasjoner, medlemskap og status for forholdet, startdato hvis du legger den til, blokkeringer, sikkerhetsvarsler og valg som trengs for å styre tilgangen til fellesrommet.',
           'Innhold du velger å legge til, omfatter svar på daglige spørsmål (tekst, bilder, tale og partnervalg), chattemeldinger med svar, bilder og talemeldinger, minner med bilder og notater, stories (et bilde med en valgfri tekst), korte notater, datoer og nedtellinger, hjerter, tegninger og dine trekk, tegninger, ord og gjetninger i spill. Paeonia leser bare bildene du velger eller tar, og lagrer et bilde i bildebiblioteket ditt bare når du trykker Lagre i Bilder. Innholdet er privat i fellesrommet med mindre det rapporteres eller tilgang er nødvendig for de begrensede formålene nedenfor.',
+          'Samtalehistorikk omfatter hvem som ringte, når og hvor lenge samtalen varte, eller at den ble tapt. Paeonia tar ikke opp lyd eller video fra samtaler.',
           'Tjenesteopplysninger omfatter status for abonnement og tilgang, referanser til App Store-transaksjoner (også engangskjøp, for eksempel for å få tilbake en streak), streak-fremdrift, varslingsvalg, pushnøkkelen til telefonen din, appversjon, språk og tidssone, status for opplasting og synkronisering, forespørsels-ID-er som hindrer doble handlinger, og sikkerhets- eller driftsopplysninger. Apple behandler betalingsopplysningene dine. Paeonia mottar ikke kortopplysningene dine.',
           'Bruksstatistikk og krasjrapporter viser oss hvilke deler av Paeonia som blir brukt, og hvor appen svikter. Appen spør deg én gang, etter at dere har koblet dere sammen, om du vil dele dem, og sender ingen av dem før du sier ja. Sier du ja, sender den hvilke skjermer du åpner, hvilke handlinger du gjør (for eksempel at du sendte et svar, aldri hva det sier), krasjrapporter og opplysninger om iPhonen din, som modell, iOS-versjon, språk og tidssone. Den tar aldri opp skjermen din. Opplysningene er knyttet til Paeonia-kontoen din, og PostHog lagrer en tilfeldig kode på telefonen for å skille telefoner fra hverandre. De brukes ikke til annonser, og Paeonia sporer deg ikke på tvers av andre apper eller nettsteder.',
           'Før du logger inn, teller appen hvor mange som kommer til hvert steg på velkomstskjermene, for eksempel at noen velger å starte eller velger en dato. Den sender bare navnet på steget, og serveren vår legger én til i en telling for den dagen. Ingenting i tellingen er knyttet til deg eller telefonen din, og den bruker ikke PostHog.',
@@ -169,6 +170,15 @@ export const legalNo = {
         ],
       },
       {
+        heading: 'Samtaler',
+        paragraphs: [
+          'Du kan ringe partneren din med lyd eller video i Paeonia. Samtalen går som regel rett fra den ene telefonen til den andre. Den er kryptert underveis, og Paeonia tar ikke opp eller lagrer det dere sier eller viser.',
+          'For å koble til direkte får hver telefon IP-adressen til den andre, også når du ikke deler posisjonen din. En IP-adresse kan vise omtrent hvor en telefon er. Mens du har satt posisjonsdeling på pause, går samtalene dine gjennom en relétjeneste som Cloudflare driver, så partnerens telefon ikke får IP-adressen din. Hvis et nettverk stopper en direkte forbindelse, går samtalen også gjennom denne relétjenesten. Den sender samtalen videre og lagrer den ikke. Meldingene som setter opp en samtale, går gjennom relétjenesten for live-tegning, som heller ikke lagrer dem.',
+          'Når en samtale er over, viser en rad i chatten når den var og hvor lenge den varte, eller at den ble tapt. Raden blir liggende i fellesrommet og slettes som annet delt innhold når forholdet avsluttes. Samtalene vises også i listen over nylige anrop i Telefon-appen på iPhonen, med navnet til partneren din. Paeonia kan ikke fjerne dem derfra, så de blir liggende etter at du logger ut, forlater forholdet eller sletter kontoen. Du kan slette dem selv i Telefon-appen.',
+          'Innkommende samtaler ringer gjennom pushtjenesten til Apple. Ringesignalet inneholder ingen navn og ingenting du har skrevet, bare koder for samtalen og den som ringer, og når det slutter å ringe. Mens du deler posisjonen din og ikke har satt den på pause, kan partneren din se hva klokka er hos deg på samtaleskjermen.',
+        ],
+      },
+      {
         heading: 'Varsler og widget',
         paragraphs: [
           'Hvis du tillater varsler, bruker vi en enhetsnøkkel og valgene dine til å sende oppdateringer om tjenesten og forholdet. Forhåndsvisninger kan vises utenfor appen avhengig av iPhone-innstillingene dine. Velg innstillingene som passer for deg.',
@@ -178,7 +188,7 @@ export const legalNo = {
       {
         heading: 'Hvem vi deler opplysninger med',
         paragraphs: [
-          'Disse leverandørene behandler opplysninger for Paeonia, og bare for å drive tjenesten. Apple håndterer Logg inn med Apple, betaling og abonnement i App Store og pushvarsler. Google håndterer Logg inn med Google. Clerk håndterer innlogging og økter. Cloudflare lagrer bilder, talemeldinger, tegninger og andre filer i EU, kjører relétjenesten for live-tegning og leverer nettsiden. OpenFreeMap leverer kartet i Oss-fanen, og Apple Kart leverer det på iPad eller når OpenFreeMap er nede. For å tegne kartet ber telefonen om området som vises, så de får IP-adressen din og omtrent hvor området er, som regel rundt deg og partneren din. De får ikke vite hvem du er i Paeonia. PostHog lagrer bruksstatistikk og krasjrapporter på sine EU-servere i Frankfurt i Tyskland, og tar verken vare på IP-adressen din eller et sted som er utledet fra den. Databasen og applikasjonsserveren til Paeonia kjører på en server vi leier i et datasenter i Leipzig i Tyskland, så disse opplysningene blir i EU og EØS. Hver leverandør er underlagt egne krav til sikkerhet og personvern.',
+          'Disse leverandørene behandler opplysninger for Paeonia, og bare for å drive tjenesten. Apple håndterer Logg inn med Apple, betaling og abonnement i App Store og pushvarsler. Google håndterer Logg inn med Google. Clerk håndterer innlogging og økter. Cloudflare lagrer bilder, talemeldinger, tegninger og andre filer i EU, kjører relétjenestene for live-tegning og samtaler og leverer nettsiden. OpenFreeMap leverer kartet i Oss-fanen, og Apple Kart leverer det på iPad eller når OpenFreeMap er nede. For å tegne kartet ber telefonen om området som vises, så de får IP-adressen din og omtrent hvor området er, som regel rundt deg og partneren din. De får ikke vite hvem du er i Paeonia. PostHog lagrer bruksstatistikk og krasjrapporter på sine EU-servere i Frankfurt i Tyskland, og tar verken vare på IP-adressen din eller et sted som er utledet fra den. Databasen og applikasjonsserveren til Paeonia kjører på en server vi leier i et datasenter i Leipzig i Tyskland, så disse opplysningene blir i EU og EØS. Hver leverandør er underlagt egne krav til sikkerhet og personvern.',
           'Vi kan utlevere opplysninger når loven krever det, for å beskytte en person eller tjenesten, eller som del av en omorganisering med egnede sikkerhetstiltak. Betrodde personer innen brukerstøtte eller moderering kan få tilgang til minst mulig informasjon for å løse en henvendelse, vurdere rapportert innhold, ivareta sikkerhet, fullføre en personvernforespørsel eller utføre sletting og gjenoppretting.',
           'Vi selger ikke personopplysninger. Vi bruker ikke forholdsinnhold til annonsering, og Paeonia har ikke tredjepartsannonser eller sporing på tvers av apper.',
         ],
