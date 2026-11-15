@@ -233,7 +233,8 @@
             memoriesViewModel: memoriesViewModel,
             gamesViewModel: gamesViewModel,
             visitsViewModel: visitsViewModel,
-            recapViewModel: DeveloperRecapFixture.model(for: scenario)
+            recapViewModel: DeveloperRecapFixture.model(for: scenario),
+            partnerPresenceModel: PartnerPresenceModel(gateway: UnavailablePartnerPresenceGateway())
           ),
           // Past the first day with a saved card, for the `home-first-steps` scenarios.
           pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(firstSteps: scenario.firstStepsProgress),

@@ -89,20 +89,6 @@ extension GamesPhaseTests {
         #expect(revealHubStatus(guessingHere, pending: unsentCorrectGuess) == .revealReady)
     }
 
-    @Test func onlyAGameThePartnerJustOpenedCounts() {
-        func opened(_ old: [GameKind], _ new: [GameKind]) -> GameKind? {
-            GamesViewModel.openedPartnerGame(from: old, to: new)
-        }
-
-        #expect(opened([], [.ludo]) == .ludo)
-        #expect(opened([.ludo], [.mindMeld, .ludo]) == .mindMeld)
-        #expect(opened([.ludo], [.ludo]) == nil)
-        #expect(opened([.ludo], []) == nil)
-        // Leaving the newer of two games brings the older one to the front, but
-        // the partner did not just open it.
-        #expect(opened([.mindMeld, .ludo], [.ludo]) == nil)
-    }
-
     @Test func todaysPickRotatesOncePerCoupleDayInCatalogOrder() {
         var utc = Calendar(identifier: .gregorian)
         utc.timeZone = .gmt

@@ -79,13 +79,6 @@ enum GameChatSwipeRules {
         return showsLaterContent ? scroll.contentOffset.y < last - 1 : scroll.contentOffset.y > first + 1
     }
 
-    /// A sheet or cover is over the app's screens.
-    static func appIsCovered() -> Bool {
-        UIApplication.shared.connectedScenes
-            .compactMap { ($0 as? UIWindowScene)?.keyWindow?.rootViewController }
-            .contains { $0.presentedViewController != nil }
-    }
-
     /// The finger moves mostly up or mostly down.
     static func isVertical(_ velocity: CGPoint, up: Bool) -> Bool {
         abs(velocity.y) > abs(velocity.x) * 1.5 && (up ? velocity.y < 0 : velocity.y > 0)
@@ -285,7 +278,7 @@ struct GameChatPanelDrag: UIViewRepresentable {
         /// Not on a cover or sheet over the panel, such as a photo the chat opened, which
         /// shares its window.
         func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-            guard let panel, panel.window != nil, !GameChatSwipeRules.appIsCovered() else { return false }
+            guard let panel, panel.window != nil, !PaeoniaAppWindow.isCovered else { return false }
             let frame = panel.convert(panel.bounds, to: nil)
             let point = touch.location(in: nil)
             startedOnGame = point.y < frame.minY

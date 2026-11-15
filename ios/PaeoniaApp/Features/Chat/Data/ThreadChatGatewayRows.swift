@@ -27,16 +27,10 @@ nonisolated struct ConversationThreadRow: Decodable {
     let lastMessageCall: ThreadChatCall?
     let hasUnread: Bool
 
-    /// What the chat is about, from the id that matches its kind.
     private var subject: ThreadChatSubject? {
-        switch kind {
-        case "daily_question": dailyQuestionID.map(ThreadChatSubject.question)
-        case "memory": memoryID.map(ThreadChatSubject.memory)
-        case "story": storyID.map(ThreadChatSubject.story)
-        case "game": gameKind.map { .game(GameChatSubject(coupleID: coupleID, kind: $0)) }
-        case "couple": .couple
-        default: nil
-        }
+        ThreadChatSubject(
+            kind: kind, coupleID: coupleID, dailyQuestionID: dailyQuestionID, memoryID: memoryID, storyID: storyID,
+            gameKind: gameKind)
     }
 
     /// The summary of a chat that is shown. Nil for a deleted or hidden thread, such as the
@@ -90,6 +84,25 @@ nonisolated struct ConversationThreadRow: Decodable {
         case privateTopic = "private_topic"
         case lastMessageCall = "last_message_call"
         case hasUnread = "has_unread"
+    }
+}
+
+nonisolated extension ThreadChatSubject {
+    /// A chat as a server row names it: its kind, and the id that matches the kind or a game chat's
+    /// game. Nil for a kind this build does not know, or a row without that id.
+    init?(
+        kind: String, coupleID: UUID, dailyQuestionID: UUID?, memoryID: UUID?, storyID: UUID?, gameKind: GameKind?
+    ) {
+        let subject: ThreadChatSubject? = switch kind {
+        case "daily_question": dailyQuestionID.map(ThreadChatSubject.question)
+        case "memory": memoryID.map(ThreadChatSubject.memory)
+        case "story": storyID.map(ThreadChatSubject.story)
+        case "game": gameKind.map { .game(GameChatSubject(coupleID: coupleID, kind: $0)) }
+        case "couple": .couple
+        default: nil
+        }
+        guard let subject else { return nil }
+        self = subject
     }
 }
 

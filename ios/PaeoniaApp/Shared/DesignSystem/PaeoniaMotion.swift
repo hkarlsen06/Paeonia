@@ -49,6 +49,10 @@ enum PaeoniaMotion {
     /// sync with them.
     static let heroMorph = Animation.spring(duration: motionMorph, bounce: 0.1)
 
+    /// The call overlay's layers growing into each other, and the call bubble and the partner's
+    /// avatar settling in a corner, so the avatar moves like the bubble it becomes.
+    static let callOverlay = Animation.spring(duration: 0.4, bounce: 0.12)
+
     /// The streak sheet's stem growing out to the couple's day count, opening each
     /// flower it passes.
     static let stemGrowth = standardCurve(duration: 0.9).delay(0.25)

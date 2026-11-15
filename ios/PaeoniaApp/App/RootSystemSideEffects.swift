@@ -13,6 +13,9 @@ protocol RootSystemSideEffecting {
     func clearAppBadge()
     /// Hangs up a call on this phone and tells the server, while requests still carry the sign-in.
     func endCall() async
+    /// Tells the server this person left the app, while requests still carry the sign-in, so the
+    /// partner stops seeing them at once instead of 30 seconds later.
+    func leaveAppPresence() async
 }
 
 struct LiveRootSystemSideEffects: RootSystemSideEffecting {
@@ -39,6 +42,17 @@ struct LiveRootSystemSideEffects: RootSystemSideEffecting {
     func endCall() async {
         await CallCenter.shared.endCallForLeaving()
     }
+
+    /// Waits at most as long as hanging up does, so a stalled connection can't hold sign-out.
+    func leaveAppPresence() async {
+        let leave = Task { try? await LivePartnerPresenceGateway.make().setInApp(false) }
+        let timeout = Task {
+            try? await Task.sleep(for: .seconds(4))
+            leave.cancel()
+        }
+        await leave.value
+        timeout.cancel()
+    }
 }
 
 struct NoOpRootSystemSideEffects: RootSystemSideEffecting {
@@ -48,4 +62,5 @@ struct NoOpRootSystemSideEffects: RootSystemSideEffecting {
     func reconcileDeliveredNotifications() {}
     func clearAppBadge() {}
     func endCall() {}
+    func leaveAppPresence() {}
 }

@@ -226,6 +226,7 @@
     @State private var center: CallCenter
     @State private var sounds = CallSoundPlayer()
     @State private var ring: Task<Void, Never>?
+    @State private var presence = PartnerPresenceModel(gateway: UnavailablePartnerPresenceGateway())
 
     init(session: CallSession) {
       _center = State(initialValue: CallCenter(engine: DeveloperCallEngine(), session: session))
@@ -234,7 +235,7 @@
     var body: some View {
       Color.paeoniaBackgroundPrimary
         .ignoresSafeArea()
-        .callOverlay(participants: DeveloperCallFixture.participants)
+        .callOverlay(participants: DeveloperCallFixture.participants, chatIsOnScreen: false, presence: presence)
         .environment(center)
         .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
         .onAppear {

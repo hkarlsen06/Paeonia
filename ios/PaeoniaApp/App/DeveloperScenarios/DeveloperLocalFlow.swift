@@ -14,12 +14,13 @@
     /// chats work. `coupleCalls` puts a finished, a missed and an unanswered call in "Just us".
     /// `callPartner` makes the phone buttons call a partner who answers, and the finished call
     /// lands in "Just us" (`DeveloperAnsweringCallEngine`). With `.callsIn` the partner also calls.
-    /// `launchLink` opens when the flow starts, unless the app was launched with one.
+    /// `launchLink` opens when the flow starts, unless the app was launched with one. `presence`
+    /// puts the partner's avatar over the app (`DeveloperPresenceFixture`).
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil,
          gameConversation: DeveloperScenario? = nil, finishedGameRuns: Bool = false, coupleCalls: Bool = false,
          callPartner: DeveloperCallPartner? = nil, launchLink: String? = nil,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
-         mail: DeveloperMailSeed = .none) {
+         mail: DeveloperMailSeed = .none, presence: PartnerPresenceModel? = nil) {
       // A link the app was launched with, such as a push tapped while the app was not running.
       _deepLink = State(
         initialValue: (ProcessInfo.processInfo.environment["PAEONIA_LAUNCH_LINK"] ?? launchLink)
@@ -29,7 +30,7 @@
         initialValue: DeveloperLocalFlowEnvironment(
           seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation,
           finishedGameRuns: finishedGameRuns, coupleCalls: coupleCalls, callPartner: callPartner,
-          avatarStories: avatarStories, mapTiles: mapTiles, mail: mail))
+          avatarStories: avatarStories, mapTiles: mapTiles, mail: mail, presence: presence))
     }
 
     var body: some View {
@@ -120,7 +121,7 @@
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: DeveloperScenario?,
          finishedGameRuns: Bool, coupleCalls: Bool, callPartner: DeveloperCallPartner?,
          avatarStories: StoryRingState?,
-         mapTiles: DeveloperHomeMapTiles, mail: DeveloperMailSeed) {
+         mapTiles: DeveloperHomeMapTiles, mail: DeveloperMailSeed, presence: PartnerPresenceModel?) {
       self.homeLaunch = homeLaunch
       let store = DeveloperLocalFlowStore(seed: seed, avatarScenario: avatarStories != nil)
       let authService = DeveloperLocalFlowAuthService(store: store)
@@ -294,7 +295,8 @@
         settingsPrivacyOperationProvider: operationProvider,
         widgetDrawingViewModel: widgetDrawingViewModel,
         widgetHistoryViewModel: widgetHistoryViewModel,
-        widgetHistoryThumbnailLoader: NoOpWidgetRevisionThumbnailLoader()
+        widgetHistoryThumbnailLoader: NoOpWidgetRevisionThumbnailLoader(),
+        partnerPresenceModel: presence ?? PartnerPresenceModel(gateway: UnavailablePartnerPresenceGateway())
       )
     }
 

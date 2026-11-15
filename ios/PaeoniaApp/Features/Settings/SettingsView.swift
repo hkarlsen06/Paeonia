@@ -134,18 +134,7 @@ struct SettingsView: View {
             }
             Group {
                 youSection
-                SettingsRelationshipSection(
-                    nicknameRow: partner.map { PartnerNicknameSettingsRow(editor: nicknameEditor, partner: $0) },
-                    relationshipDateRow: RelationshipDateSettingsRow(
-                        relationshipStartedOn: relationshipStartedOn,
-                        isSaving: milestoneIsSaving,
-                        onSave: onSaveRelationshipStartedOn
-                    ),
-                    yourBirthdayRow: birthdayRow(for: currentUserID),
-                    partnerBirthdayRow: birthdayRow(for: partnerUserID),
-                    locationViewModel: locationViewModel,
-                    partnerName: partnerName
-                )
+                relationshipSections
                 appSection
                 AdminSettingsSection(access: adminAccess, gateway: adminGateway)
                 SettingsSubscriptionHelpSection(
@@ -306,6 +295,24 @@ extension SettingsView {
             coupleDates: coupleDates,
             names: CoupleDateNames(currentUserID: currentUserID, partnerUserID: partnerUserID, partnerName: partnerName)
         )
+    }
+
+    /// The relationship's own settings, then "Show when I'm here".
+    @ViewBuilder
+    private var relationshipSections: some View {
+        SettingsRelationshipSection(
+            nicknameRow: partner.map { PartnerNicknameSettingsRow(editor: nicknameEditor, partner: $0) },
+            relationshipDateRow: RelationshipDateSettingsRow(
+                relationshipStartedOn: relationshipStartedOn,
+                isSaving: milestoneIsSaving,
+                onSave: onSaveRelationshipStartedOn
+            ),
+            yourBirthdayRow: birthdayRow(for: currentUserID),
+            partnerBirthdayRow: birthdayRow(for: partnerUserID),
+            locationViewModel: locationViewModel,
+            partnerName: partnerName
+        )
+        PresenceSettingsSection(partnerName: partnerName)
     }
 
     private var appSection: some View {

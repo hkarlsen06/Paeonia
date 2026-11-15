@@ -1,0 +1,69 @@
+import SwiftUI
+
+/// The identity of the task that runs the presence model. A new couple, or the app coming back to
+/// the foreground, starts it again.
+struct PresenceRunKey: Hashable {
+    var coupleID: UUID?
+    var isInForeground: Bool
+}
+
+/// The partner's avatar over every screen (`Features/Presence`).
+extension MainTabView {
+    var presenceModel: PartnerPresenceModel { models.presence }
+
+    /// Runs the presence model while the app is in front, keeps it told what is on screen, and opens
+    /// what the avatar asks for. The model is in the environment for Settings.
+    func runningPresence(on content: some View) -> some View {
+        content
+            .environment(presenceModel)
+            .task(id: presenceRunKey) { await runPresence(presenceRunKey) }
+            .onChange(of: presenceViewer, initial: true) { _, viewer in presenceModel.viewer = viewer }
+            .onChange(of: presenceModel.openRequest) { _, request in
+                if request != nil { openPresenceRequest() }
+            }
+    }
+
+    /// A short trip to Control Center or a system alert keeps the session. Leaving for the
+    /// background ends it, and the partner sees this person go.
+    private var presenceRunKey: PresenceRunKey {
+        PresenceRunKey(coupleID: identity.coupleID, isInForeground: scenePhase != .background)
+    }
+
+    private func runPresence(_ key: PresenceRunKey) async {
+        guard key.isInForeground, let coupleID = key.coupleID else { return }
+        await presenceModel.run(coupleID: coupleID)
+    }
+
+    /// What this person has on screen, so the avatar leaves out the chat and the game they are in.
+    private var presenceViewer: PresenceViewerPlace {
+        PresenceViewerPlace(
+            visibleChat: visibleChatSubject,
+            openGame: selection.wrappedValue == .games ? gamesPath.last?.gameKind : nil
+        )
+    }
+
+    /// Opens what a tap on the partner's avatar asked for. The avatar has closed the sheets and
+    /// covers over the tabs first.
+    private func openPresenceRequest() {
+        switch presenceModel.takeOpenRequest() {
+        case .chat(.couple):
+            // With no chat on screen, "Just us" slides over what is there. Another chat would stay
+            // open under it and mark the partner's messages read, so it opens in Chats instead.
+            if visibleChatSubject == nil { slideOverCoupleChat() } else { openCoupleChat() }
+        case let .chat(subject):
+            openChatAction(for: subject)()
+        case let .game(kind):
+            isCoupleChatSlidOver = false
+            dismissGameChatSheet()
+            openGameFromHome(.game(kind))
+        case nil:
+            break
+        }
+    }
+
+    /// "Just us" slides over whatever is on screen, without a switch of tab.
+    private func slideOverCoupleChat() {
+        dismissGameChatSheet()
+        isCoupleChatSlidOver = true
+    }
+}

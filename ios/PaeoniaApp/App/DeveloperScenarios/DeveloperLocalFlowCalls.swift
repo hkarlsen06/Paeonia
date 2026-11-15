@@ -164,6 +164,8 @@
     }
   }
 
+  /// Robin is here in both call flows, so the call screen and the ring pill grow out of Robin's
+  /// avatar, and it comes back when the call ends.
   nonisolated extension DeveloperScenario {
     static let localFlowCall = DeveloperScenario(
       "local-flow-call", "Local flow · a call Robin answers",
@@ -171,7 +173,8 @@
     ) { _ in
       DeveloperLocalFlowHost(
         seed: .paired, gameConversation: .connectFourPartnerTurn, callPartner: .answers,
-        launchLink: "paeonia://games/connect-four", avatarStories: .noStory)
+        launchLink: "paeonia://games/connect-four", avatarStories: .noStory,
+        presence: DeveloperPresenceFixture.model(partner: PartnerPresence()))
     }
 
     static let localFlowIncomingCall = DeveloperScenario(
@@ -179,7 +182,9 @@
       "Robin's call rings in its pill over Us, opens to the call screen, and connects when you answer",
       .localFlows
     ) { _ in
-      DeveloperLocalFlowHost(seed: .paired, callPartner: .callsIn, avatarStories: .noStory)
+      DeveloperLocalFlowHost(
+        seed: .paired, callPartner: .callsIn, avatarStories: .noStory,
+        presence: DeveloperPresenceFixture.model(partner: PartnerPresence()))
     }
   }
 #endif

@@ -414,9 +414,9 @@ extension MainTabView {
         self.deepLink.wrappedValue = nil
     }
 
-    /// A game card on Home, shown while the partner is in the game, or the banner
-    /// other tabs show when the partner opens one. Someone who has not been through
-    /// the first-time steps sees them before the game.
+    /// A game card on Home, shown while the partner is in the game, or Join on the
+    /// partner's avatar. Someone who has not been through the first-time steps sees
+    /// them before the game.
     func openGameFromHome(_ destination: GamesDestination) {
         selection.wrappedValue = .games
         gamesViewModel.open(destination)

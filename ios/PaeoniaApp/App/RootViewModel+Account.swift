@@ -64,6 +64,7 @@ extension RootViewModel {
             // The purge below removes whatever is left, as the log-out alert says.
             await syncService.flushPendingWrites(timeout: .seconds(4))
             await systemSideEffects.endCall()
+            await systemSideEffects.leaveAppPresence()
             try await authService.signOut()
             await endSession(purgingLocalData: true)
         }

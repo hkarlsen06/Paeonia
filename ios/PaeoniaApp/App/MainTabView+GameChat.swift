@@ -17,9 +17,14 @@ extension MainTabView {
         messageNoticeStartedAt = Date()
         visibleChatSubject = nil
         gameChatDestination = nil
+        dismissGameChatSheet()
+        openingGameChatID = nil
+    }
+
+    /// Closes a game's chat over the game, and one still on its way there.
+    func dismissGameChatSheet() {
         gameChatSheet = nil
         pendingGameChatSheet = nil
-        openingGameChatID = nil
     }
 
     /// Shared chat dependencies and the root-owned game navigation actions.
@@ -124,8 +129,7 @@ extension MainTabView {
     func gameChatTabChanged(to tab: MainTab) {
         if tab != .games {
             // The game under the sheet is no longer on screen.
-            gameChatSheet = nil
-            pendingGameChatSheet = nil
+            dismissGameChatSheet()
         } else if let pending = pendingGameChatSheet {
             pendingGameChatSheet = nil
             // A turn later, once the game is laid out on screen, so the panel measures it.
@@ -167,7 +171,8 @@ extension MainTabView {
         isCoupleChatRequested = true
     }
 
-    /// The live summary feed supplies authorized previews even when APNs is unavailable.
+    /// The live summary feed supplies authorized previews even when APNs is unavailable. While the
+    /// partner's avatar is on screen, the message shows beside it instead of in a banner.
     func announcePartnerMessage(
         previous: [ThreadChatSubject: ThreadChatSummary], current: [ThreadChatSubject: ThreadChatSummary]
     ) {
@@ -182,7 +187,9 @@ extension MainTabView {
                 && visibleChatSubject != summary.subject
         }.sorted { ($0.lastMessageAt ?? .distantPast) < ($1.lastMessageAt ?? .distantPast) }
         for summary in arrivals {
-            guard let preview = summary.lastMessagePreview else { continue }
+            guard let preview = summary.lastMessagePreview, let messageID = summary.lastMessageID else { continue }
+            let notice = PresenceMessageNotice(messageID: messageID, chat: summary.subject, preview: preview)
+            if presenceModel.receive(.message(notice)) { continue }
             var title = reactionPartnerName
             var gameKind: GameKind?
             if case .game(let game) = summary.subject {
@@ -201,8 +208,8 @@ extension MainTabView {
         }
     }
 
-    /// What tapping a partner message's banner opens: the chat it arrived in.
-    private func openChatAction(for subject: ThreadChatSubject) -> () -> Void {
+    /// What tapping a partner message's banner or the partner's avatar opens: the chat it arrived in.
+    func openChatAction(for subject: ThreadChatSubject) -> () -> Void {
         switch subject {
         case .game(let game): { openGameChat(kind: game.kind) }
         case .question(let id): { PaeoniaNotificationRouter.shared.route(.dailyChat(questionID: id)) }

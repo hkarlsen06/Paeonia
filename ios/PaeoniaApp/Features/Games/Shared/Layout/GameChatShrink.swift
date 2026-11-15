@@ -136,7 +136,7 @@ extension GameChatScreen {
         // After the zoom into the game has settled.
         do { try await Task.sleep(for: .seconds(1.6)) } catch { return }
         // A sheet such as the how-to-play cards would hide it.
-        guard !GameChatSwipeRules.appIsCovered() else { return }
+        guard !PaeoniaAppWindow.isCovered else { return }
         SwipeLessons[.gameChat].peeked(at: .now)
         peek.show(kind)
         try? await Task.sleep(for: .seconds(1.4))

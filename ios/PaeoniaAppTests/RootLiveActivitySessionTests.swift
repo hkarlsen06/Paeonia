@@ -137,6 +137,8 @@ private struct LiveActivitySystemSideEffects: RootSystemSideEffecting {
     func clearAppBadge() {}
 
     func endCall() {}
+
+    func leaveAppPresence() {}
 }
 
 @MainActor

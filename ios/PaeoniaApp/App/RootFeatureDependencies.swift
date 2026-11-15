@@ -27,6 +27,7 @@ struct RootFeatureDependencies {
     var widgetDrawingViewModel: WidgetDrawingViewModel?
     var widgetHistoryViewModel: WidgetDrawingHistoryViewModel?
     var widgetHistoryThumbnailLoader: (any WidgetRevisionThumbnailLoading)?
+    var partnerPresenceModel: PartnerPresenceModel?
 
     init(
         paywallViewModel: PaywallViewModel? = nil,
@@ -49,7 +50,8 @@ struct RootFeatureDependencies {
         settingsPrivacyOperationProvider: (any SyncClientOperationProviding)? = nil,
         widgetDrawingViewModel: WidgetDrawingViewModel? = nil,
         widgetHistoryViewModel: WidgetDrawingHistoryViewModel? = nil,
-        widgetHistoryThumbnailLoader: (any WidgetRevisionThumbnailLoading)? = nil
+        widgetHistoryThumbnailLoader: (any WidgetRevisionThumbnailLoading)? = nil,
+        partnerPresenceModel: PartnerPresenceModel? = nil
     ) {
         self.paywallViewModel = paywallViewModel
         self.paywallPresentationOverride = paywallPresentationOverride
@@ -72,5 +74,6 @@ struct RootFeatureDependencies {
         self.widgetDrawingViewModel = widgetDrawingViewModel
         self.widgetHistoryViewModel = widgetHistoryViewModel
         self.widgetHistoryThumbnailLoader = widgetHistoryThumbnailLoader
+        self.partnerPresenceModel = partnerPresenceModel
     }
 }

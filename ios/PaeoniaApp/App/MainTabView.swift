@@ -112,6 +112,8 @@ final class MainTabModels {
             ?? WidgetRevisionThumbnailLoader(gateway: WidgetDrawingHistoryFactory.makeGateway())
     )
     lazy var recap = dependencies.recapViewModel ?? RecapViewModel.live(thumbnailLoader: lookBack.thumbnailLoader)
+    lazy var presence = dependencies.partnerPresenceModel
+        ?? PartnerPresenceModel(gateway: LivePartnerPresenceGateway.make())
     private var settingsModel: SettingsViewModel?
 
     /// Built for the first signed-in user it is asked for, like the
@@ -187,8 +189,6 @@ struct MainTabView: View {
     @State var lookBackDrawingRevisionID: UUID?
     /// What the Games tab has open. A notification about a game sets it.
     @State var gamesPath: [GamesDestination] = []
-    /// The banner saying the partner opened a game, while it may be on screen.
-    @State var partnerGameBanner: PaeoniaBannerContent?
     @State var gameChatDestination: GameChatDestination?
     /// A game chat opened from a game screen, shown as a sheet over the game.
     @State var gameChatSheet: GameChatDestination?
@@ -260,7 +260,8 @@ struct MainTabView: View {
     var firstStepsModel: HomeFirstStepsModel { models.firstSteps }
 
     var body: some View {
-        openingTodaysQuestion(on: presentingSearch(on: presentingDailyFlows(on: followingFirstSteps(on: tabContent))))
+        runningPresence(on: openingTodaysQuestion(on: presentingSearch(
+            on: presentingDailyFlows(on: followingFirstSteps(on: tabContent)))))
             // Outside the covers and sheets, so the Home drawing, the story viewer and every game
             // screen can show and take reactions.
             .environment(reactionStore)
@@ -341,8 +342,6 @@ struct MainTabView: View {
             guard introGatedLoadKey.introComplete else { return }
             await gamesViewModel.observeStoreChanges()
         }
-        .onChange(of: gamesViewModel.partnerOpenedGame) { announcePartnerGame($1?.kind) }
-        .onChange(of: partnerGameBannerIsStale) { if $1 { dismissPartnerGameBanner() } }
         // Names, photos and the couple arrive after launch. They never reload the games.
         .onChange(of: gamesParticipants) { _, participants in gamesViewModel.configure(participants: participants) }
         .task(id: identity.currentUserID) {

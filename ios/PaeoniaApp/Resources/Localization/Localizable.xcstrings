@@ -17755,42 +17755,6 @@
         }
       }
     },
-    "games.partnerOpened.message" : {
-      "comment" : "Second line of the banner shown on other tabs when the partner opens a game. Tapping the banner opens the same game.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap to join."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trykk for å bli med."
-          }
-        }
-      }
-    },
-    "games.partnerOpened.title" : {
-      "comment" : "Banner shown on other tabs when the partner opens a game. %1$@ is the partner's name, %2$@ is the game's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ opened %2$@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ åpnet %2$@"
-          }
-        }
-      }
-    },
     "games.partnerPicked.change" : {
       "comment" : "Button that opens the Games settings from the partner's choices",
       "extractionState" : "manual",
@@ -35579,6 +35543,492 @@
         }
       }
     },
+    "presence.action.tuck" : {
+      "comment" : "VoiceOver action that moves the partner's floating picture off the side of the screen, leaving a small tab.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tuck away"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjem unna"
+          }
+        }
+      }
+    },
+    "presence.avatar.accessibilityHint" : {
+      "comment" : "VoiceOver hint of the partner's floating picture. Tapping it shows buttons to call, write and join a game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows ways to reach them."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viser hvordan du kan nå dem."
+          }
+        }
+      }
+    },
+    "presence.avatar.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the partner's floating picture. %1$@ is the partner's name, %2$@ says where they are in the app, such as Playing Mind Meld.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ is here. %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ er her. %2$@"
+          }
+        }
+      }
+    },
+    "presence.avatar.accessibilityLabel.here" : {
+      "comment" : "VoiceOver label of the partner's floating picture while they have the app open and are not in a game or chat. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is here"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er her"
+          }
+        }
+      }
+    },
+    "presence.notice.join" : {
+      "comment" : "Second line of the notice beside the partner's floating picture when they open a game. Tapping it opens the same game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to join"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk for å bli med"
+          }
+        }
+      }
+    },
+    "presence.notice.message.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the partner's new message shown beside their floating picture. %1$@ is the partner's name, %2$@ is the message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ wrote: %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ skrev: %2$@"
+          }
+        }
+      }
+    },
+    "presence.notice.openChat.accessibilityHint" : {
+      "comment" : "VoiceOver hint of the partner's new message or typing shown beside their floating picture.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the chat."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner chatten."
+          }
+        }
+      }
+    },
+    "presence.status.chatting.couple" : {
+      "comment" : "Status beside the partner's floating picture while they have the couple's own chat, Just us, open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Just us"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I Bare oss"
+          }
+        }
+      }
+    },
+    "presence.status.chatting.game" : {
+      "comment" : "Status beside the partner's floating picture while they have a game's chat open. %@ is the game's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the %@ chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I chatten i %@"
+          }
+        }
+      }
+    },
+    "presence.status.chatting.memory" : {
+      "comment" : "Status beside the partner's floating picture while they have the comments on a memory open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talking about a memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prater om et minne"
+          }
+        }
+      }
+    },
+    "presence.status.chatting.question" : {
+      "comment" : "Status beside the partner's floating picture while they have the chat about a daily question open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talking about a question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prater om et spørsmål"
+          }
+        }
+      }
+    },
+    "presence.status.chatting.story" : {
+      "comment" : "Status beside the partner's floating picture while they have the replies to a story open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talking about a story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prater om en story"
+          }
+        }
+      }
+    },
+    "presence.status.here" : {
+      "comment" : "Status beside the partner's floating picture while they have the app open and are not in a game or chat.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Here now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Her nå"
+          }
+        }
+      }
+    },
+    "presence.status.openedGame" : {
+      "comment" : "Shown for a few seconds beside the partner's floating picture when they open a game. %@ is the game's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opened %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpnet %@"
+          }
+        }
+      }
+    },
+    "presence.status.playing" : {
+      "comment" : "Status beside the partner's floating picture while they have a game open. %@ is the game's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playing %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiller %@"
+          }
+        }
+      }
+    },
+    "presence.status.typing.couple" : {
+      "comment" : "Status beside the partner's floating picture while they type in the couple's own chat, Just us.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typing in Just us"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriver i Bare oss"
+          }
+        }
+      }
+    },
+    "presence.status.typing.game" : {
+      "comment" : "Status beside the partner's floating picture while they type in a game's chat. %@ is the game's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typing in the %@ chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriver i chatten i %@"
+          }
+        }
+      }
+    },
+    "presence.status.typing.memory" : {
+      "comment" : "Status beside the partner's floating picture while they type a comment on a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typing about a memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriver om et minne"
+          }
+        }
+      }
+    },
+    "presence.status.typing.question" : {
+      "comment" : "Status beside the partner's floating picture while they type in the chat about a daily question.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typing about a question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriver om et spørsmål"
+          }
+        }
+      }
+    },
+    "presence.status.typing.story" : {
+      "comment" : "Status beside the partner's floating picture while they type a reply to a story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typing about a story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriver om en story"
+          }
+        }
+      }
+    },
+    "presence.tab.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the small tab at the edge of the screen that brings back the partner's floating picture. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis %@"
+          }
+        }
+      }
+    },
+    "presence.tab.newNotice" : {
+      "comment" : "VoiceOver value of the tab at the edge of the screen when something new happened while the partner's picture was tucked away.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something new"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe nytt"
+          }
+        }
+      }
+    },
+    "presence.toolbar.call" : {
+      "comment" : "Button under the partner's floating picture that calls them. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring"
+          }
+        }
+      }
+    },
+    "presence.toolbar.join" : {
+      "comment" : "Button under the partner's floating picture that opens the game the partner is playing. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med"
+          }
+        }
+      }
+    },
+    "presence.toolbar.join.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the Join button under the partner's floating picture. %@ is the game's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med i %@"
+          }
+        }
+      }
+    },
+    "presence.toolbar.message" : {
+      "comment" : "Button under the partner's floating picture that opens the couple's own chat, Just us. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv"
+          }
+        }
+      }
+    },
+    "presence.toolbar.message.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the Message button under the partner's floating picture. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write to %@ in Just us"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv til %@ i Bare oss"
+          }
+        }
+      }
+    },
     "privacySafety.correction.action" : {
       "comment" : "Button that opens the personal data correction form",
       "extractionState" : "manual",
@@ -39931,6 +40381,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bruk høyst %lld tegn."
+          }
+        }
+      }
+    },
+    "settings.presence.footer" : {
+      "comment" : "Footer under the Show when I'm here switch in Settings. It covers only the floating picture and where the person is in the app. The green ring on a game and the typing dots in a chat still show. %1$@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "While you both have Paeonia open, %1$@ sees your picture over the app and where you are in it. If you turn this off, you won't see %1$@'s picture either."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når dere begge har Paeonia åpen, ser %1$@ bildet ditt over appen og hvor du er i den. Skrur du dette av, ser du heller ikke bildet til %1$@."
+          }
+        }
+      }
+    },
+    "settings.presence.toggle" : {
+      "comment" : "Settings switch. On, the partner sees this person's picture floating over their screen and where they are in the app while both have Paeonia open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show when I'm here"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis når jeg er her"
           }
         }
       }

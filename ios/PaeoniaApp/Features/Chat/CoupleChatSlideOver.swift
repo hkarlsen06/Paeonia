@@ -9,7 +9,8 @@ extension View {
     /// Lets a swipe in from the right edge of the screen pull the couple chat ("Just us")
     /// over this view, on any tab. The chat follows the finger, and lets go open past a
     /// third of the screen or on a flick. Its back button and a swipe right slide it away
-    /// again, back to the screen it covered. `isPresented` is true while it is open.
+    /// again, back to the screen it covered. `isPresented` is true while it is open, and setting
+    /// it slides the chat in, such as from Message on the partner's avatar.
     ///
     /// While `peeks` is true the chat's edge peeks in from the right a moment and goes back,
     /// the way the swipe pulls it, as `SwipeLessons` allows.
@@ -106,7 +107,11 @@ private struct CoupleChatSlideOver: ViewModifier {
                 hide()
             }
             .onChange(of: isPresented) { _, isPresented in
-                if !isPresented, position == .shown { hide() }
+                if isPresented, position != .shown {
+                    slideIn()
+                } else if !isPresented, position == .shown {
+                    hide()
+                }
             }
     }
 
@@ -146,12 +151,11 @@ private struct CoupleChatSlideOver: ViewModifier {
               SwipeLessons[.justUs].peekIsDue(at: .now, calendar: .current)
         else { return }
         do { try await Task.sleep(for: .seconds(1.6)) } catch { return }
-        guard !isMounted, !GameChatSwipeRules.appIsCovered() else { return }
+        guard !isMounted, !PaeoniaAppWindow.isCovered else { return }
         SwipeLessons[.justUs].peeked(at: .now)
         showsPeek = true
         isMounted = true
-        // Built at the edge first, then slid in once it is on screen.
-        try? await Task.sleep(for: .milliseconds(50))
+        await Self.waitUntilMounted()
         if position == .hidden, !Task.isCancelled {
             withAnimation(slide) { position = .peeking }
             try? await Task.sleep(for: .seconds(1.4))
@@ -178,6 +182,26 @@ private struct CoupleChatSlideOver: ViewModifier {
             guard chat == nil, chatContext.coupleID == coupleID else { return }
             chat = model
         }
+    }
+
+    /// Opens the chat without a swipe.
+    private func slideIn() {
+        guard chatContext.isAvailable else {
+            isPresented = false
+            return
+        }
+        begin()
+        Task {
+            await Self.waitUntilMounted()
+            guard isPresented, isMounted else { return }
+            withAnimation(slide) { position = .shown }
+            AccessibilityNotification.ScreenChanged().post()
+        }
+    }
+
+    /// The chat is built at the edge first, and slides in once it is on screen.
+    private static func waitUntilMounted() async {
+        try? await Task.sleep(for: .milliseconds(50))
     }
 
     private func end(projectedDistance: CGFloat) {

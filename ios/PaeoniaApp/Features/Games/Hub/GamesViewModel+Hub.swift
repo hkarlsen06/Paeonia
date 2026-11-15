@@ -16,12 +16,6 @@ extension GamesViewModel {
         return lastPlayed
     }
 
-    /// The game the partner just opened. Both lists are freshest first. Leaving
-    /// one of two open games opens nothing.
-    nonisolated static func openedPartnerGame(from old: [GameKind], to new: [GameKind]) -> GameKind? {
-        new.first { !old.contains($0) }
-    }
-
     /// The games the partner is in, then the games waiting for this person, played
     /// most recently first.
     nonisolated static func featuredOrder(

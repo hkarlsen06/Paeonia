@@ -42,8 +42,11 @@ extension MainTabView {
             bannerCenter,
             onTap: actions.openWidgetDrawing
         )
-        // The call screen and its bubble float over every tab, game, sheet and cover.
-        .callOverlay(participants: dailyChallengeParticipants)
+        // The call screen and its bubble float over every tab, game, sheet and cover, and so does
+        // the partner's avatar while no call is up.
+        .callOverlay(
+            participants: dailyChallengeParticipants, chatIsOnScreen: visibleChatSubject != nil,
+            presence: presenceModel)
         .onGeometryChange(for: CGFloat.self) {
             $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
         } action: { bottom in

@@ -29,6 +29,8 @@ enum PaeoniaAnalytics {
         "admin:ban_user",
         "admin:unban_user",
         "analytics:set_usage_sharing",
+        "appPresence:set_app_presence",
+        "appPresence:set_shows_presence",
         "calls:call_heartbeat",
         "calls:create_call_live_ticket",
         "calls:get_call_ice_servers",
