@@ -12,6 +12,9 @@ nonisolated enum PaeoniaSpacing {
     static let space40: CGFloat = 40
 
     static let screenHorizontalPadding: CGFloat = 20
+    /// How far the iPhone's floating tab bar sits in from each side. Cards that line up
+    /// with it, such as Home's under the map, use it instead of `screenHorizontalPadding`.
+    static let tabBarHorizontalInset: CGFloat = 21
     static let screenTopSpacing: CGFloat = 24
     static let sectionSpacing: CGFloat = 24
     static let cardContentPadding: CGFloat = 16

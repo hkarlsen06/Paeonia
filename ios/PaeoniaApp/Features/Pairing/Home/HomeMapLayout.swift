@@ -34,8 +34,6 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     @Environment(LaunchMapFlight.self) private var launchMapFlight: LaunchMapFlight?
     @Environment(\.scenePhase) private var scenePhase
     @State private var scrollOffset: CGFloat = 0
-    /// Whether the footer holds a card. Only then does the page leave room under the tab bar.
-    @State private var hasFooter = false
     @State private var topBarHeight = Self.headerHeight
     @State private var compass = PartnerCompass()
     @State private var flights = HeartFlights()
@@ -94,18 +92,12 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     private func scrollPage(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
         ScrollView {
             VStack(spacing: 0) {
+                // The page ends at the top of the tab bar, so the footer's first card starts
+                // level with the bar, as wide as it, and the card under it peeks up below.
                 page(couple, screen)
-                    // The page keeps its own height. The room below it is empty.
                     .fixedSize(horizontal: false, vertical: true)
-                    // The footer starts at the screen's bottom edge, under the tab bar, so its
-                    // words never show through the glass bar while Home is at rest.
-                    .frame(
-                        minHeight: reservesMapSpace && hasFooter ? screen.fillHeight + screen.bottomInset : nil,
-                        alignment: .top
-                    )
                 footer
                     .fixedSize(horizontal: false, vertical: true)
-                    .onGeometryChange(for: Bool.self) { $0.size.height > 0 } action: { hasFooter = $0 }
             }
             .padding(.bottom, PaeoniaSpacing.space16)
             // A pinch can span the map and the cards below it.

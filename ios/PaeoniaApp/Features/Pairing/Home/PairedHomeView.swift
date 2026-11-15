@@ -323,7 +323,8 @@ extension PairedHomeView {
             // On the map layout today's question sits on the page, with no card.
             .environment(\.dailyPromptIsInline, true)
             .sharesHomeTileExtent()
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            // As wide as the tab bar, which the footer's first card sits level with.
+            .padding(.horizontal, PaeoniaSpacing.tabBarHorizontalInset)
             .padding(.bottom, PaeoniaSpacing.space16)
         } footer: {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
@@ -334,7 +335,7 @@ extension PairedHomeView {
                 lookBackCard
                 movedVisitPrompt
             }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.horizontal, PaeoniaSpacing.tabBarHorizontalInset)
         }
         // On the whole page, so the map and the avatars move with a card that changes height.
         .modifier(cardChangeAnimations)
