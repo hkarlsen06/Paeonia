@@ -11,6 +11,17 @@ struct PresenceRunKey: Hashable {
 extension MainTabView {
     var presenceModel: PartnerPresenceModel { models.presence }
 
+    /// The tabs with "Just us" that pulls in from the right edge, under the call overlay. The overlay
+    /// is outside "Just us", so its composer keeps the avatar and the bubble clear, and its call
+    /// button has the starter.
+    var tabsUnderOverlays: some View {
+        tabNavigation
+            .coupleChatSlideOver(
+                isPresented: $isCoupleChatSlidOver, isEnabled: allowsCoupleChatSwipe, peeks: coupleChatPeekIsWelcome
+            )
+            .callOverlay(participants: dailyChallengeParticipants, presence: presenceModel)
+    }
+
     /// Runs the presence model while the app is in front, keeps it told what is on screen, and opens
     /// what the avatar asks for. The model is in the environment for Settings.
     func runningPresence(on content: some View) -> some View {
@@ -18,6 +29,14 @@ extension MainTabView {
             .environment(presenceModel)
             .task(id: presenceRunKey) { await runPresence(presenceRunKey) }
             .onChange(of: presenceViewer, initial: true) { _, viewer in presenceModel.viewer = viewer }
+            .onChange(of: unreadPartnerChats, initial: true) { _, count in presenceModel.unreadChats = count }
+            // A notification from the partner that arrives while the app is open shows in the avatar.
+            .onAppear {
+                PaeoniaNotificationRouter.shared.takePartnerNotices(for: presenceModel) { [presenceModel] notice in
+                    presenceModel.receiveNow(.update(notice))
+                }
+            }
+            .onDisappear { PaeoniaNotificationRouter.shared.stopTakingPartnerNotices(for: presenceModel) }
             .onChange(of: presenceModel.openRequest) { _, request in
                 if request != nil { openPresenceRequest() }
             }
@@ -32,6 +51,12 @@ extension MainTabView {
     private func runPresence(_ key: PresenceRunKey) async {
         guard key.isInForeground, let coupleID = key.coupleID else { return }
         await presenceModel.run(coupleID: coupleID)
+    }
+
+    /// The chats where the partner wrote something this person has not read, as the Chats list counts
+    /// them, leaving out the one on screen, which reads it.
+    private var unreadPartnerChats: Int {
+        chatSummaries.summaries.keys.count { $0 != visibleChatSubject && chatSummaries.isUnread($0) }
     }
 
     /// What this person has on screen, so the avatar leaves out the chat and the game they are in.
@@ -56,6 +81,9 @@ extension MainTabView {
             isCoupleChatSlidOver = false
             dismissGameChatSheet()
             openGameFromHome(.game(kind))
+        case let .link(link):
+            isCoupleChatSlidOver = false
+            PaeoniaNotificationRouter.shared.route(link)
         case nil:
             break
         }

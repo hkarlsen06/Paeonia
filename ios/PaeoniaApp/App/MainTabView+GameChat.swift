@@ -172,7 +172,7 @@ extension MainTabView {
     }
 
     /// The live summary feed supplies authorized previews even when APNs is unavailable. While the
-    /// partner's avatar is on screen, the message shows beside it instead of in a banner.
+    /// partner's avatar is on screen, the message shows in it instead of in a banner.
     func announcePartnerMessage(
         previous: [ThreadChatSubject: ThreadChatSummary], current: [ThreadChatSubject: ThreadChatSummary]
     ) {
@@ -183,7 +183,8 @@ extension MainTabView {
                 && previous[summary.subject]?.lastMessageID != messageID
                 && date >= messageNoticeStartedAt
                 && summary.isPrivateTopic != true
-                && summary.lastMessageCall?.outcome != .completed
+                // A call rang in the open app, which said how it ended.
+                && summary.lastMessageCall == nil
                 && visibleChatSubject != summary.subject
         }.sorted { ($0.lastMessageAt ?? .distantPast) < ($1.lastMessageAt ?? .distantPast) }
         for summary in arrivals {

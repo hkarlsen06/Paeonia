@@ -21,6 +21,9 @@ final class PartnerPresenceModel {
     /// A call's screen, bubble or ring pill shows in the avatar's place. The call overlay keeps it
     /// current.
     var isCoveredByCall = false
+    /// The chats with a message from the partner this person has not read, which the avatar counts
+    /// once its notice has gone. `MainTabView` keeps it current.
+    var unreadChats = 0
 
     private let gateway: any PartnerPresenceGateway
     private let heartbeatInterval: Duration
@@ -147,7 +150,7 @@ final class PartnerPresenceModel {
 
     // MARK: - Notices
 
-    /// Shows a notice beside the avatar for a few seconds, or keeps it until the toolbar closes or
+    /// Shows a notice in the avatar for a few seconds, or keeps it until the toolbar closes or
     /// the avatar comes back from the edge or the cover over the app closes. A notice that tells this
     /// person nothing new is dropped.
     /// False while the avatar is not on screen to take it, so the caller shows a banner instead.
@@ -158,6 +161,13 @@ final class PartnerPresenceModel {
         return true
     }
 
+    /// Shows a notice in the avatar only while it is out with its toolbar closed. A notification has
+    /// nowhere else to wait, so while the avatar is away the caller shows a banner instead.
+    func receiveNow(_ notice: PresenceNotice) -> Bool {
+        guard case .avatar = mode else { return false }
+        return receive(notice)
+    }
+
     func clearNotice() {
         choose(pill.chosen.withoutNotice)
     }
@@ -166,7 +176,7 @@ final class PartnerPresenceModel {
         show(pill.choosing(chosen))
     }
 
-    /// Moves to `next`, and times the notice it shows beside the avatar. A notice the avatar keeps
+    /// Moves to `next`, and times the notice it shows in the avatar. A notice the avatar keeps
     /// while it is put away starts its time when it shows.
     private func show(_ next: PresencePill) {
         guard next != pill else { return }

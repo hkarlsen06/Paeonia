@@ -9,18 +9,24 @@
     @State private var deepLink: PaeoniaDeepLink?
     @State private var pendingInviteCode: String?
     @State private var environment: DeveloperLocalFlowEnvironment
+    private let partnerWritesAfter: Duration?
+    private let presence: PartnerPresenceModel?
 
     /// `gameConversation` is a game scenario. The Games tab then shows its state, and game
     /// chats work. `coupleCalls` puts a finished, a missed and an unanswered call in "Just us".
     /// `callPartner` makes the phone buttons call a partner who answers, and the finished call
     /// lands in "Just us" (`DeveloperAnsweringCallEngine`). With `.callsIn` the partner also calls.
     /// `launchLink` opens when the flow starts, unless the app was launched with one. `presence`
-    /// puts the partner's avatar over the app (`DeveloperPresenceFixture`).
+    /// puts the partner's avatar over the app (`DeveloperPresenceFixture`). That long after
+    /// the avatar shows, `partnerWritesAfter`, the partner writes in the game's chat.
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil,
          gameConversation: DeveloperScenario? = nil, finishedGameRuns: Bool = false, coupleCalls: Bool = false,
          callPartner: DeveloperCallPartner? = nil, launchLink: String? = nil,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
-         mail: DeveloperMailSeed = .none, presence: PartnerPresenceModel? = nil) {
+         mail: DeveloperMailSeed = .none, presence: PartnerPresenceModel? = nil,
+         partnerWritesAfter: Duration? = nil) {
+      self.partnerWritesAfter = partnerWritesAfter
+      self.presence = presence
       // A link the app was launched with, such as a push tapped while the app was not running.
       _deepLink = State(
         initialValue: (ProcessInfo.processInfo.environment["PAEONIA_LAUNCH_LINK"] ?? launchLink)
@@ -52,6 +58,13 @@
       .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
       .environment(\.mediaAlternativeEditingService, environment.mediaAlternativeEditingService)
       .modifier(DeveloperLocalFlowCalls(center: environment.callCenter))
+      .task {
+        guard let partnerWritesAfter, let presence, let gameFlow = environment.gameConversationFlow else { return }
+        while !presence.isShown, !Task.isCancelled { try? await Task.sleep(for: .milliseconds(200)) }
+        try? await Task.sleep(for: partnerWritesAfter)
+        guard !Task.isCancelled else { return }
+        await gameFlow.receivePartnerMessage()
+      }
       .overlay(alignment: .topTrailing) {
         if let gameFlow = environment.gameConversationFlow,
            UserDefaults.standard.bool(forKey: "paeonia-game-chat-test-events") {

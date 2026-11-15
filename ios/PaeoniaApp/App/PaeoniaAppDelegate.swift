@@ -98,6 +98,9 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         return .newData
     }
 
+    /// Reminders the app sends about the partner, which name them but are not something they did.
+    nonisolated private static let remindersAboutThePartner: Set<String> = ["date_reminder", "streak_reminder"]
+
     nonisolated private static let typesShownLiveInApp: Set<String> = [
         "thread_message_sent",
         "partner_answered",
@@ -106,6 +109,8 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         "daily_challenge_completed",
         // The open app plays the pairing celebration the moment the partner joins.
         "partner_joined",
+        // The call rang in the open app, which said it was missed, and Just us keeps its row.
+        "missed_call",
     ]
 
     /// Foreground pushes never show a system banner, play a push sound or enter
@@ -150,13 +155,13 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         guard !title.isEmpty || !body.isEmpty else { return }
         let deepLink = isWidgetUpdate ? .widgetDrawing : PaeoniaDeepLink(notificationUserInfo: userInfo)
         let showsPartnerAvatar = isWidgetUpdate || userInfo["actor_user_id"] is String
-        let messageID = type == "thread_message_sent"
-            ? (userInfo["message_id"] as? String).flatMap(UUID.init(uuidString:)) : nil
+        let notice = PaeoniaForegroundNotice(
+            title: title.isEmpty ? nil : title, message: body, deepLink: deepLink,
+            showsPartnerAvatar: showsPartnerAvatar,
+            isPartnersDoing: showsPartnerAvatar && !Self.remindersAboutThePartner.contains(type)
+        )
         Task { @MainActor in
-            PaeoniaNotificationRouter.shared.presentForegroundNotice(
-                title: title.isEmpty ? nil : title,
-                message: body, deepLink: deepLink, showsPartnerAvatar: showsPartnerAvatar, messageID: messageID
-            )
+            PaeoniaNotificationRouter.shared.presentForegroundNotice(notice)
         }
     }
 

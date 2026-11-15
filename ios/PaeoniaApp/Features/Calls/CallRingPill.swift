@@ -1,36 +1,63 @@
 import SwiftUI
 
-/// Places the ring pill at the top of the screen, under the status bar and the Dynamic Island.
+/// Places the ring pill where `CallOverlayModel.ringAnchor` says: grown out of the partner's avatar,
+/// with the photo where the avatar's was, or at the top of the screen under the status bar and the
+/// Dynamic Island.
 struct CallRingLayer: View {
     let model: CallOverlayModel
     let session: CallSession
 
     var body: some View {
-        VStack(spacing: 0) {
-            CallRingPill(center: model.center, session: session, participants: model.participants)
-                .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
-                // The window passes every touch outside this frame to the app underneath.
-                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { model.ringFrame = $0 }
-            Spacer(minLength: 0)
+        switch model.ringAnchor {
+        case .top:
+            VStack(spacing: 0) {
+                pill(photoEdge: .leading, opensDownward: true)
+                Spacer(minLength: 0)
+            }
+            .padding(.top, PaeoniaSpacing.space8)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        case let .avatar(spot):
+            GeometryReader { proxy in
+                let placement = model.placement(in: proxy)
+                let rowY = placement.center(of: spot, bubble: PresenceAvatar.outerSize).y
+                let opensDownward = placement.growsDownward(fromY: rowY, rowHeight: CallRingPill.height)
+                pill(photoEdge: spot.edge, opensDownward: opensDownward)
+                    .placed(on: spot.edge, rowY: rowY, rowHeight: CallRingPill.height, in: placement)
+            }
         }
-        .padding(.top, PaeoniaSpacing.space8)
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+    }
+
+    private func pill(photoEdge: HorizontalEdge, opensDownward: Bool) -> some View {
+        CallRingPill(
+            center: model.center, session: session, participants: model.participants, photoEdge: photoEdge,
+            opensDownward: opensDownward
+        )
+        .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
+        // The window passes every touch outside this frame to the app underneath.
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { model.ringFrame = $0 }
     }
 }
 
 /// The partner's call ringing inside the app: their face and name, "Calling you", and Decline and
 /// Answer. A tap anywhere else on it opens the full call screen. A ring that ends unanswered says
-/// why until the call clears.
+/// why until the call clears. The photo sits at `photoEdge`, the side of the partner's avatar it
+/// grew out of.
 struct CallRingPill: View {
     let center: CallCenter
     let session: CallSession
     let participants: DailyChallengeParticipants
+    var photoEdge = HorizontalEdge.leading
+    /// A pull down opens the full call screen when the pill is at the top, and a pull up when it is
+    /// at the bottom.
+    var opensDownward = true
 
     private static let avatarSize: CGFloat = 48
     private static let buttonSize: CGFloat = 52
     private static let symbolSize: CGFloat = 20
+    /// The pill's height, with its padding around the buttons.
+    static let height = buttonSize + 2 * PaeoniaSpacing.space8
 
-    /// How far a pull down goes before letting go opens the full call screen.
+    /// How far a pull goes before letting go opens the full call screen.
     private static let openDistance: CGFloat = 32
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -40,7 +67,7 @@ struct CallRingPill: View {
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            caller
+            if photoEdge == .leading { caller }
             if isRinging {
                 CallRoundButton(
                     systemImage: "phone.down.fill", label: .callsControlDecline, size: Self.buttonSize,
@@ -53,6 +80,7 @@ struct CallRingPill: View {
                     morphPart: .answer
                 ) { center.engine.answer() }
             }
+            if photoEdge == .trailing { caller }
         }
         .padding(PaeoniaSpacing.space8)
         .background {
@@ -62,19 +90,21 @@ struct CallRingPill: View {
                 .callMorph(.background)
         }
         .offset(y: pull)
-        .gesture(pullDown)
+        .gesture(pullToOpen)
     }
 
-    /// A pull down opens the full call screen, as a pull on a notification expands it.
-    private var pullDown: some Gesture {
-        DragGesture(minimumDistance: 10)
+    /// A pull toward the middle of the screen opens the full call screen, as a pull on a notification
+    /// expands it.
+    private var pullToOpen: some Gesture {
+        let direction: CGFloat = opensDownward ? 1 : -1
+        return DragGesture(minimumDistance: 10)
             .onChanged { value in
-                // Follows the finger less and less, so the pill stays near the top.
-                pull = max(0, value.translation.height) * 0.35
+                // Follows the finger less and less, so the pill stays near its edge.
+                pull = max(0, value.translation.height * direction) * 0.35 * direction
             }
             .onEnded { value in
-                if value.translation.height > Self.openDistance
-                    || value.predictedEndTranslation.height > Self.openDistance * 3 {
+                if value.translation.height * direction > Self.openDistance
+                    || value.predictedEndTranslation.height * direction > Self.openDistance * 3 {
                     open()
                 }
                 withAnimation(reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.2)) { pull = 0 }
@@ -83,15 +113,12 @@ struct CallRingPill: View {
 
     private var caller: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            PaeoniaProfilePhotoAvatar(
-                mediaAssetID: participants.partnerProfilePhotoAssetID,
-                name: participants.partnerName,
-                tint: .paeoniaPartnerTwo,
-                size: Self.avatarSize
-            )
-            .callMorph(.photo, size: Self.avatarSize)
-            .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+            if photoEdge == .leading {
+                photo
+            } else {
+                Spacer(minLength: 0)
+            }
+            VStack(alignment: photoEdge == .leading ? .leading : .trailing, spacing: PaeoniaSpacing.space2) {
                 Text(verbatim: participants.partnerName)
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)
@@ -100,7 +127,11 @@ struct CallRingPill: View {
                 CallStatusLine(phase: session.phase, direction: session.direction, font: PaeoniaTypography.caption)
                     .lineLimit(1)
             }
-            Spacer(minLength: 0)
+            if photoEdge == .trailing {
+                photo
+            } else {
+                Spacer(minLength: 0)
+            }
         }
         .contentShape(.rect)
         .onTapGesture(perform: open)
@@ -109,6 +140,17 @@ struct CallRingPill: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(named: Text(.callsOpenCall), open)
         .accessibilityIdentifier("calls.ring")
+    }
+
+    private var photo: some View {
+        PaeoniaProfilePhotoAvatar(
+            mediaAssetID: participants.partnerProfilePhotoAssetID,
+            name: participants.partnerName,
+            tint: .paeoniaPartnerTwo,
+            size: Self.avatarSize
+        )
+        .callMorph(.photo, size: Self.avatarSize)
+        .accessibilityHidden(true)
     }
 
     private func open() {

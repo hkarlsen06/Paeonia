@@ -35615,20 +35615,20 @@
         }
       }
     },
-    "presence.notice.join" : {
-      "comment" : "Second line of the notice beside the partner's floating picture when they open a game. Tapping it opens the same game.",
+    "presence.avatar.unreadChats" : {
+      "comment" : "VoiceOver value of the partner's floating picture while some of the couple's chats have messages from the partner this person has not read. %lld is the number of those chats.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap to join"
+            "value" : "Unread chats: %lld"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trykk for å bli med"
+            "value" : "Uleste samtaler: %lld"
           }
         }
       }
@@ -35651,8 +35651,26 @@
         }
       }
     },
+    "presence.notice.openAccessibilityHint" : {
+      "comment" : "VoiceOver hint of a notice in the partner's floating picture that opens a game, a letter, a drawing or another screen when tapped.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens what it is about."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner det det gjelder."
+          }
+        }
+      }
+    },
     "presence.notice.openChat.accessibilityHint" : {
-      "comment" : "VoiceOver hint of the partner's new message or typing shown beside their floating picture.",
+      "comment" : "VoiceOver hint of the partner's new message or typing shown in their floating picture.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -35939,42 +35957,6 @@
         }
       }
     },
-    "presence.toolbar.call" : {
-      "comment" : "Button under the partner's floating picture that calls them. Short.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Call"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ring"
-          }
-        }
-      }
-    },
-    "presence.toolbar.join" : {
-      "comment" : "Button under the partner's floating picture that opens the game the partner is playing. Short.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Join"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bli med"
-          }
-        }
-      }
-    },
     "presence.toolbar.join.accessibilityLabel" : {
       "comment" : "VoiceOver label of the Join button under the partner's floating picture. %@ is the game's name.",
       "extractionState" : "manual",
@@ -35989,24 +35971,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bli med i %@"
-          }
-        }
-      }
-    },
-    "presence.toolbar.message" : {
-      "comment" : "Button under the partner's floating picture that opens the couple's own chat, Just us. Short.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Message"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skriv"
           }
         }
       }

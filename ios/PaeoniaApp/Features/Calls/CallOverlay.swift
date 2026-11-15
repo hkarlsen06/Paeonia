@@ -6,17 +6,14 @@ extension View {
     /// Mounts the call screen, the bubble and the ring pill once for the signed-in app, in a window
     /// of their own above every screen, sheet and cover, and puts the `CallStarter` for the phone
     /// buttons in the environment. While no call is up the window shows the partner's avatar, while
-    /// `presence` says the partner is here. While `chatIsOnScreen`, the bubble and the avatar keep
-    /// to the top, clear of the chat's composer. Does nothing without a `CallCenter` in the
-    /// environment.
-    func callOverlay(
-        participants: DailyChallengeParticipants, chatIsOnScreen: Bool, presence: PartnerPresenceModel
-    ) -> some View {
-        modifier(CallOverlayMount(participants: participants, chatIsOnScreen: chatIsOnScreen, presence: presence))
+    /// `presence` says the partner is here. Does nothing without a `CallCenter` in the environment.
+    func callOverlay(participants: DailyChallengeParticipants, presence: PartnerPresenceModel) -> some View {
+        modifier(CallOverlayMount(participants: participants, presence: presence))
     }
 
     /// Where the bubble must stay above, in global coordinates, such as the top of the game chat
-    /// panel. The bubble also stays above the bottom controls that `paeoniaBannerBottomEdge` reports.
+    /// panel. The bubble also stays above the bottom controls that `paeoniaBannerBottomEdge` reports,
+    /// such as a chat's composer.
     func callBubbleBottomEdge(_ edge: CGFloat?) -> some View {
         preference(key: CallBubbleBottomEdgeKey.self, value: edge)
     }
@@ -33,7 +30,6 @@ struct CallBubbleBottomEdgeKey: PreferenceKey {
 
 private struct CallOverlayMount: ViewModifier {
     let participants: DailyChallengeParticipants
-    let chatIsOnScreen: Bool
     let presence: PartnerPresenceModel
 
     @Environment(CallCenter.self) private var center: CallCenter?
@@ -43,12 +39,19 @@ private struct CallOverlayMount: ViewModifier {
     func body(content: Content) -> some View {
         if let center {
             content.modifier(CallOverlayHost(
-                center: center, starter: injectedStarter, participants: participants, chatIsOnScreen: chatIsOnScreen,
-                presence: presence))
+                center: center, starter: injectedStarter, participants: participants, presence: presence))
         } else {
             content
         }
     }
+}
+
+/// Where the partner's call rings inside the app.
+nonisolated enum RingAnchor: Equatable, Sendable {
+    /// Under the status bar and the Dynamic Island.
+    case top
+    /// Grown out of the partner's avatar at its spot.
+    case avatar(CallBubbleSpot)
 }
 
 /// What the overlay window shows, and where the bubble may go.
@@ -59,9 +62,9 @@ final class CallOverlayModel {
         case hidden
         case screen
         case bubble
-        /// The partner's call ringing inside the app, as a pill at the top of the screen.
+        /// The partner's call ringing inside the app, as a pill (`ringAnchor`).
         case ring
-        /// No call, and the partner is here: their avatar in a corner (`PresencePillLayer`).
+        /// No call, and the partner is here: their avatar at its spot (`PresencePillLayer`).
         case presence
     }
 
@@ -83,18 +86,19 @@ final class CallOverlayModel {
     let center: CallCenter
     let presence: PartnerPresenceModel
     var participants: DailyChallengeParticipants
-    var chatIsOnScreen: Bool
     /// The top of the screen's bottom controls (`PaeoniaBannerBottomEdgeKey`), in global coordinates.
     var controlsTop: CGFloat?
     /// The top of the game chat panel while it is open (`CallBubbleBottomEdgeKey`).
     var panelTop: CGFloat?
-    /// The corner the person dragged the bubble or the partner's avatar to. They share it.
-    var corner = CallBubbleCorner.bottomTrailing
+    /// Where the person dragged the bubble or the partner's avatar to. They share it.
+    var spot = CallBubbleSpot.initial
+    /// Where the ring pill shows, decided as it comes on screen so it never moves while it rings.
+    private(set) var ringAnchor = RingAnchor.top
     /// Where each part is in the window, for `touchArea`. Each has its own, so one that is leaving
     /// can't move another's.
     var bubbleFrame = CGRect.zero
     var ringFrame = CGRect.zero
-    /// The partner's avatar with the notice beside it.
+    /// The partner's avatar with its notice and toolbar.
     var avatarFrame = CGRect.zero
     /// The tab at the edge while the avatar is tucked away.
     var tabFrame = CGRect.zero
@@ -104,19 +108,20 @@ final class CallOverlayModel {
     /// The layer the window draws. It follows `layer` once the window shows, because a view that
     /// appears in a hidden window skips its transition.
     var shownLayer = Layer.hidden {
-        didSet { previousShownLayer = oldValue }
+        didSet {
+            previousShownLayer = oldValue
+            if shownLayer == .ring, oldValue != .ring { ringAnchor = currentRingAnchor }
+        }
     }
     /// The layer the window drew before, so the call screen and the ring pill can tell a morph
     /// between them from an entrance.
     private(set) var previousShownLayer = Layer.hidden
 
     init(
-        center: CallCenter, participants: DailyChallengeParticipants, chatIsOnScreen: Bool,
-        presence: PartnerPresenceModel
+        center: CallCenter, participants: DailyChallengeParticipants, presence: PartnerPresenceModel
     ) {
         self.center = center
         self.participants = participants
-        self.chatIsOnScreen = chatIsOnScreen
         self.presence = presence
     }
 
@@ -132,6 +137,21 @@ final class CallOverlayModel {
         if session.direction == .incoming, session.phase == .ringing, !session.ringsInApp { return nil }
         guard center.presentation == .bubble else { return .screen }
         return session.ringsInApp ? .ring : .bubble
+    }
+
+    /// The keyboard is up. It sits above this window and could cover a ring at the avatar, so a ring
+    /// that is already there moves to the top.
+    var keyboardIsUp = false {
+        didSet { if keyboardIsUp, shownLayer == .ring { ringAnchor = .top } }
+    }
+
+    /// The ring grows out of the partner's avatar while it shows at its spot, and else rings at the
+    /// top of the screen, as when the avatar is tucked at an edge, the partner is not here, or the
+    /// keyboard is up.
+    private var currentRingAnchor: RingAnchor {
+        guard presence.isShown, !keyboardIsUp else { return .top }
+        if case .tucked = presence.mode { return .top }
+        return .avatar(spot)
     }
 
     /// The partner's avatar comes back once the call has gone, so an ended call's screen or ring pill
@@ -160,15 +180,13 @@ final class CallOverlayModel {
 
     func placement(in proxy: GeometryProxy) -> CallBubblePlacement {
         CallBubblePlacement(
-            size: proxy.size, globalMinY: proxy.frame(in: .global).minY, controlsTop: controlsTop,
-            panelTop: panelTop, chatIsOnScreen: chatIsOnScreen)
+            size: proxy.size, globalMinY: proxy.frame(in: .global).minY, controlsTop: controlsTop, panelTop: panelTop)
     }
 }
 
 private struct CallOverlayHost: ViewModifier {
     let center: CallCenter
     let participants: DailyChallengeParticipants
-    let chatIsOnScreen: Bool
 
     @State private var starter: CallStarter
     @State private var model: CallOverlayModel
@@ -177,15 +195,14 @@ private struct CallOverlayHost: ViewModifier {
     @Environment(\.avatarStyling) private var avatarStyling
 
     init(
-        center: CallCenter, starter: CallStarter?, participants: DailyChallengeParticipants, chatIsOnScreen: Bool,
+        center: CallCenter, starter: CallStarter?, participants: DailyChallengeParticipants,
         presence: PartnerPresenceModel
     ) {
         self.center = center
         self.participants = participants
-        self.chatIsOnScreen = chatIsOnScreen
         _starter = State(initialValue: starter ?? CallStarter(center: center))
         _model = State(initialValue: CallOverlayModel(
-            center: center, participants: participants, chatIsOnScreen: chatIsOnScreen, presence: presence))
+            center: center, participants: participants, presence: presence))
     }
 
     func body(content: Content) -> some View {
@@ -195,7 +212,7 @@ private struct CallOverlayHost: ViewModifier {
             .onPreferenceChange(PaeoniaBannerBottomEdgeKey.self) { model.controlsTop = $0 }
             .onPreferenceChange(CallBubbleBottomEdgeKey.self) { model.panelTop = $0 }
             .onChange(of: participants) { _, participants in model.participants = participants }
-            .onChange(of: chatIsOnScreen) { _, isOnScreen in model.chatIsOnScreen = isOnScreen }
+            .onDockedKeyboardChange { model.keyboardIsUp = $0 }
             .onChange(of: model.callLayer != nil, initial: true) { _, isUp in model.presence.isCoveredByCall = isUp }
             // Starting or answering a call opens the full call screen. A ring inside the app starts
             // as the pill.
@@ -276,7 +293,9 @@ private struct CallOverlayRoot: View {
             CallBubbleLayer(model: model, session: session)
                 .transition(.opacity.combined(with: .scale(scale: 0.6)))
         case .ring:
-            let slide = AnyTransition.move(edge: .top).combined(with: .opacity)
+            // A pill at the avatar never travels in from the top edge.
+            let slide: AnyTransition = model.ringAnchor == .top
+                ? .move(edge: .top).combined(with: .opacity) : .opacity
             CallRingLayer(model: model, session: session)
                 .transition(.asymmetric(
                     insertion: arrives(from: .screen) || arrives(from: .presence) ? .opacity : slide,

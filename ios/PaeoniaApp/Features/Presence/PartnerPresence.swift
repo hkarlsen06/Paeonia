@@ -53,6 +53,9 @@ nonisolated struct PresenceMessageNotice: Equatable, Sendable {
 nonisolated enum PresenceNotice: Equatable, Sendable {
     case message(PresenceMessageNotice)
     case openedGame(GameKind)
+    /// A notification from the partner that arrived while the app is open, such as a letter or a
+    /// story.
+    case update(PaeoniaForegroundNotice)
 
     /// True when the notice tells this person something new. A message must come from a chat they
     /// don't have on screen, and a game must be one they don't have open.
@@ -60,6 +63,7 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
         switch self {
         case let .message(message): message.chat != viewer.visibleChat
         case let .openedGame(kind): kind != viewer.openGame
+        case .update: true
         }
     }
 
@@ -67,6 +71,7 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
         switch self {
         case let .message(message): .message(message)
         case let .openedGame(kind): .openedGame(kind)
+        case let .update(update): .update(update)
         }
     }
 }
@@ -77,17 +82,19 @@ nonisolated struct PresenceViewerPlace: Equatable, Sendable {
     var openGame: GameKind?
 }
 
-/// What the avatar calls out beside it. A tap opens the chat or the game it is about.
+/// What the avatar calls out in its capsule. A tap opens the chat, the game or the screen it is about.
 nonisolated enum PresenceCallout: Equatable, Sendable {
     case message(PresenceMessageNotice)
     case openedGame(GameKind)
     case typing(ThreadChatSubject)
+    case update(PaeoniaForegroundNotice)
 
-    var destination: PresenceDestination {
+    var destination: PresenceDestination? {
         switch self {
         case let .message(message): .chat(message.chat)
         case let .openedGame(kind): .game(kind)
         case let .typing(chat): .chat(chat)
+        case let .update(update): update.deepLink.map(PresenceDestination.link)
         }
     }
 }
@@ -133,4 +140,6 @@ nonisolated enum PresenceDestination: Equatable, Sendable {
     case chat(ThreadChatSubject)
     /// The game the partner is in, for Join and for "Opened".
     case game(GameKind)
+    /// Where the partner's notification goes, as if it were tapped.
+    case link(PaeoniaDeepLink)
 }

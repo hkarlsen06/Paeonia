@@ -296,10 +296,7 @@ struct MainTabView: View {
     }
 
     private var tabContent: some View {
-        tabNavigation
-        .coupleChatSlideOver(
-            isPresented: $isCoupleChatSlidOver, isEnabled: allowsCoupleChatSwipe, peeks: coupleChatPeekIsWelcome
-        )
+        tabsUnderOverlays
         .tint(.paeoniaAccentPrimary)
         // Key the load on the signed-in user alone. The partner id, display names,
         // and profile photos all populate/refresh shortly after launch; if they were

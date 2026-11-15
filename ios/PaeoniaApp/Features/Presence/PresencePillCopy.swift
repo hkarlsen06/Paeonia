@@ -1,12 +1,34 @@
 import SwiftUI
 
 extension PresenceCallout {
-    /// A message says where it was written, above the message itself.
-    var title: LocalizedStringResource {
+    /// A message says where it was written, above the message itself, and a notification its title.
+    /// The partner's notification arrives in words already, so every case is a plain string.
+    var title: String {
         switch self {
-        case let .message(message): PresencePlace.chatting(in: message.chat)
-        case let .openedGame(kind): .presenceStatusOpenedGame(String(localized: kind.name))
-        case let .typing(chat): Self.typing(in: chat)
+        case let .message(message): String(localized: PresencePlace.chatting(in: message.chat))
+        case let .openedGame(kind): String(localized: .presenceStatusOpenedGame(String(localized: kind.name)))
+        case let .typing(chat): String(localized: Self.typing(in: chat))
+        case let .update(update): update.title ?? update.message
+        }
+    }
+
+    /// The message, or a notification's text under its title.
+    var detail: String? {
+        switch self {
+        case let .message(message): message.preview
+        case .openedGame, .typing: nil
+        case let .update(update): update.title == nil ? nil : update.message
+        }
+    }
+
+    func accessibilityLabel(partnerName: String) -> String {
+        switch self {
+        case let .message(message):
+            String(localized: .presenceNoticeMessageAccessibilityLabel(partnerName, message.preview))
+        case let .update(update):
+            [update.title, update.message].compactMap(\.self).joined(separator: ". ")
+        case .openedGame, .typing:
+            title
         }
     }
 
@@ -44,13 +66,13 @@ extension PresencePlace {
 
 extension PresencePillStatus {
     /// The callout while there is one, otherwise where the partner is.
-    var headline: LocalizedStringResource {
-        callout?.title ?? place.title
+    var headline: String {
+        callout?.title ?? String(localized: place.title)
     }
 
     /// "Robin is here. Playing Mind Meld", for VoiceOver on the avatar.
     func accessibilityLabel(partnerName: String) -> LocalizedStringResource {
         if callout == nil, place == .here { return .presenceAvatarAccessibilityLabelHere(partnerName) }
-        return .presenceAvatarAccessibilityLabel(partnerName, String(localized: headline))
+        return .presenceAvatarAccessibilityLabel(partnerName, headline)
     }
 }

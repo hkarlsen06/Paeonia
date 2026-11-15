@@ -29,6 +29,22 @@ struct PaeoniaBannerGameIcon: View {
     }
 }
 
+/// The picture for where a notification goes: the game's own, or a symbol.
+struct PaeoniaDeepLinkIcon: View {
+    let link: PaeoniaDeepLink
+
+    var body: some View {
+        if let kind = link.bannerGameKind {
+            PaeoniaBannerGameIcon(kind: kind)
+        } else {
+            Image(systemName: link.bannerSystemImage)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityHidden(true)
+        }
+    }
+}
+
 extension PaeoniaDeepLink {
     var bannerGameKind: GameKind? {
         switch self {

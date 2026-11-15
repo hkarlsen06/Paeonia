@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Places the bubble in its corner (`CallBubblePlacement`). A drag moves it, and it settles in the
-/// corner nearest to where it was thrown.
+/// Places the bubble at its spot (`CallBubblePlacement`). A drag moves it, and it settles against the
+/// edge it was thrown toward, at the height it was dropped.
 struct CallBubbleLayer: View {
     let model: CallOverlayModel
     let session: CallSession
@@ -19,7 +19,7 @@ struct CallBubbleLayer: View {
                 // The window passes every touch outside this frame to the app underneath.
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { model.bubbleFrame = $0 }
                 .gesture(drag(in: placement))
-                .position(placement.center(of: model.corner, bubble: bubbleSize))
+                .position(placement.center(of: model.spot, bubble: bubbleSize))
                 .offset(dragOffset)
         }
     }
@@ -29,11 +29,11 @@ struct CallBubbleLayer: View {
         DragGesture(minimumDistance: 8, coordinateSpace: .global)
             .onChanged { dragOffset = $0.translation }
             .onEnded { value in
-                // The bubble never tucks away. Thrown past an edge, it settles in the corner there.
+                // The bubble never tucks away. Thrown past an edge, it settles against it.
                 let landing = placement.landing(
-                    thrownFrom: model.corner, by: value.predictedEndTranslation, bubble: bubbleSize)
+                    from: model.spot, translation: value.translation, velocity: value.velocity, bubble: bubbleSize)
                 withAnimation(reduceMotion ? nil : PaeoniaMotion.callOverlay) {
-                    model.corner = landing.corner
+                    model.spot = landing.spot
                     dragOffset = .zero
                 }
             }

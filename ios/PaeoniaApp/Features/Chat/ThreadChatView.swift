@@ -84,9 +84,12 @@ struct ThreadChatView: View {
             }
         }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewportFrame = $0 }
+        // Only while on screen, because a chat left open on another tab must not lift the banner,
+        // the call bubble or the partner's avatar on this one.
         .preference(
             key: PaeoniaBannerBottomEdgeKey.self,
-            value: viewModel.isChatAvailable && composerHeight > 0 ? viewportFrame.maxY - composerHeight : nil
+            value: isVisible && viewModel.isChatAvailable && composerHeight > 0
+                ? viewportFrame.maxY - composerHeight : nil
         )
         .onChange(of: messageViewport, initial: true) { readViewport.frame = messageViewport }
         .paeoniaReadableWidth()

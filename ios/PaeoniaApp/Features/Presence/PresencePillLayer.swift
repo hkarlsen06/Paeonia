@@ -1,10 +1,11 @@
 import SwiftUI
 import UIKit
 
-/// Places the partner's avatar in the call bubble's corner (`CallBubblePlacement`), with a notice or
-/// the toolbar beside it toward the middle of the screen, or as a tab at an edge while it is tucked
-/// away. A drag moves it between corners, and a throw past the left or right edge tucks it. While a
-/// sheet or cover is over the app the avatar waits as the tab at its side (`PresencePill`).
+/// Places the partner's avatar at the call bubble's spot (`CallBubblePlacement`), or as a tab at its
+/// edge while it is tucked away. A notice or the Call, Message and Join buttons widen the avatar's
+/// capsule toward the middle of the screen (`PresenceIsland`). A drag moves it anywhere along the
+/// left or right edge. While a sheet or cover is over the app the avatar waits as the tab at its
+/// side (`PresencePill`).
 struct PresencePillLayer: View {
     let overlay: CallOverlayModel
 
@@ -35,7 +36,7 @@ struct PresencePillLayer: View {
                 }
                 if let status = model.status {
                     if case let .tucked(edge, pending) = model.mode {
-                        tab(edge: edge, hasWaitingNotice: pending != nil, in: placement)
+                        tab(edge: edge, hasWaitingNotice: pending != nil || model.unreadChats > 0, in: placement)
                     } else {
                         pill(status, in: placement)
                     }
@@ -44,9 +45,15 @@ struct PresencePillLayer: View {
         }
         .animation(motion, value: model.mode)
         .animation(motion, value: model.status)
-        // A chat that comes on screen moves the avatar to the top, clear of its composer.
-        .animation(motion, value: overlay.chatIsOnScreen)
+        .animation(motion, value: model.unreadChats)
+        // A chat's composer comes on screen, or the keyboard lifts it, and the avatar moves above it.
+        .animation(motion, value: overlay.controlsTop)
         .task { await followCovers() }
+        // The window's layer stays the same, so VoiceOver hears of a new notice only from here.
+        .onChange(of: model.mode.shownNotice) { _, notice in
+            guard let notice else { return }
+            AccessibilityNotification.Announcement(notice.callout.accessibilityLabel(partnerName: partnerName)).post()
+        }
     }
 
     /// UIKit sends no event when something is presented over the app's window, so the layer looks
@@ -55,7 +62,7 @@ struct PresencePillLayer: View {
         defer { model.coversClosed() }
         while !Task.isCancelled {
             if PaeoniaAppWindow.isCovered {
-                model.coverOpened(tuckingAt: overlay.corner.isLeading ? .leading : .trailing)
+                model.coverOpened(tuckingAt: overlay.spot.edge)
             } else {
                 model.coversClosed()
             }
@@ -65,62 +72,98 @@ struct PresencePillLayer: View {
         }
     }
 
-    // MARK: - The avatar and what is beside it
+    // MARK: - The avatar, its notice and its toolbar
 
+    /// The avatar's capsule against its edge. A notice or the buttons widen it toward the middle of
+    /// the screen, and the face stays where it is.
     private func pill(_ status: PresencePillStatus, in placement: CallBubblePlacement) -> some View {
-        let corner = overlay.corner
-        let atTop = placement.showsAtTop(corner, height: PresenceAvatar.outerSize.height)
-        return HStack(alignment: atTop ? .top : .bottom, spacing: PaeoniaSpacing.space8) {
-            if corner.isLeading { avatar(status, in: placement) }
-            beside(status, growsFrom: corner.isLeading ? .leading : .trailing)
-            if !corner.isLeading { avatar(status, in: placement) }
+        let spot = overlay.spot
+        let rowY = placement.center(of: spot, bubble: PresenceAvatar.outerSize).y
+        let content = islandContent(status)
+        return PresenceIsland(faceEdge: spot.edge, showsContent: content != .none) {
+            islandContent(content)
+                .transition(.opacity)
+        } face: {
+            face(status, hasOwnGlass: content == .none, in: placement)
+        }
+        .overlay(alignment: spot.isLeading ? .topLeading : .topTrailing) {
+            if model.unreadChats > 0 {
+                PresenceUnreadBadge(count: model.unreadChats)
+                    .frame(width: PresenceAvatar.outerSize.width, alignment: .trailing)
+                    .offset(x: PaeoniaSpacing.space4, y: -PaeoniaSpacing.space4)
+                    .transition(.scale.combined(with: .opacity))
+            }
         }
         // The window passes every touch outside this frame to the app underneath.
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { overlay.avatarFrame = $0 }
-        .frame(
-            width: placement.area.width, height: placement.area.height,
-            alignment: Alignment(horizontal: corner.isLeading ? .leading : .trailing, vertical: atTop ? .top : .bottom)
-        )
-        .position(x: placement.area.midX, y: placement.area.midY)
+        .placed(on: spot.edge, rowY: rowY, rowHeight: PresenceAvatar.outerSize.height, in: placement)
         .offset(dragOffset)
     }
 
-    /// The toolbar while it is open, otherwise the callout. Under a sheet that holds unsaved work,
-    /// which nothing here may close, neither offers anything to open.
-    @ViewBuilder
-    private func beside(_ status: PresencePillStatus, growsFrom anchor: UnitPoint) -> some View {
-        let transition: AnyTransition = reduceMotion
-            ? .opacity : .opacity.combined(with: .scale(scale: 0.85, anchor: anchor))
+    /// What the capsule holds beside the face.
+    private enum IslandContent: Equatable {
+        case none
+        case callout(PresenceCallout)
+        /// Call, Message, and Join for `join`.
+        case actions(join: GameKind?)
+        /// Where the partner is, for an open toolbar over a sheet that holds unsaved work, which
+        /// nothing here may close.
+        case place
+    }
+
+    /// The open toolbar shows the buttons. So does the partner opening a game, so Join is one tap away.
+    private func islandContent(_ status: PresencePillStatus) -> IslandContent {
         let canLeave = !coversHoldUnsavedWork
-        if model.mode.isExpanded {
-            PresenceToolbar(
-                partnerName: partnerName, headline: status.headline, showsButtons: canLeave,
-                showsMessage: model.viewer.visibleChat != .couple, joinableGame: model.joinableGame,
-                call: call, message: { open(.chat(.couple)) }, join: { open(.game($0)) }
-            )
-            .accessibilityAction(.escape) { model.collapse() }
-            .transition(transition)
-        } else if let callout = status.callout {
-            PresenceNoticePill(callout: callout, partnerName: partnerName, canOpen: canLeave) {
-                open(callout.destination, clearingNotice: true)
-            }
-            .transition(transition)
+        if model.mode.isExpanded { return canLeave ? .actions(join: model.joinableGame) : .place }
+        switch status.callout {
+        case let .openedGame(kind) where canLeave: return .actions(join: kind)
+        case let .some(callout): return .callout(callout)
+        case nil: return .none
         }
     }
 
-    private func avatar(_ status: PresencePillStatus, in placement: CallBubblePlacement) -> some View {
-        PresenceAvatar(participants: overlay.participants, place: status.place)
+    @ViewBuilder
+    private func islandContent(_ content: IslandContent) -> some View {
+        switch content {
+        case .none:
+            EmptyView()
+        case let .callout(callout):
+            PresenceCalloutContent(
+                callout: callout, partnerName: partnerName,
+                canOpen: !coversHoldUnsavedWork && callout.destination != nil
+            ) {
+                if let destination = callout.destination { open(destination, clearingNotice: true) }
+            }
+        case let .actions(join):
+            PresenceActions(
+                partnerName: partnerName, showsMessage: model.viewer.visibleChat != .couple, joinableGame: join,
+                call: call, message: { open(.chat(.couple)) }, join: { open(.game($0), clearingNotice: true) }
+            )
+            .accessibilityAction(.escape) { model.collapse() }
+        case .place:
+            Text(verbatim: model.status?.headline ?? "")
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextSecondary)
+                .lineLimit(1)
+                .padding(.horizontal, PaeoniaSpacing.space12)
+        }
+    }
+
+    private func face(
+        _ status: PresencePillStatus, hasOwnGlass: Bool, in placement: CallBubblePlacement
+    ) -> some View {
+        PresenceAvatar(participants: overlay.participants, place: status.place, hasOwnGlass: hasOwnGlass)
             .contentShape(Circle())
             .onTapGesture { model.toggleToolbar() }
             .gesture(drag(in: placement))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(status.accessibilityLabel(partnerName: partnerName)))
+            .accessibilityValue(
+                model.unreadChats > 0 ? Text(.presenceAvatarUnreadChats(model.unreadChats)) : Text(verbatim: ""))
             .accessibilityHint(Text(.presenceAvatarAccessibilityHint))
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { model.toggleToolbar() }
-            .accessibilityAction(named: Text(.presenceActionTuck)) {
-                model.tuck(overlay.corner.isLeading ? .leading : .trailing)
-            }
+            .accessibilityAction(named: Text(.presenceActionTuck)) { model.tuck(overlay.spot.edge) }
             .accessibilityIdentifier("presence.avatar")
     }
 
@@ -128,7 +171,7 @@ struct PresencePillLayer: View {
 
     private func tab(edge: HorizontalEdge, hasWaitingNotice: Bool, in placement: CallBubblePlacement) -> some View {
         let width = PresenceTab.size.width
-        let y = placement.center(of: overlay.corner, bubble: PresenceAvatar.outerSize).y
+        let y = placement.center(of: overlay.spot, bubble: PresenceAvatar.outerSize).y
         return PresenceTab(edge: edge, partnerName: partnerName, hasWaitingNotice: hasWaitingNotice)
             .onTapGesture { model.untuck() }
             .accessibilityAddTraits(.isButton)
@@ -139,6 +182,8 @@ struct PresencePillLayer: View {
             .transition(.move(edge: edge == .leading ? .leading : .trailing).combined(with: .opacity))
     }
 
+    /// The avatar follows the finger and settles against the edge it was thrown toward, at the height
+    /// it was dropped. Only a third past the edge, or a hard fling at it, tucks it away.
     private func drag(in placement: CallBubblePlacement) -> some Gesture {
         // In global space, because the avatar moves under the finger.
         DragGesture(minimumDistance: 8, coordinateSpace: .global)
@@ -148,10 +193,11 @@ struct PresencePillLayer: View {
             }
             .onEnded { value in
                 let landing = placement.landing(
-                    thrownFrom: overlay.corner, by: value.predictedEndTranslation, bubble: PresenceAvatar.outerSize)
+                    from: overlay.spot, translation: value.translation, velocity: value.velocity,
+                    bubble: PresenceAvatar.outerSize)
                 withAnimation(motion) {
-                    overlay.corner = landing.corner
-                    if case let .tucked(edge, _) = landing { model.tuck(edge) }
+                    overlay.spot = landing.spot
+                    if case let .tucked(spot) = landing { model.tuck(spot.edge) }
                     dragOffset = .zero
                 }
             }

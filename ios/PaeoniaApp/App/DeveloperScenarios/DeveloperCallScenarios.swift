@@ -235,7 +235,7 @@
     var body: some View {
       Color.paeoniaBackgroundPrimary
         .ignoresSafeArea()
-        .callOverlay(participants: DeveloperCallFixture.participants, chatIsOnScreen: false, presence: presence)
+        .callOverlay(participants: DeveloperCallFixture.participants, presence: presence)
         .environment(center)
         .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
         .onAppear {

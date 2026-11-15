@@ -248,7 +248,7 @@ extension RootView {
             return
         }
 
-        var banner = PaeoniaBannerContent.info(
+        let banner = PaeoniaBannerContent.info(
             title: notice.title,
             message: notice.message,
             gameKind: notice.deepLink?.bannerGameKind,
@@ -258,9 +258,6 @@ extension RootView {
                 { PaeoniaNotificationRouter.shared.route(deepLink) }
             }
         )
-        banner.appEntityIdentifier = notice.messageID.map {
-            EntityIdentifier(for: ChatMessageEntity.self, identifier: $0)
-        }
         bannerCenter.show(banner)
         PaeoniaNotificationRouter.shared.consumeForegroundNotice()
     }

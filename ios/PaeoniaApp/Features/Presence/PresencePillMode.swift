@@ -2,7 +2,7 @@ import SwiftUI
 
 /// How the avatar is drawn, with the notice it shows or keeps for later.
 nonisolated enum PresencePillMode: Equatable, Sendable {
-    /// The partner's face in its corner, with a notice beside it for a moment.
+    /// The partner's face at its spot, with a notice in its capsule for a moment.
     case avatar(notice: PresenceNotice?)
     /// The toolbar is open: Call, Message, and Join while the partner is in a game. A notice that
     /// arrives meanwhile waits until it closes.
@@ -11,7 +11,7 @@ nonisolated enum PresencePillMode: Equatable, Sendable {
     /// with a dot while a notice waits.
     case tucked(edge: HorizontalEdge, pending: PresenceNotice?)
 
-    /// The notice beside the avatar.
+    /// The notice the avatar shows.
     var shownNotice: PresenceNotice? {
         if case let .avatar(notice) = self { notice } else { nil }
     }
@@ -20,7 +20,7 @@ nonisolated enum PresencePillMode: Equatable, Sendable {
         if case .expanded = self { true } else { false }
     }
 
-    /// The newest notice shows beside the avatar, or waits for the toolbar to close or the avatar
+    /// The newest notice shows in the avatar, or waits for the toolbar to close or the avatar
     /// to come back from the edge.
     func receiving(_ notice: PresenceNotice) -> Self {
         switch self {
