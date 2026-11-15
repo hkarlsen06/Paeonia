@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Normalize and check bundled GameSound CAFs. See docs/game-audio.md."""
+"""Normalize and check the bundled GameSound and CallSound CAFs. See docs/game-audio.md."""
 import argparse
 from contextlib import nullcontext
 import json
@@ -13,9 +13,14 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-SOUNDS = ROOT / "ios/PaeoniaApp/Resources/GameSounds"
-ENUM = ROOT / "ios/PaeoniaApp/Features/Games/Shared/Sound/GameSound.swift"
+RESOURCES = ROOT / "ios/PaeoniaApp/Resources"
 INVENTORY = Path(__file__).with_name("game-sounds-inventory.json")
+# Each library's folder, the enum that names its sounds, and its file prefix. Game sounds have
+# numbered variants listed in the inventory. A call sound is one file per case.
+LIBRARIES = {
+    "game": (RESOURCES / "GameSounds", ROOT / "ios/PaeoniaApp/Features/Games/Shared/Sound/GameSound.swift", "GameSound"),
+    "call": (RESOURCES / "CallSounds", ROOT / "ios/PaeoniaApp/Services/Calls/CallSound.swift", "CallSound"),
+}
 TARGET_LUFS = -26.0
 LOUDNESS_TOLERANCE = 0.5
 MAX_TRUE_PEAK = -3.0
@@ -81,32 +86,43 @@ def normalize(source, destination):
     raise ValueError(f"{source.name}: could not meet loudness and peak limits")
 
 
-def inventory(directory, only):
-    names = set(re.findall(r'case \w+ = "(\w+)"', ENUM.read_text()))
+def expected_files(library):
+    _, enum, prefix = LIBRARIES[library]
+    names = set(re.findall(r'case \w+ = "(\w+)"', enum.read_text()))
+    if not names:
+        raise ValueError(f"{enum.name}: no sound cases")
+    if library == "call":
+        return names, {f"{prefix}{name}.caf" for name in names}
     counts = json.loads(INVENTORY.read_text())
     if not isinstance(counts, dict) or set(counts) != names:
         raise ValueError("game-sounds-inventory.json must list every GameSound case exactly once")
     if any(type(count) is not int or count < 1 for count in counts.values()):
         raise ValueError("Game sound variant counts must be positive integers")
-    expected = {f"GameSound{name}{variant}.caf"
-                for name, count in counts.items() for variant in range(1, count + 1)}
-    paths = sorted(directory.glob("GameSound*.caf"))
+    return names, {f"{prefix}{name}{variant}.caf"
+                   for name, count in counts.items() for variant in range(1, count + 1)}
+
+
+def inventory(library, directory, only):
+    _, enum, prefix = LIBRARIES[library]
+    names, expected = expected_files(library)
+    paths = sorted(directory.glob(f"{prefix}*.caf"))
     actual = {path.name for path in paths}
+    suffix = "" if library == "call" else "([1-9][0-9]*)"
     for path in paths:
-        match = re.fullmatch(r"GameSound(.+?)([1-9][0-9]*)\.caf", path.name)
+        match = re.fullmatch(f"{prefix}(.+?){suffix}\\.caf", path.name)
         if not match or match[1] not in names:
-            raise ValueError(f"{path.name}: no matching GameSound case")
+            raise ValueError(f"{path.name}: no matching case in {enum.name}")
     if actual - expected:
-        raise ValueError("Unexpected variants: " + ", ".join(sorted(actual - expected)))
+        raise ValueError("Unexpected files: " + ", ".join(sorted(actual - expected)))
     if only:
         selected = set(only)
         if selected - actual:
             raise ValueError("--only names a missing CAF")
         paths = [path for path in paths if path.name in selected]
     elif expected - actual:
-        raise ValueError("Missing variants: " + ", ".join(sorted(expected - actual)))
+        raise ValueError("Missing files: " + ", ".join(sorted(expected - actual)))
     if not paths:
-        raise ValueError("No game sound CAFs found")
+        raise ValueError(f"No {library} sound CAFs found")
     return paths
 
 
@@ -115,23 +131,35 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--write", action="store_true")
-    parser.add_argument("--directory", type=Path, default=SOUNDS)
+    parser.add_argument("--library", choices=sorted(LIBRARIES), help="Only this library. Default: all")
+    parser.add_argument("--directory", type=Path, help="The library's folder, for generated outputs")
     parser.add_argument("--only", nargs="+", help="Normalize only these generated CAF filenames")
     args = parser.parse_args()
     if args.only and not args.write:
         parser.error("--only is for generation, not the complete-library check")
+    if (args.directory or args.only) and not args.library:
+        parser.error("--directory and --only need --library")
     for tool in ["ffmpeg", "ffprobe"]:
         if not shutil.which(tool):
             parser.error(f"{tool} is required")
-    paths = inventory(args.directory, args.only)
+    libraries = [args.library] if args.library else sorted(LIBRARIES)
+    for library in libraries:
+        directory = args.directory or LIBRARIES[library][0]
+        status = process(library, directory, inventory(library, directory, args.only), args.write)
+        if status:
+            return status
+    return 0
+
+
+def process(library, directory, paths, write):
     errors, results, replacements = [], [], []
     # Stage every result before replacing any original. Invalid input leaves the library intact.
-    staging = tempfile.TemporaryDirectory(prefix="game-audio-", dir=args.directory) if args.write else nullcontext()
+    staging = tempfile.TemporaryDirectory(prefix="game-audio-", dir=directory) if write else nullcontext()
     with staging as scratch:
         for path in paths:
             probe(path)
             loudness, peak = measure(path)
-            if not conforms(loudness, peak) and args.write:
+            if not conforms(loudness, peak) and write:
                 target = Path(scratch) / path.name
                 loudness, peak = normalize(path, target)
                 replacements.append((target, path))
@@ -145,7 +173,7 @@ def main():
         for target, path in replacements:
             target.chmod(path.stat().st_mode)
             os.replace(target, path)
-    print(f"{len(paths)} sounds checked, {len(replacements)} normalized; "
+    print(f"{len(paths)} {library} sounds checked, {len(replacements)} normalized; "
           f"{min(results):.1f} to {max(results):.1f} LUFS, true peaks <= {MAX_TRUE_PEAK:.1f} dBTP")
     return 0
 

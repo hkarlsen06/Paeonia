@@ -18,9 +18,13 @@ final class SimulatorCallSystem: CallSystem {
         self.delegate = delegate
     }
 
+    /// The system activates an outgoing call's audio once the app fulfills the start, as CallKit
+    /// does, so the caller hears the ringback.
     func startOutgoing(_ conversationID: UUID, to handle: Handle) {
         conversations.insert(conversationID)
-        deliver(.start, for: conversationID, onFail: { [weak self] in
+        deliver(.start, for: conversationID, onFulfill: { [weak self] in
+            self?.activateAudio(for: conversationID)
+        }, onFail: { [weak self] in
             self?.conversations.remove(conversationID)
         })
     }
@@ -29,9 +33,7 @@ final class SimulatorCallSystem: CallSystem {
         conversations.insert(conversationID)
     }
 
-    func reportConnecting(_ conversationID: UUID) {
-        activateAudio(for: conversationID)
-    }
+    func reportConnecting(_ conversationID: UUID) {}
 
     func reportConnected(_ conversationID: UUID) {}
 

@@ -6,8 +6,8 @@ cd "$ROOT_DIR"
 
 STAGED_PATHS="$(git diff --cached --name-only)"
 if printf '%s\n' "$STAGED_PATHS" | grep -E \
-  '^(ios/PaeoniaApp/Resources/GameSounds/|ios/PaeoniaApp/Features/Games/Shared/Sound/|ios/Scripts/(normalize-game-sounds\.py|game-sounds\.swift|game-sounds-inventory\.json))' >/dev/null; then
-  echo "[pre-commit] Checking game audio loudness"
+  '^(ios/PaeoniaApp/Resources/(GameSounds|CallSounds)/|ios/PaeoniaApp/Features/Games/Shared/Sound/|ios/PaeoniaApp/Services/Calls/CallSound\.swift|ios/Scripts/(normalize-game-sounds\.py|game-sounds\.swift|game-sounds-inventory\.json))' >/dev/null; then
+  echo "[pre-commit] Checking game and call audio loudness"
   python3 - <<'PY'
 from pathlib import Path
 import subprocess
@@ -16,7 +16,9 @@ import tempfile
 
 inputs = [
     "ios/PaeoniaApp/Resources/GameSounds",
+    "ios/PaeoniaApp/Resources/CallSounds",
     "ios/PaeoniaApp/Features/Games/Shared/Sound/GameSound.swift",
+    "ios/PaeoniaApp/Services/Calls/CallSound.swift",
     "ios/Scripts/normalize-game-sounds.py",
     "ios/Scripts/game-sounds-inventory.json",
 ]

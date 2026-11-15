@@ -16,6 +16,8 @@ nonisolated enum CallEvent: Equatable, Sendable {
     case connectionLost
     /// The system activated the call's audio (`conversationManager(_:didActivate:)`).
     case audioActivated
+    /// The system deactivated it (`conversationManager(_:didDeactivate:)`).
+    case audioDeactivated
     /// The person ended or declined the call on this phone.
     case hangUp
     /// The call ended somewhere the server already knows about, such as a busy line or an answer
@@ -58,6 +60,9 @@ nonisolated enum CallEffect: Equatable, Sendable {
     /// The call is over. Tear everything down and tell the system. `server` says what to tell the
     /// server, if anything.
     case finish(CallEndReason, server: CallServerEnd?)
+    /// Loop `CallSound.ringback`, or stop it.
+    case ringback(isOn: Bool)
+    case playConnectedSound
 }
 
 /// One call's phase and the facts its transitions depend on. Pure, so the rules in
@@ -79,6 +84,9 @@ nonisolated struct CallMachine: Equatable, Sendable {
     /// The server's row for the call has existed, so a missing row now means the call ended.
     private(set) var hasSeenLiveCall: Bool
     private(set) var hasAudio = false
+    /// The call connected for the first time and its sound has not played yet, because it plays
+    /// only in the audio the system activated.
+    private var isConnectedSoundDue = false
 
     /// An outgoing call, before `start_call` returns.
     static func outgoing(
@@ -112,11 +120,41 @@ nonisolated struct CallMachine: Equatable, Sendable {
         return (machine, [.startTimer(.ring, fireAt: ringDeadline)])
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
+    /// The caller hears the ringback while the partner's phone rings, once the system has
+    /// activated the call's audio. Playing before that would activate the audio session itself.
+    var isRingingBack: Bool {
+        direction == .outgoing && phase == .ringing && hasAudio
+    }
+
     mutating func reduce(_ event: CallEvent, now: Date) -> [CallEffect] {
         if case .ended = phase {
             return []
         }
+        let wasRingingBack = isRingingBack
+        let effects = transition(event, now: now)
+        return soundEffects(wasRingingBack: wasRingingBack) + effects
+    }
+
+    /// The sounds go first, so the ringback stops before the work that follows a ring.
+    private mutating func soundEffects(wasRingingBack: Bool) -> [CallEffect] {
+        var effects: [CallEffect] = []
+        if isRingingBack != wasRingingBack {
+            effects.append(.ringback(isOn: isRingingBack))
+        }
+        if isConnectedSoundDue, case .active = phase {
+            if hasAudio {
+                isConnectedSoundDue = false
+                effects.append(.playConnectedSound)
+            }
+        } else {
+            // Too late once the call has dropped or ended. A reconnect plays nothing.
+            isConnectedSoundDue = false
+        }
+        return effects
+    }
+
+    // swiftlint:disable:next cyclomatic_complexity
+    private mutating func transition(_ event: CallEvent, now: Date) -> [CallEffect] {
         switch event {
         case let .registered(callID, answeredIncoming):
             return register(callID: callID, answeredIncoming: answeredIncoming, now: now)
@@ -132,6 +170,9 @@ nonisolated struct CallMachine: Equatable, Sendable {
         case .audioActivated:
             hasAudio = true
             return [.cancelTimer(.audioActivation)]
+        case .audioDeactivated:
+            hasAudio = false
+            return []
         case .hangUp:
             return finish(.hungUp, server: serverEnd)
         case let .ended(reason):
@@ -151,6 +192,7 @@ nonisolated struct CallMachine: Equatable, Sendable {
         switch phase {
         case .connecting:
             phase = .active(since: now)
+            isConnectedSoundDue = true
             // The system has activated an outgoing call's audio by the time it connects.
             return [.cancelTimer(.connect)] + (direction == .outgoing ? audioTimer(now: now) : [])
         case let .reconnecting(since):

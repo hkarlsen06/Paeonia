@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "ios/PaeoniaApp/Resources/GameSounds/**"
+      - "ios/PaeoniaApp/Resources/CallSounds/**"
+      - "ios/PaeoniaApp/Services/Calls/CallSound.swift"
       - "ios/PaeoniaApp/Features/Games/Shared/Sound/**"
       - "ios/Scripts/*game-sounds*"
       - ".github/workflows/game-audio.yml"
@@ -11,6 +13,8 @@ on:
     branches: [main]
     paths:
       - "ios/PaeoniaApp/Resources/GameSounds/**"
+      - "ios/PaeoniaApp/Resources/CallSounds/**"
+      - "ios/PaeoniaApp/Services/Calls/CallSound.swift"
       - "ios/PaeoniaApp/Features/Games/Shared/Sound/**"
       - "ios/Scripts/*game-sounds*"
       - ".github/workflows/game-audio.yml"
@@ -23,5 +27,5 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install audio measurement tools
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
-      - name: Check bundled game audio
+      - name: Check bundled game and call audio
         run: python3 ios/Scripts/normalize-game-sounds.py --check

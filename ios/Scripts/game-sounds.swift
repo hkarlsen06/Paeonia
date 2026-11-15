@@ -1,12 +1,14 @@
-// Makes synthesized game sounds in ios/PaeoniaApp/Resources/GameSounds.
+// Makes the synthesized game sounds in ios/PaeoniaApp/Resources/GameSounds and the call
+// sounds in ios/PaeoniaApp/Resources/CallSounds.
 // Piccante uses CC0 recordings instead. This script only writes its recipe outputs.
 // Provenance for the recordings is in docs/games/piccante.md. Change a recipe and run:
 //   swiftc -O -o /tmp/game-sounds ios/Scripts/game-sounds.swift
-//   /tmp/game-sounds ios/PaeoniaApp/Resources/GameSounds
+//   /tmp/game-sounds ios/PaeoniaApp/Resources
 // The recipes aim for soft, close sounds: low wooden "thock" bodies, short clicks, paper
 // and felt, and no harsh highs. A sound the games repeat in a row gets a few variants,
 // numbered from 1, and the app picks one at random so no two hits are the same.
-// `GameSound` in ios/PaeoniaApp/Features/Games/Shared/Sound lists the names.
+// `GameSound` in ios/PaeoniaApp/Features/Games/Shared/Sound and `CallSound` in
+// ios/PaeoniaApp/Services/Calls list the names.
 
 import AVFoundation
 import Foundation
@@ -247,16 +249,39 @@ func slap(_ body: Double, gain: Double = 1) -> [Double] {
 func note(_ semitones: Double) -> Double { 440 * pow(2, semitones / 12) }
 
 let c4 = note(-9), e4 = note(-5), g4 = note(-2), a3 = note(-12), a4 = note(0)
-let c5 = note(3), d5 = note(5), e5 = note(7), g5 = note(10), gSharp5 = note(11)
+let cSharp5 = note(4), c5 = note(3), d5 = note(5), e5 = note(7), g5 = note(10), gSharp5 = note(11)
+let a5 = note(12)
 let c6 = note(15), d6 = note(17), g6 = note(22)
 
 // MARK: Recipes
 
+enum Library: String {
+    case game, call
+
+    var folder: String {
+        switch self {
+        case .game: "GameSounds"
+        case .call: "CallSounds"
+        }
+    }
+
+    /// Game sounds have numbered variants. A call sound is one file.
+    func fileName(_ name: String, variant: Int) -> String {
+        switch self {
+        case .game: "GameSound\(name)\(variant).caf"
+        case .call: "CallSound\(name).caf"
+        }
+    }
+}
+
 struct Recipe {
+    var library = Library.game
     var name: String
     var variants = 1
     /// The loudest sample, from 0 to 1. The app scales it again per moment.
     var peak: Double
+    /// For a sound that loops: silence after the sound fills it to this many seconds.
+    var period: Double?
     var make: () -> [Double]
 }
 
@@ -431,6 +456,31 @@ let recipes: [Recipe] = [
         mix.add(thock(170, decay: 0.025, bright: 0.3), at: land, gain: 0.5)
         return Biquad.lowpass(2_500).run(mix.samples)
     },
+
+    // Calls. Both are in A, so the answer resolves the ring. Low-passed for the earpiece and
+    // AirPods, which a call plays through.
+
+    // Plays on loop while the partner's phone rings: a soft falling fourth, E5 to A4, on a
+    // mallet bar with a kalimba tine over it, once every 3 seconds.
+    Recipe(library: .call, name: "Ringback", peak: 0.4, period: 3) {
+        var mix = Mix()
+        mix.add(bar(a3, decay: 0.5), gain: 0.18)
+        mix.add(bar(e5, decay: 0.32), gain: 0.55)
+        mix.add(tine(e5, decay: 0.4))
+        mix.add(bar(a4, decay: 0.42), at: 0.3, gain: 0.55)
+        mix.add(tine(a4, decay: 0.55), at: 0.3, gain: 0.95)
+        // Cut where the ring is low, so `finish` fades it out well before the next one.
+        return Array(Biquad.lowpass(2_600).run(mix.samples).prefix(count(2.4)))
+    },
+    // The partner answered: A4, C#5, E5 and A5 rising quickly, and a low A under them.
+    Recipe(library: .call, name: "Connected", peak: 0.42) {
+        var mix = Mix()
+        mix.add(bar(a3, decay: 0.3), gain: 0.3)
+        for (index, hz) in [a4, cSharp5, e5, a5].enumerated() {
+            mix.add(tine(hz, decay: 0.26), at: Double(index) * 0.07, gain: 1 - Double(index) * 0.1)
+        }
+        return Biquad.lowpass(3_200).run(mix.samples)
+    },
 ]
 
 // MARK: Finishing
@@ -467,21 +517,26 @@ func write(_ samples: [Double], to url: URL) throws {
     try file.write(from: buffer)
 }
 
-guard CommandLine.arguments.count == 2 else { fail("usage: game-sounds <output folder>") }
-let folder = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
-try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-var generatedFiles: [String] = []
+guard CommandLine.arguments.count == 2 else { fail("usage: game-sounds <Resources folder>") }
+let resources = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+var generatedFiles: [Library: [String]] = [:]
 for recipe in recipes {
+    let folder = resources.appendingPathComponent(recipe.library.folder, isDirectory: true)
+    try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     for variant in 1...recipe.variants {
         random = Random(recipe.name, variant)
-        let samples = finish(recipe.make(), peak: recipe.peak)
-        let url = folder.appendingPathComponent("GameSound\(recipe.name)\(variant).caf")
+        var samples = finish(recipe.make(), peak: recipe.peak)
+        if let period = recipe.period {
+            guard samples.count <= count(period) else { fail("\(recipe.name) is longer than its period") }
+            samples += [Double](repeating: 0, count: count(period) - samples.count)
+        }
+        let url = folder.appendingPathComponent(recipe.library.fileName(recipe.name, variant: variant))
         do {
             try write(samples, to: url)
         } catch {
             fail("could not write \(url.lastPathComponent): \(error)")
         }
-        generatedFiles.append(url.lastPathComponent)
+        generatedFiles[recipe.library, default: []].append(url.lastPathComponent)
         let line = String(format: "%@  %.0f ms\n", url.lastPathComponent, Double(samples.count) / rate * 1_000)
         FileHandle.standardOutput.write(Data(line.utf8))
     }
@@ -490,9 +545,15 @@ for recipe in recipes {
 // Apply the same loudness standard as imported recordings. Only these recipe outputs change.
 let normalizer = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     .appendingPathComponent("normalize-game-sounds.py")
-let normalize = Process()
-normalize.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-normalize.arguments = ["python3", normalizer.path, "--write", "--directory", folder.path, "--only"] + generatedFiles
-try normalize.run()
-normalize.waitUntilExit()
-guard normalize.terminationStatus == 0 else { fail("game sound normalization failed") }
+for (library, files) in generatedFiles.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+    let folder = resources.appendingPathComponent(library.folder, isDirectory: true)
+    let normalize = Process()
+    normalize.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    normalize.arguments = ["python3", normalizer.path, "--write", "--library", library.rawValue,
+                           "--directory", folder.path, "--only"] + files
+    try normalize.run()
+    normalize.waitUntilExit()
+    guard normalize.terminationStatus == 0 else { fail("\(library.rawValue) sound normalization failed") }
+}
+// Every recipe lives in this one script, so it grows with the sound library.
+// swiftlint:disable:this file_length

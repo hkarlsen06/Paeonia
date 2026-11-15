@@ -4,12 +4,14 @@
 
   /// A call engine for the local flows that plays a partner who answers: the call rings for a
   /// second, connects for a second, then runs until you end it. Ending it adds its row to "Just us"
-  /// through `recordCall`, the way the server does.
+  /// through `recordCall`, the way the server does. It plays the ringback and the connected sound
+  /// as `CallEngine` does.
   @MainActor
   final class DeveloperAnsweringCallEngine: CallEngineActions {
     private weak var center: CallCenter?
     private let recordCall: @MainActor (ThreadChatCall) async -> Void
     private let stills = DeveloperCallEngine()
+    private let sounds = CallSoundPlayer()
     private var script: Task<Void, Never>?
 
     /// A call center whose calls this engine plays.
@@ -27,14 +29,17 @@
     func startCall() {
       guard let center, !center.isInCall else { return }
       center.session = CallSession(id: UUID(), direction: .outgoing, phase: .ringing)
+      sounds.setRingback(true)
       script?.cancel()
       script = Task { [weak self] in
         try? await Task.sleep(for: .seconds(1))
         guard !Task.isCancelled else { return }
+        self?.sounds.setRingback(false)
         self?.center?.session?.phase = .connecting
         try? await Task.sleep(for: .seconds(1))
         guard !Task.isCancelled else { return }
         self?.center?.session?.phase = .active(since: .now)
+        self?.sounds.play(.connected)
       }
     }
 
@@ -56,6 +61,7 @@
         return
       }
       center.session?.phase = .ended(.hungUp)
+      sounds.stopAll()
       script?.cancel()
       script = Task { [weak self] in
         await self?.recordCall(call)

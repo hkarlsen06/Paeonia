@@ -53,6 +53,7 @@ final class CallEngine {
     let system: any CallSystem
     let partnerVideo = CallVideoFeed()
     let localVideo = CallVideoFeed()
+    let sounds = CallSoundPlayer()
     private(set) lazy var pictureInPicture = CallPictureInPicture(feed: partnerVideo)
     var run: CallRun?
     /// Calls reported to the system as incoming in this run of the app. The push and the live
@@ -174,6 +175,10 @@ final class CallEngine {
             run.media?.restart()
         case let .finish(reason, server):
             finish(run, reason: reason, server: server)
+        case let .ringback(isOn):
+            sounds.setRingback(isOn)
+        case .playConnectedSound:
+            sounds.play(.connected)
         }
     }
 
@@ -231,6 +236,7 @@ final class CallEngine {
 
     private func finish(_ run: CallRun, reason: CallEndReason, server: CallServerEnd?) {
         run.stop()
+        sounds.stopAll()
         finishedCallIDs.formUnion([run.callID, run.conversationID])
         pictureInPicture.setEnabled(false)
         if let server {
@@ -309,6 +315,7 @@ final class CallEngine {
         clearTask = nil
         run?.stop()
         run = nil
+        sounds.stopAll()
         partnerVideo.clear()
         localVideo.clear()
     }

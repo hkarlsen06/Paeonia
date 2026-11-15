@@ -35,6 +35,9 @@ extension CallEngine: CallSystemDelegate {
 
     func audioDeactivated(_ audioSession: AVAudioSession) {
         CallAudio.didDeactivate(audioSession)
+        if let run, !run.isFinished {
+            send(.audioDeactivated, to: run)
+        }
     }
 
     func systemReset() {

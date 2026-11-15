@@ -207,9 +207,11 @@
     }
   }
 
-  /// The full call screen over a plain background.
+  /// The full call screen over a plain background. A ringing call plays the ringback, so it can be
+  /// heard on the simulator.
   private struct DeveloperCallScreenHost: View {
     @State private var center: CallCenter
+    @State private var sounds = CallSoundPlayer()
 
     init(session: CallSession) {
       _center = State(initialValue: CallCenter(engine: DeveloperCallEngine(), session: session))
@@ -221,6 +223,12 @@
         .callOverlay(participants: DeveloperCallFixture.participants)
         .environment(center)
         .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
+        .onAppear {
+          if center.session?.phase == .ringing {
+            sounds.setRingback(true)
+          }
+        }
+        .onDisappear { sounds.stopAll() }
     }
   }
 

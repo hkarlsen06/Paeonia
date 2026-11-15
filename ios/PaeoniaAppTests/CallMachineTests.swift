@@ -161,4 +161,41 @@ struct CallMachineTests {
         var ringing = incoming()
         #expect(ringing.reduce(.timerFired(.ring), now: start + 50) == [.finish(.missed, server: nil)])
     }
+
+    @Test func theCallerHearsTheRingbackOnlyWhileRingingInTheCallsAudio() {
+        var machine = outgoing()
+        #expect(machine.reduce(.registered(callID: callID, answeredIncoming: false), now: start).isEmpty)
+        #expect(machine.reduce(.audioActivated, now: start + 1).first == .ringback(isOn: true))
+        #expect(machine.reduce(.audioDeactivated, now: start + 2) == [.ringback(isOn: false)])
+        _ = machine.reduce(.audioActivated, now: start + 3)
+
+        let answered = machine.reduce(.liveCall(row(.active)), now: start + 5)
+        #expect(answered.first == .ringback(isOn: false))
+        #expect(answered.contains(.connectMedia))
+
+        var hungUp = outgoing()
+        _ = hungUp.reduce(.audioActivated, now: start)
+        #expect(hungUp.reduce(.hangUp, now: start + 1) == [.ringback(isOn: false), .finish(.hungUp, server: nil)])
+
+        var ringing = incoming()
+        #expect(ringing.reduce(.audioActivated, now: start) == [.cancelTimer(.audioActivation)])
+    }
+
+    @Test func theConnectedSoundPlaysOnceWhenTheCallFirstConnectsWithAudio() {
+        var machine = incoming()
+        _ = machine.reduce(.answered, now: start)
+        #expect(!machine.reduce(.connected, now: start + 1).contains(.playConnectedSound))
+        #expect(machine.reduce(.audioActivated, now: start + 2).contains(.playConnectedSound))
+
+        _ = machine.reduce(.connectionLost, now: start + 30)
+        #expect(!machine.reduce(.connected, now: start + 32).contains(.playConnectedSound))
+
+        // A call that drops before its audio arrives stays quiet when it reconnects.
+        var dropped = incoming()
+        _ = dropped.reduce(.answered, now: start)
+        _ = dropped.reduce(.connected, now: start + 1)
+        _ = dropped.reduce(.connectionLost, now: start + 2)
+        _ = dropped.reduce(.audioActivated, now: start + 3)
+        #expect(!dropped.reduce(.connected, now: start + 4).contains(.playConnectedSound))
+    }
 }
