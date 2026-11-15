@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// When the couple got together. The person who joined sees the date their partner
-/// set and confirms it or changes it. Someone without a date picks one or skips.
-/// A confirmed or saved date then counts up the days together.
+/// When the couple got together. The person who started the couple picks the date
+/// or skips. The person who joined sees the date their partner set and confirms it or
+/// changes it, and waits for it while the partner is still picking. A confirmed or
+/// saved date then counts up the days together.
 struct PostPairingDateStep: View {
     private enum Phase: Equatable {
+        case waiting
         case confirm(String)
         case ask
         case reveal(String)
@@ -25,11 +27,11 @@ struct PostPairingDateStep: View {
     private let serverStartedOn: String?
     private let syncAfterLocalChange: @MainActor () async -> Void
 
-    /// `startedOn` is the couple's date as `yyyy-MM-dd`. `confirmsPartnerDate` is
-    /// true for the person who joined, when the partner already set it.
+    /// `startedOn` is the couple's date as `yyyy-MM-dd`, as the server has it now.
+    /// `partnerSetsDate` is true for the person who joined.
     init(
         startedOn: String?,
-        confirmsPartnerDate: Bool,
+        partnerSetsDate: Bool,
         partnerName: String,
         ownerUserID: UUID,
         milestone: RelationshipMilestoneViewModel,
@@ -42,10 +44,12 @@ struct PostPairingDateStep: View {
         self.serverStartedOn = startedOn
         self.syncAfterLocalChange = syncAfterLocalChange
         _milestone = State(initialValue: milestone)
-        if let startedOn, confirmsPartnerDate {
+        if !partnerSetsDate {
+            _phase = State(initialValue: .ask)
+        } else if let startedOn {
             _phase = State(initialValue: .confirm(startedOn))
         } else {
-            _phase = State(initialValue: .ask)
+            _phase = State(initialValue: .waiting)
         }
     }
 
@@ -61,6 +65,13 @@ struct PostPairingDateStep: View {
         .task {
             milestone.setSyncAfterLocalChange { await syncAfterLocalChange() }
             await milestone.configure(ownerUserID: ownerUserID, serverStartedOn: serverStartedOn)
+        }
+        .onChange(of: serverStartedOn) { _, startedOn in
+            guard phase == .waiting, let startedOn else {
+                return
+            }
+            PaeoniaHaptics.selection()
+            phase = .confirm(startedOn)
         }
         .onChange(of: milestone.error) { _, error in
             guard let error else {
@@ -81,15 +92,18 @@ struct PostPairingDateStep: View {
 
     private var phaseID: Int {
         switch phase {
-        case .confirm: 0
-        case .ask: 1
-        case .reveal: 2
+        case .waiting: 0
+        case .confirm: 1
+        case .ask: 2
+        case .reveal: 3
         }
     }
 
     @ViewBuilder
     private var content: some View {
         switch phase {
+        case .waiting:
+            waiting
         case let .confirm(startedOn):
             confirm(startedOn)
         case .ask:
@@ -100,6 +114,20 @@ struct PostPairingDateStep: View {
     }
 
     // MARK: Phases
+
+    private var waiting: some View {
+        OnboardingStepScaffold(
+            title: .onboardingFirstDayDateWaitingTitle(partnerName),
+            message: .onboardingFirstDayDateWaitingMessage,
+            placement: .standalone,
+            secondary: OnboardingStepAction(title: .onboardingFirstDayDateSkipButton, action: onFinish)
+        ) {
+            calendarArt("calendar.badge.clock")
+                .symbolEffect(.pulse)
+        } content: {
+            EmptyView()
+        }
+    }
 
     private func confirm(_ startedOn: String) -> some View {
         OnboardingStepScaffold(
@@ -115,7 +143,7 @@ struct PostPairingDateStep: View {
                 isEditorPresented = true
             }
         ) {
-            calendarArt
+            calendarArt("calendar.badge.checkmark")
         } content: {
             EmptyView()
         }
@@ -168,8 +196,8 @@ struct PostPairingDateStep: View {
         }
     }
 
-    private var calendarArt: some View {
-        Image(systemName: "calendar.badge.checkmark")
+    private func calendarArt(_ symbol: String) -> some View {
+        Image(systemName: symbol)
             .font(.system(size: symbolSize, weight: .semibold))
             .foregroundStyle(.paeoniaAccentPrimary)
             .symbolRenderingMode(.hierarchical)
@@ -210,7 +238,7 @@ private struct PostPairingDateStepPreview: View {
     var body: some View {
         PostPairingDateStep(
             startedOn: startedOn,
-            confirmsPartnerDate: true,
+            partnerSetsDate: true,
             partnerName: "Hjalmar",
             ownerUserID: UUID(),
             milestone: RelationshipMilestoneViewModel(
@@ -232,7 +260,7 @@ private struct PostPairingDateStepPreview: View {
     PostPairingDateStepPreview(startedOn: "2024-03-03")
 }
 
-#Preview("No date yet") {
+#Preview("Waiting for the partner's date") {
     PostPairingDateStepPreview(startedOn: nil)
 }
 #endif

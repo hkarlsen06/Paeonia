@@ -50,7 +50,7 @@ final class PostPairingFlowModel {
     private(set) var outcome: PostPairingOutcome?
 
     /// This person joined with the partner's code, so the date step confirms the
-    /// partner's date.
+    /// date the partner sets.
     var acceptedInvite: Bool {
         facts.acceptedInvite
     }

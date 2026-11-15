@@ -17,7 +17,8 @@
       homeLaunchDuringReveal, homeLaunchLocationFirst, homeLaunchCalendarFirst, homeLaunchOverlapping,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,
-      pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
+      pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayJoinedWaiting, firstDayInvited,
+      firstDayInvitedNoDate,
       paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallPairedEnded, paywallPairedPaymentFailed,
       paywallLoading,
       pairedHome, pairedHomeTodayOpens, questions, chatsAttention, chatsAttentionAnswered, questionsPartial,
@@ -156,6 +157,14 @@
       "first-day-invited", "First day · inviter",
       "Celebration, then the partner's drawing back. Date, question time and answers are skipped", .pairing
     ) { _ in DeveloperPostPairingScenarioView(acceptedInvite: false) }
+    static let firstDayJoinedWaiting = DeveloperScenario(
+      "first-day-joined-waiting", "First day · joined, date still coming",
+      "The date step waits for Robin to pick the date, then asks to confirm it", .pairing
+    ) { _ in DeveloperPostPairingScenarioView(acceptedInvite: true, dateSetup: .partnerPicksLater) }
+    static let firstDayInvitedNoDate = DeveloperScenario(
+      "first-day-invited-no-date", "First day · inviter without a date",
+      "The inviter skipped the date before sign-in, so the date step asks for it", .pairing
+    ) { _ in DeveloperPostPairingScenarioView(acceptedInvite: false, dateSetup: .missing) }
 
     // MARK: Paywall
 

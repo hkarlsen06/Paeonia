@@ -10,11 +10,23 @@
   /// only Robin's drawing back is left to unwrap.
   @MainActor
   struct DeveloperPostPairingScenarioView: View {
+    /// The couple's start date when the sequence starts.
+    enum DateSetup {
+      case set
+      /// The inviter skipped the date before sign-in. Robin has not drawn back yet,
+      /// so the date is the inviter's first step.
+      case missing
+      /// The inviter picks the date a few seconds after the person who joined
+      /// reaches the date step.
+      case partnerPicksLater
+    }
+
     let acceptedInvite: Bool
+    var dateSetup = DateSetup.set
     @State private var run = 0
 
     var body: some View {
-      DeveloperPostPairingRun(acceptedInvite: acceptedInvite, onRestart: { run += 1 })
+      DeveloperPostPairingRun(acceptedInvite: acceptedInvite, dateSetup: dateSetup, onRestart: { run += 1 })
         .id(run)
     }
   }
@@ -22,8 +34,10 @@
   @MainActor
   private struct DeveloperPostPairingRun: View {
     let acceptedInvite: Bool
+    let dateSetup: DeveloperPostPairingScenarioView.DateSetup
     let onRestart: () -> Void
 
+    @State private var startedOn: String?
     @State private var bannerCenter = PaeoniaBannerCenter()
     @State private var store: DeveloperLocalFlowCelebrationStore
     @State private var model: PostPairingFlowModel
@@ -37,9 +51,17 @@
       coupleID: UUID(uuidString: "abababab-0000-4000-8000-000000000002") ?? UUID()
     )
 
-    init(acceptedInvite: Bool, onRestart: @escaping () -> Void) {
+    private static let partnerStartedOn = "2024-03-03"
+
+    init(
+      acceptedInvite: Bool,
+      dateSetup: DeveloperPostPairingScenarioView.DateSetup,
+      onRestart: @escaping () -> Void
+    ) {
       self.acceptedInvite = acceptedInvite
+      self.dateSetup = dateSetup
       self.onRestart = onRestart
+      _startedOn = State(initialValue: dateSetup == .set ? Self.partnerStartedOn : nil)
       let operationProvider = DeveloperScenarioOperationProvider()
       let store = DeveloperLocalFlowCelebrationStore()
       _store = State(initialValue: store)
@@ -47,7 +69,9 @@
         initialValue: PostPairingFlowModel(
           store: store,
           loader: DeveloperPostPairingLoader(
-            gift: acceptedInvite ? DeveloperPostPairingFixture.heart() : DeveloperGamesFixture.umbrella(),
+            gift: acceptedInvite
+              ? DeveloperPostPairingFixture.heart()
+              : dateSetup == .missing ? nil : DeveloperGamesFixture.umbrella(),
             questionTimeIsOn: !acceptedInvite,
             partnerAnswersWaiting: acceptedInvite
           ),
@@ -98,7 +122,7 @@
             model: model,
             partnerName: "Robin",
             currentDisplayName: "Alex",
-            startedOn: "2024-03-03",
+            startedOn: startedOn,
             acceptedInvite: acceptedInvite,
             syncAfterLocalChange: {},
             onFinish: { outcome = $0 }
@@ -115,6 +139,13 @@
       .preferredColorScheme(.dark)
       .onAppear {
         model.prepare(Self.context)
+      }
+      .task(id: model.screen) {
+        guard dateSetup == .partnerPicksLater, model.screen == .date else {
+          return
+        }
+        try? await Task.sleep(for: .seconds(4))
+        startedOn = Self.partnerStartedOn
       }
     }
 

@@ -33,8 +33,8 @@ nonisolated struct PostPairingFacts: Equatable, Sendable {
     var hasGift = false
     /// The couple's start date as `yyyy-MM-dd`.
     var startedOn: String?
-    /// This person joined with the partner's code. The partner set things up while
-    /// waiting, so a date that is already set came from them.
+    /// This person joined with the partner's code. The partner sets the date, so
+    /// this person only confirms it.
     var acceptedInvite = false
     /// This person's own drawing is on the couple's widget, and the widget is not on
     /// their Home Screen.
@@ -57,8 +57,9 @@ nonisolated enum PostPairingPlan {
             // With a gift, drawing back asks for the widget there, and Later skips it.
             !facts.hasGift && !facts.acceptedInvite && facts.ownDrawingNeedsWidget
         case .date:
-            // The inviter set the date while waiting, so only the person who joined
-            // confirms it. Anyone without a date is asked.
+            // The person who started the couple sets the date, before sign-in or
+            // here. The person who joined confirms it, and waits for it when it is
+            // not set yet.
             facts.startedOn == nil || facts.acceptedInvite
         case .questionTime:
             facts.questionTimeIsOn == false

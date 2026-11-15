@@ -135,7 +135,7 @@ struct PostPairingFlowView: View {
         if let ownerUserID = model.context?.currentUserID {
             PostPairingDateStep(
                 startedOn: startedOn,
-                confirmsPartnerDate: model.acceptedInvite,
+                partnerSetsDate: model.acceptedInvite,
                 partnerName: partnerName,
                 ownerUserID: ownerUserID,
                 milestone: model.makeMilestoneViewModel(),

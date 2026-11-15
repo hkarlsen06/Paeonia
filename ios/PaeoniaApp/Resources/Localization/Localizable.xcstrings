@@ -31475,6 +31475,42 @@
         }
       }
     },
+    "onboarding.firstDay.date.waiting.message" : {
+      "comment" : "Line under the title while the partner picks the day the couple got together. The date then shows on this screen to confirm.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It shows up here as soon as it's picked."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den dukker opp her så snart den er valgt."
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.waiting.title" : {
+      "comment" : "Title shown to the partner who joined while the partner who started the couple picks the day they got together. %@ is that partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is picking the day you got together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ velger dagen dere ble sammen"
+          }
+        }
+      }
+    },
     "onboarding.firstDay.gift.button" : {
       "comment" : "Last button of the pairing celebration when the partner made a drawing while waiting. %@ is the partner's name. Tapping it opens the drawing.",
       "extractionState" : "manual",
