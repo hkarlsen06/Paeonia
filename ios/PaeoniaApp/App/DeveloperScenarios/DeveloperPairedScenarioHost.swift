@@ -67,6 +67,8 @@
       (69.6492, 18.9553), (63.4305, 10.3951), (61.1153, 10.4662), (59.9142, 10.7530), (60.3913, 5.3221),
     ]
     private static let partnerCapturedAt = Date.now.addingTimeInterval(-7_200)
+    /// Paired home shows the longest status the Us header gets, "Sammen · Akkurat nå".
+    private static let partnerCapturedJustNow = Date.now
 
     private var partnerLocation: LocationPoint {
       let stop: (latitude: Double, longitude: Double) = switch scenario {
@@ -74,7 +76,8 @@
       case .homeMapPartnerMoves: Self.partnerStops[partnerStop]
       default: Self.partnerStops[3]
       }
-      return LocationPoint(latitude: stop.latitude, longitude: stop.longitude, capturedAt: Self.partnerCapturedAt)
+      let capturedAt = scenario == .pairedHome ? Self.partnerCapturedJustNow : Self.partnerCapturedAt
+      return LocationPoint(latitude: stop.latitude, longitude: stop.longitude, capturedAt: capturedAt)
     }
 
     /// A store of its own, emptied once per launch, so today's question opens by itself on every run.
