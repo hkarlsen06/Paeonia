@@ -28,7 +28,7 @@ import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { listUserFavoriteRows } from "./lib/favoriteRows";
 import { tombstoneReportTargets } from "./lib/reports";
 import { nowIso } from "./lib/time";
-import { authProvider as authProviderValidator } from "./lib/validators";
+import { authProvider as authProviderValidator, literals } from "./lib/validators";
 
 type AuthProvider = "apple" | "google" | "unknown";
 
@@ -113,7 +113,8 @@ async function findActiveDeletionRequest(ctx: ReaderCtx, userId: string): Promis
 /**
  * Port of `internal.request_account_deletion`: the first stage of account
  * deletion. Removes the user's data paths in one transaction and records a job
- * for the final identity deletion. A retry returns the stored tombstone.
+ * for the final identity deletion. Its push history follows in pages
+ * (`purge_push_history`). A retry returns the stored tombstone.
  * `providerHint` is the provider named by the caller's session claims.
  */
 export async function requestAccountDeletion(
@@ -215,49 +216,29 @@ export async function requestAccountDeletion(
     .query("user_devices")
     .withIndex("by_user_id_disabled_at", (q) => q.eq("user_id", userId))
     .collect();
-  for (const row of await ctx.db
-    .query("widget_push_outbox")
-    .withIndex("by_recipient_user_id", (q) => q.eq("recipient_user_id", userId))
-    .collect()) {
-    await ctx.db.delete(row._id);
-  }
-  // The ends the relationship end queued above still go to the user's other phones, so those rows
-  // and their activity tokens stay. `push_finished` deletes each token once its end went or failed.
-  const activityPushes = await ctx.db
-    .query("live_activity_push_outbox")
-    .withIndex("by_recipient_user_id", (q) => q.eq("recipient_user_id", userId))
-    .collect();
-  const pendingEnds = activityPushes.filter((row) => row.event === "end" && pushStatus(row) === "pending");
-  const endTokenIds = new Set(pendingEnds.map((row) => row.target_token_id));
-  const activityTokens = await ctx.db
+  // The ends the relationship end queued above still go to the user's other phones, so their
+  // activity tokens stay. `push_finished` deletes each token once its end went or failed.
+  const pendingEndTokenIds = new Set(
+    (
+      await ctx.db
+        .query("live_activity_push_outbox")
+        .withIndex("by_recipient_user_id", (q) => q.eq("recipient_user_id", userId))
+        .collect()
+    )
+      .filter(isPendingActivityEnd)
+      .map((row) => row.target_token_id),
+  );
+  for (const token of await ctx.db
     .query("live_activity_tokens")
     .withIndex("by_user_id_kind", (q) => q.eq("user_id", userId))
-    .collect();
-  for (const row of [
-    ...activityPushes.filter((row) => !pendingEnds.includes(row)),
-    ...activityTokens.filter((token) => !(token.kind === "update" && endTokenIds.has(token.id))),
-  ]) {
-    await ctx.db.delete(row._id);
+    .collect()) {
+    if (!(token.kind === "update" && pendingEndTokenIds.has(token.id))) await ctx.db.delete(token._id);
   }
-  const outboxRows = await ctx.db
-    .query("notification_outbox")
-    .withIndex("by_recipient_user_id_created_at", (q) => q.eq("recipient_user_id", userId))
-    .collect();
-  for (const device of userDevices) {
-    outboxRows.push(
-      ...(await ctx.db
-        .query("notification_outbox")
-        .withIndex("by_target_device_id", (q) => q.eq("target_device_id", device.id))
-        .collect()),
-    );
-  }
-  const deletedOutbox = new Set<string>();
-  for (const row of outboxRows) {
-    if (!deletedOutbox.has(row._id)) {
-      deletedOutbox.add(row._id);
-      await ctx.db.delete(row._id);
-    }
-  }
+  await ctx.scheduler.runAfter(0, internal.accountDeletion.purge_push_history, {
+    user_id: userId,
+    table: PUSH_HISTORY_TABLES[0],
+    cursor: null,
+  });
   // Downloads of the person's data are copies of everything, so they go with the account.
   await deleteUserDataExports(ctx, userId);
   for (const device of widgetDevices) await ctx.db.delete(device._id);
@@ -355,6 +336,60 @@ export async function requestAccountDeletion(
   await enqueueAuthDelete(ctx, jobId, QUEUED_AUTH_DELETE_DELAY_MS);
   return [startRow(request, job)];
 }
+
+// Every push leaves a row, so an account that has been used for a while has thousands, more
+// than one mutation may delete. The deletion removes the user's devices, which makes `send_push`
+// drop any row still due, and this job deletes the rows in pages after the deletion commits.
+const PUSH_HISTORY_TABLES = ["notification_outbox", "widget_push_outbox", "live_activity_push_outbox"] as const;
+type PushHistoryTable = (typeof PUSH_HISTORY_TABLES)[number];
+// The server allows 4 MiB of writes a second for everything, so a page of deletes waits a second
+// for the next. Without the wait the pages and the push queue fail with "Too many writes per second".
+const PUSH_HISTORY_PAGE_SIZE = 500;
+const PUSH_HISTORY_PAGE_DELAY_MS = 1000;
+
+function isPendingActivityEnd(row: Doc<"live_activity_push_outbox">): boolean {
+  return row.event === "end" && pushStatus(row) === "pending";
+}
+
+async function pushHistoryPage(ctx: MutationCtx, table: PushHistoryTable, userId: string, cursor: string | null) {
+  const paging = { numItems: PUSH_HISTORY_PAGE_SIZE, cursor };
+  switch (table) {
+    case "notification_outbox":
+      return await ctx.db
+        .query(table)
+        .withIndex("by_recipient_user_id_created_at", (q) => q.eq("recipient_user_id", userId))
+        .paginate(paging);
+    case "widget_push_outbox":
+      return await ctx.db
+        .query(table)
+        .withIndex("by_recipient_user_id", (q) => q.eq("recipient_user_id", userId))
+        .paginate(paging);
+    case "live_activity_push_outbox": {
+      const result = await ctx.db
+        .query(table)
+        .withIndex("by_recipient_user_id", (q) => q.eq("recipient_user_id", userId))
+        .paginate(paging);
+      return { ...result, page: result.page.filter((row) => !isPendingActivityEnd(row)) };
+    }
+  }
+}
+
+/** Deletes one page of a deleted account's push rows and schedules the next page or table. */
+export const purge_push_history = internalMutation({
+  args: { user_id: v.string(), table: literals(...PUSH_HISTORY_TABLES), cursor: v.union(v.null(), v.string()) },
+  handler: async (ctx, args) => {
+    const result = await pushHistoryPage(ctx, args.table, args.user_id, args.cursor);
+    for (const row of result.page) await ctx.db.delete(row._id);
+    const table = result.isDone ? PUSH_HISTORY_TABLES[PUSH_HISTORY_TABLES.indexOf(args.table) + 1] : args.table;
+    if (table) {
+      await ctx.scheduler.runAfter(PUSH_HISTORY_PAGE_DELAY_MS, internal.accountDeletion.purge_push_history, {
+        user_id: args.user_id,
+        table,
+        cursor: result.isDone ? null : result.continueCursor,
+      });
+    }
+  },
+});
 
 /** Starts deletion for the Clerk session of the `delete_account` action. */
 export const begin_account_deletion = internalMutation({
