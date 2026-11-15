@@ -203,13 +203,11 @@ struct GuessMySpotResultCard: View {
         } label: {
             Image(systemName: "chevron.down")
                 .font(PaeoniaTypography.caption.weight(.bold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: Self.collapseSide, height: Self.collapseSide)
-                .glassEffect(.regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.6)), in: Circle())
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PaeoniaGlassCircleButtonStyle(
+            face: Self.collapseSide,
+            glass: .regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.6))
+        ))
         .accessibilityLabel(Text(.guessMySpotRevealCardCollapse))
         .accessibilityIdentifier("guessMySpot.reveal.card.collapse")
         .transition(.opacity)

@@ -372,20 +372,12 @@ private struct WidgetDrawingHistoryThumbnail: View {
 private struct WidgetDrawingShareButton: View {
     let action: () -> Void
 
-    private static let glyphSize: CGFloat = 32
-    private static let hitTarget: CGFloat = 44
-
     var body: some View {
         Button(action: action) {
             Image(systemName: "square.and.arrow.up")
                 .font(.footnote.weight(.bold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: Self.glyphSize, height: Self.glyphSize)
-                .glassEffect(.regular, in: Circle())
-                .frame(width: Self.hitTarget, height: Self.hitTarget)
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PaeoniaGlassCircleButtonStyle())
         .accessibilityLabel(Text(.commonShare))
     }
 }

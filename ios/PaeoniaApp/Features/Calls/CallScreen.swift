@@ -102,12 +102,8 @@ struct CallScreen: View {
             Button(action: minimize) {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .frame(width: PaeoniaSpacing.compactButtonHeight, height: PaeoniaSpacing.compactButtonHeight)
-                    .glassEffect(.regular.interactive(), in: Circle())
-                    .contentShape(Circle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PaeoniaGlassCircleButtonStyle(face: PaeoniaSpacing.compactButtonHeight))
             .accessibilityLabel(Text(.callsMinimize))
             .accessibilityIdentifier("calls.minimize")
 

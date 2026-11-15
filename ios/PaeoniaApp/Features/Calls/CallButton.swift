@@ -48,12 +48,8 @@ struct CallBackButton: View {
                 }
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
-                .padding(.horizontal, PaeoniaSpacing.space12)
-                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-                .contentShape(Capsule())
             }
-            .buttonStyle(.plain)
-            .glassEffect(.regular.interactive(), in: Capsule())
+            .buttonStyle(.glass)
             .accessibilityLabel(Text(.callsCallBackAccessibilityLabel(context.participants.partnerName)))
             .accessibilityIdentifier("calls.callBack")
         }

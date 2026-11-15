@@ -67,9 +67,6 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
 private struct GameHubNotNowButton: View {
     let action: () -> Void
 
-    private static let glyphSize: CGFloat = 36
-    private static let hitTarget: CGFloat = 44
-
     var body: some View {
         Button {
             PaeoniaHaptics.selection()
@@ -77,16 +74,11 @@ private struct GameHubNotNowButton: View {
         } label: {
             Image(systemName: "moon.zzz.fill")
                 .font(.footnote.weight(.bold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: Self.glyphSize, height: Self.glyphSize)
-                .glassEffect(
-                    .regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.75)).interactive(),
-                    in: Circle()
-                )
-                .frame(width: Self.hitTarget, height: Self.hitTarget)
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PaeoniaGlassCircleButtonStyle(
+            face: 36,
+            glass: .regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.75))
+        ))
         .accessibilityLabel(Text(.gamesHubNotNow))
         .accessibilityHint(Text(.gamesHubNotNowHint))
         .accessibilityIdentifier("games.hub.notNow")

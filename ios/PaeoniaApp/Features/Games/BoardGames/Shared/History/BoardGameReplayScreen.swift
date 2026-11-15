@@ -182,12 +182,12 @@ struct BoardGameReplayScreen<Board: BoardGameRules>: View {
         } label: {
             Image(systemName: playIcon)
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.paeoniaTextPrimary)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 52, height: 52)
-                .glassEffect(.regular.tint(Color.paeoniaAccentPrimary.opacity(0.35)).interactive(), in: Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PaeoniaGlassCircleButtonStyle(
+            face: 52,
+            glass: .regular.tint(Color.paeoniaAccentPrimary.opacity(0.35))
+        ))
         .disabled(model.moveCount == 0)
         .accessibilityLabel(Text(playLabel))
         .accessibilityIdentifier("boardGames.replay.play")

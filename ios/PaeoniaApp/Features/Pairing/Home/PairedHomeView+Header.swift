@@ -29,19 +29,21 @@ extension PairedHomeView {
                 .frame(maxWidth: .infinity, alignment: .leading)
             title
                 .layoutPriority(1)
-            HStack {
-                // Calls the partner, on the side of the row nearest their avatar.
-                CallButton()
-                    .glassEffect(.regular.interactive(), in: Circle())
-                if dailyChallengeStreak.isVisible {
-                    DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
-                        // The label pads itself for a capsule. This adds what the
-                        // toolbar's capsule added, so the pill keeps its old width.
-                        .padding(.horizontal, PaeoniaSpacing.space4)
-                        .frame(minHeight: Self.headerBarHeight)
-                        .glassEffect(.regular.interactive(), in: Capsule())
-                        // Fades in once the streak is known instead of popping in.
-                        .transition(.opacity)
+            GlassEffectContainer {
+                HStack {
+                    // Calls the partner, on the side of the row nearest their avatar.
+                    CallButton()
+                        .glassEffect(.regular.interactive(), in: Circle())
+                    if dailyChallengeStreak.isVisible {
+                        DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
+                            // The label pads itself for a capsule. This adds what the
+                            // toolbar's capsule added, so the pill keeps its old width.
+                            .padding(.horizontal, PaeoniaSpacing.space4)
+                            .frame(minHeight: Self.headerBarHeight)
+                            .glassEffect(.regular.interactive(), in: Capsule())
+                            // Fades in once the streak is known instead of popping in.
+                            .transition(.opacity)
+                    }
                 }
             }
             .fixedSize()

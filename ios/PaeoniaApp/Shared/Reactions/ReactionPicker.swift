@@ -132,17 +132,13 @@ struct ReactionPickerButton: View {
     @Environment(ReactionStore.self) private var store: ReactionStore?
     @State private var isPickerOpen = false
 
-    private static let glyphSize: CGFloat = 32
-    private static let hitTarget: CGFloat = 44
-
     var body: some View {
         if let store {
-            Button {
+            styled(Button {
                 isPickerOpen = true
             } label: {
-                label(own: store.ownReaction(on: target))
-            }
-            .buttonStyle(.plain)
+                glyph(own: store.ownReaction(on: target))
+            })
             .accessibilityLabel(Text(.reactionsButton))
             .popover(isPresented: $isPickerOpen) {
                 ReactionPickerRow(target: target, isFramed: false) { isPickerOpen = false }
@@ -153,16 +149,10 @@ struct ReactionPickerButton: View {
     }
 
     @ViewBuilder
-    private func label(own: String?) -> some View {
+    private func styled(_ button: some View) -> some View {
         switch style {
-        case .floating:
-            glyph(own: own)
-                .frame(width: Self.glyphSize, height: Self.glyphSize)
-                .glassEffect(.regular, in: Circle())
-                .frame(width: Self.hitTarget, height: Self.hitTarget)
-                .contentShape(Rectangle())
-        case .toolbar:
-            glyph(own: own)
+        case .floating: button.buttonStyle(PaeoniaGlassCircleButtonStyle())
+        case .toolbar: button.buttonStyle(.plain)
         }
     }
 

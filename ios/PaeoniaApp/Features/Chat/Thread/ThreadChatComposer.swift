@@ -223,20 +223,20 @@ struct ThreadChatComposer: View {
     }
 
     private var textField: some View {
-        HStack(alignment: .bottom, spacing: PaeoniaSpacing.space8) {
-            // An edit only changes text, so there is nothing to attach.
-            if editingMessage == nil {
-                roundButton(
-                    systemImage: staging.isDrawerOpen ? "xmark" : "plus",
-                    label: .dailyChatComposerAddPhoto,
-                    isProminent: false,
-                    tint: .paeoniaTextPrimary,
-                    action: { staging.isDrawerOpen.toggle() }
-                )
-                .glassEffect(.regular, in: Circle())
-                .padding(.bottom, 4)
+        GlassEffectContainer {
+            HStack(alignment: .bottom, spacing: PaeoniaSpacing.space8) {
+                // An edit only changes text, so there is nothing to attach.
+                if editingMessage == nil {
+                    Button { staging.isDrawerOpen.toggle() } label: {
+                        Image(systemName: staging.isDrawerOpen ? "xmark" : "plus")
+                            .font(.system(size: 16, weight: .bold))
+                    }
+                    .buttonStyle(PaeoniaGlassCircleButtonStyle(face: PaeoniaSpacing.compactButtonHeight))
+                    .accessibilityLabel(Text(.dailyChatComposerAddPhoto))
+                    .padding(.bottom, 4)
+                }
+                composerCapsule
             }
-            composerCapsule
         }
     }
 

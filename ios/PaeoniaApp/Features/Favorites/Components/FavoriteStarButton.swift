@@ -35,9 +35,6 @@ struct FavoriteStarOverlayButton: View {
     var identifier = "favorite.star"
     var store: FavoritesStore = .shared
 
-    private static let glyphSize: CGFloat = 32
-    private static let hitTarget: CGFloat = 44
-
     var body: some View {
         let isFavorite = store.isFavorite(target)
         let title: LocalizedStringResource = isFavorite ? .favoritesStarred : .favoritesStar
@@ -48,12 +45,8 @@ struct FavoriteStarOverlayButton: View {
             Image(systemName: isFavorite ? "star.fill" : "star")
                 .font(.footnote.weight(.bold))
                 .foregroundStyle(isFavorite ? Color.paeoniaAccentPrimary : Color.paeoniaTextPrimary)
-                .frame(width: Self.glyphSize, height: Self.glyphSize)
-                .glassEffect(.regular, in: Circle())
-                .frame(width: Self.hitTarget, height: Self.hitTarget)
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PaeoniaGlassCircleButtonStyle())
         .accessibilityLabel(Text(title))
         .accessibilityAddTraits(isFavorite ? .isSelected : [])
         .accessibilityIdentifier(identifier)

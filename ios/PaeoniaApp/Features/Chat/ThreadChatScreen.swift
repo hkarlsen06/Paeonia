@@ -46,7 +46,8 @@ struct ThreadChatScreen: View {
                     .toolbarVisibility(.hidden, for: .navigationBar)
                     .overlay(alignment: .topTrailing) {
                         closeButton
-                            .buttonStyle(FloatingCloseButtonStyle())
+                            .font(PaeoniaTypography.caption.weight(.semibold))
+                            .buttonStyle(PaeoniaGlassCircleButtonStyle())
                             .padding(PaeoniaSpacing.space4)
                     }
             }
@@ -122,18 +123,5 @@ struct ThreadChatScreen: View {
               let record = context.memories?.record(for: viewModel.subject.id)
         else { return nil }
         return ThreadChatHeader(memory: record)
-    }
-}
-
-/// A small glass circle with a full-size tap target, for a close button over content.
-private struct FloatingCloseButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(.paeoniaTextPrimary)
-            .frame(width: 32, height: 32)
-            .glassEffect(.regular.interactive(), in: Circle())
-            .frame(width: PaeoniaSpacing.compactButtonHeight, height: PaeoniaSpacing.compactButtonHeight)
-            .contentShape(Rectangle())
     }
 }

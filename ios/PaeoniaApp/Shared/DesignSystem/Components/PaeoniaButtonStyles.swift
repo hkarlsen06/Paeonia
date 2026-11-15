@@ -168,6 +168,27 @@ struct PaeoniaCircularButtonStyle: ButtonStyle {
     }
 }
 
+/// A round Liquid Glass button for an icon over content, such as a close button or a map
+/// control. The glass reacts to touch the way the system `.glass` style does, but keeps a
+/// fixed `face` size inside a tap target of at least 44 points, which `.glass` sizes from its
+/// label instead.
+struct PaeoniaGlassCircleButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    var face: CGFloat = 32
+    var glass: Glass = .regular
+
+    func makeBody(configuration: Configuration) -> some View {
+        let target = max(face, PaeoniaSpacing.compactButtonHeight)
+        return configuration.label
+            .foregroundStyle(.paeoniaTextPrimary)
+            .frame(width: face, height: face)
+            .glassEffect(glass.interactive(), in: Circle())
+            .opacity(isEnabled ? 1 : 0.4)
+            .frame(width: target, height: target)
+            .contentShape(Rectangle())
+    }
+}
+
 struct PaeoniaDestructiveButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

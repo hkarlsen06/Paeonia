@@ -359,10 +359,8 @@ struct HomeMapShowBothButton: View {
                     Image(systemName: "location.fill")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.paeoniaAccentPrimary)
-                        .frame(width: PaeoniaSpacing.compactButtonHeight, height: PaeoniaSpacing.compactButtonHeight)
                 }
-                .buttonStyle(.plain)
-                .glassEffect(.regular.interactive(), in: Circle())
+                .buttonStyle(PaeoniaGlassCircleButtonStyle(face: PaeoniaSpacing.compactButtonHeight))
                 .accessibilityLabel(Text(.homeMapShowBoth))
                 .transition(.opacity)
             }

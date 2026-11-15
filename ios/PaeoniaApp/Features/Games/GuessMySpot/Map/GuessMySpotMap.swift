@@ -235,11 +235,11 @@ struct GuessMySpotMap: View {
             Image(systemName: isSatellite ? "globe.europe.africa.fill" : "map.fill")
                 .contentTransition(.symbolEffect(.replace))
                 .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: 44, height: 44)
-                .glassEffect(.regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.6)), in: Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PaeoniaGlassCircleButtonStyle(
+            face: PaeoniaSpacing.compactButtonHeight,
+            glass: .regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.6))
+        ))
         .padding(PaeoniaSpacing.space8)
         .accessibilityLabel(Text(.guessMySpotMapSatellite))
         .accessibilityAddTraits(isSatellite ? [.isToggle, .isSelected] : .isToggle)

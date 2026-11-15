@@ -8,11 +8,8 @@ struct StoryNoteCloseButton: View {
         Button(action: action) {
             Image(systemName: "xmark")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: PaeoniaSpacing.compactButtonHeight, height: PaeoniaSpacing.compactButtonHeight)
-                .glassEffect(.regular.interactive(), in: Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PaeoniaGlassCircleButtonStyle(face: PaeoniaSpacing.compactButtonHeight))
         .accessibilityLabel(Text(.commonClose))
     }
 }
