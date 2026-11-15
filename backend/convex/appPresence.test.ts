@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, components } from "./_generated/api";
 import { gameChatSubjectId } from "./lib/gameChatSubjects";
-import { appRoom } from "./lib/presence";
+import { appRoom, drawingRoom, onlineUserIds } from "./lib/presence";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { failure } from "./media.testing";
 import { createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
@@ -14,7 +14,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const enterApp = (user: TestUser) => user.as.mutation(api.appPresence.set_app_presence, { p_present: true });
+const enterApp = (user: TestUser, drawing = false) =>
+  user.as.mutation(api.appPresence.set_app_presence, { p_present: true, p_drawing: drawing });
 const setShows = (user: TestUser, shows: boolean) =>
   user.as.mutation(api.appPresence.set_shows_presence, { p_shows: shows });
 const partnerOf = (user: TestUser) => user.as.query(api.appPresence.get_partner_presence, {});
@@ -44,12 +45,34 @@ describe("partner presence", () => {
     await enterApp(couple.first);
     expect(await partnerOf(couple.second)).toEqual({
       shows_presence: true,
-      partner: { games: [], chat: null, typing: null },
+      partner: { games: [], drawing: false, chat: null, typing: null },
     });
     expect((await partnerOf(couple.first)).partner).toBeNull();
 
-    await couple.first.as.mutation(api.appPresence.set_app_presence, { p_present: false });
+    await couple.first.as.mutation(api.appPresence.set_app_presence, { p_present: false, p_drawing: false });
     expect((await partnerOf(couple.second)).partner).toBeNull();
+  });
+
+  test("says when the partner opens the drawing and leaves it, and leaving the app leaves it too", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await enterApp(couple.first, true);
+    expect((await partnerOf(couple.second)).partner?.drawing).toBe(true);
+
+    await enterApp(couple.first, false);
+    expect((await partnerOf(couple.second)).partner?.drawing).toBe(false);
+
+    await enterApp(couple.first, true);
+    await couple.first.as.mutation(api.appPresence.set_app_presence, { p_present: false, p_drawing: true });
+    expect((await partnerOf(couple.second)).partner).toBeNull();
+    await enterApp(couple.first, false);
+    expect((await partnerOf(couple.second)).partner?.drawing).toBe(false);
+
+    // Hiding takes the person out of the drawing room as well.
+    await enterApp(couple.first, true);
+    await setShows(couple.first, false);
+    expect(await t.run((ctx) => onlineUserIds(ctx, drawingRoom(couple.coupleId)))).toEqual([]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("hiding works both ways, and turning it off leaves the app room at once", async () => {
@@ -92,6 +115,7 @@ describe("partner presence", () => {
 
     expect((await partnerOf(couple.second)).partner).toEqual({
       games: ["mind_meld", "ludo"],
+      drawing: false,
       chat: { kind: "couple" },
       typing: { kind: "game", game_kind: "mind_meld" },
     });

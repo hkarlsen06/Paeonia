@@ -6,12 +6,12 @@ import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
 import type { WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
-import { appRoom, placesInApp, setPresent } from "./lib/presence";
+import { appRoom, drawingRoom, placesInApp, setPresent } from "./lib/presence";
 import { findProfile, updateProfile } from "./lib/profiles";
 
-// Whether the partner has Paeonia open, and where in it they are: a game, a chat, or typing in
-// one. The app shows it as the partner's floating avatar. Each person can turn it off, and then
-// neither partner sees the other, so nobody watches someone who cannot watch back.
+// Whether the partner has Paeonia open, and where in it they are: a game, the drawing, a chat, or
+// typing in one. The app shows it as the partner's floating avatar. Each person can turn it off,
+// and then neither partner sees the other, so nobody watches someone who cannot watch back.
 
 /**
  * The app room ends this long after the last heartbeat, such as when the app was killed. The app
@@ -21,27 +21,31 @@ const APP_PRESENCE_TIMEOUT_MS = 30_000;
 
 const showsPresence = (profile: Doc<"profiles"> | null) => profile?.shows_presence !== false;
 
-async function setInApp(ctx: WriterCtx, coupleId: string, userId: string, present: boolean) {
+/** The app room, and the drawing room while `drawing`. Leaving leaves both. */
+async function setInApp(ctx: WriterCtx, coupleId: string, userId: string, present: boolean, drawing = false) {
   await setPresent(ctx, appRoom(coupleId), userId, present, APP_PRESENCE_TIMEOUT_MS);
+  await setPresent(ctx, drawingRoom(coupleId), userId, present && drawing, APP_PRESENCE_TIMEOUT_MS);
 }
 
 /**
- * A heartbeat while the app is in front (`p_present` true), or leaving (false). A person who hides
- * their presence leaves the room instead, so a heartbeat from a phone that has not heard of the
- * change yet shows nothing. Returns null.
+ * A heartbeat while the app is in front (`p_present` true), or leaving (false). `p_drawing` says
+ * the drawing screen is open, and the app sends a heartbeat as it opens and closes. A person who
+ * hides their presence leaves the rooms instead, so a heartbeat from a phone that has not heard of
+ * the change yet shows nothing. Returns null.
  */
 export const set_app_presence = mutation({
-  args: { p_present: v.boolean() },
+  args: { p_present: v.boolean(), p_drawing: v.boolean() },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     await assertNoPendingAccountDeletion(ctx, userId);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    await setInApp(ctx, coupleId, userId, args.p_present && showsPresence(await findProfile(ctx, userId)));
+    const present = args.p_present && showsPresence(await findProfile(ctx, userId));
+    await setInApp(ctx, coupleId, userId, present, args.p_drawing);
     return null;
   },
 });
 
-/** Turns "Show when I'm here" on or off. Off takes the caller out of the app room at once. */
+/** Turns "Show when I'm here" on or off. Off takes the caller out of the app rooms at once. */
 export const set_shows_presence = mutation({
   args: { p_shows: v.boolean() },
   handler: async (ctx, args) => {
@@ -63,8 +67,8 @@ export const set_shows_presence = mutation({
 /**
  * The caller's own setting, and where the partner is while they have the app open. `partner` is
  * null unless both partners show their presence and the partner is in the app room. Its `games`
- * are the game screens they have open, `chat` the chat screen they have open, and `typing` the
- * chat they type in, each a `ChatPlace`. It reads no clock. The presence component ends each room
+ * are the game screens they have open and `drawing` whether the drawing is open. `chat` is the chat
+ * screen they have open and `typing` the chat they type in, each a `ChatPlace`. It reads no clock. The presence component ends each room
  * after its timeout, which updates this query.
  */
 export const get_partner_presence = query({

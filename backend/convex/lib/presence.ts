@@ -27,6 +27,11 @@ export function appRoom(coupleId: string): string {
   return `${coupleId}:app`;
 }
 
+/** The couple's widget drawing screen open on either partner's phone, one room per couple. */
+export function drawingRoom(coupleId: string): string {
+  return `${coupleId}:drawing`;
+}
+
 /** Typing in one chat, named by its place, so a reader can tell which chat it is. */
 export function chatTypingRoom(coupleId: string, place: ChatPlace): string {
   return `${typingRoomPrefix(coupleId)}${chatRoomKey(place)}`;
@@ -114,8 +119,11 @@ export async function openGameKinds(ctx: ReaderCtx, coupleId: string, userId: st
   return new Set(rooms.filter(({ roomId }) => roomId.startsWith(prefix)).map(({ roomId }) => roomId.slice(prefix.length)));
 }
 
-/** Where a partner is in the app: the game screens they have open, a chat screen and the chat they type in. */
-export type PartnerPlaces = { games: GameKind[]; chat: ChatPlace | null; typing: ChatPlace | null };
+/**
+ * Where a partner is in the app: the game screens they have open, whether they have the drawing
+ * open, a chat screen and the chat they type in.
+ */
+export type PartnerPlaces = { games: GameKind[]; drawing: boolean; chat: ChatPlace | null; typing: ChatPlace | null };
 
 /**
  * Where the user is in the couple's rooms, from one read of their online rooms, or null while
@@ -135,6 +143,7 @@ export async function placesInApp(ctx: ReaderCtx, coupleId: string, userId: stri
   const games = new Set(keysAfter(gameRoomPrefix(coupleId)));
   return {
     games: GAME_KINDS.filter((kind) => games.has(kind)),
+    drawing: rooms.includes(drawingRoom(coupleId)),
     chat: firstPlace(keysAfter(chatRoomPrefix(coupleId))),
     typing: firstPlace(keysAfter(typingRoomPrefix(coupleId))),
   };
