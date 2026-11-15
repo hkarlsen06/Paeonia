@@ -95,7 +95,7 @@ nonisolated struct CallBubblePlacement {
 
     /// Dropped as low or as high as it goes, the bubble keeps to that end, so a keyboard or a panel that
     /// goes away later doesn't leave it in the middle of the screen.
-    private func settledY(_ y: CGFloat, bubble: CGSize) -> CGFloat {
+    func settledY(_ y: CGFloat, bubble: CGSize) -> CGFloat {
         let settled = center(of: CallBubbleSpot(edge: .trailing, y: y), bubble: bubble).y
         if settled >= center(of: CallBubbleSpot(edge: .trailing, y: .infinity), bubble: bubble).y { return .infinity }
         if settled <= area.minY + bubble.height / 2 { return -.infinity }

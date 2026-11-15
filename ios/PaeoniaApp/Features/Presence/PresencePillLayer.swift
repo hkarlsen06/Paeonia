@@ -12,6 +12,8 @@ struct PresencePillLayer: View {
     @Environment(CallStarter.self) private var starter: CallStarter?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var dragOffset = CGSize.zero
+    /// How far the tab has been dragged up or down along its edge.
+    @State private var tabDragHeight: CGFloat = 0
     /// A sheet under the avatar holds unsaved work, so nothing here may close it.
     @State private var coversHoldUnsavedWork = false
 
@@ -172,14 +174,32 @@ struct PresencePillLayer: View {
     private func tab(edge: HorizontalEdge, hasWaitingNotice: Bool, in placement: CallBubblePlacement) -> some View {
         let width = PresenceTab.size.width
         let y = placement.center(of: overlay.spot, bubble: PresenceAvatar.outerSize).y
+        let shownY = placement.center(
+            of: CallBubbleSpot(edge: edge, y: y + tabDragHeight), bubble: PresenceAvatar.outerSize).y
         return PresenceTab(edge: edge, partnerName: partnerName, hasWaitingNotice: hasWaitingNotice)
             .onTapGesture { model.untuck() }
             .accessibilityAddTraits(.isButton)
-            .gesture(DragGesture(minimumDistance: 8).onEnded { _ in model.untuck() })
+            .gesture(tabDrag(edge: edge, fromY: y, in: placement))
             .accessibilityAction { model.untuck() }
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { overlay.tabFrame = $0 }
-            .position(x: edge == .leading ? width / 2 : placement.size.width - width / 2, y: y)
+            .position(x: edge == .leading ? width / 2 : placement.size.width - width / 2, y: shownY)
             .transition(.move(edge: edge == .leading ? .leading : .trailing).combined(with: .opacity))
+    }
+
+    /// The tab slides up and down its edge with the finger and stays where it is dropped. A pull in
+    /// from the edge brings the avatar out there.
+    private func tabDrag(edge: HorizontalEdge, fromY y: CGFloat, in placement: CallBubblePlacement) -> some Gesture {
+        DragGesture(minimumDistance: 8, coordinateSpace: .global)
+            .onChanged { tabDragHeight = $0.translation.height }
+            .onEnded { value in
+                let inward = edge == .leading ? value.translation.width : -value.translation.width
+                let droppedY = placement.settledY(y + value.translation.height, bubble: PresenceAvatar.outerSize)
+                withAnimation(motion) {
+                    overlay.spot = CallBubbleSpot(edge: edge, y: droppedY)
+                    if inward > PresenceTab.size.width * 1.5 { model.untuck() }
+                    tabDragHeight = 0
+                }
+            }
     }
 
     /// The avatar follows the finger and settles against the edge it was thrown toward, at the height
