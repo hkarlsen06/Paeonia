@@ -238,7 +238,7 @@ A new game adds its entries at these points and edits no other game:
 - Its own `convex/<game>.ts` and `lib/<game>.ts`, with its tables in `schema.ts`. `lib/games.ts` holds what every game shares and never imports a game or the registry.
 - `GAME_BACKENDS` in `lib/gameRegistry.ts`: `pushStillWanted`, `deleteCoupleRows`, and optionally `sendDueTurnReminders` and `onLanguageChanged`.
 - `GAME_PUSH_COPY` in `lib/notificationCopy.ts`: the lock-screen name and wording of its pushes.
-- `ALLOWED_CHANNELS` in `relay/src/ticket.ts` must list the same game kinds as `GAME_KINDS`, plus `call`.
+- `ALLOWED_CHANNELS` in `relay/src/ticket.ts` and `GameKind` in Swift: the same kinds as `GAME_KINDS` (the relay adds `call`). `scripts/check-repo-rules.mjs` checks both.
 
 Rules every game follows:
 

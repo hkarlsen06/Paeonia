@@ -10,7 +10,7 @@
     "dev": "bun run --cwd marketing dev",
     "build": "bun run --cwd marketing build",
     "start": "bun run --cwd marketing start",
-    "lint": "bun run --cwd marketing typecheck",
+    "lint": "node scripts/check-repo-rules.mjs && bun run --cwd marketing typecheck",
     "test": "bun run --cwd marketing build",
     "pages:deploy:marketing": "bun run build && wrangler pages deploy",
     "open-ios": "open ios/Paeonia.xcodeproj",

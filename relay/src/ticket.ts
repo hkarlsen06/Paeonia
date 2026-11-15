@@ -11,8 +11,8 @@ export type Ticket = { coupleId: string; userId: string; expiresAt: number; chan
 /**
  * The channels a ticket may name: every game kind, and `call`. A game's channel is its kind, and
  * Convex issues tickets for every kind in `GAME_KINDS` (backend/convex/lib/validators.ts), so keep
- * the game kinds here the same as that list. `call` carries the setup messages of a voice or video
- * call, and `calls:create_call_live_ticket` issues it.
+ * the game kinds here the same as that list (scripts/check-repo-rules.mjs checks it). `call`
+ * carries the setup messages of a voice or video call, and `calls:create_call_live_ticket` issues it.
  */
 export const ALLOWED_CHANNELS: readonly string[] = [
   "draw_and_guess",

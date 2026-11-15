@@ -17,7 +17,7 @@ Decisions and rules for the Games tab. Each game has its own doc in `docs/games/
 - **Finished creations take emoji reactions.** Unlike a star, a reaction is visible to the partner, and a first reaction sends one gentle push that follows the Games setting.
 - **Finished drawings, creatures and stories can be shared outside the app** from a toolbar button.
 - **Dropped games.** Touch is too thin to ship. Air hockey needs both phones side by side, and Paeonia is for couples who are apart. Battleship with date ideas is out.
-- **"Four in a Row", never "Connect Four".** Connect Four is a Hasbro trademark. No user-visible text, VoiceOver label, push, data export, website or App Store text may use it. The Norwegian name stays "Fire på rad". The internal kind `connect_four` stays.
+- **"Four in a Row", never "Connect Four".** Connect Four is a Hasbro trademark. No user-visible text, VoiceOver label, push, data export, website or App Store text may use it. The Norwegian name stays "Fire på rad". The internal kind `connect_four` stays. `scripts/check-repo-rules.mjs` fails a commit or CI run that adds it.
 
 ### Setup and settings
 
@@ -100,7 +100,7 @@ Not built: Reaction duel (tap when the flower opens, using the fairness rule abo
 
 ## Adding a game
 
-All kinds are registered on the backend (`GAME_KINDS`), the relay (`ALLOWED_CHANNELS`) and Swift (`GameKind`). A kind shows in the app only once its hub model is in `GamesViewModel.games`. Draw & Guess is the worked example for every point. Add your lines at these points and leave other games' lines alone.
+All kinds are registered on the backend (`GAME_KINDS`), the relay (`ALLOWED_CHANNELS`) and Swift (`GameKind`), and `scripts/check-repo-rules.mjs` checks that the three lists match. A kind shows in the app only once its hub model is in `GamesViewModel.games`. Draw & Guess is the worked example for every point. Add your lines at these points and leave other games' lines alone.
 
 - **Naming.** Backend module `backend/convex/<camelKind>.ts` with helpers in `lib/<camelKind>.ts`. Tables start with the kind. Swift types, files, `GamesDestination` and `SyncPendingOperationKind` cases, and `DeveloperScenario` members start with the Swift prefix. String Catalog keys start with the Swift prefix. Deep link `paeonia://games/<kebab-kind>`.
 - **Backend.** Tables in `schema.ts` with a `couple_id` index. Check access with `getCurrentEntitledCoupleId` or `requireCoupleAccess` (`lib/access.ts`). Replace your `null` in `GAME_BACKENDS` (`lib/gameRegistry.ts`) with a `GameBackend`. Queue pushes with `enqueueGamePush` and add your entry to `GAME_PUSH_COPY` in `lib/notificationCopy.ts` first. Invites, presence, live tickets, settings and "Not now" need nothing, because `games.ts` takes every kind.

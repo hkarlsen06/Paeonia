@@ -31,6 +31,9 @@ with tempfile.TemporaryDirectory(prefix="paeonia-staged-audio-") as snapshot:
 PY
 fi
 
+echo "[pre-commit] Checking rules that span the backend, relay, app and site"
+node scripts/check-repo-rules.mjs --staged
+
 STAGED_SWIFT_FILES="$(
   git diff --cached --name-only --diff-filter=ACMR |
     grep -E '\.swift$' || true
