@@ -20,6 +20,7 @@
     /// The games cache, where `home-partner-leaves-game` takes Robin out of the game.
     private let gamesCache: any GamesCaching
     private let locationViewModel: LocationMapViewModel
+    private let mapTiles: HomeMapTileStatus?
     private let scenario: DeveloperScenario
 
     init(scenario: DeveloperScenario) {
@@ -52,6 +53,11 @@
       _gamesViewModel = State(initialValue: GamesViewModel(dependencies: gamesDependencies))
       _visitsViewModel = State(initialValue: DeveloperVisitsFixture.model(for: scenario))
       locationViewModel = Self.makeLocationViewModel(operationProvider: operationProvider)
+      mapTiles = scenario == .homeMapShareLocationOutage ? DeveloperHomeMapTiles.outage.makeStatus() : nil
+    }
+
+    private var sharesLocationLater: Bool {
+      scenario == .homeMapShareLocation || scenario == .homeMapShareLocationOutage
     }
 
     /// Tromsø, Trondheim, Lillehammer, Oslo (together) and Bergen.
@@ -72,7 +78,7 @@
 
     private var partnerLocation: LocationPoint {
       let stop: (latitude: Double, longitude: Double) = switch scenario {
-      case .homeMapApart, .homeMapShareLocation: Self.partnerStops[0]
+      case .homeMapApart, .homeMapShareLocation, .homeMapShareLocationOutage: Self.partnerStops[0]
       case .homeMapPartnerMoves: Self.partnerStops[partnerStop]
       default: Self.partnerStops[3]
       }
@@ -239,7 +245,7 @@
           ),
           // PROTOTYPE: a live map for the Home map layout, or the state named by
           // `-proto.home.mapState`.
-          locationMapState: scenario == .homeMapShareLocation
+          locationMapState: sharesLocationLater
             ? shareLocationState : Self.protoMapState ?? readyMapState,
           locationViewModel: locationViewModel,
           selection: $selection,
@@ -252,6 +258,7 @@
             gamesViewModel: gamesViewModel,
             visitsViewModel: visitsViewModel,
             recapViewModel: DeveloperRecapFixture.model(for: scenario),
+            homeMapTiles: mapTiles,
             partnerPresenceModel: PartnerPresenceModel(gateway: UnavailablePartnerPresenceGateway())
           ),
           // Past the first day with a saved card, for the `home-first-steps` scenarios.
@@ -259,7 +266,7 @@
           todaysQuestionOpenings: scenario == .pairedHomeTodayOpens ? Self.todaysQuestionOpenings : nil
         )
         .task {
-          if scenario == .homeMapShareLocation {
+          if sharesLocationLater {
             try? await Task.sleep(for: .seconds(6))
             shareLocationState = .locatingCurrent
             try? await Task.sleep(for: .seconds(1.5))

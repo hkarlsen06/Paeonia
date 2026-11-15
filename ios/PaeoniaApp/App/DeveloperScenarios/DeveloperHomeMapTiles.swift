@@ -78,6 +78,12 @@ nonisolated extension DeveloperScenario {
       "home-map-share-location", "Home map · start sharing",
       "Alex in Oslo shares after 6 s, Robin is in Tromsø, and the map flies in 1.5 s later", .relationship
     ) { DeveloperPairedScenarioHost(scenario: $0) }
+    /// The same while OpenFreeMap is down: Home keeps its layout without the world preview,
+    /// and switches to the map card once both places arrive.
+    static let homeMapShareLocationOutage = DeveloperScenario(
+      "home-map-share-location-outage", "Home map · start sharing, OpenFreeMap down",
+      "As home-map-share-location, but the map can't load, so the map card takes over", .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
     /// Robin's game card leads the cards, then goes, so the cards under it move up.
     static let homePartnerLeavesGame = DeveloperScenario(
       "home-partner-leaves-game", "Home · partner leaves a game",
