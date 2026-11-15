@@ -108,6 +108,11 @@ nonisolated struct CallBackend: Sendable {
         try await client().mutation("calls:call_heartbeat", args: ["p_call_id": callID.uuidString])
     }
 
+    /// `calls:get_live_call` read once, over a request that opens on the phone's current network.
+    func liveCall() async throws -> LiveCall? {
+        try await client().query("calls:get_live_call")
+    }
+
     func partnerTimeZoneID() async throws -> String? {
         let context: CallContext = try await client().query("calls:get_call_context")
         return context.partnerTimeZoneID

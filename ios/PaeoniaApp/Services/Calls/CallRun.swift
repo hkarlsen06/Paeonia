@@ -9,6 +9,8 @@ final class CallRun {
     var media: CallMediaSession?
     var timers: [CallTimer: Task<Void, Never>] = [:]
     var heartbeat: Task<Void, Never>?
+    /// Reads the server's row while the call rings (`CallEngine.updateRingWatch`).
+    var ringWatch: Task<Void, Never>?
     /// Tells the server the call ended here.
     var serverEnd: Task<Void, Never>?
     /// The end came from the system call UI, which already shows it.
@@ -40,6 +42,8 @@ final class CallRun {
         timers = [:]
         heartbeat?.cancel()
         heartbeat = nil
+        ringWatch?.cancel()
+        ringWatch = nil
         media?.close()
         media = nil
     }

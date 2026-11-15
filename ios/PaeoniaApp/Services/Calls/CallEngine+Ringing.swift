@@ -41,6 +41,33 @@ extension CallEngine {
         }
     }
 
+    /// Reads the server's row every `ringWatchInterval` while the call rings, once the server has
+    /// it. The live query reports an answer or a cancel at once, but its socket can stay on a
+    /// network the phone left. After Wi-Fi turned off, a caller kept ringing for 18 seconds after
+    /// the answer. Each read opens on the current network.
+    func updateRingWatch(_ run: CallRun) {
+        let isRinging = run.machine.phase == .ringing && run.machine.isRegistered
+        guard isRinging != (run.ringWatch != nil) else { return }
+        guard isRinging else {
+            run.ringWatch?.cancel()
+            run.ringWatch = nil
+            return
+        }
+        run.ringWatch = Task { [weak self, weak run, backend] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.ringWatchInterval)
+                let row: LiveCall?
+                do {
+                    row = try await backend.liveCall()
+                } catch {
+                    continue
+                }
+                guard !Task.isCancelled, let self, let run else { return }
+                send(.liveCall(row), to: run)
+            }
+        }
+    }
+
     func handleStart(_ request: CallSystemRequest) {
         guard let run, run.conversationID == request.conversationID, run.machine.phase == .ringing else {
             request.fail()

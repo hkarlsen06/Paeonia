@@ -46,6 +46,7 @@ final class CallEngine {
     /// The local ring timer fires this long after the server's deadline, which the live query
     /// normally reports first.
     static let ringGrace: TimeInterval = 5
+    static let ringWatchInterval: Duration = .seconds(2)
 
     weak var center: CallCenter?
     let backend = CallBackend()
@@ -119,6 +120,7 @@ final class CallEngine {
         for effect in effects {
             perform(effect, for: run)
         }
+        updateRingWatch(run)
         return run
     }
 
@@ -131,6 +133,7 @@ final class CallEngine {
             perform(effect, for: run)
         }
         updateHeartbeat(run)
+        updateRingWatch(run)
     }
 
     private func publish(_ run: CallRun, previous: CallPhase) {
