@@ -32,13 +32,15 @@ nonisolated enum CallSound: String, CaseIterable, Sendable {
 /// `AVAudioPlayer` in the call's audio session.
 /// Nothing plays in a call before the system activates its audio.
 ///
-/// The engine calls the delegate methods on its own thread, and the lock keeps them in order with
-/// `play` and `setRingback` from the main thread.
+/// `play`, `setRingback` and `stopAll` run on `CallAudio.queue`, after the engine changes asked for
+/// before them, because starting or stopping a player waits on the system's audio service. The
+/// engine calls the delegate methods on its own thread, and the lock keeps the two in order.
 nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegate, @unchecked Sendable {
     private let lock = NSLock()
     private let engineNode = AVAudioPlayerNode()
     private let buffers: [CallSound: AVAudioPCMBuffer]
     private let players: [CallSound: AVAudioPlayer]
+    private let durations: [CallSound: Duration]
     // Only touched under `lock`.
     private weak var engine: AVAudioEngine?
 
@@ -55,6 +57,7 @@ nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegat
         }
         self.buffers = buffers
         self.players = players
+        durations = players.mapValues { .seconds($0.duration) }
     }
 
     private static func buffer(from url: URL) -> AVAudioPCMBuffer? {
@@ -71,24 +74,28 @@ nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegat
     /// Returns how long the sound lasts.
     @discardableResult
     func play(_ sound: CallSound) -> Duration {
-        lock.withLock { start(sound) }
-        return .seconds(players[sound]?.duration ?? 0)
+        CallAudio.queue.async { self.lock.withLock { self.start(sound) } }
+        return durations[sound] ?? .zero
     }
 
     func setRingback(_ isOn: Bool) {
-        lock.withLock {
-            if isOn {
-                start(.ringback)
-            } else {
-                stop(.ringback)
+        CallAudio.queue.async {
+            self.lock.withLock {
+                if isOn {
+                    self.start(.ringback)
+                } else {
+                    self.stop(.ringback)
+                }
             }
         }
     }
 
     func stopAll() {
-        lock.withLock {
-            for sound in CallSound.allCases {
-                stop(sound)
+        CallAudio.queue.async {
+            self.lock.withLock {
+                for sound in CallSound.allCases {
+                    self.stop(sound)
+                }
             }
         }
     }

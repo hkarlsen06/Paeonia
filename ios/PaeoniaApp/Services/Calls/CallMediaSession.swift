@@ -370,8 +370,9 @@ nonisolated enum CallMediaError: Error {
 }
 
 /// One factory for the app's lifetime, with WebRTC's `AVAudioEngine` audio (`CallAudio`).
-enum CallMediaFactory {
-    static let shared: LKRTCPeerConnectionFactory = {
+/// `CallAudio.queue` reaches its audio module, so it is not tied to the main actor.
+nonisolated enum CallMediaFactory {
+    nonisolated(unsafe) static let shared: LKRTCPeerConnectionFactory = {
         LKRTCInitializeSSL()
         return LKRTCPeerConnectionFactory(
             audioDeviceModuleType: .audioEngine,

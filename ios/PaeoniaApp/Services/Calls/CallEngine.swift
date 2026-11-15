@@ -304,8 +304,9 @@ final class CallEngine {
     /// Gives the audio session back to the rest of the app once no call needs it.
     private func restoreAppAudio() {
         PaeoniaAudioSession.setCallActive(false)
-        // Off the main thread, because setting the category can block for a moment.
-        Task.detached(priority: .utility) { PaeoniaAudioSession.useAmbient() }
+        // Off the main thread, because setting the category can block for a moment, and after
+        // the engine has stopped.
+        CallAudio.queue.async { PaeoniaAudioSession.useAmbient() }
     }
 
     /// Drops the finished call and its video. The caller decides what happens to the audio

@@ -15,7 +15,13 @@ import OSLog
 /// or a car alone. An output override would not last, because iOS drops it when it switches the
 /// mode.
 enum CallAudio {
-    private static var module: LKRTCAudioDeviceModule {
+    /// The engine's availability, the call's sounds (`CallSoundPlayer`) and the state log change
+    /// here, one after another. Each change waits for WebRTC's audio thread or the system's
+    /// audio service, up to 160 ms on an iPhone, and on the main thread it stalled the call
+    /// screen for about 320 ms as it slid up when a call started.
+    nonisolated static let queue = DispatchQueue(label: "no.paeonia.app.call-audio", qos: .userInitiated)
+
+    nonisolated private static var module: LKRTCAudioDeviceModule {
         CallMediaFactory.shared.audioDeviceModule
     }
 
@@ -23,11 +29,13 @@ enum CallAudio {
     /// processing runs, it turns the call's own sounds down as little as iOS allows. A muted
     /// microphone is muted at the engine's input mixer: voice processing's own mute crashed the
     /// system's audio service on an iPhone (`ATSecureVADManager::setMuteState` in audiomxd).
-    static func configureAtLaunch(sounds: CallSoundPlayer) {
-        module.observer = sounds
-        module.duckingLevel = .min
-        module.setMuteMode(.inputMixer)
-        setEngineAvailable(false)
+    nonisolated static func configureAtLaunch(sounds: CallSoundPlayer) {
+        queue.async {
+            module.observer = sounds
+            module.duckingLevel = .min
+            module.setMuteMode(.inputMixer)
+            setEngineAvailable(false)
+        }
     }
 
     private static let options: AVAudioSession.CategoryOptions = [.allowBluetoothHFP]
@@ -44,22 +52,27 @@ enum CallAudio {
     /// partner's voice and the microphone together, when the phones connect. Started for the
     /// voice alone, it restarted for the microphone a moment later and cut off the connected
     /// chime.
-    static func didActivate(_: AVAudioSession) {
-        setEngineAvailable(true)
-        module.setRecordingAlwaysPreparedMode(true)
+    nonisolated static func didActivate(_: AVAudioSession) {
+        queue.async {
+            setEngineAvailable(true)
+            module.setRecordingAlwaysPreparedMode(true)
+        }
     }
 
-    static func didDeactivate(_: AVAudioSession) {
+    nonisolated static func didDeactivate(_: AVAudioSession) {
         stopEngine()
     }
 
     /// Stops the engine when the call ends, even if the system never deactivates its audio.
-    static func stopEngine() {
-        module.setRecordingAlwaysPreparedMode(false)
-        setEngineAvailable(false)
+    nonisolated static func stopEngine() {
+        queue.async {
+            module.setRecordingAlwaysPreparedMode(false)
+            setEngineAvailable(false)
+        }
     }
 
-    private static func setEngineAvailable(_ isOn: Bool) {
+    /// Runs on `queue`.
+    nonisolated private static func setEngineAvailable(_ isOn: Bool) {
         isEngineAvailable = isOn
         let availability = ObjCBool(isOn)
         module.setEngineAvailability(
@@ -67,24 +80,28 @@ enum CallAudio {
         )
     }
 
-    private static var isEngineAvailable = false
+    /// Only touched on `queue`.
+    nonisolated(unsafe) private static var isEngineAvailable = false
 
     nonisolated static let log = Logger(subsystem: "no.paeonia.app", category: "CallAudio")
 
     /// Logs the session's state at each audio step of a call. A device's console shows it when
     /// the app launches with `OS_ACTIVITY_DT_MODE=YES`.
-    static func logState(_ moment: String) {
-        let session = AVAudioSession.sharedInstance()
-        let outputs = session.currentRoute.outputs
-            .map { "\($0.portType.rawValue)/\($0.channels?.count ?? 0)ch" }
-            .joined(separator: ",")
-        log.notice("""
-            \(moment, privacy: .public): outputs=\(outputs, privacy: .public) \
-            category=\(session.category.rawValue, privacy: .public) mode=\(session.mode.rawValue, privacy: .public) \
-            options=\(session.categoryOptions.rawValue) volume=\(session.outputVolume) \
-            engineRunning=\(module.isEngineRunning) playing=\(module.isPlaying) recording=\(module.isRecording) \
-            otherAudio=\(session.isOtherAudioPlaying)
-            """)
+    nonisolated static func logState(_ moment: String) {
+        queue.async {
+            let session = AVAudioSession.sharedInstance()
+            let outputs = session.currentRoute.outputs
+                .map { "\($0.portType.rawValue)/\($0.channels?.count ?? 0)ch" }
+                .joined(separator: ",")
+            log.notice("""
+                \(moment, privacy: .public): outputs=\(outputs, privacy: .public) \
+                category=\(session.category.rawValue, privacy: .public) \
+                mode=\(session.mode.rawValue, privacy: .public) \
+                options=\(session.categoryOptions.rawValue) volume=\(session.outputVolume) \
+                engineRunning=\(module.isEngineRunning) playing=\(module.isPlaying) recording=\(module.isRecording) \
+                otherAudio=\(session.isOtherAudioPlaying)
+                """)
+        }
     }
 
     static func currentRoute() -> CallAudioRoute {
@@ -131,10 +148,12 @@ enum CallAudio {
 
     /// Starts the engine again once the microphone is allowed during a call, so it records.
     /// Before the system activates the call's audio there is nothing to restart.
-    static func restartForMicrophone() {
-        guard isEngineAvailable else { return }
-        setEngineAvailable(false)
-        setEngineAvailable(true)
+    nonisolated static func restartForMicrophone() {
+        queue.async {
+            guard isEngineAvailable else { return }
+            setEngineAvailable(false)
+            setEngineAvailable(true)
+        }
     }
 
     static func cameraAllowed() async -> Bool {
