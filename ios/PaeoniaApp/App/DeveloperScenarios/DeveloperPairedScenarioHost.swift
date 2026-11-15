@@ -15,18 +15,14 @@
     @State private var visitsViewModel: VisitsViewModel
     /// How far Robin has got in `home-map-partner-moves`.
     @State private var partnerStop = 0
+    /// The games cache, where `home-partner-leaves-game` takes Robin out of the game.
+    private let gamesCache: any GamesCaching
     private let locationViewModel: LocationMapViewModel
     private let scenario: DeveloperScenario
 
     init(scenario: DeveloperScenario) {
       self.scenario = scenario
       let operationProvider = DeveloperScenarioOperationProvider()
-      let pendingOperationStore: any PendingSyncOperationPersisting =
-        scenario == .questionsOfflineQueued
-        ? DeveloperOfflineDailyOperationStore()
-        : InMemoryPendingSyncOperationRepository()
-      let dailyService = DeveloperDailyChallengeService(
-        mode: .mode(for: scenario), pendingOperationStore: pendingOperationStore)
       _selection = State(initialValue: Self.initialTab(for: scenario))
       _deepLink = State(
         initialValue: Self.opensAnswerFlow(scenario)
@@ -35,15 +31,7 @@
       )
 
       _dailyChallengeViewModel = State(
-        initialValue: DailyChallengeViewModel(
-          service: dailyService,
-          operationProvider: operationProvider,
-          draftStore: DeveloperScenarioDailyDraftStore(),
-          mediaDraftStore: DeveloperScenarioMediaDraftStore(),
-          pendingOperationStore: pendingOperationStore,
-          snapshotCache: DeveloperScenarioSnapshotCache(),
-          now: { DeveloperScenarioFixture.now }
-        )
+        initialValue: Self.makeDailyChallengeViewModel(scenario: scenario, operationProvider: operationProvider)
       )
       _milestoneViewModel = State(
         initialValue: RelationshipMilestoneViewModel(
@@ -57,7 +45,9 @@
       _memoriesViewModel = State(
         initialValue: Self.makeMemoriesViewModel(scenario: scenario, operationProvider: operationProvider)
       )
-      _gamesViewModel = State(initialValue: DeveloperGamesScenarioFactory.gamesViewModel(for: scenario))
+      let gamesDependencies = DeveloperGamesScenarioFactory.dependencies(for: scenario)
+      gamesCache = gamesDependencies.cache
+      _gamesViewModel = State(initialValue: GamesViewModel(dependencies: gamesDependencies))
       _visitsViewModel = State(initialValue: DeveloperVisitsFixture.model(for: scenario))
       locationViewModel = Self.makeLocationViewModel(operationProvider: operationProvider)
     }
@@ -91,6 +81,27 @@
     /// Scenarios that show the answer flow on its own, for today's question.
     private static func opensAnswerFlow(_ scenario: DeveloperScenario) -> Bool {
       scenario == .questionAnswerFlow || scenario == .questionPartnerAnswersMeanwhile
+    }
+
+    private static func makeDailyChallengeViewModel(
+      scenario: DeveloperScenario,
+      operationProvider: DeveloperScenarioOperationProvider
+    ) -> DailyChallengeViewModel {
+      let pendingOperationStore: any PendingSyncOperationPersisting =
+        scenario == .questionsOfflineQueued
+        ? DeveloperOfflineDailyOperationStore()
+        : InMemoryPendingSyncOperationRepository()
+      let service = DeveloperDailyChallengeService(
+        mode: .mode(for: scenario), pendingOperationStore: pendingOperationStore)
+      return DailyChallengeViewModel(
+        service: service,
+        operationProvider: operationProvider,
+        draftStore: DeveloperScenarioDailyDraftStore(),
+        mediaDraftStore: DeveloperScenarioMediaDraftStore(),
+        pendingOperationStore: pendingOperationStore,
+        snapshotCache: DeveloperScenarioSnapshotCache(),
+        now: { DeveloperScenarioFixture.now }
+      )
     }
 
     private static func makeMemoriesViewModel(
@@ -241,15 +252,28 @@
           todaysQuestionOpenings: scenario == .pairedHomeTodayOpens ? Self.todaysQuestionOpenings : nil
         )
         .task {
-          guard scenario == .homeMapPartnerMoves else { return }
-          // After the launch intro has landed, then one stop at a time.
+          guard scenario == .homeMapPartnerMoves || scenario == .homePartnerLeavesGame else { return }
+          // After the launch intro has landed.
           try? await Task.sleep(for: .seconds(10))
+          if scenario == .homePartnerLeavesGame {
+            await partnerLeavesGame()
+            return
+          }
           for stop in 1..<Self.partnerStops.count {
             partnerStop = stop
             try? await Task.sleep(for: .seconds(3.5))
           }
         }
       }
+    }
+  }
+
+  extension DeveloperPairedScenarioHost {
+    private func partnerLeavesGame() async {
+      let owner = DeveloperGamesFixture.me
+      guard let overview = await gamesCache.document(ownerUserID: owner).overview else { return }
+      await gamesCache.saveOverview(overview.clearingPresence(), ownerUserID: owner)
+      await gamesViewModel.reload()
     }
   }
 

@@ -73,5 +73,11 @@ nonisolated extension DeveloperScenario {
       "home-map-partner-moves", "Home map · partner moves",
       "Robin goes from Tromsø to Trondheim, Lillehammer, Oslo and Bergen, 3.5 s apart", .relationship
     ) { DeveloperPairedScenarioHost(scenario: $0) }
+    /// Robin's game card leads the cards, then goes, so the cards under it move up.
+    static let homePartnerLeavesGame = DeveloperScenario(
+      "home-partner-leaves-game", "Home · partner leaves a game",
+      "Robin's Draw & Guess card shows above the question of when you meet next, then Robin leaves after 10 s",
+      .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
 }
 #endif

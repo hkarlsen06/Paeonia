@@ -47,12 +47,12 @@
             guesserHasSeenIt: true
           )
         )
-      case .gamesHubPartnerHere, .drawGuessingReplay:
+      case .gamesHubPartnerHere, .homePartnerLeavesGame, .drawGuessingReplay:
         return Fixture.state(
           settings: mine,
           game: Fixture.game(state: .guessing, turn: Fixture.me),
           round: Fixture.round(state: .guessing, drawer: Fixture.partner, hasDrawing: true),
-          partnerIsHere: scenario == .gamesHubPartnerHere
+          partnerIsHere: scenario != .drawGuessingReplay
         )
       default:
         return nil
