@@ -249,7 +249,7 @@ struct PresencePillLayer: View {
 
 /// The sheets and covers over the app's screens, in the app's own window.
 @MainActor
-private enum AppCovers {
+enum AppCovers {
     /// One of them holds unsaved work or a save in progress, which `interactiveDismissDisabled`
     /// marks, so it must stay open. SwiftUI answers that through the presentation's delegate and
     /// leaves `isModalInPresentation` false, so both are asked.

@@ -2,7 +2,9 @@ import SwiftUI
 
 /// Places the bubble at its spot (`CallBubblePlacement`). A drag moves it, and it stays where it is
 /// dropped. Pushed into the side of the screen, it tucks away as a tab there (`PresenceTab`), which
-/// brings it back out. A pinch makes the video bigger or smaller.
+/// brings it back out. A pinch makes the video bigger or smaller. While the partner's avatar is under
+/// the call, the game or the drawing the partner opens shows for a few seconds beside the bubble,
+/// where a tap joins them.
 struct CallBubbleLayer: View {
     let model: CallOverlayModel
     let session: CallSession
@@ -30,10 +32,24 @@ struct CallBubbleLayer: View {
                 }
             }
         }
+        .animation(motion, value: callout)
+        // The window's layer stays the same, so VoiceOver hears of the callout only from here.
+        .onChange(of: callout) { _, callout in
+            guard let callout else { return }
+            AccessibilityNotification.Announcement(
+                callout.accessibilityLabel(partnerName: model.participants.partnerName)
+            ).post()
+        }
+    }
+
+    private var callout: PresenceCallout? {
+        model.presence.callCallout
     }
 
     private func bubble(in placement: CallBubblePlacement) -> some View {
         let scales = videoScales(in: placement)
+        let center = placement.center(of: model.spot, bubble: bubbleSize)
+        let calloutBelow = placement.growsDownward(fromY: center.y, rowHeight: bubbleSize.height)
         return CallBubble(
             center: model.center, session: session, participants: model.participants,
             videoScale: clamp(model.videoScale * pinch, to: scales),
@@ -44,10 +60,15 @@ struct CallBubbleLayer: View {
         .onGeometryChange(for: CGSize.self) { $0.size } action: { bubbleSize = $0 }
         // The window passes every touch outside this frame to the app underneath.
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { model.bubbleFrame = $0 }
+        .overlay(alignment: Alignment(
+            horizontal: model.spot.isLeading ? .leading : .trailing, vertical: calloutBelow ? .bottom : .top
+        )) {
+            calloutView(below: calloutBelow)
+        }
         .gesture(drag(in: placement))
         .simultaneousGesture(
             resizing(within: scales), including: CallBubble.showsVideo(session) ? .all : .subviews)
-        .position(placement.center(of: model.spot, bubble: bubbleSize))
+        .position(center)
         .offset(dragOffset)
         .transition(.move(edge: model.spot.isLeading ? .leading : .trailing).combined(with: .opacity))
     }
@@ -59,7 +80,7 @@ struct CallBubbleLayer: View {
         let y = placement.center(of: model.spot, bubble: bubbleSize).y
         let shownY = placement.center(
             of: CallBubbleSpot(edge: edge, height: .center(y + tabDragHeight)), bubble: bubbleSize).y
-        return PresenceTab(edge: edge, partnerName: model.participants.partnerName, hasWaitingNotice: false)
+        return PresenceTab(edge: edge, partnerName: model.participants.partnerName, hasWaitingNotice: callout != nil)
             .onTapGesture { untuck() }
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { untuck() }
@@ -67,6 +88,33 @@ struct CallBubbleLayer: View {
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { model.tabFrame = $0 }
             .position(x: edge == .leading ? width / 2 : placement.size.width - width / 2, y: shownY)
             .transition(.move(edge: edge == .leading ? .leading : .trailing).combined(with: .opacity))
+    }
+
+    /// Under the bubble, or above it in the bottom half of the screen, at the bubble's side so it
+    /// grows toward the middle.
+    @ViewBuilder
+    private func calloutView(below: Bool) -> some View {
+        if let callout {
+            let gap = PaeoniaSpacing.space8
+            let side: UnitPoint = model.spot.isLeading ? (below ? .topLeading : .bottomLeading)
+                : (below ? .topTrailing : .bottomTrailing)
+            CallBubbleCallout(callout: callout, partnerName: model.participants.partnerName, open: open)
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
+                    model.bubbleCalloutFrame = $0
+                }
+                // No height of its own, so it hangs off the bubble's bottom or top edge.
+                .frame(height: 0, alignment: below ? .top : .bottom)
+                .offset(y: below ? gap : -gap)
+                .transition(.scale(scale: 0.6, anchor: side).combined(with: .opacity))
+        }
+    }
+
+    /// The covers over the app close first, so the game or the drawing shows on top.
+    private func open(_ destination: PresenceDestination) {
+        AppCovers.close { [presence = model.presence] in
+            presence.clearCallNotice()
+            presence.open(destination)
+        }
     }
 
     private func untuck() {
@@ -143,5 +191,23 @@ struct CallBubbleLayer: View {
                     tabDragHeight = 0
                 }
             }
+    }
+}
+
+/// What the partner just opened, in a glass capsule beside the call's bubble, as the avatar says it.
+/// A tap opens it.
+private struct CallBubbleCallout: View {
+    let callout: PresenceCallout
+    let partnerName: String
+    let open: (PresenceDestination) -> Void
+
+    var body: some View {
+        PresenceCalloutContent(callout: callout, partnerName: partnerName, canOpen: callout.destination != nil) {
+            if let destination = callout.destination { open(destination) }
+        }
+        .padding(.vertical, PaeoniaSpacing.space8)
+        .fixedSize()
+        .glassEffect(.regular.interactive(), in: Capsule())
+        .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
     }
 }

@@ -71,6 +71,15 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
         }
     }
 
+    /// False once the partner has left the game or the drawing the notice says they opened.
+    func isTrue(of partner: PartnerPresence?) -> Bool {
+        switch self {
+        case let .openedGame(kind): partner?.games.contains(kind) == true
+        case .openedDrawing: partner?.isDrawing == true
+        case .message, .update: true
+        }
+    }
+
     var callout: PresenceCallout {
         switch self {
         case let .message(message): .message(message)

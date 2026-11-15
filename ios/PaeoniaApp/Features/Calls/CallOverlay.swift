@@ -72,13 +72,17 @@ final class CallOverlayModel {
     enum TouchArea: Equatable {
         case none
         case everywhere
-        case frame(CGRect)
+        case frames([CGRect])
+
+        static func frame(_ frame: CGRect) -> Self {
+            .frames([frame])
+        }
 
         func contains(_ point: CGPoint) -> Bool {
             switch self {
             case .none: false
             case .everywhere: true
-            case let .frame(frame): frame.contains(point)
+            case let .frames(frames): frames.contains { $0.contains(point) }
             }
         }
     }
@@ -102,6 +106,8 @@ final class CallOverlayModel {
     /// Where each part is in the window, for `touchArea`. Each has its own, so one that is leaving
     /// can't move another's.
     var bubbleFrame = CGRect.zero
+    /// What the partner just opened, beside the bubble (`CallBubbleCallout`).
+    var bubbleCalloutFrame = CGRect.zero
     var ringFrame = CGRect.zero
     /// The partner's avatar with its notice and toolbar.
     var avatarFrame = CGRect.zero
@@ -173,7 +179,14 @@ final class CallOverlayModel {
         switch shownLayer {
         case .hidden: .none
         case .screen: .everywhere
-        case .bubble: .frame(bubbleIsTucked ? tabFrame : bubbleFrame)
+        case .bubble:
+            if bubbleIsTucked {
+                .frame(tabFrame)
+            } else if presence.callCallout != nil {
+                .frames([bubbleFrame, bubbleCalloutFrame])
+            } else {
+                .frame(bubbleFrame)
+            }
         case .ring: .frame(ringFrame)
         case .presence:
             switch presence.mode {

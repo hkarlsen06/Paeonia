@@ -25,7 +25,12 @@ final class PartnerPresenceModel {
     }
     /// A call's screen, bubble or ring pill shows in the avatar's place. The call overlay keeps it
     /// current.
-    var isCoveredByCall = false
+    var isCoveredByCall = false {
+        didSet { if !isCoveredByCall { setCallNotice(nil) } }
+    }
+    /// The game or the drawing the partner just opened, which the call's bubble says for a few
+    /// seconds while a call covers the avatar.
+    private(set) var callNotice: PresenceNotice?
     /// The chats with a message from the partner this person has not read, which the avatar counts
     /// once its notice has gone. `MainTabView` keeps it current.
     var unreadChats = 0
@@ -38,6 +43,7 @@ final class PartnerPresenceModel {
     private var confirmedShowsPresence = true
     private var isSavingShowsPresence = false
     private var noticeTask: Task<Void, Never>?
+    private var callNoticeTask: Task<Void, Never>?
     /// The newest presence write. The next one waits for it, so a leave sent after a heartbeat
     /// reaches the server after it.
     private var lastWrite: Task<Void, Never>?
@@ -64,6 +70,11 @@ final class PartnerPresenceModel {
 
     /// How the avatar is drawn.
     var mode: PresencePillMode { pill.mode }
+
+    /// What the call's bubble says, while it still tells this person something new.
+    var callCallout: PresenceCallout? {
+        callNotice.flatMap { $0.concerns(viewer) ? $0.callout : nil }
+    }
 
     var status: PresencePillStatus? {
         feed.partner.map { PresencePillStatus(partner: $0, notice: mode.shownNotice, viewer: viewer) }
@@ -143,13 +154,8 @@ final class PartnerPresenceModel {
         let partner = reading.partner?.ordered(after: previous.partner)
         follow(.reading(partner))
         // "Opened Ludo" that waited while the avatar was away is no longer true once they left Ludo.
-        choose(pill.chosen.keepingNotice { notice in
-            switch notice {
-            case let .openedGame(kind): partner?.games.contains(kind) == true
-            case .openedDrawing: partner?.isDrawing == true
-            case .message, .update: true
-            }
-        })
+        choose(pill.chosen.keepingNotice { $0.isTrue(of: partner) })
+        if let callNotice, !callNotice.isTrue(of: partner) { setCallNotice(nil) }
         // The first reading of a run finds the partner where they already were. After that, a game
         // or the drawing that appears was just opened.
         guard case let .reading(before) = previous, let partner else { return }
@@ -162,20 +168,33 @@ final class PartnerPresenceModel {
     /// Whenever the partner goes, their notices go too.
     private func follow(_ next: PartnerFeed) {
         feed = next
-        if next.partner == nil { choose(pill.chosen.partnerLeft) }
+        if next.partner == nil {
+            choose(pill.chosen.partnerLeft)
+            setCallNotice(nil)
+        }
     }
 
     // MARK: - Notices
 
     /// Shows a notice in the avatar for a few seconds, or keeps it until the toolbar closes or
     /// the avatar comes back from the edge or the cover over the app closes. A notice that tells this
-    /// person nothing new is dropped.
+    /// person nothing new is dropped. While a call covers the avatar, the call's bubble says which
+    /// game or drawing the partner opened.
     /// False while the avatar is not on screen to take it, so the caller shows a banner instead.
     @discardableResult
     func receive(_ notice: PresenceNotice) -> Bool {
-        guard isShown, !isCoveredByCall else { return false }
-        if notice.concerns(viewer) { choose(pill.chosen.receiving(notice)) }
-        return true
+        guard isShown else { return false }
+        guard isCoveredByCall else {
+            if notice.concerns(viewer) { choose(pill.chosen.receiving(notice)) }
+            return true
+        }
+        switch notice {
+        case .openedGame, .openedDrawing:
+            if notice.concerns(viewer) { setCallNotice(notice) }
+            return true
+        case .message, .update:
+            return false
+        }
     }
 
     /// Shows a notice in the avatar only while it is out with its toolbar closed. A notification has
@@ -204,6 +223,24 @@ final class PartnerPresenceModel {
             noticeTask?.cancel()
         }
         pill = next
+    }
+
+    /// Shows `notice` beside the call's bubble for as long as a notice shows in the avatar.
+    private func setCallNotice(_ notice: PresenceNotice?) {
+        callNoticeTask?.cancel()
+        callNotice = notice
+        guard let notice else { return }
+        let duration = noticeDuration
+        let sleep = sleep
+        callNoticeTask = Task { [weak self] in
+            try? await sleep(duration)
+            guard !Task.isCancelled, let self, callNotice == notice else { return }
+            callNotice = nil
+        }
+    }
+
+    func clearCallNotice() {
+        setCallNotice(nil)
     }
 
     private func expire(_ notice: PresenceNotice) -> Task<Void, Never> {

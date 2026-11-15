@@ -10,7 +10,7 @@
       callOutgoing, callIncoming, callIncomingPill, callConnecting, callActiveVoice, callActiveVoiceMutedSpeaker,
       callActiveVoiceAirPods, callActiveVideo, callVideoOwnCamera, callMicrophoneWaiting, callReconnecting,
       callEnded, callEndedNoAnswer, callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame,
-      callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
+      callBubblePartnerOpenedGame, callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
     ]
 
     // MARK: The call screen
@@ -87,6 +87,18 @@
           $0.isPartnerCameraOn = true
         },
         presentation: .bubble, game: true)
+    }
+
+    static let callBubblePartnerOpenedGame = DeveloperScenario(
+      "call-bubble-partner-opened-game", "Call · Robin opens a game during a video call",
+      "Robin opens Mind Meld while the video bubble is over Us, and the bubble says so with Join", .calls
+    ) { _ in
+      DeveloperCallLocalFlow(
+        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
+          $0.isCameraOn = true
+          $0.isPartnerCameraOn = true
+        },
+        presentation: .bubble, partnerOpensMindMeld: true)
     }
 
     static let callBubbleJustUs = DeveloperScenario(
@@ -255,17 +267,23 @@
 
   /// The real paired app from a local flow, with a call center of its own. `game` opens Four in a
   /// Row on Robin's turn, `coupleCalls` opens "Just us" with its call rows, and `nightPrompt` has
-  /// the night question up.
+  /// the night question up. With `partnerOpensMindMeld`, Robin is in the app and opens Mind Meld a
+  /// moment after the app shows.
   private struct DeveloperCallLocalFlow: View {
     @State private var center: CallCenter
     @State private var starter: CallStarter
+    @State private var presence: PartnerPresenceModel?
     private let game: Bool
     private let coupleCalls: Bool
+    private let partnerOpensMindMeld: Bool
 
     init(
       session: CallSession? = nil, presentation: CallPresentation = .full, game: Bool = false,
-      coupleCalls: Bool = false, nightPrompt: CallStarter.NightPrompt? = nil
+      coupleCalls: Bool = false, nightPrompt: CallStarter.NightPrompt? = nil, partnerOpensMindMeld: Bool = false
     ) {
+      self.partnerOpensMindMeld = partnerOpensMindMeld
+      _presence = State(initialValue: partnerOpensMindMeld
+        ? DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.mindMeld])) : nil)
       let center = CallCenter(engine: DeveloperCallEngine(), session: session)
       center.presentation = presentation
       _center = State(initialValue: center)
@@ -285,11 +303,20 @@
             seed: .paired, gameConversation: .mindMeldWrite, coupleCalls: true, launchLink: "paeonia://chat",
             avatarStories: .noStory)
         } else {
-          DeveloperLocalFlowHost(seed: .paired, avatarStories: .noStory)
+          DeveloperLocalFlowHost(
+            seed: .paired, gameConversation: partnerOpensMindMeld ? .mindMeldWrite : nil, avatarStories: .noStory,
+            presence: presence)
         }
       }
       .environment(center)
       .environment(starter)
+      .task {
+        guard let presence else { return }
+        while !presence.isShown, !Task.isCancelled { try? await Task.sleep(for: .milliseconds(200)) }
+        try? await Task.sleep(for: .seconds(1.5))
+        guard !Task.isCancelled else { return }
+        presence.receive(.openedGame(.mindMeld))
+      }
     }
   }
 #endif
