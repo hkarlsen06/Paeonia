@@ -57,8 +57,8 @@ final class CallEngine {
     let sounds = CallSoundPlayer()
     private(set) lazy var pictureInPicture = CallPictureInPicture(feed: partnerVideo)
     var run: CallRun?
-    /// Calls reported to the system as incoming in this run of the app. The push and the live
-    /// query can both announce one call, and only the first report counts.
+    /// Calls that rang on this phone in this run of the app. The push and the live query can both
+    /// announce one call, and only the first counts.
     var reportedCallIDs: Set<UUID> = []
     /// Calls that ended on this phone, so a late push for one is reported and ended at once.
     var finishedCallIDs: Set<UUID> = []
@@ -68,6 +68,7 @@ final class CallEngine {
     var partnerTimeZoneRefresh: Task<Void, Never>?
     private var pushRegistry: CallPushRegistry?
     private var routeObserver: (any NSObjectProtocol)?
+    private var backgroundObserver: (any NSObjectProtocol)?
     private var clearTask: Task<Void, Never>?
 
     init(system: any CallSystem) {
@@ -93,6 +94,7 @@ final class CallEngine {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.refreshAudioRoute() }
         }
+        backgroundObserver = handRingsToSystemInBackground()
         watchLiveCalls()
     }
 
@@ -104,18 +106,20 @@ final class CallEngine {
     // MARK: Running the state machine
 
     /// Starts a call: the session the screens show, the call's audio category, and its first timers.
+    /// A call opens the full call screen, except a ring inside the app, which starts as the pill.
     @discardableResult
-    func begin(_ run: CallRun, effects: [CallEffect]) -> CallRun {
+    func begin(_ run: CallRun, effects: [CallEffect], ringsInApp: Bool = false) -> CallRun {
         removeRun()
         self.run = run
         PaeoniaAudioSession.setCallActive(true)
         CallAudio.prepareCategory()
-        center?.presentation = .full
+        center?.presentation = ringsInApp ? .bubble : .full
         center?.session = CallSession(
             id: run.callID,
             direction: run.machine.direction,
             phase: run.machine.phase,
-            audioRoute: CallAudio.currentRoute()
+            audioRoute: CallAudio.currentRoute(),
+            ringsInApp: ringsInApp
         )
         for effect in effects {
             perform(effect, for: run)
@@ -139,20 +143,8 @@ final class CallEngine {
     private func publish(_ run: CallRun, previous: CallPhase) {
         guard let center, let current = center.session else { return }
         var session = current
-        if session.id != run.callID {
-            // `start_call` answered the partner's ringing call, so the call took its id.
-            session = CallSession(
-                id: run.callID,
-                direction: current.direction,
-                phase: current.phase,
-                isMuted: current.isMuted,
-                audioRoute: current.audioRoute,
-                isCameraOn: current.isCameraOn,
-                isPartnerCameraOn: current.isPartnerCameraOn,
-                isUsingFrontCamera: current.isUsingFrontCamera,
-                isWaitingForMicrophone: current.isWaitingForMicrophone
-            )
-        }
+        // The id changes when `start_call` answered the partner's ringing call instead.
+        session.id = run.callID
         session.phase = run.machine.phase
         if session != current {
             center.session = session

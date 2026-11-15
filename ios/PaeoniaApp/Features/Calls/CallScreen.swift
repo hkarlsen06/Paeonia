@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The full call screen. The partner's face and name on both partners' petal colors, what the
 /// call is doing, their local time, and the controls. During video the partner's video fills the
-/// screen and your own sits in a corner. A swipe down, or the chevron, shrinks it to the bubble.
+/// screen and your own sits in a corner. A swipe down, or the chevron, shrinks it to the bubble, or
+/// to the ring pill while the partner's call rings inside the app.
 struct CallScreen: View {
     let center: CallCenter
     let session: CallSession
@@ -108,7 +109,7 @@ struct CallScreen: View {
                     Text(verbatim: participants.partnerName)
                         .font(PaeoniaTypography.sectionTitle)
                         .foregroundStyle(.paeoniaTextPrimary)
-                    CallStatusLine(phase: session.phase, font: PaeoniaTypography.caption)
+                    CallStatusLine(phase: session.phase, direction: session.direction, font: PaeoniaTypography.caption)
                 }
                 .accessibilityElement(children: .combine)
                 .transition(.opacity)
@@ -127,7 +128,7 @@ struct CallScreen: View {
                     .font(PaeoniaTypography.collectionHeroTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .multilineTextAlignment(.center)
-                CallStatusLine(phase: session.phase)
+                CallStatusLine(phase: session.phase, direction: session.direction)
                 partnerTime
             }
             .accessibilityElement(children: .combine)
@@ -204,15 +205,11 @@ struct CallScreen: View {
 
     @ViewBuilder
     private var controls: some View {
-        #if targetEnvironment(simulator)
         if session.direction == .incoming, session.phase == .ringing {
             CallAnswerControls(engine: center.engine)
         } else {
             CallControls(session: session, engine: center.engine)
         }
-        #else
-        CallControls(session: session, engine: center.engine)
-        #endif
     }
 
     /// What the person can do about a call that could not go through. Waiting does not help with

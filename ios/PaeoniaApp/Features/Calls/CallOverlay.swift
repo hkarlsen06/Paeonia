@@ -3,9 +3,9 @@ import SwiftUI
 import UIKit
 
 extension View {
-    /// Mounts the call screen and the bubble once for the signed-in app, in a window of their own
-    /// above every screen, sheet and cover, and puts the `CallStarter` for the phone buttons in the
-    /// environment. Does nothing without a `CallCenter` in the environment.
+    /// Mounts the call screen, the bubble and the ring pill once for the signed-in app, in a window
+    /// of their own above every screen, sheet and cover, and puts the `CallStarter` for the phone
+    /// buttons in the environment. Does nothing without a `CallCenter` in the environment.
     func callOverlay(participants: DailyChallengeParticipants) -> some View {
         modifier(CallOverlayMount(participants: participants))
     }
@@ -50,6 +50,8 @@ final class CallOverlayModel {
         case hidden
         case screen
         case bubble
+        /// The partner's call ringing inside the app, as a pill at the top of the screen.
+        case ring
     }
 
     let center: CallCenter
@@ -62,20 +64,21 @@ final class CallOverlayModel {
     var corner = CallBubbleCorner.topTrailing
     /// Where the bubble is in the window, so touches beside it reach the app underneath.
     var bubbleFrame = CGRect.zero
+    /// Where the ring pill is in the window, for the same reason.
+    var ringFrame = CGRect.zero
 
     init(center: CallCenter, participants: DailyChallengeParticipants) {
         self.center = center
         self.participants = participants
     }
 
-    /// An incoming call that still rings shows nothing in the app, because the system shows it.
-    /// The simulator has no system call UI, so there the call screen answers it.
+    /// An incoming call that rings on the system call UI shows nothing in the app. One that rings
+    /// inside the app shows as the ring pill until the person opens the full call screen.
     var layer: Layer {
         guard let session = center.session else { return .hidden }
-        #if !targetEnvironment(simulator)
-        if session.direction == .incoming, session.phase == .ringing { return .hidden }
-        #endif
-        return center.presentation == .full ? .screen : .bubble
+        if session.direction == .incoming, session.phase == .ringing, !session.ringsInApp { return .hidden }
+        guard center.presentation == .bubble else { return .screen }
+        return session.ringsInApp ? .ring : .bubble
     }
 }
 
@@ -103,9 +106,10 @@ private struct CallOverlayHost: ViewModifier {
             .onPreferenceChange(PaeoniaBannerBottomEdgeKey.self) { model.controlsTop = $0 }
             .onPreferenceChange(CallBubbleBottomEdgeKey.self) { model.panelTop = $0 }
             .onChange(of: participants) { _, participants in model.participants = participants }
-            // Starting or answering a call opens the full call screen.
+            // Starting or answering a call opens the full call screen. A ring inside the app starts
+            // as the pill.
             .onChange(of: center.session?.id) { oldID, newID in
-                if let newID, newID != oldID { center.presentation = .full }
+                if let newID, newID != oldID, center.session?.ringsInApp != true { center.presentation = .full }
             }
             .onChange(of: model.layer, initial: true) { _, layer in window.show(layer) }
             .onAppear {
@@ -122,7 +126,7 @@ private struct CallOverlayHost: ViewModifier {
     }
 }
 
-/// The call screen or the bubble, in the overlay window.
+/// The call screen, the bubble or the ring pill, in the overlay window.
 private struct CallOverlayRoot: View {
     let model: CallOverlayModel
 
@@ -138,6 +142,9 @@ private struct CallOverlayRoot: View {
                 case .bubble:
                     CallBubbleLayer(model: model, session: session)
                         .transition(.opacity.combined(with: .scale(scale: 0.6)))
+                case .ring:
+                    CallRingLayer(model: model, session: session)
+                        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
                 case .hidden:
                     EmptyView()
                 }
@@ -150,7 +157,8 @@ private struct CallOverlayRoot: View {
 }
 
 /// Puts the overlay in a window of its own above the app's, below the app lock's cover. The
-/// window takes touches only on the bubble while the call is small, so the app under it works.
+/// window takes touches only on the bubble or the ring pill while the call is small, so the app
+/// under it works.
 @MainActor
 final class CallOverlayWindowController {
     private var window: CallOverlayWindow?
@@ -189,7 +197,7 @@ final class CallOverlayWindowController {
             PaeoniaKeyboard.dismiss()
             window.isHidden = false
             UIAccessibility.post(notification: .screenChanged, argument: window.rootViewController?.view)
-        case .bubble:
+        case .bubble, .ring:
             window.isHidden = false
             UIAccessibility.post(notification: .layoutChanged, argument: nil)
         }
@@ -209,6 +217,7 @@ private final class CallOverlayWindow: UIWindow {
         switch model?.layer {
         case .screen: true
         case .bubble: model?.bubbleFrame.contains(point) == true
+        case .ring: model?.ringFrame.contains(point) == true
         case .hidden, nil: false
         }
     }

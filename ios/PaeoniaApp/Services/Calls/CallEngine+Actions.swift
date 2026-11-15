@@ -7,15 +7,30 @@ extension CallEngine: CallEngineActions {
         Task { await startOutgoing(requestedHandle: nil) }
     }
 
+    /// Opens the full call screen and joins the call through the system, which first hears of a
+    /// call that rang only inside the app.
     func answer() {
         guard let run, !run.isFinished else { return }
-        requestSystem { try await $0.requestJoin(run.conversationID) } ifRefused: { [weak self] in
+        center?.presentation = .full
+        let unreportedHandle = run.takeUnreportedRing()
+        requestSystem { system in
+            if let unreportedHandle {
+                try await system.reportIncoming(run.conversationID, from: unreportedHandle)
+            }
+            try await system.requestJoin(run.conversationID)
+        } ifRefused: { [weak self] in
             self?.send(.failed(.other), to: run)
         }
     }
 
+    /// A call that rang only inside the app ends here, because the system has nothing to end.
     func decline() {
-        end()
+        guard let run, !run.isFinished else { return }
+        if run.takeUnreportedRing() != nil {
+            send(.hangUp, to: run)
+        } else {
+            end()
+        }
     }
 
     func end() {

@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// What the call is doing, in a few words: "Calling…", the running call time, or why it ended.
+/// What the call is doing, in a few words: "Calling…", "Calling you", the running call time, or
+/// why it ended.
 struct CallStatusLine: View {
     let phase: CallPhase
+    let direction: CallDirection
     var font: Font = PaeoniaTypography.body
 
     var body: some View {
@@ -15,7 +17,7 @@ struct CallStatusLine: View {
                         .monospacedDigit()
                 }
             default:
-                if let text = Self.text(for: phase) { Text(text) }
+                if let text = Self.text(for: phase, direction: direction) { Text(text) }
             }
         }
         .font(font)
@@ -26,9 +28,9 @@ struct CallStatusLine: View {
     }
 
     /// The line for every phase but a running call, which shows its time instead.
-    static func text(for phase: CallPhase) -> LocalizedStringResource? {
+    static func text(for phase: CallPhase, direction: CallDirection) -> LocalizedStringResource? {
         switch phase {
-        case .ringing: .callsStatusCalling
+        case .ringing: direction == .incoming ? .callsStatusCallingYou : .callsStatusCalling
         case .connecting: .callsStatusConnecting
         case .active: nil
         case .reconnecting: .callsStatusReconnecting

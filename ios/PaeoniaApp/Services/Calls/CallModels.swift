@@ -4,7 +4,8 @@ import Foundation
 /// `docs/calling-plan.md` has the rules.
 nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     /// The conversation UUID. The same id names the call in Convex, LiveCommunicationKit and the relay.
-    let id: UUID
+    /// It changes once, when `start_call` answers the partner's ringing call instead.
+    var id: UUID
     let direction: CallDirection
     var phase: CallPhase
     var isMuted = false
@@ -15,9 +16,13 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     /// The call was answered before the person said whether Paeonia may use the microphone, so
     /// the partner cannot hear them until they open the app and allow it.
     var isWaitingForMicrophone = false
+    /// The partner's call rings inside the app, as the ring pill or the full call screen, because
+    /// Paeonia was open on screen when it came in. It stays set when that ring ends unanswered, so
+    /// the ring says why where it rang. Answering it, or handing it to the system, clears it.
+    var ringsInApp = false
 
     /// A voice call on the earpiece, which the person holds to their ear, so the screen turns off
-    /// and their cheek cannot press anything. An incoming ring is the system's to show.
+    /// and their cheek cannot press anything. An incoming ring is not held to the ear.
     var usesProximitySensor: Bool {
         guard audioRoute == .receiver, !isCameraOn, !isPartnerCameraOn else { return false }
         return switch phase {
@@ -34,7 +39,8 @@ nonisolated enum CallDirection: Equatable, Sendable {
 }
 
 nonisolated enum CallPhase: Equatable, Sendable {
-    /// An outgoing call waits for the partner. An incoming one rings on the system call UI, and the app shows nothing.
+    /// An outgoing call waits for the partner. An incoming one rings on the system call UI, or
+    /// inside the app while it is open (`CallSession.ringsInApp`).
     case ringing
     /// Answered, and the phones are connecting.
     case connecting
@@ -86,7 +92,8 @@ nonisolated enum CallVideoSource: Equatable, Sendable {
     case partner
 }
 
-/// How the call shows inside the app: the full call screen, or the floating bubble over the other screens.
+/// How the call shows inside the app: the full call screen, or small over the other screens, as the
+/// floating bubble or, while the partner's call rings in the app, the ring pill.
 nonisolated enum CallPresentation: Equatable, Sendable {
     case full
     case bubble

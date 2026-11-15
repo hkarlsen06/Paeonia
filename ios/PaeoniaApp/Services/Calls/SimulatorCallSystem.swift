@@ -6,7 +6,7 @@ import Foundation
 /// Stands in for the system call service on the simulator, where the system ends every call at
 /// once because it has no call UI to show. It hands each request straight back to the engine and
 /// runs the call's audio session itself. Nothing shows outside the app, so an incoming call rings
-/// only on the in-app call screen.
+/// only inside the app, and only while it is open.
 final class SimulatorCallSystem: CallSystem {
     private weak var delegate: (any CallSystemDelegate)?
     private var conversations: Set<UUID> = []

@@ -2,20 +2,24 @@
   import SwiftUI
   import UIKit
 
-  /// Every state of the call screen, the bubble, the call buttons and the call rows, for
-  /// screenshots. Each scenario brings its own `CallCenter` with a fixed session and an engine
-  /// that does nothing, so nothing rings and no microphone or camera turns on.
+  /// Every state of the call screen, the bubble, the ring pill, the call buttons and the call rows,
+  /// for screenshots. Each scenario brings its own `CallCenter` with a fixed session and an engine
+  /// that does nothing, so no call rings and no microphone or camera turns on.
   nonisolated extension DeveloperScenario {
     static let calls: [DeveloperScenario] = [
-      callOutgoing, callConnecting, callActiveVoice, callActiveVoiceMutedSpeaker, callActiveVoiceAirPods,
-      callActiveVideo, callVideoOwnCamera, callMicrophoneWaiting, callReconnecting, callEnded, callEndedNoAnswer,
-      callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame, callBubbleJustUs, callNightCheck,
-      callGameToolbar, callUsTab, callJustUsRows,
+      callOutgoing, callIncoming, callIncomingPill, callConnecting, callActiveVoice, callActiveVoiceMutedSpeaker,
+      callActiveVoiceAirPods, callActiveVideo, callVideoOwnCamera, callMicrophoneWaiting, callReconnecting,
+      callEnded, callEndedNoAnswer, callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame,
+      callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
     ]
 
     // MARK: The call screen
 
     static let callOutgoing = screen("call-outgoing", "Call · calling", "Robin's phone rings", phase: .ringing)
+    static let callIncoming = screen(
+      "call-incoming", "Call · incoming", "Robin calls while the app is open, with Answer and Decline",
+      phase: .ringing, direction: .incoming
+    ) { $0.ringsInApp = true }
     static let callConnecting = screen(
       "call-connecting", "Call · connecting", "Robin answered and the phones connect", phase: .connecting)
     static let callActiveVoice = screen(
@@ -56,6 +60,14 @@
     static let callBusy = screen("call-busy", "Call · busy", "The couple already has a call", phase: .ended(.busy))
 
     // MARK: Over the app
+
+    static let callIncomingPill = DeveloperScenario(
+      "call-incoming-pill", "Call · incoming pill", "Robin's call ringing in its pill at the top of Us", .calls
+    ) { _ in
+      DeveloperCallLocalFlow(
+        session: DeveloperCallFixture.session(phase: .ringing, direction: .incoming) { $0.ringsInApp = true },
+        presentation: .bubble)
+    }
 
     static let callBubbleVoiceGame = DeveloperScenario(
       "call-bubble-voice-game", "Call · voice bubble over a game", "Four in a Row with the call shrunk to its bubble",
@@ -106,11 +118,12 @@
     ) { _ in DeveloperCallLocalFlow(coupleCalls: true) }
 
     private static func screen(
-      _ id: String, _ title: String, _ detail: String, phase: CallPhase,
+      _ id: String, _ title: String, _ detail: String, phase: CallPhase, direction: CallDirection = .outgoing,
       configure: @escaping @Sendable (inout CallSession) -> Void = { _ in }
     ) -> DeveloperScenario {
       DeveloperScenario(id, title, detail, .calls) { _ in
-        DeveloperCallScreenHost(session: DeveloperCallFixture.session(phase: phase, configure: configure))
+        DeveloperCallScreenHost(
+          session: DeveloperCallFixture.session(phase: phase, direction: direction, configure: configure))
       }
     }
   }
@@ -140,9 +153,9 @@
     }
 
     static func session(
-      phase: CallPhase, configure: (inout CallSession) -> Void = { _ in }
+      phase: CallPhase, direction: CallDirection = .outgoing, configure: (inout CallSession) -> Void = { _ in }
     ) -> CallSession {
-      var session = CallSession(id: callID, direction: .outgoing, phase: phase)
+      var session = CallSession(id: callID, direction: direction, phase: phase)
       configure(&session)
       return session
     }
@@ -207,11 +220,12 @@
     }
   }
 
-  /// The full call screen over a plain background. A ringing call plays the ringback, so it can be
-  /// heard on the simulator.
+  /// The full call screen over a plain background. A ringing call plays the ringback, or the ring
+  /// for Robin's call, so it can be heard on the simulator.
   private struct DeveloperCallScreenHost: View {
     @State private var center: CallCenter
     @State private var sounds = CallSoundPlayer()
+    @State private var ring: Task<Void, Never>?
 
     init(session: CallSession) {
       _center = State(initialValue: CallCenter(engine: DeveloperCallEngine(), session: session))
@@ -224,11 +238,17 @@
         .environment(center)
         .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
         .onAppear {
-          if center.session?.phase == .ringing {
+          guard let session = center.session, session.phase == .ringing else { return }
+          if session.direction == .incoming {
+            ring = CallRinger.ring()
+          } else {
             sounds.setRingback(true)
           }
         }
-        .onDisappear { sounds.stopAll() }
+        .onDisappear {
+          sounds.stopAll()
+          ring?.cancel()
+        }
     }
   }
 

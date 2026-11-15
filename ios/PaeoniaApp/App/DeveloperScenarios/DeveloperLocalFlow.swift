@@ -12,12 +12,12 @@
 
     /// `gameConversation` is a game scenario. The Games tab then shows its state, and game
     /// chats work. `coupleCalls` puts a finished, a missed and an unanswered call in "Just us".
-    /// `answersCalls` makes the phone buttons call a partner who answers, and the finished call
-    /// lands in "Just us" (`DeveloperAnsweringCallEngine`).
+    /// `callPartner` makes the phone buttons call a partner who answers, and the finished call
+    /// lands in "Just us" (`DeveloperAnsweringCallEngine`). With `.callsIn` the partner also calls.
     /// `launchLink` opens when the flow starts, unless the app was launched with one.
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil,
          gameConversation: DeveloperScenario? = nil, finishedGameRuns: Bool = false, coupleCalls: Bool = false,
-         answersCalls: Bool = false, launchLink: String? = nil,
+         callPartner: DeveloperCallPartner? = nil, launchLink: String? = nil,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
          mail: DeveloperMailSeed = .none) {
       // A link the app was launched with, such as a push tapped while the app was not running.
@@ -28,7 +28,7 @@
       _environment = State(
         initialValue: DeveloperLocalFlowEnvironment(
           seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation,
-          finishedGameRuns: finishedGameRuns, coupleCalls: coupleCalls, answersCalls: answersCalls,
+          finishedGameRuns: finishedGameRuns, coupleCalls: coupleCalls, callPartner: callPartner,
           avatarStories: avatarStories, mapTiles: mapTiles, mail: mail))
     }
 
@@ -118,7 +118,8 @@
     // This is the single Debug composition boundary for the full local app graph.
     // swiftlint:disable:next function_body_length
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: DeveloperScenario?,
-         finishedGameRuns: Bool, coupleCalls: Bool, answersCalls: Bool, avatarStories: StoryRingState?,
+         finishedGameRuns: Bool, coupleCalls: Bool, callPartner: DeveloperCallPartner?,
+         avatarStories: StoryRingState?,
          mapTiles: DeveloperHomeMapTiles, mail: DeveloperMailSeed) {
       self.homeLaunch = homeLaunch
       let store = DeveloperLocalFlowStore(seed: seed, avatarScenario: avatarStories != nil)
@@ -141,7 +142,9 @@
           pending: pendingOperationStore, games: $0, finishedGameRuns: finishedGameRuns, coupleCalls: coupleCalls)
       }
       gameConversationFlow = gameFlow
-      callCenter = answersCalls ? DeveloperAnsweringCallEngine.center { await gameFlow?.recordCall($0) } : nil
+      callCenter = callPartner.map { partner in
+        DeveloperAnsweringCallEngine.center(partner: partner) { await gameFlow?.recordCall($0) }
+      }
       let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
       let storeKitService = DeveloperScenarioStoreKitService()
       let widgetCanvasService = DeveloperWidgetCanvasService()

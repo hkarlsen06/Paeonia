@@ -2,6 +2,7 @@ import AVFAudio
 import Foundation
 import Intents
 @preconcurrency import LiveCommunicationKit
+import UIKit
 
 /// Starting a call, and ringing for the partner's call from a VoIP push or the live query.
 extension CallEngine {
@@ -150,11 +151,18 @@ extension CallEngine {
         await reportIncoming(ring, mustReport: false)
     }
 
-    /// Rings for the partner's call, reported to the system before anything slow runs. A call the
-    /// system already shows is dropped. A call that already ended, or that arrives during another
-    /// call, is reported and ended at once when iOS requires a report.
+    /// Rings for the partner's call. While Paeonia is open on screen and iOS does not require a
+    /// report, it rings inside the app and the system hears of the call only when the person
+    /// answers or leaves the app. Otherwise the call is reported to the system before anything
+    /// slow runs. A call that already rings is dropped, unless iOS requires a report for it. A call
+    /// that already ended, or that arrives during another call, is reported and ended at once when
+    /// iOS requires a report.
     func reportIncoming(_ ring: IncomingRing, mustReport: Bool) async {
         if let run, !run.isFinished, run.callID == ring.callID || run.conversationID == ring.callID {
+            if mustReport {
+                // iOS ends an app that does not report such a push.
+                await handRingToSystem(run)
+            }
             return
         }
         guard isIdle, !reportedCallIDs.contains(ring.callID), !finishedCallIDs.contains(ring.callID),
@@ -172,9 +180,47 @@ extension CallEngine {
             deviceID: deviceID,
             ringDeadline: ring.ringExpiresAt + Self.ringGrace
         )
-        let run = begin(CallRun(machine: machine, conversationID: ring.callID, role: .answerer), effects: effects)
+        let ringsInApp = !mustReport && UIApplication.shared.applicationState == .active
+        let run = begin(
+            CallRun(machine: machine, conversationID: ring.callID, role: .answerer),
+            effects: effects,
+            ringsInApp: ringsInApp
+        )
+        if ringsInApp {
+            run.ringInApp(from: handle)
+        } else {
+            await reportToSystem(run, from: handle)
+        }
+    }
+
+    /// Hands a ring inside the app to the system once the app is in the background. Not when the
+    /// app only stops being active, as under Control Center, where the ring in the app still shows.
+    func handRingsToSystemInBackground() -> any NSObjectProtocol {
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let run = self.run, !run.isFinished else { return }
+                Task { await self.handRingToSystem(run) }
+            }
+        }
+    }
+
+    /// Hands a ring that shows only inside the app to the system, which rings from now on. Does
+    /// nothing once the system knows the call.
+    func handRingToSystem(_ run: CallRun) async {
+        guard run === self.run, let handle = run.takeUnreportedRing() else { return }
+        center?.session?.ringsInApp = false
+        // An answer on the system call UI then opens the full call screen, as for any system ring.
+        center?.presentation = .full
+        await reportToSystem(run, from: handle)
+    }
+
+    private func reportToSystem(_ run: CallRun, from handle: Handle) async {
         do {
-            try await system.reportIncoming(ring.callID, from: handle)
+            try await system.reportIncoming(run.conversationID, from: handle)
         } catch {
             // The system did not ring, such as under a Focus that silences calls.
             send(.ended(.missed), to: run)
@@ -220,6 +266,8 @@ extension CallEngine {
                     return
                 }
                 request.fulfill()
+                // The ring is over. A ring that showed inside the app goes on as any other call.
+                center?.session?.ringsInApp = false
                 send(.answered, to: run)
                 if microphone != .granted {
                     askForMicrophone(during: run)

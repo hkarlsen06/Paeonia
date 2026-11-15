@@ -61,9 +61,7 @@ struct CallControls: View {
     }
 }
 
-#if targetEnvironment(simulator)
-/// Answer and decline for an incoming call. Only the simulator shows them, because on a phone the
-/// system's call screen rings.
+/// Answer and decline on the call screen, for the partner's call while it rings inside the app.
 struct CallAnswerControls: View {
     let engine: any CallEngineActions
 
@@ -81,7 +79,33 @@ struct CallAnswerControls: View {
         }
     }
 }
-#endif
+
+/// A small round call button with only its symbol, for the bubble and the ring pill.
+struct CallRoundButton: View {
+    let systemImage: String
+    let label: LocalizedStringResource
+    var size: CGFloat = PaeoniaSpacing.compactButtonHeight
+    var symbolSize: CGFloat = 17
+    var isOn = false
+    var fill: Color?
+    let identifier: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: symbolSize, weight: .semibold))
+                .foregroundStyle(isOn ? Color.paeoniaTextInverse : Color.paeoniaTextPrimary)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: size, height: size)
+                .background(fill ?? (isOn ? Color.paeoniaTextPrimary : Color.white.opacity(0.12)), in: Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(label))
+        .accessibilityIdentifier(identifier)
+    }
+}
 
 /// A round call button with its name under it. A switch that is on turns white.
 struct CallControlButton: View {

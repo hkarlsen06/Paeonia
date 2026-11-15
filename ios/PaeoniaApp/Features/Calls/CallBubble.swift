@@ -40,7 +40,7 @@ struct CallBubble: View {
                     size: Self.avatarSize
                 )
                 .accessibilityHidden(true)
-                CallStatusLine(phase: session.phase, font: PaeoniaTypography.bodyEmphasis)
+                CallStatusLine(phase: session.phase, direction: session.direction, font: PaeoniaTypography.bodyEmphasis)
                     .lineLimit(2)
                     .frame(maxWidth: 132, alignment: .leading)
             }
@@ -51,12 +51,12 @@ struct CallBubble: View {
             .accessibilityIdentifier("calls.bubble")
 
             if !isEnded {
-                bubbleButton(
+                CallRoundButton(
                     systemImage: session.isMuted ? "mic.slash.fill" : "mic.fill",
                     label: session.isMuted ? .callsUnmute : .callsControlMute,
                     isOn: session.isMuted, identifier: "calls.bubble.mute"
                 ) { center.engine.setMuted(!session.isMuted) }
-                bubbleButton(
+                CallRoundButton(
                     systemImage: "phone.down.fill", label: .callsControlEnd, fill: .paeoniaError,
                     identifier: "calls.bubble.end"
                 ) { center.engine.end() }
@@ -79,24 +79,6 @@ struct CallBubble: View {
             .accessibilityLabel(Text(.callsBubbleAccessibilityLabel(participants.partnerName)))
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier("calls.bubble")
-    }
-
-    private func bubbleButton(
-        systemImage: String, label: LocalizedStringResource, isOn: Bool = false, fill: Color? = nil,
-        identifier: String, action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(isOn ? Color.paeoniaTextInverse : Color.paeoniaTextPrimary)
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: PaeoniaSpacing.compactButtonHeight, height: PaeoniaSpacing.compactButtonHeight)
-                .background(fill ?? (isOn ? Color.paeoniaTextPrimary : Color.white.opacity(0.12)), in: Circle())
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(label))
-        .accessibilityIdentifier(identifier)
     }
 
     private func open() {

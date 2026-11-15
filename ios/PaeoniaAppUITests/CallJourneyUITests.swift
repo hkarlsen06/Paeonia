@@ -1,8 +1,9 @@
 import XCTest
 
-/// A call through the real root, with a partner who answers in place of the call service: it
-/// starts from a game's toolbar, shrinks to the bubble, follows the person into "Just us", and
-/// ends from the bubble with its row in the chat.
+/// Calls through the real root, with a partner in place of the call service. One starts from a
+/// game's toolbar, shrinks to the bubble, follows the person into "Just us", and ends from the
+/// bubble with its row in the chat. In the other the partner calls while the app is open, and the
+/// call rings in its pill, opens to the call screen and connects when the person answers.
 final class CallJourneyUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -10,12 +11,7 @@ final class CallJourneyUITests: XCTestCase {
 
     @MainActor
     func testCallFromGameShrinksToBubbleAndEndsInJustUs() throws {
-        let app = XCUIApplication()
-        app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-call"
-        app.launchArguments += [
-            "-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-paeonia-scenario-hide-controls", "YES",
-        ]
-        app.launch()
+        let app = launch(scenario: "local-flow-call")
 
         let minimize = startCallFromGame(in: app)
         minimize.tap()
@@ -47,6 +43,43 @@ final class CallJourneyUITests: XCTestCase {
         attach(app, named: "Just us with the finished call's row")
     }
 
+    @MainActor
+    func testPartnersCallRingsInItsPillAndConnectsFromTheCallScreen() throws {
+        let app = launch(scenario: "local-flow-incoming-call")
+
+        let ring = app.descendants(matching: .any)["calls.ring"].firstMatch
+        XCTAssertTrue(ring.waitForExistence(timeout: 15), app.debugDescription)
+        XCTAssertTrue(app.buttons["calls.ring.answer"].exists, app.debugDescription)
+        XCTAssertTrue(app.buttons["calls.ring.decline"].exists, app.debugDescription)
+        attach(app, named: "The partner's call ringing in its pill over Us")
+
+        ring.tap()
+        let answer = app.buttons["calls.answer"]
+        XCTAssertTrue(answer.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(ring.waitForNonExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(app.buttons["calls.decline"].exists, app.debugDescription)
+        attach(app, named: "Call screen while the partner's call rings")
+
+        answer.tap()
+        waitForCallTime(in: app)
+        XCTAssertFalse(answer.exists, app.debugDescription)
+        app.buttons["calls.end"].tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["calls.status"].firstMatch.waitForNonExistence(timeout: 10),
+            app.debugDescription)
+    }
+
+    @MainActor
+    private func launch(scenario: String) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["PAEONIA_SCENARIO"] = scenario
+        app.launchArguments += [
+            "-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-paeonia-scenario-hide-controls", "YES",
+        ]
+        app.launch()
+        return app
+    }
+
     /// Calls from the game's toolbar and waits on the call screen until the call time runs.
     /// Returns the call screen's minimize button.
     @MainActor
@@ -59,14 +92,20 @@ final class CallJourneyUITests: XCTestCase {
 
         let minimize = app.buttons["calls.minimize"]
         XCTAssertTrue(minimize.waitForExistence(timeout: 5), app.debugDescription)
+        waitForCallTime(in: app)
+        return minimize
+    }
+
+    /// Waits on the call screen until the call time, such as "0:01", shows, once the partner has
+    /// answered and the phones connected.
+    @MainActor
+    private func waitForCallTime(in app: XCUIApplication) {
         let status = app.descendants(matching: .any)["calls.status"].firstMatch
         XCTAssertTrue(status.waitForExistence(timeout: 5), app.debugDescription)
-        // The call time, such as "0:01", shows once the partner has answered and the phones connected.
         let timer = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "label MATCHES %@", ".*\\b[0-9]+:[0-9]{2}\\b.*"), object: status)
         XCTAssertEqual(XCTWaiter.wait(for: [timer], timeout: 10), .completed, status.debugDescription)
         attach(app, named: "Call screen with the call running")
-        return minimize
     }
 
     @MainActor

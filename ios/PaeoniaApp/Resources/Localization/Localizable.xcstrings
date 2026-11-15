@@ -5095,6 +5095,24 @@
         }
       }
     },
+    "calls.ring.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the pill at the top of the screen while the partner's call rings in the app. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is calling"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ringer"
+          }
+        }
+      }
+    },
     "calls.row.call" : {
       "comment" : "Row in the couple chat, and its preview, for a call that was answered.",
       "extractionState" : "manual",
@@ -5181,6 +5199,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ringer…"
+          }
+        }
+      }
+    },
+    "calls.status.callingYou" : {
+      "comment" : "Call screen and ring pill line while the partner's call rings on this phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calling you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ringer deg"
           }
         }
       }
