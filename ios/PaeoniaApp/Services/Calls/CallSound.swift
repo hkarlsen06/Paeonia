@@ -12,6 +12,13 @@ nonisolated enum CallSound: String, CaseIterable, Sendable {
     /// Plays once on both phones when a call they talked on ends. The engine has stopped by then,
     /// so it plays outside it, and the system ends the call once it has played.
     case ended = "Ended"
+    /// Loops on the partner's phone while the call rings inside the open app. `CallRinger` plays
+    /// it with System Sound Services, outside the call's audio, so `CallSoundPlayer` leaves it out.
+    case ring = "Ring"
+
+    var url: URL? {
+        Bundle.main.url(forResource: "CallSound\(rawValue)", withExtension: "caf")
+    }
 }
 
 /// Plays the call's sounds. Once WebRTC's audio engine runs, they play inside it: the player is
@@ -33,10 +40,8 @@ nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegat
     override init() {
         var buffers: [CallSound: AVAudioPCMBuffer] = [:]
         var players: [CallSound: AVAudioPlayer] = [:]
-        for sound in CallSound.allCases {
-            guard let url = Bundle.main.url(forResource: "CallSound\(sound.rawValue)", withExtension: "caf") else {
-                continue
-            }
+        for sound in CallSound.allCases where sound != .ring {
+            guard let url = sound.url else { continue }
             buffers[sound] = Self.buffer(from: url)
             if let player = try? AVAudioPlayer(contentsOf: url) {
                 player.numberOfLoops = sound == .ringback ? -1 : 0

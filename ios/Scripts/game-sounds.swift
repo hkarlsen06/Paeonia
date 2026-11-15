@@ -457,11 +457,11 @@ let recipes: [Recipe] = [
         return Biquad.lowpass(2_500).run(mix.samples)
     },
 
-    // Calls. Both are in A, so the answer resolves the ring. They sit an octave above the
+    // Calls. All are in A, so the connected chime resolves the rings. They sit an octave above the
     // game sounds, between 0.9 and 5 kHz, where a phone's speaker is loud. Below about 600 Hz
     // it plays little, and an earlier ringback on A4 was barely audible on a phone.
 
-    // Plays on loop while the partner's phone rings: a soft falling fourth, E6 to A5, on a
+    // Plays on loop while the partner's phone rings: a soft falling fifth, E6 to A5, on a
     // mallet bar with a kalimba tine over it, once every 3 seconds.
     Recipe(library: .call, name: "Ringback", peak: 0.4, period: 3) {
         var mix = Mix()
@@ -472,6 +472,20 @@ let recipes: [Recipe] = [
         mix.add(tine(a5, decay: 0.55), at: 0.3, gain: 0.95)
         // Cut where the ring is low, so `finish` fades it out well before the next one.
         return Array(Biquad.lowpass(5_000).run(mix.samples).prefix(count(2.4)))
+    },
+    // Rings on this phone while the partner's call rings inside the open app: two quick rising
+    // pairs, A5 to E6. It rises where the ringback falls, so the two are easy to tell apart.
+    // System Sound Services plays it once every `CallRinger.period`.
+    Recipe(library: .call, name: "Ring", peak: 0.42) {
+        var mix = Mix()
+        for start in [0.0, 0.42] {
+            mix.add(bar(a4, decay: 0.3), at: start, gain: 0.15)
+            mix.add(bar(a5, decay: 0.2), at: start, gain: 0.4)
+            mix.add(tine(a5, decay: 0.22), at: start, gain: 0.9)
+            mix.add(bar(e6, decay: 0.22), at: start + 0.14, gain: 0.45)
+            mix.add(tine(e6, decay: 0.3), at: start + 0.14)
+        }
+        return Array(Biquad.lowpass(5_000).run(mix.samples).prefix(count(1.6)))
     },
     // The partner answered: A5, C#6, E6 and A6 rising quickly, and a low A under them.
     Recipe(library: .call, name: "Connected", peak: 0.42) {
