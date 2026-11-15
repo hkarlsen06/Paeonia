@@ -71,9 +71,16 @@ extension PairedHomeView {
         }
     }
 
+    /// The two places are in different stacks, so without the shared geometry a card that
+    /// takes the lead when the one above it goes would fade in there instead of moving up.
+    private func popUpCard(_ card: HomePopUpCard) -> some View {
+        popUpContent(card)
+            .matchedGeometryEffect(id: card, in: popUpSlots)
+    }
+
     @ViewBuilder
     // swiftlint:disable:next cyclomatic_complexity
-    func popUpCard(_ card: HomePopUpCard) -> some View {
+    private func popUpContent(_ card: HomePopUpCard) -> some View {
         switch card {
         case .accessNotice: accessNoticeCard
         case .streakSave: streakSaveCard
