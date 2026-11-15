@@ -1353,6 +1353,8 @@ export default defineSchema({
     shares_usage: v.optional(v.boolean()),
     shares_usage_decided_at: optTs,
     shares_usage_notice: optString,
+    // False while the person hides when they are in the app (`appPresence.ts`). Missing means shown.
+    shows_presence: v.optional(v.boolean()),
   })
     .index("by_user_id", ["user_id"])
     .index("by_moderation_report_id", ["moderation_report_id"])

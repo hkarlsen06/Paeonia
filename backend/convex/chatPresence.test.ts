@@ -110,7 +110,7 @@ describe("typing", () => {
     const t = newTest();
     const couple = await createCouple(t);
     const questionId = await answeredQuestion(t, couple);
-    const room = chatTypingRoom(couple.coupleId, questionId);
+    const room = chatTypingRoom(couple.coupleId, { kind: "daily_question", daily_question_id: questionId });
     const typists = () => t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: room }));
     await couple.first.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true });
     await couple.second.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true });
@@ -121,7 +121,7 @@ describe("typing", () => {
     expect((await failure(couple.second.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true }))).code).toBe("42501");
 
     // Account deletion also clears whatever a user still has, in any room.
-    const leftover = chatTypingRoom(newUuid(), newUuid());
+    const leftover = chatTypingRoom(newUuid(), { kind: "memory", memory_id: newUuid() });
     await t.run((ctx) => ctx.runMutation(components.presence.public.heartbeat, { roomId: leftover, userId: couple.first.userId, sessionId: "s" }));
     await t.run((ctx) => removePresenceRooms(ctx, [couple.first.userId], ""));
     expect(await t.run((ctx) => ctx.runQuery(components.presence.public.listUser, { userId: couple.first.userId }))).toEqual([]);
@@ -189,7 +189,7 @@ describe("open chat", () => {
     expect((await couple.second.as.query(api.chatPresence.get_chat_presence, args)).partner_in_chat).toBe(false);
 
     await couple.first.as.mutation(api.chatPresence.set_chat_open, { ...args, p_is_open: true });
-    const room = chatOpenRoom(couple.coupleId, args.p_subject_id);
+    const room = chatOpenRoom(couple.coupleId, { kind: "game", game_kind: "ludo" });
     const open = () => t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: room }));
     expect(await open()).toHaveLength(1);
     await t.run((ctx) => endRelationshipForPair(ctx, couple.pairId, couple.first.userId, "user_left"));

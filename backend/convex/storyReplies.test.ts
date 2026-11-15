@@ -216,7 +216,7 @@ describe("chat presence by subject", () => {
       p_message_id: first.message_id,
     });
     expect((await presence(couple.second, couple.coupleId, "story", storyId)).partner_last_read_message_id).toBe(first.message_id);
-    expect(await t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: chatTypingRoom(couple.coupleId, storyId) }))).toHaveLength(1);
+    expect(await t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: chatTypingRoom(couple.coupleId, { kind: "story", story_id: storyId }) }))).toHaveLength(1);
   });
 
   test("a memory's comments have their own room, and a stranger or a missing subject is refused", async () => {

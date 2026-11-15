@@ -9,7 +9,8 @@ import { uuidArg } from "./ids";
 import { queueThreadMediaAssetsIfOrphaned } from "./mediaOrphans";
 import { deleteReactionsOfThread } from "./reactions";
 import { nowIso } from "./time";
-import { gameKind, threadKind } from "./validators";
+import type { GameKind } from "./games";
+import { GAME_KINDS, threadKind } from "./validators";
 
 // A chat thread is about a question, memory, story or game kind, or about nothing in particular
 // (the couple chat). The kind is the thread's `conversation_threads.kind`. Each kind but the
@@ -23,6 +24,17 @@ export type ThreadSubjectKind = Infer<typeof threadKind>;
 
 export type ThreadSubject = { kind: "couple" } | { kind: Exclude<ThreadSubjectKind, "couple">; id: string };
 
+/**
+ * A chat named the way a thread row names its subject (`threads:get_conversation_threads`), so the
+ * app reads both alike. A game chat is named by its game, and the couple chat by its kind alone.
+ */
+export type ChatPlace =
+  | { kind: "couple" }
+  | { kind: "game"; game_kind: GameKind }
+  | { kind: "daily_question"; daily_question_id: string }
+  | { kind: "memory"; memory_id: string }
+  | { kind: "story"; story_id: string };
+
 /** The arguments of a function that names a chat by its subject. The couple chat sends no id. */
 export const threadSubjectArgs = { p_subject_kind: threadKind, p_subject_id: v.optional(v.union(v.null(), v.string())) };
 
@@ -30,11 +42,6 @@ export function threadSubjectOf(args: { p_subject_kind: ThreadSubjectKind; p_sub
   if (args.p_subject_kind === "couple") return { kind: "couple" };
   if (args.p_subject_id == null) return fail("22023", "chat subject id is required");
   return { kind: args.p_subject_kind, id: uuidArg(args.p_subject_id) };
-}
-
-/** The key of a chat's typing room within its couple (`chatTypingRoom`). */
-export function subjectRoomKey(subject: ThreadSubject): string {
-  return subject.kind === "couple" ? "couple" : subject.id;
 }
 
 /** The couple's own chat, or null before anyone has written in it. */
@@ -134,15 +141,8 @@ export async function isChatSubjectAvailable(
   switch (subject.kind) {
     case "couple":
       return true;
-    case "game": {
-      const link = await ctx.db.query("game_threads").withIndex("by_subject_id", q => q.eq("subject_id", subject.id)).unique();
-      if (link) return link.couple_id === coupleId;
-      // Opening a game chat does not create its thread. Its canonical room can already show typing.
-      for (const kind of gameKind.members) {
-        if (await gameChatSubjectId(coupleId, kind.value) === subject.id) return true;
-      }
-      return false;
-    }
+    case "game":
+      return (await gameOfChatSubject(ctx, coupleId, subject.id)) !== null;
     case "daily_question":
       return (await getByUuid(ctx, "questions", subject.id)) !== null;
     case "memory": {
@@ -158,6 +158,35 @@ export async function isChatSubjectAvailable(
       const story = await getByUuid(ctx, "stories", subject.id);
       return story !== null && story.couple_id === coupleId && story.deleted_at === undefined;
     }
+  }
+}
+
+/** The game whose chat in this couple has this subject id, or null when the id names no game chat of the couple. */
+async function gameOfChatSubject(ctx: ReaderCtx, coupleId: string, subjectId: string): Promise<GameKind | null> {
+  const link = await ctx.db.query("game_threads").withIndex("by_subject_id", q => q.eq("subject_id", subjectId)).unique();
+  if (link) return link.couple_id === coupleId ? link.game_kind : null;
+  // Opening a game chat does not create its thread. Its canonical room can already show typing.
+  for (const kind of GAME_KINDS) {
+    if (await gameChatSubjectId(coupleId, kind) === subjectId) return kind;
+  }
+  return null;
+}
+
+/** The subject as a `ChatPlace`, or null when a game chat's id names no game chat of the couple. */
+export async function chatPlaceOf(ctx: ReaderCtx, coupleId: string, subject: ThreadSubject): Promise<ChatPlace | null> {
+  switch (subject.kind) {
+    case "couple":
+      return { kind: "couple" };
+    case "game": {
+      const game = await gameOfChatSubject(ctx, coupleId, subject.id);
+      return game === null ? null : { kind: "game", game_kind: game };
+    }
+    case "daily_question":
+      return { kind: "daily_question", daily_question_id: subject.id };
+    case "memory":
+      return { kind: "memory", memory_id: subject.id };
+    case "story":
+      return { kind: "story", story_id: subject.id };
   }
 }
 

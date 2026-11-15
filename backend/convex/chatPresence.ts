@@ -8,7 +8,7 @@ import { visibleAnswersOf } from "./lib/dailyQuestions";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
 import { chatOpenRoom, chatTypingRoom, onlineUserIds, setPresent } from "./lib/presence";
-import { isChatSubjectAvailable, subjectRoomKey, threadIdOfSubject, threadSubjectArgs, threadSubjectOf } from "./lib/threadSubjects";
+import { chatPlaceOf, isChatSubjectAvailable, threadIdOfSubject, threadSubjectArgs, threadSubjectOf } from "./lib/threadSubjects";
 import { nowIso } from "./lib/time";
 
 // Typing dots, the open chat and read receipts for chats, and the "seen" mark on a partner's answer. New in
@@ -31,16 +31,15 @@ const TYPING_TIMEOUT_MS = 4_000;
  */
 const CHAT_OPEN_TIMEOUT_MS = 30_000;
 
-/** Couple access and the subject's room key, or the failure to return. */
-async function chatRoomKey(ctx: ReaderCtx, userId: string, coupleId: string, args: Parameters<typeof threadSubjectOf>[0]) {
+/** The chat's place once couple access and the subject are checked, or the failure to return. */
+async function checkedChatPlace(ctx: ReaderCtx, userId: string, coupleId: string, args: Parameters<typeof threadSubjectOf>[0]) {
   const subject = threadSubjectOf(args);
   if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
     return fail("42501", "active entitled couple access is required");
   }
-  if (!(await isChatSubjectAvailable(ctx, coupleId, subject))) {
-    return fail("22023", "chat subject was not found");
-  }
-  return subjectRoomKey(subject);
+  const place = (await isChatSubjectAvailable(ctx, coupleId, subject)) ? await chatPlaceOf(ctx, coupleId, subject) : null;
+  if (place === null) return fail("22023", "chat subject was not found");
+  return place;
 }
 
 async function instanceCoupleId(ctx: ReaderCtx, instanceId: string): Promise<string | null> {
@@ -60,8 +59,8 @@ export const set_chat_typing = mutation({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const coupleId = uuidArg(args.p_couple_id);
-    const key = await chatRoomKey(ctx, userId, coupleId, args);
-    await setPresent(ctx, chatTypingRoom(coupleId, key), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
+    const place = await checkedChatPlace(ctx, userId, coupleId, args);
+    await setPresent(ctx, chatTypingRoom(coupleId, place), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
     return null;
   },
 });
@@ -76,8 +75,8 @@ export const set_chat_open = mutation({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const coupleId = uuidArg(args.p_couple_id);
-    const key = await chatRoomKey(ctx, userId, coupleId, args);
-    await setPresent(ctx, chatOpenRoom(coupleId, key), userId, args.p_is_open, CHAT_OPEN_TIMEOUT_MS);
+    const place = await checkedChatPlace(ctx, userId, coupleId, args);
+    await setPresent(ctx, chatOpenRoom(coupleId, place), userId, args.p_is_open, CHAT_OPEN_TIMEOUT_MS);
     return null;
   },
 });
@@ -171,12 +170,13 @@ export const get_chat_presence = query({
     const coupleId = uuidArg(args.p_couple_id);
     const subject = threadSubjectOf(args);
     if (!(await canAccessCoupleContent(ctx, userId, coupleId))) return empty;
+    const place = await chatPlaceOf(ctx, coupleId, subject);
+    if (place === null) return empty;
 
-    const key = subjectRoomKey(subject);
     const partnerIn = async (room: string) => (await onlineUserIds(ctx, room)).some((id) => id !== userId);
-    const typing = await partnerIn(chatTypingRoom(coupleId, key));
+    const typing = await partnerIn(chatTypingRoom(coupleId, place));
     // Typing counts as being in the chat, so a typing heartbeat that beats the first open one still shows.
-    const inChat = typing || (await partnerIn(chatOpenRoom(coupleId, key)));
+    const inChat = typing || (await partnerIn(chatOpenRoom(coupleId, place)));
 
     const threadId = await threadIdOfSubject(ctx, coupleId, subject);
     const read = threadId

@@ -2,10 +2,12 @@ import { Presence } from "@convex-dev/presence";
 import { components } from "../_generated/api";
 import type { ReaderCtx, WriterCtx } from "./db";
 import type { GameKind } from "./games";
+import type { ChatPlace } from "./threadSubjects";
+import { GAME_KINDS } from "./validators";
 
-// Who has a game screen open, who has a chat open and who is typing in it, kept by the
-// @convex-dev/presence component. The component marks a user offline on its own once
-// heartbeats stop, so no cron and no clock read in a query decides it.
+// Who has the app open, who has a game screen open, who has a chat open and who is typing in
+// it, kept by the @convex-dev/presence component. The component marks a user offline on its
+// own once heartbeats stop, so no cron and no clock read in a query decides it.
 //
 // Only server code calls the component. The caller checks couple access first and passes
 // a room built here from the couple id, so a client never names a room or a user. Every
@@ -20,14 +22,59 @@ export function gameRoom(coupleId: string, kind: GameKind): string {
 
 const gameRoomPrefix = (coupleId: string) => `${coupleId}:game:`;
 
-/** Typing in one chat, named by its subject's id (a question, a memory or a story). */
-export function chatTypingRoom(coupleId: string, subjectId: string): string {
-  return `${coupleId}:typing:${subjectId}`;
+/** The app open and in front on either partner's phone, one room per couple. */
+export function appRoom(coupleId: string): string {
+  return `${coupleId}:app`;
+}
+
+/** Typing in one chat, named by its place, so a reader can tell which chat it is. */
+export function chatTypingRoom(coupleId: string, place: ChatPlace): string {
+  return `${typingRoomPrefix(coupleId)}${chatRoomKey(place)}`;
 }
 
 /** An open chat screen, named like its typing room. */
-export function chatOpenRoom(coupleId: string, subjectId: string): string {
-  return `${coupleId}:chat:${subjectId}`;
+export function chatOpenRoom(coupleId: string, place: ChatPlace): string {
+  return `${chatRoomPrefix(coupleId)}${chatRoomKey(place)}`;
+}
+
+const typingRoomPrefix = (coupleId: string) => `${coupleId}:typing:`;
+const chatRoomPrefix = (coupleId: string) => `${coupleId}:chat:`;
+
+/** The chat's kind, then its game or its subject's id. `chatPlaceOfRoomKey` reads it back. */
+function chatRoomKey(place: ChatPlace): string {
+  switch (place.kind) {
+    case "couple":
+      return "couple";
+    case "game":
+      return `game:${place.game_kind}`;
+    case "daily_question":
+      return `daily_question:${place.daily_question_id}`;
+    case "memory":
+      return `memory:${place.memory_id}`;
+    case "story":
+      return `story:${place.story_id}`;
+  }
+}
+
+function chatPlaceOfRoomKey(key: string): ChatPlace | null {
+  if (key === "couple") return { kind: "couple" };
+  const separator = key.indexOf(":");
+  if (separator < 0) return null;
+  const id = key.slice(separator + 1);
+  switch (key.slice(0, separator)) {
+    case "game": {
+      const game = GAME_KINDS.find((kind) => kind === id);
+      return game === undefined ? null : { kind: "game", game_kind: game };
+    }
+    case "daily_question":
+      return { kind: "daily_question", daily_question_id: id };
+    case "memory":
+      return { kind: "memory", memory_id: id };
+    case "story":
+      return { kind: "story", story_id: id };
+    default:
+      return null;
+  }
 }
 
 /**
@@ -65,6 +112,32 @@ export async function openGameKinds(ctx: ReaderCtx, coupleId: string, userId: st
   const prefix = gameRoomPrefix(coupleId);
   const rooms = await presence.listUser(ctx, userId, true, 1000);
   return new Set(rooms.filter(({ roomId }) => roomId.startsWith(prefix)).map(({ roomId }) => roomId.slice(prefix.length)));
+}
+
+/** Where a partner is in the app: the game screens they have open, a chat screen and the chat they type in. */
+export type PartnerPlaces = { games: GameKind[]; chat: ChatPlace | null; typing: ChatPlace | null };
+
+/**
+ * Where the user is in the couple's rooms, from one read of their online rooms, or null while
+ * they are not in the app room. Open games come in `GAME_KINDS` order, and the app keeps the
+ * order they opened in. Several open chats name the first room id, so every read picks the same one.
+ */
+export async function placesInApp(ctx: ReaderCtx, coupleId: string, userId: string): Promise<PartnerPlaces | null> {
+  const prefix = `${coupleId}:`;
+  const rooms = (await presence.listUser(ctx, userId, true, 1000))
+    .map(({ roomId }) => roomId)
+    .filter((roomId) => roomId.startsWith(prefix))
+    .sort();
+  if (!rooms.includes(appRoom(coupleId))) return null;
+  const keysAfter = (roomPrefix: string) =>
+    rooms.filter((roomId) => roomId.startsWith(roomPrefix)).map((roomId) => roomId.slice(roomPrefix.length));
+  const firstPlace = (keys: string[]) => keys.map(chatPlaceOfRoomKey).find((place) => place !== null) ?? null;
+  const games = new Set(keysAfter(gameRoomPrefix(coupleId)));
+  return {
+    games: GAME_KINDS.filter((kind) => games.has(kind)),
+    chat: firstPlace(keysAfter(chatRoomPrefix(coupleId))),
+    typing: firstPlace(keysAfter(typingRoomPrefix(coupleId))),
+  };
 }
 
 /**

@@ -111,7 +111,7 @@ test("cleanup drains more than 1000 offline rooms", async () => {
       const token = await ctx.runMutation(
         components.presence.public.heartbeat,
         {
-          roomId: chatTypingRoom(c.coupleId, "subject-" + i),
+          roomId: chatTypingRoom(c.coupleId, { kind: "memory", memory_id: "subject-" + i }),
           userId: c.first.userId,
           sessionId: "session-" + i,
           interval: 1000000,
