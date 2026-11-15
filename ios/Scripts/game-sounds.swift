@@ -251,7 +251,7 @@ func note(_ semitones: Double) -> Double { 440 * pow(2, semitones / 12) }
 let c4 = note(-9), e4 = note(-5), g4 = note(-2), a3 = note(-12), a4 = note(0)
 let cSharp5 = note(4), c5 = note(3), d5 = note(5), e5 = note(7), g5 = note(10), gSharp5 = note(11)
 let a5 = note(12)
-let c6 = note(15), d6 = note(17), g6 = note(22)
+let c6 = note(15), cSharp6 = note(16), d6 = note(17), e6 = note(19), g6 = note(22), a6 = note(24)
 
 // MARK: Recipes
 
@@ -457,29 +457,30 @@ let recipes: [Recipe] = [
         return Biquad.lowpass(2_500).run(mix.samples)
     },
 
-    // Calls. Both are in A, so the answer resolves the ring. Low-passed for the earpiece and
-    // AirPods, which a call plays through.
+    // Calls. Both are in A, so the answer resolves the ring. They sit an octave above the
+    // game sounds, between 0.9 and 5 kHz, where a phone's speaker is loud. Below about 600 Hz
+    // it plays little, and an earlier ringback on A4 was barely audible on a phone.
 
-    // Plays on loop while the partner's phone rings: a soft falling fourth, E5 to A4, on a
+    // Plays on loop while the partner's phone rings: a soft falling fourth, E6 to A5, on a
     // mallet bar with a kalimba tine over it, once every 3 seconds.
     Recipe(library: .call, name: "Ringback", peak: 0.4, period: 3) {
         var mix = Mix()
-        mix.add(bar(a3, decay: 0.5), gain: 0.18)
-        mix.add(bar(e5, decay: 0.32), gain: 0.55)
-        mix.add(tine(e5, decay: 0.4))
-        mix.add(bar(a4, decay: 0.42), at: 0.3, gain: 0.55)
-        mix.add(tine(a4, decay: 0.55), at: 0.3, gain: 0.95)
+        mix.add(bar(a4, decay: 0.5), gain: 0.18)
+        mix.add(bar(e6, decay: 0.32), gain: 0.55)
+        mix.add(tine(e6, decay: 0.4))
+        mix.add(bar(a5, decay: 0.42), at: 0.3, gain: 0.55)
+        mix.add(tine(a5, decay: 0.55), at: 0.3, gain: 0.95)
         // Cut where the ring is low, so `finish` fades it out well before the next one.
-        return Array(Biquad.lowpass(2_600).run(mix.samples).prefix(count(2.4)))
+        return Array(Biquad.lowpass(5_000).run(mix.samples).prefix(count(2.4)))
     },
-    // The partner answered: A4, C#5, E5 and A5 rising quickly, and a low A under them.
+    // The partner answered: A5, C#6, E6 and A6 rising quickly, and a low A under them.
     Recipe(library: .call, name: "Connected", peak: 0.42) {
         var mix = Mix()
-        mix.add(bar(a3, decay: 0.3), gain: 0.3)
-        for (index, hz) in [a4, cSharp5, e5, a5].enumerated() {
+        mix.add(bar(a4, decay: 0.3), gain: 0.3)
+        for (index, hz) in [a5, cSharp6, e6, a6].enumerated() {
             mix.add(tine(hz, decay: 0.26), at: Double(index) * 0.07, gain: 1 - Double(index) * 0.1)
         }
-        return Biquad.lowpass(3_200).run(mix.samples)
+        return Biquad.lowpass(6_000).run(mix.samples)
     },
 ]
 

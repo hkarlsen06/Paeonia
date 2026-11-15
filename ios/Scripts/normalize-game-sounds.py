@@ -21,11 +21,10 @@ LIBRARIES = {
     "game": (RESOURCES / "GameSounds", ROOT / "ios/PaeoniaApp/Features/Games/Shared/Sound/GameSound.swift", "GameSound"),
     "call": (RESOURCES / "CallSounds", ROOT / "ios/PaeoniaApp/Services/Calls/CallSound.swift", "CallSound"),
 }
-TARGET_LUFS = -26.0
+# Each library's integrated loudness in LUFS and true peak ceiling in dBTP. Call sounds play
+# louder, because a ringback has to carry from a phone's speaker across a room.
+LEVELS = {"game": (-26.0, -3.0), "call": (-16.0, -1.0)}
 LOUDNESS_TOLERANCE = 0.5
-MAX_TRUE_PEAK = -3.0
-# Oversampling and a small margin keep the resampled, quantized CAF below the ceiling.
-LIMIT = 10 ** (-3.5 / 20)
 
 
 def run(*args):
@@ -60,27 +59,31 @@ def measure(path):
     return values
 
 
-def conforms(loudness, peak):
-    return abs(loudness - TARGET_LUFS) <= LOUDNESS_TOLERANCE and peak <= MAX_TRUE_PEAK
+def conforms(library, loudness, peak):
+    target, ceiling = LEVELS[library]
+    return abs(loudness - target) <= LOUDNESS_TOLERANCE and peak <= ceiling
 
 
-def normalize(source, destination):
+def normalize(library, source, destination):
+    target, ceiling = LEVELS[library]
+    # Oversampling and a small margin keep the resampled, quantized CAF below the ceiling.
+    limit = 10 ** ((ceiling - 0.5) / 20)
     frames = probe(source)
     loudness, peak = measure(source)
-    gain = TARGET_LUFS - loudness
+    gain = target - loudness
     for _ in range(12):
         filters = f"volume={gain}dB"
-        if peak + gain > MAX_TRUE_PEAK:
-            filters += (f",aresample=192000,alimiter=limit={LIMIT}:level=false:latency=true"
+        if peak + gain > ceiling:
+            filters += (f",aresample=192000,alimiter=limit={limit}:level=false:latency=true"
                         ":attack=5:release=50,aresample=44100")
         run("ffmpeg", "-v", "error", "-y", "-i", str(source), "-af", filters,
             "-ar", "44100", "-ac", "1", "-c:a", "pcm_s16le", str(destination))
         if probe(destination) != frames:
             raise ValueError(f"{source.name}: normalization changed its frame count")
         actual, actual_peak = measure(destination)
-        if conforms(actual, actual_peak):
+        if conforms(library, actual, actual_peak):
             return actual, actual_peak
-        gain += TARGET_LUFS - actual
+        gain += target - actual
         if abs(gain) > 40:
             break
     raise ValueError(f"{source.name}: could not meet loudness and peak limits")
@@ -159,12 +162,12 @@ def process(library, directory, paths, write):
         for path in paths:
             probe(path)
             loudness, peak = measure(path)
-            if not conforms(loudness, peak) and write:
+            if not conforms(library, loudness, peak) and write:
                 target = Path(scratch) / path.name
-                loudness, peak = normalize(path, target)
+                loudness, peak = normalize(library, path, target)
                 replacements.append((target, path))
             results.append(loudness)
-            if not conforms(loudness, peak):
+            if not conforms(library, loudness, peak):
                 errors.append(f"{path.name}: {loudness:.1f} LUFS, {peak:.1f} dBTP")
         if errors:
             print("\n".join(errors), file=sys.stderr)
@@ -174,7 +177,7 @@ def process(library, directory, paths, write):
             target.chmod(path.stat().st_mode)
             os.replace(target, path)
     print(f"{len(paths)} {library} sounds checked, {len(replacements)} normalized; "
-          f"{min(results):.1f} to {max(results):.1f} LUFS, true peaks <= {MAX_TRUE_PEAK:.1f} dBTP")
+          f"{min(results):.1f} to {max(results):.1f} LUFS, true peaks <= {LEVELS[library][1]:.1f} dBTP")
     return 0
 
 
