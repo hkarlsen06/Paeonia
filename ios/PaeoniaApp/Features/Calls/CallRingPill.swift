@@ -89,7 +89,7 @@ struct CallRingPill: View {
                 tint: .paeoniaPartnerTwo,
                 size: Self.avatarSize
             )
-            .callMorph(.photo)
+            .callMorph(.photo, size: Self.avatarSize)
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                 Text(verbatim: participants.partnerName)

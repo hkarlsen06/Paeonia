@@ -17,7 +17,7 @@ struct PresenceAvatar: View {
             tint: .paeoniaPartnerTwo,
             size: Self.size
         )
-        .callMorph(.photo)
+        .callMorph(.photo, size: Self.size)
         .padding(PaeoniaSpacing.space4)
         .glassEffect(.regular.interactive(), in: Circle())
         .overlay(alignment: .bottomTrailing) { badge }

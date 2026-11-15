@@ -100,7 +100,7 @@ struct CallRoundButton: View {
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: size, height: size)
                 .background(fill ?? (isOn ? Color.paeoniaTextPrimary : Color.white.opacity(0.12)), in: Circle())
-                .callMorph(morphPart)
+                .callMorph(morphPart, size: size)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -143,7 +143,7 @@ struct CallControlButton: View {
                     .contentTransition(.symbolEffect(.replace))
                     .frame(width: Self.size, height: Self.size)
                     .background { background }
-                    .callMorph(morphPart)
+                    .callMorph(morphPart, size: Self.size)
                 Text(title)
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextPrimary)

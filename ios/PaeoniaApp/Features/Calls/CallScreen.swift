@@ -150,11 +150,15 @@ struct CallScreen: View {
             size: Self.avatarSize,
             isCurrentUser: false
         )
-        .callMorph(.photo)
+        // The photo's own frame, which the pill's and the partner's avatar's photos match. A
+        // decoration reaches past it.
+        .frame(width: Self.avatarSize, height: Self.avatarSize)
+        // The glow grows and moves with the photo.
+        .background { ringingGlow.frame(width: Self.glowSize, height: Self.glowSize) }
+        .callMorph(.photo, size: Self.avatarSize)
         // The frame holds the glow at its largest in every phase, so it never reaches the name
         // and the name stays put when the call connects.
         .frame(width: Self.glowSize, height: Self.glowSize)
-        .background { ringingGlow }
         .accessibilityHidden(true)
     }
 
