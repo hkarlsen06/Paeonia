@@ -10,6 +10,7 @@ extension BoardGameViewModel {
         guard !isRunning else { return }
         isRunning = true
         isActive = true
+        updateLiveRoom()
         await reload()
         guard isRunning, !Task.isCancelled else { return }
         if isShowingMissedEnding { resumeAfterWaitingForBoard() }
@@ -36,6 +37,7 @@ extension BoardGameViewModel {
     func stop(preservingPresentation: Bool = false) {
         guard isRunning else { return }
         isRunning = false
+        updateLiveRoom()
         attentionCue.reset()
         loops.cancelFollowing()
         if preservingPresentation {
@@ -69,6 +71,45 @@ extension BoardGameViewModel {
         stagedOutcomeGame = nil
         lastMove = nil
         lastMoveSettles = nil
+    }
+
+    /// Another person signed in. Nothing of the last person's game stays.
+    func resetForNewIdentity() {
+        // The room's ticket was for the person before. `configure` opens it again.
+        stopLiveRoom()
+        attentionCue.reset()
+        rematchedGameNumber = nil
+        replayTask?.cancel()
+        outcomeTask?.cancel()
+        photoTask?.cancel()
+        document = BoardGamesLocalDocument()
+        overview = nil
+        pending = []
+        clearPartnerMoves()
+        snapshot = nil
+        partnerUserID = nil
+        hasDisplay = false
+        displayedMoves = []
+        displayedGameNumber = 0
+        replayQueue = []
+        isReplaying = false
+        stagedOutcomeGame = nil
+        markImages = BoardMarkImages()
+        photo = nil
+        photoAssetID = nil
+        localInviteSentAt = nil
+        board = .initial
+        lastMove = nil
+        lastMoveSettles = nil
+        showsOutcome = false
+        result = nil
+        isShowingMissedEnding = false
+        stakeDraft = ""
+        colorDraft = nil
+        ludoColors = .standard
+        colorChoice = nil
+        summary = nil
+        phase = .loading
     }
 
     /// The app moved to the background or came back while the screen is open.

@@ -15,10 +15,11 @@ nonisolated struct BoardGameMoveTiming: Sendable {
     var exact: (@Sendable (BoardMoveEvent, any BoardGameRules) -> Duration?)?
 }
 
-/// One board game screen: Connect Four, Dots and Boxes or Ultimate
-/// Tic-Tac-Toe. It reads the board games cache, which the live feed keeps
-/// current, puts this phone's unsent moves on top (`BoardGameResolver`), and
-/// plays the partner's new moves one at a time so the board can animate each.
+/// One board game screen: Connect Four, Dots and Boxes, Ultimate Tic-Tac-Toe
+/// or Ludo. It reads the board games cache, which the live feed keeps current,
+/// puts this phone's unsent moves and the partner's live moves on top
+/// (`BoardGameResolver`), and plays the partner's new moves one at a time so
+/// the board can animate each.
 ///
 /// The board on screen (`board`) can trail the game while moves replay. Input
 /// waits until the replay has caught up.
@@ -86,6 +87,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
             && board.outcome == nil
             && board.next == me
             && displayedMovesMatchGame
+            && snapshot?.hasUnconfirmedPartnerMove != true
     }
 
     var bloomSeed: String {
@@ -100,6 +102,15 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     @ObservationIgnored var document = BoardGamesLocalDocument()
     @ObservationIgnored var overview: RemoteGamesOverview?
     @ObservationIgnored var pending: [BoardGamePendingAction] = []
+    /// The game's relay room while the screen runs (`BoardGameLive.swift`). The
+    /// Ultimate Tic-Tac-Toe and Ludo screens attach their own channels to it.
+    var liveRoom: WidgetLiveDrawing?
+    @ObservationIgnored var liveRoomCoupleID: UUID?
+    @ObservationIgnored var moveChannel: GameLiveChannel<BoardGameLiveMove>?
+    /// The partner's moves that came through the relay room, in the order they
+    /// came. Each shows until the server's game has it.
+    @ObservationIgnored var partnerMoves: [BoardGameMovePayload] = []
+    @ObservationIgnored var partnerMovesExpiry: Task<Void, Never>?
     // `canPlay` reads these, so they are observed.
     var snapshot: BoardGameSnapshot<Board>?
     @ObservationIgnored var partnerUserID: UUID?
@@ -190,6 +201,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         if userChanged {
             resetForNewIdentity()
         }
+        updateLiveRoom()
         updatePeople()
     }
 
@@ -280,6 +292,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
               let snapshot = BoardGameResolver.resolve(
                   game,
                   pending: pending,
+                  partnerMoves: partnerMoves,
                   userID: userID,
                   partnerID: partnerID,
                   as: Board.self
@@ -306,41 +319,6 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     var displayedMovesMatchGame: Bool {
         guard let snapshot else { return false }
         return displayedGameNumber == snapshot.gameNumber && displayedMoves == snapshot.moves
-    }
-
-    func resetForNewIdentity() {
-        attentionCue.reset()
-        rematchedGameNumber = nil
-        replayTask?.cancel()
-        outcomeTask?.cancel()
-        photoTask?.cancel()
-        document = BoardGamesLocalDocument()
-        overview = nil
-        pending = []
-        snapshot = nil
-        partnerUserID = nil
-        hasDisplay = false
-        displayedMoves = []
-        displayedGameNumber = 0
-        replayQueue = []
-        isReplaying = false
-        stagedOutcomeGame = nil
-        markImages = BoardMarkImages()
-        photo = nil
-        photoAssetID = nil
-        localInviteSentAt = nil
-        board = .initial
-        lastMove = nil
-        lastMoveSettles = nil
-        showsOutcome = false
-        result = nil
-        isShowingMissedEnding = false
-        stakeDraft = ""
-        colorDraft = nil
-        ludoColors = .standard
-        colorChoice = nil
-        summary = nil
-        phase = .loading
     }
 }
 

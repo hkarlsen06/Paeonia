@@ -109,6 +109,11 @@ extension BoardGameViewModel {
             notice = .couldNotSaveMove
             return false
         }
+        // Only a saved move goes to the partner. One that failed to save is
+        // taken back on this phone.
+        if case let .move(payload) = action {
+            moveChannel?.send(BoardGameLiveMove(move: payload))
+        }
         await reload()
         if let sync = localChangeSyncHandler {
             Task { await sync() }

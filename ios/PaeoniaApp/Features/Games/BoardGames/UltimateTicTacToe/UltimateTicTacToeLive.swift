@@ -26,9 +26,10 @@ nonisolated struct UltimateTicTacToeLiveMessage: GameLiveMessage, Equatable {
     }
 }
 
-/// Joins one Ultimate Tic-Tac-Toe screen to its relay room while the screen is
-/// open. My picks go out as I make them, and again when my partner arrives.
-/// My partner's picks go to `onPartnerPick`.
+/// Joins one Ultimate Tic-Tac-Toe screen to the game's relay room, which the
+/// board game view model keeps open while the screen runs. My picks go out as I
+/// make them, and again when my partner arrives. My partner's picks go to
+/// `onPartnerPick`.
 final class UltimateTicTacToeLiveLink {
     private let room: WidgetLiveDrawing
     private let channel: GameLiveChannel<UltimateTicTacToeLiveMessage>
@@ -42,7 +43,6 @@ final class UltimateTicTacToeLiveLink {
             guard let self, let lastSent else { return }
             channel.send(lastSent)
         }
-        room.start()
     }
 
     /// False once my partner has left the game, so a pick they never locked
@@ -57,8 +57,9 @@ final class UltimateTicTacToeLiveLink {
         channel.send(message)
     }
 
-    func stop() {
+    /// Lets go of the room. The view model closes it.
+    func detach() {
         room.onPartnerArrived = nil
-        room.stop()
+        channel.close()
     }
 }

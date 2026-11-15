@@ -60,7 +60,8 @@ struct GamesDependencies {
     var boardGamesGateway: any BoardGamesGateway = UnavailableBoardGamesGateway()
     var boardGamesCache: any BoardGamesCaching = InMemoryBoardGamesCache()
     /// Builds a board game's relay room for the couple, or nil when there is none.
-    /// Ludo sends live rolls through it and Ultimate Tic-Tac-Toe the cell a player picked.
+    /// Every board game sends its moves through it. Ludo also sends live rolls and
+    /// Ultimate Tic-Tac-Toe the cell a player picked.
     var makeBoardGameLive: @MainActor (GameKind, UUID) -> WidgetLiveDrawing? = { _, _ in nil }
     /// Loads the hidden photo under Dots and Boxes, the way Memories loads photos.
     var memoryPhotos: (any MemoryMediaImageProviding)?

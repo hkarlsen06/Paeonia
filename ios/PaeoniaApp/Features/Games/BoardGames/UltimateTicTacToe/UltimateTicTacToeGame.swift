@@ -77,11 +77,11 @@ struct UltimateTicTacToeScreen: View {
         .onChange(of: myPick) { _, message in
             live?.send(message)
         }
-        .task(id: viewModel.participants.coupleID) {
-            startLive(coupleID: viewModel.participants.coupleID)
+        .task(id: viewModel.liveRoom.map(ObjectIdentifier.init)) {
+            attachLive(to: viewModel.liveRoom)
         }
         .onDisappear {
-            live?.stop()
+            live?.detach()
             live = nil
         }
     }
@@ -122,16 +122,14 @@ struct UltimateTicTacToeScreen: View {
         )
     }
 
-    private func startLive(coupleID: UUID?) {
-        live?.stop()
+    private func attachLive(to room: WidgetLiveDrawing?) {
+        live?.detach()
         partnerPick = nil
-        live = coupleID
-            .flatMap { viewModel.dependencies.makeBoardGameLive(.ultimateTicTacToe, $0) }
-            .map { room in
-                UltimateTicTacToeLiveLink(room: room) { message in
-                    withAnimation(PaeoniaMotion.stateChange) { partnerPick = message }
-                }
+        live = room.map { room in
+            UltimateTicTacToeLiveLink(room: room) { message in
+                withAnimation(PaeoniaMotion.stateChange) { partnerPick = message }
             }
+        }
         live?.send(myPick)
     }
 

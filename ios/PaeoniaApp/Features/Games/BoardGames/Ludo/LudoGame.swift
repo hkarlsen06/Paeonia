@@ -76,23 +76,21 @@ struct LudoScreen: View {
         .onChange(of: LudoRollContext(viewModel), initial: true) {
             roll.update()
         }
-        .task(id: viewModel.participants.coupleID) {
-            startLive(coupleID: viewModel.participants.coupleID)
+        .task(id: viewModel.liveRoom.map(ObjectIdentifier.init)) {
+            attachLive(to: viewModel.liveRoom)
         }
         .onDisappear {
             roll.stop()
-            live?.stop()
+            live?.detach()
             live = nil
         }
         // A drag throws the die, so only the edge swipe goes back.
         .background(GameEdgeSwipeOnly())
     }
 
-    private func startLive(coupleID: UUID?) {
-        live?.stop()
-        live = coupleID
-            .flatMap { viewModel.dependencies.makeBoardGameLive(.ludo, $0) }
-            .map { LudoLiveLink(room: $0, roll: roll) }
+    private func attachLive(to room: WidgetLiveDrawing?) {
+        live?.detach()
+        live = room.map { LudoLiveLink(room: $0, roll: roll) }
     }
 }
 

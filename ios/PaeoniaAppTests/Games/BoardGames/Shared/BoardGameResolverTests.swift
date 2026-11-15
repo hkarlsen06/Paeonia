@@ -2,7 +2,8 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// How the phone shows a game: the server's game with the unsent actions on top.
+/// How the phone shows a game: the server's game with the unsent actions on
+/// top, then the partner's moves that came live.
 struct BoardGameResolverTests {
     private typealias Fixture = BoardGameDataFixture
     private let me = Fixture.me
@@ -11,9 +12,17 @@ struct BoardGameResolverTests {
     private func resolve<Board: BoardGameRules>(
         _ game: RemoteBoardGame,
         _ pending: [BoardGamePendingAction],
+        partnerMoves: [BoardGameMovePayload] = [],
         as type: Board.Type
     ) throws -> BoardGameSnapshot<Board> {
-        try #require(BoardGameResolver.resolve(game, pending: pending, userID: me, partnerID: partner, as: type))
+        try #require(BoardGameResolver.resolve(
+            game,
+            pending: pending,
+            partnerMoves: partnerMoves,
+            userID: me,
+            partnerID: partner,
+            as: type
+        ))
     }
 
     // MARK: Moves
@@ -261,6 +270,95 @@ struct BoardGameResolverTests {
         )
 
         #expect(snapshot == nil)
+    }
+}
+
+// MARK: - The partner's live moves
+
+extension BoardGameResolverTests {
+    @Test func aPartnersLiveMoveShowsAtTheVersionItNames() throws {
+        let game = Fixture.game(first: partner)
+
+        let snapshot = try resolve(game, [], partnerMoves: [Fixture.move(3, on: game)], as: ConnectFourBoard.self)
+
+        #expect(snapshot.moves == [3])
+        #expect(snapshot.version == 2)
+        #expect(snapshot.board.next == snapshot.player(for: me))
+        #expect(snapshot.hasUnconfirmedPartnerMove)
+        #expect(snapshot.unsentCount == 0)
+    }
+
+    @Test func aPartnersLiveMoveTheServerHasIsNotPlayedTwice() throws {
+        let before = Fixture.game(first: partner)
+        let after = Fixture.game(first: partner, moves: [3])
+
+        let snapshot = try resolve(after, [], partnerMoves: [Fixture.move(3, on: before)], as: ConnectFourBoard.self)
+
+        #expect(snapshot.moves == [3])
+        #expect(snapshot.version == 2)
+        #expect(!snapshot.hasUnconfirmedPartnerMove)
+    }
+
+    @Test func aStaleOrOutOfTurnPartnersLiveMoveIsSkipped() throws {
+        // The game moved on past the version the first move names, and on the
+        // second game it is my turn, not the partner's.
+        let movedOn = Fixture.game(first: partner, moves: [3, 4])
+        let myTurn = Fixture.game(first: me)
+
+        let stale = try resolve(
+            movedOn, [], partnerMoves: [Fixture.move(5, on: movedOn, expectedVersion: 2)], as: ConnectFourBoard.self
+        )
+        let outOfTurn = try resolve(myTurn, [], partnerMoves: [Fixture.move(5, on: myTurn)], as: ConnectFourBoard.self)
+
+        #expect(stale.moves == [3, 4])
+        #expect(!stale.hasUnconfirmedPartnerMove)
+        #expect(outOfTurn.moves.isEmpty)
+        #expect(!outOfTurn.hasUnconfirmedPartnerMove)
+    }
+
+    @Test func aPartnersLiveMoveFollowsMyUnsentMove() throws {
+        // The partner saw my move live and answered before the server had it.
+        let game = Fixture.game()
+        let mine = Fixture.move(3, on: game)
+        let theirs = Fixture.move(4, on: game, expectedVersion: game.version + 1)
+
+        let snapshot = try resolve(game, [.move(mine)], partnerMoves: [theirs], as: ConnectFourBoard.self)
+
+        #expect(snapshot.moves == [3, 4])
+        #expect(snapshot.version == game.version + 2)
+        #expect(snapshot.unsentCount == 1)
+        #expect(snapshot.hasUnconfirmedPartnerMove)
+    }
+
+    @Test func twoPartnersLiveMovesChainOnTheirExtraTurn() throws {
+        // The partner closes box 0 with line 21 and moves again.
+        let game = Fixture.game(kind: .dotsAndBoxes, first: partner, moves: [0, 4, 20, 1])
+        let closing = Fixture.move(21, on: game)
+        let following = Fixture.move(2, on: game, expectedVersion: game.version + 1)
+
+        let snapshot = try resolve(game, [], partnerMoves: [closing, following], as: DotsAndBoxesBoard.self)
+
+        #expect(snapshot.moves == [0, 4, 20, 1, 21, 2])
+        #expect(snapshot.hasUnconfirmedPartnerMove)
+        #expect(snapshot.board.next == snapshot.player(for: me))
+    }
+
+    @Test func aWinningPartnersLiveMoveCountsForThePartner() throws {
+        let game = Fixture.game(
+            first: partner,
+            moves: Fixture.connectFourAlmostWon,
+            myWins: 1,
+            partnerWins: 1,
+            gamesFinished: 2
+        )
+
+        let snapshot = try resolve(game, [], partnerMoves: [Fixture.move(0, on: game)], as: ConnectFourBoard.self)
+
+        #expect(snapshot.isFinished)
+        #expect(snapshot.board.outcome?.winner == snapshot.player(for: partner))
+        #expect(snapshot.myWins == 1)
+        #expect(snapshot.partnerWins == 2)
+        #expect(snapshot.gamesFinished == 3)
     }
 }
 

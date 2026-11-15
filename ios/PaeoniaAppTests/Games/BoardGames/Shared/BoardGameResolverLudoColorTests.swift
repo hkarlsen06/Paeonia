@@ -72,6 +72,24 @@ struct BoardGameResolverLudoColorTests {
         #expect(snapshot.partnerColor == .lavender)
     }
 
+    @Test func thePartnersLiveFirstMoveCarriesTheirPick() throws {
+        let game = ludoGame(first: partner)
+        let picksGold = Fixture.move(15, on: game, ludoColor: .gold)
+        let picksMine = Fixture.move(15, on: game, ludoColor: .pink)
+
+        let gold = try #require(BoardGameResolver.resolve(
+            game, pending: [], partnerMoves: [picksGold], userID: me, partnerID: partner, as: LudoBoard.self
+        ))
+        let mine = try #require(BoardGameResolver.resolve(
+            game, pending: [], partnerMoves: [picksMine], userID: me, partnerID: partner, as: LudoBoard.self
+        ))
+
+        #expect(gold.partnerColor == .gold)
+        #expect(gold.myColor == .pink)
+        #expect(mine.partnerColor == .lavender)
+        #expect(mine.moves == [15])
+    }
+
     @Test func theColorsStayThroughARematch() throws {
         let win = try LudoFixture.named("playerOneWins")
         let game = Fixture.game(

@@ -16,9 +16,10 @@ nonisolated struct LudoLiveMessage: GameLiveMessage, Equatable {
     var toss: LudoToss?
 }
 
-/// Joins one Ludo screen's die to the relay room while the screen is open. My
-/// rolls go out as they start, and again when my partner opens the game in the
-/// middle of my turn. My partner's rolls go to the roll model.
+/// Joins one Ludo screen's die to the game's relay room, which the board game
+/// view model keeps open while the screen runs. My rolls go out as they start,
+/// and again when my partner opens the game in the middle of my turn. My
+/// partner's rolls go to the roll model.
 final class LudoLiveLink {
     private let room: WidgetLiveDrawing
     private let channel: GameLiveChannel<LudoLiveMessage>
@@ -37,12 +38,16 @@ final class LudoLiveLink {
             channel.send(LudoLiveMessage(roll: current))
         }
         roll.announce = { channel.send(LudoLiveMessage(roll: $0, toss: $1)) }
-        room.start()
+        // The room may have met the partner before this link attached.
+        if let current = roll.ownRoll {
+            channel.send(LudoLiveMessage(roll: current))
+        }
     }
 
-    func stop() {
+    /// Lets go of the room. The view model closes it.
+    func detach() {
         roll?.announce = nil
         room.onPartnerArrived = nil
-        room.stop()
+        channel.close()
     }
 }
