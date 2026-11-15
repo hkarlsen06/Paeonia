@@ -31,6 +31,8 @@ final class CallMediaSession {
     private var videoTransceiver: RTCRtpTransceiver?
     private var remoteVideoTrack: RTCVideoTrack?
     private var isCameraOn: Bool
+    /// Counts camera starts, so only the newest one ends the wait in `localFeed`.
+    private var cameraStarts = 0
     private var isConnected = false
     /// The number of the newest offer this phone sent. Only its answer applies.
     private var offerNumber = 0
@@ -87,10 +89,10 @@ final class CallMediaSession {
         if role == .offerer {
             addTransceivers()
         }
-        if isCameraOn {
-            camera.start(front: isFrontCamera)
-        }
         observer.session = self
+        if isCameraOn {
+            startCamera(front: isFrontCamera)
+        }
         relay.onSignal = { continuation.yield(.signal($0)) }
         relay.onPartnerPresent = { continuation.yield(.partnerPresent) }
         workTask = Task { [weak self] in
@@ -155,12 +157,24 @@ final class CallMediaSession {
     func setCamera(isOn: Bool, front: Bool) {
         isCameraOn = isOn
         if isOn {
-            camera.start(front: front)
+            startCamera(front: front)
         } else {
             camera.stop()
         }
         videoTransceiver?.sender.track = isOn ? videoTrack : nil
         relay.send(.camera(isOn: isOn))
+    }
+
+    /// The local video keeps the old camera's last frame and mirroring until the new camera
+    /// sends, so flipping never shows the old picture mirrored the new way.
+    private func startCamera(front: Bool) {
+        cameraStarts += 1
+        let start = cameraStarts
+        localFeed.cameraWillStart()
+        camera.start(front: front) { [weak self] in
+            guard let self, start == cameraStarts else { return }
+            localFeed.cameraStarted(isMirrored: front)
+        }
     }
 
     // MARK: Signaling

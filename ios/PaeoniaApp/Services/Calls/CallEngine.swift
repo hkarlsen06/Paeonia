@@ -108,7 +108,6 @@ final class CallEngine {
         self.run = run
         PaeoniaAudioSession.setCallActive(true)
         CallAudio.prepareCategory()
-        localVideo.isMirrored = true
         center?.presentation = .full
         center?.session = CallSession(
             id: run.callID,

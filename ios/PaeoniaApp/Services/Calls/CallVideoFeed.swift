@@ -12,11 +12,14 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
     private var poolSize: (width: Int, height: Int) = (0, 0)
 
     @MainActor private var views: [WeakVideoView] = []
-    @MainActor var isMirrored = false {
+    @MainActor private var isMirrored = false {
         didSet {
             for view in liveViews { view.isMirrored = isMirrored }
         }
     }
+    /// A camera is starting, so frames from the one before it wait out the switch instead of
+    /// showing with the new camera's mirroring.
+    @MainActor private var isWaitingForCamera = false
 
     /// The upright size of the latest frame, such as for Picture in Picture's window.
     @MainActor var onFrameSize: ((CGSize) -> Void)?
@@ -58,8 +61,22 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
         }
     }
 
+    /// Holds the picture still while the camera switches.
+    @MainActor
+    func cameraWillStart() {
+        isWaitingForCamera = true
+    }
+
+    /// The new camera sends now. A front camera shows mirrored, like a mirror.
+    @MainActor
+    func cameraStarted(isMirrored: Bool) {
+        self.isMirrored = isMirrored
+        isWaitingForCamera = false
+    }
+
     @MainActor
     private func show(_ sample: CallVideoSample, rotation: RTCVideoRotation, size: CGSize) {
+        guard !isWaitingForCamera else { return }
         if size != frameSize {
             frameSize = size
             onFrameSize?(size)

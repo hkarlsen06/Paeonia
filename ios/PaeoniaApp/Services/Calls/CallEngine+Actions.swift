@@ -60,7 +60,6 @@ extension CallEngine: CallEngineActions {
         guard let run, !run.isFinished, let center, var session = center.session else { return }
         session.isUsingFrontCamera.toggle()
         center.session = session
-        localVideo.isMirrored = session.isUsingFrontCamera
         if session.isCameraOn {
             run.media?.setCamera(isOn: true, front: session.isUsingFrontCamera)
         }

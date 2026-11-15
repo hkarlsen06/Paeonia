@@ -18,7 +18,9 @@ final class CallCamera {
         }
     }
 
-    func start(front: Bool) {
+    /// Starts the front or back camera, or switches to it. `onStarted` runs on the main thread
+    /// once frames come from that camera.
+    func start(front: Bool, onStarted: @escaping @MainActor @Sendable () -> Void) {
         let position: AVCaptureDevice.Position = front ? .front : .back
         let devices = RTCCameraVideoCapturer.captureDevices()
         guard let device = devices.first(where: { $0.position == position }) ?? devices.first,
@@ -27,7 +29,14 @@ final class CallCamera {
             return
         }
         let maxRate = format.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? Self.maxFramesPerSecond
-        capturer.startCapture(with: device, format: format, fps: Int(min(maxRate, Self.maxFramesPerSecond)))
+        capturer.startCapture(
+            with: device,
+            format: format,
+            fps: Int(min(maxRate, Self.maxFramesPerSecond)),
+            completionHandler: { @Sendable _ in
+                DispatchQueue.main.async { MainActor.assumeIsolated { onStarted() } }
+            }
+        )
     }
 
     func stop() {
