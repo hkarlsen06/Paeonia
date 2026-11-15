@@ -144,6 +144,13 @@ extension HomeMapLayout {
 
     static var previewOpacity: Double { 0.5 }
 
+    /// Apart, the heart that sat between the avatars in the row stays between them as the
+    /// map flies in from the world preview, and fades out over the start of the flight.
+    var rowHeartFade: Double {
+        guard !reduceMotion, mapProjection?.introFromPreview ?? previewedMap else { return 0 }
+        return max(0, 1 - (mapProjection?.introProgress ?? 0) * 3)
+    }
+
     func separated(_ points: HomeMapAvatarPoints, isNear: Bool) -> HomeMapAvatarPoints {
         // Wide enough that the two note bubbles never touch.
         let decorations = avatarStyling?.decorations ?? CoupleAvatarDecorations()

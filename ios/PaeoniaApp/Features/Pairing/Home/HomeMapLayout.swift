@@ -219,11 +219,13 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
         HomeMapBand { bandHeight in
             let metrics = metrics(couple, screen, bandHeight: bandHeight)
             let points = points(couple, metrics)
-            if couple.isNear, hearts != nil {
+            let heartOpacity = couple.isNear ? 1 : rowHeartFade
+            if heartOpacity > 0, hearts != nil {
                 let middle = CGPoint(x: (points.own.x + points.partner.x) / 2, y: (points.own.y + points.partner.y) / 2)
                 togetherHeart
-                    .opacity(metrics.avatarOpacity(at: middle))
+                    .opacity(metrics.avatarOpacity(at: middle) * heartOpacity)
                     .position(middle)
+                    .allowsHitTesting(couple.isNear)
             }
             KissLayer(start: points.own, end: points.partner, tapKisses: flights.kisses)
                 .allowsHitTesting(false)

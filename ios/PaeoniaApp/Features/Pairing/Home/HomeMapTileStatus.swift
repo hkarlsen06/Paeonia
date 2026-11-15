@@ -36,6 +36,16 @@ final class HomeMapTileStatus {
         if case .unavailable = tiles { false } else { true }
     }
 
+    /// The map card stands in for the map header only when OpenFreeMap can't draw a map
+    /// that is due. Without both places, the header shows the world faintly instead, and
+    /// that preview stays hidden until OpenFreeMap answers again.
+    func showsMapHeader(for state: CoupleMapState) -> Bool {
+        switch state {
+        case .loading, .ready: showsMapHeader
+        default: true
+        }
+    }
+
     func mapLoaded() {
         loadRevision += 1
         Self.logger.notice("Map finished loading")

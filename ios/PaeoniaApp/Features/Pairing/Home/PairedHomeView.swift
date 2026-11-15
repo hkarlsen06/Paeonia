@@ -74,7 +74,7 @@ struct PairedHomeView: View {
     @State var visitMemoryForm: VisitMemoryForm?
     /// The time the visit card is worked out for (`visitClock`).
     @State var visitNow = Date()
-    /// `mapTiles.showsMapHeader`, changed inside an animation so the layouts cross-fade.
+    /// `wantsMapHeader`, changed inside an animation so the layouts cross-fade.
     @State private var showsMapHeader: Bool
     /// Both layouts are on screen while one fades into the other.
     @State private var isSwitchingLayout = false
@@ -147,7 +147,7 @@ struct PairedHomeView: View {
         self.zoomNamespace = zoomNamespace
         self.locationMapState = locationMapState
         self.mapTiles = mapTiles
-        _showsMapHeader = State(initialValue: mapTiles.showsMapHeader)
+        _showsMapHeader = State(initialValue: mapTiles.showsMapHeader(for: locationMapState))
         self.onPromptCurrentLocation = onPromptCurrentLocation
         self.onPauseLocationSharing = onPauseLocationSharing
         self.unreadChats = unreadChats
@@ -181,8 +181,8 @@ struct PairedHomeView: View {
         }
         .onPreferenceChange(HomeIsCoveredKey.self) { covered in
             isCovered = covered
-            if !covered, showsMapHeader != mapTiles.showsMapHeader {
-                switchLayout(showingMapHeader: mapTiles.showsMapHeader)
+            if !covered, showsMapHeader != wantsMapHeader {
+                switchLayout(showingMapHeader: wantsMapHeader)
             }
         }
         .paeoniaWideLayout($isWideLayout)
@@ -206,13 +206,13 @@ struct PairedHomeView: View {
         .task(id: mapTiles.tiles) {
             await mapTiles.watch()
         }
-        .onChange(of: mapTiles.showsMapHeader) { _, shows in
+        .onChange(of: wantsMapHeader) { _, shows in
             switchLayout(showingMapHeader: shows)
         }
         .onDisappear {
             layoutSwitchTask?.cancel()
             isSwitchingLayout = false
-            showsMapHeader = mapTiles.showsMapHeader
+            showsMapHeader = wantsMapHeader
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Let the scroll view reach the bottom edge so the tab bar's automatic
@@ -278,7 +278,7 @@ extension PairedHomeView {
                     return
                 }
             }
-            guard !Task.isCancelled, mapTiles.showsMapHeader == shows else { return }
+            guard !Task.isCancelled, wantsMapHeader == shows else { return }
             guard !isCovered else {
                 isSwitchingLayout = false
                 return
@@ -286,11 +286,13 @@ extension PairedHomeView {
             withAnimation(PaeoniaMotion.homeLayoutChange) {
                 showsMapHeader = shows
             } completion: {
-                guard mapTiles.showsMapHeader == shows else { return }
+                guard wantsMapHeader == shows else { return }
                 isSwitchingLayout = false
             }
         }
     }
+
+    private var wantsMapHeader: Bool { mapTiles.showsMapHeader(for: locationMapState) }
 
     private var usesMapHeader: Bool {
         drawsOwnHeader && showsMapHeader
