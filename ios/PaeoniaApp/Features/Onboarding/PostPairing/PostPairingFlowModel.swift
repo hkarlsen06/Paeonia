@@ -38,6 +38,11 @@ final class PostPairingFlowModel {
     }
 
     private(set) var screen: Screen?
+    /// Steps shown so far, the one on screen included.
+    private(set) var shownStepCount = 0
+    /// Steps shown so far plus the planned steps still to come. A step can join late,
+    /// such as the widget asked for after a drawing back.
+    private(set) var stepCount = 0
     /// The partner's drawing, set once it has loaded.
     private(set) var gift: PostPairingGiftModel?
     /// The drawing screen opened from the gift, while it is open.
@@ -129,6 +134,8 @@ final class PostPairingFlowModel {
         gift?.stop()
         context = nil
         screen = nil
+        shownStepCount = 0
+        stepCount = 0
         gift = nil
         drawingViewModel = nil
         nudgeDrawing = nil
@@ -250,7 +257,7 @@ final class PostPairingFlowModel {
             finish()
             return
         }
-        screen = Self.screen(for: queue.removeFirst())
+        show(Self.screen(for: queue.removeFirst()))
         if queue.isEmpty {
             startLateAnswersCheck()
         }
@@ -276,10 +283,25 @@ final class PostPairingFlowModel {
         lateAnswersCheck?.cancel()
         lateAnswersCheck = nil
         if lateAnswersWaiting, screen != .answerInvite {
-            screen = .answerInvite
+            show(.answerInvite)
         } else {
             outcome = .us
         }
+    }
+
+    private func show(_ next: Screen) {
+        screen = next
+        shownStepCount += 1
+        stepCount = shownStepCount + queue.count
+    }
+
+    /// Where the sequence is for the onboarding progress bar. The steps shown before
+    /// the one on screen count as finished. Nil until the first step shows.
+    var onboardingStage: OnboardingStage? {
+        guard screen != nil else {
+            return nil
+        }
+        return .firstDay(finished: shownStepCount - 1, total: stepCount)
     }
 
     private static func screen(for step: PostPairingStep) -> Screen {
@@ -348,7 +370,7 @@ extension PostPairingFlowModel {
         }
         if let image, !isInstalled {
             nudgeDrawing = image
-            screen = .widgetNudge
+            show(.widgetNudge)
         } else {
             advance()
         }

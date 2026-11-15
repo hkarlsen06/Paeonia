@@ -2,8 +2,9 @@ import SwiftUI
 
 /// The first day sequence after the pairing celebration: unwrap what the partner
 /// made, draw back, confirm the date, pick question time, and answer. Each step
-/// crossfades into the next, and every step can be skipped. The root shows this
-/// in place of the tabs until `onFinish`.
+/// crossfades into the next, and every step can be skipped. The onboarding progress
+/// bar stays above the steps and fills as each one passes. The root shows this in
+/// place of the tabs until `onFinish`.
 struct PostPairingFlowView: View {
     let model: PostPairingFlowModel
     let partnerName: String
@@ -33,6 +34,15 @@ struct PostPairingFlowView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if let progress {
+                    OnboardingProgressBar(fraction: progress)
+                        .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+                        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                        .padding(.top, PaeoniaSpacing.space8)
+                        .transition(.opacity)
+                }
+            }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
                 stackContentWidth = width
             }
@@ -80,6 +90,12 @@ struct PostPairingFlowView: View {
                 try? await Task.sleep(for: Self.sentPause)
                 await model.drawingSent()
             }
+        }
+    }
+
+    private var progress: Double? {
+        model.onboardingStage.flatMap { stage in
+            OnboardingProgress.fraction(path: acceptedInvite ? .joining : .starting, stage: stage)
         }
     }
 

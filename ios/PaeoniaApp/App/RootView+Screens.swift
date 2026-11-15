@@ -24,7 +24,7 @@ extension RootView {
     var routedRootContent: some View {
         ZStack {
             if let framedScreen {
-                PaeoniaScreenFrame {
+                PaeoniaScreenFrame(progress: onboardingProgress(framedScreen)) {
                     framedContent(framedScreen)
                         .id(framedScreen)
                         .transition(routeTransition)
@@ -79,6 +79,31 @@ extension RootView {
         case .launching, .unauthenticated, .paired:
             nil
         }
+    }
+
+    /// How far through onboarding `screen` is, for its progress bar. A saved
+    /// partner's code means this person joins.
+    private func onboardingProgress(_ screen: RootFramedScreen) -> Double? {
+        let stage: OnboardingStage? = switch screen {
+        case .onboarding:
+            .profile
+        case .paywall:
+            // The paired paywall is not part of onboarding.
+            viewModel.state == .limitedAuthenticated ? .access : nil
+        case .join:
+            .access
+        case .pairing:
+            .invite
+        case .relationshipEnded, .accountClosed, .deletingAccount:
+            nil
+        }
+        guard let stage else {
+            return nil
+        }
+        return OnboardingProgress.fraction(
+            path: pendingJoinInviteCode == nil ? .starting : .joining,
+            stage: stage
+        )
     }
 
     @ViewBuilder

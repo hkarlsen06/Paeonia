@@ -4,13 +4,25 @@ import SwiftUI
 /// welcome, and every screen between sign-in and the paired app (profile setup, the
 /// paywall, pairing, joining and the account notices). It draws the glow background,
 /// the narrow column and the side margins. Only the welcome screen shows the logo, so
-/// the content gets the whole height and sets its own top spacing.
+/// the content gets the whole height and sets its own top spacing. An onboarding
+/// screen after sign-in passes its `progress`, and the frame shows the progress bar
+/// above the content. The frame stays while its screens swap, so the bar fills from
+/// one screen's value to the next.
 struct PaeoniaScreenFrame<Content: View>: View {
+    /// How far through onboarding the screen is, from 0 to 1. Nil shows no bar.
+    var progress: Double?
     @ViewBuilder let content: Content
 
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if let progress {
+                    OnboardingProgressBar(fraction: progress)
+                        .padding(.top, PaeoniaSpacing.space8)
+                        .transition(.opacity)
+                }
+            }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
             .padding(.bottom, PaeoniaSpacing.space16)

@@ -31781,6 +31781,24 @@
         }
       }
     },
+    "onboarding.progress.label" : {
+      "comment" : "VoiceOver label for the thin bar at the top of the setup screens that shows how far along the person is. VoiceOver reads the percent after it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Getting set up"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer i gang"
+          }
+        }
+      }
+    },
     "onboarding.questionTime.custom.title" : {
       "comment" : "Question reminder choice that opens a time picker.",
       "extractionState" : "manual",
