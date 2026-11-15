@@ -33,6 +33,7 @@ import {
 } from "./lib/threadSubjects";
 import { gameKind } from "./lib/validators";
 import { callOfMessage, projectThreadMessages } from "./lib/threadMessageProjection";
+import { isThreadUnreadFor } from "./lib/threadUnread";
 import { topicOfQuestion } from "./lib/topics";
 
 import { finishedGameForChat, gameChatSource, gameChatSubjectId, normalizeGameChatSource, type GameChatSource } from "./lib/gameChatSubjects";
@@ -455,6 +456,7 @@ export const delete_thread_message = mutation({
         if (!thread || !(await canAccessCoupleContent(ctx, userId, thread.couple_id))) {
           return fail("42501", "active entitled thread access is required");
         }
+        if (message.call !== undefined) fail("23514", "calls cannot be deleted");
         if (message.deleted_at !== undefined) return null;
         await ctx.db.patch(
           message._id,
@@ -850,6 +852,8 @@ export const get_conversation_threads = query({
         last_message_call: visible ? callOfMessage(last) : null,
         viewer_read_through_at: viewerRead?.last_read_message_created_at ?? null,
         viewer_read_through_message_id: viewerRead?.last_read_message_id ?? null,
+        // Decided like the app icon's badge, which passes over completed calls.
+        has_unread: await isThreadUnreadFor(ctx, thread, userId),
         topic_key: topic?.key ?? null,
         private_topic: topic?.private ?? false,
       });

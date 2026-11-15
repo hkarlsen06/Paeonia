@@ -8,6 +8,7 @@ import { gamesWaitingFor } from "./gameRegistry";
 import { MAX_WAITING_LETTERS } from "./letters";
 import { insertNotificationOutbox, listActiveUserDevices, preferenceAllows } from "./notifications";
 import { addMs, nowIso } from "./time";
+import { isThreadUnreadFor } from "./threadUnread";
 import { topicsWaitingQuestionIds } from "./topics";
 import { pushStatus } from "./pushStatus";
 
@@ -85,9 +86,8 @@ export async function badgeCountForUser(ctx: ReaderCtx, userId: string, now: str
 }
 
 /**
- * Chats whose newest message is from the partner and newer than what this person read on any
- * phone, whatever they are about. A question chat counts only while it can be opened, like
- * `get_conversation_threads`.
+ * Chats that wait for this person (`isThreadUnreadFor`), whatever they are about. A question chat
+ * counts only while it can be opened, like `get_conversation_threads`.
  */
 async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Promise<Set<string>> {
   const threads = await ctx.db
@@ -96,17 +96,7 @@ async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Pr
     .collect();
   const waiting = new Set<string>();
   for (const thread of threads) {
-    if (thread.deleted_at !== undefined || thread.moderation_status !== "visible") continue;
-    const last = await newestCountedMessage(ctx, thread.id);
-    if (!last || last.sender_user_id === userId || last.deleted_at !== undefined || last.moderation_status !== "visible") {
-      continue;
-    }
-    const read = await ctx.db
-      .query("thread_read_states")
-      .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", thread.id).eq("user_id", userId))
-      .unique();
-    if (read && (read.last_read_message_created_at > last.created_at ||
-        (read.last_read_message_created_at === last.created_at && read.last_read_message_id >= last.id))) continue;
+    if (!(await isThreadUnreadFor(ctx, thread, userId))) continue;
     if (thread.kind === "daily_question") {
       const daily = await ctx.db
         .query("daily_question_threads")
@@ -119,20 +109,6 @@ async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Pr
     }
   }
   return waiting;
-}
-
-/**
- * The thread's newest message, passing over the rows of completed calls, which never mark a chat
- * unread. A missed call counts like a message.
- */
-async function newestCountedMessage(ctx: ReaderCtx, threadId: string): Promise<Doc<"thread_messages"> | null> {
-  for await (const message of ctx.db
-    .query("thread_messages")
-    .withIndex("by_thread_id_created_at_id", (q) => q.eq("thread_id", threadId))
-    .order("desc")) {
-    if (message.call?.outcome !== "completed") return message;
-  }
-  return null;
 }
 
 /**

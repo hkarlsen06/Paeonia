@@ -1693,6 +1693,8 @@ export default defineSchema({
     callee_seen_at: optTs,
     // The Cloudflare TURN usernames handed out for this call, revoked when it ends.
     turn_usernames: v.array(v.string()),
+    // One entry per set of TURN credentials minted, the member who asked. Caps the sets per member.
+    turn_mint_user_ids: v.array(uuid),
     created_at: ts,
   })
     .index("by_uuid", ["id"])

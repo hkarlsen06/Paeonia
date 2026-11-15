@@ -17,6 +17,7 @@ import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
 import { signLiveTicket } from "./lib/liveTicket";
+import { isSharingNow } from "./lib/locationPause";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { knownMemberTimeZone } from "./lib/streakDeadlines";
 import { addMs, nowIso } from "./lib/time";
@@ -88,6 +89,7 @@ export const start_call = mutation({
       state: "ringing",
       ring_expires_at: ringExpiresAt,
       turn_usernames: [],
+      turn_mint_user_ids: [],
       created_at: now,
     });
     await ctx.scheduler.runAt(Date.parse(ringExpiresAt), internal.calls.ring_timed_out, { call_id: callId });
@@ -176,7 +178,20 @@ export const get_live_call = query({
   },
 });
 
-/** What the call screen shows about the partner: their time zone, or null when it is not really known. */
+/** Whether `userId` shares their location in the couple now: sharing is on and not paused. */
+async function isSharingLocationNow(ctx: ReaderCtx, coupleId: string, userId: string): Promise<boolean> {
+  const preference = await ctx.db
+    .query("location_sharing_preferences")
+    .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
+    .unique();
+  return isSharingNow(preference);
+}
+
+/**
+ * What the call screen shows about the partner: their time zone, or null when it is not really
+ * known. Also null while the partner does not share their location, since a time zone says roughly
+ * where they are.
+ */
 export const get_call_context = query({
   args: {},
   handler: async (ctx) => {
@@ -184,7 +199,8 @@ export const get_call_context = query({
     const couple = await findCurrentCouple(ctx, userId);
     if (!couple) return fail("42501", "active couple membership is required");
     const partner = (await listActiveMembers(ctx, couple.id)).find((member) => member.user_id !== userId);
-    return { partner_time_zone_id: partner ? await knownMemberTimeZone(ctx, partner.user_id) : null };
+    const shown = partner !== undefined && (await isSharingLocationNow(ctx, couple.id, partner.user_id));
+    return { partner_time_zone_id: shown ? await knownMemberTimeZone(ctx, partner.user_id) : null };
   },
 });
 
@@ -270,21 +286,26 @@ export const prepare_call_ring = internalQuery({
 
 const TURN_TTL_SECONDS = 24 * 60 * 60;
 const CLOUDFLARE_TURN_API = "https://rtc.live.cloudflare.com/v1/turn/keys";
+/** How many sets of TURN credentials one member can get for one call. Enough for a few reconnects. */
+const MAX_TURN_MINTS_PER_MEMBER = 4;
 
-/** Whether the viewer, a member of the live call, has paused location sharing and so sends media only through TURN. */
-export const ice_server_access = internalQuery({
-  args: { call_id: v.string() },
+/**
+ * Checks that the viewer is a member of the live call. When `mint` is true, also counts one set of
+ * TURN credentials for them, and refuses with P0003 `turn_limit_reached` past
+ * `MAX_TURN_MINTS_PER_MEMBER`. `relay_only` is true unless the viewer shares their location now, so
+ * a partner learns nobody's IP address that they could not already see.
+ */
+export const ice_server_access = internalMutation({
+  args: { call_id: v.string(), mint: v.boolean() },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const call = await requireLiveCallMember(ctx, userId, uuidArg(args.call_id));
-    const preference = await ctx.db
-      .query("location_sharing_preferences")
-      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", call.couple_id).eq("user_id", userId))
-      .unique();
-    return {
-      call_id: call.id,
-      relay_only: preference?.paused_until !== undefined && preference.paused_until > nowIso(),
-    };
+    if (args.mint) {
+      const minted = call.turn_mint_user_ids.filter((id) => id === userId).length;
+      if (minted >= MAX_TURN_MINTS_PER_MEMBER) return fail("P0003", "turn_limit_reached");
+      await ctx.db.patch(call._id, { turn_mint_user_ids: [...call.turn_mint_user_ids, userId] });
+    }
+    return { call_id: call.id, relay_only: !(await isSharingLocationNow(ctx, call.couple_id, userId)) };
   },
 });
 
@@ -318,19 +339,23 @@ function parseIceServers(body: unknown): IceServer[] {
 
 /**
  * STUN and TURN servers for a member of the live call, with TURN credentials from Cloudflare that last
- * 24 hours and carry the call id as their custom identifier. The call's end revokes them.
- * `relay_only` is true while the viewer has paused location sharing, so the partner never sees their
- * address. Without `CLOUDFLARE_TURN_KEY_ID` and `CLOUDFLARE_TURN_API_TOKEN` (a local backend) the list is empty.
+ * 24 hours and carry the call id as their custom identifier. The call's end revokes them. Each member
+ * gets at most `MAX_TURN_MINTS_PER_MEMBER` sets per call, then P0003 `turn_limit_reached`.
+ * `relay_only` is true unless the viewer shares their location now, so the partner never sees their
+ * address otherwise. Without `CLOUDFLARE_TURN_KEY_ID` and `CLOUDFLARE_TURN_API_TOKEN` (a local
+ * backend) the list is empty and nothing is counted.
  */
 export const get_call_ice_servers = action({
   args: { p_call_id: v.string() },
   handler: async (ctx, args): Promise<{ ice_servers: IceServer[]; relay_only: boolean }> => {
-    const access: { call_id: string; relay_only: boolean } = await ctx.runQuery(internal.calls.ice_server_access, {
-      call_id: args.p_call_id,
-    });
     const keyId = process.env.CLOUDFLARE_TURN_KEY_ID;
     const token = process.env.CLOUDFLARE_TURN_API_TOKEN;
-    if (!keyId || !token) return { ice_servers: [], relay_only: access.relay_only };
+    const mint = Boolean(keyId && token);
+    const access: { call_id: string; relay_only: boolean } = await ctx.runMutation(internal.calls.ice_server_access, {
+      call_id: args.p_call_id,
+      mint,
+    });
+    if (!mint) return { ice_servers: [], relay_only: access.relay_only };
 
     const response = await fetch(`${CLOUDFLARE_TURN_API}/${keyId}/credentials/generate-ice-servers`, {
       method: "POST",

@@ -957,9 +957,10 @@ describe("reads", () => {
       last_message_call: null,
       viewer_read_through_at: null,
       viewer_read_through_message_id: null,
+      has_unread: true,
     });
-    expect(rows[2]).toMatchObject({ kind: "daily_question", daily_question_id: questionId, memory_id: null, last_message_body: "daily hello" });
-    expect(rows[0]).toMatchObject({ last_message_id: null, last_message_at: null, last_message_body: null });
+    expect(rows[2]).toMatchObject({ kind: "daily_question", daily_question_id: questionId, memory_id: null, last_message_body: "daily hello", has_unread: false });
+    expect(rows[0]).toMatchObject({ last_message_id: null, last_message_at: null, last_message_body: null, has_unread: false });
     expect(message_id).toBeTruthy();
   });
 

@@ -466,11 +466,18 @@ async function disableDevice(ctx: WriterCtx, kind: "app" | "widget", deviceId: s
   }
 }
 
-/** Turns off the app devices whose token APNs called dead outside the outbox, such as a call ring (`push:send_call_ring`). */
-export const disable_dead_devices = internalMutation({
-  args: { device_ids: v.array(v.string()) },
+/**
+ * Clears the PushKit tokens APNs called dead when a call rang (`push:send_call_ring`). The device
+ * keeps its alert token, so its other pushes go on. A token the phone replaced since is kept.
+ */
+export const clear_dead_voip_tokens = internalMutation({
+  args: { devices: v.array(v.object({ device_id: v.string(), voip_push_token: v.string() })) },
   handler: async (ctx, args) => {
-    for (const deviceId of args.device_ids) await disableDevice(ctx, "app", deviceId);
+    for (const dead of args.devices) {
+      const device = await getByUuid(ctx, "user_devices", uuidArg(dead.device_id));
+      if (device?.voip_push_token !== dead.voip_push_token) continue;
+      await ctx.db.patch(device._id, withTouch(device, { voip_push_token: undefined }));
+    }
     return null;
   },
 });

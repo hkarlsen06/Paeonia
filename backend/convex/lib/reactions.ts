@@ -89,7 +89,7 @@ const REACTION_TARGETS: Record<ReactionTargetKind, ReactionTargetSpec> = {
       return { coupleId, notify: none };
     },
   },
-  /** A shown message, the caller's own or the partner's. */
+  /** A shown message, the caller's own or the partner's. Not a call's row. */
   thread_message: {
     resolve: async (ctx, userId, targetId) => {
       const message = await getByUuid(ctx, "thread_messages", targetId);
@@ -105,6 +105,7 @@ const REACTION_TARGETS: Record<ReactionTargetKind, ReactionTargetSpec> = {
       ) {
         fail("23514", UNAVAILABLE);
       }
+      if (message.call !== undefined) fail("23514", "calls cannot be reacted to");
       return { coupleId, notify: none };
     },
   },

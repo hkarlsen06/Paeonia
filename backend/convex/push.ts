@@ -157,7 +157,8 @@ export const send_push = internalAction({
 /**
  * Rings the callee's phones for a call that `calls:start_call` started: one PushKit push to each active
  * phone with a VoIP token, sent once. It has no outbox row and no retry, because a late ring is worse
- * than none, and APNs drops it at the ring deadline. A dead token turns its device off like any push.
+ * than none, and APNs drops it at the ring deadline. A dead PushKit token is cleared from its device,
+ * which keeps getting its other pushes.
  * Without APNs keys (a local backend) it logs and sends nothing, and the app rings from its subscription.
  */
 export const send_call_ring = internalAction({
@@ -171,13 +172,13 @@ export const send_call_ring = internalAction({
     const rings = await ctx.runQuery(internal.calls.prepare_call_ring, { call_id });
     if (rings.length === 0) return null;
     const transport = createTransport(config);
-    const deadDevices: string[] = [];
+    const deadTokens: { device_id: string; voip_push_token: string }[] = [];
     try {
       await Promise.all(
         rings.map(async (ring) => {
           try {
             const result = await sendWithEnvironmentFallback(buildVoipRequest(ring, config.bundleId), transport);
-            if (result.invalidToken) deadDevices.push(ring.device_id);
+            if (result.invalidToken) deadTokens.push({ device_id: ring.device_id, voip_push_token: ring.voip_push_token });
             else if (!result.ok) console.error("call ring failed", { error: result.error });
           } catch (error) {
             console.error("call ring failed", { error: String(error) });
@@ -187,8 +188,8 @@ export const send_call_ring = internalAction({
     } finally {
       transport.close();
     }
-    if (deadDevices.length > 0) {
-      await ctx.runMutation(internal.pushQueue.disable_dead_devices, { device_ids: deadDevices });
+    if (deadTokens.length > 0) {
+      await ctx.runMutation(internal.pushQueue.clear_dead_voip_tokens, { devices: deadTokens });
     }
     return null;
   },

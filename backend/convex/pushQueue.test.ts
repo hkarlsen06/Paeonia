@@ -443,3 +443,38 @@ describe("send_push through pushWorkpool", () => {
     expect(row.failed_at).toBeUndefined();
   });
 });
+
+describe("call rings", () => {
+  test("a dead PushKit token is cleared, and the phone still gets its alerts", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const phone = await addDevice(t, couple.second.userId);
+    await t.run((ctx) => ctx.db.patch(phone._id, { voip_push_token: "voip-dead" }));
+    configureApns();
+    send.mockImplementation(async (request) =>
+      request.pushType === "voip"
+        ? { ok: false, error: "BadDeviceToken", invalidToken: true }
+        : { ok: true, providerMessageId: "apns-ok" });
+
+    // The ring finds the token dead, then the ring times out into a missed-call alert.
+    const callId = newUuid();
+    await couple.first.as.mutation(api.calls.start_call, { p_call_id: callId, p_device_id: newUuid() });
+    await t.action(internal.push.send_call_ring, { call_id: callId });
+    await drain(t);
+
+    expect(send.mock.calls.map(([request]) => request.pushType)).toEqual(["voip", "alert"]);
+    const device = (await t.run((ctx) => ctx.db.query("user_devices").collect())).find((row) => row.id === phone.id)!;
+    expect(device.voip_push_token).toBeUndefined();
+    expect(device.disabled_at).toBeUndefined();
+    expect((await outboxRows(t)).find((row) => row.kind === "missed_call")?.sent_at).toBeDefined();
+  });
+
+  test("a token the phone replaced after the ring is kept", async () => {
+    const t = newTest();
+    const user = await createSignedInUser(t, {});
+    const phone = await addDevice(t, user.userId);
+    await t.run((ctx) => ctx.db.patch(phone._id, { voip_push_token: "voip-new" }));
+    await t.mutation(internal.pushQueue.clear_dead_voip_tokens, { devices: [{ device_id: phone.id, voip_push_token: "voip-old" }] });
+    expect((await t.run((ctx) => ctx.db.get(phone._id)))?.voip_push_token).toBe("voip-new");
+  });
+});

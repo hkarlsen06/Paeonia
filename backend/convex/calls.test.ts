@@ -26,6 +26,35 @@ const callRows = (t: TestConvex) =>
 const missedCallPushes = (t: TestConvex) =>
   t.run(async (ctx) => (await ctx.db.query("notification_outbox").collect()).filter((row) => row.kind === "missed_call"));
 
+const op = () => ({
+  p_client_operation_id: newUuid(),
+  p_client_id: newUuid(),
+  p_client_sequence: 1,
+  p_local_created_at: new Date().toISOString(),
+});
+
+/** Sets how `userId` shares their location in the couple: off, on, or on and paused for an hour. */
+async function setLocationSharing(t: TestConvex, coupleId: string, userId: string, state: "off" | "on" | "paused") {
+  await t.run(async (ctx) => {
+    const existing = await ctx.db
+      .query("location_sharing_preferences")
+      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
+      .unique();
+    if (existing) await ctx.db.delete(existing._id);
+    const now = new Date().toISOString();
+    await ctx.db.insert("location_sharing_preferences", {
+      couple_id: coupleId,
+      user_id: userId,
+      is_enabled: state !== "off",
+      source: "settings_toggle",
+      updates_while_closed: false,
+      paused_until: state === "paused" ? new Date(Date.now() + 3_600_000).toISOString() : undefined,
+      created_at: now,
+      updated_at: now,
+    });
+  });
+}
+
 /** The first partner calls the second. Returns the call id. */
 async function call(couple: TestCouple): Promise<string> {
   const callId = newUuid();
@@ -95,24 +124,20 @@ describe("access", () => {
     }
   });
 
-  test("ICE servers are empty without a TURN key, and relay only while location sharing is paused", async () => {
+  test("ICE servers are empty without a TURN key, and relay only unless the viewer shares their location", async () => {
     const { t, couple } = await setup();
     const callId = await call(couple);
-    expect(await couple.second.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).toEqual({ ice_servers: [], relay_only: false });
-    await t.run(async (ctx) => {
-      const now = new Date().toISOString();
-      await ctx.db.insert("location_sharing_preferences", {
-        couple_id: couple.coupleId,
-        user_id: couple.second.userId,
-        is_enabled: true,
-        source: "settings_toggle",
-        updates_while_closed: false,
-        paused_until: new Date(Date.now() + 3_600_000).toISOString(),
-        created_at: now,
-        updated_at: now,
-      });
-    });
+    const relayOnly = async () => (await couple.second.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).relay_only;
     expect(await couple.second.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).toEqual({ ice_servers: [], relay_only: true });
+    await setLocationSharing(t, couple.coupleId, couple.second.userId, "on");
+    expect(await relayOnly()).toBe(false);
+    await setLocationSharing(t, couple.coupleId, couple.second.userId, "paused");
+    expect(await relayOnly()).toBe(true);
+    await setLocationSharing(t, couple.coupleId, couple.second.userId, "off");
+    expect(await relayOnly()).toBe(true);
+    // The partner's choice is theirs alone.
+    await setLocationSharing(t, couple.coupleId, couple.first.userId, "on");
+    expect(await relayOnly()).toBe(true);
     expect((await couple.first.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).relay_only).toBe(false);
   });
 
@@ -157,13 +182,70 @@ describe("access", () => {
     }
   });
 
-  test("the call context gives the partner's zone, and null when it is unknown", async () => {
+  test("each member gets at most four sets of TURN credentials per call, and the end revokes them all", async () => {
+    process.env.CLOUDFLARE_TURN_KEY_ID = "key-1";
+    process.env.CLOUDFLARE_TURN_API_TOKEN = "token-1";
+    const urls: string[] = [];
+    let minted = 0;
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      urls.push(url);
+      if (url.endsWith("/generate-ice-servers")) {
+        minted += 1;
+        return new Response(JSON.stringify({
+          iceServers: [{ urls: ["turn:turn.cloudflare.com:3478"], username: `turn-user-${minted}`, credential: "secret" }],
+        }), { status: 201 });
+      }
+      return new Response(null, { status: 204 });
+    });
+    try {
+      const { t, couple } = await setup();
+      const callId = await call(couple);
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        await couple.first.as.action(api.calls.get_call_ice_servers, { p_call_id: callId });
+      }
+      expect(await failure(couple.first.as.action(api.calls.get_call_ice_servers, { p_call_id: callId }))).toEqual({
+        code: "P0003",
+        message: "turn_limit_reached",
+      });
+      expect(minted).toBe(4);
+      // The partner's own sets are counted apart.
+      await couple.second.as.action(api.calls.get_call_ice_servers, { p_call_id: callId });
+      expect(minted).toBe(5);
+
+      await couple.first.as.mutation(api.calls.end_call, { p_call_id: callId });
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+      const revoked = urls.filter((url) => url.endsWith("/revoke"));
+      expect(revoked).toHaveLength(5);
+      for (let index = 1; index <= 5; index += 1) {
+        expect(revoked).toContain(`https://rtc.live.cloudflare.com/v1/turn/keys/key-1/credentials/turn-user-${index}/revoke`);
+      }
+    } finally {
+      fetchMock.mockRestore();
+      delete process.env.CLOUDFLARE_TURN_KEY_ID;
+      delete process.env.CLOUDFLARE_TURN_API_TOKEN;
+    }
+  });
+
+  test("the call context gives the partner's zone only while they share their location", async () => {
     const t = newTest();
     const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "America/New_York"] });
-    expect(await couple.first.as.query(api.calls.get_call_context, {})).toEqual({ partner_time_zone_id: "America/New_York" });
+    const context = () => couple.first.as.query(api.calls.get_call_context, {});
+    expect(await context()).toEqual({ partner_time_zone_id: null });
+    await setLocationSharing(t, couple.coupleId, couple.second.userId, "on");
+    expect(await context()).toEqual({ partner_time_zone_id: "America/New_York" });
     await addDevice(t, couple.second.userId, { timeZone: "Asia/Tokyo" });
-    expect(await couple.first.as.query(api.calls.get_call_context, {})).toEqual({ partner_time_zone_id: "Asia/Tokyo" });
+    expect(await context()).toEqual({ partner_time_zone_id: "Asia/Tokyo" });
+    await setLocationSharing(t, couple.coupleId, couple.second.userId, "paused");
+    expect(await context()).toEqual({ partner_time_zone_id: null });
+    await setLocationSharing(t, couple.coupleId, couple.second.userId, "off");
+    expect(await context()).toEqual({ partner_time_zone_id: null });
+    // The viewer's own sharing does not show the partner's zone.
+    await setLocationSharing(t, couple.coupleId, couple.first.userId, "on");
+    expect(await context()).toEqual({ partner_time_zone_id: null });
+
     const unknown = await createCouple(t);
+    await setLocationSharing(t, unknown.coupleId, unknown.second.userId, "on");
     expect(await unknown.first.as.query(api.calls.get_call_context, {})).toEqual({ partner_time_zone_id: null });
   });
 });
@@ -319,7 +401,27 @@ describe("call states", () => {
     expect(page.messages).toMatchObject([{ message_id: callId, sender_user_id: couple.first.userId, body: null, call: thread.last_message_call }]);
   });
 
-  test("a call's row cannot be edited, replied to or reported", async () => {
+  test("a completed call after an unread message keeps the chat unread for the person who has not read it", async () => {
+    const { couple } = await setup();
+    await couple.second.as.mutation(api.threads.create_couple_thread_with_message, { ...op(), p_couple_id: couple.coupleId, p_body: "call me?" });
+    tick(5);
+    const callId = await call(couple);
+    await couple.second.as.mutation(api.calls.answer_call, { p_call_id: callId, p_device_id: newUuid() });
+    tick(30);
+    await couple.first.as.mutation(api.calls.end_call, { p_call_id: callId });
+
+    const [forFirst] = await couple.first.as.query(api.threads.get_conversation_threads, {});
+    expect(forFirst).toMatchObject({ last_message_id: callId, last_message_sender_user_id: couple.first.userId, has_unread: true });
+    const [forSecond] = await couple.second.as.query(api.threads.get_conversation_threads, {});
+    expect(forSecond.has_unread).toBe(false);
+
+    const page = await couple.first.as.query(api.threads.get_thread_messages, { p_thread_id: forFirst.thread_id, p_limit: 10 });
+    const message = page.messages.find((row) => row.message_id !== callId)!;
+    await couple.first.as.mutation(api.chatPresence.mark_thread_read, { p_thread_id: forFirst.thread_id, p_message_id: message.message_id });
+    expect((await couple.first.as.query(api.threads.get_conversation_threads, {}))[0].has_unread).toBe(false);
+  });
+
+  test("a call's row cannot be edited, replied to, deleted, reacted to or reported", async () => {
     const { t, couple } = await setup();
     const callId = await call(couple);
     await couple.first.as.mutation(api.calls.end_call, { p_call_id: callId });
@@ -328,16 +430,24 @@ describe("call states", () => {
       code: "23514",
       message: "calls cannot be edited",
     });
-    const op = () => ({
-      p_client_operation_id: newUuid(),
-      p_client_id: newUuid(),
-      p_client_sequence: 1,
-      p_local_created_at: new Date().toISOString(),
-    });
     const reply = await failure(
       couple.second.as.mutation(api.threads.send_thread_message, { p_thread_id: threadId, p_body: "sorry", p_reply_to_message_id: callId, ...op() }),
     );
     expect(reply).toEqual({ code: "23514", message: "calls cannot be replied to" });
+    expect(await failure(couple.first.as.mutation(api.threads.delete_thread_message, { p_message_id: callId, ...op() }))).toEqual({
+      code: "23514",
+      message: "calls cannot be deleted",
+    });
+    // The callee did not send the row, so they are refused as for any message of the partner's.
+    expect((await failure(couple.second.as.mutation(api.threads.delete_thread_message, { p_message_id: callId, ...op() }))).code).toBe("42501");
+    for (const user of [couple.first, couple.second]) {
+      expect(
+        await failure(user.as.mutation(api.reactions.set_reaction, { p_kind: "thread_message", p_target_id: callId, p_emoji: "❤️" })),
+      ).toEqual({ code: "23514", message: "calls cannot be reacted to" });
+    }
+    expect(await callRows(t)).toMatchObject([{ id: callId, call: { outcome: "missed" } }]);
+    expect((await callRows(t))[0].deleted_at).toBeUndefined();
+    expect(await t.run((ctx) => ctx.db.query("reactions").collect())).toEqual([]);
     const report = await failure(
       couple.second.as.mutation(api.reports.submit_leave_and_report, {
         p_target_kind: "thread_message",

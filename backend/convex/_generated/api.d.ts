@@ -139,6 +139,7 @@ import type * as lib_syncEvents from "../lib/syncEvents.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_threadMessageProjection from "../lib/threadMessageProjection.js";
 import type * as lib_threadSubjects from "../lib/threadSubjects.js";
+import type * as lib_threadUnread from "../lib/threadUnread.js";
 import type * as lib_time from "../lib/time.js";
 import type * as lib_together from "../lib/together.js";
 import type * as lib_topicCatalog from "../lib/topicCatalog.js";
@@ -320,6 +321,7 @@ declare const fullApi: ApiFromModules<{
   "lib/text": typeof lib_text;
   "lib/threadMessageProjection": typeof lib_threadMessageProjection;
   "lib/threadSubjects": typeof lib_threadSubjects;
+  "lib/threadUnread": typeof lib_threadUnread;
   "lib/time": typeof lib_time;
   "lib/together": typeof lib_together;
   "lib/topicCatalog": typeof lib_topicCatalog;
