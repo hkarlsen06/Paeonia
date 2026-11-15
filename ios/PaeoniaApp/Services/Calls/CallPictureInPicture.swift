@@ -6,9 +6,12 @@ import UIKit
 final class CallPictureInPicture {
     private let contentController = AVPictureInPictureVideoCallViewController()
     private var controller: AVPictureInPictureController?
-    /// The partner's video on screen, which the system animates into Picture in Picture.
+    /// Every view showing the partner's video, such as the call screen's and the bubble's.
+    private var partnerViews: [WeakView] = []
+    /// The partner's video the person sees, which the system animates into Picture in Picture.
     private weak var sourceView: UIView?
     private var isEnabled = false
+    private var resignObserver: (any NSObjectProtocol)?
 
     init(feed: CallVideoFeed) {
         let video = feed.makeView()
@@ -23,44 +26,81 @@ final class CallPictureInPicture {
         feed.onFrameSize = { [weak self] size in
             self?.contentController.preferredContentSize = size
         }
+        // The call screen and the bubble swap with animations that end after the last change
+        // to window membership, so the source is chosen once more just before the app leaves.
+        resignObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willResignActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.update() }
+        }
     }
 
-    /// Picture in Picture may start while the partner's camera is on during a call.
+    /// Picture in Picture may start while the partner's camera is on during a call. The engine
+    /// calls this on every change to the call, which also chooses the source again.
     func setEnabled(_ enabled: Bool) {
-        guard enabled != isEnabled else { return }
-        isEnabled = enabled
-        if !enabled {
+        if isEnabled, !enabled {
             controller?.stopPictureInPicture()
         }
+        isEnabled = enabled
         update()
     }
 
-    /// A view showing the partner's video entered or left a window.
-    func sourceViewChanged(_ view: UIView) {
-        if view.window != nil {
-            sourceView = view
-        } else if view === sourceView {
-            sourceView = nil
-        }
-        update()
+    /// A new view showing the partner's video. Its source follows the views on screen.
+    func track(_ view: CallVideoLayerView) {
+        partnerViews.removeAll { $0.view == nil }
+        partnerViews.append(WeakView(view: view))
+        view.onWindowChange = { [weak self] in self?.update() }
     }
 
+    /// Points Picture in Picture at the partner's video the person sees. A view can stay in a
+    /// window while another covers it, or while it fades or moves away, so being in a window
+    /// is not enough.
     private func update() {
-        guard isEnabled, AVPictureInPictureController.isPictureInPictureSupported(),
-              let sourceView, sourceView.window != nil
-        else {
+        guard isEnabled, AVPictureInPictureController.isPictureInPictureSupported() else {
             controller?.canStartPictureInPictureAutomaticallyFromInline = false
             return
         }
+        // Changing the source of a running Picture in Picture would end it.
+        guard controller?.isPictureInPictureActive != true else { return }
+        partnerViews.removeAll { $0.view == nil }
+        guard let visible = partnerViews.compactMap(\.view).filter(Self.isVisible).max(by: {
+            $0.bounds.width * $0.bounds.height < $1.bounds.width * $1.bounds.height
+        }) else {
+            sourceView = nil
+            controller?.canStartPictureInPictureAutomaticallyFromInline = false
+            return
+        }
+        controller?.canStartPictureInPictureAutomaticallyFromInline = true
+        guard visible !== sourceView || controller == nil else { return }
+        sourceView = visible
         let source = AVPictureInPictureController.ContentSource(
-            activeVideoCallSourceView: sourceView,
+            activeVideoCallSourceView: visible,
             contentViewController: contentController
         )
         if let controller {
             controller.contentSource = source
         } else {
             controller = AVPictureInPictureController(contentSource: source)
+            controller?.canStartPictureInPictureAutomaticallyFromInline = true
         }
-        controller?.canStartPictureInPictureAutomaticallyFromInline = true
+    }
+
+    /// In a shown window, not hidden or transparent anywhere up to it, and at least partly on it.
+    private static func isVisible(_ view: UIView) -> Bool {
+        guard let window = view.window, !view.bounds.isEmpty else { return false }
+        var alpha: CGFloat = 1
+        var current: UIView? = view
+        while let ancestor = current {
+            guard !ancestor.isHidden else { return false }
+            alpha *= ancestor.alpha
+            current = ancestor.superview
+        }
+        return alpha > 0.01 && view.convert(view.bounds, to: window).intersects(window.bounds)
+    }
+
+    private struct WeakView {
+        weak var view: UIView?
     }
 }

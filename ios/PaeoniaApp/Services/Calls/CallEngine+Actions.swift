@@ -97,9 +97,7 @@ extension CallEngine: CallEngineActions {
             return localVideo.makeView()
         case .partner:
             let view = partnerVideo.makeView()
-            view.onWindowChange = { [weak self] view in
-                self?.pictureInPicture.sourceViewChanged(view)
-            }
+            pictureInPicture.track(view)
             return view
         }
     }

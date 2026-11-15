@@ -29,6 +29,7 @@ Decided on 2026-11-14.
 Built on 2026-11-14 in `ios/PaeoniaApp/Features/Calls/` (`docs/implementation-map.md` lists the files).
 
 - The full call screen and the bubble live in a window of their own above the app's window and below the app lock's cover, so they stay over sheets, covers and games. Starting or answering a call opens the full screen. The chevron or a swipe down shrinks it to the bubble, which the person can drag to any corner.
+- System Picture in Picture starts from the partner's video the person sees. `CallPictureInPicture` keeps every partner video view and picks the one that is in a window, not hidden or transparent, and on screen, whenever the call changes, a view enters or leaves a window, and just before the app goes to the background. A view that is still in a window can be hidden behind the other surface or faded out, and iOS does not start Picture in Picture from it.
 - The phone buttons and Call back go through `CallStarter`, which opens the call screen while a call is live and asks the night question first.
 - The Us tab's phone button sits in its header row beside the streak, because the partner's avatar moves around the map.
 - An ended call shows why on the call screen until the engine clears the session. A microphone refusal adds an Open Settings button, and any other failure adds the support link.

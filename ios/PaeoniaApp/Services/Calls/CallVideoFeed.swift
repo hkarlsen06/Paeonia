@@ -150,7 +150,7 @@ typealias CallVideoSample = CMReadySampleBuffer<CMSampleBuffer.DynamicContent>
 final class CallVideoLayerView: UIView {
     /// Called when the view enters or leaves a window, so Picture in Picture can follow the
     /// partner's video on screen.
-    var onWindowChange: ((CallVideoLayerView) -> Void)?
+    var onWindowChange: (() -> Void)?
     var isMirrored = false {
         didSet { setNeedsLayout() }
     }
@@ -182,7 +182,7 @@ final class CallVideoLayerView: UIView {
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        onWindowChange?(self)
+        onWindowChange?()
     }
 
     override func layoutSubviews() {
