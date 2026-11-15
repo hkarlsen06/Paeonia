@@ -9,6 +9,7 @@ final class CallCamera {
     private static let maxFramesPerSecond = 30.0
 
     private let capturer: LKRTCCameraVideoCapturer
+    private var isCapturing = false
 
     init(source: LKRTCVideoSource) {
         capturer = LKRTCCameraVideoCapturer(delegate: source)
@@ -21,6 +22,10 @@ final class CallCamera {
 
     /// Starts the front or back camera, or switches to it. `onStarted` runs on the main thread
     /// once frames come from that camera.
+    ///
+    /// A switch stops the running camera first. The capturer removes only inputs for the camera
+    /// it is starting, so starting over a running one leaves the old connection on the shared
+    /// multi-camera session, and adding the new one throws.
     func start(front: Bool, onStarted: @escaping @MainActor @Sendable () -> Void) {
         let position: AVCaptureDevice.Position = front ? .front : .back
         let devices = LKRTCCameraVideoCapturer.captureDevices()
@@ -30,6 +35,8 @@ final class CallCamera {
             return
         }
         let maxRate = format.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? Self.maxFramesPerSecond
+        stop()
+        isCapturing = true
         capturer.startCapture(
             with: device,
             format: format,
@@ -41,6 +48,8 @@ final class CallCamera {
     }
 
     func stop() {
+        guard isCapturing else { return }
+        isCapturing = false
         capturer.stopCapture()
     }
 
