@@ -1,13 +1,22 @@
 import AVFoundation
+import OSLog
 @preconcurrency import WebRTC
 
 /// The call's side of the audio session. The system activates the session for a call, and
 /// WebRTC's audio runs only inside that activation, when `CallMachine` asks for it
 /// (`isMediaAudioOn`). Nothing here calls `setActive`.
+///
+/// The session is in the default mode until WebRTC's audio starts, and in `voiceChat` after.
+/// In `voiceChat` iOS plays sound that skips voice processing far quieter, so the ringback was
+/// barely audible on an iPhone even at full gain.
 enum CallAudio {
     private static var rtcSession: RTCAudioSession {
         RTCAudioSession.sharedInstance()
     }
+
+    /// Every category change keeps these options. WebRTC sets its category again when its
+    /// audio starts, and a real change there would drop the speaker for the earpiece.
+    private static let options: AVAudioSession.CategoryOptions = [.allowBluetoothHFP]
 
     /// Turns on WebRTC's manual audio, before any peer connection exists.
     static func configureAtLaunch() {
@@ -16,7 +25,7 @@ enum CallAudio {
         let configuration = RTCAudioSessionConfiguration.webRTC()
         configuration.category = AVAudioSession.Category.playAndRecord.rawValue
         configuration.mode = AVAudioSession.Mode.voiceChat.rawValue
-        configuration.categoryOptions = [.allowBluetoothHFP]
+        configuration.categoryOptions = options
         RTCAudioSessionConfiguration.setWebRTC(configuration)
     }
 
@@ -25,16 +34,43 @@ enum CallAudio {
         let session = rtcSession
         session.lockForConfiguration()
         defer { session.unlockForConfiguration() }
-        try? session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetoothHFP])
+        try? session.setCategory(.playAndRecord, mode: .voiceChat, options: options)
     }
 
+    /// Switches the mode and keeps the speaker if it had the sound, because a mode change can
+    /// move the sound back to the earpiece.
+    private static func setMode(_ mode: AVAudioSession.Mode) {
+        let session = rtcSession
+        guard session.mode != mode.rawValue else { return }
+        let wasSpeaker = currentRoute() == .speaker
+        session.lockForConfiguration()
+        defer { session.unlockForConfiguration() }
+        do {
+            try session.setCategory(.playAndRecord, mode: mode, options: options)
+        } catch {
+            log.error("setCategory failed: \(error.localizedDescription, privacy: .public)")
+        }
+        if wasSpeaker {
+            try? session.overrideOutputAudioPort(.speaker)
+        }
+        logState("mode \(mode.rawValue)")
+    }
+
+    /// The call's sounds play in the default mode until WebRTC's audio starts.
     static func didActivate(_ audioSession: AVAudioSession) {
         rtcSession.audioSessionDidActivate(audioSession)
+        if !rtcSession.isAudioEnabled {
+            setMode(.default)
+        }
     }
 
     /// Starts or stops WebRTC's voice processing unit, which plays the partner and records the
-    /// microphone. While it runs, iOS turns other sound down, the call's own sounds included.
+    /// microphone, in `voiceChat`. While it runs, iOS turns other sound down, the call's own
+    /// sounds included.
     static func setMediaAudio(_ isOn: Bool) {
+        if isOn {
+            setMode(.voiceChat)
+        }
         if rtcSession.isAudioEnabled != isOn {
             rtcSession.isAudioEnabled = isOn
         }
@@ -43,6 +79,24 @@ enum CallAudio {
     static func didDeactivate(_ audioSession: AVAudioSession) {
         rtcSession.audioSessionDidDeactivate(audioSession)
         rtcSession.isAudioEnabled = false
+    }
+
+    nonisolated static let log = Logger(subsystem: "no.paeonia.app", category: "CallAudio")
+
+    /// Logs the session's state at each audio step of a call. A device's console shows it when
+    /// the app launches with `OS_ACTIVITY_DT_MODE=YES`.
+    static func logState(_ moment: String) {
+        let session = AVAudioSession.sharedInstance()
+        let outputs = session.currentRoute.outputs
+            .map { "\($0.portType.rawValue)/\($0.channels?.count ?? 0)ch" }
+            .joined(separator: ",")
+        log.notice("""
+            \(moment, privacy: .public): outputs=\(outputs, privacy: .public) \
+            category=\(session.category.rawValue, privacy: .public) mode=\(session.mode.rawValue, privacy: .public) \
+            options=\(session.categoryOptions.rawValue) volume=\(session.outputVolume) \
+            webrtcAudio=\(rtcSession.isAudioEnabled) webrtcActive=\(rtcSession.isActive) \
+            otherAudio=\(session.isOtherAudioPlaying)
+            """)
     }
 
     static func currentRoute() -> CallAudioRoute {

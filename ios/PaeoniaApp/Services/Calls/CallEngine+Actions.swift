@@ -124,6 +124,7 @@ extension CallEngine: CallEngineActions {
 
     func refreshAudioRoute() {
         guard !isIdle, let center else { return }
+        CallAudio.logState("route refresh")
         let route = CallAudio.currentRoute()
         if center.session?.audioRoute != route {
             center.session?.audioRoute = route

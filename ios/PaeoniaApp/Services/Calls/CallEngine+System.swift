@@ -27,8 +27,10 @@ extension CallEngine: CallSystemDelegate {
 
     func audioActivated(_ audioSession: AVAudioSession) {
         CallAudio.didActivate(audioSession)
+        CallAudio.logState("activated")
         if let run, !run.isFinished {
             useSpeakerAtStart(of: run)
+            CallAudio.logState("after speaker pick")
             send(.audioActivated, to: run)
         }
         refreshAudioRoute()

@@ -1,4 +1,5 @@
 import AVFoundation
+import OSLog
 
 /// The call's own sounds, `CallSound<rawValue>.caf` in Resources/CallSounds.
 /// `ios/Scripts/game-sounds.swift` makes them.
@@ -47,7 +48,8 @@ nonisolated final class CallSoundPlayer: @unchecked Sendable {
     private func start(_ sound: CallSound) {
         guard let player = player(for: sound) else { return }
         player.currentTime = 0
-        player.play()
+        let isPlaying = player.play()
+        CallAudio.log.notice("\(sound.rawValue, privacy: .public) play=\(isPlaying) gain=\(player.volume)")
     }
 
     private func player(for sound: CallSound) -> AVAudioPlayer? {

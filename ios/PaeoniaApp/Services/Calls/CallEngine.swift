@@ -180,11 +180,13 @@ final class CallEngine {
         case let .finish(reason, server):
             finish(run, reason: reason, server: server)
         case let .ringback(isOn):
+            CallAudio.logState(isOn ? "ringback on" : "ringback off")
             sounds.setRingback(isOn)
         case .playConnectedSound:
             sounds.play(.connected)
         case let .mediaAudio(isOn):
             CallAudio.setMediaAudio(isOn)
+            CallAudio.logState(isOn ? "media audio on" : "media audio off")
         }
     }
 
