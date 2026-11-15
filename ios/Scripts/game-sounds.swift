@@ -473,10 +473,11 @@ let recipes: [Recipe] = [
         // Cut where the ring is low, so `finish` fades it out well before the next one.
         return Array(Biquad.lowpass(5_000).run(mix.samples).prefix(count(2.4)))
     },
-    // Rings on this phone while the partner's call rings inside the open app: two quick rising
-    // pairs, A5 to E6. It rises where the ringback falls, so the two are easy to tell apart.
-    // System Sound Services plays it once every `CallRinger.period`.
-    Recipe(library: .call, name: "Ring", peak: 0.42) {
+    // Rings on this phone for the partner's call: two quick rising pairs, A5 to E6. It rises
+    // where the ringback falls, so the two are easy to tell apart. The system call UI loops the
+    // file as the ringtone, and `CallRinger` plays it inside the open app, so the period sets
+    // the gap between rings.
+    Recipe(library: .call, name: "Ring", peak: 0.42, period: 2.5) {
         var mix = Mix()
         for start in [0.0, 0.42] {
             mix.add(bar(a4, decay: 0.3), at: start, gain: 0.15)

@@ -13,7 +13,7 @@ final class LiveCommunicationCallSystem: CallSystem {
 
     init() {
         manager = ConversationManager(configuration: ConversationManager.Configuration(
-            ringtoneName: nil,
+            ringtoneName: CallSound.ring.fileName,
             iconTemplateImageData: Self.iconTemplate(),
             maximumConversationGroups: 1,
             maximumConversationsPerConversationGroup: 1,

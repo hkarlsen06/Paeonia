@@ -6,7 +6,7 @@ import Foundation
 /// vibration settings decide whether the phone sounds, vibrates or both, and the call's audio
 /// session stays untouched.
 enum CallRinger {
-    /// One ring starts this often. The sound itself is shorter.
+    /// One ring starts this often, the length of the sound file, which ends in silence.
     static let period: Duration = .seconds(2.5)
 
     /// Rings until the task is cancelled.

@@ -11,7 +11,7 @@ Every bundled `GameSound` uses the same file loudness reference. `CallSound` has
 
 `ios/Scripts/normalize-game-sounds.py` owns the numeric limits. It uses static gain when that meets the peak ceiling, otherwise an oversampled lookahead limiter. It measures the final quantized CAF again before accepting it. The script prepares every changed file before replacing originals and leaves files that already conform untouched.
 
-Call sounds (`CallSound` in `ios/PaeoniaApp/Services/Calls/CallSound.swift`) live in `Resources/CallSounds`, one `CallSound<Name>.caf` per case with no variants. The ringback loops, so its file is one whole period, the phrase followed by silence. The ring on the partner's phone plays through System Sound Services, and `CallRinger` starts it again every 2.5 seconds, so its file holds only the phrase. Their notes sit between 0.9 and 5 kHz, an octave above the game sounds, because a phone's speaker plays little below about 600 Hz. A mono ringback on A4 at -26 LUFS was barely audible on an iPhone held to the ear.
+Call sounds (`CallSound` in `ios/PaeoniaApp/Services/Calls/CallSound.swift`) live in `Resources/CallSounds`, one `CallSound<Name>.caf` per case with no variants. The ringback loops, so its file is one whole period, the phrase followed by silence. The ring on the partner's phone is one whole period too, 2.5 seconds, because the system call UI loops it as the ringtone and `CallRinger` plays it again every 2.5 seconds inside the app. Their notes sit between 0.9 and 5 kHz, an octave above the game sounds, because a phone's speaker plays little below about 600 Hz. A mono ringback on A4 at -26 LUFS was barely audible on an iPhone held to the ear.
 
 ## Playback
 
