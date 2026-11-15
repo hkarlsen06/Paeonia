@@ -1,15 +1,27 @@
 import SwiftUI
 
 /// The call, shrunk to a bubble that floats over every screen. A voice call shows the partner's
-/// face, the call time, mute and end. A video call shows the partner's video. A tap opens the
-/// call screen again.
+/// face, the call time, mute and end. A video call shows the partner's video, at the size the
+/// person pinched it to. A tap opens the call screen again.
 struct CallBubble: View {
     let center: CallCenter
     let session: CallSession
     let participants: DailyChallengeParticipants
+    /// How much bigger or smaller than `videoSize` the video shows.
+    var videoScale: CGFloat = 1
+    /// VoiceOver's swipe up or down makes the video bigger or smaller.
+    var resizeVideo: (AccessibilityAdjustmentDirection) -> Void = { _ in }
 
     static let videoSize = CGSize(width: 104, height: 148)
+    /// How far a pinch may shrink or grow the video.
+    static let videoScales: ClosedRange<CGFloat> = 0.75...2.5
     private static let avatarSize: CGFloat = 44
+
+    /// The bubble shows `session`'s video, which a pinch resizes, and not its voice controls.
+    static func showsVideo(_ session: CallSession) -> Bool {
+        if case .ended = session.phase { return false }
+        return session.isPartnerCameraOn
+    }
 
     private var isEnded: Bool {
         if case .ended = session.phase { return true }
@@ -18,7 +30,7 @@ struct CallBubble: View {
 
     var body: some View {
         Group {
-            if session.isPartnerCameraOn, !isEnded {
+            if Self.showsVideo(session) {
                 video
             } else {
                 voice
@@ -69,7 +81,7 @@ struct CallBubble: View {
 
     private var video: some View {
         CallVideoView(engine: center.engine, source: .partner)
-            .frame(width: Self.videoSize.width, height: Self.videoSize.height)
+            .frame(width: Self.videoSize.width * videoScale, height: Self.videoSize.height * videoScale)
             .clipShape(.rect(cornerRadius: PaeoniaRadius.radius20))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20).strokeBorder(.white.opacity(0.25))
@@ -78,6 +90,7 @@ struct CallBubble: View {
             .accessibilityElement()
             .accessibilityLabel(Text(.callsBubbleAccessibilityLabel(participants.partnerName)))
             .accessibilityAddTraits(.isButton)
+            .accessibilityAdjustableAction(resizeVideo)
             .accessibilityIdentifier("calls.bubble")
     }
 

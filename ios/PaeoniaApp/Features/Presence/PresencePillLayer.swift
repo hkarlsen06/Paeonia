@@ -179,7 +179,7 @@ struct PresencePillLayer: View {
         let width = PresenceTab.size.width
         let y = placement.center(of: overlay.spot, bubble: PresenceAvatar.outerSize).y
         let shownY = placement.center(
-            of: CallBubbleSpot(edge: edge, y: y + tabDragHeight), bubble: PresenceAvatar.outerSize).y
+            of: CallBubbleSpot(edge: edge, height: .center(y + tabDragHeight)), bubble: PresenceAvatar.outerSize).y
         return PresenceTab(edge: edge, partnerName: partnerName, hasWaitingNotice: hasWaitingNotice)
             .onTapGesture { model.untuck() }
             .accessibilityAddTraits(.isButton)
@@ -197,9 +197,9 @@ struct PresencePillLayer: View {
             .onChanged { tabDragHeight = $0.translation.height }
             .onEnded { value in
                 let inward = edge == .leading ? value.translation.width : -value.translation.width
-                let droppedY = placement.settledY(y + value.translation.height, bubble: PresenceAvatar.outerSize)
+                let dropped = placement.settledHeight(y + value.translation.height, bubble: PresenceAvatar.outerSize)
                 withAnimation(motion) {
-                    overlay.spot = CallBubbleSpot(edge: edge, y: droppedY)
+                    overlay.spot = CallBubbleSpot(edge: edge, height: dropped)
                     if inward > PresenceTab.size.width * 1.5 { model.untuck() }
                     tabDragHeight = 0
                 }

@@ -3,24 +3,34 @@ import SwiftUI
 /// Where the call bubble and the partner's avatar sit: against the left or the right edge, at the
 /// height the person dropped it. They share one spot, so the bubble shows where the avatar was.
 nonisolated struct CallBubbleSpot: Equatable, Sendable {
+    enum Height: Equatable, Sendable {
+        /// Just above the screen's bottom controls, such as the tab bar or a chat's composer. Where it
+        /// starts, before the person moves it.
+        case aboveControls
+        /// Dropped as high or as low as it goes, it keeps to that end, so a keyboard or a panel that
+        /// goes away later doesn't leave it in the middle of the screen.
+        case top
+        case bottom
+        /// The center's height in the layer. The free area keeps it in.
+        case center(CGFloat)
+    }
+
     var edge: HorizontalEdge
-    /// The center's height in the layer. The free area keeps it in, so `.infinity` is as low as it goes.
-    var y: CGFloat
+    var height: Height
 
     /// Bottom right, above the tab bar.
-    static let initial = CallBubbleSpot(edge: .trailing, y: .infinity)
+    static let initial = CallBubbleSpot(edge: .trailing, height: .aboveControls)
 
     var isLeading: Bool { edge == .leading }
 }
 
-/// Where the call bubble and the partner's avatar may sit. They stay clear of the navigation bar at
-/// the top, and of the tab bar, a screen's bottom controls, a chat's composer and the game chat panel
-/// at the bottom.
+/// Where the call bubble and the partner's avatar may sit. The person may drop them anywhere from
+/// under the navigation bar to the bottom of the screen, over the tab bar and a screen's bottom
+/// controls too. The keyboard and the game chat panel push them up while they are open, and they
+/// start above the bottom controls.
 nonisolated struct CallBubblePlacement {
     /// Room for a navigation bar under the status bar.
     private static let navigationBarClearance: CGFloat = 52
-    /// Room for the floating tab bar above the bottom of the safe area.
-    private static let tabBarClearance: CGFloat = 70
     static let margin = PaeoniaSpacing.space12
     /// How far ahead a throw carries, in seconds of its speed when the finger lets go.
     private static let throwCarry: CGFloat = 0.1
@@ -29,27 +39,37 @@ nonisolated struct CallBubblePlacement {
     let size: CGSize
     /// Where a bubble's frame may go, in the layer's coordinates.
     let area: CGRect
+    /// The lowest a bubble's frame goes at `.aboveControls`.
+    private let controlsMaxY: CGFloat
 
     /// `globalMinY` is the top of the layer in global coordinates, and `controlsTop` and `panelTop`
-    /// are global too.
-    init(size: CGSize, globalMinY: CGFloat, controlsTop: CGFloat?, panelTop: CGFloat?) {
+    /// are global too. The bottom controls keep the bubble above them only while the keyboard is up,
+    /// because then they ride on it.
+    init(size: CGSize, globalMinY: CGFloat, controlsTop: CGFloat?, panelTop: CGFloat?, keyboardIsUp: Bool) {
         self.size = size
-        let top = Self.navigationBarClearance
-        var bottom = size.height - Self.tabBarClearance
-        for edge in [controlsTop, panelTop].compactMap(\.self) {
-            bottom = min(bottom, edge - globalMinY)
-        }
         let margin = Self.margin
+        let top = Self.navigationBarClearance
+        let controlsBottom = controlsTop.map { min(size.height, $0 - globalMinY) } ?? size.height
+        var bottom = keyboardIsUp ? controlsBottom : size.height
+        if let panelTop { bottom = min(bottom, panelTop - globalMinY) }
         area = CGRect(
             x: margin, y: top, width: max(0, size.width - 2 * margin), height: max(0, bottom - margin - top))
+        controlsMaxY = min(area.maxY, controlsBottom - margin)
     }
 
     /// The center of a bubble of `bubble` size at `spot`, kept inside the free area. With no room
     /// left, such as above an open chat panel, it goes to the top.
     func center(of spot: CallBubbleSpot, bubble: CGSize) -> CGPoint {
         let x = spot.isLeading ? area.minX + bubble.width / 2 : area.maxX - bubble.width / 2
+        let highest = area.minY + bubble.height / 2
         let lowest = max(area.minY, area.maxY - bubble.height) + bubble.height / 2
-        return CGPoint(x: x, y: min(max(spot.y, area.minY + bubble.height / 2), lowest))
+        let y: CGFloat = switch spot.height {
+        case .aboveControls: max(area.minY, controlsMaxY - bubble.height) + bubble.height / 2
+        case .top: highest
+        case .bottom: lowest
+        case let .center(y): min(max(y, highest), lowest)
+        }
+        return CGPoint(x: x, y: y)
     }
 
     /// In the top half something taller than the spot's row grows down from it, and in the bottom
@@ -82,7 +102,7 @@ nonisolated struct CallBubblePlacement {
         let carried = CGPoint(
             x: released.x + velocity.width * Self.throwCarry, y: released.y + velocity.height * Self.throwCarry)
         let edge: HorizontalEdge = carried.x < size.width / 2 ? .leading : .trailing
-        let landed = CallBubbleSpot(edge: edge, y: settledY(carried.y, bubble: bubble))
+        let landed = CallBubbleSpot(edge: edge, height: settledHeight(carried.y, bubble: bubble))
         // How far the bubble's middle went past the edge. A finger can't leave the screen, so a third
         // of the bubble over the edge is as far as a drag by its middle can surely push it.
         let pastEdge = edge == .leading ? -released.x : released.x - size.width
@@ -93,13 +113,12 @@ nonisolated struct CallBubblePlacement {
         return tucks ? .tucked(landed) : .spot(landed)
     }
 
-    /// Dropped as low or as high as it goes, the bubble keeps to that end, so a keyboard or a panel that
-    /// goes away later doesn't leave it in the middle of the screen.
-    func settledY(_ y: CGFloat, bubble: CGSize) -> CGFloat {
-        let settled = center(of: CallBubbleSpot(edge: .trailing, y: y), bubble: bubble).y
-        if settled >= center(of: CallBubbleSpot(edge: .trailing, y: .infinity), bubble: bubble).y { return .infinity }
-        if settled <= area.minY + bubble.height / 2 { return -.infinity }
-        return settled
+    /// The height a bubble dropped with its center at `y` keeps.
+    func settledHeight(_ y: CGFloat, bubble: CGSize) -> CallBubbleSpot.Height {
+        let settled = center(of: CallBubbleSpot(edge: .trailing, height: .center(y)), bubble: bubble).y
+        if settled >= center(of: CallBubbleSpot(edge: .trailing, height: .bottom), bubble: bubble).y { return .bottom }
+        if settled <= area.minY + bubble.height / 2 { return .top }
+        return .center(settled)
     }
 }
 

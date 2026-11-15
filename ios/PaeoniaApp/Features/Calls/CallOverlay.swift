@@ -92,6 +92,8 @@ final class CallOverlayModel {
     var panelTop: CGFloat?
     /// Where the person dragged the bubble or the partner's avatar to. They share it.
     var spot = CallBubbleSpot.initial
+    /// How much bigger or smaller than `CallBubble.videoSize` the person pinched the video bubble.
+    var videoScale: CGFloat = 1
     /// Where the ring pill shows, decided as it comes on screen so it never moves while it rings.
     private(set) var ringAnchor = RingAnchor.top
     /// Where each part is in the window, for `touchArea`. Each has its own, so one that is leaving
@@ -180,7 +182,8 @@ final class CallOverlayModel {
 
     func placement(in proxy: GeometryProxy) -> CallBubblePlacement {
         CallBubblePlacement(
-            size: proxy.size, globalMinY: proxy.frame(in: .global).minY, controlsTop: controlsTop, panelTop: panelTop)
+            size: proxy.size, globalMinY: proxy.frame(in: .global).minY, controlsTop: controlsTop, panelTop: panelTop,
+            keyboardIsUp: keyboardIsUp)
     }
 }
 
