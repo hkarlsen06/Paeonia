@@ -28,6 +28,7 @@ nonisolated enum CallSound: String, CaseIterable, Sendable {
 
 /// Plays the call's sounds. Once WebRTC's audio engine runs, they play inside it: the player is
 /// connected to the engine's main mixer next to the partner's voice (`LKRTCAudioDeviceModuleDelegate`).
+/// The delegate methods hand the engine to `GameSoundPlayer` too, so game sounds play in it.
 /// Before that, as for the ringback, and after it, as for the ended sound, they play with
 /// `AVAudioPlayer` in the call's audio session.
 /// Nothing plays in a call before the system activates its audio.
@@ -153,6 +154,7 @@ nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegat
             engine.attach(engineNode)
             self.engine = engine
         }
+        GameSoundPlayer.shared.joinCallEngine(engine)
         CallAudio.log.notice("engine created")
         return 0
     }
@@ -175,6 +177,7 @@ nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegat
                 }
             }
         }
+        GameSoundPlayer.shared.connectInCallEngine(engine)
         CallAudio.log.notice("engine output connected: \(format, privacy: .public)")
         return 0
     }
@@ -236,6 +239,7 @@ nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegat
             }
             self.engine = nil
         }
+        GameSoundPlayer.shared.leaveCallEngine(engine)
         CallAudio.log.notice("engine released")
         return 0
     }

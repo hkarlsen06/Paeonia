@@ -25,7 +25,7 @@ Call sounds (`CallSound` in `ios/PaeoniaApp/Services/Calls/CallSound.swift`) liv
 
 Call `GameSound.tap.play()` or the corresponding effect. Use `level:` only when the same sound has a different role, such as a quieter partner-step cue. `intensity:` is a relative envelope for a bounce, replay or animation, bounded to 0 through 1. Do not use it to compensate for an audio file's loudness. Variants have no random gain variation. Piccante keeps its shared variant selection and playback deadlines.
 
-The player keeps the existing ambient audio session and silent-switch behavior. Call sounds play in the call's audio session instead, through `CallSoundPlayer`, at full gain (1.0). That is a call level of their own, above the game levels, because a call plays through the earpiece, a car or AirPods as often as through the speaker, and the ringback must be heard over the room. The app does not normalize a user's voice messages, recordings or music.
+Outside a call, `GameSoundPlayer` plays in the app's ambient audio session, so the silent switch mutes game sounds. During a call they play in the call's own audio engine at these same levels. The call's `playAndRecord` session ignores the silent switch, so it does not mute them then. Call sounds play in the call's audio session instead, through `CallSoundPlayer`, at full gain (1.0). That is a call level of their own, above the game levels, because a call plays through the earpiece, a car or AirPods as often as through the speaker, and the ringback must be heard over the room. The app does not normalize a user's voice messages, recordings or music.
 
 ## Authoring and checks
 

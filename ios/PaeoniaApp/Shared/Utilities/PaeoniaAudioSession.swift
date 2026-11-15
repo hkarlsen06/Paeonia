@@ -6,8 +6,10 @@ import Synchronization
 /// Voice notes switch the session while they record or play, ducking other audio
 /// instead of stopping it, and come back here when they finish.
 ///
-/// A call owns the session while it runs. The system activates it for the call, so game
-/// sounds, the pairing celebration and voice notes check `isCallActive` and leave it alone.
+/// A call owns the session while it runs. The system activates it for the call, so the
+/// pairing celebration and voice notes check `isCallActive` and leave it alone. Game sounds
+/// play inside the call's own engine then (`GameSoundPlayer`) and check `isCallActive` to stay
+/// silent while the call has no engine, such as while it rings.
 nonisolated enum PaeoniaAudioSession {
     private static let callActive = Mutex(false)
 
