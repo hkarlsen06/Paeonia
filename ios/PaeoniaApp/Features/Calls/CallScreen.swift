@@ -5,7 +5,8 @@ import SwiftUI
 /// screen and your own sits in a corner. A swipe down, or the chevron, shrinks it to the bubble, or
 /// to the ring pill while the partner's call rings inside the app. What the partner just did in the
 /// app shows above the controls for a few seconds (`CallCallout`), because the partner's avatar and
-/// the app's banners are under the call.
+/// the app's banners are under the call. During video the controls fade out after a few seconds
+/// without a touch, so nothing covers the partner, and a tap brings them back.
 struct CallScreen: View {
     let center: CallCenter
     let session: CallSession
@@ -16,11 +17,15 @@ struct CallScreen: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
+    @AccessibilityPresentation(.controls) private var showsControls
     @State private var partnerTimeZone: TimeZone?
     @State private var dragOffset: CGFloat = 0
     /// The height of what sits under the face while the call runs. An ended call keeps it, so the
     /// face and the name stay put when the call ends.
     @State private var bottomHeight: CGFloat?
+    @State private var isHUDHidden = false
+    /// Counts taps on the controls, so each one starts the wait before they hide again.
+    @State private var hudTouches = 0
 
     private static let avatarSize: CGFloat = 132
     /// The glow at its largest. It breathes between `glowScales`, which never go past 1.
@@ -37,16 +42,18 @@ struct CallScreen: View {
     }
 
     var body: some View {
+        // The taps only hide and show the controls, which never hide for VoiceOver or Switch Control.
+        // swiftlint:disable:next accessibility_trait_for_button
         ZStack {
             background
             if showsPartnerVideo {
                 CallVideoView(engine: center.engine, source: .partner)
                     .ignoresSafeArea()
                     .transition(.opacity)
-                scrims
+                scrims.callHUD(isShown: showsHUD)
             }
             VStack(spacing: 0) {
-                topBar
+                topBar.callHUD(isShown: showsHUD)
                 if showsPartnerVideo {
                     Spacer(minLength: 0)
                 } else {
@@ -61,12 +68,19 @@ struct CallScreen: View {
             .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
         }
         .overlay(alignment: .topTrailing) { localTile }
+        // Buttons and the callout win their own taps. While the controls are hidden they take
+        // none, so the first tap only brings them back.
+        .contentShape(.rect)
+        .onTapGesture(perform: toggleHUD)
         .offset(y: dragOffset)
         .gesture(swipeDown)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: session)
         .animation(reduceMotion ? nil : PaeoniaMotion.callOverlay, value: shownCallout)
         .task(id: session.id) {
             partnerTimeZone = await center.engine.partnerTimeZone()
+        }
+        .task(id: HUDTimer(canHide: canHideHUD, isHidden: isHUDHidden, touches: hudTouches)) {
+            await hideHUDWhenIdle()
         }
         .accessibilityAction(.escape, minimize)
     }
@@ -219,7 +233,10 @@ struct CallScreen: View {
                         .padding(.bottom, PaeoniaSpacing.space16)
                         .transition(.opacity)
                 }
+                // swiftlint:disable:next accessibility_trait_for_button
                 controls
+                    .simultaneousGesture(TapGesture().onEnded { hudTouches += 1 })
+                    .callHUD(isShown: showsHUD)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomHeight = $0 }
             .overlay(alignment: .top) { calloutView }
@@ -279,25 +296,6 @@ struct CallScreen: View {
         }
     }
 
-    /// Your own camera in the top corner, under the chevron's row.
-    @ViewBuilder
-    private var localTile: some View {
-        if session.isCameraOn, !isEnded {
-            CallVideoView(engine: center.engine, source: .local)
-                .frame(width: Self.localTileSize.width, height: Self.localTileSize.height)
-                .clipShape(.rect(cornerRadius: PaeoniaRadius.radius20))
-                .overlay {
-                    RoundedRectangle(cornerRadius: PaeoniaRadius.radius20).strokeBorder(.white.opacity(0.25))
-                }
-                .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
-                .padding(.top, PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space16)
-                .padding(.trailing, PaeoniaSpacing.screenHorizontalPadding)
-                .accessibilityElement()
-                .accessibilityLabel(Text(.callsYourCamera))
-                .transition(.scale(scale: 0.8, anchor: .topTrailing).combined(with: .opacity))
-        }
-    }
-
 }
 
 // MARK: - Minimizing
@@ -322,5 +320,82 @@ extension CallScreen {
         withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
             center.presentation = .bubble
         }
+    }
+}
+
+// MARK: - Hiding the controls
+
+extension CallScreen {
+    private static let hudDelay = Duration.seconds(4)
+    private static let hudFade = PaeoniaMotion.standardCurve(duration: 0.3)
+
+    /// Someone who uses VoiceOver, Switch Control or Extra controls keeps the controls on screen.
+    private var canHideHUD: Bool {
+        guard showsPartnerVideo, case .active = session.phase else { return false }
+        return !session.isWaitingForMicrophone && !showsControls
+    }
+
+    private var showsHUD: Bool { !canHideHUD || !isHUDHidden }
+
+    /// Any change to these starts the wait over.
+    private struct HUDTimer: Equatable {
+        let canHide: Bool
+        let isHidden: Bool
+        let touches: Int
+    }
+
+    private func hideHUDWhenIdle() async {
+        guard canHideHUD else {
+            // So they wait the full delay before hiding once hiding is allowed again.
+            isHUDHidden = false
+            return
+        }
+        guard !isHUDHidden else { return }
+        do {
+            try await Task.sleep(for: Self.hudDelay)
+        } catch {
+            return
+        }
+        withAnimation(Self.hudFade) { isHUDHidden = true }
+    }
+
+    /// Like FaceTime, a tap hides shown controls at once and brings hidden ones back.
+    private func toggleHUD() {
+        guard canHideHUD else { return }
+        withAnimation(Self.hudFade) { isHUDHidden.toggle() }
+    }
+}
+
+// MARK: - Your camera
+
+extension CallScreen {
+    /// Your own camera in the top corner, under the chevron's row. It moves up into that row while
+    /// the controls are hidden, unless Reduce Motion is on.
+    @ViewBuilder
+    private var localTile: some View {
+        if session.isCameraOn, !isEnded {
+            CallVideoView(engine: center.engine, source: .local)
+                .frame(width: Self.localTileSize.width, height: Self.localTileSize.height)
+                .clipShape(.rect(cornerRadius: PaeoniaRadius.radius20))
+                .overlay {
+                    RoundedRectangle(cornerRadius: PaeoniaRadius.radius20).strokeBorder(.white.opacity(0.25))
+                }
+                .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+                .padding(.top, showsHUD || reduceMotion
+                    ? PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space16
+                    : PaeoniaSpacing.space8)
+                .padding(.trailing, PaeoniaSpacing.screenHorizontalPadding)
+                .accessibilityElement()
+                .accessibilityLabel(Text(.callsYourCamera))
+                .transition(.scale(scale: 0.8, anchor: .topTrailing).combined(with: .opacity))
+        }
+    }
+}
+
+private extension View {
+    func callHUD(isShown: Bool) -> some View {
+        opacity(isShown ? 1 : 0)
+            .allowsHitTesting(isShown)
+            .accessibilityHidden(!isShown)
     }
 }
