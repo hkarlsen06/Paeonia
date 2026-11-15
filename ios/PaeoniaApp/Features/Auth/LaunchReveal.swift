@@ -67,6 +67,21 @@ private enum EntranceCascade {
     }
 }
 
+private extension View {
+    /// The drop itself. The entrance animates only this opacity and offset. An
+    /// `.animation(_:value:)` here would also animate every layout change that lands
+    /// in the same update, and a screen's first real layout lands in the update that
+    /// starts its entrance, so each element would glide from where the empty first
+    /// pass put it, each with its own delay, and the screen would grow out of a corner.
+    func entranceDrop(revealed: Bool, order: Int, reduceMotion: Bool) -> some View {
+        animation(EntranceCascade.entrance(order: order, reduceMotion: reduceMotion)) {
+            $0
+                .opacity(revealed ? 1 : 0)
+                .offset(y: revealed || reduceMotion ? 0 : -EntranceCascade.rise)
+        }
+    }
+}
+
 private struct LaunchEntranceModifier: ViewModifier {
     let order: Int
 
@@ -78,9 +93,7 @@ private struct LaunchEntranceModifier: ViewModifier {
             // Moves the subtree as one, so views inserted mid-drop (like plan prices
             // arriving from the App Store) drop with it instead of appearing at the end spot.
             .geometryGroup()
-            .opacity(revealed ? 1 : 0)
-            .offset(y: revealed || reduceMotion ? 0 : -EntranceCascade.rise)
-            .animation(EntranceCascade.entrance(order: order, reduceMotion: reduceMotion), value: revealed)
+            .entranceDrop(revealed: revealed, order: order, reduceMotion: reduceMotion)
     }
 }
 
@@ -105,9 +118,7 @@ private struct ScreenEntranceModifier: ViewModifier {
             // Moves the subtree as one, so views inserted mid-drop (like plan prices
             // arriving from the App Store) drop with it instead of appearing at the end spot.
             .geometryGroup()
-            .opacity(revealed ? 1 : 0)
-            .offset(y: revealed || reduceMotion ? 0 : -EntranceCascade.rise)
-            .animation(EntranceCascade.entrance(order: order, reduceMotion: reduceMotion), value: revealed)
+            .entranceDrop(revealed: revealed, order: order, reduceMotion: reduceMotion)
             .onGeometryChange(for: Bool.self) { $0.size.width > 0 } action: { hasWidth in
                 if hasWidth {
                     isLaidOut = true

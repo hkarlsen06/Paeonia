@@ -12,6 +12,10 @@ Use cards only when the framed surface has product meaning, such as a distinct r
 
 Chats, Games and Memories use inline navigation titles. More has no toolbar title. Us keeps its custom map header. Shared button styles provide vertical padding as well as a minimum tap height. Use `PaeoniaCircularButtonStyle` for the compact circular actions in composers. The paywall lets its purchase controls scroll at accessibility text sizes or when they would occupy more than half the available height.
 
+### Animating a view in
+
+An entrance that starts when a view appears or first lays out, such as a fade and drop, animates its own modifiers with `.animation(_:body:)`. Do not put `.animation(_:value:)` on it. That form animates every layout change in the update where the value flips, and a new screen's first real layout lands in that same update, so each part glides in from where the empty first pass put it and the screen seems to grow out of a corner. `screenEntrance(order:)` and `launchEntrance(order:)` (`Features/Auth/LaunchReveal.swift`) already do this, so use them for a screen's cascade.
+
 ### iPad layout
 
 The app runs on iPhone and iPad, and on iPad it can be any width from a narrow Split View column to full landscape. Build one adaptive layout, not a separate iPad design.
