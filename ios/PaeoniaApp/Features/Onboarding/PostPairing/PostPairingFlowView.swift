@@ -16,6 +16,8 @@ struct PostPairingFlowView: View {
     let onFinish: (PostPairingOutcome) -> Void
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @State private var width: CGFloat = 0
+    @State private var stackContentWidth: CGFloat = 0
 
     /// Long enough to see the drawing screen say it was sent.
     private static let sentPause: Duration = .seconds(0.9)
@@ -31,6 +33,9 @@ struct PostPairingFlowView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+                stackContentWidth = width
+            }
             // A step that changes under the drawing screen swaps at once, so going
             // back lands on it instead of watching the gift fade out.
             .animation(model.drawingViewModel == nil ? PaeoniaMotion.meaningfulMoment : nil, value: model.screen)
@@ -41,7 +46,16 @@ struct PostPairingFlowView: View {
                 }
             }
         }
-        .task(id: model.context?.pairID) {
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+            self.width = width
+        }
+        // The navigation stack sizes its content in a few passes after it appears. A
+        // step shown before the last one would animate from that small size, so the
+        // first step waits until the content is as wide as this view.
+        .task(id: StartKey(pairID: model.context?.pairID, hasFullWidth: hasFullWidth)) {
+            guard hasFullWidth else {
+                return
+            }
             await model.start(startedOn: startedOn, acceptedInvite: acceptedInvite)
         }
         .onChange(of: model.outcome) { _, outcome in
@@ -67,6 +81,15 @@ struct PostPairingFlowView: View {
                 await model.drawingSent()
             }
         }
+    }
+
+    private var hasFullWidth: Bool {
+        width > 0 && abs(stackContentWidth - width) < 1
+    }
+
+    private struct StartKey: Equatable {
+        let pairID: UUID?
+        let hasFullWidth: Bool
     }
 
     @ViewBuilder
