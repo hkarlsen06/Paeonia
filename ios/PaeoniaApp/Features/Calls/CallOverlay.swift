@@ -264,13 +264,15 @@ private struct CallOverlayHost: ViewModifier {
                 if let session { model.lastSession = session }
             }
             .onAppear {
-                window.install(
-                    CallOverlayRoot(model: model)
-                        .environment(starter)
-                        .environment(\.profilePhotoImageProvider, photoProvider)
-                        .environment(\.avatarStyling, avatarStyling),
-                    model: model
-                )
+                let root = CallOverlayRoot(model: model)
+                    .environment(starter)
+                    .environment(\.profilePhotoImageProvider, photoProvider)
+                    .environment(\.avatarStyling, avatarStyling)
+                    #if DEBUG
+                    // A window of its own does not get the app window's fixture.
+                    .modifier(DeveloperAssistiveTechnologyEnvironment())
+                    #endif
+                window.install(root, model: model)
                 window.show(model.layer)
             }
             .onDisappear { window.remove() }
