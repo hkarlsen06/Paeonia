@@ -42,6 +42,7 @@ struct ConnectFourScreen: View {
                 bloomSeed: viewModel.bloomSeed,
                 onPlay: { column in Task { await viewModel.play(column) } },
                 partnerName: viewModel.partnerName,
+                partnerLastTurn: viewModel.partnerLastTurn,
                 // The view model plays the outcome haptic for every board game.
                 playsOutcomeHaptics: false
             )

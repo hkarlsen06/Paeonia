@@ -17,6 +17,10 @@ struct ConnectFourInputLayer: View {
     /// The newest move's number. When it changes, the hovering disc hands over
     /// to the falling disc, which starts in the same spot.
     let moveNumber: Int?
+    /// The cell of the partner's last disc, which VoiceOver names as their last move.
+    let lastTurnDisc: Int?
+    /// The partner's name for that. Nil or empty names no last move.
+    let partnerName: String?
     let onPlay: (Int) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -211,10 +215,17 @@ struct ConnectFourInputLayer: View {
         }
     }
 
+    /// "Row 6, column 3, yours", or "Row 5, column 3, Robin's last move" for the partner's last disc.
     private func cellLabel(row: Int, column: Int) -> String {
-        let owner = board.cells[row * ConnectFourBoardGeometry.columns + column]
-        let state: LocalizedStringResource = owner == nil ? .gamesCellEmpty
-            : owner == me ? .gamesCellYours : .gamesCellPartner
+        let index = row * ConnectFourBoardGeometry.columns + column
+        let owner = board.cells[index]
+        let state: LocalizedStringResource = if index == lastTurnDisc, let partnerName, !partnerName.isEmpty {
+            .boardGamesLastTurnA11Y(partnerName)
+        } else if owner == nil {
+            .gamesCellEmpty
+        } else {
+            owner == me ? .gamesCellYours : .gamesCellPartner
+        }
         return String(localized: .gamesBoardCell(row + 1, column + 1, String(localized: state)))
     }
 

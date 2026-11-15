@@ -92,4 +92,19 @@ struct BoardGameRulesTests {
     @Test func moversAreNilForAnIllegalSequence() {
         #expect(DotsAndBoxesBoard.movers([0, 0]) == nil)
     }
+
+    @Test func lastTurnHoldsEveryLineAfterABoxClosed() {
+        // Player two closes box 0 with line 21 and draws line 22 in the same turn.
+        let moves = [0, 4, 20, 21, 22]
+
+        #expect(DotsAndBoxesBoard.lastTurn(of: moves, by: .two) == [21, 22])
+    }
+
+    @Test func lastTurnIsEmptyOnceTheOtherPlayerHasMoved() {
+        let moves = [0, 4, 20, 21, 22, 1]
+
+        #expect(DotsAndBoxesBoard.lastTurn(of: moves, by: .two).isEmpty)
+        #expect(DotsAndBoxesBoard.lastTurn(of: moves, by: .one) == [1])
+        #expect(DotsAndBoxesBoard.lastTurn(of: [0, 0], by: .one).isEmpty)
+    }
 }

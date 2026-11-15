@@ -13,6 +13,14 @@ extension BoardGameViewModel {
         return snapshot.map { ($0.gameNumber, $0.moves) }
     }
 
+    /// The moves of the partner's latest turn on the board on screen, which the
+    /// board marks. It grows while their moves replay and empties with my next
+    /// move. A finished game marks none, because the outcome owns the board then.
+    var partnerLastTurn: Set<Int> {
+        guard board.outcome == nil else { return [] }
+        return Board.lastTurn(of: displayedMoves, by: me.other)
+    }
+
     var missedEnding: RemoteBoardGameEnding? {
         isShowingMissedEnding ? snapshot?.previous : nil
     }

@@ -31,14 +31,16 @@ enum DotsAndBoxesSide: Int, CaseIterable, Identifiable {
 }
 
 /// The board for VoiceOver: a grid of 16 boxes. Each box reads who closed it or
-/// which sides are drawn, and offers one action per open side while it is my turn.
-/// Nothing here draws.
+/// which sides are drawn, and whether a side is the partner's last move. It
+/// offers one action per open side while it is my turn. Nothing here draws.
 struct DotsAndBoxesAccessibilityLayer: View {
     let board: DotsAndBoxesBoard
     let geometry: DotsAndBoxesBoardGeometry
     let me: BoardPlayer
     /// The partner's name as VoiceOver says it.
     let partnerName: String
+    /// The lines of the partner's latest turn.
+    let lastTurn: Set<Int>
     let canPlay: Bool
     let onPlay: (Int) -> Void
 
@@ -49,7 +51,9 @@ struct DotsAndBoxesAccessibilityLayer: View {
                 Color.clear
                     .frame(width: rect.width, height: rect.height)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Self.boxLabel(board: board, box: box, me: me, partnerName: partnerName))
+                    .accessibilityLabel(Self.boxLabel(
+                        board: board, box: box, me: me, partnerName: partnerName, lastTurn: lastTurn
+                    ))
                     .accessibilityIdentifier("dotsAndBoxes.box.\(box)")
                     .accessibilityActions { actions(for: box) }
                     .position(x: rect.midX, y: rect.midY)
@@ -57,23 +61,37 @@ struct DotsAndBoxesAccessibilityLayer: View {
         }
     }
 
-    static func boxLabel(board: DotsAndBoxesBoard, box: Int, me: BoardPlayer, partnerName: String) -> Text {
+    /// The box as VoiceOver reads it, such as "Box row 2, column 3, top and left
+    /// drawn, Robin's last move" when a side of it is in the partner's latest turn.
+    static func boxLabel(
+        board: DotsAndBoxesBoard, box: Int, me: BoardPlayer, partnerName: String, lastTurn: Set<Int>
+    ) -> Text {
+        let state = String(localized: boxState(board: board, box: box, me: me, partnerName: partnerName))
+        guard DotsAndBoxesBoard.lines(of: box).contains(where: lastTurn.contains) else {
+            return Text(verbatim: state)
+        }
+        return Text(verbatim: [state, String(localized: .boardGamesLastTurnA11Y(partnerName))].joined(separator: ", "))
+    }
+
+    private static func boxState(
+        board: DotsAndBoxesBoard, box: Int, me: BoardPlayer, partnerName: String
+    ) -> LocalizedStringResource {
         let count = DotsAndBoxesBoard.boxesPerSide
         let row = box / count + 1
         let column = box % count + 1
         if let owner = board.boxes[box] {
             return owner == me
-                ? Text(.dotsAndBoxesBoxMine(row, column))
-                : Text(.dotsAndBoxesBoxPartner(row, column, partnerName))
+                ? .dotsAndBoxesBoxMine(row, column)
+                : .dotsAndBoxesBoxPartner(row, column, partnerName)
         }
         let lines = DotsAndBoxesBoard.lines(of: box)
         let drawn = DotsAndBoxesSide.allCases
             .filter { board.lines[lines[$0.rawValue]] != nil }
             .map { String(localized: $0.word) }
         if drawn.isEmpty {
-            return Text(.dotsAndBoxesBoxEmpty(row, column))
+            return .dotsAndBoxesBoxEmpty(row, column)
         }
-        return Text(.dotsAndBoxesBoxSides(row, column, drawn.formatted(.list(type: .and))))
+        return .dotsAndBoxesBoxSides(row, column, drawn.formatted(.list(type: .and)))
     }
 
     @ViewBuilder

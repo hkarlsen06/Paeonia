@@ -8,19 +8,23 @@ struct UltimateTicTacToeNativeControls: View {
     let partnerName: String
     let canPlay: Bool
     let turn: BoardGameTurnLabel
+    /// The move of my partner's latest turn, which a cell names as their last move.
+    let partnerLastTurn: Set<Int>
     let selectedMove: Int?
     let onPick: (Int) -> Void
     @State private var inspectedBoard: Int
 
     init(
         board: UltimateTicTacToeBoard, me: BoardPlayer, partnerName: String,
-        canPlay: Bool, turn: BoardGameTurnLabel, selectedMove: Int?, onPick: @escaping (Int) -> Void
+        canPlay: Bool, turn: BoardGameTurnLabel, partnerLastTurn: Set<Int>, selectedMove: Int?,
+        onPick: @escaping (Int) -> Void
     ) {
         self.board = board
         self.me = me
         self.partnerName = partnerName
         self.canPlay = canPlay
         self.turn = turn
+        self.partnerLastTurn = partnerLastTurn
         self.selectedMove = selectedMove
         self.onPick = onPick
         _inspectedBoard = State(initialValue: selectedMove.map { $0 / 9 } ?? board.openBoards.first ?? 0)
@@ -117,8 +121,15 @@ struct UltimateTicTacToeNativeControls: View {
 
     private func cellLabel(_ move: Int) -> Text {
         let owner = board.cells[move]
-        let state = owner == nil ? String(localized: .gamesCellEmpty)
-            : owner == me ? String(localized: .gamesCellYours) : partnerName
+        let state = if owner == nil {
+            String(localized: .gamesCellEmpty)
+        } else if owner == me {
+            String(localized: .gamesCellYours)
+        } else if partnerLastTurn.contains(move) {
+            String(localized: .boardGamesLastTurnA11Y(partnerName))
+        } else {
+            partnerName
+        }
         return Text(.ultimateTicTacToeBoardCell(inspectedBoard + 1, move % 9 / 3 + 1, move % 3 + 1, state))
     }
 }

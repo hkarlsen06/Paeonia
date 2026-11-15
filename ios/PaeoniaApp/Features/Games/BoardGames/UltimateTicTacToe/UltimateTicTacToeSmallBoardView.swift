@@ -14,16 +14,18 @@ struct UltimateTicTacToeSmallBoardAccess {
     let pick: (Int) -> Void
 }
 
-/// One of the nine boards: the surface, the grid, the marks, and once the board
-/// is closed, the strike line. The winner's big mark is
-/// `UltimateTicTacToeWinnerMarkView`, which the board view draws above the
-/// line through the winning boards. Taps are handled by the whole board view,
+/// One of the nine boards: the surface, the grid, the marks with a tint behind
+/// my partner's last one, and once the board is closed, the strike line. The
+/// winner's big mark is `UltimateTicTacToeWinnerMarkView`, which the board view
+/// draws above the line through the winning boards. Taps are handled by the whole board view,
 /// so the cells here only carry VoiceOver.
 struct UltimateTicTacToeSmallBoardView: View {
     let index: Int
     /// The side of this small board.
     let side: CGFloat
     let content: UltimateTicTacToeSmallBoardContent
+    /// The cells of my partner's latest turn here, as 0 to 8.
+    let lastTurnCells: Set<Int>
     let emphasis: UltimateTicTacToeEmphasis
     /// The color for `emphasis.glow`. Unused when there is no glow.
     let glowColor: Color
@@ -37,6 +39,7 @@ struct UltimateTicTacToeSmallBoardView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let closedOpacity = 0.3
+    private static let lastTurnOpacity = 0.22
     static let positions: [LocalizedStringResource] = [
         .ultimateTicTacToePositionTopLeft, .ultimateTicTacToePositionTop, .ultimateTicTacToePositionTopRight,
         .ultimateTicTacToePositionLeft, .ultimateTicTacToePositionCenter, .ultimateTicTacToePositionRight,
@@ -109,10 +112,12 @@ struct UltimateTicTacToeSmallBoardView: View {
 
     /// Each mark sits in an overlay on a cell-sized frame, so its transition
     /// scales and opens around the mark and not around the whole small board.
+    /// My partner's last mark has a soft tint behind it once it has drawn in.
     private var marks: some View {
         ForEach(0..<9, id: \.self) { cell in
             Color.clear
                 .frame(width: layout.cellSide, height: layout.cellSide)
+                .background { lastTurnTint(cell) }
                 .overlay {
                     if let player = content.cells[cell] {
                         BoardMarkView(style: styles[player], tint: styles[player].color)
@@ -122,6 +127,20 @@ struct UltimateTicTacToeSmallBoardView: View {
                 }
                 .position(layout.cellCenter(cell))
         }
+    }
+
+    /// Its own animation, so the fade never changes how a new mark draws in.
+    private func lastTurnTint(_ cell: Int) -> some View {
+        let isLastTurn = lastTurnCells.contains(cell)
+        return ZStack {
+            if isLastTurn, let player = content.cells[cell] {
+                RoundedRectangle(cornerRadius: layout.cellSide * 0.18, style: .continuous)
+                    .fill(styles[player].color.opacity(Self.lastTurnOpacity))
+                    .padding(layout.cellSide * 0.08)
+                    .boardLastTurnHalo(afterLanding: UltimateTicTacToeTiming.markDraw)
+            }
+        }
+        .animation(BoardLastTurnHalo.fadeOut(reduceMotion: reduceMotion), value: isLastTurn)
     }
 
     private var markTransition: AnyTransition {
@@ -190,8 +209,15 @@ struct UltimateTicTacToeSmallBoardView: View {
         let row = cell / 3 + 1
         let column = cell % 3 + 1
         let owner = content.cells[cell]
-        let state = owner == nil ? String(localized: .gamesCellEmpty)
-            : owner == access.me ? String(localized: .gamesCellYours) : access.partnerName
+        let state = if owner == nil {
+            String(localized: .gamesCellEmpty)
+        } else if owner == access.me {
+            String(localized: .gamesCellYours)
+        } else if lastTurnCells.contains(cell) {
+            String(localized: .boardGamesLastTurnA11Y(access.partnerName))
+        } else {
+            access.partnerName
+        }
         return Text(.ultimateTicTacToeBoardCell(index + 1, row, column, state))
     }
 }

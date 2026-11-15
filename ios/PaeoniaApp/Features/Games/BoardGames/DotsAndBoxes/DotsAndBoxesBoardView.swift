@@ -11,6 +11,8 @@ import SwiftUI
 /// Showing moves. The board animates the newest move when `lastMove.number`
 /// changes: the line grows from its middle, its dots pulse, and each box it
 /// closed pops in. Moves already on the board when the view appears just show.
+/// The lines of the partner's latest turn keep a soft halo in their color until
+/// my next move.
 ///
 /// Ending. When `showsOutcome` turns true, a board with a photo lifts the tints
 /// and closes the gaps so the photo shows whole. A plain board pulses the
@@ -33,6 +35,8 @@ struct DotsAndBoxesBoardView: View {
     let photo: UIImage?
     /// The partner's name for VoiceOver. Empty reads as "Your partner".
     let partnerName: String
+    /// The lines of the partner's latest turn, which get a halo. Empty in a replay.
+    let partnerLastTurn: Set<Int>
     let onPlay: (Int) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -60,6 +64,7 @@ struct DotsAndBoxesBoardView: View {
         bloomSeed: String,
         photo: UIImage?,
         partnerName: String = "",
+        partnerLastTurn: Set<Int> = [],
         onPlay: @escaping (Int) -> Void
     ) {
         self.board = board
@@ -71,6 +76,7 @@ struct DotsAndBoxesBoardView: View {
         self.bloomSeed = bloomSeed
         self.photo = photo
         self.partnerName = partnerName
+        self.partnerLastTurn = partnerLastTurn
         self.onPlay = onPlay
         // A board that opens on a finished game shows the settled state without replaying it.
         let settled = showsOutcome && board.outcome != nil
@@ -117,7 +123,8 @@ struct DotsAndBoxesBoardView: View {
             .overlay(alignment: .topTrailing) {
                 GameBoardControls {
                     DotsAndBoxesNativeControls(
-                        board: board, me: me, partnerName: partnerLabel, canPlay: canPlay, onPlay: onPlay
+                        board: board, me: me, partnerName: partnerLabel, lastTurn: partnerLastTurn,
+                        canPlay: canPlay, onPlay: onPlay
                     )
                 }
             }
@@ -134,6 +141,7 @@ struct DotsAndBoxesBoardView: View {
                 geometry: geometry,
                 me: me,
                 partnerName: partnerLabel,
+                lastTurn: partnerLastTurn,
                 canPlay: canPlay,
                 onPlay: play
             )
@@ -168,6 +176,7 @@ struct DotsAndBoxesBoardView: View {
                 styles: styles,
                 me: me,
                 animatedMove: animatedMove,
+                lastTurn: partnerLastTurn,
                 candidate: candidate(in: geometry),
                 dotPulses: dotPulses,
                 canPlay: canPlay

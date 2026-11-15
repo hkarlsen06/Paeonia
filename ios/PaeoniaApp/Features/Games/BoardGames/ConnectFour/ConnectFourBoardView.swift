@@ -6,8 +6,10 @@ import SwiftUI
 ///
 /// Discs sit behind the board face, so a falling disc shows through the holes.
 /// When `lastMove.number` changes the board animates that move. Moves already on
-/// the board when the view appears just show. The screen around the board owns
-/// the turn, the result panel and the timing of `showsOutcome`.
+/// the board when the view appears just show. The partner's last disc keeps a
+/// soft ring in their color once it has stopped bouncing, until my next move.
+/// The screen around the board owns the turn, the result panel and the timing
+/// of `showsOutcome`.
 struct ConnectFourBoardView: View {
     let board: ConnectFourBoard
     /// The newest move. The board animates it when `number` changes.
@@ -28,6 +30,8 @@ struct ConnectFourBoardView: View {
     /// in column 3", posted when their move arrives. Leave it nil to announce
     /// nothing, for a screen that announces moves itself.
     var partnerName: String?
+    /// The column of the partner's latest move, whose top disc gets a ring. Empty in a replay.
+    var partnerLastTurn: Set<Int> = []
     /// The board taps once as the result highlight reaches its peak (a firm tap
     /// for a win, a soft one for a draw). Set it false if the screen plays that tap.
     var playsOutcomeHaptics = true
@@ -60,6 +64,8 @@ struct ConnectFourBoardView: View {
                     me: me,
                     canPlay: canPlay,
                     moveNumber: lastMove?.number,
+                    lastTurnDisc: lastTurnDiscs.first,
+                    partnerName: partnerName,
                     onPlay: onPlay
                 )
             }
@@ -84,7 +90,8 @@ struct ConnectFourBoardView: View {
     // MARK: Layers
 
     /// Back to front: the dark panel, resting discs, falling discs, the dimming
-    /// veil, the board face, then the winning discs, line and bloom.
+    /// veil, the board face, the ring round the partner's last disc, then the
+    /// winning discs, line and bloom.
     private func visuals(_ geometry: ConnectFourBoardGeometry) -> some View {
         ZStack(alignment: .topLeading) {
             ConnectFourBoardBacking(geometry: geometry)
@@ -96,6 +103,7 @@ struct ConnectFourBoardView: View {
             }
             outcomeVeil(geometry)
             ConnectFourBoardFace(geometry: geometry)
+            lastTurnHalos(geometry)
             outcomeHighlight(geometry)
         }
     }
@@ -110,6 +118,33 @@ struct ConnectFourBoardView: View {
             ConnectFourDiscView(style: styles[disc.player], diameter: geometry.discDiameter)
                 .position(geometry.cellCenter(index: disc.index))
         }
+    }
+
+    /// The cells of the partner's last discs. Each is the top disc of its
+    /// column, because nobody has dropped on it since.
+    private var lastTurnDiscs: [Int] {
+        partnerLastTurn.compactMap { board.topDiscIndex(column: $0) }.sorted()
+    }
+
+    /// A ring on the board face round each of the partner's last discs. It waits
+    /// until the disc has stopped falling, so it fades in round a disc at rest.
+    private func lastTurnHalos(_ geometry: ConnectFourBoardGeometry) -> some View {
+        let hidden = hiddenIndexes
+        let side = geometry.holeDiameter + geometry.cell * 0.1
+        return ZStack(alignment: .topLeading) {
+            ForEach(lastTurnDiscs.filter { !hidden.contains($0) }, id: \.self) { index in
+                if let owner = board.cells[index] {
+                    let color = styles[owner].color
+                    Circle()
+                        .stroke(color.opacity(0.6), lineWidth: geometry.cell * 0.05)
+                        .shadow(color: color.opacity(0.7), radius: geometry.cell * 0.08)
+                        .frame(width: side, height: side)
+                        .position(geometry.cellCenter(index: index))
+                        .boardLastTurnHalo(afterLanding: 0)
+                }
+            }
+        }
+        .animation(BoardLastTurnHalo.fadeOut(reduceMotion: reduceMotion), value: partnerLastTurn)
     }
 
     @ViewBuilder

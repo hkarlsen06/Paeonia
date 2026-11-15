@@ -57,6 +57,7 @@ struct UltimateTicTacToeScreen: View {
                 canPlay: viewModel.canPlay,
                 pick: $pick,
                 partnerPick: partnerPickOnBoard,
+                partnerLastTurn: viewModel.partnerLastTurn,
                 showsOutcome: viewModel.showsOutcome,
                 bloomSeed: viewModel.bloomSeed,
                 partnerName: viewModel.partnerName
@@ -66,6 +67,7 @@ struct UltimateTicTacToeScreen: View {
                     UltimateTicTacToeNativeControls(
                         board: viewModel.board, me: viewModel.me, partnerName: viewModel.partnerName,
                         canPlay: viewModel.canPlay, turn: viewModel.turnLabel,
+                        partnerLastTurn: viewModel.partnerLastTurn,
                         selectedMove: pick.move(on: viewModel.board),
                         onPick: selectMove
                     )

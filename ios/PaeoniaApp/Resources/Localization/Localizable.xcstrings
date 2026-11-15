@@ -3679,6 +3679,24 @@
         }
       }
     },
+    "boardGames.lastTurn.a11y" : {
+      "comment" : "VoiceOver text on a piece the partner placed on their latest turn in a board game, such as a line or a disc. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s last move"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sitt siste trekk"
+          }
+        }
+      }
+    },
     "boardGames.mark.canvas.a11y" : {
       "comment" : "VoiceOver label for the square drawing area on the mark sheet.",
       "extractionState" : "manual",

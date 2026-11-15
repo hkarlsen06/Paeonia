@@ -15,6 +15,8 @@ import SwiftUI
 /// - A move draws in on the whole board. Then a spark flies from its cell to
 ///   the small board the next player is sent to, which lights up and pulses
 ///   once. When the next player may choose, every open board lights up instead.
+/// - My partner's last mark keeps a soft tint in its cell once it has drawn
+///   in, until my next move.
 /// - A pinch out over a small board zooms into it to look closely. A pinch in,
 ///   a tap outside it, or a new move zooms back out.
 /// - Reduce Motion shows a move at once with no spark, and the glow fades in.
@@ -53,6 +55,8 @@ struct UltimateTicTacToeBoardView: View {
     /// What my partner picked on their turn and has not locked in yet. The
     /// screen keeps it at `.none` on my turn.
     let partnerPick: UltimateTicTacToePick
+    /// The move of my partner's latest turn, whose cell gets a tint. Empty in a replay.
+    let partnerLastTurn: Set<Int>
     /// Turns true 0.15 s after the last move landed on a finished game. Then
     /// the outcome highlight plays.
     let showsOutcome: Bool
@@ -74,6 +78,7 @@ struct UltimateTicTacToeBoardView: View {
         canPlay: Bool,
         pick: Binding<UltimateTicTacToePick>,
         partnerPick: UltimateTicTacToePick = .none,
+        partnerLastTurn: Set<Int> = [],
         showsOutcome: Bool,
         bloomSeed: String,
         partnerName: String = "",
@@ -86,6 +91,7 @@ struct UltimateTicTacToeBoardView: View {
         self.canPlay = canPlay
         _pick = pick
         self.partnerPick = partnerPick
+        self.partnerLastTurn = partnerLastTurn
         self.showsOutcome = showsOutcome
         self.bloomSeed = bloomSeed
         self.partnerName = partnerName
@@ -178,22 +184,7 @@ struct UltimateTicTacToeBoardView: View {
     private func boardLayer(_ geometry: UltimateTicTacToeBoardGeometry, zoomScale: CGFloat) -> some View {
         let look = self.look
         return ZStack(alignment: .topLeading) {
-            ForEach(0..<9, id: \.self) { index in
-                let rect = geometry.smallRect(index)
-                let emphasis = look.emphasis(of: index)
-                UltimateTicTacToeSmallBoardView(
-                    index: index,
-                    side: geometry.smallSide,
-                    content: look.content(of: index),
-                    emphasis: emphasis,
-                    glowColor: glowColor(for: emphasis.glow),
-                    zoomScale: zoomScale,
-                    styles: styles,
-                    pulseCount: playback.pulseCounts[index],
-                    access: access(for: index)
-                )
-                .position(x: rect.midX, y: rect.midY)
-            }
+            smallBoards(geometry, look: look, zoomScale: zoomScale)
             pendingMark(geometry)
             outcomeLines(geometry)
             ForEach(0..<9, id: \.self) { index in
@@ -208,6 +199,30 @@ struct UltimateTicTacToeBoardView: View {
                 .position(x: rect.midX, y: rect.midY)
             }
             sparkLayer(geometry)
+        }
+    }
+
+    private func smallBoards(
+        _ geometry: UltimateTicTacToeBoardGeometry,
+        look: UltimateTicTacToeLook,
+        zoomScale: CGFloat
+    ) -> some View {
+        ForEach(0..<9, id: \.self) { index in
+            let rect = geometry.smallRect(index)
+            let emphasis = look.emphasis(of: index)
+            UltimateTicTacToeSmallBoardView(
+                index: index,
+                side: geometry.smallSide,
+                content: look.content(of: index),
+                lastTurnCells: Set(partnerLastTurn.filter { $0 / 9 == index }.map { $0 % 9 }),
+                emphasis: emphasis,
+                glowColor: glowColor(for: emphasis.glow),
+                zoomScale: zoomScale,
+                styles: styles,
+                pulseCount: playback.pulseCounts[index],
+                access: access(for: index)
+            )
+            .position(x: rect.midX, y: rect.midY)
         }
     }
 

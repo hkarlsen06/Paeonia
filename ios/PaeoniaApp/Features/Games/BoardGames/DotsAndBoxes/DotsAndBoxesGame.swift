@@ -39,6 +39,7 @@ struct DotsAndBoxesScreen: View {
                 bloomSeed: viewModel.bloomSeed,
                 photo: viewModel.photo,
                 partnerName: viewModel.partnerName,
+                partnerLastTurn: viewModel.partnerLastTurn,
                 onPlay: { line in Task { await viewModel.play(line) } }
             )
         }

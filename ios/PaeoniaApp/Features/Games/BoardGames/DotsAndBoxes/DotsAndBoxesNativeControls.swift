@@ -6,6 +6,8 @@ struct DotsAndBoxesNativeControls: View {
     let board: DotsAndBoxesBoard
     let me: BoardPlayer
     let partnerName: String
+    /// The lines of the partner's latest turn.
+    let lastTurn: Set<Int>
     let canPlay: Bool
     let onPlay: (Int) -> Void
     @State private var inspectedBox = 0
@@ -45,6 +47,8 @@ struct DotsAndBoxesNativeControls: View {
     }
 
     private func boxLabel(_ box: Int) -> Text {
-        DotsAndBoxesAccessibilityLayer.boxLabel(board: board, box: box, me: me, partnerName: partnerName)
+        DotsAndBoxesAccessibilityLayer.boxLabel(
+            board: board, box: box, me: me, partnerName: partnerName, lastTurn: lastTurn
+        )
     }
 }

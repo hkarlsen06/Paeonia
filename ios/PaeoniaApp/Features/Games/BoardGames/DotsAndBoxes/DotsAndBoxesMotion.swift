@@ -4,7 +4,10 @@ import SwiftUI
 /// board. Shared timings live in `PaeoniaMotion`.
 enum DotsAndBoxesMotion {
     /// A line grows from its middle to both dots, with a little overshoot.
-    static let lineSnap = Animation.spring(duration: 0.3, bounce: 0.3)
+    static let lineSnap = Animation.spring(duration: lineLanding, bounce: 0.3)
+    /// How long a new line takes to reach both dots. The halo on the partner's
+    /// last line waits for it.
+    static let lineLanding: TimeInterval = 0.3
     /// A closed box scales up from 0.85 and fades in.
     static let boxPop = Animation.spring(duration: 0.42, bounce: 0.25)
     /// The owner's color sweeps once across a closed box.

@@ -58,4 +58,14 @@ nonisolated extension BoardGameRules {
         }
         return players
     }
+
+    /// The moves of `player`'s latest turn: the run of moves at the end that
+    /// they made. A Dots and Boxes turn can hold several lines, because closing a
+    /// box gives the player another move. Empty when the last move is not
+    /// theirs, when there are no moves, or when any move is illegal.
+    static func lastTurn(of moves: [Int], by player: BoardPlayer) -> Set<Int> {
+        guard let players = movers(moves) else { return [] }
+        let turn = zip(moves, players).reversed().prefix { $0.1 == player }
+        return Set(turn.map(\.0))
+    }
 }
