@@ -35,6 +35,8 @@ final class CallMediaSession {
     /// Counts camera starts, so only the newest one ends the wait in `localFeed`.
     private var cameraStarts = 0
     private var isConnected = false
+    /// The path the video's limits were last set for. `CallCodecs.configure` starts at TURN's.
+    private var videoPath = CallMediaPath.turn
     /// The number of the newest offer this phone sent. Only its answer applies.
     private var offerNumber = 0
     /// An offer waits in `work`, so another reason to offer needs no second one.
@@ -341,7 +343,9 @@ extension CallMediaSession {
         case .connected:
             guard !isConnected else { return }
             isConnected = true
-            statsLog.start(peerConnection)
+            statsLog.start(peerConnection) { [weak self] sample in
+                self?.useVideoPath(sample.mediaPath)
+            }
             onConnectionChange?(true)
         case .disconnected, .failed:
             guard isConnected else { return }
@@ -351,6 +355,13 @@ extension CallMediaSession {
         default:
             break
         }
+    }
+
+    /// The phones pick a new path after a network change, so this runs for every stats sample.
+    private func useVideoPath(_ path: CallMediaPath?) {
+        guard let path, path != videoPath, let sender = videoTransceiver?.sender else { return }
+        videoPath = path
+        CallCodecs.limitVideo(sender, on: path)
     }
 
     private func networkChanged(_ path: NWPath) {

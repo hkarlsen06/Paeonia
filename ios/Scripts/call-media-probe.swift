@@ -11,7 +11,9 @@ import Foundation
 
 @main
 enum CallMediaProbe {
-    static let seconds = 20.0
+    /// How long the call runs on the direct path it finds, then on TURN's limits.
+    static let directSeconds = 20.0
+    static let turnSeconds = 10.0
     static let sampleInterval = Duration.milliseconds(100)
 
     static func main() async {
@@ -27,21 +29,11 @@ enum CallMediaProbe {
         let caller = Peer(name: "caller", factory: factory)
         let partner = Peer(name: "partner", factory: factory)
         await connect(caller, partner, factory: tuned ? factory : nil)
-        say("Connected. Sending a voice-like sound and silence by turns of 1 s, and panning 720p noise at 30 fps, "
-            + "for \(Int(seconds)) s.")
+        say("Connected. Sending a voice-like sound and silence by turns of 1 s, and panning 1080p noise at 30 fps, "
+            + "for \(Int(directSeconds)) s on the path the stats show, then \(Int(turnSeconds)) s on TURN's limits.")
 
-        let statsLog = CallStatsLog(interval: .seconds(10)) { say("CallStatsLog caller: \($0)") }
-        statsLog.start(caller.connection)
-        var samples: [String: [Timed]] = [:]
-        let start = ContinuousClock.now
-        while ContinuousClock.now - start < .seconds(seconds) {
-            for peer in [caller, partner] {
-                let sample = await CallStatsSample.read(peer.connection)
-                samples[peer.name, default: []].append(Timed(microphone.seconds, sample))
-            }
-            try? await Task.sleep(for: sampleInterval)
-        }
-        statsLog.stop()
+        let peers = [caller, partner]
+        let (direct, turn) = await run(peers, tuned: tuned, microphone)
 
         let offer = caller.connection.localDescription?.sdp ?? ""
         let answer = partner.connection.localDescription?.sdp ?? ""
@@ -51,12 +43,55 @@ enum CallMediaProbe {
             Check("the offer asks for Opus DTX (usedtx=1)", .tuning, holds: opusAsksForDTX(offer)),
             Check("the answer asks for Opus DTX (usedtx=1)", .tuning, holds: opusAsksForDTX(answer)),
         ]
-            + checks(caller, samples[caller.name] ?? [])
-            + checks(partner, samples[partner.name] ?? [])
+            + peers.flatMap { checks($0, direct[$0.name] ?? []) + turnChecks($0, turn[$0.name] ?? []) }
         let passed = report(checks, tuned: tuned)
         caller.connection.close()
         partner.connection.close()
         exit(passed ? 0 : 1)
+    }
+
+    /// Runs the call on the path the stats show, following it the way CallMediaSession does,
+    /// then on TURN's limits, and returns each phase's samples.
+    static func run(
+        _ peers: [Peer],
+        tuned: Bool,
+        _ microphone: FakeMicrophone
+    ) async -> (direct: [String: [Timed]], turn: [String: [Timed]]) {
+        let statsLog = CallStatsLog(interval: .seconds(10)) { say("CallStatsLog caller: \($0)") }
+        statsLog.start(peers[0].connection)
+        defer { statsLog.stop() }
+        let direct = await record(peers, for: directSeconds, microphone) { peer, sample in
+            if tuned, let path = sample.mediaPath, path != peer.videoPath {
+                peer.videoPath = path
+                CallCodecs.limitVideo(peer.videoSender, on: path)
+            }
+        }
+        if tuned {
+            for peer in peers {
+                CallCodecs.limitVideo(peer.videoSender, on: .turn)
+            }
+        }
+        return (direct, await record(peers, for: turnSeconds, microphone) { _, _ in })
+    }
+
+    /// Samples each peer's stats every `sampleInterval` for `seconds`.
+    static func record(
+        _ peers: [Peer],
+        for seconds: Double,
+        _ microphone: FakeMicrophone,
+        onSample: (Peer, CallStatsSample) -> Void
+    ) async -> [String: [Timed]] {
+        var samples: [String: [Timed]] = [:]
+        let start = ContinuousClock.now
+        while ContinuousClock.now - start < .seconds(seconds) {
+            for peer in peers {
+                let sample = await CallStatsSample.read(peer.connection)
+                onSample(peer, sample)
+                samples[peer.name, default: []].append(Timed(microphone.seconds, sample))
+            }
+            try? await Task.sleep(for: sampleInterval)
+        }
+        return samples
     }
 
     /// Offers and answers the way `CallMediaSession` does, and applies `CallCodecs` at the same
@@ -106,13 +141,16 @@ enum CallMediaProbe {
         let audio = AudioTurns(samples)
         let target = samples.compactMap(\.sample.video.targetBitsPerSecond).max() ?? 0
         let peak = (two: peakVideoBitsPerSecond(samples, over: 2), ten: peakVideoBitsPerSecond(samples, over: 10))
+        let widest = samples.compactMap(\.sample.frameWidth).max() ?? 0
         let shown = peer.partnerVideo.snapshot()
         say("\(name) audio: \(Int(audio.speech.packetsPerSecond)) packets/s and \(Int(audio.speech.bytesPerPacket)) "
             + "bytes a packet in speech, \(Int(audio.silence.packetsPerSecond)) packets/s in silence")
-        say("\(name) video: \(last.video.codec ?? "-"), highest encoder target \(Int(target / 1_000)) kbps, peak sent "
-            + "\(Int(peak.two / 1_000)) kbps over 2 s and \(Int(peak.ten / 1_000)) kbps over 10 s, last frame "
-            + "\(last.frameWidth ?? 0) wide; it showed \(shown.frames) partner frames, last \(shown.size)")
+        say("\(name) video on the \(last.mediaPath.map { "\($0)" } ?? "unknown") path: \(last.video.codec ?? "-"), "
+            + "highest encoder target \(Int(target / 1_000)) kbps, peak sent \(Int(peak.two / 1_000)) kbps over 2 s "
+            + "and \(Int(peak.ten / 1_000)) kbps over 10 s, widest frame \(widest); it showed \(shown.frames) "
+            + "partner frames, last \(shown.size)")
         return [
+            Check("\(name) finds the direct path", .always, holds: last.mediaPath == .direct),
             Check(
                 "\(name)'s audio packets in speech carry two Opus frames (RED): over 120 bytes, "
                     + "where one 32 kbps frame is 80",
@@ -125,14 +163,39 @@ enum CallMediaProbe {
                 holds: audio.silence.packetsPerSecond < 0.3 * audio.speech.packetsPerSecond
             ),
             Check("\(name) sends video as video/H265", .tuning, holds: last.video.codec == "video/H265"),
-            Check("\(name)'s video encoder target stays at or under 1.5 Mbps", .tuning, holds: target <= 1_500_000),
             Check(
-                "\(name)'s sent video stays under 1.65 Mbps over every 10 s",
-                .tunedRunOnly,
-                holds: peak.ten < 1_650_000
+                "\(name)'s video encoder target on the direct path goes over WebRTC's own 2.5 Mbps",
+                .tuning,
+                holds: target > 2_500_000
             ),
+            Check("\(name)'s video encoder target stays at or under 4 Mbps", .always, holds: target <= 4_000_000),
+            Check("\(name)'s sent video stays under 4.4 Mbps over every 10 s", .always, holds: peak.ten < 4_400_000),
             Check("\(name)'s sent video reaches over 1 Mbps", .always, holds: peak.two > 1_000_000),
             Check("\(name) shows over 100 frames of the partner's video", .always, holds: shown.frames > 100),
+        ]
+    }
+
+    static func turnChecks(_ peer: Peer, _ samples: [Timed]) -> [Check] {
+        let name = peer.name
+        // The encoder and the packets already sent take a moment to follow the new limits.
+        let settled = samples.filter { $0.sample.seconds - (samples.first?.sample.seconds ?? 0) >= 2 }
+        let target = settled.compactMap(\.sample.video.targetBitsPerSecond).max() ?? 0
+        let peak = peakVideoBitsPerSecond(settled, over: 5)
+        let widest = settled.compactMap(\.sample.frameWidth).max() ?? 0
+        say("\(name) video on TURN's limits: highest encoder target \(Int(target / 1_000)) kbps, peak sent "
+            + "\(Int(peak / 1_000)) kbps over 5 s, widest frame \(widest)")
+        return [
+            Check(
+                "\(name)'s video encoder target on TURN stays at or under 1.5 Mbps",
+                .tuning,
+                holds: target <= 1_500_000
+            ),
+            Check(
+                "\(name)'s sent video on TURN stays under 1.65 Mbps over every 5 s",
+                .tunedRunOnly,
+                holds: peak < 1_650_000
+            ),
+            Check("\(name)'s video on TURN is at most 1280 wide", .tunedRunOnly, holds: widest <= 1_280),
         ]
     }
 
@@ -290,6 +353,8 @@ final class Peer {
     let audioTrack: LKRTCAudioTrack
     let videoTrack: LKRTCVideoTrack
     let partnerVideo = FrameCounter()
+    /// The path this peer's video limits were last set for. `CallCodecs.configure` starts at TURN's.
+    var videoPath = CallMediaPath.turn
     private let camera: NoiseCamera
     private var partnerTrack: LKRTCVideoTrack?
 
@@ -326,6 +391,13 @@ final class Peer {
         return description
     }
 
+    var videoSender: LKRTCRtpSender {
+        guard let sender = connection.transceivers.first(where: { $0.mediaType == .video })?.sender else {
+            CallMediaProbe.fail("\(name) has no video sender")
+        }
+        return sender
+    }
+
     /// Keeps the track, because a track removes its renderers when it is freed.
     func watchPartnerVideo() {
         partnerTrack = connection.transceivers.lazy.compactMap { $0.receiver.track as? LKRTCVideoTrack }.first
@@ -353,11 +425,11 @@ nonisolated final class FrameCounter: NSObject, LKRTCVideoRenderer, @unchecked S
     }
 }
 
-/// 1280x720 frames at 30 fps of a noise picture that pans, with fresh grain on top, so the
-/// encoder always wants more bits than the cap allows.
+/// 1920x1080 frames at 30 fps, as CallCamera captures, of a noise picture that pans, with fresh
+/// grain on top, so the encoder always wants more bits than the cap allows.
 nonisolated final class NoiseCamera: @unchecked Sendable {
-    static let width = 1_280
-    static let height = 720
+    static let width = 1_920
+    static let height = 1_080
 
     private let source: LKRTCVideoSource
     private let capturer: LKRTCVideoCapturer

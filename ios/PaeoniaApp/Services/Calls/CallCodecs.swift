@@ -4,13 +4,8 @@ import Foundation
 /// How a call compresses its audio and video. `scripts/call-media-probe` checks each choice
 /// on two connections in one Mac process.
 nonisolated enum CallCodecs {
-    /// WebRTC lets 720p video reach 2.5 Mbps. H.265 looks good on a phone screen at 1.5 Mbps, and
-    /// the extra bits cost mobile data and TURN traffic. The cap also replaces WebRTC's lower
-    /// limits for smaller pictures, such as 600 kbps at 320x180.
-    static let maxVideoBitsPerSecond = 1_500_000
-
-    /// Prefers RED-wrapped Opus for audio and caps the video bitrate. Call it for each
-    /// transceiver before the offer or answer that first carries it.
+    /// Prefers RED-wrapped Opus for audio and limits the video for TURN until the call knows its
+    /// path. Call it for each transceiver before the offer or answer that first carries it.
     static func configure(_ transceiver: LKRTCRtpTransceiver, factory: LKRTCPeerConnectionFactory) {
         switch transceiver.mediaType {
         case .audio:
@@ -21,14 +16,21 @@ nonisolated enum CallCodecs {
                 + codecs.filter { !first.contains($0.name.lowercased()) }
             try? transceiver.setCodecPreferences(preferred, error: ())
         case .video:
-            let parameters = transceiver.sender.parameters
-            for encoding in parameters.encodings {
-                encoding.maxBitrateBps = NSNumber(value: maxVideoBitsPerSecond)
-            }
-            transceiver.sender.parameters = parameters
+            limitVideo(transceiver.sender, on: .turn)
         default:
             break
         }
+    }
+
+    /// Sets the video's largest bitrate and picture size for the path. The camera captures 1080p.
+    /// WebRTC can change both during a call without a new offer.
+    static func limitVideo(_ sender: LKRTCRtpSender, on path: CallMediaPath) {
+        let parameters = sender.parameters
+        for encoding in parameters.encodings {
+            encoding.maxBitrateBps = NSNumber(value: path.maxVideoBitsPerSecond)
+            encoding.scaleResolutionDownBy = NSNumber(value: path.videoScaleDown)
+        }
+        sender.parameters = parameters
     }
 
     /// Asks the partner's phone to stop sending audio while this person is silent (Opus DTX).
@@ -66,6 +68,37 @@ nonisolated enum CallCodecs {
         let rest = line.dropFirst(prefix.count)
         guard let space = rest.firstIndex(of: " ") else { return nil }
         return (rest[..<space], rest[rest.index(after: space)...])
+    }
+}
+
+/// How a call's media travels between the two phones.
+nonisolated enum CallMediaPath: Equatable, Sendable {
+    /// Straight between the phones, so only their own networks limit the video.
+    case direct
+    /// Through Cloudflare's TURN server, which Paeonia pays for by the gigabyte.
+    case turn
+
+    /// Either end of the connection in use on a TURN server sends everything through it.
+    init(localCandidateType: String, remoteCandidateType: String?) {
+        self = localCandidateType == "relay" || remoteCandidateType == "relay" ? .turn : .direct
+    }
+
+    /// A direct call sends 1080p at up to 4 Mbps, which looks sharp full screen on an iPad. H.265
+    /// looks good on a phone at 720p and 1.5 Mbps, so TURN traffic stays there. The limit also
+    /// replaces WebRTC's own, which would hold 1080p at 2.5 Mbps and 320x180 at 600 kbps.
+    var maxVideoBitsPerSecond: Int {
+        switch self {
+        case .direct: 4_000_000
+        case .turn: 1_500_000
+        }
+    }
+
+    /// How much WebRTC shrinks the camera's 1080p picture before it encodes it.
+    var videoScaleDown: Double {
+        switch self {
+        case .direct: 1
+        case .turn: 1.5
+        }
     }
 }
 

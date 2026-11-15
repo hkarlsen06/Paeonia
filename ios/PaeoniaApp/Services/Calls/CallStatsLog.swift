@@ -4,7 +4,8 @@ import OSLog
 
 /// Logs one line about the call's media every 10 seconds while the phones are connected:
 /// codecs, bitrates, losses, round trip time and whether the media goes direct or through TURN.
-/// Read it in Console with the `CallStats` category.
+/// Read it in Console with the `CallStats` category. Each sample also goes to `onSample`, the
+/// first one as soon as the phones connect.
 final class CallStatsLog {
     private static let logger = Logger(subsystem: "no.paeonia.app", category: "CallStats")
 
@@ -20,14 +21,16 @@ final class CallStatsLog {
         self.write = write
     }
 
-    func start(_ peerConnection: LKRTCPeerConnection) {
+    func start(_ peerConnection: LKRTCPeerConnection, onSample: @escaping (CallStatsSample) -> Void = { _ in }) {
         guard task == nil else { return }
         task = Task { [interval, write] in
             var previous = await CallStatsSample.read(peerConnection)
+            onSample(previous)
             while true {
                 try? await Task.sleep(for: interval)
                 guard !Task.isCancelled else { return }
                 let current = await CallStatsSample.read(peerConnection)
+                onSample(current)
                 write(current.line(since: previous))
                 previous = current
             }
@@ -62,8 +65,16 @@ nonisolated struct CallStatsSample: Sendable {
     var packetsLost = 0
     var roundTripSeconds: Double?
     var availableOutgoingBitsPerSecond: Double?
-    /// `host`, `srflx`, `prflx` or `relay` for this phone's end of the path in use. Never an address.
+    /// `host`, `srflx`, `prflx` or `relay` for each end of the path in use. Never an address.
     var localCandidateType: String?
+    /// A partner's candidate that answers before its description arrives starts as `prflx`.
+    /// WebRTC corrects it once the description comes, so a later sample shows `relay`.
+    var remoteCandidateType: String?
+
+    /// Nil until the phones have picked a path.
+    var mediaPath: CallMediaPath? {
+        localCandidateType.map { CallMediaPath(localCandidateType: $0, remoteCandidateType: remoteCandidateType) }
+    }
 
     static func read(_ peerConnection: LKRTCPeerConnection) async -> CallStatsSample {
         await withCheckedContinuation { continuation in
@@ -100,6 +111,7 @@ nonisolated struct CallStatsSample: Sendable {
                 roundTripSeconds = pair.number("currentRoundTripTime")
                 availableOutgoingBitsPerSecond = pair.number("availableOutgoingBitrate")
                 localCandidateType = stats[pair.string("localCandidateId") ?? ""]?.string("candidateType")
+                remoteCandidateType = stats[pair.string("remoteCandidateId") ?? ""]?.string("candidateType")
             default:
                 break
             }
@@ -126,7 +138,7 @@ nonisolated struct CallStatsSample: Sendable {
             "lost \(packetsLost - previous.packetsLost)",
             "rtt \(show(roundTripSeconds.map { Int(($0 * 1_000).rounded()) })) ms",
             "available \(show(availableOutgoingBitsPerSecond.map { Int(($0 / 1_000).rounded()) })) kbps",
-            "path \(show(localCandidateType))",
+            "path \(show(localCandidateType))/\(show(remoteCandidateType))",
         ].joined(separator: ", ")
     }
 }

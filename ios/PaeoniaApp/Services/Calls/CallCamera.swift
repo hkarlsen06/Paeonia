@@ -3,8 +3,9 @@ import AVFoundation
 
 /// The phone's camera for a video call. Frames go to the call's video source.
 final class CallCamera {
-    /// Big enough for a full screen on the partner's phone, small enough for a weak connection.
-    private static let targetPixels = 1_280 * 720
+    /// Sharp full screen on the partner's iPad. Through TURN, and on a weak connection, WebRTC
+    /// sends it smaller (`CallMediaPath`).
+    private static let targetPixels = 1_920 * 1_080
     private static let maxFramesPerSecond = 30.0
 
     private let capturer: LKRTCCameraVideoCapturer
