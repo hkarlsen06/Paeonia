@@ -1,58 +1,12 @@
-# iOS Architecture Guidelines
+# iOS architecture guidelines
 
-Use Tidex's maintainable architecture lessons as the baseline, adapted for Paeonia.
+Organize by product feature, as the existing `ios/PaeoniaApp/` folders do. Do not flatten screens into one folder or put feature details into shared modules unless they are reused. App-wide `Shared/` holds only components, extensions and design-system code that several features use.
 
-### Feature-First Organization
+Inside a substantial feature, use subfolders named for the responsibility they own, such as `AnswerFlow/`, `History/`, `Audio/`, `Streak/`, `Canvas/`, `Offer/` or `Invite/`, next to `Models/`, `Data/` and `Components/`. Do not create `PrimaryFlow/`, `SecondaryFlow/`, `PureLogic/` or a feature-local `Shared/`.
 
-Organize by product feature:
+Use SwiftUI for all UI and interaction. If UIKit looks necessary, stop before implementing it and report why SwiftUI is insufficient, which UIKit API you would use, and the tradeoff.
 
-```text
-ios/PaeoniaApp/
-├── App/                  # App entry, lifecycle, root navigation
-├── Features/             # Pairing, DailyPrompt, Memories, Countdown, Settings
-├── Services/             # Auth, notifications, media, sync, subscriptions
-├── Storage/              # SwiftData models, repositories, sync/local store
-├── Models/               # Domain models and DTOs
-├── Shared/               # Reusable components, extensions, design system
-└── Resources/            # Assets, localization, sounds
-```
-
-Keep this feature-first structure as a hard maintainability rule. Do not flatten screens into one folder or mix feature implementation details into shared/global modules unless they are genuinely reusable.
-
-Within a substantial feature, prefer responsibility-based subfolders over a generic feature-local `Shared/` folder. This is an example shape, not a literal template:
-
-```text
-ios/PaeoniaApp/Features/FeatureName/
-├── Models/      # Feature-wide domain/UI models and remote DTOs
-├── Data/        # Feature services, repositories, caches, drafts, and sync adapters
-├── Components/  # Reusable UI pieces used by multiple flows in this feature
-├── Timeline/    # Example product surface folder; use the real surface name
-├── Editor/      # Example supporting flow folder; use the real flow name
-└── Milestones/  # Example product logic folder; use the real logic name
-```
-
-Name flow and logic folders after the product responsibility they own, such as `AnswerFlow/`, `History/`, `Audio/`, `Streak/`, `Timeline/`, `Canvas/`, `Offer/`, or `Invite/`. Do not create generic `PrimaryFlow/`, `SecondaryFlow/`, `PureLogic/`, or `Shared/` buckets when a more precise responsibility name fits. Keep app-wide `Shared/` reserved for components, extensions, and design-system code that is genuinely reused across features.
-
-### MVVM Boundaries
-
-- SwiftUI views render state and forward user actions.
-- Use SwiftUI as much as possible for app UI and interaction implementation.
-- If UIKit appears necessary to solve a task, stop before implementing it and report why SwiftUI is insufficient, what UIKit API would be used, and the expected tradeoff.
-- View models own presentation state and async UI flows.
-- Repositories own local data access.
-- Services own platform, backend, notification, media, and subscription integrations.
-- Pure product logic should live outside SwiftUI views.
-
-Examples of pure/testable logic:
-
-- prompt reveal rules
-- streak repair rules
-- countdown calculations
-- time-zone handling
-- pairing state transitions
-- notification planning
-- memory ordering
-- sync conflict handling
+Prefer initializer injection. Keep UI-facing view models on `@MainActor`, and handle task cancellation in async flows.
 
 ### One enum per lifecycle
 
@@ -65,7 +19,7 @@ When two or more stored properties together say what stage something is in, such
 - `ImageLoad<Key>` (`Services/Media/ImageLoad.swift`) is a view's photo load. It keeps the key with the image or the failure, so a reused view never shows the last photo's result.
 - `PendingSyncFailure` (`Storage/Repositories/PendingSyncOperationTypes.swift`) records why a queued write's try failed, classified with `PaeoniaFailure` when it happens. Read `failedWhileOnline` or `lastFailureKind`, never the text in `lastError`.
 
-### Stable Presentation Readiness
+### Stable presentation readiness
 
 For any screen that can be the first app surface after launch, do not dismiss the launch/loading screen until the screen has a stable first presentation.
 
@@ -75,33 +29,8 @@ For any screen that can be the first app surface after launch, do not dismiss th
 - The app loading surface should be visually blank and copy-free; it may be present for only a split second, so do not add explanatory loading text that users cannot read.
 - Keep the last known stable state visible during refreshes. Do not clear existing content, pricing, trial, pairing, entitlement, or invite state just because a new fetch has started.
 - Transient errors may be shown through the top banner, but clearing the banner must not make `isPresentationReady` false again if the underlying fetch has already settled.
-- Add or update focused tests when introducing readiness gates, especially for blocked or slow fetches and for error-clearing behavior.
 
-### Local-First Data Flow
-
-Default to local-first behavior:
-
-- Read from local persistence first.
-- Write locally immediately.
-- Mark records as pending/dirty if remote sync is needed.
-- Sync in the background.
-- Keep the UI usable offline where possible.
-- Surface sync errors clearly without blocking ordinary app use.
-
-### Dependency Injection
-
-- Prefer initializer injection for view models, repositories, and services.
-- Use protocols where they materially improve testability.
-- Avoid unnecessary global singletons.
-- Shared production instances are acceptable for app-wide coordination, but business logic should remain testable.
-
-### Swift Concurrency
-
-- Keep UI-facing view models on `@MainActor`.
-- Use actors for serialized mutable state, save pipelines, or sync coordination.
-- Handle task cancellation in async flows.
-- Avoid heavy work in SwiftUI `body` or computed properties.
-- Use `Sendable` for values crossing concurrency boundaries when appropriate.
+### Swift concurrency gotchas
 
 #### Pass stored `@MainActor` closures through a closure literal
 
@@ -111,11 +40,10 @@ Passing a stored `@MainActor () async -> T` property straight into another view'
 
 In `PaeoniaAppTests`, write `actor FakeCache { ... }` followed by `extension FakeCache: ProfilePhotoImageCaching {}` when the protocol is declared `nonisolated protocol`. With the conformance on the actor itself, Xcode 27 can fail with "'nonisolated' on an actor's synchronous initializer is invalid". It fails when a file that calls the actor's initializer is type-checked before the file that declares the actor, so whether it fails depends on how the build batches files. A local build can pass while CI fails. The app target is not affected because it defaults to `MainActor` isolation and the test target does not.
 
-#### `.task(id:)` keys must be load-bearing only
+#### `.task(id:)` keys hold only inputs that change what loads
 
 `SwiftUI`'s `.task(id:)` cancels its running task and restarts it whenever the `id` value changes. So the `id` must contain *only* the inputs that determine what the task loads — never cosmetic data that arrives or refreshes shortly after launch.
 
-- Symptom of getting this wrong: a network request fails with `NSURLErrorCancelled` (`URLError.cancelled`, code `-999`) a beat after the screen appears, then a manual retry works. The launch-time load was aborted because some unrelated field in the `id` changed mid-flight.
-- Concrete case (do not reintroduce): the daily challenge load was keyed on the whole `DailyChallengeParticipants` value (current/partner ids **plus** display names and profile-photo asset ids). Names and avatars populate asynchronously, so each one cancelled the in-flight `get_today_daily_challenge_snapshot` fetch. Fixed by keying `.task(id:)` on `currentUserID` alone and feeding cosmetic identity through a separate non-reloading path (`DailyChallengeViewModel.refreshParticipants` via `.onChange`).
-- Rule: key the load on identity that genuinely changes *what* is fetched (usually a user/couple id). Route display-only updates (names, photos, labels) through `.onChange` into a method that refreshes rendering without re-fetching. When in doubt, prefer a narrow, stable `id` and a separate cosmetic-update path.
-- Note that swallowing `URLError.cancelled` (treating it like Swift's `CancellationError`) hides the *banner*, but the load is still wastefully cancelled and may not auto-retry. Fix the `id`, don't just silence the error.
+- A request that fails with `NSURLErrorCancelled` (`-999`) a beat after the screen appears, and works on manual retry, means a cosmetic field in the `id` changed mid-flight. The daily challenge load once keyed on all `DailyChallengeParticipants`, so each name and avatar that arrived cancelled the fetch. It now keys on `currentUserID` and refreshes cosmetic identity through `.onChange` (`DailyChallengeViewModel.refreshParticipants`).
+- Key the load on identity that changes what is fetched, usually a user or couple id. Route names, photos and labels through `.onChange` into a method that refreshes rendering without fetching.
+- Swallowing `URLError.cancelled` hides the banner but leaves the load cancelled and possibly not retried. Fix the `id`.

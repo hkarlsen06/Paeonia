@@ -32,31 +32,13 @@ Product constraints:
 - Type-safe localization from the beginning.
 - Shared daily prompts, memories, countdowns, widgets, respectful notifications, and couple pairing.
 - Minimum deployment target is iOS 27.0.
-- Initial iOS targets include app, widget, notification service extension, unit tests, and UI tests.
 - Auth uses Sign in with Apple and Google Sign-In only for MVP; no separate sign-up page, passkey flow, email/password, or email magic-link auth for MVP. The production Clerk instance allows only Apple and Google, and `api.paeonia.no` trusts only it. Local backends (`scripts/local-backend`) trust the development Clerk instance instead, where the test couple from `scripts/test-couple` lives.
-- Project setup should stay nearly identical to Tidex. Discuss deviations with the user before making them.
-- Associated Domains should be configured from the start for `applinks:paeonia.no`.
+- Project setup stays nearly identical to Tidex. Discuss deviations with the user before making them.
 - Localization must use Xcode String Catalog generated symbols from day one. Start with English and Norwegian Bokmal.
 
-## Repository Structure
+## Repository structure
 
-Repository structure:
-
-```text
-paeonia/
-├── marketing/            # Static SvelteKit site for paeonia.no
-├── ios/                  # Native iOS application
-│   ├── PaeoniaApp/       # Main iOS app target
-│   ├── PaeoniaWidget/    # Widget target, if/when added
-│   ├── PaeoniaAppTests/  # Unit tests
-│   ├── PaeoniaAppUITests/# UI tests
-│   └── Scripts/          # Build/localization/release scripts
-├── backend/              # Self-hosted Convex backend
-├── relay/                # Cloudflare Worker that relays live drawing strokes
-├── docs/                 # Architecture and product documentation
-├── AGENTS.md
-└── README.md
-```
+`ios/` (app, widget, notification service extension, tests, scripts), `backend/` (self-hosted Convex), `marketing/` (static SvelteKit site), `relay/` (Cloudflare Worker for live drawing), `docs/`, `scripts/`, `video/` and `design/`.
 
 Use `paeonia.no` as the canonical public domain for marketing, support, legal pages, and universal links.
 The backend is a self-hosted Convex deployment on the `one-s` server, with Clerk for auth. It is the only hosted deployment, and it holds test data. Hosted origins:
@@ -80,8 +62,7 @@ Keep `AGENTS.md` for durable rules and constraints. Put feature ownership maps, 
 
 - `docs/implementation-map.md`: first stop for "which file owns this behavior?"
 - `docs/mvp-release-checklist.md`: active MVP release-readiness checklist.
-- `docs/phase-3-data-contract.md`: product and data-model decisions, written for the retired Supabase schema. `backend/convex/schema.ts` is current.
-- `docs/marketing-app-contract.md`: public routes, Universal Links, Cloudflare static files, and marketing app structure.
+- `docs/marketing-app-contract.md`: public routes, Universal Links, Cloudflare static files.
 - `docs/games-plan.md`: Games tab decisions and build plan. Read it before any games work, and update it in the same change when a games decision or design changes.
 - `docs/calling-plan.md`: voice and video calling decisions and build plan. Read it before any calling work, and update it in the same change when a calling decision changes.
 - `backend/AGENTS.md`: backend working rules, local commands, server access, and deploy steps.
@@ -111,19 +92,9 @@ The developer may run multiple agents in parallel in the same worktree.
 - If a feature is not ready to wire up, leave it unwired rather than adding a fake destination. Prefer not adding the entry point yet, or stop and ask how the developer wants the unfinished feature surfaced.
 - If a temporary placeholder is genuinely wanted, confirm that intent first, and only then add it.
 
-### File Size And Splitting
+### File size and splitting
 
-- Avoid letting Swift files grow into broad catch-all files.
-- There is no hard line limit, but treat large files as a design signal.
-- When a file becomes substantial, actively look for natural split points before adding more code:
-  - feature subviews
-  - button/card/style definitions
-  - repository protocols and implementations
-  - pure date/calculation logic
-  - sync or persistence helpers
-  - preview/test fixtures
-- Split only when it improves readability, ownership, or testability. Do not fragment code into tiny files just to satisfy a number.
-- The pre-commit hook runs SwiftLint and prints an advisory for large staged Swift files. Treat that advisory as a prompt to think, not as an automatic mandate.
+There is no hard line limit, but a large Swift file is a design signal. Before adding to a substantial file, look for natural split points (feature subviews, style definitions, repository implementations, pure calculation logic, sync helpers, fixtures). Split only when it improves readability, ownership or testability. The pre-commit hook advises on large staged Swift files. Treat the advisory as a prompt to think, not a mandate.
 
 ### Product Copy Clarity
 

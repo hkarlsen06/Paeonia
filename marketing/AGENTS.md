@@ -2,24 +2,15 @@
 
 Paths are relative to the repository root. Read `docs/marketing-app-contract.md` for routing or deployment changes.
 
-## Marketing Site Guidelines
+## Marketing site rules
 
-The `marketing/` app is a static SvelteKit 3 site. It moved off Next.js on 2026-10-16, so this is a deliberate difference from Tidex.
+The `marketing/` app is a static SvelteKit 3 site on Cloudflare Pages. It moved off Next.js on 2026-10-16, so this is a deliberate difference from Tidex.
 
-- Use SvelteKit with `@sveltejs/adapter-static`. Every page is prerendered, and only `/join/` ships client code (`csr = true` in `src/routes/join/+page.ts`).
+- Use `@sveltejs/adapter-static`. Every page is prerendered, and only `/join/` ships client code (`csr = true` in `src/routes/join/+page.ts`).
 - Configure SvelteKit through the `sveltekit()` plugin in `vite.config.ts`. SvelteKit 3 has no `svelte.config.js`.
 - Import shared code through `#lib/...` with the file extension, for example `#lib/paths.ts`.
-- Deploy to Cloudflare Pages.
-- Keep public/legal/support pages in the marketing app.
-- Use `paeonia.no` as the canonical domain.
-- Use stable routes for App Store and in-app references:
-  - `/`
-  - `/privacy`
-  - `/terms`
-  - `/support`
-  - `/join/[inviteCode]` or another universal-link route chosen before implementation
-- Avoid server-only runtime dependencies unless the deployment target changes.
-- Keep legal/version metadata structured once legal pages exist.
+- Keep route URLs stable, because the App Store and the app link to them. [The contract](../docs/marketing-app-contract.md) lists them.
+- Add marketing copy to the marketing dictionaries and legal copy to the legal dictionaries under `src/lib/i18n/dictionaries/`. Do not grow one large dictionary file.
 
 ## App Store and marketing copy
 

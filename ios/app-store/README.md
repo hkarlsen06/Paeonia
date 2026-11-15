@@ -1,10 +1,10 @@
 # App Store Connect
 
-Paeonia uses the same ASC CLI workflow as Tidex. `config.json` pins the CLI version and identifies the app. Metadata and screenshot commands show a read-only plan by default. Add `--apply` when an upload is authorized.
+Paeonia uses the same ASC CLI workflow as Tidex. Metadata and screenshot commands show a read-only plan by default. Add `--apply` when an upload is authorized.
 
 ## Setup
 
-The Mac already has ASC 6.5.3 installed. On another machine, install the matching binary from the [ASC releases](https://github.com/rorkai/App-Store-Connect-CLI/releases) and verify its release checksums. `ASC_BIN` can select an executable outside `PATH`. Check a CLI upgrade against the commands below before changing `cliVersion`.
+`config.json` pins the CLI version. On another machine, install that binary from the [ASC releases](https://github.com/rorkai/App-Store-Connect-CLI/releases) and verify its release checksums. `ASC_BIN` can select an executable outside `PATH`. Check a CLI upgrade against the commands below before changing `cliVersion`.
 
 The ignored `ios/app-store/.env` symlink points to `/Users/hkarlsen06/Documents/Privat/Utviklernøkler/Secrets/Paeonia/asc.env`. It contains `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY_PATH`. Environment variables override the file. The wrapper gives ASC a temporary key copy with mode 0600 and removes it afterward. Keep credentials outside Git. Recreate this symlink in a fresh checkout, or supply the three environment variables.
 

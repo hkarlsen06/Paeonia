@@ -28,12 +28,7 @@ backend/questions/
     `-- <question_key>/                 same layout as a system question
 ```
 
-Each file is YAML front matter only. Copy a neighbouring question for the exact shape (prompts use the `>-` block style).
-
-- `question.md`: `collection`, `key`, `status`, `resurfaceable`, `resurface_after_months`. Topic questions add `topic` and `sort_order`.
-- `version.md`: `version_number`, `status`, `active_from`, `retired_at`, `answer_kinds`.
-- `locales/<locale>.md`: `locale`, `prompt` (3-500 characters), `short_prompt` (3-160). An `either_or` version adds `option_a` and `option_b`.
-- `topic.md`: `key`, `status`, `sort_order` (shelf order), `private` (true for Flirt, so its chat pushes name only the sender). Topic `locales/<locale>.md`: `locale`, `title` (1-60 characters), `subtitle` (at most 160).
+Each file is YAML front matter only. Copy a neighbouring question for the exact shape (prompts use the `>-` block style). The dry run validates the fields. Limits to know: `prompt` 3-500 characters, `short_prompt` 3-160, topic `title` 1-60, topic `subtitle` at most 160, and `private: true` on `topic.md` for Flirt, so its chat pushes name only the sender. An `either_or` version adds `option_a` and `option_b` to each locale.
 
 Rules:
 
