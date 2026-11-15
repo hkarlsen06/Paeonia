@@ -4,7 +4,7 @@ import Foundation
 /// so the timing is testable and the screen can ask how long a drop takes.
 ///
 /// Heights are in cells above the disc's resting cell. Times are seconds since
-/// the move arrived. A partner's disc first hovers over its column and fades in.
+/// the move arrived. A partner's disc fades in as it starts to fall.
 nonisolated struct ConnectFourDropMotion: Equatable {
     nonisolated struct Bounce: Equatable {
         let start: TimeInterval
@@ -27,22 +27,19 @@ nonisolated struct ConnectFourDropMotion: Equatable {
     static let gravity = 62.0
     static let shortestFall: TimeInterval = 0.25
     static let longestFall: TimeInterval = 0.45
-    /// How long the partner's disc hovers over its column before it drops.
-    static let partnerHover: TimeInterval = 0.25
     static let partnerFadeIn: TimeInterval = 0.15
 
     /// How far the disc starts above its cell, in cells.
     let distance: Double
-    let hoverDuration: TimeInterval
     let fadeInDuration: TimeInterval
     let fallDuration: TimeInterval
     let bounces: [Bounce]
 
-    init(distance: Double, hover: TimeInterval = 0, fadeIn: TimeInterval = 0) {
+    init(distance: Double, fadeIn: TimeInterval = 0) {
         let fall = min(Self.longestFall, max(Self.shortestFall, (2 * distance / Self.gravity).squareRoot()))
         let firstPeak = min(0.3, max(0.08, 0.05 * distance))
         var bounces: [Bounce] = []
-        var start = hover + fall
+        var start = fall
         for peak in [firstPeak, firstPeak * 0.4] {
             let duration = 2 * (2 * peak / Self.gravity).squareRoot()
             bounces.append(Bounce(start: start, duration: duration, peak: peak))
@@ -50,7 +47,6 @@ nonisolated struct ConnectFourDropMotion: Equatable {
         }
         self.init(
             distance: distance,
-            hoverDuration: hover,
             fadeInDuration: fadeIn,
             fallDuration: fall,
             bounces: bounces
@@ -59,13 +55,11 @@ nonisolated struct ConnectFourDropMotion: Equatable {
 
     private init(
         distance: Double,
-        hoverDuration: TimeInterval,
         fadeInDuration: TimeInterval,
         fallDuration: TimeInterval,
         bounces: [Bounce]
     ) {
         self.distance = distance
-        self.hoverDuration = hoverDuration
         self.fadeInDuration = fadeInDuration
         self.fallDuration = fallDuration
         self.bounces = bounces
@@ -80,7 +74,6 @@ nonisolated struct ConnectFourDropMotion: Equatable {
         }
         return ConnectFourDropMotion(
             distance: ConnectFourBoardGeometry.dropDistance(toRow: landingRow),
-            hover: isMine ? 0 : partnerHover,
             fadeIn: isMine ? 0 : partnerFadeIn
         )
     }
@@ -89,7 +82,6 @@ nonisolated struct ConnectFourDropMotion: Equatable {
     static func reduced(fadeIn: TimeInterval) -> ConnectFourDropMotion {
         ConnectFourDropMotion(
             distance: 0,
-            hoverDuration: 0,
             fadeInDuration: fadeIn,
             fallDuration: 0,
             bounces: []
@@ -97,7 +89,7 @@ nonisolated struct ConnectFourDropMotion: Equatable {
     }
 
     /// When the disc first touches its cell.
-    var landingTime: TimeInterval { hoverDuration + fallDuration }
+    var landingTime: TimeInterval { fallDuration }
 
     /// When the disc has stopped moving.
     var totalDuration: TimeInterval {
@@ -107,10 +99,8 @@ nonisolated struct ConnectFourDropMotion: Equatable {
 
     /// How far above its cell the disc is, in cells.
     func height(at elapsed: TimeInterval) -> Double {
-        if elapsed < hoverDuration { return distance }
-        let fallen = elapsed - hoverDuration
-        if fallen < fallDuration {
-            let fraction = fallen / fallDuration
+        if elapsed < fallDuration {
+            let fraction = elapsed / fallDuration
             return distance * (1 - fraction * fraction)
         }
         for bounce in bounces where elapsed >= bounce.start && elapsed < bounce.start + bounce.duration {

@@ -24,7 +24,7 @@
     )
     static let connectFourPartnerMove = boardGameScreen(
       "connect-four-partner-move", "Four in a Row · Robin's disc arrives",
-      "Opens one disc behind: Robin's last disc hovers over its column, then drops"
+      "Opens one disc behind: Robin's last disc fades in and drops into its column"
     )
     static let connectFourWon = boardGameScreen(
       "connect-four-won", "Four in a Row · you win",
