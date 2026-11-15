@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Where the call bubble and the partner's avatar sit: against the left or the right edge, at the
-/// height the person dropped it. They share one spot, so the bubble shows where the avatar was.
+/// Where the call bubble and the partner's avatar sit: the partner's avatar against the left or the
+/// right edge, and the call bubble where the person dropped it, at the height they dropped it. They
+/// share one spot, so the bubble shows where the avatar was.
 nonisolated struct CallBubbleSpot: Equatable, Sendable {
     enum Height: Equatable, Sendable {
         /// Just above the screen's bottom controls, such as the tab bar or a chat's composer. Where it
@@ -15,8 +16,11 @@ nonisolated struct CallBubbleSpot: Equatable, Sendable {
         case center(CGFloat)
     }
 
+    /// The side it is nearest, where the partner's avatar sits and where either tucks away.
     var edge: HorizontalEdge
     var height: Height
+    /// Where the call bubble's center was dropped across the screen. Nil keeps it against `edge`.
+    var x: CGFloat?
 
     /// Bottom right, above the tab bar.
     static let initial = CallBubbleSpot(edge: .trailing, height: .aboveControls)
@@ -60,7 +64,9 @@ nonisolated struct CallBubblePlacement {
     /// The center of a bubble of `bubble` size at `spot`, kept inside the free area. With no room
     /// left, such as above an open chat panel, it goes to the top.
     func center(of spot: CallBubbleSpot, bubble: CGSize) -> CGPoint {
-        let x = spot.isLeading ? area.minX + bubble.width / 2 : area.maxX - bubble.width / 2
+        let leftmost = area.minX + bubble.width / 2
+        let rightmost = max(leftmost, area.maxX - bubble.width / 2)
+        let x = spot.x.map { min(max($0, leftmost), rightmost) } ?? (spot.isLeading ? leftmost : rightmost)
         let highest = area.minY + bubble.height / 2
         let lowest = max(area.minY, area.maxY - bubble.height) + bubble.height / 2
         let y: CGFloat = switch spot.height {
@@ -81,8 +87,8 @@ nonisolated struct CallBubblePlacement {
     /// Where a dragged bubble settles.
     enum Landing: Equatable {
         case spot(CallBubbleSpot)
-        /// Pushed a third past the left or right edge, or flung hard at it, which tucks the partner's
-        /// avatar away there. It comes back at the spot.
+        /// Pushed over the left or right edge, or flung hard at it, which tucks the bubble or the
+        /// partner's avatar away there. It comes back at the spot.
         case tucked(CallBubbleSpot)
 
         var spot: CallBubbleSpot {
@@ -92,25 +98,31 @@ nonisolated struct CallBubblePlacement {
         }
     }
 
-    /// Where a bubble that started at `spot` settles once the finger lets go: against the edge it was
-    /// thrown toward, at the height it was dropped, carried a little by the throw.
+    /// Where a bubble that started at `spot` settles once the finger lets go, carried a little by the
+    /// throw: at the height it was dropped, and where it was dropped across the screen when it
+    /// `staysWhereDropped`, else against the edge it was thrown toward.
     func landing(
-        from spot: CallBubbleSpot, translation: CGSize, velocity: CGSize, bubble: CGSize
+        from spot: CallBubbleSpot, translation: CGSize, velocity: CGSize, bubble: CGSize, staysWhereDropped: Bool
     ) -> Landing {
         let start = center(of: spot, bubble: bubble)
         let released = CGPoint(x: start.x + translation.width, y: start.y + translation.height)
         let carried = CGPoint(
             x: released.x + velocity.width * Self.throwCarry, y: released.y + velocity.height * Self.throwCarry)
         let edge: HorizontalEdge = carried.x < size.width / 2 ? .leading : .trailing
-        let landed = CallBubbleSpot(edge: edge, height: settledHeight(carried.y, bubble: bubble))
-        // How far the bubble's middle went past the edge. A finger can't leave the screen, so a third
-        // of the bubble over the edge is as far as a drag by its middle can surely push it.
+        var landed = CallBubbleSpot(edge: edge, height: settledHeight(carried.y, bubble: bubble))
+        // How far the bubble's middle went past the edge. A finger can't leave the screen, and it may
+        // hold the bubble anywhere, so a quarter of the bubble over the edge, and at most 24 pt of it,
+        // is enough to tuck it.
         let pastEdge = edge == .leading ? -released.x : released.x - size.width
+        let overEdge = pastEdge + bubble.width / 2
         // A fling tucks only when it starts near that edge, so a throw across the screen never does.
         let startsNearEdge = pastEdge > -bubble.width * 1.5
         let flungPastEdge = edge == .leading ? -carried.x : carried.x - size.width
-        let tucks = pastEdge > -bubble.width / 6 || (startsNearEdge && flungPastEdge > bubble.width)
-        return tucks ? .tucked(landed) : .spot(landed)
+        let tucks = overEdge > min(bubble.width / 4, 24) || (startsNearEdge && flungPastEdge > bubble.width)
+        // A tucked bubble comes back against the edge.
+        if tucks { return .tucked(landed) }
+        if staysWhereDropped { landed.x = carried.x }
+        return .spot(landed)
     }
 
     /// The height a bubble dropped with its center at `y` keeps.

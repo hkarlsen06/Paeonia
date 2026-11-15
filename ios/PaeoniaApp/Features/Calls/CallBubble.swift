@@ -11,6 +11,8 @@ struct CallBubble: View {
     var videoScale: CGFloat = 1
     /// VoiceOver's swipe up or down makes the video bigger or smaller.
     var resizeVideo: (AccessibilityAdjustmentDirection) -> Void = { _ in }
+    /// Pushes the bubble into the side of the screen.
+    var tuck: () -> Void = {}
 
     static let videoSize = CGSize(width: 104, height: 148)
     /// How far a pinch may shrink or grow the video.
@@ -40,6 +42,7 @@ struct CallBubble: View {
         .onTapGesture(perform: open)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(named: Text(.callsOpenCall), open)
+        .accessibilityAction(named: Text(.presenceActionTuck), tuck)
     }
 
     private var voice: some View {

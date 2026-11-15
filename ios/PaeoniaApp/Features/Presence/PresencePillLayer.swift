@@ -207,7 +207,7 @@ struct PresencePillLayer: View {
     }
 
     /// The avatar follows the finger and settles against the edge it was thrown toward, at the height
-    /// it was dropped. Only a third past the edge, or a hard fling at it, tucks it away.
+    /// it was dropped. Only a push over the edge, or a hard fling at it, tucks it away.
     private func drag(in placement: CallBubblePlacement) -> some Gesture {
         // In global space, because the avatar moves under the finger.
         DragGesture(minimumDistance: 8, coordinateSpace: .global)
@@ -218,7 +218,7 @@ struct PresencePillLayer: View {
             .onEnded { value in
                 let landing = placement.landing(
                     from: overlay.spot, translation: value.translation, velocity: value.velocity,
-                    bubble: PresenceAvatar.outerSize)
+                    bubble: PresenceAvatar.outerSize, staysWhereDropped: false)
                 withAnimation(motion) {
                     overlay.spot = landing.spot
                     if case let .tucked(spot) = landing { model.tuck(spot.edge) }

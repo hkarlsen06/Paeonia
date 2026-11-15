@@ -94,6 +94,9 @@ final class CallOverlayModel {
     var spot = CallBubbleSpot.initial
     /// How much bigger or smaller than `CallBubble.videoSize` the person pinched the video bubble.
     var videoScale: CGFloat = 1
+    /// The person pushed the bubble into the side of the screen at `spot.edge`, where it waits as a
+    /// tab. It comes back out each time the call shrinks to the bubble again.
+    var bubbleIsTucked = false
     /// Where the ring pill shows, decided as it comes on screen so it never moves while it rings.
     private(set) var ringAnchor = RingAnchor.top
     /// Where each part is in the window, for `touchArea`. Each has its own, so one that is leaving
@@ -102,7 +105,7 @@ final class CallOverlayModel {
     var ringFrame = CGRect.zero
     /// The partner's avatar with its notice and toolbar.
     var avatarFrame = CGRect.zero
-    /// The tab at the edge while the avatar is tucked away.
+    /// The tab at the edge while the avatar or the bubble is tucked away.
     var tabFrame = CGRect.zero
     /// The last call the overlay showed, so the screen, the bubble or the pill can leave on screen
     /// after the engine clears the call.
@@ -112,6 +115,7 @@ final class CallOverlayModel {
     var shownLayer = Layer.hidden {
         didSet {
             previousShownLayer = oldValue
+            if shownLayer != .bubble { bubbleIsTucked = false }
             if shownLayer == .ring, oldValue != .ring { ringAnchor = currentRingAnchor }
         }
     }
@@ -169,7 +173,7 @@ final class CallOverlayModel {
         switch shownLayer {
         case .hidden: .none
         case .screen: .everywhere
-        case .bubble: .frame(bubbleFrame)
+        case .bubble: .frame(bubbleIsTucked ? tabFrame : bubbleFrame)
         case .ring: .frame(ringFrame)
         case .presence:
             switch presence.mode {
