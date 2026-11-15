@@ -7,6 +7,7 @@ extension PresenceCallout {
         switch self {
         case let .message(message): String(localized: PresencePlace.chatting(in: message.chat))
         case let .openedGame(kind): String(localized: .presenceStatusOpenedGame(String(localized: kind.name)))
+        case .openedDrawing: String(localized: .presenceStatusOpenedDrawing)
         case let .typing(chat): String(localized: Self.typing(in: chat))
         case let .update(update): update.title ?? update.message
         }
@@ -16,7 +17,7 @@ extension PresenceCallout {
     var detail: String? {
         switch self {
         case let .message(message): message.preview
-        case .openedGame, .typing: nil
+        case .openedGame, .openedDrawing, .typing: nil
         case let .update(update): update.title == nil ? nil : update.message
         }
     }
@@ -27,7 +28,7 @@ extension PresenceCallout {
             String(localized: .presenceNoticeMessageAccessibilityLabel(partnerName, message.preview))
         case let .update(update):
             [update.title, update.message].compactMap(\.self).joined(separator: ". ")
-        case .openedGame, .typing:
+        case .openedGame, .openedDrawing, .typing:
             title
         }
     }
@@ -48,6 +49,7 @@ extension PresencePlace {
     var title: LocalizedStringResource {
         switch self {
         case let .playing(kind): .presenceStatusPlaying(String(localized: kind.name))
+        case .drawing: .presenceStatusDrawing
         case let .chatting(chat): Self.chatting(in: chat)
         case .here: .presenceStatusHere
         }

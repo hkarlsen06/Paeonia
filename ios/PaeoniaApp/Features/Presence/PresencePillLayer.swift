@@ -106,19 +106,21 @@ struct PresencePillLayer: View {
     private enum IslandContent: Equatable {
         case none
         case callout(PresenceCallout)
-        /// Call, Message, and Join for `join`.
-        case actions(join: GameKind?)
+        /// Call, Message, and Join for `join`, a game or the drawing.
+        case actions(join: PresenceDestination?)
         /// Where the partner is, for an open toolbar over a sheet that holds unsaved work, which
         /// nothing here may close.
         case place
     }
 
-    /// The open toolbar shows the buttons. So does the partner opening a game, so Join is one tap away.
+    /// The open toolbar shows the buttons. So does the partner opening a game or the drawing, so Join
+    /// is one tap away.
     private func islandContent(_ status: PresencePillStatus) -> IslandContent {
         let canLeave = !coversHoldUnsavedWork
-        if model.mode.isExpanded { return canLeave ? .actions(join: model.joinableGame) : .place }
+        if model.mode.isExpanded { return canLeave ? .actions(join: model.joinTarget) : .place }
         switch status.callout {
-        case let .openedGame(kind) where canLeave: return .actions(join: kind)
+        case let .openedGame(kind) where canLeave: return .actions(join: .game(kind))
+        case .openedDrawing where canLeave: return .actions(join: .drawing)
         case let .some(callout): return .callout(callout)
         case nil: return .none
         }
@@ -138,8 +140,8 @@ struct PresencePillLayer: View {
             }
         case let .actions(join):
             PresenceActions(
-                partnerName: partnerName, showsMessage: model.viewer.visibleChat != .couple, joinableGame: join,
-                call: call, message: { open(.chat(.couple)) }, join: { open(.game($0), clearingNotice: true) }
+                partnerName: partnerName, showsMessage: model.viewer.visibleChat != .couple, join: join,
+                call: call, message: { open(.chat(.couple)) }, open: { open($0, clearingNotice: true) }
             )
             .accessibilityAction(.escape) { model.collapse() }
         case .place:

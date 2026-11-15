@@ -45,7 +45,7 @@ struct LiveRootSystemSideEffects: RootSystemSideEffecting {
 
     /// Waits at most as long as hanging up does, so a stalled connection can't hold sign-out.
     func leaveAppPresence() async {
-        let leave = Task { try? await LivePartnerPresenceGateway.make().setInApp(false) }
+        let leave = Task { try? await LivePartnerPresenceGateway.make().setInApp(false, isDrawing: false) }
         let timeout = Task {
             try? await Task.sleep(for: .seconds(4))
             leave.cancel()

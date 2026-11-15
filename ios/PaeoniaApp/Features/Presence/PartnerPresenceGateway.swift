@@ -2,8 +2,8 @@ import Foundation
 
 /// The `appPresence:*` functions (`backend/convex/appPresence.ts`).
 nonisolated protocol PartnerPresenceGateway: Sendable {
-    /// A heartbeat while the app is in front, or leaving.
-    func setInApp(_ isInApp: Bool) async throws
+    /// A heartbeat while the app is in front, saying whether the drawing is open, or leaving.
+    func setInApp(_ isInApp: Bool, isDrawing: Bool) async throws
     /// "Show when I'm here". Returns the setting the server saved.
     func setShowsPresence(_ shows: Bool) async throws -> Bool
     /// Every reading of the presence query for the couple. Nil while the subscription is down,
@@ -14,8 +14,9 @@ nonisolated protocol PartnerPresenceGateway: Sendable {
 nonisolated struct LivePartnerPresenceGateway: PartnerPresenceGateway {
     let client: PaeoniaConvexClient
 
-    func setInApp(_ isInApp: Bool) async throws {
-        try await client.mutation("appPresence:set_app_presence", args: SetAppPresenceRequest(present: isInApp))
+    func setInApp(_ isInApp: Bool, isDrawing: Bool) async throws {
+        try await client.mutation(
+            "appPresence:set_app_presence", args: SetAppPresenceRequest(present: isInApp, drawing: isDrawing))
     }
 
     func setShowsPresence(_ shows: Bool) async throws -> Bool {
@@ -45,7 +46,7 @@ nonisolated struct LivePartnerPresenceGateway: PartnerPresenceGateway {
 nonisolated struct UnavailablePartnerPresenceGateway: PartnerPresenceGateway {
     struct Unavailable: Error {}
 
-    func setInApp(_: Bool) throws {
+    func setInApp(_: Bool, isDrawing _: Bool) throws {
         throw Unavailable()
     }
 
@@ -71,9 +72,11 @@ extension LivePartnerPresenceGateway {
 
 nonisolated private struct SetAppPresenceRequest: Encodable {
     let present: Bool
+    let drawing: Bool
 
     enum CodingKeys: String, CodingKey {
         case present = "p_present"
+        case drawing = "p_drawing"
     }
 }
 
@@ -96,6 +99,7 @@ nonisolated private struct ShowsPresenceRow: Decodable {
 nonisolated struct PartnerPresenceRow: Decodable, Sendable {
     struct Partner: Decodable, Sendable {
         let games: [GameKind]
+        let drawing: Bool
         let chat: ChatPlace?
         let typing: ChatPlace?
     }
@@ -138,6 +142,7 @@ nonisolated struct PartnerPresenceRow: Decodable, Sendable {
             partner: partner.map { partner in
                 PartnerPresence(
                     games: partner.games,
+                    isDrawing: partner.drawing,
                     chat: partner.chat?.subject(coupleID: coupleID),
                     typing: partner.typing?.subject(coupleID: coupleID))
             })

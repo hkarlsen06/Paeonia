@@ -16,8 +16,13 @@ final class PartnerPresenceModel {
     private var pill: PresencePill
     /// Where a tap on the avatar asked to go. `MainTabView` opens it and clears it.
     private(set) var openRequest: PresenceDestination?
-    /// What this person has on screen. `MainTabView` keeps it current.
-    var viewer = PresenceViewerPlace()
+    /// What this person has on screen. `MainTabView` keeps it current. Opening or closing the
+    /// drawing tells the partner at once, not at the next heartbeat.
+    var viewer = PresenceViewerPlace() {
+        didSet {
+            if isRunning, confirmedShowsPresence, viewer.isDrawing != oldValue.isDrawing { enqueueInApp(true) }
+        }
+    }
     /// A call's screen, bubble or ring pill shows in the avatar's place. The call overlay keeps it
     /// current.
     var isCoveredByCall = false
@@ -36,6 +41,8 @@ final class PartnerPresenceModel {
     /// The newest presence write. The next one waits for it, so a leave sent after a heartbeat
     /// reaches the server after it.
     private var lastWrite: Task<Void, Never>?
+    /// Between the start and the end of `run`, when heartbeats go out.
+    private var isRunning = false
 
     /// The heartbeat comes 2.5 times per timeout (`APP_PRESENCE_TIMEOUT_MS`, 30 seconds).
     init(
@@ -62,10 +69,13 @@ final class PartnerPresenceModel {
         feed.partner.map { PresencePillStatus(partner: $0, notice: mode.shownNotice, viewer: viewer) }
     }
 
-    /// Join opens the partner's game while it is not the one this person has open.
-    var joinableGame: GameKind? {
-        guard let game = feed.partner?.game, game != viewer.openGame else { return nil }
-        return game
+    /// What Join opens: the partner's game while it is not the one this person has open, or else
+    /// the drawing while the partner draws and this person does not.
+    var joinTarget: PresenceDestination? {
+        guard let partner = feed.partner else { return nil }
+        if let game = partner.game, game != viewer.openGame { return .game(game) }
+        if partner.isDrawing, !viewer.isDrawing { return .drawing }
+        return nil
     }
 
     // MARK: - Running
@@ -75,7 +85,9 @@ final class PartnerPresenceModel {
     /// relationship ending or the app leaving the foreground.
     func run(coupleID: UUID) async {
         let heartbeat = Task { await beat() }
+        isRunning = true
         defer {
+            isRunning = false
             heartbeat.cancel()
             leave()
         }
@@ -108,9 +120,10 @@ final class PartnerPresenceModel {
     private func enqueueInApp(_ isInApp: Bool) -> Task<Void, Never> {
         let previous = lastWrite
         let gateway = gateway
+        let isDrawing = isInApp && viewer.isDrawing
         let write = Task {
             await previous?.value
-            try? await gateway.setInApp(isInApp)
+            try? await gateway.setInApp(isInApp, isDrawing: isDrawing)
         }
         lastWrite = write
         return write
@@ -131,15 +144,19 @@ final class PartnerPresenceModel {
         follow(.reading(partner))
         // "Opened Ludo" that waited while the avatar was away is no longer true once they left Ludo.
         choose(pill.chosen.keepingNotice { notice in
-            guard case let .openedGame(kind) = notice else { return true }
-            return partner?.games.contains(kind) == true
+            switch notice {
+            case let .openedGame(kind): partner?.games.contains(kind) == true
+            case .openedDrawing: partner?.isDrawing == true
+            case .message, .update: true
+            }
         })
         // The first reading of a run finds the partner where they already were. After that, a game
-        // that appears was just opened.
+        // or the drawing that appears was just opened.
         guard case let .reading(before) = previous, let partner else { return }
         for kind in partner.games where before?.games.contains(kind) != true {
             receive(.openedGame(kind))
         }
+        if partner.isDrawing, before?.isDrawing != true { receive(.openedDrawing) }
     }
 
     /// Whenever the partner goes, their notices go too.

@@ -6,7 +6,8 @@
   nonisolated extension DeveloperScenario {
     static let presence: [DeveloperScenario] = [
       presenceUsTab, presencePlaying, presenceMessage, presenceTyping, presenceTucked, presenceOverCover,
-      presenceInChat, presenceLetter, presenceUnread, presenceOpenedGame, localFlowPresence,
+      presenceInChat, presenceLetter, presenceUnread, presenceOpenedGame, presenceOpenedDrawing,
+      localFlowPresence,
     ]
 
     static let presenceUsTab = DeveloperScenario(
@@ -72,6 +73,11 @@
     ) { _ in
       DeveloperPresenceFlow(partner: PartnerPresence(games: [.mindMeld]), notice: .openedGame(.mindMeld))
     }
+
+    static let presenceOpenedDrawing = DeveloperScenario(
+      "presence-opened-drawing", "Presence · Robin opens the drawing",
+      "Robin opens your drawing, and the picture opens with Call, Message and Join for a few seconds", .presence
+    ) { _ in DeveloperPresenceFlow(partner: PartnerPresence(isDrawing: true), notice: .openedDrawing) }
 
     static let localFlowPresence = DeveloperScenario(
       "local-flow-presence", "Local flow · Robin in Mind Meld",
@@ -178,7 +184,7 @@
   nonisolated struct DeveloperPartnerPresenceGateway: PartnerPresenceGateway {
     let feed: DeveloperPresenceFeed
 
-    func setInApp(_: Bool) {}
+    func setInApp(_: Bool, isDrawing _: Bool) {}
 
     func setShowsPresence(_ shows: Bool) async -> Bool {
       await feed.setShowsPresence(shows)

@@ -5,6 +5,8 @@ import SwiftUI
 nonisolated struct PartnerPresence: Equatable, Sendable {
     /// The game screens the partner has open, the one they opened last at the end.
     var games: [GameKind] = []
+    /// The partner has the couple's widget drawing open.
+    var isDrawing = false
     /// The chat screen the partner has open.
     var chat: ThreadChatSubject?
     /// The chat the partner types in.
@@ -53,6 +55,7 @@ nonisolated struct PresenceMessageNotice: Equatable, Sendable {
 nonisolated enum PresenceNotice: Equatable, Sendable {
     case message(PresenceMessageNotice)
     case openedGame(GameKind)
+    case openedDrawing
     /// A notification from the partner that arrived while the app is open, such as a letter or a
     /// story.
     case update(PaeoniaForegroundNotice)
@@ -63,6 +66,7 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
         switch self {
         case let .message(message): message.chat != viewer.visibleChat
         case let .openedGame(kind): kind != viewer.openGame
+        case .openedDrawing: !viewer.isDrawing
         case .update: true
         }
     }
@@ -71,6 +75,7 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
         switch self {
         case let .message(message): .message(message)
         case let .openedGame(kind): .openedGame(kind)
+        case .openedDrawing: .openedDrawing
         case let .update(update): .update(update)
         }
     }
@@ -80,12 +85,15 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
 nonisolated struct PresenceViewerPlace: Equatable, Sendable {
     var visibleChat: ThreadChatSubject?
     var openGame: GameKind?
+    /// The couple's widget drawing is open on the Us tab.
+    var isDrawing = false
 }
 
 /// What the avatar calls out in its capsule. A tap opens the chat, the game or the screen it is about.
 nonisolated enum PresenceCallout: Equatable, Sendable {
     case message(PresenceMessageNotice)
     case openedGame(GameKind)
+    case openedDrawing
     case typing(ThreadChatSubject)
     case update(PaeoniaForegroundNotice)
 
@@ -93,6 +101,7 @@ nonisolated enum PresenceCallout: Equatable, Sendable {
         switch self {
         case let .message(message): .chat(message.chat)
         case let .openedGame(kind): .game(kind)
+        case .openedDrawing: .drawing
         case let .typing(chat): .chat(chat)
         case let .update(update): update.deepLink.map(PresenceDestination.link)
         }
@@ -102,13 +111,16 @@ nonisolated enum PresenceCallout: Equatable, Sendable {
 /// Where the partner is, shown as the avatar's badge.
 nonisolated enum PresencePlace: Equatable, Sendable {
     case playing(GameKind)
+    case drawing
     case chatting(ThreadChatSubject)
     case here
 
-    /// A game comes before a chat.
+    /// A game comes before the drawing, and the drawing before a chat.
     init(_ partner: PartnerPresence) {
         if let game = partner.game {
             self = .playing(game)
+        } else if partner.isDrawing {
+            self = .drawing
         } else if let chat = partner.chat {
             self = .chatting(chat)
         } else {
@@ -140,6 +152,8 @@ nonisolated enum PresenceDestination: Equatable, Sendable {
     case chat(ThreadChatSubject)
     /// The game the partner is in, for Join and for "Opened".
     case game(GameKind)
+    /// The couple's widget drawing, while the partner draws.
+    case drawing
     /// Where the partner's notification goes, as if it were tapped.
     case link(PaeoniaDeepLink)
 }

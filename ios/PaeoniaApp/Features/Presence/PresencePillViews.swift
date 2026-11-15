@@ -60,6 +60,15 @@ struct PresenceAvatar: View {
         .padding(PaeoniaSpacing.space4)
     }
 
+    private func symbolBadge(_ name: String) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(.paeoniaTextPrimary)
+            .frame(width: 20, height: 20)
+            .background(.paeoniaSurfacePrimary, in: Circle())
+            .accessibilityHidden(true)
+    }
+
     @ViewBuilder
     private var badge: some View {
         switch place {
@@ -68,13 +77,10 @@ struct PresenceAvatar: View {
                 .frame(width: 20, height: 20)
                 .padding(PaeoniaSpacing.space2)
                 .background(.paeoniaSurfacePrimary, in: Circle())
+        case .drawing:
+            symbolBadge("pencil")
         case .chatting:
-            Image(systemName: "bubble.left.fill")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: 20, height: 20)
-                .background(.paeoniaSurfacePrimary, in: Circle())
-                .accessibilityHidden(true)
+            symbolBadge("bubble.left.fill")
         case .here:
             EmptyView()
         }
@@ -103,6 +109,8 @@ struct PresenceUnreadBadge: View {
 /// says what or where, and one with the message or what a tap does. A tap opens the chat, the game
 /// or the screen it is about, unless `canOpen` is false.
 struct PresenceCalloutContent: View {
+    static let textWidthCap: CGFloat = 220
+
     let callout: PresenceCallout
     let partnerName: String
     let canOpen: Bool
@@ -112,18 +120,21 @@ struct PresenceCalloutContent: View {
         Button(action: open) {
             HStack(spacing: PaeoniaSpacing.space8) {
                 icon
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(verbatim: callout.title)
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .foregroundStyle(.paeoniaTextSecondary)
-                    if let detail = callout.detail {
-                        Text(verbatim: detail)
-                            .font(PaeoniaTypography.body)
-                            .foregroundStyle(.paeoniaTextPrimary)
+                // As wide as the words, up to the cap. A frame with a largest width would always
+                // take all of it and stretch the capsule.
+                WidthCap(PresenceCalloutContent.textWidthCap) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(verbatim: callout.title)
+                            .font(PaeoniaTypography.caption.weight(.semibold))
+                            .foregroundStyle(.paeoniaTextSecondary)
+                        if let detail = callout.detail {
+                            Text(verbatim: detail)
+                                .font(PaeoniaTypography.body)
+                                .foregroundStyle(.paeoniaTextPrimary)
+                        }
                     }
+                    .lineLimit(1)
                 }
-                .lineLimit(1)
-                .frame(maxWidth: 220, alignment: .leading)
             }
             .padding(.horizontal, PaeoniaSpacing.space12)
             .contentShape(.rect)
@@ -148,6 +159,9 @@ struct PresenceCalloutContent: View {
         case let .openedGame(kind):
             PaeoniaBannerGameIcon(kind: kind)
                 .frame(width: 28, height: 28)
+        case .openedDrawing:
+            PaeoniaDeepLinkIcon(link: .widgetDrawing)
+                .frame(width: 28, height: 28)
         case .typing:
             GameTypingDots()
         case .message:
@@ -161,19 +175,20 @@ struct PresenceCalloutContent: View {
     }
 }
 
-/// Call, Message, and Join while the partner is in a game this person does not have open, as round
-/// buttons inside the avatar's capsule. They are smaller than the face, so they read as the avatar's
-/// own controls rather than things beside it.
+/// Call, Message, and Join while the partner is in a game or the drawing that this person does not
+/// have open, as round buttons inside the avatar's capsule. They are smaller than the face, so they
+/// read as the avatar's own controls rather than things beside it.
 struct PresenceActions: View {
     static let buttonSize: CGFloat = 32
 
     let partnerName: String
     /// Hidden while "Just us" is already on screen.
     let showsMessage: Bool
-    let joinableGame: GameKind?
+    /// A game or the drawing.
+    let join: PresenceDestination?
     let call: () -> Void
     let message: () -> Void
-    let join: (GameKind) -> Void
+    let open: (PresenceDestination) -> Void
 
     var body: some View {
         HStack(spacing: 0) {
@@ -190,17 +205,33 @@ struct PresenceActions: View {
                         .accessibilityHidden(true)
                 }
             }
-            if let joinableGame {
-                PresenceActionButton(
-                    label: .presenceToolbarJoinAccessibilityLabel(String(localized: joinableGame.name)),
-                    identifier: "presence.join", fill: .paeoniaPresence, action: { join(joinableGame) }
-                ) {
-                    PaeoniaBannerGameIcon(kind: joinableGame)
-                        .frame(width: 22, height: 22)
-                }
-            }
+            joinButton
         }
         .padding(.horizontal, PaeoniaSpacing.space4)
+    }
+
+    @ViewBuilder
+    private var joinButton: some View {
+        switch join {
+        case let .game(kind):
+            PresenceActionButton(
+                label: .presenceToolbarJoinAccessibilityLabel(String(localized: kind.name)),
+                identifier: "presence.join", fill: .paeoniaPresence, action: { open(.game(kind)) }
+            ) {
+                PaeoniaBannerGameIcon(kind: kind)
+                    .frame(width: 22, height: 22)
+            }
+        case .drawing:
+            PresenceActionButton(
+                label: .presenceToolbarJoinDrawingAccessibilityLabel(partnerName),
+                identifier: "presence.join", fill: .paeoniaPresence, action: { open(.drawing) }
+            ) {
+                Image(systemName: "pencil")
+                    .accessibilityHidden(true)
+            }
+        case .chat, .link, nil:
+            EmptyView()
+        }
     }
 }
 
@@ -268,5 +299,23 @@ struct PresenceTab: View {
         return edge == .trailing
             ? UnevenRoundedRectangle(topLeadingRadius: radius, bottomLeadingRadius: radius)
             : UnevenRoundedRectangle(bottomTrailingRadius: radius, topTrailingRadius: radius)
+    }
+}
+
+/// Lays its content out no wider than `width`, and as narrow as the content wants below it.
+private struct WidthCap: Layout {
+    let width: CGFloat
+
+    init(_ width: CGFloat) {
+        self.width = width
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
+        let capped = ProposedViewSize(width: min(proposal.width ?? width, width), height: proposal.height)
+        return subviews.first?.sizeThatFits(capped) ?? .zero
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
     }
 }

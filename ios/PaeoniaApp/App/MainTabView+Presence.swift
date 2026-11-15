@@ -63,7 +63,10 @@ extension MainTabView {
     private var presenceViewer: PresenceViewerPlace {
         PresenceViewerPlace(
             visibleChat: visibleChatSubject,
-            openGame: selection.wrappedValue == .games ? gamesPath.last?.gameKind : nil
+            openGame: selection.wrappedValue == .games ? gamesPath.last?.gameKind : nil,
+            // Open on the Us tab whichever tab shows, so a trip to another tab doesn't tell the
+            // partner again that this person opened it.
+            isDrawing: widgetDrawingPresented.wrappedValue
         )
     }
 
@@ -81,6 +84,10 @@ extension MainTabView {
             isCoupleChatSlidOver = false
             dismissGameChatSheet()
             openGameFromHome(.game(kind))
+        case .drawing:
+            isCoupleChatSlidOver = false
+            dismissGameChatSheet()
+            actions.openWidgetDrawing()
         case let .link(link):
             isCoupleChatSlidOver = false
             PaeoniaNotificationRouter.shared.route(link)

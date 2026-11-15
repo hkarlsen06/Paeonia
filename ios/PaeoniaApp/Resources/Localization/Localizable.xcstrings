@@ -35777,6 +35777,24 @@
         }
       }
     },
+    "presence.status.drawing" : {
+      "comment" : "Where the partner is in the app, under their name or read by VoiceOver on their floating picture: they have the couple's drawing open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegner"
+          }
+        }
+      }
+    },
     "presence.status.here" : {
       "comment" : "Status beside the partner's floating picture while they have the app open and are not in a game or chat.",
       "extractionState" : "manual",
@@ -35791,6 +35809,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Her nå"
+          }
+        }
+      }
+    },
+    "presence.status.openedDrawing" : {
+      "comment" : "VoiceOver and status text when the partner has just opened the couple's drawing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opened the drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpnet tegningen"
           }
         }
       }
@@ -35971,6 +36007,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bli med i %@"
+          }
+        }
+      }
+    },
+    "presence.toolbar.joinDrawing.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the button in the partner's floating picture that opens the drawing the partner is drawing on. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn med %@"
           }
         }
       }
