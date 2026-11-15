@@ -73,6 +73,11 @@ nonisolated extension DeveloperScenario {
       "home-map-partner-moves", "Home map · partner moves",
       "Robin goes from Tromsø to Trondheim, Lillehammer, Oslo and Bergen, 3.5 s apart", .relationship
     ) { DeveloperPairedScenarioHost(scenario: $0) }
+    /// Home without location sharing, then sharing turns on and both places arrive.
+    static let homeMapShareLocation = DeveloperScenario(
+      "home-map-share-location", "Home map · start sharing",
+      "Alex in Oslo shares after 6 s, Robin is in Tromsø, and the map flies in 1.5 s later", .relationship
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
     /// Robin's game card leads the cards, then goes, so the cards under it move up.
     static let homePartnerLeavesGame = DeveloperScenario(
       "home-partner-leaves-game", "Home · partner leaves a game",

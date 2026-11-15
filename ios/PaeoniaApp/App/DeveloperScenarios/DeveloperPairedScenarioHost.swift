@@ -15,6 +15,8 @@
     @State private var visitsViewModel: VisitsViewModel
     /// How far Robin has got in `home-map-partner-moves`.
     @State private var partnerStop = 0
+    /// Where `home-map-share-location` has got.
+    @State private var shareLocationState = CoupleMapState.currentUnknown
     /// The games cache, where `home-partner-leaves-game` takes Robin out of the game.
     private let gamesCache: any GamesCaching
     private let locationViewModel: LocationMapViewModel
@@ -60,9 +62,17 @@
     /// Paired home shows the longest status the Us header gets, "Sammen · Akkurat nå".
     private static let partnerCapturedJustNow = Date.now
 
+    private var readyMapState: CoupleMapState {
+      .ready(
+        current: LocationPoint(latitude: 59.9139, longitude: 10.7522, capturedAt: .now.addingTimeInterval(-60)),
+        partner: partnerLocation,
+        partnerWasStaleAtLastRefresh: false
+      )
+    }
+
     private var partnerLocation: LocationPoint {
       let stop: (latitude: Double, longitude: Double) = switch scenario {
-      case .homeMapApart: Self.partnerStops[0]
+      case .homeMapApart, .homeMapShareLocation: Self.partnerStops[0]
       case .homeMapPartnerMoves: Self.partnerStops[partnerStop]
       default: Self.partnerStops[3]
       }
@@ -229,11 +239,8 @@
           ),
           // PROTOTYPE: a live map for the Home map layout, or the state named by
           // `-proto.home.mapState`.
-          locationMapState: Self.protoMapState ?? .ready(
-            current: LocationPoint(latitude: 59.9139, longitude: 10.7522, capturedAt: .now.addingTimeInterval(-60)),
-            partner: partnerLocation,
-            partnerWasStaleAtLastRefresh: false
-          ),
+          locationMapState: scenario == .homeMapShareLocation
+            ? shareLocationState : Self.protoMapState ?? readyMapState,
           locationViewModel: locationViewModel,
           selection: $selection,
           widgetDrawingPresented: .constant(false),
@@ -252,6 +259,13 @@
           todaysQuestionOpenings: scenario == .pairedHomeTodayOpens ? Self.todaysQuestionOpenings : nil
         )
         .task {
+          if scenario == .homeMapShareLocation {
+            try? await Task.sleep(for: .seconds(6))
+            shareLocationState = .locatingCurrent
+            try? await Task.sleep(for: .seconds(1.5))
+            shareLocationState = readyMapState
+            return
+          }
           guard scenario == .homeMapPartnerMoves || scenario == .homePartnerLeavesGame else { return }
           // After the launch intro has landed.
           try? await Task.sleep(for: .seconds(10))
