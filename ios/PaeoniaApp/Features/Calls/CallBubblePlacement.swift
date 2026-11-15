@@ -36,7 +36,8 @@ nonisolated struct CallBubblePlacement {
     /// Room for a navigation bar under the status bar.
     private static let navigationBarClearance: CGFloat = 52
     static let margin = PaeoniaSpacing.space12
-    /// How far ahead a throw carries, in seconds of its speed when the finger lets go.
+    /// How far ahead a throw reaches, in seconds of its speed when the finger lets go, when it picks
+    /// the side and whether a fling tucks the bubble. The bubble itself rests where it was let go.
     private static let throwCarry: CGFloat = 0.1
 
     /// The layer's size.
@@ -98,9 +99,10 @@ nonisolated struct CallBubblePlacement {
         }
     }
 
-    /// Where a bubble that started at `spot` settles once the finger lets go, carried a little by the
-    /// throw: at the height it was dropped, and where it was dropped across the screen when it
-    /// `staysWhereDropped`, else against the edge it was thrown toward.
+    /// Where a bubble that started at `spot` settles once the finger lets go: at the height it was
+    /// let go, and where it was let go across the screen when it `staysWhereDropped`, else against the
+    /// edge it was thrown toward. The throw picks only that edge and whether a fling tucks it, so the
+    /// bubble never slides on past the finger.
     func landing(
         from spot: CallBubbleSpot, translation: CGSize, velocity: CGSize, bubble: CGSize, staysWhereDropped: Bool
     ) -> Landing {
@@ -109,7 +111,7 @@ nonisolated struct CallBubblePlacement {
         let carried = CGPoint(
             x: released.x + velocity.width * Self.throwCarry, y: released.y + velocity.height * Self.throwCarry)
         let edge: HorizontalEdge = carried.x < size.width / 2 ? .leading : .trailing
-        var landed = CallBubbleSpot(edge: edge, height: settledHeight(carried.y, bubble: bubble))
+        var landed = CallBubbleSpot(edge: edge, height: settledHeight(released.y, bubble: bubble))
         // How far the bubble's middle went past the edge. A finger can't leave the screen, and it may
         // hold the bubble anywhere, so a quarter of the bubble over the edge, and at most 24 pt of it,
         // is enough to tuck it.
@@ -121,7 +123,7 @@ nonisolated struct CallBubblePlacement {
         let tucks = overEdge > min(bubble.width / 4, 24) || (startsNearEdge && flungPastEdge > bubble.width)
         // A tucked bubble comes back against the edge.
         if tucks { return .tucked(landed) }
-        if staysWhereDropped { landed.x = carried.x }
+        if staysWhereDropped { landed.x = released.x }
         return .spot(landed)
     }
 

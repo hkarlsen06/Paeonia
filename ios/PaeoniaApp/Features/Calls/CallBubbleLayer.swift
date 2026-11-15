@@ -2,9 +2,10 @@ import SwiftUI
 
 /// Places the bubble at its spot (`CallBubblePlacement`). A drag moves it, and it stays where it is
 /// dropped. Pushed into the side of the screen, it tucks away as a tab there (`PresenceTab`), which
-/// brings it back out. A pinch makes the video bigger or smaller. While the partner's avatar is under
-/// the call, what the partner just did shows for a few seconds beside the bubble (`CallCallout`),
-/// such as the game they opened, where a tap joins them.
+/// brings it back out. A pinch makes the video bigger or smaller and moves the bubble with the
+/// fingers at the same time (`CallBubbleGesture`). While the partner's avatar is under the call,
+/// what the partner just did shows for a few seconds beside the bubble (`CallCallout`), such as the
+/// game they opened, where a tap joins them.
 struct CallBubbleLayer: View {
     let model: CallOverlayModel
     let session: CallSession
@@ -58,9 +59,17 @@ struct CallBubbleLayer: View {
         )) {
             calloutView(below: calloutBelow)
         }
-        .gesture(drag(in: placement))
-        .simultaneousGesture(
-            resizing(within: scales), including: CallBubble.showsVideo(session) ? .all : .subviews)
+        .gesture(CallBubbleGesture(zooms: CallBubble.showsVideo(session)) { translation, scale in
+            dragOffset = translation
+            pinch = scale
+        } ended: { translation, scale, velocity in
+            drop(translation: translation, scale: scale, velocity: velocity, in: placement, within: scales)
+        } cancelled: {
+            withAnimation(motion) {
+                dragOffset = .zero
+                pinch = 1
+            }
+        })
         .position(center)
         .offset(dragOffset)
         .transition(.move(edge: model.spot.isLeading ? .leading : .trailing).combined(with: .opacity))
@@ -114,19 +123,6 @@ struct CallBubbleLayer: View {
         return range.lowerBound...max(range.lowerBound, min(range.upperBound, fits))
     }
 
-    private func resizing(within scales: ClosedRange<CGFloat>) -> some Gesture {
-        MagnifyGesture()
-            .onChanged { pinch = $0.magnification }
-            .onEnded { value in
-                var transaction = Transaction()
-                transaction.disablesAnimations = true
-                withTransaction(transaction) {
-                    model.videoScale = clamp(model.videoScale * value.magnification, to: scales)
-                    pinch = 1
-                }
-            }
-    }
-
     private func resize(_ direction: AccessibilityAdjustmentDirection, within scales: ClosedRange<CGFloat>) {
         let step: CGFloat = 0.25
         let scale = switch direction {
@@ -143,22 +139,26 @@ struct CallBubbleLayer: View {
         min(max(scale, scales.lowerBound), scales.upperBound)
     }
 
-    /// The bubble follows the finger and stays where it is dropped. A push over the left or right
-    /// edge, or a hard fling at it, tucks it away.
-    private func drag(in placement: CallBubblePlacement) -> some Gesture {
-        // In global space, because the bubble moves under the finger.
-        DragGesture(minimumDistance: 8, coordinateSpace: .global)
-            .onChanged { dragOffset = $0.translation }
-            .onEnded { value in
-                let landing = placement.landing(
-                    from: model.spot, translation: value.translation, velocity: value.velocity, bubble: bubbleSize,
-                    staysWhereDropped: true)
-                withAnimation(motion) {
-                    model.spot = landing.spot
-                    if case .tucked = landing { model.bubbleIsTucked = true }
-                    dragOffset = .zero
-                }
-            }
+    /// The bubble stays where the fingers let it go, at the size they left it. A push over the left
+    /// or right edge, or a hard fling at it, tucks it away.
+    private func drop(
+        translation: CGSize, scale: CGFloat, velocity: CGSize, in placement: CallBubblePlacement,
+        within scales: ClosedRange<CGFloat>
+    ) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            model.videoScale = clamp(model.videoScale * scale, to: scales)
+            pinch = 1
+        }
+        let landing = placement.landing(
+            from: model.spot, translation: translation, velocity: velocity, bubble: bubbleSize,
+            staysWhereDropped: true)
+        withAnimation(motion) {
+            model.spot = landing.spot
+            if case .tucked = landing { model.bubbleIsTucked = true }
+            dragOffset = .zero
+        }
     }
 
     /// The tab slides up and down its edge with the finger and stays where it is dropped. A pull in
