@@ -29,7 +29,7 @@ struct ThreadChatComposer: View {
     let beginPhotoDraft: () -> ThreadChatPhotoDraftEditing?
     let onTextChanged: (String) -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.openURL) private var openURL
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
     /// Voice messages cannot record while a call is on.
@@ -41,6 +41,9 @@ struct ThreadChatComposer: View {
     @State var voiceDraftEditing: ThreadChatVoiceDraftEditing?
     @State var staging = ThreadChatPhotoStaging()
     @State var isSubmitting = false
+    /// Set when the microphone is tapped during a call, which explains why nothing records.
+    /// Each tap starts the hint's time again.
+    @State var callRecordHint: UUID?
     /// What the field held before an edit started, put back when the edit ends.
     @State private var draftBeforeEdit: String?
 
@@ -65,6 +68,7 @@ struct ThreadChatComposer: View {
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, PaeoniaSpacing.space8)
+                    .transition(.opacity)
             }
             if recorder.setback == .permissionDenied {
                 Button {
@@ -129,6 +133,12 @@ struct ThreadChatComposer: View {
             restoreRecording()
             restorePhotoDraft()
         }
+        .task(id: callRecordHint) {
+            guard callRecordHint != nil else { return }
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { callRecordHint = nil }
+        }
         .onChange(of: voiceTranscript) { _, _ in saveRecordingDraft() }
         .onChange(of: recorder.phase) { _, phase in
             if phase == .recorded { saveRecordingDraft() }
@@ -157,7 +167,7 @@ struct ThreadChatComposer: View {
     }
 
     private var notice: LocalizedStringResource? {
-        if isRecordingBlockedByCall, recorder.phase == .idle, trimmedText.isEmpty, staging.staged.isEmpty {
+        if callRecordHint != nil {
             return .callsRecordAfterCall
         }
         return switch recorder.setback {
@@ -308,7 +318,6 @@ extension ThreadChatComposer {
                     isProminent: false,
                     action: startRecording
                 )
-                .disabled(isRecordingBlockedByCall)
                 .transition(.opacity.combined(with: .scale(scale: 0.8)))
             } else {
                 roundButton(

@@ -5078,7 +5078,7 @@
       }
     },
     "calls.recordAfterCall" : {
-      "comment" : "Line under a disabled record button while a call is on.",
+      "comment" : "Hint that shows for a few seconds after the person taps record during a call.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

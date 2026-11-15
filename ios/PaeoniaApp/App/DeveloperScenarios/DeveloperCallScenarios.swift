@@ -9,8 +9,8 @@
     static let calls: [DeveloperScenario] = [
       callOutgoing, callConnecting, callActiveVoice, callActiveVoiceMutedSpeaker, callActiveVoiceAirPods,
       callActiveVideo, callVideoOwnCamera, callMicrophoneWaiting, callReconnecting, callEnded, callEndedNoAnswer,
-      callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame, callNightCheck, callGameToolbar, callUsTab,
-      callJustUsRows,
+      callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame, callBubbleJustUs, callNightCheck,
+      callGameToolbar, callUsTab, callJustUsRows,
     ]
 
     // MARK: The call screen
@@ -75,6 +75,15 @@
           $0.isPartnerCameraOn = true
         },
         presentation: .bubble, game: true)
+    }
+
+    static let callBubbleJustUs = DeveloperScenario(
+      "call-bubble-just-us", "Call · bubble over Just us", "The voice bubble over the chat, where nothing records",
+      .calls
+    ) { _ in
+      DeveloperCallLocalFlow(
+        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active), presentation: .bubble,
+        coupleCalls: true)
     }
 
     static let callNightCheck = DeveloperScenario(

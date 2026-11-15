@@ -23,6 +23,9 @@ struct DailyVoiceRecorderView: View {
     /// The last take handed to `onRecorded`, so the phase change and the disappear
     /// path can never deliver the same take twice.
     @State private var deliveredURL: URL?
+    /// Set when the button is tapped during a call, which explains why nothing records. Each
+    /// tap starts the hint's time again.
+    @State private var callRecordHint: UUID?
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
@@ -71,6 +74,12 @@ struct DailyVoiceRecorderView: View {
                 break
             }
         }
+        .task(id: callRecordHint) {
+            guard callRecordHint != nil else { return }
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { callRecordHint = nil }
+        }
         .onDisappear {
             // `onChange` no longer fires once the view is gone, so hand the take over here.
             recorder.finishForDisappear()
@@ -109,8 +118,7 @@ struct DailyVoiceRecorderView: View {
                 .shadow(color: tint.opacity(0.45), radius: 20)
         }
         .buttonStyle(.plain)
-        .disabled(recorder.phase == .starting || isBlockedByCall)
-        .opacity(isBlockedByCall ? 0.4 : 1)
+        .disabled(recorder.phase == .starting)
         .accessibilityLabel(Text(isRecording ? .dailyChallengeVoiceStopRecording : .dailyChallengeVoiceRecord))
         .accessibilityValue(isRecording ? voiceClock(recorder.elapsed) : "")
     }
@@ -126,7 +134,7 @@ struct DailyVoiceRecorderView: View {
                         .monospacedDigit()
                         .foregroundStyle(colors.foreground)
                 }
-            } else if isBlockedByCall {
+            } else if callRecordHint != nil {
                 Text(.callsRecordAfterCall)
                     .foregroundStyle(colors.secondary)
             } else {
@@ -135,8 +143,8 @@ struct DailyVoiceRecorderView: View {
             }
         }
         .font(PaeoniaTypography.body)
-        // The button speaks "Record" and the clock. Only the call's reason is new.
-        .accessibilityHidden(!isBlockedByCall)
+        // The button speaks "Record" and the clock. The call's reason is announced on the tap.
+        .accessibilityHidden(true)
     }
 
     private func message(_ text: LocalizedStringResource) -> some View {
@@ -148,6 +156,11 @@ struct DailyVoiceRecorderView: View {
     }
 
     private func toggle() {
+        guard !isBlockedByCall else {
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { callRecordHint = UUID() }
+            AccessibilityNotification.Announcement(String(localized: .callsRecordAfterCall)).post()
+            return
+        }
         onRecordingChange(!isRecording)
         switch recorder.phase {
         case .recording:

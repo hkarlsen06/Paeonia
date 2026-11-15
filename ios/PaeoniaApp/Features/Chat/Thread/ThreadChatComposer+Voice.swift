@@ -75,7 +75,11 @@ extension ThreadChatComposer {
     }
 
     func startRecording() {
-        guard !isRecordingBlockedByCall else { return }
+        guard !isRecordingBlockedByCall else {
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { callRecordHint = UUID() }
+            AccessibilityNotification.Announcement(String(localized: .callsRecordAfterCall)).post()
+            return
+        }
         isFocused = false
         Task { await recorder.startRecording() }
     }
