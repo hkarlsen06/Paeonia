@@ -191,6 +191,71 @@ describe("request_account_deletion", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
+  test("deletes an account with more sent pushes than one mutation can remove", async () => {
+    const t = newTest({ enforceLimits: true });
+    const couple = await appleCoupleWithData(t);
+    const { first, second } = couple;
+    const secondDevice = await addDevice(t, second.userId);
+    const [widgetDevice] = await t.run((ctx) => ctx.db.query("widget_push_devices").collect());
+    const sentPush = (recipient: string, deviceId: string) => ({
+      id: newUuid(),
+      recipient_user_id: recipient,
+      target_device_id: deviceId,
+      push_token_hash: "p".repeat(64),
+      apns_environment: "sandbox" as const,
+      kind: "partner_answered" as const,
+      payload_version: 1,
+      redaction_level: "private" as const,
+      payload: {},
+      apns_push_type: "alert" as const,
+      scheduled_for: NOW,
+      sent_at: NOW,
+      created_at: NOW,
+    });
+    // More rows than one mutation may write, so deleting them all at once fails.
+    for (let batch = 0; batch < 5; batch++) {
+      await t.run(async (ctx) => {
+        for (let index = 0; index < 3_300; index++) {
+          await ctx.db.insert("notification_outbox", sentPush(first.userId, couple.deviceId));
+        }
+      });
+    }
+    await t.run(async (ctx) => {
+      for (let index = 0; index < 3; index++) {
+        await ctx.db.insert("notification_outbox", sentPush(second.userId, secondDevice.id));
+      }
+      for (let index = 0; index < 1_200; index++) {
+        await ctx.db.insert("widget_push_outbox", {
+          id: newUuid(),
+          recipient_user_id: first.userId,
+          target_widget_device_id: widgetDevice!.id,
+          widget_push_token_hash: "w".repeat(64),
+          apns_environment: "sandbox",
+          kind: "widget_updated",
+          payload: {},
+          scheduled_for: NOW,
+          sent_at: NOW,
+          created_at: NOW,
+        });
+      }
+    });
+
+    const [start] = await first.as.mutation(api.identity.request_account_deletion, {});
+    expect(start).toMatchObject({ status: "processing", auth_delete_status: "ready_for_auth_delete" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+    const left = await t.run(async (ctx) => {
+      const pushes = await ctx.db.query("notification_outbox").collect();
+      return {
+        first: pushes.filter((row) => row.recipient_user_id === first.userId).length,
+        second: pushes.filter((row) => row.recipient_user_id === second.userId).length,
+        widget: (await ctx.db.query("widget_push_outbox").collect()).length,
+      };
+    });
+    // The partner keeps their own pushes, plus the notice that the relationship ended.
+    expect(left).toEqual({ first: 0, second: 4, widget: 0 });
+  });
+
   test("revokes pending invites and active grants", async () => {
     const t = newTest();
     const couple = await createCouple(t, { entitled: true });

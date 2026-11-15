@@ -13,8 +13,9 @@ import schema from "./schema";
 
 export const modules = import.meta.glob(["./**/*.{ts,js}", "!./**/*.*.*"]);
 
-export function newTest() {
-  const t = convexTest(schema, modules);
+/** `enforceLimits` makes every function fail where Convex would refuse it, such as a mutation that writes too much. */
+export function newTest({ enforceLimits = false }: { enforceLimits?: boolean } = {}) {
+  const t = convexTest({ schema, modules, transactionLimits: enforceLimits });
   // Names match convex.config.ts.
   workpool.register(t, "pushWorkpool");
   workpool.register(t, "backgroundWorkpool");
