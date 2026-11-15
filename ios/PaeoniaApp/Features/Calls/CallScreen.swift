@@ -64,17 +64,21 @@ struct CallScreen: View {
 
     // MARK: - Layout
 
+    /// Concentric with the display, so it fills the screen and is a pill while it grows out of
+    /// the ring pill.
     private var background: some View {
-        LinearGradient(
-            colors: [
-                Color.paeoniaBackgroundPrimary.mix(with: .paeoniaPartnerTwo, by: 0.34),
-                Color.paeoniaBackgroundPrimary,
-                Color.paeoniaBackgroundPrimary.mix(with: .paeoniaPartnerOne, by: 0.26),
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .ignoresSafeArea()
+        ConcentricRectangle(corners: .concentric, isUniform: true)
+            .fill(LinearGradient(
+                colors: [
+                    Color.paeoniaBackgroundPrimary.mix(with: .paeoniaPartnerTwo, by: 0.34),
+                    Color.paeoniaBackgroundPrimary,
+                    Color.paeoniaBackgroundPrimary.mix(with: .paeoniaPartnerOne, by: 0.26),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            ))
+            .ignoresSafeArea()
+            .callMorph(.background)
     }
 
     /// Dark edges over the partner's video, so the name and the buttons stay readable.
@@ -128,6 +132,7 @@ struct CallScreen: View {
                     .font(PaeoniaTypography.collectionHeroTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .multilineTextAlignment(.center)
+                    .callMorph(.name)
                 CallStatusLine(phase: session.phase, direction: session.direction)
                 partnerTime
             }
@@ -145,6 +150,7 @@ struct CallScreen: View {
             size: Self.avatarSize,
             isCurrentUser: false
         )
+        .callMorph(.photo)
         // The frame holds the glow at its largest in every phase, so it never reaches the name
         // and the name stays put when the call connects.
         .frame(width: Self.glowSize, height: Self.glowSize)

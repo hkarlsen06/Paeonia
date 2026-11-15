@@ -44,17 +44,23 @@ struct CallRingPill: View {
             if isRinging {
                 CallRoundButton(
                     systemImage: "phone.down.fill", label: .callsControlDecline, size: Self.buttonSize,
-                    symbolSize: Self.symbolSize, fill: .paeoniaError, identifier: "calls.ring.decline"
+                    symbolSize: Self.symbolSize, fill: .paeoniaError, identifier: "calls.ring.decline",
+                    morphPart: .decline
                 ) { center.engine.decline() }
                 CallRoundButton(
                     systemImage: "phone.fill", label: .callsControlAnswer, size: Self.buttonSize,
-                    symbolSize: Self.symbolSize, fill: .paeoniaSuccess, identifier: "calls.ring.answer"
+                    symbolSize: Self.symbolSize, fill: .paeoniaSuccess, identifier: "calls.ring.answer",
+                    morphPart: .answer
                 ) { center.engine.answer() }
             }
         }
         .padding(PaeoniaSpacing.space8)
-        .glassEffect(.regular.interactive(), in: Capsule())
-        .shadow(color: .black.opacity(0.3), radius: 16, y: 6)
+        .background {
+            Color.clear
+                .glassEffect(.regular.interactive(), in: Capsule())
+                .shadow(color: .black.opacity(0.3), radius: 16, y: 6)
+                .callMorph(.background)
+        }
         .offset(y: pull)
         .gesture(pullDown)
     }
@@ -83,12 +89,14 @@ struct CallRingPill: View {
                 tint: .paeoniaPartnerTwo,
                 size: Self.avatarSize
             )
+            .callMorph(.photo)
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                 Text(verbatim: participants.partnerName)
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .lineLimit(1)
+                    .callMorph(.name)
                 CallStatusLine(phase: session.phase, direction: session.direction, font: PaeoniaTypography.caption)
                     .lineLimit(1)
             }

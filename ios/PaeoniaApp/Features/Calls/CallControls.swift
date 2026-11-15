@@ -69,12 +69,12 @@ struct CallAnswerControls: View {
         HStack(alignment: .top, spacing: 0) {
             CallControlButton(
                 systemImage: "phone.down.fill", title: .callsControlDecline, fill: .paeoniaError,
-                identifier: "calls.decline"
+                identifier: "calls.decline", morphPart: .decline
             ) { engine.decline() }
 
             CallControlButton(
                 systemImage: "phone.fill", title: .callsControlAnswer, fill: .paeoniaSuccess,
-                identifier: "calls.answer"
+                identifier: "calls.answer", morphPart: .answer
             ) { engine.answer() }
         }
     }
@@ -89,6 +89,7 @@ struct CallRoundButton: View {
     var isOn = false
     var fill: Color?
     let identifier: String
+    var morphPart: CallMorphPart?
     let action: () -> Void
 
     var body: some View {
@@ -99,6 +100,7 @@ struct CallRoundButton: View {
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: size, height: size)
                 .background(fill ?? (isOn ? Color.paeoniaTextPrimary : Color.white.opacity(0.12)), in: Circle())
+                .callMorph(morphPart)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -116,17 +118,19 @@ struct CallControlButton: View {
     var isOn: Bool?
     var fill: Color?
     let identifier: String
+    var morphPart: CallMorphPart?
     let action: () -> Void
 
     init(
         systemImage: String, title: LocalizedStringResource, isOn: Bool? = nil, fill: Color? = nil,
-        identifier: String, action: @escaping () -> Void
+        identifier: String, morphPart: CallMorphPart? = nil, action: @escaping () -> Void
     ) {
         self.systemImage = systemImage
         self.title = title
         self.isOn = isOn
         self.fill = fill
         self.identifier = identifier
+        self.morphPart = morphPart
         self.action = action
     }
 
@@ -139,6 +143,7 @@ struct CallControlButton: View {
                     .contentTransition(.symbolEffect(.replace))
                     .frame(width: Self.size, height: Self.size)
                     .background { background }
+                    .callMorph(morphPart)
                 Text(title)
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextPrimary)

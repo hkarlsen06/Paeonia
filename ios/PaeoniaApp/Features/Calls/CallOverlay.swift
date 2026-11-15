@@ -71,7 +71,12 @@ final class CallOverlayModel {
     var lastSession: CallSession?
     /// The layer the window draws. It follows `layer` once the window shows, because a view that
     /// appears in a hidden window skips its transition.
-    var shownLayer = Layer.hidden
+    var shownLayer = Layer.hidden {
+        didSet { previousShownLayer = oldValue }
+    }
+    /// The layer the window drew before, so the call screen and the ring pill can tell a morph
+    /// between them from an entrance.
+    private(set) var previousShownLayer = Layer.hidden
 
     init(center: CallCenter, participants: DailyChallengeParticipants) {
         self.center = center
@@ -140,12 +145,14 @@ private struct CallOverlayRoot: View {
     let model: CallOverlayModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var morph
 
     var body: some View {
         GeometryReader { proxy in
             layers(screenTravel: proxy.size.height + proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom)
         }
-        .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.12), value: model.shownLayer)
+        .environment(\.callMorph, morph)
+        .animation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.12), value: model.shownLayer)
         .preferredColorScheme(.dark)
     }
 
@@ -154,22 +161,38 @@ private struct CallOverlayRoot: View {
     private func layers(screenTravel: CGFloat) -> some View {
         ZStack {
             if let session = model.center.session ?? model.lastSession {
+                // While the call rings inside the app, the pill and the call screen morph into
+                // each other: the one leaving fades while their shared parts (`CallMorphPart`)
+                // move. A view that leaves keeps the transition of its last update, so the
+                // leaving side reads the ring and the arriving side reads the layer it replaces.
+                let leavesByMorph = reduceMotion || (session.ringsInApp && session.phase == .ringing)
                 switch model.shownLayer {
                 case .screen:
                     CallScreen(center: model.center, session: session, participants: model.participants)
-                        .transition(reduceMotion ? .opacity : .offset(y: screenTravel))
+                        .transition(.asymmetric(
+                            insertion: arrives(from: .ring) ? .opacity : .offset(y: screenTravel),
+                            removal: leavesByMorph ? .opacity : .offset(y: screenTravel)
+                        ))
                 case .bubble:
                     CallBubbleLayer(model: model, session: session)
                         .transition(.opacity.combined(with: .scale(scale: 0.6)))
                 case .ring:
+                    let slide = AnyTransition.move(edge: .top).combined(with: .opacity)
                     CallRingLayer(model: model, session: session)
-                        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+                        .transition(.asymmetric(
+                            insertion: arrives(from: .screen) ? .opacity : slide,
+                            removal: leavesByMorph ? .opacity : slide
+                        ))
                 case .hidden:
                     EmptyView()
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func arrives(from layer: CallOverlayModel.Layer) -> Bool {
+        reduceMotion || model.previousShownLayer == layer
     }
 }
 
