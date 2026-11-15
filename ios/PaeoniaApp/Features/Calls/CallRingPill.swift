@@ -30,6 +30,12 @@ struct CallRingPill: View {
     private static let buttonSize: CGFloat = 52
     private static let symbolSize: CGFloat = 20
 
+    /// How far a pull down goes before letting go opens the full call screen.
+    private static let openDistance: CGFloat = 32
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pull: CGFloat = 0
+
     private var isRinging: Bool { session.phase == .ringing }
 
     var body: some View {
@@ -49,6 +55,24 @@ struct CallRingPill: View {
         .padding(PaeoniaSpacing.space8)
         .glassEffect(.regular.interactive(), in: Capsule())
         .shadow(color: .black.opacity(0.3), radius: 16, y: 6)
+        .offset(y: pull)
+        .gesture(pullDown)
+    }
+
+    /// A pull down opens the full call screen, as a pull on a notification expands it.
+    private var pullDown: some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                // Follows the finger less and less, so the pill stays near the top.
+                pull = max(0, value.translation.height) * 0.35
+            }
+            .onEnded { value in
+                if value.translation.height > Self.openDistance
+                    || value.predictedEndTranslation.height > Self.openDistance * 3 {
+                    open()
+                }
+                withAnimation(reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.2)) { pull = 0 }
+            }
     }
 
     private var caller: some View {

@@ -203,14 +203,24 @@ struct CallScreen: View {
         }
     }
 
-    @ViewBuilder
+    /// Answering swaps Answer and Decline for the call controls in one place, one fading out
+    /// before the other fades in, so the two rows never show on top of each other.
     private var controls: some View {
-        if session.direction == .incoming, session.phase == .ringing {
-            CallAnswerControls(engine: center.engine)
-        } else {
-            CallControls(session: session, engine: center.engine)
+        ZStack {
+            if session.direction == .incoming, session.phase == .ringing {
+                CallAnswerControls(engine: center.engine)
+                    .transition(Self.controlsSwap)
+            } else {
+                CallControls(session: session, engine: center.engine)
+                    .transition(Self.controlsSwap)
+            }
         }
     }
+
+    private static let controlsSwap = AnyTransition.asymmetric(
+        insertion: .opacity.animation(.easeOut(duration: 0.2).delay(0.12)),
+        removal: .opacity.animation(.easeIn(duration: 0.12))
+    )
 
     /// What the person can do about a call that could not go through. Waiting does not help with
     /// the microphone, so that one opens Settings.

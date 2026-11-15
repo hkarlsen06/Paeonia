@@ -66,6 +66,9 @@ final class CallOverlayModel {
     var bubbleFrame = CGRect.zero
     /// Where the ring pill is in the window, for the same reason.
     var ringFrame = CGRect.zero
+    /// The last call the overlay showed, so the screen, the bubble or the pill can leave on screen
+    /// after the engine clears the call.
+    var lastSession: CallSession?
     /// The layer the window draws. It follows `layer` once the window shows, because a view that
     /// appears in a hidden window skips its transition.
     var shownLayer = Layer.hidden
@@ -115,6 +118,9 @@ private struct CallOverlayHost: ViewModifier {
                 if let newID, newID != oldID, center.session?.ringsInApp != true { center.presentation = .full }
             }
             .onChange(of: model.layer, initial: true) { _, layer in window.show(layer) }
+            .onChange(of: center.session) { _, session in
+                if let session { model.lastSession = session }
+            }
             .onAppear {
                 window.install(
                     CallOverlayRoot(model: model)
@@ -136,12 +142,22 @@ private struct CallOverlayRoot: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        GeometryReader { proxy in
+            layers(screenTravel: proxy.size.height + proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom)
+        }
+        .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.12), value: model.shownLayer)
+        .preferredColorScheme(.dark)
+    }
+
+    /// `screenTravel` is the window's whole height. The call screen's background reaches under
+    /// the home indicator, so sliding it by its own height would leave a strip on screen.
+    private func layers(screenTravel: CGFloat) -> some View {
         ZStack {
-            if let session = model.center.session {
+            if let session = model.center.session ?? model.lastSession {
                 switch model.shownLayer {
                 case .screen:
                     CallScreen(center: model.center, session: session, participants: model.participants)
-                        .transition(reduceMotion ? .opacity : .move(edge: .bottom))
+                        .transition(reduceMotion ? .opacity : .offset(y: screenTravel))
                 case .bubble:
                     CallBubbleLayer(model: model, session: session)
                         .transition(.opacity.combined(with: .scale(scale: 0.6)))
@@ -154,8 +170,6 @@ private struct CallOverlayRoot: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.12), value: model.shownLayer)
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -195,9 +209,10 @@ final class CallOverlayWindowController {
         window.rootViewController?.view.accessibilityViewIsModal = layer == .screen
         switch layer {
         case .hidden:
-            // After the screen or bubble has left.
+            // After the screen, the bubble or the pill has left. A full screen slides the
+            // whole height, and its spring is still settling at 400 ms.
             hideTask = Task {
-                try? await Task.sleep(for: .milliseconds(400))
+                try? await Task.sleep(for: .milliseconds(700))
                 guard !Task.isCancelled else { return }
                 window.isHidden = true
             }
