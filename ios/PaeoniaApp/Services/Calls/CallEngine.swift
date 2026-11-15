@@ -158,6 +158,7 @@ final class CallEngine {
         updatePictureInPicture()
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private func perform(_ effect: CallEffect, for run: CallRun) {
         switch effect {
         case let .startTimer(timer, fireAt):
@@ -179,6 +180,8 @@ final class CallEngine {
             sounds.setRingback(isOn)
         case .playConnectedSound:
             sounds.play(.connected)
+        case let .mediaAudio(isOn):
+            CallAudio.setMediaAudio(isOn)
         }
     }
 

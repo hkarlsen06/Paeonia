@@ -7,19 +7,13 @@ nonisolated enum CallSound: String, CaseIterable, Sendable {
     case ringback = "Ringback"
     /// Plays once on both phones when the call first connects.
     case connected = "Connected"
-
-    fileprivate var volume: Float {
-        switch self {
-        case .ringback: 0.6
-        case .connected: 0.7
-        }
-    }
 }
 
 /// Plays the call's sounds. On a phone the call engine plays them only once the system has
-/// activated the call's audio session, so they follow the call's route: the earpiece, the
-/// speaker or AirPods. `AVAudioPlayer` mixes with WebRTC's voice processing unit instead of
-/// taking it over, and nothing here touches the session.
+/// activated the call's audio session, so they follow the call's route: the speaker, the
+/// earpiece or AirPods. `CallMachine` keeps WebRTC's voice processing off while they play,
+/// because it turns other sound down, and nothing here touches the session. They play at full
+/// gain, the call level in `docs/game-audio.md`.
 ///
 /// The players run on one serial queue, because `AVAudioPlayer` talks to the audio session,
 /// which can block the main thread. The queue keeps every start and stop in order.
@@ -64,7 +58,6 @@ nonisolated final class CallSoundPlayer: @unchecked Sendable {
               let player = try? AVAudioPlayer(contentsOf: url)
         else { return nil }
         player.numberOfLoops = sound == .ringback ? -1 : 0
-        player.volume = sound.volume
         players[sound] = player
         return player
     }

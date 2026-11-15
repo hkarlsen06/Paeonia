@@ -28,9 +28,20 @@ extension CallEngine: CallSystemDelegate {
     func audioActivated(_ audioSession: AVAudioSession) {
         CallAudio.didActivate(audioSession)
         if let run, !run.isFinished {
+            useSpeakerAtStart(of: run)
             send(.audioActivated, to: run)
         }
         refreshAudioRoute()
+    }
+
+    /// Every call starts on the speaker, unless AirPods, a headset or a car has the sound. Only
+    /// the call's first activation picks, so a later one keeps what the person chose.
+    private func useSpeakerAtStart(of run: CallRun) {
+        guard !run.hasPickedStartingRoute else { return }
+        run.hasPickedStartingRoute = true
+        if CallAudio.currentRoute() == .receiver {
+            CallAudio.useSpeaker(true)
+        }
     }
 
     func audioDeactivated(_ audioSession: AVAudioSession) {

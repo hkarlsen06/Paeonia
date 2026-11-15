@@ -2,8 +2,8 @@ import AVFoundation
 @preconcurrency import WebRTC
 
 /// The call's side of the audio session. The system activates the session for a call, and
-/// WebRTC's audio runs only between `conversationManager(_:didActivate:)` and
-/// `didDeactivate`. Nothing here calls `setActive`.
+/// WebRTC's audio runs only inside that activation, when `CallMachine` asks for it
+/// (`isMediaAudioOn`). Nothing here calls `setActive`.
 enum CallAudio {
     private static var rtcSession: RTCAudioSession {
         RTCAudioSession.sharedInstance()
@@ -30,7 +30,14 @@ enum CallAudio {
 
     static func didActivate(_ audioSession: AVAudioSession) {
         rtcSession.audioSessionDidActivate(audioSession)
-        rtcSession.isAudioEnabled = true
+    }
+
+    /// Starts or stops WebRTC's voice processing unit, which plays the partner and records the
+    /// microphone. While it runs, iOS turns other sound down, the call's own sounds included.
+    static func setMediaAudio(_ isOn: Bool) {
+        if rtcSession.isAudioEnabled != isOn {
+            rtcSession.isAudioEnabled = isOn
+        }
     }
 
     static func didDeactivate(_ audioSession: AVAudioSession) {
@@ -52,7 +59,8 @@ enum CallAudio {
         }
     }
 
-    /// Sends the sound to the speaker, or back to the route the system picks.
+    /// Sends the sound to the speaker, or back to the route the system picks, which is the
+    /// earpiece unless something such as AirPods or a car is connected.
     static func useSpeaker(_ isOn: Bool) {
         let session = rtcSession
         session.lockForConfiguration()
@@ -77,7 +85,7 @@ enum CallAudio {
     }
 
     /// Starts WebRTC's audio again once the microphone is allowed during a call, so it records.
-    /// Before the system activates the call's audio there is nothing to restart.
+    /// Before WebRTC's audio starts there is nothing to restart.
     static func restartForMicrophone() {
         guard rtcSession.isAudioEnabled else { return }
         rtcSession.isAudioEnabled = false

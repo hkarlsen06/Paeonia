@@ -13,6 +13,8 @@ final class CallRun {
     var serverEnd: Task<Void, Never>?
     /// The end came from the system call UI, which already shows it.
     var isEndingFromSystem = false
+    /// The call's audio has been sent to the speaker or left on an external route once.
+    var hasPickedStartingRoute = false
 
     init(machine: CallMachine, conversationID: UUID, role: CallMediaSession.Role) {
         self.machine = machine

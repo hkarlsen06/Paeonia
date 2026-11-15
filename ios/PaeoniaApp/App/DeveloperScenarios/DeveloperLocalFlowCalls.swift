@@ -28,7 +28,8 @@
 
     func startCall() {
       guard let center, !center.isInCall else { return }
-      center.session = CallSession(id: UUID(), direction: .outgoing, phase: .ringing)
+      // Every call starts on the speaker, as `CallEngine` starts it without AirPods.
+      center.session = CallSession(id: UUID(), direction: .outgoing, phase: .ringing, audioRoute: .speaker)
       sounds.setRingback(true)
       script?.cancel()
       script = Task { [weak self] in
