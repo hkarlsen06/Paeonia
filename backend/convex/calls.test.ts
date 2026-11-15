@@ -124,21 +124,19 @@ describe("access", () => {
     }
   });
 
-  test("ICE servers are empty without a TURN key, and relay only unless the viewer shares their location", async () => {
+  test("ICE servers are empty without a TURN key, and relay only while the viewer has paused location sharing", async () => {
     const { t, couple } = await setup();
     const callId = await call(couple);
     const relayOnly = async () => (await couple.second.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).relay_only;
-    expect(await couple.second.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).toEqual({ ice_servers: [], relay_only: true });
+    expect(await couple.second.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).toEqual({ ice_servers: [], relay_only: false });
     await setLocationSharing(t, couple.coupleId, couple.second.userId, "on");
     expect(await relayOnly()).toBe(false);
     await setLocationSharing(t, couple.coupleId, couple.second.userId, "paused");
     expect(await relayOnly()).toBe(true);
-    await setLocationSharing(t, couple.coupleId, couple.second.userId, "off");
-    expect(await relayOnly()).toBe(true);
     // The partner's choice is theirs alone.
-    await setLocationSharing(t, couple.coupleId, couple.first.userId, "on");
-    expect(await relayOnly()).toBe(true);
     expect((await couple.first.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).relay_only).toBe(false);
+    await setLocationSharing(t, couple.coupleId, couple.second.userId, "off");
+    expect(await relayOnly()).toBe(false);
   });
 
   test("TURN credentials carry the call id, and the call's end revokes them", async () => {

@@ -17,7 +17,7 @@ import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
 import { signLiveTicket } from "./lib/liveTicket";
-import { isSharingNow } from "./lib/locationPause";
+import { isPaused, isSharingNow } from "./lib/locationPause";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { knownMemberTimeZone } from "./lib/streakDeadlines";
 import { addMs, nowIso } from "./lib/time";
@@ -178,13 +178,12 @@ export const get_live_call = query({
   },
 });
 
-/** Whether `userId` shares their location in the couple now: sharing is on and not paused. */
-async function isSharingLocationNow(ctx: ReaderCtx, coupleId: string, userId: string): Promise<boolean> {
-  const preference = await ctx.db
+/** The location sharing choice of `userId` in the couple, or null when they never set one up. */
+async function locationPreference(ctx: ReaderCtx, coupleId: string, userId: string) {
+  return await ctx.db
     .query("location_sharing_preferences")
     .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
     .unique();
-  return isSharingNow(preference);
 }
 
 /**
@@ -199,7 +198,7 @@ export const get_call_context = query({
     const couple = await findCurrentCouple(ctx, userId);
     if (!couple) return fail("42501", "active couple membership is required");
     const partner = (await listActiveMembers(ctx, couple.id)).find((member) => member.user_id !== userId);
-    const shown = partner !== undefined && (await isSharingLocationNow(ctx, couple.id, partner.user_id));
+    const shown = partner !== undefined && isSharingNow(await locationPreference(ctx, couple.id, partner.user_id));
     return { partner_time_zone_id: shown ? await knownMemberTimeZone(ctx, partner.user_id) : null };
   },
 });
@@ -287,8 +286,9 @@ const MAX_TURN_MINTS_PER_MEMBER = 4;
 /**
  * Checks that the viewer is a member of the live call. When `mint` is true, also counts one set of
  * TURN credentials for them, and refuses with P0003 `turn_limit_reached` past
- * `MAX_TURN_MINTS_PER_MEMBER`. `relay_only` is true unless the viewer shares their location now, so
- * a partner learns nobody's IP address that they could not already see.
+ * `MAX_TURN_MINTS_PER_MEMBER`. `relay_only` is true only while the viewer has paused location
+ * sharing, so someone who pauses to hide where they are does not give their partner their IP
+ * address either. The rule and its reason are in docs/calling-plan.md.
  */
 export const ice_server_access = internalMutation({
   args: { call_id: v.string(), mint: v.boolean() },
@@ -300,7 +300,7 @@ export const ice_server_access = internalMutation({
       if (minted >= MAX_TURN_MINTS_PER_MEMBER) return fail("P0003", "turn_limit_reached");
       await ctx.db.patch(call._id, { turn_mint_user_ids: [...call.turn_mint_user_ids, userId] });
     }
-    return { call_id: call.id, relay_only: !(await isSharingLocationNow(ctx, call.couple_id, userId)) };
+    return { call_id: call.id, relay_only: isPaused(await locationPreference(ctx, call.couple_id, userId)) };
   },
 });
 
@@ -336,9 +336,10 @@ function parseIceServers(body: unknown): IceServer[] {
  * STUN and TURN servers for a member of the live call, with TURN credentials from Cloudflare that last
  * 24 hours and carry the call id as their custom identifier. The call's end revokes them. Each member
  * gets at most `MAX_TURN_MINTS_PER_MEMBER` sets per call, then P0003 `turn_limit_reached`.
- * `relay_only` is true unless the viewer shares their location now, so the partner never sees their
- * address otherwise. Without `CLOUDFLARE_TURN_KEY_ID` and `CLOUDFLARE_TURN_API_TOKEN` (a local
- * backend) the list is empty and nothing is counted.
+ * `relay_only` is true while the viewer has paused location sharing, so the partner's phone never
+ * gets their address then. Everyone else connects directly and falls back to TURN. Without
+ * `CLOUDFLARE_TURN_KEY_ID` and `CLOUDFLARE_TURN_API_TOKEN` (a local backend) the list is empty and
+ * nothing is counted.
  */
 export const get_call_ice_servers = action({
   args: { p_call_id: v.string() },

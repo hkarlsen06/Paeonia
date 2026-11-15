@@ -17,6 +17,14 @@ export function isSharingNow(preference: Doc<"location_sharing_preferences"> | n
 }
 
 /**
+ * Whether the person has sharing on and paused. Like `isSharingNow`, this reads the stored pause and
+ * not the clock.
+ */
+export function isPaused(preference: Doc<"location_sharing_preferences"> | null | undefined): boolean {
+  return preference?.is_enabled === true && preference.paused_until !== undefined;
+}
+
+/**
  * Whether the person shares as their partner sees it: sharing is on, paused or not. The partner
  * is never told of a pause (`get_partner_location_visibility`), so anything the partner can see
  * reads this and not `isSharingNow`.
