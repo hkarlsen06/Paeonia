@@ -1,344 +1,123 @@
 # Games plan
 
-Plan and decisions for the Games tab. Draw & Guess is built (`backend/convex/drawAndGuess.ts`, `Features/Games/DrawAndGuess/`). The shared Games wiring is kind-based: the backend (`backend/convex/games.ts`, `lib/games.ts`, `lib/gameRegistry.ts`), the relay (`relay/src/ticket.ts`) and Swift (`GameKind`) register all eleven kinds below, and each game plugs in at the points in "Adding a game". Sections marked "Decided" were agreed with the developer. Everything else is the current proposal and can change.
-
-Keep this file current. When a games decision changes, or games code lands, update the matching section in the same change. Move items from "Open questions" to "Decisions" once the developer settles them, and replace proposals with what was actually built.
-
-Each game gets its own design doc in `docs/games/` once the developer picks it. That doc owns the game's rules, scoring and content. This file owns what all games share.
-
-- `docs/games/draw-and-guess.md`: the first game.
-- `docs/games/mind-meld.md`: the simultaneous word game.
-- `docs/games/hub-artwork.md`: the standard every game's hub picture follows.
-- `docs/games/ludo.md`: Ludo, the fourth board game, on the board game engine.
-- `docs/games/consensio.md`: Consensio, where one partner places a marker on a line and the other guesses where it is.
-- `docs/games/piccante.md`: Piccante, the secret chili chocolate game.
-- `docs/games/guess-my-spot.md`: Guess my spot, where one partner sends a photo and the other guesses on a map where it was taken.
+Decisions and rules for the Games tab. Each game has its own doc in `docs/games/` that owns its rules, scoring and content. This file owns what all games share. When a games decision changes, update the matching section in the same change.
 
 ## Decisions
 
-Decided on 2026-11-14.
+### Scope and product
 
-- On an iPhone held upright, a game chat opened from a game or a game history shows as a panel over the lower part of the screen, and the whole screen stays in view above it, smaller, the way a video stays in view over its comments. Everything on the screen shrinks together, the navigation bar included, so nothing is cut out or hidden and every game and history behaves the same. The screen keeps running while the panel is open, so a partner's drawing or move shows as it happens. The panel takes 64% of the screen's height. It also covers the screen's bottom controls, such as letter tiles or a Lock in button, which nobody can use while the panel is open, and the navigation bar is left out when it holds only the back, chat and menu buttons. The rest then shows larger: about 45% of full size in Draw & Guess. A bar that shows the score stays, and a screen with neither shows whole, at about 30%.
-- The panel has no navigation bar. It has a close button in its top corner, and the messages take the rest. It has no drag handle, because a drag down closes it from the panel and from the game above it. The keyboard opens inside the panel, so the panel and the game above it stay where they are while the person writes.
-- A swipe up on a game or a game history opens its chat, from empty space and from a button alike, so starting to write takes one move. The swipe stays with whatever needs it where it starts: a canvas that is drawn on, a map, Ludo's scene where the die is thrown, a board that takes drags on the person's own turn (Four in a Row, Dots and Boxes, Consensio's line), and a list that can still scroll that way.
-- A tap on the game above the panel, the close button, a swipe right, or a drag down that starts on the panel or on the game above it closes it and gives the game its full size back. The messages scroll first, and while the keyboard is up a drag on them takes the keyboard away, as in every chat. The game takes no touches while the panel is open.
-- An iPad and a phone on its side have no room above a panel, so there the chat stays a sheet over the game, at half height and at full height with the keyboard.
-- The app shows the swipe up instead of explaining it. A moment after a game screen opens, the screen shrinks a little from its top and the top of the chat peeks up under it with its latest message, then goes back down. This happens at most once a day and three times in all. It does not happen once the person has touched the screen, or with Reduce Motion. Someone who still opens the chat with its button twice after the third peek gets one tip, in a banner over the game when the chat closes. The first swipe up on a game stops both for good. A swipe up on a banner that opens something, such as a partner's message, opens it, as a tap does.
+- **Included in the subscription.** No per-game unlock. Games use the couple entitlement check.
+- **Every game is crafted.** Ship fewer games rather than thin ones. [Quality bar](#quality-bar) applies before building.
+- **No game streaks.** A game turn counts toward the couple's existing streak through an activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game doc says which action counts.
+- **No forfeits on a timer.** An async game waits as long as it needs, following the forgiving-streak rule in `AGENTS.md`. A turn reminder goes out once, after 72 hours, never twice for the same move.
+- **Scores grow forever.** No seasons or weekly resets.
+- **One active game per kind per couple.**
+- **Live is not deferred.** When a game's design includes live play, live ships in its first version.
+- **Games don't save to Memories.** A creative game keeps its own history, and each partner can privately star rounds (the partner is not told). Board games keep every finished game with its moves.
+- **Finished creations take emoji reactions.** Unlike a star, a reaction is visible to the partner, and a first reaction sends one gentle push that follows the Games setting.
+- **Finished drawings, creatures and stories can be shared outside the app** from a toolbar button.
+- **Dropped games.** Touch is too thin to ship. Air hockey needs both phones side by side, and Paeonia is for couples who are apart. Battleship with date ideas is out.
+- **"Four in a Row", never "Connect Four".** Connect Four is a Hasbro trademark. No user-visible text, VoiceOver label, push, data export, website or App Store text may use it. The Norwegian name stays "Fire på rad". The internal kind `connect_four` stays.
 
-Decided on 2026-11-09.
+### Setup and settings
 
-- Game notices use the shared untinted bottom glass banner and the game's illustrated hub object. Game action bars, composers and bet controls report their top edge so notices stay above them, including while the keyboard is open.
+- The Games tab opens on the hub so both partners see every game first. The first game a partner opens asks for two couple settings, play style and game language. The other partner sees the choice before their first game and can keep or change it.
+- **Play style.** "Against each other" gives each partner a score and a winner. "Together" gives one shared score. Each game doc says how it plays in each style.
+- **Game language.** The couple picks one language both understand (English or Norwegian Bokmal). Word lists and decoy letters use it regardless of each partner's app language.
+- Games and their histories hide the tab bar on iPhone to keep the play area available.
 
-Decided on 2026-11-05.
+### Hub, presence and notices
 
-- Swiping through messages in the game chat scrolls the conversation. The sheet that an iPad and a phone on its side show resizes from its drag handle. The panel on an upright iPhone has one height (2026-11-14).
+- The hub has "Right now" (full cards for the game the partner is in, then games waiting for this person) and a "More games" grid. A "Not now" button on a waiting card moves it to the grid and takes it off the tab badge.
+- The Us tab shows one card, the game the partner opened most recently while they have it open, above today's questions, because the partner waiting in a game is the one thing not to miss.
+- The Games tab badge counts turns, unseen results and open invites waiting for this person, except "Not now" items and those already there when the hub last showed. Opening the hub clears the badge without hiding a game.
+- Every game with live play has a "Tell [Name] you want to play" button, shown when the partner doesn't have the game open. It sends one push, at most once every 15 minutes.
+- When the partner opens a game while this person is on another tab, a 7-second banner opens that game on tap. The partner's open game also shows as a Lock Screen Live Activity that names the game and whose turn it is, never a move.
+- Presence is one steady green ring only while the partner has that game open. It pulses once on arrival.
+- Game notices use the shared bottom glass banner, kept above action bars and composers.
 
-Decided on 2026-11-04.
+### Game chat
 
-- Piccante, Four in a Row, Dots and Boxes and Ultimate Tic-Tac-Toe share plain round player portraits, with names below and a bold name for the turn. Board games keep their mark badges and accessibility owner symbols. Ludo keeps its glass player cards over its 3D board. All use the shared presence ring and score capsule. Piccante centers the choose-size title, box and buttons together below the portraits. At large text sizes the screen scrolls.
+- One ongoing chat per game type, available before, during and after play, opened from a toolbar button over the game rather than switching to Chats.
+- On an upright iPhone it is a panel over the lower screen with the game still visible above, opened by a swipe up (except where the game needs the swipe, such as a canvas or map). A tap on the game, the close button, a swipe right or a drag down closes it. On iPad and a phone on its side it is a sheet.
+- The app shows the swipe up instead of explaining it, at most once a day.
+- Game chats show a miniature of the current visible game content, never a hidden answer.
 
-Decided on 2026-11-03.
+### Queued moves and replays
 
-- Piccante uses plain round player portraits with the shared presence ring and score capsule. Together counts finished games. The board composes nine illustrated chocolate varieties in gold cups. Both phones use the same arrangement, with no identical neighbors. Eaten tiles leave empty wrappers with crumbs, and burns reveal chili pieces. Selection outlines, round owner avatars and a flame identify states without bite numbers. Only the partner's note appears, on a dark plum card with light text. Finished boxes stay in the game chat.
+- Queued moves show no local-save or offline reassurance line. Failed sends on a working connection keep their warning and retry action.
+- Result buttons name the partner's next action, such as "Continue · Robin is waiting".
 
-- A game chat opened from a game or a game history shows over that screen instead of switching to Chats. This covers the toolbar chat button and a partner message's banner. On an upright iPhone it is the panel decided on 2026-11-14. On an iPad and a phone on its side it is a sheet, which opens at half height so the board stays visible, and grows to full height when the keyboard comes up. Closing it shows the game again with its unfinished input. Result cards open their full result or replay inside the sheet. A game chat opened from anywhere else, such as a Chats row, a message banner, a push or a link, switches to Games, opens that game and shows its chat over it (decided 2026-11-14). A banner for another game's chat opens that game in place of the one on screen. The chat opens in Chats only when the game can't open yet: Games has not loaded, or the first-time steps come before the first game. Mind Meld waits with its own keyboard until the chat closes.
+### Guess my spot
 
-- Game chats show a miniature of the current board or visible game content instead of a controller. An empty rematch keeps the last finished board until the first new move. Odd Creatures shows only a completed creature, Mind Meld only revealed word pairs, and Consensio only revealed pins. A game without cached visible content uses its own hub illustration. Thumbnails follow the owner-scoped local caches and queued board moves without marking a result as seen.
-
-- Guess my spot discards blurred previews of completed rounds, including late relay messages. Waiting for the next photo shows the partner until they pick a new one. A new preview received during the previous reveal stays available.
-
-- Game toolbars omit the game name to leave room for scores and controls. Drawing instructions and partner presence remain visible.
-
-Decided on 2026-11-01.
-
-- More > Accessibility controls the optional visible tools. Extra controls and media descriptions are switches that default to off. Paeonia still shows them while the system reports an active assistive technology. Board-control buttons, native scale inputs, place picking, shape creation and description panels use these preferences. Labels, native board semantics, text scaling, contrast, motion preferences and private game-state rules remain active. Hiding an authoring field preserves its draft and validation; invalid input and failed saves retain a recovery action.
-
-- Mind Meld, Consensio and Guess my spot open history through their toolbar score capsules. Their adjacent menus omit history, and Mind Meld has no second history button on the result.
-
-- Games and their histories hide the tab bar on iPhone to keep the play area available. iPad keeps its top tab bar. The game chat opens over the game, so the tab bar stays hidden. Selecting Games from Chats while a game is still open hides the tab bar and waits for the keyboard to close, the full-screen layout to settle and a frame to render before showing the game. The shared tab root supplies the same visibility to the Games navigation root.
-- An empty game chat explains that the couple can chat while playing and that finished rounds will appear there. The composer remains available.
-
-Decided on 2026-10-31.
-
-- When extra controls are shown, board games offer a Board controls button opening native, scrollable controls. Four in a Row lists every cell and its owner before each column's drop button. Dots and Boxes offers a native list-style box picker, the selected box's full state, and four side buttons. Its spatial grid still exposes all 16 boxes and their custom actions. Ludo lists all four pawns, including base, shared track square and safety, home lane and finished state, with Roll and legal pawn buttons using the existing move callbacks. Ultimate Tic-Tac-Toe cells include their board number and selected state.
-- Extra controls add a native Slider and Stepper alongside Consensio's line. Revealed pins report owner and exact position measured from the left endpoint. Pins still hidden by the reveal are omitted. Guess my spot's extra controls offer place search and signed coordinate entry in both photo checking and guessing. The picker receives no photo or round metadata and selects through the same callbacks as map taps.
-- Draw & Guess has a visible skip replay button in guessing and history, alongside its existing replay actions. These controls do not make visual drawing recognition accessible. Drawing composition, recognition and the remaining animated reveals still need device-based accessibility review before claiming complete game access.
-
-- Chats, Games, Memories and More use inline navigation titles. Us keeps its custom map header. Mind Meld stacks full-width word cards at accessibility text sizes, so the revealed words use the person's chosen reading size.
-- Story Chain's custom opening choice uses its label without a subtitle. Expanded chat results keep the game name in the navigation bar and show the finish time above the result.
-- Board games, drawing games and Guess my spot share the wide-window breakpoint. Board and drawing squares use the same wide sizing calculation.
-
-- Queued moves show no local-save or offline reassurance line. The board, word, drawing or story stays visible and sends automatically. Failed sends on a working connection keep their warning and retry action. Held reveals still wait for the server before showing the hidden result.
-
-- Game hub cards use `PaeoniaIllustratedCard` for the shared artwork, title, action and compact layout. Compact cards fit the visible status text instead of reserving empty lines beneath it. `GameHubCardFrame` adds presence, scores and Not now. Daily questions use the shared card directly. Topic cards and illustrated cards share their waiting-content border and glow through `paeoniaCardSurface`.
-- Each couple has one ongoing chat per game type, available before, during and after play. Games and their histories have one toolbar button that opens that conversation over the game. On a game screen the toolbar reads score, call, chat, then the "•••" menu (`GameToolbarActions`), so the score never sits before the buttons. The phone button starts a voice call with the partner (`docs/calling-plan.md`). Result screens have no second chat button. Completed rounds or matches appear among messages at their completion time as one short line, "Game finished" and the time, and every result starts collapsed, so nothing grows in after the chat opens. Tapping the line opens the card with the reply action and the full result or board replay, and it stays open for the current chat visit unless the person collapses it.
-- The chat button on a game screen shows the partner's state in that game's chat, so a slow move has a visible reason. It turns the presence color and fills while the partner has the chat open, and shows animated dots while they type. The chat on screen sends `chatPresence:set_chat_open` every 10 seconds and on leaving, and the server ends it 30 seconds after the last heartbeat. `get_chat_presence` returns `partner_in_chat`, which typing also counts as. A message can reply to a result card, including the first message in the conversation. Result access still follows each game's reveal rules.
-- The unanswered daily challenge stays first in Chats, followed by outstanding conversations. Once it is answered, Themes navigation stays above those conversations. A game the partner has open appears below those conversations, even before either person writes. An unread game conversation joins the outstanding list once, ordered by its newest unread activity. It shares the same row once the conversation has messages. Presence alone does not create a permanent empty chat. The chat over a game keeps the game and its unfinished input underneath. Live game data continues while Chats is open, but presence describes the screen actually open.
-- Incoming partner messages show the shared top banner with their preview and game name. There is no banner for the conversation already visible or for historical messages loaded when the app opens. Tapping a game message opens its game with the conversation over it. Foreground APNs alerts stay suppressed, so the live summary feed owns these banners.
-- Game chat timelines merge messages and result references under one cursor. Indexed game histories own the results, and details load when a card opens. Deleting a Guess my spot round removes its result and photo without deleting the ongoing chat or unrelated messages. Messages keep the existing offline send queue.
-
-- Story Chain skips the arrival animation for a line watched live during this visit and for the writer's own line. A pause in typing does not replay a watched line. A partner's line missed while away still writes itself in. The story and title fields explicitly enable system autocorrect.
-- Story Chain keeps optional writing controls in a compact toolbar beneath the draft and above the keyboard. "Give a word" and "Last line?" are quiet filled chips, with the counter beside Send. Long words and larger text sizes wrap the controls while keeping their tap targets and full accessibility labels.
-
-- Guess my spot uses a compact reveal card. The verdict centers above a square photo at the bottom left and scores on the right. The totals share the right edge, and earned points sit directly above their total. The distance stays above the map. Your turn sits below the card, with Continue for the sender. Chat stays in the toolbar. The overview uses the full map while the controls are hidden, and the landing keeps the destination pin above them.
-
-- Result buttons show the partner's next action beside Continue, such as "Continue · Robin is waiting" or "Continue · Robin has picked". This covers the next word, drawing, photo, marker, creature part, story and board game. A new partner action plays the shared attention haptic and sound once while the game is open. Opening a result with that action already there stays quiet. A partner's progress does not dismiss the result. Waiting requires the partner's live screen to have moved past the result, and the label uses the person's private nickname when set.
-
-- Games size their play area from the available window. Landscape boards and drawing canvases keep a centered pair of columns, with a narrower control column in smaller windows. The controls stay together beside the play area. Drawing tools, colors and size controls share its width, and tool rows scroll when their buttons cannot keep their tap targets. Odd Creatures unfolds in the center of the screen, then moves beside the credits as the camera pulls back. Consensio uses the readable width for its line, and Mind Meld uses larger reveal cards in both iPad orientations. Story Chain keeps its reading column, Guess my spot keeps its photo and map layout, and Ludo keeps its full-screen board.
-
-- Draw & Guess and Story Chain have four live reaction buttons, !, ?, laughter and a heart. Draw & Guess puts them under the partner status and above the canvas. Story Chain keeps them below the title while writing, reading or naming the story, including when the keyboard is open. Both partners can send them while the unfinished game is open on both phones. Each tap sends one temporary reaction through the existing relay and shows it on both screens. It rises from the bottom of the screen, just above the home indicator or the keyboard, at a random spot across the middle with a small tilt, and leaves through the top edge, the way live reactions do in a video call. Reduce Motion shows it at the bottom and fades it out. These reactions are not saved and send no push.
-
-- Odd Creatures remembers the last creature whose unfolding finished on this phone, separately for each signed-in person. Reopening shows the whole creature and its buttons immediately. Continue still starts the next turn.
-- Gameplay activity groups center within their play area. A portrait and status form one unit. Related status items share a compact centered row when their full text fits, then stack with centered wrapping text. Accessibility sizes stack the items without shrinking text. Waiting titles and hints stay close together. Board player scores, story paragraphs, inputs and history rows keep their own alignment. Presence uses the dedicated mint `paeoniaPresence` color, distinct from correct-answer and result feedback. The ring, hub presence chip, arrival pulse and spoken presence keep the same meaning.
-
-Decided on 2026-10-30.
-
-- Gameplay portraits use one steady green presence ring only while the partner has that game open. The ring pulses once when an absent partner arrives, then stays still. Opening a screen with the partner already present does not trigger it. Turn decoration, locked words and finished moves remain separate. Drawing uses its existing pencil and canvas cues. Mind Meld and Story Chain share typing dots in their existing status areas. Mind Meld requires its typing message, and Story Chain requires a fresh nonempty live draft, never title selection. Reduce Motion suppresses the arrival pulse and stops the dots, including when changed while visible. Presence is also spoken separately from progress in English and Norwegian Bokmal.
-
-Decided on 2026-10-27.
-
-- **Draw & Guess shows letter hints to both partners.** The drawer sees the same pink outline around letters the guesser revealed with "Show a letter". A custom word has a "Custom word" cue above the guesser's answer slots.
-
-- Finished games and their histories link to their game's ongoing conversation. The 2026-10-31 decision replaces the separate conversation per finished result. All four board games expose their stored past games.
-
-Decided on 2026-10-24.
-
-- **The game is "Four in a Row", never "Connect Four".** Connect Four is a Hasbro trademark, so no text a user or App Review sees may use it: copy, VoiceOver labels, pushes, the data export, the website and App Store text. The Norwegian name stays "Fire på rad". Internal names keep `connect_four` (`GameKind.connectFour`, catalog keys such as `connectFour.name`, type, file and asset names, the relay channel and stored data), because nobody sees them.
-
-Decided on 2026-10-23.
-
-- **"Not now" on a waiting game.** A full card under "Right now" that is there because the game waits for this person has a round "Not now" button in its top trailing corner. Tapping it moves the card down to the grid, takes the game off the Games tab badge and the app icon badge, and stops the 72-hour reminder for that turn. The game comes back by itself when the partner moves, a new result arrives, or the partner sends a new invite. A card that shows because the partner is in the game has no button, and the Us tab card has none either. The server stores the hide, so it holds on every phone of that person (`games:hide_waiting_game`, `game_hidden_waits`).
-
-Decided on 2026-10-18.
-
-- **Dropped games.** Touch, Air hockey and Battleship with date ideas are out. Touch is too thin to ship. Air hockey needs both phones side by side, because each phone shows only its own half of the table, and Paeonia is for couples who are apart. Battleship with date ideas makes the couple come up with date ideas, which is the hard part they would want help with.
-- **Guess my spot uses photos from the library.** There is no camera button. The couple may share their live location on the Home map, which would give away a photo taken right now, so the game is about where you were. Any photo in the camera roll can be sent, with no age rule. Memories are not a source.
-- **Guess my spot's spot comes from the photo.** The phone reads the photo's location. When it has none or it is wrong, the sender drops the pin. The sender always sees the spot on a map before sending and can move it, so nothing goes out that they didn't see.
-- **Guess my spot plays like Consensio.** The partners take turns, one photo each. It plays async with pushes, and live when both are in.
-- **Guess my spot scores on a log scale.** Up to 5000 points within 25 m, down to 0 at 20,000 km, and every 10 times closer adds the same points, because most photos come from near home. (2026-10-27)
-- **Guess my spot's screens.** The guess shows a small photo on top, tap to see it full screen, and a map under it that takes most of the screen to drop the pin. The map is Apple's standard map in Paeonia's dark look, with a button for satellite. On the reveal the map zooms out from the guess, a gold line draws to the real spot, the camera lands there and the distance counts up, then the photo comes back with the place name and date. Only where is guessed, not when. In the result, round points sit above the total so large totals stay on one line. The collapsed result shows both scores side by side, with numbers scaling down to fit.
-- **Guess my spot keeps a map of our places.** Every round becomes a pin on one shared map, and each pin opens its photo and both spots.
-- **Guess my spot strips the photo.** The phone removes the photo's metadata, such as the camera, the time and the location, before uploading. The spot travels on its own and stays hidden until the guess.
-- **Guess my spot is "Gjett hvor" in Norwegian.**
-- **Guess my spot follows the play style.** "Together" shows one shared total, "against each other" each partner's own points. Only the guesser scores. (2026-10-19)
-- **Guess my spot's guessed rounds show on the Memories tab's "Our places" map,** marked as from the game and left out of its countries and cities. The game's own map is "Our guesses". (2026-10-19)
-- **Guess my spot keeps the picker open until sending.** A picked photo can be swapped for another as often as the sender likes until the round is sent. A photo with no location the sender can't place is just swapped out, so there is no skip.
-
-Decided on 2026-10-21.
-
-- **Finished drawings, creatures and stories can be shared outside the app.** Draw & Guess (history and result), Odd Creatures (history and reveal) and Story Chain (history and the finished story) open the shared share sheet from a toolbar button (`Shared/Sharing/`). A drawing or creature leaves as a framed card on the plum canvas with a small Paeonia wordmark. A Story Chain story leaves as a typeset card, and also as plain text. The button waits until the result is on screen, so the picture never gives away a reveal. Either partner can share, since the couple made it together.
-
-Decided on 2026-10-14.
-
-- **How to play cards.** Ultimate Tic-Tac-Toe, Dots and Boxes, Mind Meld, Consensio and Guess my spot have three swipeable cards, each with one illustration and one or two sentences. They open by themselves the first time this phone opens the game, and again from "How to play" in the game's `…` menu or the long-press menu of its hub card. The other games still teach by playing. The cards are `GameTutorial` and `GameTutorialSheet` in `Features/Games/Shared/Tutorial/`, and the pictures are in the `GameTutorial` asset folder.
-
-Decided on 2026-10-13.
-
-- **Hub with several games.** The hub has two parts, so a game is never far down (decided on 2026-10-20). "Right now" shows a full-width card for each game the partner is in, then each game waiting for this person. Every other game is a small tile in a two-column grid below, headed "More games" (more columns on iPad, one with the largest text sizes). Both the waiting games and the grid put the game either partner played most recently first, so the games the couple plays rise to the top. A game neither partner ever opened comes after the played ones, in catalog order (decided on 2026-10-20). "Played" means the game screen was open: the server keeps one time per couple and game in `game_plays`, which an open screen moves forward every 5 minutes and closing it moves at once. Without a game for "Right now", "Today's pick" shows one full card instead, and the grid stays headed "More games" (decided on 2026-11-03). The pick is the same on both phones on a couple day. It rotates through all games in catalog order by the couple day, so opening games or updating their play history cannot change it during the day (`GamesViewModel.todaysPick`, fixed on 2026-11-07). Its card is the game's normal card, without "Not now". Above both, a small strip shows how many days in a row both partners played and how many days they played together in all, from `play_days` in the overview (`game_play_days`). A day counts when both partners had any game open on that couple day. The streak is forgiving: until today ends, a day without play yet keeps yesterday's run. The strip hides until the couple has played together once, and a streak under 2 days stays out. The full cards on the hub are short banners (`docs/games/hub-artwork.md`), so the first card and the next card's name fit on one iPhone screen. A tile is the same frame with the picture and its beat, the name and the status line, and a tap anywhere opens the game. Once the couple played a game, its tile shows their latest content in place of the objects, as a large rounded square on dark glass, with no frame, and the tile's backdrop takes the content's colors: the board, the last drawing, the finished creature, a map of the last revealed guess, the words, the story or the scale (decided on 2026-11-03). It has no badge, partner chip, button or history link, since every game screen links to its own history. A long press on a card or a tile shows the game's menu: its history, "Your mark" for a board game, and "How to play" for a game with tutorial cards (decided on 2026-10-28). Catalog order is the `GameKind` case order, most popular first: Ludo, Draw & Guess, Four in a Row, Mind Meld, Consensio, Guess my spot, Dots and Boxes, Ultimate Tic-Tac-Toe, Piccante, Story Chain, Odd Creatures. All cards and tiles share one frame (`GameHubCardFrame`): the game's own objects on a moving backdrop in their own colors, behind the whole card (`docs/games/hub-artwork.md`), the partner-here chip, an optional badge such as the score, the name, a status line, the main button, and optional extras such as "Our drawings". The card glows while the game waits for this person.
-- **Us tab with several games.** The Us tab shows one card: the game the partner opened most recently, while they have it open. It is the hub card without hub-only links, and it is the first card, above today's questions, because the partner waiting in a game is the one thing not to miss (decided on 2026-10-18).
-
-- **Finished creations take emoji reactions.** Either partner can put one emoji on a finished Draw & Guess round, Odd Creatures figure or Story Chain story, in the result and in the creation's history (decided on 2026-10-21). Unlike a star, a reaction is not private: the partner sees it, and a first reaction sends them one gentle push that follows the Games setting. It is the app's one reaction model (`reactions:set_reaction`, see `docs/implementation-map.md`, "Reactions"), so Draw & Guess's older love, laugh and wow reaction for the guesser is gone. The other games get none: Mind Meld, Consensio, Guess my spot and the board games are scored or guessed, so there is no finished piece of work to react to.
-- **Games don't save to Memories.** A creative game keeps its own history instead, such as the finished drawings of Draw & Guess. Each partner can star rounds in that history, and stars are private: the partner isn't told and a star doesn't change the game. This replaces the opt-in save prompt from 2026-10-11 and the save prompt details from 2026-10-12. Board games keep every finished game with its moves, so the couple can watch it again (decided on 2026-10-15, see "Past games" in `docs/games/board-games.md`). They have no stars. Quick duels keep no history.
-
-Decided on 2026-10-12.
-
-- **Draw & Guess is the first game.** Design in `docs/games/draw-and-guess.md`.
-- **Every game is crafted.** A game ships only when it passes the quality bar below. It is better to ship fewer games than to ship thin ones.
-- **First-time setup.** The Games tab opens on the hub, so both partners see every game before choosing anything. The first time a partner opens a game, a sheet asks for two couple settings: play style and game language. The partner who opens a game first completes setup. The other partner sees what was picked before their first game and can keep it or change it. The server remembers who has seen the settings (`game_settings.seen_by_user_ids`), so a reinstall or a new phone does not show them again. Then each partner without a drawn mark gets the canvas for their board game mark, and the game opens when that sheet closes. Cancel on the settings step leaves the person on the hub. There is no step where both must agree. Either partner can change a setting later, and the last change wins.
-- **Play style.** The couple chooses whether they like to play against each other or together as a team. "Against each other" gives each partner their own score and a winner. "Together" gives one shared score. Each game's design doc says how the game plays in each style. A game where scores make no sense can ignore the setting.
-- **Game language.** The couple picks a language they both understand. Word lists, decoy letters and other game content use it, whatever language each partner's app is in. The choices are the app's languages, English and Norwegian Bokmal. When both partners already use the same app language, setup preselects it.
-- **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
-- **Tab order.** Us, Chats, Games, Memories, More. Games sits in the middle.
-- **Tab badge.** The Games tab counts the turns, unseen results and open invites waiting for this person, except those put aside with "Not now" and those already there the last time the Games hub showed (decided on 2026-11-14). Opening the hub clears the badge, and the games stay under "Right now" with their glow, so a person can clear the badge without hiding a game. A new turn, result or invite counts again. The server keeps what was seen (`games:mark_waiting_games_seen`, `game_seen_waits`), so the app icon drops on every phone, and the 72-hour turn reminder still goes out. An unseen Draw & Guess result stays under "Right now" with a button to see the result and "Not now", even when the partner has the next turn. The badge loads at launch, before the tab is opened.
-- **One ongoing game per kind.** A couple has at most one active game of each kind.
-- **Turn reminder.** When a move has waited 72 hours, the partner whose turn it is gets one reminder. There is never a second one for the same move.
-- **Live is not deferred.** When a game's design includes live play, live ships in the game's first version.
-- **Invite to play.** Every game with live play has a "Tell [Name] you want to play" button. It shows when the partner doesn't have the game open. Tapping it sends the partner a push, "[Name] wants to play [game] with you", and opening the push goes straight into the game. A partner can send one invite every 15 minutes. Until then the button shows "Sent". Ludo shows it as a button under the board, which keeps its room while hidden, so the board never resizes. The other games have no room for it, so it is the first item in the game's `…` menu, with a bell icon. The toolbar keeps room for the chat button and the score that way. After a send the item reads "Sent", and a banner says when the next invite can go. (2026-11-04)
-- **Partner in a game on the Us tab.** While the partner has a game open, its card from the Games tab also shows on the Us tab, so an invite opens in one tap. Only the game the partner is in shows there. A game that waits for your turn stays on the Games tab. The Games tab shows the one the partner is in first under "Right now", then the games waiting for your turn, except those you put aside with "Not now" (decided on 2026-10-23).
-- **Partner opens a game on another tab.** When the partner opens a game while this person is on any tab but Us, a banner at the top says "Robin opened Ludo" with the partner's photo. It stays 7 seconds, longer than other notices, and tapping it opens that game. There is no banner while this person is already in that game or is answering a question. Leaving one of two open games shows nothing. `MainTabView.announcePartnerGame` owns it.
-- **Scores grow forever.** Scores never reset. There are no seasons or weekly matches.
-- **Partner's game on the Lock Screen.** When the partner opens any game, the other person's phones show a Live Activity that names the partner and the game and says whose turn it is, and a tap opens that game. It never shows a move. With nothing waiting it says "Robin is playing Mind Meld" and invites the person to join. On this person's turn it says "Your turn" with the game and the partner. On the partner's turn it says it waits for them. The turn comes from the same waits that count toward the Games badge, without invites. It follows the partner to another game in place. It stays when this person opens the game too, and its changes go quietly while they play. When the partner goes to another game, the Dynamic Island opens for a moment and the Lock Screen lights up, with no sound. A move or a result that waits for this person does the same with a sound, and it is the only alert for it. Its ordinary push waits while the activity says "Your turn" on one of their phones, and goes out once the activity is gone if the turn still waits. When the partner closes the game, the activity ends 60 to 90 seconds later when nothing waits for either of them, and 10 to 10.5 minutes later when a turn waits. When their app stops without a close, that wait starts once the server sees them gone, a minute or so after their last heartbeat. A partner who is back before the end keeps the same activity. None starts while this person has that game open, has game pushes off, or is with the partner that day, by a visit or by location. Each heartbeat of the partner's game screen, every 30 seconds, checks again, so one starts soon after this person leaves the game, turns pushes on, or the together day ends. An activity that was already running when they met keeps running and follows the partner. A phone that ends its own stale activity leaves it on the others. Turning game pushes off ends a running activity, and ending the relationship ends it on every phone. The activity names the partner on the Lock Screen whatever the lock screen detail setting says. Built in unit L1 of the distance program (2026-11-11), and on 2026-11-12 extended to every game with whose turn it is. `backend/convex/lib/liveActivities.ts` holds the rules.
-
-Decided on 2026-10-11.
-
-- **Games is the fifth tab.** It becomes a new `MainTab` case. Its position among the tabs is still open.
-- **Overflow plan.** If the tab bar ever needs a sixth entry, the You tab becomes a More tab. Memories keeps its own tab.
-- **Included in the subscription.** Games are part of the subscription the couple already has. There is no separate purchase and no per-game unlock. Use the same couple entitlement check as other paid features.
-- **No forfeits on a timer.** An async game waits as long as it needs to. This follows the forgiving-streak rule in `AGENTS.md`.
+- Photos come from the library only, with no camera button. The couple may share live location on the Home map, which would give away a photo taken right now, so the game is about where you were.
+- The spot comes from the photo's location. Without one, or when it is wrong, the sender drops the pin and always sees the spot on a map before sending.
+- The phone strips the photo's metadata before upload. The spot travels separately and stays hidden until the guess.
+- Scoring is logarithmic: up to 5000 points within 25 m, 0 at 20,000 km, with equal points per 10 times closer, because most photos come from near home.
+- Turn-taking, one photo each, async with pushes and live when both are in, like Consensio. The Norwegian name is "Gjett hvor".
+- Every round becomes a pin on one shared map ("Our guesses"). Guessed rounds also show on the Memories "Our places" map, marked as from the game and left out of its countries and cities.
 
 ## Quality bar
 
-Check every game design against this list before building it.
+Check every game against this before building it.
 
-1. **Fun within 30 seconds.** The first turn teaches the rules by playing. A game whose rules are hard to learn that way also gets illustrated "How to play" cards (see Decisions).
+1. **Fun within 30 seconds.** The first turn teaches the rules by playing. A game hard to learn that way also gets illustrated "How to play" cards.
 2. **Works apart.** Partners are often in different time zones, so every game works async. A game with live play also works when only one partner is online.
-3. **Only in Paeonia.** GamePigeon already offers classic board games inside iMessage. A game earns its place by using what only Paeonia has: the drawing canvas, the couple's shared context, and Memories.
+3. **Only in Paeonia.** GamePigeon already offers classic board games in iMessage. A game earns its place with the drawing canvas, the couple's shared context, or Memories.
 4. **A designed reveal.** The moment a partner sees the other's move gets the most attention to timing, haptics and animation.
-5. **Hand-written content.** Word lists and prompts are written by hand for each language, never translated filler.
+5. **Hand-written content.** Word lists and prompts are written by hand per language, never translated filler.
 6. **Ends gently.** No abandoned games, no guilt, no punishment for slow replies.
 
-## Architecture
+## Architecture rules
 
-Proposed. Two transports already exist, and they suit different jobs.
+- **Convex owns the state of every game.** The relay (`relay/`, a Worker with one Durable Object per couple, 30 to 80 ms phone to phone, stores nothing) carries only continuous movement that never needs saving, such as strokes and finger positions. Turns, scores, hidden information, history and push go through Convex (100 to 300 ms). Simultaneous-reveal games run on Convex alone.
+- **Hidden information never reaches the other phone.** Each kind returns a per-user projection of its state, never the whole row.
+- **Relay sockets close after 10 minutes.** A live game reconnects with a fresh ticket and refetches state from Convex.
+- **Reaction games compare reaction times, not arrival order.** Each phone measures from when its own screen showed the signal, scheduled at a shared future time with clock offset from a relay ping.
+- **Game data joins relationship end and account deletion cleanup** through `deleteCoupleGameRows` in `lib/gameRegistry.ts`.
+- **Pushes.** Lock-screen text names the game and that it is your turn, never the move, a drawing or written content. While the app is open, game pushes show no system banner or sound. Alerts collapse per game kind and couple.
+- **Localization.** All game copy goes through the String Catalog in English and Norwegian Bokmal. Word lists exist in both languages. A dictionary-based game needs licensed lists for both.
 
-| | Relay (`relay/`, Worker plus one Durable Object per couple) | Convex |
-|---|---|---|
-| Latency | Phone to phone, about 30 to 80 ms | Mutation then subscription update, about 100 to 300 ms |
-| Storage | None. Forwards messages and forgets them | Saved, validated, authorized |
-| Use for | Continuous streams: finger positions, strokes | Turns, scores, hidden information, history, push |
+## Catalog
 
-Convex owns the state of every game. The relay carries only movement that never needs saving. Games built on simultaneous reveal (both act, then both see the result) run on Convex alone.
+All shipped games have their own doc in `docs/games/`. The relay channel and backend kind names are in `GAME_KINDS` (`backend/convex/lib/validators.ts`).
 
-### Relay changes
+| Game | Own doc |
+|---|---|
+| Draw & Guess, the first game | `draw-and-guess.md` |
+| Mind Meld | `mind-meld.md` |
+| Exquisite corpse | `exquisite-corpse.md` |
+| Story Chain | `story-chain.md` |
+| Four in a Row, Dots and Boxes, Ultimate Tic-Tac-Toe | `board-games.md` |
+| Ludo | `ludo.md` |
+| Consensio | `consensio.md` |
+| Guess my spot | `guess-my-spot.md` |
+| Piccante | `piccante.md` |
 
-- Today every socket for a couple joins one room, capped at `MAX_SOCKETS_PER_ROOM = 4` (Home and the canvas on two phones). Games would hit the cap. Built: the relay ticket has an optional channel claim `ch`, and the Worker routes with ``getByName(`${coupleId}:${channel}`)``, so each game gets its own room. A ticket without a channel still joins the couple's canvas room. The channel is the game kind. The Worker accepts only the channels in `ALLOWED_CHANNELS` (`relay/src/ticket.ts`), which lists every kind, and `games:create_game_live_ticket` issues the game tickets.
-- Sockets close after `SESSION_MS` (10 minutes). A live game must reconnect with a fresh ticket and fetch the current state again from Convex or from the phone that owns it.
-- The relay reads nothing it forwards. The app defines the message format, as `WidgetDrawing/Live/WidgetLiveMessage.swift` does for drawing.
-- Built: each game has its own message type next to the drawing messages, on the same socket. The type conforms to `GameLiveMessage` and names its game, and `GameLiveChannel` sends and receives it (`Features/Games/Live/GameLiveChannel.swift`). On the wire a game message is `{"game": "<game>", "message": {...}}`, and the connection routes anything with a `game` key to the channel. To add live messages to a new game, declare its message type and open a `GameLiveChannel` on a connection made with `GameLiveTicket.provider(for:)`. Build the room with `GameLiveRoom.make(kind, coupleID:role:)`. Messages sent while offline are dropped, so a game sends its whole state each time and sends it again when the partner arrives (`WidgetLiveDrawing.onPartnerArrived`). `DrawAndGuessLiveMessage` is the first one.
+The hub picture standard is `hub-artwork.md`.
 
-### Convex model
-
-- Shared tables, keyed by `kind` where it matters: `game_settings` (the couple's play style and language), `game_invites` (each partner's last invite per game, and when the partner answered it by opening the game), `game_plays` (when either partner last had each game open), `game_play_days` (who had any game open on each couple day), `game_hidden_waits` (what each person put aside with "Not now", by kind). Who has which game open lives in the `@convex-dev/presence` component, one room per couple and game (`backend/convex/lib/presence.ts`). `games:get_games_overview` returns all of them for the app.
-- Each game has its own tables, named with its kind as a prefix. Draw & Guess came first, so its tables are `games` (one row per couple, without a `status` column because the game never ends), `game_moves` (one row per round), `game_guesses` and `game_used_words`. Follow the snake_case and uuid conventions in `backend/convex/schema.ts`.
-- Draw & Guess has one mutation per action (`pick_draw_word`, `submit_drawing`, `submit_guess`, `give_up_round`), each checking access, turn ownership, and round state. Proposal for board games: one `make_move({ game_id, expected_version, move })` mutation. It checks couple access, whose turn it is, and the version, then runs a pure rules function for that `kind`. A stale version fails instead of overwriting.
-- A `view_for(state, user_id)` function per kind. Queries return only that projection, so hidden information (unrevealed answers, the drawing under the fold) never reaches the other phone.
-- Game data joins relationship end and account deletion cleanup. `deleteCoupleGameRows` in `lib/gameRegistry.ts` deletes the shared rows and calls each game's `deleteCoupleRows`.
-- A creative game keeps its own history in its own tables, such as the finished rounds and drawings of Draw & Guess. Stars are favorites, one shared `favorites` table with one row per person and item. Nothing is copied into `memories`.
-
-### Real-time fairness
-
-Reaction games compare reaction times, not arrival order. Each phone measures from the moment its own screen showed the signal. Both phones schedule the signal for a shared future time, with clock offset measured by a ping over the relay.
-
-### Notifications
-
-- Turn notifications go through `enqueueGamePush` and `lib/notificationCopy.ts`. While the app is open, game pushes and game reactions never show a system banner or play a push sound. Live game cues and the existing partner-presence banner provide the in-app notices. The one exception is the partner's game Live Activity. Its start, the partner's move to another game and a move that waits for this person carry an alert, and the app cannot hold it back. Only the move has a sound, with the night rule of the game push it stands in for. That push waits until the activity is gone.
-- Alerts collapse per game kind and couple. Opening a game clears its delivered alerts. Queued invites send only while the same invite is unanswered and less than 15 minutes old.
-- Lock-screen text names the game and that it is your turn. It never shows the move, a drawing, or written content.
-- After a few days without a move, send at most one gentle reminder, then stay quiet.
-- A "Your move" widget fits the existing widget target. It is optional for the first release.
-
-### Localization
-
-All game copy goes through the String Catalog in English and Norwegian Bokmal. Game content such as word lists follows the couple's game language, so every list needs both languages. Any dictionary-based game needs licensed word lists for both.
-
-## Game catalog
-
-Effort is relative: S reuses most existing code, L needs a large new engine or content.
-
-### Real-time (both online)
-
-| Game | Transport | Own history | Effort |
-|---|---|---|---|
-| Draw & Guess | Relay strokes, Convex round state | Yes, the drawings with stars | S |
-| Mind Meld | Convex, relay for presence and typing | Yes, the word trails | S |
-| Reaction duel | Relay, Convex for results | No | S |
-
-- **Draw & Guess.** The native "Build with shapes" form creates PencilKit marks with shape, position, size and color controls, with replacement, removal and undo. It uses the same local draft and send pipeline as finger drawing. Geometry readouts contain only visible stroke information. An optional author-written description travels with the full drawing through its local draft and upload queue, then appears beside the sent clue and in history. The author is told to describe visible marks without naming the secret answer. No answer or word is inserted automatically. Freehand object recognition remains unavailable. The first game. It plays async, with live watching when both are online. Its full design is in `docs/games/draw-and-guess.md`.
-- **Mind Meld.** Built. Both type a word at the same time and the words are revealed together. Each next round, both try to name a word that connects the last two. You win when you say the same word. Live play shows when the partner is here, typing or locked in. Its design is in `docs/games/mind-meld.md`.
-- **Reaction duel.** Tap when the flower opens. Uses the fairness rule above.
-
-### Async (one turn, then hours of waiting)
-
-| Game | Hidden information | Own history | Effort |
-|---|---|---|---|
-| Exquisite corpse | Yes | Yes | M |
-| Story chain | No | Yes | S |
-| Consensio | Yes, the real spot until the guess | Yes, every revealed round | M |
-| Guess my spot | Yes, the location until the guess | Yes, a map of every round | M |
-| Four in a Row, Dots and Boxes, Ultimate tic-tac-toe | No | Yes, every finished game to watch again | S each |
-| Piccante | Yes, hidden chilis and notes | Yes, results in game chat | M |
-| Chess | No | No | L |
-| Wordfeud-style word game | Yes, the tile rack | No | L |
-
-- **Exquisite corpse.** The same native shape form creates real strokes for each part. Accessible strip descriptions read only the already clipped previous strip. They never read the full previous part or unfinished hidden parts. Only the final finished figure exposes each full part's authored description and geometry. A clipped strip never carries full-part text. Optional descriptions stay with local drafts and queued full drawing uploads; the author can correct them after sharing. Missing descriptions are explicit. Built. Partners take turns drawing the head, body and legs of a figure, and each sees only the bottom 12% of the part before. The whole figure unfolds part by part at the end and goes to "Our creatures". It plays live with a folded paper view and async with pushes. The toolbar title names the part to draw. A light bulb and question mark for ideas sit centered above the canvas. Its full design is in `docs/games/exquisite-corpse.md`.
-- **Story Chain.** Built. The partners write one story together, one or two sentences a turn. A writer can dare the partner to use a word in the next line, and the partner who did not write the last line names the story. Live play shows the partner's letters as they are typed, with letters past the line limit in red. Its design is in `docs/games/story-chain.md`.
-- **Consensio.** Built. One partner puts a marker where they honestly stand on a line between two ends, such as how they feel about camping. The other guesses where it went, and the reveal scores how close they came. It plays async with pushes and live with the guess marker moving on the placer's screen. Its design and the decisions are in `docs/games/consensio.md`.
-- **Guess my spot.** Built. Send a photo from your library, and the partner drops a pin on a map where they think it was taken. The score is by distance, and the sender's spot stays hidden until the guess. It plays async with pushes and live with the guesser's map view showing on the sender's map, without their pin. Its design is in `docs/games/guess-my-spot.md`, with the decisions from 2026-10-18 above.
-- **Board games.** Four in a Row, Dots and Boxes and Ultimate Tic-Tac-Toe share one turn engine (`make_move` with a pure rules function per kind). Each partner's own drawn mark is on every piece, the starter can play for something, and Dots and Boxes uncovers a random photo from Memories, stories or Guess my spot. Built. Design in `docs/games/board-games.md`.
-- **Ludo.** The fourth board game, on the same engine. Two pawns each race round the classic cross board. The phone rolls the die and the roll is part of the move, so a move can still be made offline. Design in `docs/games/ludo.md`.
-- **Piccante.** A dark chili badge and gold chocolate outline mark your hidden placement. Confirmed bites share a server playback deadline and recording, with clock offset sampling on each phone. Each partner secretly hides a chili in a chocolate box, then partners alternate bites. Every chili burns, including your own. One private sniff and live lifted chocolates allow bluffs. Results stay in the game chat. Its sounds are CC0 recordings, with provenance in `docs/games/piccante.md` alongside the design and function contract.
-- **Chess and word games.** Popular but expensive. Chess needs a rules engine. A word game needs licensed English and Norwegian dictionaries. Deferred.
+Not built: Reaction duel (tap when the flower opens, using the fairness rule above). Deferred as expensive: chess (needs a rules engine) and a Wordfeud-style word game (needs licensed English and Norwegian dictionaries).
 
 ## Adding a game
 
-The checklist for building a game. All eleven kinds are already registered on the backend (`GAME_KINDS` in `lib/validators.ts`), in the relay (`ALLOWED_CHANNELS`) and in Swift (`GameKind`). A kind shows nowhere in the app until its hub model is in `GamesViewModel.games`. Add your lines at the points below and leave other games' lines alone. Draw & Guess is the worked example for every point.
+All kinds are registered on the backend (`GAME_KINDS`), the relay (`ALLOWED_CHANNELS`) and Swift (`GameKind`). A kind shows in the app only once its hub model is in `GamesViewModel.games`. Draw & Guess is the worked example for every point. Add your lines at these points and leave other games' lines alone.
 
-### Names
+- **Naming.** Backend module `backend/convex/<camelKind>.ts` with helpers in `lib/<camelKind>.ts`. Tables start with the kind. Swift types, files, `GamesDestination` and `SyncPendingOperationKind` cases, and `DeveloperScenario` members start with the Swift prefix. String Catalog keys start with the Swift prefix. Deep link `paeonia://games/<kebab-kind>`.
+- **Backend.** Tables in `schema.ts` with a `couple_id` index. Check access with `getCurrentEntitledCoupleId` or `requireCoupleAccess` (`lib/access.ts`). Replace your `null` in `GAME_BACKENDS` (`lib/gameRegistry.ts`) with a `GameBackend`. Queue pushes with `enqueueGamePush` and add your entry to `GAME_PUSH_COPY` in `lib/notificationCopy.ts` first. Invites, presence, live tickets, settings and "Not now" need nothing, because `games.ts` takes every kind.
+- **Relay.** Nothing.
+- **iOS.** Follow the Draw & Guess pattern for the gateway, cache, live feed, `GameHubModel`, `GamesDependencies`, `GamesPendingOperationRegistry`, `GameScreenLoops` heartbeat, `GameLiveChannel`, `GameAttention`, `GameChatScreen` and developer scenarios. Read play style and language from the overview and never ask for them in your game. Reuse `Features/Games/Shared/` (reload gate, stars, canvas, stroke replay) instead of copying code. Play a `GameSound` next to each haptic, following [the audio standard](game-audio.md). Clear your cache in `LocalPrivacyPurgeService`.
+- **Checks.** `npm run typecheck` and `npm test` in `backend/`. Test on a local backend (`scripts/local-backend`). A branch never deploys to `api.paeonia.no`, because a deploy replaces every function there, including other games'.
+- **Ownership.** A game owns its iOS folder, tests, backend module, tables and design doc. Do not change Draw & Guess's tables or code except to move code you reuse into `Features/Games/Shared/` while Draw & Guess behaves the same. Shared files take small additions at the points above. Ask the developer before a real change to a shared seam.
+- **Merging.** Conflicts at the registry points and in `Localizable.xcstrings` are two lists growing. Keep both sides and merge the String Catalog by key. Anything more, stop and ask.
 
-| kind (backend, relay channel) | Swift prefix | URL path `paeonia://games/<path>` | Folder `ios/PaeoniaApp/Features/Games/<Folder>` | Design doc |
-|---|---|---|---|---|
-| draw_and_guess | drawAndGuess / DrawAndGuess | draw-and-guess | DrawAndGuess | docs/games/draw-and-guess.md |
-| mind_meld | mindMeld / MindMeld | mind-meld | MindMeld | docs/games/mind-meld.md |
-| exquisite_corpse | exquisiteCorpse / ExquisiteCorpse | exquisite-corpse | ExquisiteCorpse | docs/games/exquisite-corpse.md |
-| story_chain | storyChain / StoryChain | story-chain | StoryChain | docs/games/story-chain.md |
-| connect_four | connectFour / ConnectFour | connect-four | BoardGames/ConnectFour | docs/games/board-games.md |
-| dots_and_boxes | dotsAndBoxes / DotsAndBoxes | dots-and-boxes | BoardGames/DotsAndBoxes | docs/games/board-games.md |
-| ultimate_tic_tac_toe | ultimateTicTacToe / UltimateTicTacToe | ultimate-tic-tac-toe | BoardGames/UltimateTicTacToe | docs/games/board-games.md |
-| ludo | ludo / Ludo | ludo | BoardGames/Ludo | docs/games/ludo.md |
-| consensio | consensio / Consensio | consensio | Consensio | docs/games/consensio.md |
-| guess_my_spot | guessMySpot / GuessMySpot | guess-my-spot | GuessMySpot | docs/games/guess-my-spot.md |
-| piccante | piccante / Piccante | piccante | Piccante | docs/games/piccante.md |
+## Accessibility rules
 
-- Backend: module `backend/convex/<camelKind>.ts` (function paths `<camelKind>:<name>`), helpers in `backend/convex/lib/<camelKind>.ts`, tests next to them. Tables start with the kind, such as `mind_meld_rounds`. The board games share `boardGames.ts`, `lib/boardGames.ts`, `board_games` and `board_game_*`.
-- Swift: every type, file, `GamesDestination` case, `SyncPendingOperationKind` case and `DeveloperScenario` static member starts with the Swift prefix, such as `MindMeldHubModel` and `mindMeldReveal`. Tests go in `ios/PaeoniaAppTests/Games/<Folder>/`. Board games share `Features/Games/BoardGames/Shared/`.
-- String Catalog keys start with the Swift prefix, such as `mindMeldRevealTitle`, so each game's keys sit together. Add English and Norwegian Bokmal for every key. Keys that start with `games` belong to the shared tab.
-
-### Backend
-
-1. Tables in `schema.ts`, in your own block after the Draw & Guess tables. Every table gets a `couple_id` index.
-2. Registered functions in your module. Check access with `getCurrentEntitledCoupleId` (`lib/access.ts`) or `requireCoupleAccess`, find the partner with `requirePartnerId`, and read the couple's settings with `requireGameSettings` (these three are in `lib/games.ts`). A turn counts toward the streak through `applyCoupleActivity` with `activity_kind: "game_turn_completed"`.
-3. `lib/gameRegistry.ts`: replace your `null` in `GAME_BACKENDS` with your `GameBackend`. `pushStillWanted` and `deleteCoupleRows` (every table of yours) are required. Add `sendDueTurnReminders` if your game has turns (one reminder after `TURN_REMINDER_AFTER_MS`, never a second for the same move) and `onLanguageChanged` if it offers content in the game language. Add `waitingFor` if a game can wait for one partner. It returns one `GameWait` (`{ kind, key }`, in `lib/games.ts`) for each game of yours where it is the user's turn or the user has not seen the newest result, and the turn's key when both are true. The key must change with every new turn and every newer result, such as `turn:<game id>:<turn_started_at>` or `result:<round id>`, because a wait hidden with "Not now" comes back when its key changes. `gamesWaitingFor` counts the waits that are not hidden or seen on the Games tab, for both badges. A game whose play needs both partners online leaves it out. Media you store is deleted by the couple media sweep in `lib/relationshipCleanup.ts`. A game that uploads files adds its `reserved_parent_kind` and `upload_purpose` next to Draw & Guess's `game_move` and `game_drawing_payload`: the literals in `schema.ts`, the reserve check in `media.ts` (`create_pending_media_upload`), `canReadMediaAsset` in `lib/mediaAssets.ts`, and `mediaAssetHasLiveReference` in `lib/mediaOrphans.ts`.
-4. Pushes: queue them with `enqueueGamePush` (`lib/games.ts`) as `game_turn_ready`, `game_result`, `game_invite` or `game_turn_reminder`. Before your first push, add your entry to `GAME_PUSH_COPY` in `lib/notificationCopy.ts`. Lock-screen copy names the game and whose turn it is, never the move or written content. When one push kind needs different words at different moments, such as the last line of a story, pass `step` to `enqueueGamePush` with a fixed token you choose (`last_line`, never content) and give it a title and body under `steps` in your copy entry. The deep link is filled in from the kind.
-5. Nothing to add for invites, presence, live tickets, settings or "Not now". `send_game_invite`, `set_game_presence`, `create_game_live_ticket`, `hide_waiting_game` and `get_games_overview` in `games.ts` take every kind.
-6. Run `npm run typecheck` and `npm test` in `backend/`.
-
-### Relay
-
-Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`.
-
-### iOS
-
-1. Data: your gateway protocol and `Live<Prefix>Gateway`, your models, your cache, and your live feed, all in your folder. Register the feed in `Services/Live/LiveFeedRegistry.swift`, and clear your cache in `Storage/Privacy/LocalPrivacyPurgeService.swift` next to `gamesCache.clearAll()`. The feed posts `LocalStoreChanges.post(.games, ...)` after each write, so the tab re-reads. `GamesCache` holds the shared overview plus Draw & Guess's sections, so keep your data in your own cache, kept in a `GamesDocumentStore` like the others (one file per person, read once and kept in memory, written only when it changes). Return `data_epoch: dataEpoch()` from your state query. Your cache's `isOlder(than:)` must return false when the two states have different `dataEpoch` values, so phones take the server's copy after a restore.
-2. `Features/Games/Data/GamesDependencies.swift`: add your dependency fields after `now`, each with a default that works offline, and set the live ones in `GamesDependencies.live()`.
-3. A hub model that conforms to `GameHubModel` (`Features/Games/Hub/GameHubModel.swift`), such as `DrawAndGuessHubModel`. Its `card` builds a `GameHubCardFrame` with your artwork, status line, action title, and any badge or extras. The artwork follows `docs/games/hub-artwork.md`. Its `screen(for:)` returns your screens. `isYourTurn` puts the card under "Right now", unless the overview's `hidden_kinds` says this person tapped "Not now" on it. The frame draws that button from `GameHubCardContext.hide`, so your card needs no code for it. The Games tab badge comes from the server's `waitingFor` hook for the game (`gamesWaitingFor` in `backend/convex/lib/gameRegistry.ts`), the same count the app icon uses.
-4. `Features/Games/Hub/GamesViewModel.swift`: add `let <camelKind>: <Prefix>HubModel`, its line in `init`, and add it to `games`. From then on the game has its hub card (a full card under "Right now" while the partner is in it or it is your turn and you have not tapped "Not now", otherwise a tile in the grid), the Us tab card while the partner is in it, and deep links and pushes that open `.game(.<kind>)`.
-5. `GamesDestination` (same file): your extra screens, such as a history, get cases with your prefix. Your main screen is `.game(.<kind>)`.
-6. Settings: read play style and language from the overview, `dependencies.cache.document(ownerUserID:).overview?.settings`. Setup is shared, so never ask for them in your game.
-7. Presence and invites: your view model owns a `GameScreenLoops` (`Features/Games/Models/GameScreenLoops.swift`). Call `loops.beginHeartbeat()` while the screen is open and the app is active, and `loops.endHeartbeat()` when the screen closes or the app goes to the background. The heartbeat sends `setPresence(.<kind>, isPresent: true)` every `GamePresence.heartbeatInterval`. Presence writes go out one after another, so `false` always lands last, and the `false` runs in a background task. `loops.beginObserving` and `loops.beginTicking` run the reload on local changes and your clock tick. Read whether the partner is here (`partnerPresent`) and your last invite from `overview.presence(for: .<kind>)`. Draw & Guess reads these fields from its own game-state snapshot. Presence stays in memory, clears when the live feed fails or stops, and is left out of persisted snapshots. For invites, judge the invite with `GameInviteState.make`, and send invites with `dependencies.gateway.sendInvite(.<kind>)`.
-8. Live play: a message type that conforms to `GameLiveMessage`, sent through a `GameLiveChannel` on a `WidgetLiveConnection` made with `GameLiveTicket.provider(for: .<kind>)`.
-9. Queued writes: `SyncPendingOperationKind` cases in `Services/Sync/SyncTypes.swift`, and your handlers in `Features/Games/Data/GamesPendingOperationRegistry.swift`.
-10. Developer scenarios: a new file `App/DeveloperScenarios/DeveloperScenario+<Prefix>.swift`, like `DeveloperScenario+MindMeld.swift`. Each scenario is a `static let` with its id, title, detail, category `.games` and the screen it opens, and one `static let <camelKind>: [DeveloperScenario]` lists them in menu order. Add that list to `allCases` in `DeveloperScenario.swift`. Also add your dependency fields in `DeveloperGamesScenarioFactory.dependencies(for:)` so the hub scenarios show your card.
-11. Shared pieces: take the reload gate (`GameReloadGate`), stars (`FavoritesStore`, `FavoriteStarButton`) and drawing pieces such as the canvas and stroke replay from `Features/Games/Shared/` instead of copying Draw & Guess code.
-12. Sounds: play a `GameSound` next to each haptic. Follow [the audio standard](game-audio.md) for imports, synthesis and playback levels. The shared level replaces per-screen volume numbers. The app's `.ambient` audio session mixes with the person's music and respects the silent switch.
-13. Turn and partner cues: next to your resolver, derive a `GameAttention` (`Features/Games/Shared/Attention/`) from the state. Its `turn` names the partner's move that made it this person's turn, and stays nil when their own move did. Its `partnerStep` names a partner move that needs them without handing over the turn. Your view model owns a `GameAttentionCue`, feeds it at the end of every `recompute()` while the screen is open, and resets it in `stop()`. The cue plays the shared knock and step haptics and their sounds, so a view never plays its own "your turn" haptic.
-14. Chat panel: `GameChatScreen` (`Features/Games/Shared/Layout/GameChatShrink.swift`) shrinks every Games screen as a whole while its chat panel is open, keeps the chat's keyboard from moving your layout, and opens the chat on a swipe up. Three things are yours. Bottom controls in a `paeoniaBottomBar` or in the pinned bottom of `GamePhaseLayout` or `GameFocusedLayout` already report their top edge, and the panel covers the screen from there down. A bar of your own reports it with `paeoniaBannerBottomEdge()`, which the notice banner needs too. Call `gameToolbarShowsInfo()` when your navigation bar shows something about the game, such as the score, or the panel leaves the bar out. Put `keepsVerticalDrags()` on a SwiftUI view whose own gesture uses vertical drags, so a swipe that starts there does not open the chat. A PencilKit canvas, a map and a RealityKit scene are found without it (`GameChatSwipe.swift`).
-
-### Ownership
-
-- Your game owns its iOS folder, its tests, its backend module and helper file, its tables, and its design doc.
-- Do not change Draw & Guess's tables or refactor its code. The one exception is the Exquisite corpse thread, which may move drawing code it reuses (canvas, stroke replay, live stroke messages, stars) into `Features/Games/Shared/` and shared backend helpers, as long as Draw & Guess behaves the same. It has moved the canvas, stroke replay, drawing components, layout, stars and history drawings so far, and a later drawing game reuses them from there (map in `docs/implementation-map.md`).
-- Shared files take small additions at the points above. If a shared seam needs a real change, ask the developer first.
-- In this file, edit only your own catalog bullet and the "Order" and "Open questions" lines about your game. Everything else goes in your design doc.
-
-### Merging
-
-- Commit on your own branch, signed, at most about three logical commits per game. When you hand back, push the branch and open a ready pull request with `gh`.
-- Before you hand back, rebase onto local `main`. Conflicts at the registry points and in `Localizable.xcstrings` are two lists growing: keep both sides, and merge the String Catalog JSON by key so it stays valid. If a conflict is anything more, stop and ask.
-- Ask the developer before you fast-forward local `main` to your branch. Whoever merges second rebases again.
-- Test your branch on its own local backend with `scripts/local-backend` ([Testing a branch on a local backend](../backend/AGENTS.md#testing-a-branch-on-a-local-backend)). A branch never deploys to `api.paeonia.no`, because a deploy replaces every function there, including other games'. Only local `main` deploys, through `scripts/deploy-backend`. Relay deploys need the developer's OK.
-
-## Order
-
-Draw & Guess comes first. It builds the turn engine, the drawing replay and the history with stars. Exquisite corpse reuses all three from `Features/Games/Shared/` and is built. Mind Meld is the cheapest game that tests a simultaneous reveal on Convex. The board games are built with their Paeonia twist: a drawn mark, a stake and a hidden photo.
+- With iOS Differentiate Without Color, Increase Contrast or Paeonia's High contrast switch on, board pieces add an owner symbol (circle for player one, diamond for player two) beside the mark and in player headers. Ludo cap textures never show it.
+- Both drawing games lock canvas edits, shape controls, undo, redo, fill and clear while the captured drawing is queued, so edits made after capture are never silently dropped. A failed queue unlocks the same drawing.
+- Neither drawing game expires the artist's turn, and Draw & Guess guessing has no deadline. "Against each other" awards an optional speed bonus for 15 or 30 seconds from the first received live stroke or replay-ready clue, including time reading a description, with no pause. "Together" has no speed bonus. Whether competitive reading time is usable is untested.
+- Shape composition, geometry readouts and authored descriptions do not make freehand drawing recognizable to blind players. The task and device gate is in [the accessibility report](accessibility-report.md).
+- More > Accessibility controls optional visible tools (extra controls, media descriptions). They default to off and show even while assistive technology is active.
 
 ## Open questions
 
-- Which game comes after Draw & Guess.
-
-### Accessibility participation and send safety
-
-With iOS Differentiate Without Color, iOS Increase Contrast or Paeonia's High contrast switch on, SwiftUI board pieces add an owner symbol, a circle for player one and a diamond for player two. The mark shrinks toward one corner and the symbol sits in the free corner, in the mark's own color. Player headers show the same symbol beside the name. Otherwise pieces show only the mark. Ludo cap textures render without the environment and never show the symbol.
-
-Both drawing games lock canvas edits, native shape controls, undo, redo, fill and clear while the captured drawing is being queued. A failed queue unlocks the same drawing for recovery. A successful queue cannot silently drop edits made after capture because mutating controls refuse them during that interval.
-
-The full task and device verification gate is in [the accessibility report](accessibility-report.md). Shape composition, geometry readouts and authored descriptions do not establish blind freehand recognition or prove fair participation without testing. Neither drawing game expires the artist's turn. Draw & Guess guessing also remains available without a deadline. Against each other awards an optional speed bonus for 15 or 30 seconds from the first received live stroke or replay-ready clue, including time spent reading a description; it has no pause or extension. Together already omits speed bonuses. This work preserves those rules, and leaves competitive reading-time usability pending.
+- Which game comes after the current catalog.

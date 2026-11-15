@@ -26,24 +26,15 @@ What the export cannot hold, and the README says so: usage statistics at PostHog
 
 ## Design
 
-A "Download my data" request is a job, not a request-response call, because years of photos do not fit in one transaction or one action.
+A "Download my data" request is a job, not a request-response call, because years of photos do not fit in one transaction or one action. `dataExport.ts` and `dataExportBuild.ts` hold the flow.
 
-1. `dataExport:request_data_export` (mutation) checks the session, refuses a pending account deletion, applies the `dataExportRequest` rate limit (3 a day), replaces any earlier finished download, inserts a `data_exports` row and schedules `dataExportBuild:collect_data`. A request while one is building returns the running job.
-2. `collect_data` (a Node action) reads the registry tables one by one through paged internal queries. It cuts each table into JSON files of about 4 MiB (`PAEONIA_EXPORT_CHUNK_BYTES`), deflates them and stores each one as a `_storage` blob with a `data_export_chunks` row, so a table is never held whole. After five minutes (`PAEONIA_EXPORT_COLLECT_BUDGET_MS`) it stops between tables and schedules itself to go on. A table that fits in one file is `folder/table.json`. A bigger one is `folder/table-001.json`, `-002.json` and so on. Tables that others read keys from (`child` tables and `referencedBy`) are read again from the database when the action went on in a new run.
-3. When the last table is collected, the same action plans the zip files: the data files first, then the media files, with part 1 keeping 1 MiB free for the README and `manifest.json`. `build_part` then builds one zip file per action, chained through the scheduler. It adds the data files and media files planned for that part, and for part 1 the README and `manifest.json`, which says which zip file holds each file. A zip file never holds more than 96 MiB (`PAEONIA_EXPORT_PART_LIMIT_BYTES`), and once a part is stored its data files are deleted. A data file or zip file that was stored but could not be recorded is deleted at once (`storeAndRecord` in `lib/dataExportFiles.ts`). No action holds more than one zip file or runs long, so neither the memory nor the ten-minute action limit grows with the size of the account.
-4. The last part marks the export `ready`, sets `expires_at` three days out and queues the `data_export_ready` push.
-5. The app subscribes to `dataExportStatus:get_data_export` (status, progress from 0 to 1, counts). When it is ready, `create_data_export_download_links` returns one signed `GET /data-export` link per zip, valid for an hour. The app downloads them and hands the files to the share sheet.
-6. The hourly `expire-data-exports` job deletes the zip files after three days and gives up on builds older than two hours. A person can delete a finished download at once. Account deletion deletes all of them. `media:sweep_orphan_storage` knows the parts and data files, so it does not delete them.
-
-Links are signed with `PAEONIA_MEDIA_URL_SECRET` and a `data-export.` prefix, like `GET /media`. The signature is the only credential, so a link works for its hour without an auth header, and a download that has expired or been deleted answers 404.
-
-An export is never made at request time, never stored longer than three days, and a failure leaves no files behind (`failed` status, the person can ask again).
+- A zip file never holds more than 96 MiB (`PAEONIA_EXPORT_PART_LIMIT_BYTES`).
+- Download links are signed with `PAEONIA_MEDIA_URL_SECRET` and a `data-export.` prefix, like `GET /media`. The signature is the only credential, so a link works for its hour without an auth header, and an expired or deleted download answers 404.
+- An export is never made at request time, never stored longer than three days, and a failure leaves no files behind (the person can ask again).
 
 ## One registry keeps it complete
 
-`backend/convex/lib/dataExportRegistry.ts` lists every table in `schema.ts`: how its rows tie to a person (`own`, `couple`, or `child` of an exported table), the index to read them with, the fields to hide, an optional `select` that keeps or reshapes a row, and a plain-language description in English and Norwegian. A table that holds no personal data of the person is `excluded` with a reason.
-
-`TABLE_EXPORTS` is typed `{ [T in TableNames]: TableExport }`, so a new table without an entry fails `npm run typecheck`. `lib/dataExportRegistry.test.ts` checks the same at run time and also checks that every field and index named in an entry exists, that fields that look like secrets are hidden, that parents come before children, and that every exclusion has a reason.
+`backend/convex/lib/dataExportRegistry.ts` lists every table in `schema.ts`. `TABLE_EXPORTS` is typed `{ [T in TableNames]: TableExport }`, so a new table without an entry fails `npm run typecheck`, and `lib/dataExportRegistry.test.ts` checks the entries.
 
 When you add a table:
 

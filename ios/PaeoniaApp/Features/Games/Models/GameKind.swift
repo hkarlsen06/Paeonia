@@ -1,8 +1,8 @@
 import Foundation
 
-/// Every game, in the catalog order of `docs/games-plan.md`. The hub lists
-/// games in this order. A kind is registered before its game is built, and it
-/// shows nowhere until its hub model is in `GamesViewModel.games`.
+/// Every game. The hub lists games in this order. A kind is registered before
+/// its game is built, and it shows nowhere until its hub model is in
+/// `GamesViewModel.games`.
 nonisolated enum GameKind: String, CaseIterable, Codable, Hashable, Sendable {
     // The case order is the hub's catalog order, most popular first.
     case ludo = "ludo"

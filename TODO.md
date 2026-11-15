@@ -1,14 +1,8 @@
 # Follow-up work
 
-## Convex runtime and capacity, November 7, 2026
+## Convex runtime and capacity
 
-The hosted backend and dashboard now use `precompiled-2026-11-12-cc07c9e`
-with packaged jemalloc (upgraded from `a7376b7` on November 12, 2026). Authentication, live writes and subscriptions, signed
-media, file backups, rollback rehearsals and restarts passed. Upstream marks this
-build as a prerelease. Hosted configuration is documented in
-[backend/AGENTS.md](backend/AGENTS.md). Shared runtime tools and backup-retention
-follow-up live in the Tidex checkout under `backend/ops/convex-runtime/` and
-`TODO.md`.
+The hosted backend runs an upstream prerelease build with packaged jemalloc. Hosted configuration is in [backend/AGENTS.md](backend/AGENTS.md). Shared runtime tools and backup-retention follow-up live in the Tidex checkout under `backend/ops/convex-runtime/` and `TODO.md`.
 
 - [ ] Observe Paeonia on `one-s` for at least 48 hours, including normal use,
   backend deploys and backup/export cycles. Record working memory excluding

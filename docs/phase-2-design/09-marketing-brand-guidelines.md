@@ -116,24 +116,7 @@ Use bright pink on light backgrounds only for large decorative marks, icons with
 
 Use Apple/system typography for MVP, consistent with the existing typography decision.
 
-Recommended stack:
-
-```css
-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-```
-
 The logo wordmark is the brand display voice. Do not add a separate decorative romance font for headings.
-
-### Marketing Type Scale
-
-| Role | Suggested CSS | Use |
-| --- | --- | --- |
-| Hero | `clamp(3.25rem, 9vw, 7.5rem)`, `line-height: 0.92-1.0`, `font-weight: 650-750`, `letter-spacing: -0.07em` | One emotional promise |
-| Section heading | `clamp(2rem, 5vw, 4.25rem)`, `line-height: 1.02`, `font-weight: 650`, `letter-spacing: -0.05em` | Major story beats |
-| Subheading | `1.125rem-1.375rem`, `line-height: 1.55-1.75` | Explain the promise |
-| Body | `1rem`, `line-height: 1.65-1.8` | Readable content |
-| Label | `0.8125rem-0.875rem`, `font-weight: 650`, slight negative or neutral tracking | Short labels, not repeated above every section |
-| Button | `0.9375rem-1rem`, `font-weight: 650` | CTAs |
 
 Rules:
 
@@ -146,32 +129,7 @@ Rules:
 
 Marketing should feel spacious and intimate, not empty. Use a strong mobile-first rhythm because the product is phone-native.
 
-### Page Structure
-
-Recommended landing page order:
-
-1. Hero with full brand mood, concise promise, primary CTA, and app/widget preview.
-2. Private place section explaining that Paeonia is for one couple.
-3. Long-distance section showing what the product helps with: drawings, check-ins, memories, milestones.
-4. Product preview section with iPhone and widget visuals.
-5. Privacy/trust section in plain language.
-6. Subscription/value section if needed, including that one paying partner unlocks both.
-7. FAQ and support.
-8. Footer with logo, legal links, and support.
-
-### Spacing Rhythm
-
-Use the existing product spacing scale as the base, then allow larger marketing steps:
-
-| Token | Suggested value | Use |
-| --- | ---: | --- |
-| `marketingSpaceXS` | 8px | Icon/text gaps |
-| `marketingSpaceS` | 16px | Button groups, compact copy |
-| `marketingSpaceM` | 24px | Card and panel padding |
-| `marketingSpaceL` | 40px | Hero copy groups, section intro spacing |
-| `marketingSpaceXL` | 64px | Section internal rhythm |
-| `marketingSpaceXXL` | 96px | Between major story sections |
-| `marketingSpaceHuge` | `clamp(6rem, 14vw, 12rem)` | Full-page pacing |
+### Spacing
 
 Rules:
 
@@ -388,17 +346,6 @@ Alt text examples:
 - Full lockup: "Paeonia, a private place for the two of you."
 - App icon: "Paeonia app icon."
 - Product preview: "Paeonia app showing a private shared space for a couple."
-
-## Implementation Notes For The Marketing Agent
-
-When updating `marketing/`:
-
-- Prefer semantic CSS custom properties or Tailwind theme tokens for the palette.
-- Keep the public page structure simple. Do not add a design-system package unless the page grows enough to need it.
-- Use SVG assets from `design/brand/web/` or copied public equivalents. Do not trace or recreate the logo.
-- Keep locale dictionaries in sync for English and Norwegian.
-- Use the current marketing app structure as the implementation target: `marketing/src/routes/[locale=locale]/+page.svelte`, `marketing/src/lib/components/SiteShell.svelte`, `marketing/src/app.css`, and `marketing/src/lib/i18n/dictionaries/`.
-- If adding app screenshots, prefer real product captures. If those are not ready, use clearly intentional product mockups, not blank panels.
 
 ## Do And Do Not
 

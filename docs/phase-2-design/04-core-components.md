@@ -1,213 +1,46 @@
-# Core Components
+# Core components
 
-This document defines Paeonia's reusable component primitives. It does not define final colors.
-
-Components should be native, calm, slightly custom, and consistent. They should make feature work faster without creating an overbuilt design system too early.
-
-The component direction is **slightly custom iOS**, not plain stock controls. Components may use custom shapes, spacing, materials, and pressed states, but they must keep native accessibility, gestures, focus, and platform behavior.
-
-Implementation target:
-
-```text
-ios/PaeoniaApp/Shared/DesignSystem/Components/
-```
-
-Create components only when used by a real screen. Do not build an unused component gallery in MVP.
+Components are native, calm and slightly custom. They may use custom shapes, spacing, materials and pressed states, but keep native accessibility, gestures and behavior. Create a component only when a real screen uses it.
 
 ## Buttons
 
-### Primary Button
-
-Use for the main action on a screen.
-
-Examples:
-
-- continue onboarding
-- accept invite
-- answer prompt
-- create memory
-- subscribe
-
-Rules:
-
-- one primary button per decision area
-- full-width on onboarding/paywall
-- clear label, no clever copy
-- disabled state must explain itself when needed
-
-Implementation name: `PaeoniaPrimaryButtonStyle`.
-
-### Secondary Button
-
-Use for alternative but valid actions.
-
-Examples:
-
-- restore purchases
-- remind me later
-- add note later
-
-Implementation name: `PaeoniaSecondaryButtonStyle`.
-
-### Quiet Button
-
-Use for low-emphasis utility actions.
-
-Examples:
-
-- edit
-- skip optional photo
-- change date
-
-Implementation name: `PaeoniaQuietButtonStyle`.
-
-### Destructive Button
-
-Use only for destructive or relationship-affecting actions.
-
-Examples:
-
-- leave relationship
-- delete memory
-- delete account
-
-Destructive flows require confirmation copy that explains consequence and reversibility.
-
-Implementation name: `PaeoniaDestructiveButtonStyle`.
+- One primary button per decision area. Full-width on onboarding and the paywall.
+- Destructive buttons are for destructive or relationship-affecting actions only. The flow confirms with copy that explains the consequence and whether it can be undone.
 
 ## Cards
 
-Cards are the main content container.
-
-Card types:
-
-- `PromptCard`
-- `MemoryCard`
-- `MilestoneCard`
-- `WidgetPreviewCard`
-- `SubscriptionCard`
-- `SettingsCard`
-- `SyncStatusCard`
-
-Rules:
-
-- cards should feel contained and private
-- avoid dense borders and heavy shadows
-- prefer one primary content idea per card
-- if a card contains partner content, make ownership/state clear
-
-Implementation should start with one reusable `PaeoniaCard` container. Feature-specific cards should compose it rather than subclassing or creating unrelated card styles.
+- Cards feel contained and private. Avoid dense borders and heavy shadows.
+- One main idea per card. A card that shows partner content makes ownership clear.
+- Feature cards compose `PaeoniaCard`. They do not make unrelated card styles.
 
 ## Sheets
 
-Use sheets for focused tasks, not whole app flows.
-
-Good sheet uses:
-
-- add memory note
-- attach media
-- edit relationship date
-- notification permission explanation
-- confirm leave relationship
-
-Avoid nesting sheets more than one level deep.
+Sheets are for focused tasks, not whole flows. Do not nest sheets more than one level.
 
 ## Fields
 
-Field types:
+- Labels are visible or strongly implied.
+- Validation is specific.
+- Invite code input tolerates spaces and case differences, and does not force separators.
+- Text-note fields feel private, not like a public post composer.
 
-- text input
-- multiline note input
-- date picker
-- invite code input
-- voice-answer title/metadata field if needed
+## Empty states
 
-Rules:
+Empty states are product moments. They say what happens next, never shame the user, and are warm and direct. Every state where the user waits on something (no partner yet, invited and waiting, partner has not answered, offline with no cache) has one.
 
-- labels should be visible or strongly implied by context
-- validation should be specific
-- invite code input should tolerate spaces/case differences
-- text-note fields must feel safe and private, not like a public post composer
+## Alerts and confirmations
 
-Invite code fields should visually support grouping/chunking without forcing users to type separators.
+- The title states the action. The body states the consequence. The destructive button uses a verb. Cancel is clear.
+- Use the centered system alert (SwiftUI `.alert`) app-wide. Do not use a bottom action sheet (`.confirmationDialog`).
 
-## Empty States
+## Paywall
 
-Empty states are product moments. They should explain what happens next without shaming the user.
-
-Required empty states:
-
-- no partner yet
-- partner invited, waiting for accept
-- no daily prompt answer yet
-- partner has not answered yet
-- no memories yet
-- no widget drawing yet
-- no playable voice answer yet
-- offline with no cached content
-
-Tone:
-
-- warm
-- direct
-- useful
-- never guilt-driven
-
-## Alerts And Confirmations
-
-Use alerts for urgent confirmations and destructive choices.
-
-Important confirmations:
-
-- leave relationship
-- delete account
-- delete memory
-- discard unsynced local changes, if ever needed
-- stop subscription flow, if user would lose access
-
-Rules:
-
-- title states the action
-- body states consequence
-- destructive button uses a verb
-- cancellation is clear
-- present them in the centered system alert dialog (SwiftUI `.alert`), app-wide; do not use a bottom action sheet (`.confirmationDialog`)
-
-## Paywall Components
-
-The paywall is hard, but it must be honest and App Review-safe.
-
-Required elements:
-
-- product value
-- price
-- billing period
-- renewal behavior
-- trial terms, if any
-- restore purchases
-- manage subscription link where appropriate
-- note that one paying partner unlocks access for both
-
-Avoid manipulative countdowns or fake urgency.
+The paywall is hard, so it must be honest and App Review-safe. It shows value, price, billing period, renewal behavior, trial terms if any, restore purchases, a manage-subscription link where appropriate, and that one paying partner unlocks access for both. No manipulative countdowns or fake urgency.
 
 ## Sync status
 
-Visible content is saved. Routine local saves and queued uploads show no status line, including while offline. The queue sends them automatically when the connection returns.
+Routine local saves and queued uploads show no status line, including while offline. Show a failed-send warning and retry only when the person can act. A drawing not yet submitted can say "Not sent yet", and a delivered one "Sent". Never expose pending operations or other implementation terms.
 
-Show a failed-send warning and retry action when the person can take action. A drawing that has not been submitted can say "Not sent yet", and a delivered drawing can confirm "Sent".
+## Navigation
 
-Keep errors in plain language. Do not expose pending operations or other implementation terms.
-
-## Navigation Shell
-
-Use `NavigationStack` for feature flows unless there is a clear reason not to.
-
-The root app state decides which high-level shell is shown:
-
-- unauthenticated
-- onboarding
-- unpaired
-- paired
-- paywalled
-
-Do not let feature screens independently decide global auth/pairing/paywall state.
+Feature flows use `NavigationStack`. The root app state decides the shell (unauthenticated, onboarding, unpaired, paired, paywalled). Feature screens never decide global auth, pairing or paywall state.

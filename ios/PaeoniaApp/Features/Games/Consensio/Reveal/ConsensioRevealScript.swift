@@ -6,8 +6,7 @@ nonisolated struct ConsensioRevealPlan: Equatable, Sendable {
     var points: Int
 }
 
-/// When each beat happens, in seconds after the reveal starts. The table is in
-/// `docs/games/consensio.md` ("Reveal").
+/// When each beat happens, in seconds after the reveal starts.
 nonisolated struct ConsensioRevealSchedule: Sendable {
     var pulses: [TimeInterval] = [0.20, 0.50, 0.80]
     /// The other marker drops onto the line.

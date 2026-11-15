@@ -7,8 +7,7 @@ nonisolated struct GuessMySpotRevealPlan: Equatable, Sendable {
     var points: Int
 }
 
-/// When each beat happens, in seconds after the reveal starts. The table is in
-/// `docs/games/guess-my-spot.md` ("Reveal").
+/// When each beat happens, in seconds after the reveal starts.
 nonisolated struct GuessMySpotRevealSchedule: Sendable {
     var pulses: [TimeInterval] = [0.20, 0.45, 0.70]
     /// The camera zooms out until both spots fit.

@@ -14,55 +14,6 @@ The finishing bite swaps in the burned piece with a short shake, a haptic and th
 
 Either person may request a rematch. The previous nonstarter is the suggested chooser, but either person may choose and become the next starter. Keep the last unseen result through a rematch. Against each other shows lifetime wins. Together shows lifetime completed games. Hiding and each bite count toward the couple streak.
 
-## Function contract
-
-All paths use module `piccante`. All UUIDs normalize at the boundary. All reads and writes require entitled couple membership. Writes use client-operation idempotency, check access before replay, and return the caller's state projection. All move versions are exact `p_expected_version` values. Each client operation also carries `p_client_id`, `p_client_sequence` and `p_local_created_at` alongside its operation id, following the shared outbox contract. The envelope also returns `user_id`, `couple_id` and `partner_user_id`.
-
-- Query `get_piccante({})` returns `{ data_epoch, game, unseen_result }`. Both game values are nullable.
-- Mutation `ensure_piccante_game({})` returns that envelope, creating one game per couple in `choosing`, with the caller as the suggested chooser and no turn.
-- Mutation `choose_piccante_size({p_game_id,p_expected_version,p_size,p_client_operation_id})` allows either member to set size to 3, 4 or 5. The chooser becomes the starter and takes the first hiding turn.
-- Mutation `hide_piccante_chili({p_game_id,p_expected_version,p_tile,p_note?,p_client_operation_id})` records a secret. After the second hide phase is `biting`, with the second hider's turn.
-- Mutation `sample_piccante_clock({})` returns a fresh server clock sample for an entitled couple.
-- Mutation `bite_piccante_chocolate({p_game_id,p_expected_version,p_tile,p_client_operation_id})` records a bite. Safe bites alternate; any chili ends the game.
-- Mutation `sniff_piccante_chocolate({p_game_id,p_expected_version,p_tile,p_client_operation_id})` records this person's private one-use sniff without changing the turn.
-- Mutation `start_piccante_rematch({p_game_id,p_expected_version,p_client_operation_id})` preserves the result and starts the next numbered game, in `choosing`, with the other starter suggested and no assigned turn.
-- Mutation `mark_piccante_result_seen({p_game_id,p_game_number,p_client_operation_id})` marks only that completed game seen.
-- Query `get_piccante_result({p_game_number})` returns a game-chat projection. An unseen result omits its finishing bite, all chilis, notes, private sniff and outcome. The chat offers a link to Piccante to see the reveal.
-
-Game projection keys: `id`, `game_number`, `version`, `starter_user_id`, `turn_user_id` nullable, `phase` choosing/hiding/biting/finished, `size` nullable, `my_chili` nullable integer, `my_note` nullable string, `partner_hidden` bool, `my_sniff` nullable `{tile,has_chili}`, `partner_sniff_used` bool, `bites` array `{tile,user_id,play_at}`, `chilis` array `{tile,user_id,note}` only when finished, `winner_user_id` nullable, `loser_user_id` nullable, `my_wins`, `partner_wins`, `games_finished`, `started_at`, `finished_at` nullable. No partner secret appears before completion. `unseen_result` is the latest finished game not seen by this person, including across rematches. Tile indexes are zero-based row-major.
-
-## Screens and integration
-
-Size choice, hiding with optional note, waiting, biting with selection, sniff mode on the same board, held queued bite, burn reveal and finished box. The game chat owns past results, with no separate history screen. The main screen uses shared presence, invite, reactions, attention and tutorial components. The relay carries game number, version and the public lifted tile only during biting. Reaction messages also carry that selection. It never carries chilis, notes or private sniff positions. Offline hides and bites queue in the shared outbox. A sniff requires a connection. A queued bite never predicts its outcome.
-
-The hub follows Ultimate Tic-Tac-Toe in the catalog. Its illustration is an open chocolate box with a warm glowing chocolate and small chili. Three tutorial cards teach hiding with a note, biting and own-chili danger, and the sniff. Every uneaten tile reads its row, column and illustrated variety to VoiceOver. Eaten wrappers say "Eaten". Own chili, lifted selection, the partner's latest bite and private sniff marks add their spoken states. Extra controls open a native Board controls list.
-
-The bite hint appears only before this person's first bite in the couple's first game. Waiting says whether the partner is hiding a chili or choosing a chocolate.
-
-## Visual presentation
-
-The Piccante player header shows plain round portraits above the names. It uses the shared avatar and presence ring without the board games' mark badges. The active portrait scales to 1.1 and turn changes animate unless Reduce Motion is enabled. Choosing emphasizes neither player. The hub and toolbar use the shared score capsule and hide empty scores. Unseen results withhold the score on the hub; a seen result says who won. An absent partner has no presence subtitle. The shared portrait ring shows presence and handles the arrival pulse. Together shows completed games. The score opens the game chat, where the couple's past boxes live. The Games navigation root supplies the chat button too. Piccante has no separate history screen.
-
-The box composes nine whole chocolates in the house 3D sticker style. Pink heart, pink stripes, nut flower, dark gold drizzle, white truffle, pink rosette, square praline, white lavender stripes and lavender flower chocolates share one overhead camera, gold cup and light. Their arrangement uses the existing game seed and keeps identical chocolates apart horizontally and vertically at every box size. An eaten piece leaves the illustrated empty gold wrapper with crumbs, dimmed, desaturated and flattened without a lifted shadow. The burned piece exposes chili filling. Until this person lifts a chocolate, the partner's newest wrapper has their outline and small round avatar. An outline follows the illustration's alpha silhouette in the player's color. Lifted chocolates scale up, rise slightly and cast a soft shadow. The same treatment shows the partner's live selection. Differentiate Without Color adds a light outer outline, and Reduce Motion keeps the lift static. VoiceOver announces selection. Chilis remain visible on your own piece, and a flame identifies the burned piece. Both owners' round avatars stay on the finished board. Bite order has no badges. A small illustrated chili sticker replaces the emoji and sits above the owner avatars, clear of the chocolate. Owner avatars and the flame badge are at least 0.32 of a tile. These shapes distinguish states without color.
-
-The finished box keeps its play size, with scrolling space for the note and actions. Only the partner's note appears, with its recipient above the message and writer below it. Both outcomes use one dark plum card with light text and a subtle folded corner. A losing partner's note describes what the winner escaped. The note slides up after the chili owners appear and wraps with Dynamic Type.
-
-## Private sniff selection
-
-Sniff happens on the main board. `PiccanteViewModel.boardMode` is `.bite` or `.sniff(target:)`. The Sniff button switches the board to sniff mode. The title becomes "Sniff a chocolate", and a hint under the board says that only this person learns whether the chocolate hides the partner's chili. In sniff mode a tap lifts the sniff target with a selection haptic and no lift sound. The person's own chili and eaten pieces cannot be chosen. "Sniff this one" sends the sniff, and Cancel returns to biting.
-
-The sniff target is local to the phone. It never changes the lifted bite selection, which the relay shares, and nothing about it goes over the relay. Otherwise the partner could work out the sniffed chocolate when the used indicator appears. While sniffing, the board lifts the target in place of the bite selection. Cancel or a successful sniff shows the bite selection again. A failed sniff keeps sniff mode and the target, so the person can try again. A new turn, a new game or a used sniff returns the board to biting. The partner learns only that a sniff was used.
-
-After a sniff, a result card under the board stays until the game ends. A safe chocolate gets a checkmark, "Safe to bite" and a calm card. The partner's chili gets a flame, "That's <partner>'s chili" and the warm warning colors of the board's flame mark. VoiceOver reads the card as one element. The sniffed chocolate also carries a private badge, a check for safe or a flame with a warm glow for hot. The badge is at least 28 points wide and 0.4 of a tile. Shapes distinguish these states without color.
-
-Board controls has no second sheet. Its Sniff button switches the same list to sniff mode. Only chocolates that can be sniffed stay enabled, and the list shows the hint, "Sniff this one" and Cancel.
-
-## Storage and results
-
-`piccante_games` keeps the current box and lifetime tallies. `piccante_results` keeps each completed box with per-person seen marks. Rematch marks the initiating person's old result seen atomically. The other person still sees the missed ending before continuing to the new box. The game chat references results by couple and game number. Downloads include the person's own hidden choices; partner notes stay out of personal exports.
-
-The phone overlays queued operations in client order. Seen marks change per-person result metadata without advancing the game version. An offline bite holds its chocolate while the server decides the outcome. A stale move is dropped immediately, refreshes the authoritative box and shows the shared recovery banner. A stale rematch marks the previous game seen, without consuming a game version, then loads the game the partner already started. A failed seen write retries before the rematch leaves the outbox.
-
 ## Artwork and sound
 
 The whole board pieces are `GameHubPiccanteHeart`, `GameHubPiccanteDrizzle`, `GameHubPiccanteNut`, `GameHubPiccanteGoldDrizzle`, `GameHubPiccanteWhiteTruffle`, `GameHubPiccanteRosette`, `GameHubPiccantePraline`, `GameHubPiccanteLavenderStripes` and `GameHubPiccanteFlower`. Eaten and burned tiles use `GameHubPiccanteWrapper` and `GameHubPiccanteBurned`. The chocolate PNGs have a 450-pixel longest side. `GameHubPiccanteChili` is a 96 by 88 transparent sticker, generated with the illustration skill and checked on plum at marker size. The wrapper is square, and the chocolate aspect ratios are between 0.980 and 1.009. They display at less than 150 points. The illustration skill's alpha and fringe checks pass for all eleven. The board draws only the tray and game-state overlays around those images.
@@ -200,23 +151,3 @@ Imported from `same-one.wav`.
 - Original title: Bell Sound
 - Download: original WAV, https://freesound.org/people/Seth_Makes_Sounds/sounds/852531/download/
 - Edits: Extracted source interval 0.000 to 0.700 s; downmixed to mono; removed DC; 70 Hz high-pass and 4800 Hz low-pass, both second-order; layered the same hit at +160 ms, resampled 1.26 times faster (a major third higher) and 1.33 times louder; 3 ms fade-in and short fade-out, longer 120 ms release for sizzles; peak-normalized to -3 dBFS; converted to 44.1 kHz signed 16-bit PCM WAV. No synthesis or reverb.
-
-## Developer scenarios
-
-| Scenario | State |
-|---|---|
-| `piccante-choose` | Either partner chooses the box size |
-| `piccante-choose-second` | The second opener also sees the choices |
-| `piccante-hub` | Isolated hub card with an unseen result |
-| `piccante-sniff-hot` | Private flame mark and hot result card |
-| `piccante-hide` | Hide one chili with an optional note |
-| `piccante-biting` | Choose and confirm a bite |
-| `piccante-partner-lifted` | Partner's live lifted chocolate |
-| `piccante-sniff` | Private sniff answer and partner's used indicator |
-| `piccante-burn` | Delayed burn reveal |
-| `piccante-same-one` | Both chilis share a chocolate |
-| `piccante-result` | Finished box and the partner's note |
-
-Piccante scenarios accept `-paeonia-scenario-piccante-size 3`, `4` or `5`, `-paeonia-scenario-piccante-compact YES` for a 320-point play area, `-paeonia-scenario-piccante-winner YES` for the winner's result perspective, and `-paeonia-scenario-piccante-together YES` for the shared completed-game count.
-
-Pure iOS tests cover selection legality, one sniff, note scalars, restored epochs, held bites and queued seen/size/hide ordering. The UI journeys check that sniffing on the main board leaves the public lifted chocolate in place, and that a sniff works inside the Board controls list. The pending-operation regression covers a lost rematch race without consuming a game version. Backend tests cover access to every public function, rules, private projections, stale moves, idempotency, rematches, waiting keys and cleanup.
