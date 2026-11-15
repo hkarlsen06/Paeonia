@@ -28,6 +28,7 @@ final class CallMediaSession {
     private let camera: CallCamera
     private let partnerFeed: CallVideoFeed
     private let localFeed: CallVideoFeed
+    private let statsLog = CallStatsLog()
     private var videoTransceiver: LKRTCRtpTransceiver?
     private var remoteVideoTrack: LKRTCVideoTrack?
     private var isCameraOn: Bool
@@ -134,6 +135,7 @@ final class CallMediaSession {
     }
 
     func close() {
+        statsLog.stop()
         pathMonitor.cancel()
         work.finish()
         workTask?.cancel()
@@ -245,9 +247,9 @@ final class CallMediaSession {
             if offerNumber > 0 {
                 peerConnection.restartIce()
             }
-            let offer = try await peerConnection.offer(
+            let offer = try await CallCodecs.withOpusDTX(peerConnection.offer(
                 for: LKRTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
-            )
+            ))
             try await peerConnection.setLocalDescription(offer)
             offerNumber += 1
             relay.send(.offer(sdp: offer.sdp, number: offerNumber))
@@ -263,9 +265,9 @@ final class CallMediaSession {
                 attachAnswererTracks()
             }
             await addPendingCandidates()
-            let answer = try await peerConnection.answer(
+            let answer = try await CallCodecs.withOpusDTX(peerConnection.answer(
                 for: LKRTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
-            )
+            ))
             try await peerConnection.setLocalDescription(answer)
             relay.send(.answer(sdp: answer.sdp, number: number))
         } catch {
@@ -292,12 +294,15 @@ extension CallMediaSession {
         let audioInit = LKRTCRtpTransceiverInit()
         audioInit.direction = .sendRecv
         audioInit.streamIds = [Self.streamID]
-        peerConnection.addTransceiver(with: audioTrack, init: audioInit)
+        if let transceiver = peerConnection.addTransceiver(with: audioTrack, init: audioInit) {
+            CallCodecs.configure(transceiver, factory: CallMediaFactory.shared)
+        }
 
         let videoInit = LKRTCRtpTransceiverInit()
         videoInit.direction = .sendRecv
         videoInit.streamIds = [Self.streamID]
         guard let transceiver = peerConnection.addTransceiver(of: .video, init: videoInit) else { return }
+        CallCodecs.configure(transceiver, factory: CallMediaFactory.shared)
         useVideoTransceiver(transceiver)
     }
 
@@ -306,6 +311,7 @@ extension CallMediaSession {
         for transceiver in peerConnection.transceivers {
             transceiver.setDirection(.sendRecv, error: nil)
             transceiver.sender.streamIds = [Self.streamID]
+            CallCodecs.configure(transceiver, factory: CallMediaFactory.shared)
             switch transceiver.mediaType {
             case .audio:
                 transceiver.sender.track = audioTrack
@@ -335,10 +341,12 @@ extension CallMediaSession {
         case .connected:
             guard !isConnected else { return }
             isConnected = true
+            statsLog.start(peerConnection)
             onConnectionChange?(true)
         case .disconnected, .failed:
             guard isConnected else { return }
             isConnected = false
+            statsLog.stop()
             onConnectionChange?(false)
         default:
             break
@@ -368,7 +376,7 @@ enum CallMediaFactory {
         return LKRTCPeerConnectionFactory(
             audioDeviceModuleType: .audioEngine,
             bypassVoiceProcessing: false,
-            encoderFactory: LKRTCDefaultVideoEncoderFactory(),
+            encoderFactory: CallVideoEncoderFactory(),
             decoderFactory: LKRTCDefaultVideoDecoderFactory(),
             audioProcessingModule: nil
         )

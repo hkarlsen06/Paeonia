@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Checks how calls compress their media: runs ios/Scripts/call-media-probe.swift, a call
+# between two WebRTC connections in one Mac process, against the app's real CallCodecs.swift
+# and CallStatsLog.swift and the pinned LiveKitWebRTC build. Takes about 30 seconds.
+#
+#   scripts/call-media-probe             checks the app's codec choices
+#   scripts/call-media-probe --defaults  shows WebRTC's own choices, where each tuned check fails
+#
+# It needs the macOS slice of the LiveKitWebRTC package that some Xcode build of Paeonia has
+# downloaded at the version Package.resolved pins.
+set -euo pipefail
+
+ROOT_DIR="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
+RESOLVED="$ROOT_DIR/ios/Paeonia.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+
+FRAMEWORKS="$(python3 - "$RESOLVED" <<'PY'
+import glob, json, os, sys
+
+def version(state, identity):
+    for pin in state:
+        if pin.get("identity", pin.get("packageRef", {}).get("identity")) == identity:
+            return pin["state"].get("version") or pin["state"].get("checkoutState", {}).get("version")
+
+pinned = version(json.load(open(sys.argv[1]))["pins"], "webrtc-xcframework")
+packages = sorted(glob.glob(os.path.expanduser("~/Library/Developer/Xcode/DerivedData/Paeonia-*/SourcePackages")),
+                  key=os.path.getmtime, reverse=True)
+for packages_dir in packages:
+    slice_dir = f"{packages_dir}/artifacts/webrtc-xcframework/LiveKitWebRTC/LiveKitWebRTC.xcframework/macos-arm64_x86_64"
+    try:
+        state = json.load(open(f"{packages_dir}/workspace-state.json"))["object"]["dependencies"]
+    except (OSError, ValueError, KeyError):
+        continue
+    if os.path.isdir(slice_dir) and version(state, "webrtc-xcframework") == pinned:
+        print(slice_dir)
+        break
+PY
+)"
+if [ -z "$FRAMEWORKS" ]; then
+  echo "call-media-probe: no Xcode build has downloaded the pinned LiveKitWebRTC package." >&2
+  echo "Build the app once with ./scripts/xcode-build-agent.sh, then run this again." >&2
+  exit 2
+fi
+
+BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/call-media-probe.XXXXXX")"
+trap 'rm -rf "$BUILD_DIR"' EXIT
+
+CALLS="$ROOT_DIR/ios/PaeoniaApp/Services/Calls"
+# The same language settings as the app target (see scripts/swift-typecheck).
+xcrun swiftc -O \
+  -swift-version 6 \
+  -default-isolation MainActor \
+  -enable-upcoming-feature InferIsolatedConformances \
+  -enable-upcoming-feature NonisolatedNonsendingByDefault \
+  -enable-upcoming-feature MemberImportVisibility \
+  -F "$FRAMEWORKS" -Xlinker -rpath -Xlinker "$FRAMEWORKS" \
+  -o "$BUILD_DIR/call-media-probe" \
+  "$ROOT_DIR/ios/Scripts/call-media-probe.swift" "$CALLS/CallCodecs.swift" "$CALLS/CallStatsLog.swift"
+
+"$BUILD_DIR/call-media-probe" "$@"
