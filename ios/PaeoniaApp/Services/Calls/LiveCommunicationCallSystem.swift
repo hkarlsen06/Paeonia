@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 @preconcurrency import LiveCommunicationKit
+import UIKit
 
 /// The system call UI (LiveCommunicationKit): the Lock Screen, the Dynamic Island and Recents.
 final class LiveCommunicationCallSystem: CallSystem {
@@ -13,13 +14,27 @@ final class LiveCommunicationCallSystem: CallSystem {
     init() {
         manager = ConversationManager(configuration: ConversationManager.Configuration(
             ringtoneName: nil,
-            iconTemplateImageData: nil,
+            iconTemplateImageData: Self.iconTemplate(),
             maximumConversationGroups: 1,
             maximumConversationsPerConversationGroup: 1,
             includesConversationInRecents: true,
             supportsVideo: true,
             supportedHandleTypes: [.generic]
         ))
+    }
+
+    /// The Paeonia mark on the system call screen's button that opens the app. The system uses
+    /// only the alpha, on a square of 40 points.
+    private static func iconTemplate() -> Data? {
+        let mark = UIImage(resource: .paeoniaMark)
+        let side: CGFloat = 120
+        let width = side * 0.9
+        let height = width * mark.size.height / mark.size.width
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: CGSize(width: side, height: side), format: format).pngData { _ in
+            mark.draw(in: CGRect(x: (side - width) / 2, y: (side - height) / 2, width: width, height: height))
+        }
     }
 
     func start(delegate: any CallSystemDelegate) {
