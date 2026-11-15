@@ -59,19 +59,17 @@ struct HomeMapDistanceLine: View {
             : CoupleMapSnapshot.formattedDistance(from: current.coordinate, to: partnerCoordinate)
         let age = PartnerLocationRecordedStatus.shortAge(capturedAt: partner.capturedAt, now: date)
         // The icon sits beside both lines, centered on them like the info button, and the age
-        // goes straight under the distance when the line does not fit between the bar's buttons.
+        // goes centered under the distance when the line does not fit between the bar's buttons.
         return HStack(spacing: PaeoniaSpacing.space4) {
-            // Apart, the arrow stays hidden until the first compass reading, so the
-            // together icon never shows on the way to it.
+            // Apart, the arrow points up until the first compass reading.
             Image(systemName: isTogether ? "person.2.fill" : "location.north.fill")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .contentTransition(.symbolEffect(.replace))
                 .rotationEffect(.degrees(isTogether ? 0 : rotation ?? 0))
-                .opacity(isTogether || direction != nil ? 1 : 0)
                 .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: rotation)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(spacing: 0) {
                 HStack(spacing: PaeoniaSpacing.space4) {
                     // Rolls up when the partner moves away and down when they come closer.
                     Text(distance)
