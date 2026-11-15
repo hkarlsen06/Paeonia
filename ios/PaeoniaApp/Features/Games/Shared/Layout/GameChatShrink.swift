@@ -51,6 +51,17 @@ struct GameChatContentTopKey: PreferenceKey {
     }
 }
 
+/// The top of a game screen's bottom controls (`PaeoniaBannerBottomEdgeKey`), in global
+/// coordinates at full size, so the chat panel sizes the small screen the same while it is small.
+struct GameChatControlsTopKey: PreferenceKey {
+    static let defaultValue: CGFloat? = nil
+
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        guard let next = nextValue() else { return }
+        value = value.map { min($0, next) } ?? next
+    }
+}
+
 extension View {
     /// Says a game screen's navigation bar shows something about the game, so the bar stays
     /// in view above the game's chat panel.
@@ -86,6 +97,10 @@ struct GameChatScreen: ViewModifier {
     @State private var toolbarShowsInfo = false
     /// The screen's top edge under the navigation bar, in global coordinates at full size.
     @State private var contentTop: CGFloat?
+    /// The screen as drawn, which is smaller while it is shrunk or lifted.
+    @State private var drawn = DrawnScreen(frame: .zero, height: 0)
+    /// The top of the bottom controls as drawn.
+    @State private var drawnControlsTop: CGFloat?
     /// The person has touched the screen since it opened. A peek would move what they touch.
     @State private var touched = false
 
@@ -101,11 +116,16 @@ struct GameChatScreen: ViewModifier {
         let keyboardIsChats = shrink != nil || chatHasKeyboard || keyboardIsAnothers
         content
             .onPreferenceChange(GameToolbarInfoKey.self) { toolbarShowsInfo = $0 }
-            // Only at full size. The shrink also scales what a screen reports.
-            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { top in
-                if shrink == nil { contentTop = top }
+            .onPreferenceChange(PaeoniaBannerBottomEdgeKey.self) { drawnControlsTop = $0 }
+            .onGeometryChange(for: DrawnScreen.self) {
+                DrawnScreen(frame: $0.frame(in: .global), height: $0.size.height)
+            } action: { screen in
+                drawn = screen
+                // Only at full size. The shrink also scales what a screen reports.
+                if shrink == nil, lift == 0 { contentTop = screen.frame.minY }
             }
             .preference(key: GameChatContentTopKey.self, value: toolbarShowsInfo ? nil : contentTop)
+            .preference(key: GameChatControlsTopKey.self, value: fullSizeControlsTop)
             .environment(\.keyboardBelongsElsewhere, keyboardIsChats)
             .background { GameScreenShrinker(shrink: shrink, lift: lift, animates: !reduceMotion) }
             .background {
@@ -128,7 +148,22 @@ struct GameChatScreen: ViewModifier {
     }
 }
 
+/// A screen's frame in global coordinates and its height in its own, which the shrink
+/// does not change.
+nonisolated private struct DrawnScreen: Equatable, Sendable {
+    let frame: CGRect
+    let height: CGFloat
+}
+
 extension GameChatScreen {
+    /// The top of the bottom controls where it is at full size. A shrunk screen that lays
+    /// itself out again reports its controls where they are drawn, and the panel would
+    /// otherwise make the screen larger each time it does.
+    private var fullSizeControlsTop: CGFloat? {
+        guard let drawnControlsTop, let contentTop, drawn.frame.height > 0 else { return nil }
+        return contentTop + (drawnControlsTop - drawn.frame.minY) * drawn.height / drawn.frame.height
+    }
+
     /// A moment after the screen opens, the chat peeks up under it and goes back down. A
     /// touch, or the screen going away, ends the peek early.
     private func runPeek() async {
