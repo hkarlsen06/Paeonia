@@ -306,8 +306,8 @@ extension PairedHomeView {
             mapTiles: mapTiles,
             onPromptCurrentLocation: onPromptCurrentLocation,
             onRefresh: onRefresh
-        ) { title in
-            markAndStreakRow(title: title)
+        ) {
+            markAndStreakRow
         } sheet: {
             // One pop-up card at most above the tiles, so the map keeps its height.
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {

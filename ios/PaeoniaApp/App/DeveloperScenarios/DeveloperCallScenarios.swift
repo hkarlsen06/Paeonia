@@ -97,7 +97,7 @@
     ) { _ in DeveloperCallLocalFlow(game: true) }
 
     static let callUsTab = DeveloperScenario(
-      "call-us-tab", "Call · Us", "The call button in the header on Us", .calls
+      "call-us-tab", "Call · Us", "The call button under Robin's avatar on Us", .calls
     ) { _ in DeveloperCallLocalFlow() }
 
     static let callJustUsRows = DeveloperScenario(

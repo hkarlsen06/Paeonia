@@ -5239,6 +5239,24 @@
         }
       }
     },
+    "calls.us.call" : {
+      "comment" : "Visible label beside a phone icon below your partner's profile photo on the Us tab. Calls the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring"
+          }
+        }
+      }
+    },
     "calls.yourCamera" : {
       "comment" : "VoiceOver label of the small tile on the call screen that shows the person's own camera.",
       "extractionState" : "manual",

@@ -1,8 +1,7 @@
 import CoreLocation
 import SwiftUI
 
-/// "Sammen · 2 t" or "306 km · 2 t", in the bar's title position. Where the line does not fit
-/// between the bar's buttons, the age moves under it.
+/// "Sammen · 2 t" or "306 km · 2 t", in the bar's title position.
 struct HomeMapDistanceLine: View {
     let current: LocationPoint
     let partner: LocationPoint
@@ -26,19 +25,10 @@ struct HomeMapDistanceLine: View {
                     wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
                 ) == .stale
             )
-            Group {
-                if dynamicTypeSize.isAccessibilitySize {
-                    line(isTogether: isTogether, at: context.date, stacksAge: true)
-                } else {
-                    ViewThatFits(in: .horizontal) {
-                        line(isTogether: isTogether, at: context.date, stacksAge: false)
-                        line(isTogether: isTogether, at: context.date, stacksAge: true)
-                    }
+            line(isTogether: isTogether, at: context.date)
+                .task(id: scenePhase == .active && !isTogether) {
+                    if scenePhase == .active && !isTogether { compass.start() } else { compass.stop() }
                 }
-            }
-            .task(id: scenePhase == .active && !isTogether) {
-                if scenePhase == .active && !isTogether { compass.start() } else { compass.stop() }
-            }
         }
         .onChange(of: direction, initial: true) { _, direction in
             let previous = rotation
@@ -52,14 +42,13 @@ struct HomeMapDistanceLine: View {
         .onDisappear { compass.stop() }
     }
 
-    private func line(isTogether: Bool, at date: Date, stacksAge: Bool) -> some View {
+    private func line(isTogether: Bool, at date: Date) -> some View {
         let meters = CoupleMapSnapshot.distanceMeters(current.coordinate, partnerCoordinate)
         let distance = isTogether
             ? String(localized: .homeMapTogether)
             : CoupleMapSnapshot.formattedDistance(from: current.coordinate, to: partnerCoordinate)
         let age = PartnerLocationRecordedStatus.shortAge(capturedAt: partner.capturedAt, now: date)
-        // Under the bar's buttons the two lines share the bar's height, like a title and subtitle.
-        return VStack(alignment: .leading, spacing: dynamicTypeSize.isAccessibilitySize ? PaeoniaSpacing.space4 : 0) {
+        return VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
             HStack(spacing: PaeoniaSpacing.space4) {
                 // Apart, the arrow stays hidden until the first compass reading, so the
                 // together icon never shows on the way to it.
@@ -74,12 +63,12 @@ struct HomeMapDistanceLine: View {
                 // Rolls up when the partner moves away and down when they come closer.
                 Text(distance)
                     .contentTransition(.numericText(value: isTogether ? 0 : meters))
-                if !stacksAge {
+                if !dynamicTypeSize.isAccessibilitySize {
                     Text(verbatim: "· " + age)
                         .contentTransition(.numericText())
                 }
             }
-            if stacksAge {
+            if dynamicTypeSize.isAccessibilitySize {
                 Text(verbatim: age)
                     .contentTransition(.numericText())
                     .font(PaeoniaTypography.caption)
@@ -87,7 +76,6 @@ struct HomeMapDistanceLine: View {
             }
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: age)
-        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
         .fixedSize(horizontal: false, vertical: true)
         .font(PaeoniaTypography.bodyEmphasis)
         .foregroundStyle(.paeoniaTextPrimary)

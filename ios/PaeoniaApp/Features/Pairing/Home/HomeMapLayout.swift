@@ -18,8 +18,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     let mapTiles: HomeMapTileStatus
     let onPromptCurrentLocation: () -> Void
     let onRefresh: () async -> Void
-    /// The bar's row, which places the map's title between its buttons.
-    @ViewBuilder let header: (AnyView) -> Header
+    @ViewBuilder let header: Header
     @ViewBuilder let sheet: Sheet
     @ViewBuilder let footer: Footer
 
@@ -462,8 +461,11 @@ extension HomeMapLayout {
 extension HomeMapLayout {
     private func topBar(_ couple: HomeMapCouple?) -> some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            header(AnyView(Group { if !dynamicTypeSize.isAccessibilitySize { title(couple) } }))
+            header
                 .frame(height: PaeoniaSpacing.compactButtonHeight)
+                .overlay {
+                    if !dynamicTypeSize.isAccessibilitySize { title(couple) }
+                }
             if dynamicTypeSize.isAccessibilitySize {
                 title(couple)
                     .frame(maxWidth: .infinity, alignment: .leading)
