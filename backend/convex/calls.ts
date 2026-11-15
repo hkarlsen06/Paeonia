@@ -256,10 +256,6 @@ export const prepare_call_ring = internalQuery({
   handler: async (ctx, args) => {
     const call = await getByUuid(ctx, "calls", args.call_id);
     if (call?.state !== "ringing") return [];
-    const preference = await ctx.db
-      .query("notification_preferences")
-      .withIndex("by_user_id", (q) => q.eq("user_id", call.callee_user_id))
-      .unique();
     const devices = await ctx.db
       .query("user_devices")
       .withIndex("by_user_id_disabled_at", (q) => q.eq("user_id", call.callee_user_id).eq("disabled_at", undefined))
@@ -275,7 +271,6 @@ export const prepare_call_ring = internalQuery({
               call_id: call.id,
               caller_user_id: call.caller_user_id,
               ring_expires_at: call.ring_expires_at,
-              lock_screen_detail_level: preference?.lock_screen_detail_level ?? "private",
             },
           ],
     );

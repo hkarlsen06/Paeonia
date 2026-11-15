@@ -6,17 +6,16 @@ import Testing
 struct CallPartnerTests {
     private let robin = CallPartner(userID: UUID(), name: "Robin")
 
-    @Test func theSystemShowsTheNameTheCallIsFor() {
-        #expect(robin.handle(showsName: true).value == "Robin")
-        #expect(robin.handle(showsName: false).value == "Paeonia")
+    @Test func theSystemShowsThePartnersName() {
+        #expect(robin.handle.value == "Robin")
     }
 
-    @Test func aCallBackFromRecentsCallsThePartnerByEitherShownName() {
-        #expect(robin.answersCallBack(to: robin.handle(showsName: true).value))
-        #expect(robin.answersCallBack(to: robin.handle(showsName: false).value))
+    @Test func aCallBackFromRecentsCallsThePartnerByTheirCurrentName() {
+        #expect(robin.answersCallBack(to: robin.handle.value))
     }
 
     @Test func aCallBackToAnotherNameIsRefused() {
+        #expect(!robin.answersCallBack(to: "Paeonia"))
         #expect(!robin.answersCallBack(to: "Sam"))
         #expect(!robin.answersCallBack(to: robin.userID.uuidString.lowercased()))
         #expect(!robin.answersCallBack(to: ""))

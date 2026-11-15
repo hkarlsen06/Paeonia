@@ -9,13 +9,11 @@ nonisolated struct IncomingRing: Equatable, Sendable {
     let callID: UUID
     let callerUserID: UUID
     let ringExpiresAt: Date
-    /// False when the person keeps lock screen details private, so the call shows "Paeonia".
-    let showsName: Bool
 }
 
 nonisolated extension IncomingRing {
-    /// Reads the push `{type: "call", call_id, caller_user_id, ring_expires_at,
-    /// lock_screen_detail_level}`. Nil when it is not a call push.
+    /// Reads the push `{type: "call", call_id, caller_user_id, ring_expires_at}`. Nil when it is
+    /// not a call push.
     init?(voipPayload payload: [AnyHashable: Any], now: Date = .now) {
         guard payload["type"] as? String == "call",
               let callID = (payload["call_id"] as? String).flatMap(UUID.init(uuidString:)),
@@ -26,7 +24,6 @@ nonisolated extension IncomingRing {
         self.callID = callID
         self.callerUserID = callerUserID
         ringExpiresAt = Self.date(payload["ring_expires_at"]) ?? now + Self.defaultRingDuration
-        showsName = payload["lock_screen_detail_level"] as? String == "descriptive"
     }
 
     private static func date(_ value: Any?) -> Date? {
@@ -39,21 +36,6 @@ nonisolated extension IncomingRing {
             return Date(timeIntervalSince1970: milliseconds / 1_000)
         }
         return nil
-    }
-}
-
-/// Whether incoming calls may show the partner's name on the lock screen. Each VoIP push carries
-/// the person's choice. A ring from the open app has no push, so it uses the last one, and keeps
-/// the name private until a push has said otherwise.
-nonisolated enum CallLockScreenPrivacy {
-    private static let key = "paeonia.calls.showsNameOnLockScreen"
-
-    static var showsName: Bool {
-        UserDefaults.standard.bool(forKey: key)
-    }
-
-    static func remember(showsName: Bool) {
-        UserDefaults.standard.set(showsName, forKey: key)
     }
 }
 

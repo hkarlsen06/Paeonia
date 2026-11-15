@@ -393,8 +393,6 @@ export type PreparedCallRing = {
   call_id: string;
   caller_user_id: string;
   ring_expires_at: string;
-  /** The callee's choice. "private" makes the phone show "Paeonia" instead of the caller's name. */
-  lock_screen_detail_level: LockScreenDetailLevel;
 };
 
 /**
@@ -416,7 +414,6 @@ export function buildVoipRequest(ring: PreparedCallRing, bundleId: string): Apns
       call_id: ring.call_id,
       caller_user_id: ring.caller_user_id,
       ring_expires_at: ring.ring_expires_at,
-      lock_screen_detail_level: ring.lock_screen_detail_level,
     }),
   };
 }

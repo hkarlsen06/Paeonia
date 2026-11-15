@@ -249,7 +249,6 @@ describe("request builders", () => {
       call_id: "c1",
       caller_user_id: "u1",
       ring_expires_at: "2026-10-10T12:00:45.000Z",
-      lock_screen_detail_level: "private" as const,
     };
     const request = buildVoipRequest(ring, "no.paeonia.app");
     expect(request).toMatchObject({
@@ -261,13 +260,12 @@ describe("request builders", () => {
       expiration: String(Date.parse("2026-10-10T12:00:45Z") / 1000),
       collapseId: null,
     });
-    // Ids, the deadline and the callee's lock screen choice, nothing anyone wrote.
+    // Ids and the deadline, nothing anyone wrote.
     expect(JSON.parse(request.body)).toEqual({
       type: "call",
       call_id: "c1",
       caller_user_id: "u1",
       ring_expires_at: "2026-10-10T12:00:45.000Z",
-      lock_screen_detail_level: "private",
     });
     expect(apnsHeaders("jwt", request)).toMatchObject({
       "apns-topic": "no.paeonia.app.voip",

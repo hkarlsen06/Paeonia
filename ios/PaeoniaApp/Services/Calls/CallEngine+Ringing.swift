@@ -35,7 +35,7 @@ extension CallEngine {
         guard run === self.run, !run.isFinished else { return }
         do {
             // The system hands the request back to `handleStart`, which calls the server.
-            try await system.startOutgoing(callID, to: partner.handle(showsName: true))
+            try await system.startOutgoing(callID, to: partner.handle)
         } catch {
             send(.failed(.other), to: run)
         }
@@ -82,11 +82,10 @@ extension CallEngine {
     func receivePush(_ ring: IncomingRing?, mustReport: Bool, completion: @escaping @Sendable () -> Void) {
         Task {
             if let ring {
-                CallLockScreenPrivacy.remember(showsName: ring.showsName)
                 await reportIncoming(ring, mustReport: mustReport)
             } else if mustReport {
                 // Not a call push, but iOS stops VoIP pushes to an app that reports no call.
-                await reportEndedCall(UUID(), handle: CallPartner.handle(name: CallPartner.privateName))
+                await reportEndedCall(UUID(), handle: CallPartner.handle(name: CallPartner.neutralName))
             }
             completion()
         }
@@ -119,8 +118,7 @@ extension CallEngine {
         let ring = IncomingRing(
             callID: call.callID,
             callerUserID: call.callerUserID,
-            ringExpiresAt: call.ringExpiresAt,
-            showsName: CallLockScreenPrivacy.showsName
+            ringExpiresAt: call.ringExpiresAt
         )
         await reportIncoming(ring, mustReport: false)
     }
@@ -136,15 +134,12 @@ extension CallEngine {
               ring.ringExpiresAt > .now
         else {
             if mustReport {
-                await reportEndedCall(ring.callID, handle: CallPartner.handle(name: CallPartner.privateName))
+                await reportEndedCall(ring.callID, handle: CallPartner.handle(forCaller: ring.callerUserID))
             }
             return
         }
         reportedCallIDs.insert(ring.callID)
-        // The store cannot be read on a locked phone, and the report cannot wait for it.
-        let partner = CallPartner.cached
-        let name = ring.showsName && partner?.userID == ring.callerUserID ? partner?.name : nil
-        let handle = CallPartner.handle(name: name ?? CallPartner.privateName)
+        let handle = CallPartner.handle(forCaller: ring.callerUserID)
         let (machine, effects) = CallMachine.incoming(
             callID: ring.callID,
             deviceID: deviceID,

@@ -531,7 +531,6 @@ describe("ringing", () => {
         call_id: callId,
         caller_user_id: couple.first.userId,
         ring_expires_at: (await liveCalls(t))[0].ring_expires_at,
-        lock_screen_detail_level: "private",
       },
     ]);
     await couple.second.as.mutation(api.calls.answer_call, { p_call_id: callId, p_device_id: newUuid() });
