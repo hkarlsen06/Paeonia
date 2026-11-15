@@ -13,6 +13,9 @@ struct CallScreen: View {
     @Environment(\.openURL) private var openURL
     @State private var partnerTimeZone: TimeZone?
     @State private var dragOffset: CGFloat = 0
+    /// The height of what sits under the face while the call runs. An ended call keeps it, so the
+    /// face and the name stay put when the call ends.
+    @State private var bottomHeight: CGFloat?
 
     private static let avatarSize: CGFloat = 132
     /// The glow at its largest. It breathes between `glowScales`, which never go past 1.
@@ -182,34 +185,41 @@ struct CallScreen: View {
         }
     }
 
+    /// Hidden once the call ends, but it keeps its line, so the face above stays put.
     @ViewBuilder
     private var partnerTime: some View {
-        if let partnerTimeZone, !isEnded {
+        if let partnerTimeZone {
             TimelineView(.everyMinute) { context in
                 Text(.callsPartnerTime(
                     CallNightCheck.localTime(at: context.date, in: partnerTimeZone), participants.partnerName))
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextTertiary)
             }
+            .opacity(isEnded ? 0 : 1)
+            .accessibilityHidden(isEnded)
         }
     }
 
     @ViewBuilder
     private var bottom: some View {
         if isEnded {
-            endedActions
-                .frame(minHeight: CallControlButton.size + PaeoniaSpacing.space32)
+            // In a stack, because a frame on the empty view an ordinary ending shows takes no space.
+            VStack(spacing: 0) { endedActions }
+                .frame(maxWidth: .infinity, minHeight: bottomHeight ?? CallControlButton.size + PaeoniaSpacing.space32)
         } else {
-            if session.isWaitingForMicrophone {
-                Text(.callsMicrophoneWaiting(participants.partnerName))
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, PaeoniaSpacing.space16)
-                    .transition(.opacity)
+            VStack(spacing: 0) {
+                if session.isWaitingForMicrophone {
+                    Text(.callsMicrophoneWaiting(participants.partnerName))
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, PaeoniaSpacing.space16)
+                        .transition(.opacity)
+                }
+                controls
             }
-            controls
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomHeight = $0 }
         }
     }
 
