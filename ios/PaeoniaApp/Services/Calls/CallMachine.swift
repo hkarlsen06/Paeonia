@@ -41,8 +41,6 @@ nonisolated enum CallTimer: Hashable, Sendable, CaseIterable {
     /// The system did not activate the audio after an incoming call was answered or an
     /// outgoing one connected.
     case audioActivation
-    /// The connected sound's notes have played, so the call's own audio may start.
-    case connectedSound
 }
 
 /// What ending the call asks of the server.
@@ -65,8 +63,6 @@ nonisolated enum CallEffect: Equatable, Sendable {
     /// Loop `CallSound.ringback`, or stop it.
     case ringback(isOn: Bool)
     case playConnectedSound
-    /// Start or stop WebRTC's audio, which plays the partner and records the microphone.
-    case mediaAudio(isOn: Bool)
 }
 
 /// One call's phase and the facts its transitions depend on. Pure, so the rules in
@@ -75,9 +71,6 @@ nonisolated struct CallMachine: Equatable, Sendable {
     static let connectTimeout: TimeInterval = 30
     static let reconnectTimeout: TimeInterval = 30
     static let audioActivationTimeout: TimeInterval = 5
-    /// How long the connected sound's notes take. WebRTC's audio starts after them, because its
-    /// voice processing turns other sound down, the call's own sounds included.
-    static let connectedSoundLength: TimeInterval = 0.8
 
     let direction: CallDirection
     /// This install's id (`p_device_id`), to tell an answer here from one on another device.
@@ -94,7 +87,6 @@ nonisolated struct CallMachine: Equatable, Sendable {
     /// The call connected for the first time and its sound has not played yet, because it plays
     /// only in the audio the system activated.
     private var isConnectedSoundDue = false
-    private var isConnectedSoundPlaying = false
 
     /// An outgoing call, before `start_call` returns.
     static func outgoing(
@@ -134,29 +126,17 @@ nonisolated struct CallMachine: Equatable, Sendable {
         direction == .outgoing && phase == .ringing && hasAudio
     }
 
-    /// WebRTC's audio runs only once the phones have connected, in the audio the system
-    /// activated, and after the connected sound. Its voice processing turns other sound down,
-    /// so the ringback and the connected sound play without it.
-    var isMediaAudioOn: Bool {
-        guard hasAudio, !isConnectedSoundPlaying else { return false }
-        return switch phase {
-        case .active, .reconnecting: true
-        case .ringing, .connecting, .ended: false
-        }
-    }
-
     mutating func reduce(_ event: CallEvent, now: Date) -> [CallEffect] {
         if case .ended = phase {
             return []
         }
         let wasRingingBack = isRingingBack
-        let hadMediaAudio = isMediaAudioOn
         let effects = transition(event, now: now)
-        return audioEffects(wasRingingBack: wasRingingBack, hadMediaAudio: hadMediaAudio, now: now) + effects
+        return audioEffects(wasRingingBack: wasRingingBack) + effects
     }
 
     /// The audio goes first, so the ringback stops before the work that follows a ring.
-    private mutating func audioEffects(wasRingingBack: Bool, hadMediaAudio: Bool, now: Date) -> [CallEffect] {
+    private mutating func audioEffects(wasRingingBack: Bool) -> [CallEffect] {
         var effects: [CallEffect] = []
         if isRingingBack != wasRingingBack {
             effects.append(.ringback(isOn: isRingingBack))
@@ -164,18 +144,11 @@ nonisolated struct CallMachine: Equatable, Sendable {
         if isConnectedSoundDue, case .active = phase {
             if hasAudio {
                 isConnectedSoundDue = false
-                isConnectedSoundPlaying = true
-                effects += [
-                    .playConnectedSound,
-                    .startTimer(.connectedSound, fireAt: now + Self.connectedSoundLength),
-                ]
+                effects.append(.playConnectedSound)
             }
         } else {
             // Too late once the call has dropped or ended. A reconnect plays nothing.
             isConnectedSoundDue = false
-        }
-        if isMediaAudioOn != hadMediaAudio {
-            effects.append(.mediaAudio(isOn: isMediaAudioOn))
         }
         return effects
     }
@@ -286,9 +259,6 @@ nonisolated struct CallMachine: Equatable, Sendable {
             return finish(.failed(.couldNotConnect), server: serverEnd)
         case (.audioActivation, _) where !hasAudio:
             return finish(.failed(.other), server: serverEnd)
-        case (.connectedSound, _):
-            isConnectedSoundPlaying = false
-            return []
         default:
             return []
         }

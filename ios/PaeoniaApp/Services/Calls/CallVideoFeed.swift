@@ -1,12 +1,12 @@
 import AVFoundation
 import CoreMedia
 import UIKit
-@preconcurrency import WebRTC
+@preconcurrency import LiveKitWebRTC
 
 /// One side's video. WebRTC hands it frames on its own thread, and it shows each frame in every
 /// view made from it. The views draw with `AVSampleBufferDisplayLayer`, which keeps drawing in the
 /// background, so the same frames can feed system Picture in Picture.
-nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Sendable {
+nonisolated final class CallVideoFeed: NSObject, LKRTCVideoRenderer, @unchecked Sendable {
     /// Only touched on WebRTC's render thread.
     private var pool: CVPixelBufferPool?
     private var poolSize: (width: Int, height: Int) = (0, 0)
@@ -47,7 +47,7 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
 
     func setSize(_ size: CGSize) {}
 
-    func renderFrame(_ frame: RTCVideoFrame?) {
+    func renderFrame(_ frame: LKRTCVideoFrame?) {
         guard let frame, let sample = sampleBuffer(for: frame) else { return }
         let rotation = frame.rotation
         let isQuarterTurn = rotation == ._90 || rotation == ._270
@@ -75,7 +75,7 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
     }
 
     @MainActor
-    private func show(_ sample: CallVideoSample, rotation: RTCVideoRotation, size: CGSize) {
+    private func show(_ sample: CallVideoSample, rotation: LKRTCVideoRotation, size: CGSize) {
         guard !isWaitingForCamera else { return }
         if size != frameSize {
             frameSize = size
@@ -86,7 +86,7 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
         }
     }
 
-    private func sampleBuffer(for frame: RTCVideoFrame) -> CallVideoSample? {
+    private func sampleBuffer(for frame: LKRTCVideoFrame) -> CallVideoSample? {
         guard let pixelBuffer = pixelBuffer(for: frame) else { return nil }
         var sample = CMReadySampleBuffer(
             pixelBuffer: CVReadOnlyPixelBuffer(unsafeBuffer: pixelBuffer),
@@ -97,15 +97,15 @@ nonisolated final class CallVideoFeed: NSObject, RTCVideoRenderer, @unchecked Se
         return CallVideoSample(sample)
     }
 
-    private func pixelBuffer(for frame: RTCVideoFrame) -> CVPixelBuffer? {
-        if let buffer = frame.buffer as? RTCCVPixelBuffer {
+    private func pixelBuffer(for frame: LKRTCVideoFrame) -> CVPixelBuffer? {
+        if let buffer = frame.buffer as? LKRTCCVPixelBuffer {
             return buffer.pixelBuffer
         }
         // Software decoders (VP8, VP9, AV1) give planar I420 frames. The display layer takes NV12.
         return nv12Buffer(from: frame.buffer.toI420())
     }
 
-    private func nv12Buffer(from source: any RTCI420BufferProtocol) -> CVPixelBuffer? {
+    private func nv12Buffer(from source: any LKRTCI420BufferProtocol) -> CVPixelBuffer? {
         let width = Int(source.width)
         let height = Int(source.height)
         guard let pool = pool(width: width, height: height) else { return nil }
@@ -176,7 +176,7 @@ final class CallVideoLayerView: UIView {
     /// The display layer's renderer takes frames only through a synchronizer's receiver.
     private let synchronizer: AVSampleBufferRenderSynchronizer
     private let receiver: AVSampleBufferVideoRenderer.Receiver
-    private var rotation: RTCVideoRotation = ._0
+    private var rotation: LKRTCVideoRotation = ._0
 
     override init(frame: CGRect) {
         let displayLayer = AVSampleBufferDisplayLayer()
@@ -220,7 +220,7 @@ final class CallVideoLayerView: UIView {
         CATransaction.commit()
     }
 
-    func enqueue(_ sample: CallVideoSample, rotation: RTCVideoRotation) {
+    func enqueue(_ sample: CallVideoSample, rotation: LKRTCVideoRotation) {
         if rotation != self.rotation {
             self.rotation = rotation
             setNeedsLayout()

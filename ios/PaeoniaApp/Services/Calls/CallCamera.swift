@@ -1,5 +1,5 @@
 import AVFoundation
-@preconcurrency import WebRTC
+@preconcurrency import LiveKitWebRTC
 
 /// The phone's camera for a video call. Frames go to the call's video source.
 final class CallCamera {
@@ -7,10 +7,10 @@ final class CallCamera {
     private static let targetPixels = 1_280 * 720
     private static let maxFramesPerSecond = 30.0
 
-    private let capturer: RTCCameraVideoCapturer
+    private let capturer: LKRTCCameraVideoCapturer
 
-    init(source: RTCVideoSource) {
-        capturer = RTCCameraVideoCapturer(delegate: source)
+    init(source: LKRTCVideoSource) {
+        capturer = LKRTCCameraVideoCapturer(delegate: source)
         let session = capturer.captureSession
         // Keeps the camera sending while the partner's video plays in Picture in Picture.
         if session.isMultitaskingCameraAccessSupported {
@@ -22,7 +22,7 @@ final class CallCamera {
     /// once frames come from that camera.
     func start(front: Bool, onStarted: @escaping @MainActor @Sendable () -> Void) {
         let position: AVCaptureDevice.Position = front ? .front : .back
-        let devices = RTCCameraVideoCapturer.captureDevices()
+        let devices = LKRTCCameraVideoCapturer.captureDevices()
         guard let device = devices.first(where: { $0.position == position }) ?? devices.first,
               let format = Self.format(for: device)
         else {
@@ -44,7 +44,7 @@ final class CallCamera {
     }
 
     private static func format(for device: AVCaptureDevice) -> AVCaptureDevice.Format? {
-        RTCCameraVideoCapturer.supportedFormats(for: device).min { lhs, rhs in
+        LKRTCCameraVideoCapturer.supportedFormats(for: device).min { lhs, rhs in
             abs(pixels(lhs) - targetPixels) < abs(pixels(rhs) - targetPixels)
         }
     }

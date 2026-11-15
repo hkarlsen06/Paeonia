@@ -75,7 +75,7 @@ final class CallEngine {
     }
 
     func start() {
-        CallAudio.configureAtLaunch()
+        CallAudio.configureAtLaunch(sounds: sounds)
         system.start(delegate: self)
         pushRegistry = CallPushRegistry(
             onToken: { token in
@@ -161,7 +161,6 @@ final class CallEngine {
         updatePictureInPicture()
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
     private func perform(_ effect: CallEffect, for run: CallRun) {
         switch effect {
         case let .startTimer(timer, fireAt):
@@ -184,9 +183,6 @@ final class CallEngine {
             sounds.setRingback(isOn)
         case .playConnectedSound:
             sounds.play(.connected)
-        case let .mediaAudio(isOn):
-            CallAudio.setMediaAudio(isOn)
-            CallAudio.logState(isOn ? "media audio on" : "media audio off")
         }
     }
 
@@ -245,6 +241,7 @@ final class CallEngine {
     private func finish(_ run: CallRun, reason: CallEndReason, server: CallServerEnd?) {
         run.stop()
         sounds.stopAll()
+        CallAudio.stopEngine()
         finishedCallIDs.formUnion([run.callID, run.conversationID])
         pictureInPicture.setEnabled(false)
         if let server {
@@ -324,6 +321,7 @@ final class CallEngine {
         run?.stop()
         run = nil
         sounds.stopAll()
+        CallAudio.stopEngine()
         partnerVideo.clear()
         localVideo.clear()
     }

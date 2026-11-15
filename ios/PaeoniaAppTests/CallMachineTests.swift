@@ -198,24 +198,4 @@ struct CallMachineTests {
         _ = dropped.reduce(.audioActivated, now: start + 3)
         #expect(!dropped.reduce(.connected, now: start + 4).contains(.playConnectedSound))
     }
-
-    /// WebRTC's voice processing turns other sound down, so it waits for the ringback and the
-    /// connected sound.
-    @Test func webRTCsAudioRunsOnlyAfterTheConnectedSoundWhileTheCallHasAudio() {
-        var machine = outgoing()
-        _ = machine.reduce(.registered(callID: callID, answeredIncoming: false), now: start)
-        #expect(!machine.reduce(.audioActivated, now: start + 1).contains(.mediaAudio(isOn: true)))
-        #expect(!machine.reduce(.liveCall(row(.active)), now: start + 5).contains(.mediaAudio(isOn: true)))
-
-        let connected = machine.reduce(.connected, now: start + 6)
-        #expect(connected.contains(.playConnectedSound))
-        #expect(connected.contains(.startTimer(.connectedSound, fireAt: start + 6 + CallMachine.connectedSoundLength)))
-        #expect(!connected.contains(.mediaAudio(isOn: true)))
-        #expect(machine.reduce(.timerFired(.connectedSound), now: start + 7) == [.mediaAudio(isOn: true)])
-
-        #expect(!machine.reduce(.connectionLost, now: start + 10).contains(.mediaAudio(isOn: false)))
-        #expect(machine.reduce(.audioDeactivated, now: start + 11) == [.mediaAudio(isOn: false)])
-        #expect(machine.reduce(.audioActivated, now: start + 12).contains(.mediaAudio(isOn: true)))
-        #expect(machine.reduce(.hangUp, now: start + 20) == [.mediaAudio(isOn: false), .finish(.hungUp, server: .end)])
-    }
 }
