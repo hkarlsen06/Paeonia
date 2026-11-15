@@ -24,6 +24,9 @@ class TwoFingerPanRecognizer: UIPanGestureRecognizer {
     static let turnStart: CGFloat = 0.15
     /// Where two fingers were as they went down.
     private(set) var firstFingers: TwoFingers?
+    /// The fingers' midpoint in the window as they went down. A pan's own translation counts only
+    /// from the moment it begins, which can be well after the fingers started moving.
+    private(set) var startLocation: CGPoint?
 
     /// Nil for one finger.
     var fingers: TwoFingers? {
@@ -38,7 +41,9 @@ class TwoFingerPanRecognizer: UIPanGestureRecognizer {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesBegan(touches, with: event)
-        if state == .possible, firstFingers == nil { firstFingers = fingers }
+        guard state == .possible else { return }
+        if firstFingers == nil { firstFingers = fingers }
+        startLocation = location(in: nil)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
@@ -57,5 +62,6 @@ class TwoFingerPanRecognizer: UIPanGestureRecognizer {
     override func reset() {
         super.reset()
         firstFingers = nil
+        startLocation = nil
     }
 }

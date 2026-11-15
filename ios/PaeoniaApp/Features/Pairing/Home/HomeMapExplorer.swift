@@ -188,10 +188,9 @@ private struct HomeMapGesture: UIGestureRecognizerRepresentable {
         let fingers = pan.fingers
         switch pan.state {
         case .began:
-            // The fingers have already moved a little before the drag is recognized, so the
-            // first step catches up from where they went down.
-            let moved = pan.translation(in: map)
-            tracker.begin(at: CGPoint(x: point.x - moved.x, y: point.y - moved.y), fingers: pan.firstFingers ?? fingers)
+            // The first step catches up from where the fingers went down.
+            let start = pan.startLocation.map { map.convert($0, from: nil) } ?? point
+            tracker.begin(at: start, fingers: pan.firstFingers ?? fingers)
         case .changed:
             guard let step = tracker.step(to: point, fingers: fingers) else { return }
             explorer.move(from: step.from, to: point, scale: step.scale, turn: step.turn)
