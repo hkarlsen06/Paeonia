@@ -146,7 +146,8 @@ final class CallEngine {
                 audioRoute: current.audioRoute,
                 isCameraOn: current.isCameraOn,
                 isPartnerCameraOn: current.isPartnerCameraOn,
-                isUsingFrontCamera: current.isUsingFrontCamera
+                isUsingFrontCamera: current.isUsingFrontCamera,
+                isWaitingForMicrophone: current.isWaitingForMicrophone
             )
         }
         session.phase = run.machine.phase

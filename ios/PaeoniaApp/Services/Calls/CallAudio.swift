@@ -62,7 +62,7 @@ enum CallAudio {
 
     /// Asks for the microphone when the person has not answered yet.
     static func microphoneAllowed() async -> Bool {
-        switch AVAudioApplication.shared.recordPermission {
+        switch microphonePermission {
         case .granted:
             true
         case .denied:
@@ -70,6 +70,18 @@ enum CallAudio {
         default:
             await AVAudioApplication.requestRecordPermission()
         }
+    }
+
+    static var microphonePermission: AVAudioApplication.recordPermission {
+        AVAudioApplication.shared.recordPermission
+    }
+
+    /// Starts WebRTC's audio again once the microphone is allowed during a call, so it records.
+    /// Before the system activates the call's audio there is nothing to restart.
+    static func restartForMicrophone() {
+        guard rtcSession.isAudioEnabled else { return }
+        rtcSession.isAudioEnabled = false
+        rtcSession.isAudioEnabled = true
     }
 
     static func cameraAllowed() async -> Bool {

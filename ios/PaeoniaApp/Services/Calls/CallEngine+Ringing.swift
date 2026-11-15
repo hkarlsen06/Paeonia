@@ -1,3 +1,4 @@
+import AVFAudio
 import Foundation
 import Intents
 @preconcurrency import LiveCommunicationKit
@@ -179,12 +180,15 @@ extension CallEngine {
             send(.failed(.other), to: run)
             return
         }
+        // iOS cannot ask for the microphone on a locked screen or in the background, so only a
+        // refusal the person already gave stops the answer.
+        let microphone = CallAudio.microphonePermission
+        guard microphone != .denied else {
+            request.fail()
+            send(.failed(.microphoneDenied), to: run)
+            return
+        }
         Task {
-            guard await CallAudio.microphoneAllowed() else {
-                request.fail()
-                send(.failed(.microphoneDenied), to: run)
-                return
-            }
             do {
                 try await backend.answerCall(callID: run.callID, deviceID: deviceID)
                 guard run === self.run, run.machine.phase == .ringing else {
@@ -195,11 +199,30 @@ extension CallEngine {
                 }
                 request.fulfill()
                 send(.answered, to: run)
+                if microphone != .granted {
+                    askForMicrophone(during: run)
+                }
             } catch {
                 // A failed answer never joins the call.
                 request.fail()
                 let stoppedRinging = CallBackend.isServerError(error, code: CallBackend.notRingingCode)
                 send(stoppedRinging ? .ended(.missed) : .failed(CallFailure(error)), to: run)
+            }
+        }
+    }
+
+    /// Asks for the microphone without holding up the call. iOS shows the question once the
+    /// person opens the app, and until they answer the partner cannot hear them.
+    private func askForMicrophone(during run: CallRun) {
+        center?.session?.isWaitingForMicrophone = true
+        Task {
+            let isAllowed = await CallAudio.microphoneAllowed()
+            guard run === self.run, !run.isFinished else { return }
+            center?.session?.isWaitingForMicrophone = false
+            if isAllowed {
+                CallAudio.restartForMicrophone()
+            } else {
+                send(.failed(.microphoneDenied), to: run)
             }
         }
     }

@@ -184,6 +184,15 @@ struct CallScreen: View {
             endedActions
                 .frame(minHeight: CallControlButton.size + PaeoniaSpacing.space32)
         } else {
+            if session.isWaitingForMicrophone {
+                Text(.callsMicrophoneWaiting(participants.partnerName))
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, PaeoniaSpacing.space16)
+                    .transition(.opacity)
+            }
             controls
         }
     }

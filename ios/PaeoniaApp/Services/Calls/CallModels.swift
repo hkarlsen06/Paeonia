@@ -12,6 +12,9 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     var isCameraOn = false
     var isPartnerCameraOn = false
     var isUsingFrontCamera = true
+    /// The call was answered before the person said whether Paeonia may use the microphone, so
+    /// the partner cannot hear them until they open the app and allow it.
+    var isWaitingForMicrophone = false
 
     /// A voice call on the earpiece, which the person holds to their ear, so the screen turns off
     /// and their cheek cannot press anything. An incoming ring is the system's to show.

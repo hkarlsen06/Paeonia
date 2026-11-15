@@ -4969,6 +4969,24 @@
         }
       }
     },
+    "calls.microphoneWaiting" : {
+      "comment" : "Call screen line after answering a call before allowing the microphone. iOS asks for the microphone once the person opens the app. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ can't hear you yet. Open Paeonia and allow the microphone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hører deg ikke ennå. Åpne Paeonia og gi tilgang til mikrofonen."
+          }
+        }
+      }
+    },
     "calls.minimize" : {
       "comment" : "VoiceOver label of the chevron that shrinks the call screen to a small bubble.",
       "extractionState" : "manual",

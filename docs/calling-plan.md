@@ -77,6 +77,7 @@ Built on 2026-11-14 in `backend/convex/calls.ts`, `lib/calls.ts`, `push:send_cal
 | End | Either person ends an active call. Writes a "Call" row with its length. |
 | Lost phone | Each phone sends a heartbeat every 15 seconds while the call is active, each one given up after 5 seconds so a slow request never delays the next. A sweep ends a call with no heartbeat from one side for 60 seconds. The other phone ends the call itself after 30 seconds without a connection. |
 | Network change | The call shows "Reconnecting", reconnects the relay at once, restarts WebRTC's connection, and ends after 30 seconds without one. |
+| Answer before allowing the microphone | The answer goes through at once, because iOS cannot ask for the microphone on a locked screen or in the background. The app asks without waiting, and iOS shows the question when the person opens the app. Until then the call screen says the partner cannot hear them yet. Allowing it starts WebRTC's audio again so it records. Refusing it ends the call as a microphone failure. A microphone the person already refused stops the answer. Starting a call runs in the foreground, so it asks first. |
 | Answer from a closed app before first unlock | The join fails and the call ends as failed, because the sign-in token is not readable yet. |
 
 Only a call that is still in the expected state can move. Answer, decline, cancel and timeout each check that the call still rings, so exactly one of them writes the missed-call row.

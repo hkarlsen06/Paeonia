@@ -8,8 +8,8 @@
   nonisolated extension DeveloperScenario {
     static let calls: [DeveloperScenario] = [
       callOutgoing, callConnecting, callActiveVoice, callActiveVoiceMutedSpeaker, callActiveVoiceAirPods,
-      callActiveVideo, callVideoOwnCamera, callReconnecting, callEnded, callEndedNoAnswer, callFailedOffline,
-      callBusy, callBubbleVoiceGame, callBubbleVideoGame, callNightCheck, callGameToolbar, callUsTab,
+      callActiveVideo, callVideoOwnCamera, callMicrophoneWaiting, callReconnecting, callEnded, callEndedNoAnswer,
+      callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame, callNightCheck, callGameToolbar, callUsTab,
       callJustUsRows,
     ]
 
@@ -31,6 +31,10 @@
       "call-active-voice-airpods", "Call · AirPods", "The system's sound picker in place of Speaker",
       phase: DeveloperCallFixture.active
     ) { $0.audioRoute = .external(name: "AirPods Pro") }
+    static let callMicrophoneWaiting = screen(
+      "call-microphone-waiting", "Call · microphone not allowed yet",
+      "Answered from the Lock Screen before allowing the microphone", phase: DeveloperCallFixture.active
+    ) { $0.isWaitingForMicrophone = true }
     static let callActiveVideo = screen(
       "call-active-video", "Call · video", "Both cameras on", phase: DeveloperCallFixture.active
     ) {
