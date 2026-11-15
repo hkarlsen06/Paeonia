@@ -280,8 +280,11 @@ struct CallScreen: View {
         }
     }
 
-    // MARK: - Minimizing
+}
 
+// MARK: - Minimizing
+
+extension CallScreen {
     private var swipeDown: some Gesture {
         DragGesture(minimumDistance: 20)
             .onChanged { value in
