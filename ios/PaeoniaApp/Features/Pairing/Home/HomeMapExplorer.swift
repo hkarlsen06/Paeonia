@@ -30,6 +30,16 @@ final class HomeMapExplorer {
         start = nil
     }
 
+    /// The map shows no couple, so there is nothing to look around. Its intro attaches it
+    /// again.
+    func detach() {
+        guard map != nil || isExploring || start != nil else { return }
+        map = nil
+        reframe = {}
+        isExploring = false
+        start = nil
+    }
+
     /// Keeps the place under the fingers' last midpoint under their new one, and zooms and
     /// turns the map around it as the fingers spread, close or twist. `turn` is in radians,
     /// clockwise on screen.

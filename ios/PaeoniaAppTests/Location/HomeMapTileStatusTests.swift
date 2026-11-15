@@ -144,9 +144,12 @@ struct HomeMapTileStatusTests {
         let coordinator = HomeMapLibreView.Coordinator()
         let map = MLNMapView(frame: .zero, styleURL: HomeMapLibreView.styleURL)
         coordinator.parent = HomeMapLibreView(
-            current: CLLocationCoordinate2D(latitude: 0, longitude: 0),
-            partner: CLLocationCoordinate2D(latitude: 1, longitude: 1),
-            isNear: false, framedBox: .zero, avatarSize: 60, tiles: status, onProjection: { _ in }
+            places: HomeMapLibreView.Places(
+                current: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+                partner: CLLocationCoordinate2D(latitude: 1, longitude: 1),
+                isNear: false, framedBox: .zero
+            ),
+            avatarSize: 60, tiles: status, onProjection: { _ in }
         )
         defer {
             finishFirst?.resume()

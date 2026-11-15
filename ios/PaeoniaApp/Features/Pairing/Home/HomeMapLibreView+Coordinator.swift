@@ -23,14 +23,21 @@ extension HomeMapLibreView {
         var introStartPoints = HomeMapAvatarPoints(own: .zero, partner: .zero)
         /// The map points the intro carries under the avatars (`HomeMapLibreView.introAnchors`).
         var introAnchors: HomeMapLibreView.MapPair = (.zero, .zero)
+        /// The world the map shows while it waits for both places. The intro flies from it.
+        var preview: HomeMapLibreView.PreviewCamera?
         private var projectionTask: Task<Void, Never>?
 
         /// Frames the map again when the couple, the box or the view's real size changed.
         /// The box must fit inside the view, or the fit has no room and zooms out to the world.
         func frameIfNeeded(_ map: MLNMapView) {
-            guard let parent, map.bounds.width > 0, map.bounds.height >= parent.framedBox.maxY,
+            guard let parent, map.bounds.width > 0 else { return }
+            guard let places = parent.places else {
+                showPreview(map)
+                return
+            }
+            guard map.bounds.height >= places.framedBox.maxY,
                   parent.explorer?.isExploring != true else { return }
-            let key = framingKey(parent, map)
+            let key = framingKey(places, map)
             guard key != lastFraming else { return }
             // HomeMapBand already interpolates the box alongside the cards. Apply each
             // frame directly instead of restarting a camera animation on every layout tick.
@@ -45,7 +52,8 @@ extension HomeMapLibreView {
             lastFraming = key
             self.map = map
             guard !holdsIntro(map, isFirstFraming: isFirstFraming) else { return }
-            parent.frame(map, animated: animated) { [weak self] in self?.lastFraming == key }
+            preview = nil
+            parent.frame(map, places, animated: animated) { [weak self] in self?.lastFraming == key }
             handOverToExplorer(map)
         }
 
@@ -53,19 +61,18 @@ extension HomeMapLibreView {
         func handOverToExplorer(_ map: MLNMapView) {
             guard let explorer = parent?.explorer, explorer.map !== map else { return }
             explorer.attach(map) { [weak self, weak map] in
-                guard let self, let map, let parent = self.parent else { return }
-                let key = self.framingKey(parent, map)
+                guard let self, let map, let parent = self.parent, let places = parent.places else { return }
+                let key = self.framingKey(places, map)
                 self.lastFraming = key
-                parent.frame(map, animated: self.isLoaded && !UIAccessibility.isReduceMotionEnabled) { [weak self] in
-                    self?.lastFraming == key
-                }
+                let animated = self.isLoaded && !UIAccessibility.isReduceMotionEnabled
+                parent.frame(map, places, animated: animated) { [weak self] in self?.lastFraming == key }
             }
         }
 
-        private func framingKey(_ parent: HomeMapLibreView, _ map: MLNMapView) -> FramingKey {
+        private func framingKey(_ places: Places, _ map: MLNMapView) -> FramingKey {
             FramingKey(
-                current: parent.current, partner: parent.partner, box: parent.framedBox,
-                size: map.bounds.size, avatarSize: parent.avatarSize
+                current: places.current, partner: places.partner, box: places.framedBox,
+                size: map.bounds.size, avatarSize: parent?.avatarSize ?? 0
             )
         }
 
@@ -93,10 +100,10 @@ extension HomeMapLibreView {
         }
 
         private func publishCurrentProjection(_ mapView: MLNMapView) {
-            guard let parent, lastFraming != nil else { return }
+            guard let parent, let places = parent.places, lastFraming != nil else { return }
             // During the intro the avatars ride on the points they land on.
             let (own, partner) = if case .none = intro {
-                (parent.current, parent.partner)
+                (places.current, places.partner)
             } else {
                 (HomeMapLibreView.coordinate(introAnchors.own), HomeMapLibreView.coordinate(introAnchors.partner))
             }
@@ -106,7 +113,8 @@ extension HomeMapLibreView {
                 direction: mapView.direction,
                 zoom: mapView.zoomLevel,
                 introProgress: introProgress,
-                introStart: introStartPoints
+                introStart: introStartPoints,
+                introFromPreview: preview != nil
             ))
         }
 
@@ -244,4 +252,6 @@ struct HomeMapProjection: Equatable {
     let introProgress: Double
     /// The positions on the intro's first camera.
     let introStart: HomeMapAvatarPoints
+    /// The intro flies from the faint world of the preview, so the map is already showing.
+    let introFromPreview: Bool
 }

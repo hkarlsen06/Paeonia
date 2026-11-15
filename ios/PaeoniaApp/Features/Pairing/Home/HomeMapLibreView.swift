@@ -9,12 +9,10 @@ import UIKit
 /// Its camera fits both partners inside `framedBox`. The coordinator reports their projected
 /// positions as the camera moves, so SwiftUI's avatars follow the map.
 /// The data credit sits behind the info button next to the distance (`HomeMapCredits`).
+/// Before both places are known, it shows the world faintly instead (`HomeMapLibreView+Preview`).
 struct HomeMapLibreView: UIViewRepresentable {
-    let current: CLLocationCoordinate2D
-    let partner: CLLocationCoordinate2D
-    let isNear: Bool
-    /// Where the couple should sit, in the map view's own coordinates.
-    let framedBox: CGRect
+    /// Both places, or nil while the map shows the world as a preview.
+    let places: Places?
     let avatarSize: CGFloat
     var compass: PartnerCompass?
     /// Where the avatars wait before the map shows, and where they land. The map then fades
@@ -29,6 +27,14 @@ struct HomeMapLibreView: UIViewRepresentable {
     /// Gets told whether the map loaded, and gives the style to load.
     let tiles: HomeMapTileStatus
     var onProjection: (HomeMapProjection) -> Void
+
+    struct Places {
+        let current: CLLocationCoordinate2D
+        let partner: CLLocationCoordinate2D
+        let isNear: Bool
+        /// Where the couple should sit, in the map view's own coordinates.
+        let framedBox: CGRect
+    }
 
     static let styleURL = URL(string: "https://tiles.openfreemap.org/styles/dark")!
     /// About 10 km across a phone screen: the city, not its streets.
@@ -79,8 +85,11 @@ struct HomeMapLibreView: UIViewRepresentable {
     }
 
     /// The framing for a map view of `size`.
-    func framing(in size: CGSize) -> Framing {
-        Self.camera(current: current, partner: partner, isNear: isNear, area: framedBox, viewSize: size)
+    static func framing(_ places: Places, in size: CGSize) -> Framing {
+        camera(
+            current: places.current, partner: places.partner, isNear: places.isNear,
+            area: places.framedBox, viewSize: size
+        )
     }
 
     /// Zoomed far out, the tiles for that zoom carry only very simplified coastlines.
@@ -91,8 +100,8 @@ struct HomeMapLibreView: UIViewRepresentable {
 
     /// `animated` pans on Paeonia's standard curve and timing, so the map moves with the
     /// cards when the box changes.
-    func frame(_ map: MLNMapView, animated: Bool, isCurrent: @escaping () -> Bool) {
-        let camera = framing(in: map.bounds.size)
+    func frame(_ map: MLNMapView, _ places: Places, animated: Bool, isCurrent: @escaping () -> Bool) {
+        let camera = Self.framing(places, in: map.bounds.size)
         map.contentInset = .zero
         let heading = Self.heading(camera.direction)
         map.tileLodZoomShift = Self.tileDetailShift(zoom: camera.zoom)

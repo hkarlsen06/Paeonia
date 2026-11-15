@@ -82,7 +82,12 @@ extension HomeMapLayout {
     }
 
     /// Side by side in the middle of the open map, where the avatars wait while it loads.
+    /// After the world preview, where they sat in the row, so they fly on from there. At the
+    /// largest text sizes the row is a column instead, and they wait in the middle.
     func waitingPoints(_ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
+        if previewedMap, !dynamicTypeSize.isAccessibilitySize {
+            return rowPoints(metrics.screen)
+        }
         let near = HomeMapMetrics(
             screen: metrics.screen, bandHeight: metrics.bandHeight, avatarSize: avatarSize, isNear: true,
             markerMeasurements: markerMeasurements
@@ -90,6 +95,20 @@ extension HomeMapLayout {
         let center = CGPoint(x: near.framedBox.midX, y: near.framedBox.midY)
         let together = separated(HomeMapAvatarPoints(own: center, partner: center), isNear: true)
         return fitted(together, in: near)
+    }
+
+    /// The middles of the portraits in the row of avatars without a map, in the page's
+    /// coordinates, worked out the way `HomeStoriesStrip` lays out the row.
+    private func rowPoints(_ screen: HomeMapScreen) -> HomeMapAvatarPoints {
+        let gap = hearts != nil && canSendHearts
+            ? Self.heartWidth - 2 * Self.heartOverlap
+            : StoryNoteBubble.maxWidth - Self.rowAvatarSize + PaeoniaSpacing.space8
+        let half = markerMeasurements.halfWidth + gap / 2
+        let y = rowTop(screen) + markerMeasurements.above
+        return HomeMapAvatarPoints(
+            own: CGPoint(x: screen.width / 2 - half, y: y),
+            partner: CGPoint(x: screen.width / 2 + half, y: y)
+        )
     }
 
     /// Clamping to the map can bring markers together. Keep their complete content apart.
@@ -112,12 +131,18 @@ extension HomeMapLayout {
         )
     }
 
-    /// The map fades in over the first half of the intro.
-    var mapOpacity: Double {
+    /// Faint while it previews the world, once it has loaded, so it fades in instead of
+    /// appearing. The map fades in over the first half of the intro, from the preview's
+    /// faintness when it showed the world.
+    func mapOpacity(_ couple: HomeMapCouple?) -> Double {
+        guard couple != nil else { return mapTiles.tiles == .available ? Self.previewOpacity : 0 }
         guard !reduceMotion else { return 1 }
-        guard let mapProjection else { return 0 }
-        return min(1, mapProjection.introProgress * 2)
+        let start = mapProjection?.introFromPreview ?? previewedMap ? Self.previewOpacity : 0
+        guard let mapProjection else { return start }
+        return start + (1 - start) * min(1, mapProjection.introProgress * 2)
     }
+
+    static var previewOpacity: Double { 0.5 }
 
     func separated(_ points: HomeMapAvatarPoints, isNear: Bool) -> HomeMapAvatarPoints {
         // Wide enough that the two note bubbles never touch.

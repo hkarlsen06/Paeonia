@@ -5,7 +5,8 @@ import SwiftUI
 /// both avatars sit on it with their stories and notes, and the cards follow in one plain
 /// scroll view. The mark and the streak stay at the top in a bar that turns to glass once
 /// the cards scroll under it, like a navigation bar. Without both locations, the avatars
-/// sit in a row instead, with why there is no map below them.
+/// sit in a row instead, with why there is no map below them and the world faintly behind
+/// them. That is the same map, so it flies in from the world once both places arrive.
 ///
 /// One view covers both, so the stories strip keeps its place when the map comes or goes,
 /// and a story or note the person is writing stays open.
@@ -29,13 +30,13 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     @AppStorage("home.locationNotice.dismissed") private var dismissedNotice = ""
     @Environment(\.avatarStyling) var avatarStyling
     @Environment(\.accessibilityReduceMotion) var reduceMotion
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dynamicTypeSize) var dynamicTypeSize
     @Environment(\.launchContentRevealed) private var launchContentRevealed
     @Environment(LaunchMapFlight.self) private var launchMapFlight: LaunchMapFlight?
     @Environment(\.scenePhase) private var scenePhase
     @State private var scrollOffset: CGFloat = 0
-    @State private var topBarHeight = Self.headerHeight
-    @State private var compass = PartnerCompass()
+    @State var topBarHeight = Self.headerHeight
+    @State var compass = PartnerCompass()
     @State private var flights = HeartFlights()
     @State private var heartTaps = 0
     /// Changes on every frame the camera moves, so only the views that place things on the
@@ -46,6 +47,10 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     @State var explorer = HomeMapExplorer()
     @State var isShowingMapDetails = false
     @State private var isNoteOpen = false
+    /// Where the cards start, in the page's coordinates, so the world preview fades out above them.
+    @State private var cardsTop: CGFloat = 0
+    /// The map showed the world before the couple arrived, so it fades in from there.
+    @State var previewedMap = false
 
     /// Both places, while there is a map to show.
     private var couple: HomeMapCouple? {
@@ -77,7 +82,14 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
         // under the tab bar.
         .ignoresSafeArea(isNoteOpen ? .keyboard : [])
         .onPreferenceChange(HomeNoteIsOpenKey.self) { isNoteOpen = $0 }
-        .onChange(of: mapState, initial: true) { _, _ in retainMapLocations() }
+        .onChange(of: mapState, initial: true) { _, _ in
+            retainMapLocations()
+            if showsMapPreview {
+                previewedMap = true
+            } else if mapState == .loading {
+                previewedMap = false
+            }
+        }
         .sheet(isPresented: $isShowingMapDetails) {
             if let couple {
                 LocationMapDetails(
@@ -106,6 +118,8 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
         .scrollIndicators(.hidden)
         // Offline, the avatars move from where they wait for the map to their places.
         .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: mapTiles.tiles)
+        // The notice gives way to the map, and the cards move down under it.
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: reservesMapSpace)
         .refreshable {
             await onRefresh()
         }
@@ -151,8 +165,11 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
                 .geometryGroup()
                 // The cards start just under the map's last full row, and the map fades on behind them.
                 .padding(.top, reservesMapSpace ? -HomeMapMetrics.cardsOverlap : PaeoniaSpacing.space24)
+                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(homeMapPageSpace)).minY } action: {
+                    cardsTop = $0
+                }
         }
-        .padding(.top, reservesMapSpace ? 0 : screen.topInset + topBarHeight + PaeoniaSpacing.space8)
+        .coordinateSpace(.named(homeMapPageSpace))
         // ScrollView also asks for an ideal width. Keep that probe at the viewport width,
         // so the square tiles never start narrow and animate out of their first positions.
         .frame(width: screen.width)
@@ -171,7 +188,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     /// from the layout, in the same pass that sizes the cards.
     private func top(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
         ZStack(alignment: .top) {
-            if let couple {
+            if couple != nil || showsMapPreview {
                 mapBand(couple, screen)
             }
 
@@ -179,6 +196,8 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
 
             if let couple {
                 heartLayer(couple, screen)
+                    // Takes over from the row's heart in the same spot.
+                    .transition(.identity)
                 showBothButton(couple, screen)
             }
         }
@@ -192,55 +211,6 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
         // A pull down keeps the map against the top of the screen.
         .visualEffect { [pinned = reservesMapSpace] content, proxy in
             content.offset(y: pinned ? min(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY) : 0)
-        }
-    }
-
-    /// The map, faded into the cards, with the open map above them sending hearts.
-    private func mapBand(_ couple: HomeMapCouple, _ screen: HomeMapScreen) -> some View {
-        HomeMapBand { bandHeight in
-            let metrics = metrics(couple, screen, bandHeight: bandHeight)
-            HomeMapLibreView(
-                current: couple.currentCoordinate,
-                partner: couple.partnerCoordinate,
-                isNear: couple.isNear,
-                framedBox: metrics.framedBox,
-                avatarSize: avatarSize,
-                compass: compass,
-                introSpots: introSpots(couple, metrics),
-                // Home also mounts under the App Store's purchase sheet after a purchase.
-                // The intro waits until nothing covers the app, so the person sees it.
-                canStartIntro: launchContentRevealed && scenePhase == .active,
-                launchFlight: launchMapFlight,
-                explorer: explorer,
-                tiles: mapTiles,
-                onProjection: { [camera] projection in
-                    guard camera.projection != projection else { return }
-                    camera.projection = projection
-                }
-            )
-            // Always as tall as the map can get, so the map view never resizes while
-            // the map grows or shrinks. Only the fade moves.
-            .frame(height: screen.mapHeight)
-            .overlay(alignment: .top) { tabLight(screen) }
-            .mask(alignment: .top) { fadeMask(metrics) }
-            .opacity(mapOpacity)
-
-            // The faded map under the cards does nothing on a tap, but SwiftUI hands the
-            // page's map gesture only touches that land on something. The areas over the map
-            // decide whether a drag or a pinch from here moves it.
-            Color.clear
-                .contentShape(Rectangle())
-                .accessibilityHidden(true)
-
-            // A tap on the open map sends a heart, as on the map card. Only down to the
-            // cards, so a tap between two cards does nothing.
-            Color.clear
-                .frame(height: metrics.framedBottom)
-                .contentShape(Rectangle())
-                .onTapGesture { sendHeart() }
-                .homeMapArea("map", explorer)
-                // VoiceOver sends hearts from the distance line in the bar.
-                .accessibilityHidden(true)
         }
     }
 
@@ -285,6 +255,12 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
                 middleOverlap: Self.heartOverlap,
                 onMarkerMeasurements: { markerMeasurements = $0 }
             )
+            // The row sits below the bar. The map, and the avatars on it, start at the top of
+            // the screen, so the map stays put when it takes over from the row.
+            .padding(.top, reservesMapSpace ? 0 : rowTop(screen))
+            // The row and the map put the avatars in the same spots when the map arrives, so
+            // they swap at once instead of fading across, and fly on with the map.
+            .animation(nil, value: reservesMapSpace)
         }
     }
 
@@ -332,14 +308,90 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
 }
 
 extension HomeMapLayout {
-    private func sendHeart() {
+    /// The map, faded into the cards, with the open map above them sending hearts. Without
+    /// the couple, the world faintly behind the row of avatars and the notice.
+    private func mapBand(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
+        HomeMapBand { bandHeight in
+            let metrics = metrics(couple, screen, bandHeight: bandHeight)
+            HomeMapLibreView(
+                places: couple.map { places($0, metrics) },
+                avatarSize: avatarSize,
+                compass: compass,
+                introSpots: couple.flatMap { introSpots($0, metrics) },
+                // Home also mounts under the App Store's purchase sheet after a purchase.
+                // The intro waits until nothing covers the app, so the person sees it.
+                canStartIntro: launchContentRevealed && scenePhase == .active,
+                launchFlight: launchMapFlight,
+                explorer: explorer,
+                tiles: mapTiles,
+                onProjection: { [camera] projection in
+                    guard camera.projection != projection else { return }
+                    camera.projection = projection
+                }
+            )
+            // Always as tall as the map can get, so the map view never resizes while
+            // the map grows or shrinks. Only the fade moves.
+            .frame(height: screen.mapHeight)
+            .overlay(alignment: .top) { tabLight(screen) }
+            .mask(alignment: .top) {
+                // Without the couple, the world fades out above the cards.
+                couple == nil
+                    ? fadeMask(bottom: cardsTop, fadeLength: cardsTop * 0.6)
+                    : fadeMask(bottom: metrics.bandHeight, fadeLength: metrics.fadeLength)
+            }
+            .opacity(mapOpacity(couple))
+            // The world preview only hints at the map to come.
+            .accessibilityHidden(couple == nil)
+
+            if couple != nil {
+                mapControls(metrics)
+            }
+        }
+    }
+
+    private func places(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapLibreView.Places {
+        HomeMapLibreView.Places(
+            current: couple.currentCoordinate,
+            partner: couple.partnerCoordinate,
+            isNear: couple.isNear,
+            framedBox: metrics.framedBox
+        )
+    }
+
+    private func mapControls(_ metrics: HomeMapMetrics) -> some View {
+        Group {
+            // The faded map under the cards does nothing on a tap, but SwiftUI hands the
+            // page's map gesture only touches that land on something. The areas over the map
+            // decide whether a drag or a pinch from here moves it.
+            Color.clear
+                .contentShape(Rectangle())
+                .accessibilityHidden(true)
+
+            // A tap on the open map sends a heart, as on the map card. Only down to the
+            // cards, so a tap between two cards does nothing.
+            Color.clear
+                .frame(height: metrics.framedBottom)
+                .contentShape(Rectangle())
+                .onTapGesture { sendHeart() }
+                .homeMapArea("map", explorer)
+                // VoiceOver sends hearts from the distance line in the bar.
+                .accessibilityHidden(true)
+        }
+    }
+
+    /// Where the row of avatars starts without a map, below the bar.
+    func rowTop(_ screen: HomeMapScreen) -> CGFloat {
+        screen.topInset + topBarHeight + PaeoniaSpacing.space8
+    }
+
+    func sendHeart() {
         guard let hearts else { return }
         flights.send()
         hearts.tap()
     }
 
     /// Eases out over a long stretch, so the map runs into the cards instead of ending.
-    private func fadeMask(_ metrics: HomeMapMetrics) -> some View {
+    private func fadeMask(bottom: CGFloat, fadeLength: CGFloat) -> some View {
         VStack(spacing: 0) {
             Color.black
             LinearGradient(
@@ -354,9 +406,9 @@ extension HomeMapLayout {
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: metrics.fadeLength)
+            .frame(height: max(fadeLength, 0))
         }
-        .frame(height: metrics.bandHeight)
+        .frame(height: max(bottom, 0))
     }
 
     var mapProjection: HomeMapProjection? { camera.projection }
@@ -375,6 +427,12 @@ extension HomeMapLayout {
     }
 
     private var reservesMapSpace: Bool { mapState == .loading || couple != nil }
+
+    /// Without both places, the world shows faintly behind the avatars as a hint of the map.
+    /// Not once the relationship has ended, since no map will come.
+    var showsMapPreview: Bool {
+        !reservesMapSpace && mapState != .partnerUnknown(.relationshipEnded)
+    }
 
     private static var headerHeight: CGFloat {
         PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space12
@@ -413,7 +471,7 @@ extension HomeMapLayout {
     static var heartWidth: CGFloat { 44 }
     /// How far the heart reaches over each avatar.
     static var heartOverlap: CGFloat { 4 }
-    private static var rowAvatarSize: CGFloat { 72 }
+    static var rowAvatarSize: CGFloat { 72 }
 
     // MARK: No map
 
@@ -443,7 +501,7 @@ extension HomeMapLayout {
 
     /// Not while the map is still loading, and nobody receives hearts once the
     /// relationship has ended.
-    private var canSendHearts: Bool {
+    var canSendHearts: Bool {
         switch mapState {
         case .loading, .partnerUnknown(.relationshipEnded): false
         default: true
@@ -451,55 +509,5 @@ extension HomeMapLayout {
     }
 }
 
-extension HomeMapLayout {
-    private func topBar(_ couple: HomeMapCouple?) -> some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            header(AnyView(Group { if !dynamicTypeSize.isAccessibilitySize { title(couple) } }))
-                .frame(height: PaeoniaSpacing.compactButtonHeight)
-            if dynamicTypeSize.isAccessibilitySize {
-                title(couple)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        // Leave room below the pill for the bar's glass.
-        .padding(.bottom, PaeoniaSpacing.space12)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { topBarHeight = $0 }
-    }
-
-    /// The partner's hearts while they play, otherwise how far apart the couple is.
-    @ViewBuilder
-    private func title(_ couple: HomeMapCouple?) -> some View {
-        ZStack {
-            if let line = hearts?.incomingLine {
-                HeartsIncomingLine(text: line)
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-            } else if let couple {
-                let layout = dynamicTypeSize.isAccessibilitySize
-                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space8))
-                    : AnyLayout(HStackLayout(spacing: 0))
-                layout {
-                    HomeMapDistanceLine(
-                        current: couple.current,
-                        partner: couple.partner,
-                        partnerCoordinate: couple.partner.coordinate,
-                        partnerWasStaleAtLastRefresh: couple.partnerWasStaleAtLastRefresh,
-                        compass: compass
-                    )
-                    .accessibilityAction(named: Text(.heartsSendAction)) { sendHeart() }
-                    HomeMapCreditsButton()
-                        .layoutPriority(1)
-                }
-                // A new place pans the map over `homeLayoutDuration`. The distance rolls to
-                // match, and the info button moves with the line's new width.
-                .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: [couple.current, couple.partner])
-                .transition(.opacity)
-            }
-        }
-        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: hearts?.incomingLine)
-    }
-
-}
+/// The page's own coordinates, which start at the top of the screen.
+private nonisolated let homeMapPageSpace = "HomeMapLayout.page"

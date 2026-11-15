@@ -118,10 +118,10 @@ extension HomeMapLibreView {
     /// The map points under the spots where the avatars land: their places, moved as far
     /// as the avatars are pushed apart or kept on the map. The intro flies these, so the
     /// map carries the avatars the whole way.
-    func introAnchors(viewSize: CGSize) -> MapPair {
-        let places = Self.mercatorPair(current, partner)
+    func introAnchors(_ couple: Places, viewSize: CGSize) -> MapPair {
+        let places = Self.mercatorPair(couple.current, couple.partner)
         guard let landing = introSpots?.landing else { return places }
-        let framing = framing(in: viewSize)
+        let framing = Self.framing(couple, in: viewSize)
         let worldSize = 512 * pow(2, framing.zoom)
         let turn = framing.direction * .pi / 180
         var center = Self.mercator(framing.center)
@@ -141,8 +141,8 @@ extension HomeMapLibreView {
     }
 
     /// The framing, with the avatars where they land.
-    func introEndPose(viewSize: CGSize) -> IntroPose {
-        let framing = framing(in: viewSize)
+    func introEndPose(_ places: Places, viewSize: CGSize) -> IntroPose {
+        let framing = Self.framing(places, in: viewSize)
         let landing = introSpots?.landing ?? HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
         return IntroPose(
             zoom: framing.zoom, direction: framing.direction, mid: Self.midpoint(landing.own, landing.partner)
@@ -168,7 +168,7 @@ extension HomeMapLibreView.Coordinator {
     /// Holds the camera on the intro's start pose, or leaves it to a flight under way.
     /// Returns false when there is no intro, and the map takes its framing.
     func holdsIntro(_ map: MLNMapView, isFirstFraming: Bool) -> Bool {
-        guard let parent else { return false }
+        guard let parent, let places = parent.places else { return false }
         let since: Date
         switch intro {
         case .flying:
@@ -185,7 +185,7 @@ extension HomeMapLibreView.Coordinator {
                 self?.startIntroIfReady()
             }
         }
-        guard let pose = startPose(parent, map) else {
+        guard let pose = startPose(parent, places, map) else {
             intro = .none
             introProgress = 1
             return false
@@ -196,28 +196,33 @@ extension HomeMapLibreView.Coordinator {
         return true
     }
 
-    /// Where the flight starts: the landing points on the spots where the avatars wait now.
-    /// Read again each frame, because those spots move while the cards settle.
-    private func startPose(_ parent: HomeMapLibreView, _ map: MLNMapView) -> HomeMapLibreView.IntroPose? {
+    /// Where the flight starts: the world the preview showed, or else the landing points on
+    /// the spots where the avatars wait now. Read again each frame, because those spots move
+    /// while the cards settle.
+    private func startPose(
+        _ parent: HomeMapLibreView, _ places: HomeMapLibreView.Places, _ map: MLNMapView
+    ) -> HomeMapLibreView.IntroPose? {
         guard let start = parent.introSpots?.waiting else { return nil }
-        let anchors = parent.introAnchors(viewSize: map.bounds.size)
+        let anchors = parent.introAnchors(places, viewSize: map.bounds.size)
         introAnchors = anchors
-        let pose = parent.introPose(
+        let pose = preview?.pose(of: anchors, viewSize: map.bounds.size) ?? parent.introPose(
             anchors,
             own: start.own,
             partnerAt: start.partner,
             viewSize: map.bounds.size,
-            fallbackDirection: parent.framing(in: map.bounds.size).direction
+            fallbackDirection: HomeMapLibreView.framing(places, in: map.bounds.size).direction
         )
         introStartPoints = parent.introPoints(anchors, on: pose)
         return pose
     }
 
     func startIntroIfReady() {
-        guard case let .waiting(_, since) = intro, let parent, let map, parent.canStartIntro,
+        guard case let .waiting(_, since) = intro, let parent, let places = parent.places, let map,
+              parent.canStartIntro,
               isLoaded || Date.now.timeIntervalSince(since) >= HomeMapLibreView.introLoadWait else { return }
         intro = .flying(began: CACurrentMediaTime())
-        map.tileLodZoomShift = HomeMapLibreView.tileDetailShift(zoom: parent.framing(in: map.bounds.size).zoom)
+        let zoom = HomeMapLibreView.framing(places, in: map.bounds.size).zoom
+        map.tileLodZoomShift = HomeMapLibreView.tileDetailShift(zoom: zoom)
         let link = CADisplayLink(target: self, selector: #selector(introTick))
         // ProMotion screens run the flight at up to 120 Hz, like the map's own redraws.
         link.preferredFrameRateRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
@@ -227,22 +232,23 @@ extension HomeMapLibreView.Coordinator {
     /// Reads where it starts and where it lands each frame, so the avatars stay on the map
     /// when either moves on the way.
     @objc private func introTick(_ link: CADisplayLink) {
-        guard let parent, let map, case let .flying(began) = intro else {
+        guard let parent, let places = parent.places, let map, case let .flying(began) = intro else {
             link.invalidate()
             return
         }
         let time = min(1, (link.targetTimestamp - began) / HomeMapLibreView.introDuration)
-        let start = startPose(parent, map)
+        let start = startPose(parent, places, map)
         guard time < 1, let start else {
             link.invalidate()
             intro = .none
             introProgress = 1
-            parent.frame(map, animated: false) { true }
+            preview = nil
+            parent.frame(map, places, animated: false) { true }
             handOverToExplorer(map)
             return
         }
         introProgress = HomeMapLibreView.introCurve.value(at: time)
-        let end = parent.introEndPose(viewSize: map.bounds.size)
+        let end = parent.introEndPose(places, viewSize: map.bounds.size)
         parent.show(start.toward(end, by: introProgress), introAnchors, on: map)
     }
 }
