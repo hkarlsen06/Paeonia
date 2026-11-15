@@ -140,6 +140,22 @@ struct CallMachineTests {
         #expect(heard.phase == .connecting)
     }
 
+    @Test func aCallThatLosesItsAudioFailsUnlessTheAudioComesBack() {
+        var lost = incoming()
+        _ = lost.reduce(.answered, now: start)
+        _ = lost.reduce(.audioActivated, now: start + 1)
+        _ = lost.reduce(.connected, now: start + 2)
+        #expect(lost.reduce(.audioLost, now: start + 60) == [.startTimer(.audioActivation, fireAt: start + 65)])
+        var restored = lost
+        #expect(restored.reduce(.audioActivated, now: start + 61) == [.cancelTimer(.audioActivation)])
+        #expect(restored.reduce(.timerFired(.audioActivation), now: start + 65).isEmpty)
+        let timedOut = lost.reduce(.timerFired(.audioActivation), now: start + 65)
+        #expect(timedOut == [.finish(.failed(.other), server: .end)])
+
+        var silent = incoming()
+        #expect(silent.reduce(.audioLost, now: start).isEmpty)
+    }
+
     @Test func startingWhileThePartnersCallRingsJoinsTheirCall() {
         var machine = outgoing()
         let partnersCall = UUID()

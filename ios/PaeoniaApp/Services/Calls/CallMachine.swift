@@ -18,6 +18,9 @@ nonisolated enum CallEvent: Equatable, Sendable {
     case audioActivated
     /// The system deactivated it (`conversationManager(_:didDeactivate:)`).
     case audioDeactivated
+    /// The system's audio service restarted and took the call's audio with it. The audio is
+    /// back at the next `audioActivated`.
+    case audioLost
     /// The person ended or declined the call on this phone.
     case hangUp
     /// The call ended somewhere the server already knows about, such as a busy line or an answer
@@ -39,7 +42,7 @@ nonisolated enum CallTimer: Hashable, Sendable, CaseIterable {
     /// The connection did not come back.
     case reconnect
     /// The system did not activate the audio after an incoming call was answered or an
-    /// outgoing one connected.
+    /// outgoing one connected, or the audio did not come back after it was lost.
     case audioActivation
 }
 
@@ -183,6 +186,10 @@ nonisolated struct CallMachine: Equatable, Sendable {
         case .audioDeactivated:
             hasAudio = false
             return []
+        case .audioLost:
+            guard hasAudio else { return [] }
+            hasAudio = false
+            return [.startTimer(.audioActivation, fireAt: now + Self.audioActivationTimeout)]
         case .hangUp:
             return finish(.hungUp, server: serverEnd, isHere: true)
         case let .ended(reason):

@@ -38,14 +38,62 @@ enum CallAudio {
         }
     }
 
-    private static let options: AVAudioSession.CategoryOptions = [.allowBluetoothHFP]
+    nonisolated private static let options: AVAudioSession.CategoryOptions = [.allowBluetoothHFP]
 
-    /// Sets the call's category before the system reports the call. iOS mutes haptics while the
-    /// microphone records unless the session allows them, and `CallHaptics` plays during the call.
+    /// The person's Speaker choice for the call, kept so the session can be set up again with it
+    /// after the system's audio service restarts.
+    private static var usesSpeaker = true
+
+    /// Sets the call's category before the system reports the call.
     static func prepareCategory() {
+        usesSpeaker = true
+        applyCallCategory(usesSpeaker: true)
+    }
+
+    /// iOS mutes haptics while the microphone records unless the session allows them, and
+    /// `CallHaptics` plays during the call.
+    nonisolated private static func applyCallCategory(usesSpeaker: Bool) {
         let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playAndRecord, mode: .default, options: options.union(.defaultToSpeaker))
+        try? session.setCategory(
+            .playAndRecord,
+            mode: .default,
+            options: usesSpeaker ? options.union(.defaultToSpeaker) : options
+        )
         try? session.setAllowHapticsAndSystemSoundsDuringRecording(true)
+    }
+
+    /// The system's audio service restarted. That puts the session back at its defaults and
+    /// leaves the engine and every player from before dead, in a call or not. This releases the
+    /// engine, gives the session its category again, replaces the players, and makes the engine
+    /// available again if the system had activated the call's audio. WebRTC's audio module
+    /// creates a new `AVAudioEngine` each time it becomes available, and has no handling of its
+    /// own for a restart. Nothing here activates the session, which stays the system's job.
+    ///
+    /// `onEngineBack` runs on the main thread once the module has its engine again. It never
+    /// runs when the system had not activated the call's audio, or when the engine stays
+    /// refused, such as while the session is no longer active.
+    static func rebuildAfterServiceRestart(
+        sounds: CallSoundPlayer,
+        isInCall: Bool,
+        onEngineBack: @escaping @MainActor @Sendable () -> Void
+    ) {
+        let usesSpeaker = usesSpeaker
+        queue.async {
+            let wasAvailable = isEngineAvailable
+            if wasAvailable {
+                setEngineAvailable(false)
+                self.onEngineBack = onEngineBack
+            }
+            if isInCall {
+                applyCallCategory(usesSpeaker: usesSpeaker)
+            } else {
+                PaeoniaAudioSession.useAmbient()
+            }
+            sounds.rebuild()
+            if wasAvailable {
+                setEngineAvailable(true)
+            }
+        }
     }
 
     /// Prepares the microphone without starting the engine, so the engine starts once, with the
@@ -54,10 +102,29 @@ enum CallAudio {
     /// chime.
     nonisolated static func didActivate(_: AVAudioSession) {
         queue.async {
+            noteSystemActivation(true)
             setEngineAvailable(true)
             module.setRecordingAlwaysPreparedMode(true)
         }
     }
+
+    /// Tells WebRTC's own audio session object that the system activated or deactivated the
+    /// call's audio. After an interruption ends, or the audio service restarts, that object sets
+    /// the session active or inactive by its own count of activations. Left at zero, the count
+    /// made it deactivate the call's session in the middle of a call. Runs on `queue`.
+    nonisolated private static func noteSystemActivation(_ isActive: Bool) {
+        guard isActive != hasSystemActivation else { return }
+        hasSystemActivation = isActive
+        let session = AVAudioSession.sharedInstance()
+        if isActive {
+            LKRTCAudioSession.sharedInstance().audioSessionDidActivate(session)
+        } else {
+            LKRTCAudioSession.sharedInstance().audioSessionDidDeactivate(session)
+        }
+    }
+
+    /// Only touched on `queue`.
+    nonisolated(unsafe) private static var hasSystemActivation = false
 
     nonisolated static func didDeactivate(_: AVAudioSession) {
         stopEngine()
@@ -68,17 +135,41 @@ enum CallAudio {
         queue.async {
             module.setRecordingAlwaysPreparedMode(false)
             setEngineAvailable(false)
+            noteSystemActivation(false)
         }
     }
 
-    /// Runs on `queue`.
-    nonisolated private static func setEngineAvailable(_ isOn: Bool) {
+    /// Runs on `queue`. The module refuses to build its engine while the session is still
+    /// changing, such as right after a new category, when the microphone reports no format yet.
+    /// It leaves the engine unavailable then, and the call would stay silent, so this tries
+    /// again for as long as the engine is still wanted.
+    nonisolated private static func setEngineAvailable(_ isOn: Bool, attempt: Int = 1) {
         isEngineAvailable = isOn
         let availability = ObjCBool(isOn)
-        module.setEngineAvailability(
+        let result = module.setEngineAvailability(
             LKRTCAudioEngineAvailability(isInputAvailable: availability, isOutputAvailable: availability)
         )
+        guard isOn, result != 0 else {
+            let engineBack = onEngineBack
+            onEngineBack = nil
+            if isOn, let engineBack {
+                Task { @MainActor in engineBack() }
+            }
+            return
+        }
+        log.error("engine not available, error \(result), attempt \(attempt)")
+        guard attempt < engineAttempts else { return }
+        queue.asyncAfter(deadline: .now() + engineRetryDelay) {
+            guard isEngineAvailable else { return }
+            setEngineAvailable(true, attempt: attempt + 1)
+        }
     }
+
+    /// Enough tries to last until the call gives up on its audio (`CallMachine.audioActivationTimeout`).
+    nonisolated private static let engineAttempts = 15
+    nonisolated private static let engineRetryDelay: TimeInterval = 0.3
+    /// Set by `rebuildAfterServiceRestart`. Only touched on `queue`.
+    nonisolated(unsafe) private static var onEngineBack: (@MainActor @Sendable () -> Void)?
 
     /// Only touched on `queue`.
     nonisolated(unsafe) private static var isEngineAvailable = false
@@ -121,6 +212,7 @@ enum CallAudio {
     /// Sends the sound to the speaker, or to the earpiece unless something such as AirPods or a
     /// car is connected. The override also takes the sound from AirPods to the speaker.
     static func useSpeaker(_ isOn: Bool) {
+        usesSpeaker = isOn
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(
             .playAndRecord,

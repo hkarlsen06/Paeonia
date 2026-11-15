@@ -37,27 +37,43 @@ nonisolated enum CallSound: String, CaseIterable, Sendable {
 /// engine calls the delegate methods on its own thread, and the lock keeps the two in order.
 nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegate, @unchecked Sendable {
     private let lock = NSLock()
-    private let engineNode = AVAudioPlayerNode()
     private let buffers: [CallSound: AVAudioPCMBuffer]
-    private let players: [CallSound: AVAudioPlayer]
     private let durations: [CallSound: Duration]
     // Only touched under `lock`.
+    private var engineNode = AVAudioPlayerNode()
+    private var players: [CallSound: AVAudioPlayer]
     private weak var engine: AVAudioEngine?
 
     override init() {
         var buffers: [CallSound: AVAudioPCMBuffer] = [:]
-        var players: [CallSound: AVAudioPlayer] = [:]
         for sound in CallSound.allCases where sound != .ring {
             guard let url = sound.url else { continue }
             buffers[sound] = Self.buffer(from: url)
-            if let player = try? AVAudioPlayer(contentsOf: url) {
-                player.numberOfLoops = sound == .ringback ? -1 : 0
-                players[sound] = player
-            }
         }
+        let players = Self.makePlayers()
         self.buffers = buffers
         self.players = players
         durations = players.mapValues { .seconds($0.duration) }
+    }
+
+    private static func makePlayers() -> [CallSound: AVAudioPlayer] {
+        var players: [CallSound: AVAudioPlayer] = [:]
+        for sound in CallSound.allCases where sound != .ring {
+            guard let url = sound.url, let player = try? AVAudioPlayer(contentsOf: url) else { continue }
+            player.numberOfLoops = sound == .ringback ? -1 : 0
+            players[sound] = player
+        }
+        return players
+    }
+
+    /// Replaces the players after the system's audio service restarted, which leaves the old
+    /// ones dead. Runs on `CallAudio.queue` while the engine is released
+    /// (`CallAudio.rebuildAfterServiceRestart`), so the next engine attaches the new node.
+    func rebuild() {
+        lock.withLock {
+            engineNode = AVAudioPlayerNode()
+            players = Self.makePlayers()
+        }
     }
 
     private static func buffer(from url: URL) -> AVAudioPCMBuffer? {

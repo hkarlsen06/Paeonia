@@ -74,6 +74,7 @@ final class CallEngine {
     private var pushRegistry: CallPushRegistry?
     private var routeObserver: (any NSObjectProtocol)?
     private var backgroundObserver: (any NSObjectProtocol)?
+    private var audioRestartObserver: (any NSObjectProtocol)?
     private var clearTask: Task<Void, Never>?
 
     init(system: any CallSystem) {
@@ -100,6 +101,7 @@ final class CallEngine {
             MainActor.assumeIsolated { self?.refreshAudioRoute() }
         }
         backgroundObserver = handRingsToSystemInBackground()
+        audioRestartObserver = rebuildAudioAfterServiceRestarts()
         watchLiveCalls()
     }
 

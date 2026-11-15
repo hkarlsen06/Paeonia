@@ -41,6 +41,38 @@ extension CallEngine: CallSystemDelegate {
         }
     }
 
+    /// Follows restarts of the system's audio service, which iOS announces with
+    /// `mediaServicesWereResetNotification`.
+    func rebuildAudioAfterServiceRestarts() -> any NSObjectProtocol {
+        NotificationCenter.default.addObserver(
+            forName: AVAudioSession.mediaServicesWereResetNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.audioServiceRestarted() }
+        }
+    }
+
+    /// Sets the call's audio up again (`CallAudio.rebuildAfterServiceRestart`). The call counts
+    /// as without audio until the engine is back or the system activates the audio again, and
+    /// fails when neither happens in time, instead of running without sound.
+    func audioServiceRestarted() {
+        CallAudio.logState("audio service restarted")
+        if let run, !run.isFinished {
+            send(.audioLost, to: run)
+        }
+        CallAudio.rebuildAfterServiceRestart(
+            sounds: sounds,
+            isInCall: PaeoniaAudioSession.isCallActive
+        ) { [weak self] in
+            guard let self, let run, !run.isFinished else { return }
+            CallAudio.logState("audio back after restart")
+            send(.audioActivated, to: run)
+            refreshAudioRoute()
+        }
+        refreshAudioRoute()
+    }
+
     func systemReset() {
         if let run, !run.isFinished {
             run.isEndingFromSystem = true
