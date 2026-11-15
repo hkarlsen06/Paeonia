@@ -29,6 +29,11 @@ extension CallCenter {
     func endCallForLeaving() async {
         await (engine as? CallEngine)?.endForLeaving()
     }
+
+    /// Ends the call while iOS closes the app, such as when the person swipes it away.
+    func endCallBeforeTermination() {
+        (engine as? CallEngine)?.endBeforeTermination()
+    }
 }
 
 /// Runs calls with the partner: the system call UI (`CallSystem`), VoIP pushes, the
@@ -320,6 +325,24 @@ final class CallEngine {
         CallAudio.stopEngine()
         partnerVideo.clear()
         localVideo.clear()
+    }
+}
+
+extension CallEngine {
+    /// Hangs up while iOS closes the app. Nothing runs once `applicationWillTerminate` returns, so
+    /// this keeps the main run loop going until the server has heard, which `endForLeaving`
+    /// limits to `leavingTimeout`. Without it the partner's phone shows "Reconnecting" for 30
+    /// seconds before the call ends.
+    func endBeforeTermination() {
+        guard let run, !run.isFinished else { return }
+        var hasEnded = false
+        Task {
+            await endForLeaving()
+            hasEnded = true
+        }
+        while !hasEnded {
+            RunLoop.current.run(mode: .default, before: .now + 0.05)
+        }
     }
 }
 

@@ -40,6 +40,10 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         return true
     }
 
+    func applicationWillTerminate(_ application: UIApplication) {
+        CallCenter.shared.endCallBeforeTermination()
+    }
+
     func application(
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data

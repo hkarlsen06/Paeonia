@@ -107,6 +107,9 @@ extension CallEngine {
 
     // MARK: Incoming
 
+    /// PushKit checks that the call was reported when `completion` runs, not when its delegate
+    /// method returns, so `completion` comes only after the report. `docs/calling-plan.md`
+    /// ("Mistakes other teams made") says how that was checked.
     func receivePush(_ ring: IncomingRing?, mustReport: Bool, completion: @escaping @Sendable () -> Void) {
         Task {
             if let ring {
