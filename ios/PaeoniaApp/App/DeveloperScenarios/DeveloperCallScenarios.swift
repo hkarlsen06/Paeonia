@@ -10,7 +10,8 @@
       callOutgoing, callIncoming, callIncomingPill, callConnecting, callActiveVoice, callActiveVoiceMutedSpeaker,
       callActiveVoiceAirPods, callActiveVideo, callVideoOwnCamera, callMicrophoneWaiting, callReconnecting,
       callEnded, callEndedNoAnswer, callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame,
-      callBubblePartnerOpenedGame, callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
+      callBubblePartnerOpenedGame, callScreenPartnerOpenedGame, callScreenPartnerMessage,
+      callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
     ]
 
     // MARK: The call screen
@@ -98,7 +99,30 @@
           $0.isCameraOn = true
           $0.isPartnerCameraOn = true
         },
-        presentation: .bubble, partnerOpensMindMeld: true)
+        presentation: .bubble, partnerDoes: .openedGame(.mindMeld))
+    }
+
+    static let callScreenPartnerOpenedGame = DeveloperScenario(
+      "call-screen-partner-opened-game", "Call · Robin opens a game during a full-screen video call",
+      "Robin opens Mind Meld while the video call fills the screen, and the call says so above its buttons",
+      .calls
+    ) { _ in
+      DeveloperCallLocalFlow(
+        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
+          $0.isCameraOn = true
+          $0.isPartnerCameraOn = true
+        },
+        partnerDoes: .openedGame(.mindMeld))
+    }
+
+    static let callScreenPartnerMessage = DeveloperScenario(
+      "call-screen-partner-message", "Call · Robin writes during a full-screen voice call",
+      "Robin writes in Just us while the voice call fills the screen, and the message shows above the buttons",
+      .calls
+    ) { _ in
+      DeveloperCallLocalFlow(
+        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active),
+        partnerDoes: DeveloperPresenceFixture.message)
     }
 
     static let callBubbleJustUs = DeveloperScenario(
@@ -267,23 +291,24 @@
 
   /// The real paired app from a local flow, with a call center of its own. `game` opens Four in a
   /// Row on Robin's turn, `coupleCalls` opens "Just us" with its call rows, and `nightPrompt` has
-  /// the night question up. With `partnerOpensMindMeld`, Robin is in the app and opens Mind Meld a
-  /// moment after the app shows.
+  /// the night question up. With `partnerDoes`, Robin is in the app, playing Mind Meld, and does
+  /// it a moment after the app shows.
   private struct DeveloperCallLocalFlow: View {
     @State private var center: CallCenter
     @State private var starter: CallStarter
     @State private var presence: PartnerPresenceModel?
     private let game: Bool
     private let coupleCalls: Bool
-    private let partnerOpensMindMeld: Bool
+    private let partnerDoes: PresenceNotice?
 
     init(
       session: CallSession? = nil, presentation: CallPresentation = .full, game: Bool = false,
-      coupleCalls: Bool = false, nightPrompt: CallStarter.NightPrompt? = nil, partnerOpensMindMeld: Bool = false
+      coupleCalls: Bool = false, nightPrompt: CallStarter.NightPrompt? = nil, partnerDoes: PresenceNotice? = nil
     ) {
-      self.partnerOpensMindMeld = partnerOpensMindMeld
-      _presence = State(initialValue: partnerOpensMindMeld
-        ? DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.mindMeld])) : nil)
+      self.partnerDoes = partnerDoes
+      _presence = State(initialValue: partnerDoes.map { _ in
+        DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.mindMeld]))
+      })
       let center = CallCenter(engine: DeveloperCallEngine(), session: session)
       center.presentation = presentation
       _center = State(initialValue: center)
@@ -304,18 +329,18 @@
             avatarStories: .noStory)
         } else {
           DeveloperLocalFlowHost(
-            seed: .paired, gameConversation: partnerOpensMindMeld ? .mindMeldWrite : nil, avatarStories: .noStory,
+            seed: .paired, gameConversation: partnerDoes == nil ? nil : .mindMeldWrite, avatarStories: .noStory,
             presence: presence)
         }
       }
       .environment(center)
       .environment(starter)
       .task {
-        guard let presence else { return }
+        guard let presence, let partnerDoes else { return }
         while !presence.isShown, !Task.isCancelled { try? await Task.sleep(for: .milliseconds(200)) }
         try? await Task.sleep(for: .seconds(1.5))
         guard !Task.isCancelled else { return }
-        presence.receive(.openedGame(.mindMeld))
+        presence.receive(partnerDoes)
       }
     }
   }

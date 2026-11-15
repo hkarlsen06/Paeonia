@@ -51,6 +51,17 @@ nonisolated struct PresenceMessageNotice: Equatable, Sendable {
     let preview: String
 }
 
+/// The call that covers the partner's avatar, which decides what the call says in its place.
+nonisolated enum PresenceCallCover: Equatable, Sendable {
+    case none
+    /// The ring pill or the call's bubble. They say which game or drawing the partner opened, and the
+    /// partner's messages and notifications keep their banners around them.
+    case small
+    /// The full call screen, which hides the banners, so it says the partner's messages and
+    /// notifications as well.
+    case fullScreen
+}
+
 /// Something the partner just did that the avatar says for a moment.
 nonisolated enum PresenceNotice: Equatable, Sendable {
     case message(PresenceMessageNotice)

@@ -106,7 +106,7 @@ final class CallOverlayModel {
     /// Where each part is in the window, for `touchArea`. Each has its own, so one that is leaving
     /// can't move another's.
     var bubbleFrame = CGRect.zero
-    /// What the partner just opened, beside the bubble (`CallBubbleCallout`).
+    /// What the partner just did, beside the bubble (`CallCallout`).
     var bubbleCalloutFrame = CGRect.zero
     var ringFrame = CGRect.zero
     /// The partner's avatar with its notice and toolbar.
@@ -149,6 +149,26 @@ final class CallOverlayModel {
         if session.direction == .incoming, session.phase == .ringing, !session.ringsInApp { return nil }
         guard center.presentation == .bubble else { return .screen }
         return session.ringsInApp ? .ring : .bubble
+    }
+
+    /// The full call screen says the partner's news only while the call is under way. While it
+    /// rings, connects or has ended, the news goes where it goes beside a small call.
+    var callCover: PresenceCallCover {
+        guard let callLayer else { return .none }
+        switch (callLayer, center.session?.phase) {
+        case (.screen, .active), (.screen, .reconnecting): return .fullScreen
+        default: return .small
+        }
+    }
+
+    /// Opens what the call's callout is about. The call shrinks to its bubble, so what opens shows
+    /// under it, and the covers over the app close first.
+    func openCallout(_ destination: PresenceDestination) {
+        center.presentation = .bubble
+        AppCovers.close { [presence] in
+            presence.clearCallNotice()
+            presence.open(destination)
+        }
     }
 
     /// The keyboard is up. It sits above this window and could cover a ring at the avatar, so a ring
@@ -233,7 +253,7 @@ private struct CallOverlayHost: ViewModifier {
             .onPreferenceChange(CallBubbleBottomEdgeKey.self) { model.panelTop = $0 }
             .onChange(of: participants) { _, participants in model.participants = participants }
             .onDockedKeyboardChange { model.keyboardIsUp = $0 }
-            .onChange(of: model.callLayer != nil, initial: true) { _, isUp in model.presence.isCoveredByCall = isUp }
+            .onChange(of: model.callCover, initial: true) { _, cover in model.presence.callCover = cover }
             // Starting or answering a call opens the full call screen. A ring inside the app starts
             // as the pill.
             .onChange(of: center.session?.id) { oldID, newID in
@@ -272,6 +292,13 @@ private struct CallOverlayRoot: View {
         .environment(\.callMorph, morph)
         .animation(reduceMotion ? nil : PaeoniaMotion.callOverlay, value: model.shownLayer)
         .preferredColorScheme(.dark)
+        // The window's layer stays the same, so VoiceOver hears of the call's callout only from here.
+        .onChange(of: model.presence.callCallout) { _, callout in
+            guard let callout else { return }
+            AccessibilityNotification.Announcement(
+                callout.accessibilityLabel(partnerName: model.participants.partnerName)
+            ).post()
+        }
     }
 
     /// `screenTravel` is the window's whole height. The call screen's background reaches under
@@ -304,7 +331,9 @@ private struct CallOverlayRoot: View {
             || model.endsIntoPresence(session)
         switch model.shownLayer {
         case .screen:
-            CallScreen(center: model.center, session: session, participants: model.participants)
+            CallScreen(
+                center: model.center, session: session, participants: model.participants,
+                callout: model.presence.callCallout, openCallout: model.openCallout)
                 .transition(.asymmetric(
                     insertion: arrives(from: .ring) || arrives(from: .presence) ? .opacity : .offset(y: screenTravel),
                     removal: leavesByMorph ? .opacity : .offset(y: screenTravel)

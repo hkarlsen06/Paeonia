@@ -23,13 +23,11 @@ final class PartnerPresenceModel {
             if isRunning, confirmedShowsPresence, viewer.isDrawing != oldValue.isDrawing { enqueueInApp(true) }
         }
     }
-    /// A call's screen, bubble or ring pill shows in the avatar's place. The call overlay keeps it
-    /// current.
-    var isCoveredByCall = false {
-        didSet { if !isCoveredByCall { setCallNotice(nil) } }
+    /// The call that shows in the avatar's place. The call overlay keeps it current.
+    var callCover = PresenceCallCover.none {
+        didSet { if callCover == .none { setCallNotice(nil) } }
     }
-    /// The game or the drawing the partner just opened, which the call's bubble says for a few
-    /// seconds while a call covers the avatar.
+    /// What the partner just did, which the call says for a few seconds while it covers the avatar.
     private(set) var callNotice: PresenceNotice?
     /// The chats with a message from the partner this person has not read, which the avatar counts
     /// once its notice has gone. `MainTabView` keeps it current.
@@ -178,29 +176,31 @@ final class PartnerPresenceModel {
 
     /// Shows a notice in the avatar for a few seconds, or keeps it until the toolbar closes or
     /// the avatar comes back from the edge or the cover over the app closes. A notice that tells this
-    /// person nothing new is dropped. While a call covers the avatar, the call's bubble says which
-    /// game or drawing the partner opened.
-    /// False while the avatar is not on screen to take it, so the caller shows a banner instead.
+    /// person nothing new is dropped. While a call covers the avatar, the call says it instead
+    /// (`PresenceCallCover`).
+    /// False while neither the avatar nor the call takes it, so the caller shows a banner instead.
     @discardableResult
     func receive(_ notice: PresenceNotice) -> Bool {
         guard isShown else { return false }
-        guard isCoveredByCall else {
+        switch (callCover, notice) {
+        case (.none, _):
             if notice.concerns(viewer) { choose(pill.chosen.receiving(notice)) }
-            return true
-        }
-        switch notice {
-        case .openedGame, .openedDrawing:
-            if notice.concerns(viewer) { setCallNotice(notice) }
-            return true
-        case .message, .update:
+        case (.small, .message), (.small, .update):
             return false
+        case (.small, _), (.fullScreen, _):
+            if notice.concerns(viewer) { setCallNotice(notice) }
         }
+        return true
     }
 
-    /// Shows a notice in the avatar only while it is out with its toolbar closed. A notification has
-    /// nowhere else to wait, so while the avatar is away the caller shows a banner instead.
+    /// Shows a notice in the avatar only while it is out with its toolbar closed, or on the full call
+    /// screen. A notification has nowhere else to wait, so otherwise the caller shows a banner.
     func receiveNow(_ notice: PresenceNotice) -> Bool {
-        guard case .avatar = mode else { return false }
+        switch callCover {
+        case .none: guard case .avatar = mode else { return false }
+        case .small: return false
+        case .fullScreen: break
+        }
         return receive(notice)
     }
 
@@ -225,7 +225,7 @@ final class PartnerPresenceModel {
         pill = next
     }
 
-    /// Shows `notice` beside the call's bubble for as long as a notice shows in the avatar.
+    /// Shows `notice` on the call for as long as a notice shows in the avatar.
     private func setCallNotice(_ notice: PresenceNotice?) {
         callNoticeTask?.cancel()
         callNotice = notice

@@ -3,8 +3,8 @@ import SwiftUI
 /// Places the bubble at its spot (`CallBubblePlacement`). A drag moves it, and it stays where it is
 /// dropped. Pushed into the side of the screen, it tucks away as a tab there (`PresenceTab`), which
 /// brings it back out. A pinch makes the video bigger or smaller. While the partner's avatar is under
-/// the call, the game or the drawing the partner opens shows for a few seconds beside the bubble,
-/// where a tap joins them.
+/// the call, what the partner just did shows for a few seconds beside the bubble (`CallCallout`),
+/// such as the game they opened, where a tap joins them.
 struct CallBubbleLayer: View {
     let model: CallOverlayModel
     let session: CallSession
@@ -33,13 +33,6 @@ struct CallBubbleLayer: View {
             }
         }
         .animation(motion, value: callout)
-        // The window's layer stays the same, so VoiceOver hears of the callout only from here.
-        .onChange(of: callout) { _, callout in
-            guard let callout else { return }
-            AccessibilityNotification.Announcement(
-                callout.accessibilityLabel(partnerName: model.participants.partnerName)
-            ).post()
-        }
     }
 
     private var callout: PresenceCallout? {
@@ -98,7 +91,7 @@ struct CallBubbleLayer: View {
             let gap = PaeoniaSpacing.space8
             let side: UnitPoint = model.spot.isLeading ? (below ? .topLeading : .bottomLeading)
                 : (below ? .topTrailing : .bottomTrailing)
-            CallBubbleCallout(callout: callout, partnerName: model.participants.partnerName, open: open)
+            CallCallout(callout: callout, partnerName: model.participants.partnerName, open: model.openCallout)
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
                     model.bubbleCalloutFrame = $0
                 }
@@ -106,14 +99,6 @@ struct CallBubbleLayer: View {
                 .frame(height: 0, alignment: below ? .top : .bottom)
                 .offset(y: below ? gap : -gap)
                 .transition(.scale(scale: 0.6, anchor: side).combined(with: .opacity))
-        }
-    }
-
-    /// The covers over the app close first, so the game or the drawing shows on top.
-    private func open(_ destination: PresenceDestination) {
-        AppCovers.close { [presence = model.presence] in
-            presence.clearCallNotice()
-            presence.open(destination)
         }
     }
 
@@ -191,23 +176,5 @@ struct CallBubbleLayer: View {
                     tabDragHeight = 0
                 }
             }
-    }
-}
-
-/// What the partner just opened, in a glass capsule beside the call's bubble, as the avatar says it.
-/// A tap opens it.
-private struct CallBubbleCallout: View {
-    let callout: PresenceCallout
-    let partnerName: String
-    let open: (PresenceDestination) -> Void
-
-    var body: some View {
-        PresenceCalloutContent(callout: callout, partnerName: partnerName, canOpen: callout.destination != nil) {
-            if let destination = callout.destination { open(destination) }
-        }
-        .padding(.vertical, PaeoniaSpacing.space8)
-        .fixedSize()
-        .glassEffect(.regular.interactive(), in: Capsule())
-        .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
     }
 }

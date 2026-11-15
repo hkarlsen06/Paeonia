@@ -3,11 +3,16 @@ import SwiftUI
 /// The full call screen. The partner's face and name on both partners' petal colors, what the
 /// call is doing, their local time, and the controls. During video the partner's video fills the
 /// screen and your own sits in a corner. A swipe down, or the chevron, shrinks it to the bubble, or
-/// to the ring pill while the partner's call rings inside the app.
+/// to the ring pill while the partner's call rings inside the app. What the partner just did in the
+/// app shows above the controls for a few seconds (`CallCallout`), because the partner's avatar and
+/// the app's banners are under the call.
 struct CallScreen: View {
     let center: CallCenter
     let session: CallSession
     let participants: DailyChallengeParticipants
+    var callout: PresenceCallout?
+    /// Shrinks the call to its bubble and opens what the callout is about.
+    var openCallout: (PresenceDestination) -> Void = { _ in }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
@@ -59,6 +64,7 @@ struct CallScreen: View {
         .offset(y: dragOffset)
         .gesture(swipeDown)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: session)
+        .animation(reduceMotion ? nil : PaeoniaMotion.callOverlay, value: shownCallout)
         .task(id: session.id) {
             partnerTimeZone = await center.engine.partnerTimeZone()
         }
@@ -216,6 +222,22 @@ struct CallScreen: View {
                 controls
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomHeight = $0 }
+            .overlay(alignment: .top) { calloutView }
+        }
+    }
+
+    private var shownCallout: PresenceCallout? {
+        isEnded ? nil : callout
+    }
+
+    /// Above the controls, with no height of its own, so nothing on the screen moves for it.
+    @ViewBuilder
+    private var calloutView: some View {
+        if let shownCallout {
+            CallCallout(callout: shownCallout, partnerName: participants.partnerName, open: openCallout)
+                .frame(height: 0, alignment: .bottom)
+                .offset(y: -PaeoniaSpacing.space16)
+                .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
         }
     }
 
