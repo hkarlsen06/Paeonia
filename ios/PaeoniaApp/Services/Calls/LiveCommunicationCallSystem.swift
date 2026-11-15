@@ -92,9 +92,10 @@ final class LiveCommunicationCallSystem: CallSystem {
 
     private static func systemReason(_ reason: CallEndReason) -> Conversation.EndedReason {
         switch reason {
-        case .hungUp:
+        // iOS answers `.unanswered` on the caller's phone with its own "Audio unavailable" sheet.
+        case .hungUp, .noAnswer:
             .remoteEnded
-        case .noAnswer, .missed:
+        case .missed:
             .unanswered
         case .answeredElsewhere:
             .joinedElsewhere
