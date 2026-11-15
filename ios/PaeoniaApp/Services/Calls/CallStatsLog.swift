@@ -61,6 +61,12 @@ nonisolated struct CallStatsSample: Sendable {
     var frameHeight: Int?
     var framesPerSecond: Double?
     var qualityLimitation: String?
+    /// Video packets the partner's phone asked for again, so they were lost on the way.
+    var videoNacks = 0
+    var videoBytesResent = 0
+    /// How unevenly the video packets reach the partner's phone. WebRTC sends less when the
+    /// delay grows, even when nothing is lost.
+    var partnerJitterSeconds: Double?
     var bytesReceived = 0
     var packetsLost = 0
     var roundTripSeconds: Double?
@@ -100,9 +106,13 @@ nonisolated struct CallStatsSample: Sendable {
                     frameHeight = stat.number("frameHeight").map { Int($0) }
                     framesPerSecond = stat.number("framesPerSecond")
                     qualityLimitation = stat.string("qualityLimitationReason")
+                    videoNacks = Int(stat.number("nackCount") ?? 0)
+                    videoBytesResent = Int(stat.number("retransmittedBytesSent") ?? 0)
                 } else {
                     audio = sent
                 }
+            case "remote-inbound-rtp" where stat.string("kind") == "video":
+                partnerJitterSeconds = stat.number("jitter")
             case "inbound-rtp":
                 bytesReceived += Int(stat.number("bytesReceived") ?? 0)
                 packetsLost += Int(stat.number("packetsLost") ?? 0)
@@ -133,7 +143,10 @@ nonisolated struct CallStatsSample: Sendable {
             "video \(show(video.codec)) \(kbps(video.bytesSent, previous.video.bytesSent)) kbps"
                 + " (target \(show(video.targetBitsPerSecond.map { Int(($0 / 1_000).rounded()) })))"
                 + " \(show(frame)) \(show(framesPerSecond.map { Int($0.rounded()) })) fps"
-                + " limit \(show(qualityLimitation))",
+                + " limit \(show(qualityLimitation))"
+                + ", resent \(kbps(videoBytesResent, previous.videoBytesResent)) kbps"
+                + " (\(videoNacks - previous.videoNacks) asked)"
+                + ", jitter at partner \(show(partnerJitterSeconds.map { Int(($0 * 1_000).rounded()) })) ms",
             "receive \(kbps(bytesReceived, previous.bytesReceived)) kbps",
             "lost \(packetsLost - previous.packetsLost)",
             "rtt \(show(roundTripSeconds.map { Int(($0 * 1_000).rounded()) })) ms",
