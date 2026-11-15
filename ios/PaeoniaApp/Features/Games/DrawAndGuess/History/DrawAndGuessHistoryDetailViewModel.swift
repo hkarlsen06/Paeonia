@@ -88,7 +88,8 @@ final class DrawAndGuessHistoryDetailViewModel {
 
     /// What the share sheet offers, once the drawing has loaded.
     var shareable: PaeoniaShareable? {
-        drawing.map { DrawAndGuessShare.shareable(drawing: $0, word: word) }
+        let (me, partner) = participants.players
+        return drawing.map { DrawAndGuessShare.shareable(drawing: $0, word: word, drawer: isDrawer ? me : partner) }
     }
 
     // MARK: - Replay

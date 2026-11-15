@@ -4,31 +4,39 @@ import SwiftUI
 extension ExquisiteCorpseRevealContent {
     var shareable: PaeoniaShareable? {
         guard isReady else { return nil }
-        let drawings = drawings
+        let parts = parts
         let title = String(localized: .exquisiteCorpseRevealNumber(number))
         return PaeoniaShareable(title: title) {
-            let order = ExquisiteCorpsePartKind.allCases
-            let images = order.compactMap { kind in
-                drawings[kind].flatMap {
-                    PaeoniaShareRenderer.inkImage(
-                        of: $0,
-                        canvasSide: GameCanvas.canonicalSide,
-                        pixelSide: ExquisiteCorpseShareCard.pixelSide
-                    )
-                }
+            let shared = parts.compactMap { part in
+                part.drawing
+                    .flatMap {
+                        PaeoniaShareRenderer.inkImage(
+                            of: $0,
+                            canvasSide: GameCanvas.canonicalSide,
+                            pixelSide: ExquisiteCorpseShareCard.pixelSide
+                        )
+                    }
+                    .map { ExquisiteCorpseShareCard.Part(ink: $0, credit: part.sharedCredit) }
             }
-            guard images.count == order.count else { return nil }
+            guard shared.count == ExquisiteCorpsePartKind.allCases.count else { return nil }
             return PaeoniaShareRenderer.png(
                 PaeoniaShareCardFrame(title: title, subtitle: String(localized: .exquisiteCorpseName)) {
-                    ExquisiteCorpseShareCard(parts: images)
+                    ExquisiteCorpseShareCard(parts: shared)
                 }
             )
         }
     }
 }
 
+/// The creature with "Head by Robin" beside each part, so whoever sees the
+/// picture knows who drew what. Without both names the figure shows alone.
 private struct ExquisiteCorpseShareCard: View {
-    let parts: [UIImage]
+    struct Part {
+        let ink: UIImage
+        let credit: String?
+    }
+
+    let parts: [Part]
 
     /// A part is narrower than the card, so the figure fits on a phone screen
     /// when it is sent on.
@@ -37,9 +45,28 @@ private struct ExquisiteCorpseShareCard: View {
     private static let hairline: CGFloat = 2
 
     var body: some View {
+        let credits = parts.compactMap(\.credit)
+        if credits.count == parts.count {
+            HStack(spacing: PaeoniaSpacing.space12) {
+                figure
+                VStack(spacing: 0) {
+                    ForEach(parts.indices, id: \.self) { index in
+                        Text(verbatim: credits[index])
+                            .font(PaeoniaTypography.bodyEmphasis)
+                            .foregroundStyle(.paeoniaTextPrimary)
+                            .frame(maxWidth: .infinity, minHeight: Self.side, maxHeight: Self.side, alignment: .leading)
+                    }
+                }
+            }
+        } else {
+            figure
+        }
+    }
+
+    private var figure: some View {
         VStack(spacing: 0) {
             ForEach(parts.indices, id: \.self) { index in
-                Image(uiImage: parts[index])
+                Image(uiImage: parts[index].ink)
                     .resizable()
                     .scaledToFit()
                     .frame(width: Self.side, height: Self.side)

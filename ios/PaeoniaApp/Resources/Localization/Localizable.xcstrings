@@ -41858,6 +41858,24 @@
         }
       }
     },
+    "share.drawnBy" : {
+      "comment" : "Line under a shared drawing from a game, in the picture people send on. %1$@ is the name of the person who drew it, %2$@ is the game's name, such as Draw & Guess.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawn by %1$@ · %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegnet av %1$@ · %2$@"
+          }
+        }
+      }
+    },
     "share.failed.message" : {
       "comment" : "Shown on the share screen when the picture could not be made",
       "extractionState" : "manual",

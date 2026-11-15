@@ -27,11 +27,21 @@ struct ExquisiteCorpseRevealContent {
 
         /// "Head by Robin".
         var credit: String {
+            credit(by: drawerName)
+        }
+
+        /// The credit in a shared picture, with the drawer's own name instead of
+        /// "you" or a nickname. Nil when that name is not known.
+        var sharedCredit: String? {
+            drawer.sharedName.map(credit(by:))
+        }
+
+        private func credit(by name: String) -> String {
             switch kind {
-            case .head: String(localized: .exquisiteCorpseRevealCreditHead(drawerName))
-            case .body: String(localized: .exquisiteCorpseRevealCreditBody(drawerName))
-            case .legs: String(localized: .exquisiteCorpseRevealCreditLegs(drawerName))
-            case .feet: String(localized: .exquisiteCorpseRevealCreditFeet(drawerName))
+            case .head: String(localized: .exquisiteCorpseRevealCreditHead(name))
+            case .body: String(localized: .exquisiteCorpseRevealCreditBody(name))
+            case .legs: String(localized: .exquisiteCorpseRevealCreditLegs(name))
+            case .feet: String(localized: .exquisiteCorpseRevealCreditFeet(name))
             }
         }
 

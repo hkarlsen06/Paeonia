@@ -171,6 +171,7 @@ Made on 2026-10-14 while the developer was away. Each can change after review.
 - **Ideas.** 50 hand-written ideas per part per language, dealt as a deck of 12 per part. Both lists still need the developer's read (see "Open questions").
 - **Reveal details.** The fold flaps swing away from the viewer. "Opening…" sits on the middle fold while the drawings load. A press counts as a hold after 0.2 seconds, and a hold carries over into the next part. The title and credits sit under the figure. There is no "hold to speed up" hint, unlike the Draw & Guess replay.
 - **Reactions.** Either partner can put one emoji on a finished figure, on the reveal (under the credits) and on the detail screen in "Our creatures". The emoji of both partners shows on the grid cell. They work like every reaction (`docs/implementation-map.md`, "Reactions"): kind `exquisite_corpse_figure`, one gentle push for a first reaction, no queue. The reveal appears only for a figure the server finished, so the row never meets a refusal. (Decided on 2026-10-21.)
+- **Sharing.** The shared picture of a creature has "Head by Robin" beside each part, so whoever sees it knows who drew what. It uses each drawer's own name, never "you" or a nickname (`GamePlayer.sharedName`). When a name is not known, the figure shows without credits. (Decided on 2026-11-16.)
 - **Not built.** No records in "Our creatures". The game has no scores, and stars cover finding a figure again.
 
 Made on 2026-11-14 with the change to four parts.
