@@ -180,6 +180,33 @@ describe("access", () => {
     }
   });
 
+  test("without TURN from Cloudflare, a viewer who may connect directly gets STUN and one who must relay is refused", async () => {
+    process.env.CLOUDFLARE_TURN_KEY_ID = "key-1";
+    process.env.CLOUDFLARE_TURN_API_TOKEN = "token-1";
+    let cloudflare: () => Promise<Response> = async () => new Response(null, { status: 503 });
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(() => cloudflare());
+    try {
+      const { t, couple } = await setup();
+      const callId = await call(couple);
+      const stunOnly = { ice_servers: [{ urls: ["stun:stun.cloudflare.com:3478"] }], relay_only: false };
+      expect(await couple.first.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).toEqual(stunOnly);
+      cloudflare = async () => {
+        throw new TypeError("fetch failed");
+      };
+      expect(await couple.first.as.action(api.calls.get_call_ice_servers, { p_call_id: callId })).toEqual(stunOnly);
+
+      await setLocationSharing(t, couple.coupleId, couple.second.userId, "paused");
+      expect(await failure(couple.second.as.action(api.calls.get_call_ice_servers, { p_call_id: callId }))).toEqual({
+        code: "P0003",
+        message: "turn_unavailable",
+      });
+    } finally {
+      fetchMock.mockRestore();
+      delete process.env.CLOUDFLARE_TURN_KEY_ID;
+      delete process.env.CLOUDFLARE_TURN_API_TOKEN;
+    }
+  });
+
   test("each member gets at most four sets of TURN credentials per call, and the end revokes them all", async () => {
     process.env.CLOUDFLARE_TURN_KEY_ID = "key-1";
     process.env.CLOUDFLARE_TURN_API_TOKEN = "token-1";

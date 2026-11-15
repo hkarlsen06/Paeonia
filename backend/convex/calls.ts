@@ -282,6 +282,10 @@ const TURN_TTL_SECONDS = 24 * 60 * 60;
 const CLOUDFLARE_TURN_API = "https://rtc.live.cloudflare.com/v1/turn/keys";
 /** How many sets of TURN credentials one member can get for one call. Enough for a few reconnects. */
 const MAX_TURN_MINTS_PER_MEMBER = 4;
+/** The phones give a call 30 seconds to connect, so a slow Cloudflare must not use them up. */
+const TURN_REQUEST_TIMEOUT_MS = 5_000;
+/** Cloudflare's public STUN server, which needs no credentials. A direct connection needs nothing else. */
+const STUN_ONLY: IceServer[] = [{ urls: ["stun:stun.cloudflare.com:3478"] }];
 
 /**
  * Checks that the viewer is a member of the live call. When `mint` is true, also counts one set of
@@ -337,9 +341,11 @@ function parseIceServers(body: unknown): IceServer[] {
  * 24 hours and carry the call id as their custom identifier. The call's end revokes them. Each member
  * gets at most `MAX_TURN_MINTS_PER_MEMBER` sets per call, then P0003 `turn_limit_reached`.
  * `relay_only` is true while the viewer has paused location sharing, so the partner's phone never
- * gets their address then. Everyone else connects directly and falls back to TURN. Without
- * `CLOUDFLARE_TURN_KEY_ID` and `CLOUDFLARE_TURN_API_TOKEN` (a local backend) the list is empty and
- * nothing is counted.
+ * gets their address then. Everyone else connects directly and falls back to TURN. When Cloudflare
+ * gives no TURN server, a viewer who must relay is refused with P0003 `turn_unavailable`, and
+ * everyone else gets `STUN_ONLY`, because most calls connect directly and should not fail with
+ * Cloudflare's API. Without `CLOUDFLARE_TURN_KEY_ID` and `CLOUDFLARE_TURN_API_TOKEN` (a local
+ * backend) the list is empty and nothing is counted.
  */
 export const get_call_ice_servers = action({
   args: { p_call_id: v.string() },
@@ -351,32 +357,48 @@ export const get_call_ice_servers = action({
       call_id: args.p_call_id,
       mint,
     });
-    if (!mint) return { ice_servers: [], relay_only: access.relay_only };
+    if (!keyId || !token) return { ice_servers: [], relay_only: access.relay_only };
 
-    const response = await fetch(`${CLOUDFLARE_TURN_API}/${keyId}/credentials/generate-ice-servers`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ ttl: TURN_TTL_SECONDS, customIdentifier: access.call_id }),
-    });
-    if (!response.ok) {
-      console.error("TURN credentials failed", { status: response.status });
-      return fail("P0003", "turn_unavailable");
-    }
-    const iceServers = parseIceServers(await response.json());
+    const iceServers = await mintIceServers(keyId, token, access.call_id);
     const usernames = iceServers.flatMap((server) => (server.username ? [server.username] : []));
-    if (usernames.length > 0) {
-      const live: boolean = await ctx.runMutation(internal.calls.record_turn_usernames, {
-        call_id: access.call_id,
-        usernames,
-      });
-      if (!live) {
-        await revokeTurnUsernames(usernames);
-        return fail("P0002", CALL_NOT_LIVE);
-      }
+    if (usernames.length === 0) {
+      return access.relay_only ? fail("P0003", "turn_unavailable") : { ice_servers: STUN_ONLY, relay_only: false };
+    }
+    const live: boolean = await ctx.runMutation(internal.calls.record_turn_usernames, {
+      call_id: access.call_id,
+      usernames,
+    });
+    if (!live) {
+      await revokeTurnUsernames(usernames);
+      return fail("P0002", CALL_NOT_LIVE);
     }
     return { ice_servers: iceServers, relay_only: access.relay_only };
   },
 });
+
+/** Cloudflare's STUN and TURN servers for the call. Empty when it refuses, fails or takes too long. */
+async function mintIceServers(keyId: string, token: string, callId: string): Promise<IceServer[]> {
+  const timeout = new AbortController();
+  const timer = setTimeout(() => timeout.abort(), TURN_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${CLOUDFLARE_TURN_API}/${keyId}/credentials/generate-ice-servers`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ ttl: TURN_TTL_SECONDS, customIdentifier: callId }),
+      signal: timeout.signal,
+    });
+    if (!response.ok) {
+      console.error("TURN credentials failed", { status: response.status });
+      return [];
+    }
+    return parseIceServers(await response.json());
+  } catch (error) {
+    console.error("TURN credentials failed", { error: String(error) });
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function revokeTurnUsernames(usernames: string[]): Promise<void> {
   const keyId = process.env.CLOUDFLARE_TURN_KEY_ID;
