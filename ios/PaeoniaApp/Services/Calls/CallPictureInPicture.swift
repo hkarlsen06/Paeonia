@@ -41,7 +41,10 @@ final class CallPictureInPicture {
     /// calls this on every change to the call, which also chooses the source again.
     func setEnabled(_ enabled: Bool) {
         if isEnabled, !enabled {
-            controller?.stopPictureInPicture()
+            // `stopPictureInPicture()` does nothing while the app is in the background, where
+            // the window cannot animate back into the app. Releasing the controller stops it
+            // there too, and `update()` makes a new one once Picture in Picture may start again.
+            controller = nil
         }
         isEnabled = enabled
         update()
