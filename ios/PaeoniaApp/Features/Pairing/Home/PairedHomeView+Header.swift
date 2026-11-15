@@ -6,13 +6,12 @@ extension PairedHomeView {
     /// in the middle. The note bubbles over the avatars rise up beside the mark and the
     /// streak, so the row uses the space a navigation bar would leave empty.
     var homeHeader: some View {
-        ZStack(alignment: .top) {
+        // The avatars and their note bubbles sit below the bar, where the map layout puts
+        // its row of avatars, so they keep their place when one layout fades into the other.
+        VStack(spacing: PaeoniaSpacing.space12 + PaeoniaSpacing.space8) {
             if drawsOwnHeader {
                 markAndStreakRow()
             }
-
-            // The strip's top is the top of a full note bubble, which lines up with the
-            // top of the streak pill.
             if let stories, let storyPeople {
                 HomeStoriesStrip(viewModel: stories, people: storyPeople)
             }
