@@ -60,6 +60,10 @@ nonisolated struct GameParticipants: Equatable, Sendable {
     var currentName: String
     var currentPhotoAssetID: UUID?
     var partnerPhotoAssetID: UUID?
+    /// Each person's own name, for pictures that leave the app. `partnerName` may be a
+    /// private nickname, so it never goes there. Nil when the name is not known.
+    var currentSharedName: String?
+    var partnerSharedName: String?
 
     init(
         currentUserID: UUID? = nil,
@@ -67,7 +71,9 @@ nonisolated struct GameParticipants: Equatable, Sendable {
         partnerName: String = "",
         currentName: String = "",
         currentPhotoAssetID: UUID? = nil,
-        partnerPhotoAssetID: UUID? = nil
+        partnerPhotoAssetID: UUID? = nil,
+        currentSharedName: String? = nil,
+        partnerSharedName: String? = nil
     ) {
         self.currentUserID = currentUserID
         self.coupleID = coupleID
@@ -75,5 +81,7 @@ nonisolated struct GameParticipants: Equatable, Sendable {
         self.currentName = currentName
         self.currentPhotoAssetID = currentPhotoAssetID
         self.partnerPhotoAssetID = partnerPhotoAssetID
+        self.currentSharedName = currentSharedName?.trimmedNonEmpty
+        self.partnerSharedName = partnerSharedName?.trimmedNonEmpty
     }
 }

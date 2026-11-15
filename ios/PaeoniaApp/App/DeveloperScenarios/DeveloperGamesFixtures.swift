@@ -18,9 +18,12 @@
     static let participants = GameParticipants(
       currentUserID: me,
       coupleID: DeveloperScenarioFixture.coupleID,
-      partnerName: UserDefaults.standard.string(forKey: "paeonia-scenario-partner-name") ?? "Robin",
-      currentName: "Alex"
+      partnerName: partnerName,
+      currentName: "Alex",
+      currentSharedName: "Alex",
+      partnerSharedName: partnerName
     )
+    private static let partnerName = UserDefaults.standard.string(forKey: "paeonia-scenario-partner-name") ?? "Robin"
 
     // MARK: Pieces
 

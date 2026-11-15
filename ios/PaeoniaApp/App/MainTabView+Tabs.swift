@@ -174,7 +174,9 @@ extension MainTabView {
             partnerName: dailyChallengeParticipants.partnerName,
             currentName: identity.currentDisplayName ?? String(localized: .dailyChallengeChoiceYou),
             currentPhotoAssetID: identity.currentProfilePhotoAssetID,
-            partnerPhotoAssetID: identity.partnerProfilePhotoAssetID
+            partnerPhotoAssetID: identity.partnerProfilePhotoAssetID,
+            currentSharedName: identity.currentDisplayName,
+            partnerSharedName: identity.partnerName?.sharedName
         )
     }
 
