@@ -68,8 +68,8 @@ struct DrawAndGuessLiveGuessTests {
         let channel = GameLiveChannel<DrawAndGuessLiveMessage>(connection: receiver)
         var received: [DrawAndGuessLiveMessage] = []
         channel.onMessage = { received.append($0) }
-        receiver.onGameData?(data)
-        receiver.onGameData?(envelope(message(), game: "another_game"))
+        receiver.receive(gameData: data)
+        receiver.receive(gameData: envelope(message(), game: "another_game"))
 
         #expect(received == [.guessScreen(message())])
     }
@@ -89,16 +89,16 @@ struct DrawAndGuessLiveGuessTests {
         guesser.recompute()
 
         guesser.sendLiveReaction(.exclamation)
-        receiver.onGameData?(try #require(sender.sentGameData.last))
+        receiver.receive(gameData: try #require(sender.sentGameData.last))
         #expect(guesser.liveReactions.flights.map(\.reaction) == [.exclamation])
         #expect(drawer.liveReactions.flights.map(\.reaction) == [.exclamation])
 
         drawer.sendLiveReaction(.love)
-        sender.onGameData?(try #require(receiver.sentGameData.last))
+        sender.receive(gameData: try #require(receiver.sentGameData.last))
         #expect(guesser.liveReactions.flights.map(\.reaction) == [.exclamation, .love])
 
         let stale = DrawAndGuessLiveMessage.reaction(round: UUID(), reaction: .question)
-        receiver.onGameData?(try JSONEncoder().encode(GameLiveEnvelope(
+        receiver.receive(gameData: try JSONEncoder().encode(GameLiveEnvelope(
             game: DrawAndGuessLiveMessage.game,
             message: stale
         )))
@@ -153,7 +153,7 @@ struct DrawAndGuessLiveGuessTests {
 
         for _ in 0..<2 {
             guesser.showLetter()
-            receiver.onGameData?(try #require(sender.sentGameData.last))
+            receiver.receive(gameData: try #require(sender.sentGameData.last))
 
             let shown = try #require(drawer.partnerGuess?.slots)
             #expect(!guesser.slots.hintedIndexes.isEmpty)
@@ -162,7 +162,7 @@ struct DrawAndGuessLiveGuessTests {
         }
 
         guesser.resendGuessScreen()
-        receiver.onGameData?(try #require(sender.sentGameData.last))
+        receiver.receive(gameData: try #require(sender.sentGameData.last))
         #expect(drawer.partnerGuess?.slots.hintedIndexes == guesser.slots.hintedIndexes)
     }
 
@@ -189,7 +189,7 @@ struct DrawAndGuessLiveGuessTests {
         let (viewModel, connection) = await waitingForGuess()
         #expect(viewModel.phase == .waitingForGuess)
 
-        connection.onGameData?(envelope(message(replay: .init(time: 0.5, rate: 1))))
+        connection.receive(gameData: envelope(message(replay: .init(time: 0.5, rate: 1))))
 
         let guess = try #require(viewModel.partnerGuess)
         #expect(guess.slots.slots.first?.tile?.letter == "U")
@@ -209,7 +209,7 @@ struct DrawAndGuessLiveGuessTests {
             .viewModel(live: WidgetLiveDrawing(connection: connection, role: .drawing))
         connection.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
         connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "watching"))
-        connection.onGameData?(envelope(message()))
+        connection.receive(gameData: envelope(message()))
         #expect(viewModel.partnerGuess == nil)
 
         await viewModel.reload()
@@ -220,7 +220,7 @@ struct DrawAndGuessLiveGuessTests {
     @Test func aScreenForAnotherRoundIsIgnored() async {
         let (viewModel, connection) = await waitingForGuess()
 
-        connection.onGameData?(envelope(message(round: GameFixture.nextRoundID)))
+        connection.receive(gameData: envelope(message(round: GameFixture.nextRoundID)))
 
         #expect(viewModel.partnerGuess == nil)
     }

@@ -307,7 +307,7 @@
         while let live {
           simulatePartner(on: live.connection, role: .watching, canvas: nil)
           if let data = ContinuousClock.now - start < delay ? empty : filled {
-            live.connection.onGameData?(data)
+            live.connection.receive(gameData: data)
           }
           try? await Task.sleep(for: .seconds(1))
         }

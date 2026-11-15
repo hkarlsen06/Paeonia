@@ -71,11 +71,13 @@ nonisolated struct GameLiveEnvelopeTag: Decodable {
     }
 }
 
-/// Sends and receives one game's messages on a live connection. A connection
-/// carries one game, because every game has its own relay room, which the
-/// connection's ticket names (see `GameLiveTicket`). Messages sent while offline
-/// are dropped, so send whole state that the partner can take as it is, and send
-/// it again when the partner arrives.
+/// Sends and receives one message type on a live connection. Every game has
+/// its own relay room, which the connection's ticket names (see `GameLiveTicket`).
+/// A room can carry several message types, one channel each, such as a board
+/// game's moves and Ludo's rolls. The connection hands each channel the messages
+/// tagged with its `Message.game`. Messages sent while offline are dropped, so
+/// send whole state that the partner can take as it is, and send it again when
+/// the partner arrives.
 @MainActor
 final class GameLiveChannel<Message: GameLiveMessage> {
     var onMessage: ((Message) -> Void)?
@@ -86,9 +88,16 @@ final class GameLiveChannel<Message: GameLiveMessage> {
 
     init(connection: WidgetLiveConnection) {
         self.connection = connection
-        connection.onGameData = { [weak self] data in
+        connection.setGameHandler(for: Message.game) { [weak self] data in
             self?.receive(data)
         }
+    }
+
+    /// Stops taking messages, while the connection stays open for the other
+    /// channels on it.
+    func close() {
+        onMessage = nil
+        connection.removeGameHandler(for: Message.game)
     }
 
     func send(_ message: Message) {
@@ -99,9 +108,7 @@ final class GameLiveChannel<Message: GameLiveMessage> {
     }
 
     private func receive(_ data: Data) {
-        guard let envelope = try? decoder.decode(GameLiveEnvelope<Message>.self, from: data),
-              envelope.game == Message.game
-        else {
+        guard let envelope = try? decoder.decode(GameLiveEnvelope<Message>.self, from: data) else {
             return
         }
         onMessage?(envelope.message)

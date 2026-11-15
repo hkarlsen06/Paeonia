@@ -228,7 +228,7 @@
             let message = ConsensioLiveMessage(roundID: roundID, position: position, touching: true)
             let envelope = GameLiveEnvelope(game: ConsensioLiveMessage.game, message: message)
             if let data = try? JSONEncoder().encode(envelope) {
-              live.connection.onGameData?(data)
+              live.connection.receive(gameData: data)
             }
             step += 1
             try? await Task.sleep(for: .milliseconds(70))

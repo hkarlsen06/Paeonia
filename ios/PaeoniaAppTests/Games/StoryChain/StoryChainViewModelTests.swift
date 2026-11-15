@@ -54,7 +54,7 @@ final class StoryChainRecordingConnection: WidgetLiveConnection {
             game: StoryChainRoomMessage.game,
             message: StoryChainRoomMessage.draft(message)
         ))
-        onGameData?(data ?? Data())
+        receive(gameData: data ?? Data())
     }
 
     /// The partner joined the room and says what its screen shows.

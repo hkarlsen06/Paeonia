@@ -58,7 +58,7 @@ final class RecordingCorpseConnection: WidgetLiveConnection {
         guard let data = try? JSONEncoder().encode(
             GameLiveEnvelope(game: ExquisiteCorpseLiveMessage.game, message: message)
         ) else { return }
-        onGameData?(data)
+        receive(gameData: data)
     }
 }
 

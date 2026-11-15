@@ -172,7 +172,7 @@ final class SimRelay {
                 }
             case let .gameData(connection, socketID, data):
                 if connection.socketID == socketID {
-                    connection.onGameData?(data)
+                    connection.receive(gameData: data)
                 }
             case let .disconnect(connection):
                 connection.relayDidDisconnect()

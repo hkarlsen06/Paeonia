@@ -24,9 +24,6 @@ class WidgetLiveConnection {
     private static let pingInterval: Duration = .seconds(25)
 
     var onMessage: ((WidgetLiveMessage) -> Void)?
-    /// A game's own message, as the JSON of a `GameLiveEnvelope`. `GameLiveChannel`
-    /// decodes it.
-    var onGameData: ((Data) -> Void)?
     /// A call setup message, as the JSON of a `CallLiveEnvelope`. `CallRelay` decodes it.
     var onCallData: ((Data) -> Void)?
     /// The socket closed. Not called after `stop()`.
@@ -40,6 +37,11 @@ class WidgetLiveConnection {
     private var runTask: Task<Void, Never>?
     private var socket: URLSessionWebSocketTask?
     private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+    /// Each game's handler of its own messages, keyed by the `game` tag of the
+    /// envelope. One room can carry several message types, such as a board
+    /// game's moves and Ludo's rolls. `GameLiveChannel` registers them.
+    private var gameHandlers: [String: (Data) -> Void] = [:]
 
     init(
         coupleID: UUID,
@@ -91,6 +93,25 @@ class WidgetLiveConnection {
     /// while offline, like `send(_:)`.
     func send(gameData: Data) {
         send(text: gameData)
+    }
+
+    /// Takes the messages whose envelope names `game`, replacing the handler
+    /// that took them before.
+    func setGameHandler(for game: String, _ handler: @escaping (Data) -> Void) {
+        gameHandlers[game] = handler
+    }
+
+    func removeGameHandler(for game: String) {
+        gameHandlers[game] = nil
+    }
+
+    /// Hands a game message, the JSON of a `GameLiveEnvelope`, to the handler of
+    /// the game it names. A message no handler takes is dropped.
+    func receive(gameData data: Data) {
+        guard let tag = try? decoder.decode(GameLiveEnvelopeTag.self, from: data) else {
+            return
+        }
+        gameHandlers[tag.game]?(data)
     }
 
     /// Sends a call setup message, the JSON of a `CallLiveEnvelope`. Dropped while offline.
@@ -175,7 +196,7 @@ class WidgetLiveConnection {
             }
             switch incoming {
             case let .game(data):
-                onGameData?(data)
+                receive(gameData: data)
             case let .call(data):
                 onCallData?(data)
             case let .live(decoded):

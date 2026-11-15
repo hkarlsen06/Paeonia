@@ -198,7 +198,7 @@
       )
       let envelope = GameLiveEnvelope(game: StoryChainRoomMessage.game, message: StoryChainRoomMessage.draft(message))
       guard let data = try? JSONEncoder().encode(envelope) else { return }
-      connection?.onGameData?(data)
+      connection?.receive(gameData: data)
     }
   }
 
@@ -249,7 +249,7 @@
         ))
         let envelope = GameLiveEnvelope(game: StoryChainRoomMessage.game, message: message)
         if let data = try? JSONEncoder().encode(envelope) {
-          hub.game.live?.connection.onGameData?(data)
+          hub.game.live?.connection.receive(gameData: data)
         }
         return
       }

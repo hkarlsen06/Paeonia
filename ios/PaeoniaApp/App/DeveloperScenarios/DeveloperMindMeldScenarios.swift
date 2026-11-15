@@ -219,7 +219,7 @@
             join(live.connection)
           }
           if let typing {
-            live.connection.onGameData?(typing)
+            live.connection.receive(gameData: typing)
           }
           try? await Task.sleep(for: .seconds(2))
         }

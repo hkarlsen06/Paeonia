@@ -16,7 +16,7 @@ struct StoryChainLiveReactionTests {
           "story":"\(StoryChainFixture.storyID)","number":2,"text":"The key turned.","last":false,"sent":false
         }}}}
         """
-        environment.connection.onGameData?(Data(json.utf8))
+        environment.connection.receive(gameData: Data(json.utf8))
 
         #expect(viewModel.page.ghost?.text == "The key turned.")
     }
@@ -37,17 +37,17 @@ struct StoryChainLiveReactionTests {
 
         writing.draft = "The door opened."
         #expect(await waitUntil { writer.connection.sentMessages.last?.text == "The door opened." })
-        reader.connection.onGameData?(try #require(writer.connection.sentGameData.last))
+        reader.connection.receive(gameData: try #require(writer.connection.sentGameData.last))
         #expect(reading.page.ghost?.text == "The door opened.")
 
         writing.sendLiveReaction(.exclamation)
-        reader.connection.onGameData?(try #require(writer.connection.sentGameData.last))
+        reader.connection.receive(gameData: try #require(writer.connection.sentGameData.last))
         #expect(writing.liveReactions.flights.map(\.reaction) == [.exclamation])
         #expect(reading.liveReactions.flights.map(\.reaction) == [.exclamation])
         #expect(reading.page.ghost?.text == "The door opened.")
 
         reading.sendLiveReaction(.love)
-        writer.connection.onGameData?(try #require(reader.connection.sentGameData.last))
+        writer.connection.receive(gameData: try #require(reader.connection.sentGameData.last))
         #expect(writing.liveReactions.flights.map(\.reaction) == [.exclamation, .love])
         #expect(writing.draft == "The door opened.")
     }
@@ -60,7 +60,7 @@ struct StoryChainLiveReactionTests {
         environment.connection.partnerJoins(role: "drawing")
 
         let message = StoryChainRoomMessage.reaction(story: UUID(), reaction: .question)
-        environment.connection.onGameData?(try JSONEncoder().encode(GameLiveEnvelope(
+        environment.connection.receive(gameData: try JSONEncoder().encode(GameLiveEnvelope(
             game: StoryChainRoomMessage.game,
             message: message
         )))

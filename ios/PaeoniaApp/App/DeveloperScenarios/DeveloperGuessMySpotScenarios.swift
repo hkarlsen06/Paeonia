@@ -354,7 +354,7 @@
     private static func feed(_ message: GuessMySpotLiveMessage, to live: WidgetLiveDrawing) {
       let envelope = GameLiveEnvelope(game: GuessMySpotLiveMessage.game, message: message)
       if let data = try? JSONEncoder().encode(envelope) {
-        live.connection.onGameData?(data)
+        live.connection.receive(gameData: data)
       }
     }
   }
