@@ -2,8 +2,7 @@ import Foundation
 @preconcurrency import LiveCommunicationKit
 import UIKit
 
-/// The partner as calls name them: their user id is the handle in Recents, and the name is what
-/// this person calls them (`PartnerName`).
+/// The partner as calls name them: the name is what this person calls them (`PartnerName`).
 nonisolated struct CallPartner: Equatable, Sendable {
     /// What the system shows instead of the partner's name when lock screen details are private.
     static let privateName = "Paeonia"
@@ -12,11 +11,19 @@ nonisolated struct CallPartner: Equatable, Sendable {
     let name: String
 
     func handle(showsName: Bool) -> Handle {
-        Self.handle(userID: userID, name: showsName ? name : Self.privateName)
+        Self.handle(name: showsName ? name : Self.privateName)
     }
 
-    static func handle(userID: UUID, name: String) -> Handle {
-        Handle(type: .generic, value: userID.uuidString.lowercased(), displayName: name)
+    /// The system call UI shows a handle's value and ignores its display name (FB24933340), so
+    /// the value is the name the call shows. Recents and Siri hand that name back for a call back.
+    static func handle(name: String) -> Handle {
+        Handle(type: .generic, value: name, displayName: name)
+    }
+
+    /// Whether a call back from Recents or Siri, which hands back the name a call showed, calls
+    /// this partner. A couple has one partner, so their current name and "Paeonia" both do.
+    func answersCallBack(to handleValue: String) -> Bool {
+        handleValue == name || handleValue == Self.privateName
     }
 
     /// The partner from the local store, or nil when signed out or unpaired. A locked phone

@@ -6,20 +6,20 @@ import Intents
 extension CallEngine {
     // MARK: Outgoing
 
-    /// A call back from Recents or Siri. The handle is the partner's user id.
+    /// A call back from Recents or Siri. The handle is the name the call showed.
     func startCall(from activity: NSUserActivity) {
         let intent = activity.interaction?.intent as? INStartCallIntent
         let handle = intent?.contacts?.first?.personHandle?.value ?? ""
         Task { await startOutgoing(requestedHandle: handle) }
     }
 
-    /// The one start path for the call buttons, Recents and Siri. `requestedHandle` is the user
-    /// id the system asked to call, which must still be the partner.
+    /// The one start path for the call buttons, Recents and Siri. `requestedHandle` is the name
+    /// the system asked to call, which must still name the partner.
     func startOutgoing(requestedHandle: String?) async {
         guard isIdle else { return }
         let partner = await CallPartner.current()
         guard isIdle else { return }
-        guard let partner, requestedHandle.map({ UUID(uuidString: $0) == partner.userID }) ?? true else {
+        guard let partner, requestedHandle.map(partner.answersCallBack) ?? true else {
             showEnded(.failed(.notPartner))
             return
         }
@@ -85,8 +85,7 @@ extension CallEngine {
                 await reportIncoming(ring, mustReport: mustReport)
             } else if mustReport {
                 // Not a call push, but iOS stops VoIP pushes to an app that reports no call.
-                let handle = CallPartner.handle(userID: UUID(), name: CallPartner.privateName)
-                await reportEndedCall(UUID(), handle: handle)
+                await reportEndedCall(UUID(), handle: CallPartner.handle(name: CallPartner.privateName))
             }
             completion()
         }
@@ -136,9 +135,7 @@ extension CallEngine {
               ring.ringExpiresAt > .now
         else {
             if mustReport {
-                await reportEndedCall(ring.callID, handle: CallPartner.handle(
-                    userID: ring.callerUserID, name: CallPartner.privateName
-                ))
+                await reportEndedCall(ring.callID, handle: CallPartner.handle(name: CallPartner.privateName))
             }
             return
         }
@@ -146,7 +143,7 @@ extension CallEngine {
         // The store cannot be read on a locked phone, and the report cannot wait for it.
         let partner = CallPartner.cached
         let name = ring.showsName && partner?.userID == ring.callerUserID ? partner?.name : nil
-        let handle = CallPartner.handle(userID: ring.callerUserID, name: name ?? CallPartner.privateName)
+        let handle = CallPartner.handle(name: name ?? CallPartner.privateName)
         let (machine, effects) = CallMachine.incoming(
             callID: ring.callID,
             deviceID: deviceID,
