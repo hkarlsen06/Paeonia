@@ -25,6 +25,7 @@ nonisolated struct ConversationThreadRow: Decodable {
     let topicKey: String?
     let privateTopic: Bool?
     let lastMessageCall: ThreadChatCall?
+    let hasUnread: Bool
 
     /// What the chat is about, from the id that matches its kind.
     private var subject: ThreadChatSubject? {
@@ -59,7 +60,8 @@ nonisolated struct ConversationThreadRow: Decodable {
             viewerReadThroughMessageID: viewerReadThroughMessageID,
             topicKey: topicKey,
             isPrivateTopic: privateTopic,
-            lastMessageCall: previewIsVisible ? lastMessageCall : nil
+            lastMessageCall: previewIsVisible ? lastMessageCall : nil,
+            hasUnread: hasUnread
         )
     }
 
@@ -87,6 +89,7 @@ nonisolated struct ConversationThreadRow: Decodable {
         case topicKey = "topic_key"
         case privateTopic = "private_topic"
         case lastMessageCall = "last_message_call"
+        case hasUnread = "has_unread"
     }
 }
 

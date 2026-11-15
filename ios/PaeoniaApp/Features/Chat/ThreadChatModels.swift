@@ -22,6 +22,9 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
     var isPrivateTopic: Bool?
     /// Set when the newest message is a call's row in "Just us".
     var lastMessageCall: ThreadChatCall?
+    /// The server counts a message from the partner after the user's read mark on any device. A
+    /// finished call does not count, so an unread message can sit under a newer call.
+    var hasUnread = false
 
     /// The question the chat is about, nil for a memory's or a story's chat.
     var questionID: UUID? {
@@ -37,15 +40,19 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
         return String(localized: lastMessageMediaType == "image" ? .dailyChatPhotoPreview : .dailyChatVoicePreview)
     }
 
-    /// The newest message came from the partner after the user last read the chat:
-    /// `readThrough` on this phone, or `viewerReadThroughAt` on any of their devices.
-    /// A finished call never makes the chat unread. A missed one does.
+    /// The partner wrote something the user has not read: `readThrough` on this phone, or
+    /// `viewerReadThroughAt` on any of their devices. A newest message from the partner that
+    /// arrived after the server's count decides it here. Anything older is the server's
+    /// `hasUnread`. A finished call never makes the chat unread. A missed one does.
     func isUnread(by userID: UUID, readThrough: ThreadChatMessageCursor?) -> Bool {
-        guard lastMessageCall?.outcome != .completed else { return false }
-        guard let lastMessageAt, let lastMessageID,
-              let sender = lastMessageSenderUserID, sender != userID else { return false }
-        guard let newestRead = latestReadCursor(onThisPhone: readThrough) else { return true }
-        return ThreadChatMessageCursor(createdAt: lastMessageAt, messageID: lastMessageID) > newestRead
+        guard let lastMessageAt, let lastMessageID else { return false }
+        let newest = ThreadChatMessageCursor(createdAt: lastMessageAt, messageID: lastMessageID)
+        if let newestRead = latestReadCursor(onThisPhone: readThrough), newestRead >= newest {
+            return false
+        }
+        let newestCounts = lastMessageSenderUserID.map { $0 != userID } == true
+            && lastMessageCall?.outcome != .completed
+        return newestCounts || hasUnread
     }
 
     /// The furthest read position saved on this phone or received from another device.

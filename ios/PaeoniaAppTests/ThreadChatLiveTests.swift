@@ -102,7 +102,8 @@ struct ThreadChatLiveTests {
             "moderation_status":"visible","last_message_id":"\(fixture.messageID.uuidString)",
             "last_message_at":"2026-05-01T10:00:05.000Z",
             "last_message_sender_user_id":"\(fixture.partnerUserID.uuidString)",
-            "last_message_deleted_at":null,"last_message_moderation_status":"visible","last_message_body":"Miss you"}]
+            "last_message_deleted_at":null,"last_message_moderation_status":"visible","last_message_body":"Miss you",
+            "has_unread":true}]
             """
         )
 

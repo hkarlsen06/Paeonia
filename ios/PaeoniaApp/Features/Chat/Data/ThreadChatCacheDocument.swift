@@ -89,7 +89,9 @@ nonisolated extension ThreadChatCoreDocument {
             viewerReadThroughAt: summary.viewerReadThroughAt,
             viewerReadThroughMessageID: summary.viewerReadThroughMessageID,
             topicKey: summary.topicKey,
-            isPrivateTopic: summary.isPrivateTopic
+            isPrivateTopic: summary.isPrivateTopic,
+            lastMessageCall: message.call,
+            hasUnread: summary.hasUnread
         )
     }
 
@@ -111,7 +113,8 @@ nonisolated extension ThreadChatCoreDocument {
             viewerReadThroughAt: summary.viewerReadThroughAt,
             viewerReadThroughMessageID: summary.viewerReadThroughMessageID,
             topicKey: summary.topicKey,
-            isPrivateTopic: summary.isPrivateTopic
+            isPrivateTopic: summary.isPrivateTopic,
+            hasUnread: summary.hasUnread
         )
     }
 

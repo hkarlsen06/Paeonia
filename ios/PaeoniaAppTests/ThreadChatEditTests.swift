@@ -240,6 +240,17 @@ struct ThreadChatReadMarkTests {
         #expect(!fromPartner.isUnread(by: me, readThrough: cursor(sentAt - 5)))
     }
 
+    @Test func aFinishedCallKeepsAnEarlierUnreadMessageUnread() {
+        var call = summary(sender: partner)
+        call.lastMessageCall = ThreadChatCall(outcome: .completed, durationSeconds: 60)
+        #expect(!call.isUnread(by: me, readThrough: nil))
+
+        call.hasUnread = true
+        #expect(call.isUnread(by: me, readThrough: nil))
+        #expect(call.isUnread(by: me, readThrough: cursor(sentAt - 5)))
+        #expect(!call.isUnread(by: me, readThrough: cursor(sentAt)))
+    }
+
     @Test func theFileCacheKeepsSeenPartnerAnswersUntilAPurge() async {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("ChatReadMarks-\(UUID().uuidString)", isDirectory: true)
