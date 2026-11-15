@@ -17,11 +17,15 @@ struct PresenceAvatar: View {
             tint: .paeoniaPartnerTwo,
             size: Self.size
         )
-        .callMorph(.photo, size: Self.size)
         .padding(PaeoniaSpacing.space4)
         .glassEffect(.regular.interactive(), in: Circle())
         .overlay(alignment: .bottomTrailing) { badge }
         .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
+        // The photo's own frame, which the call's photo matches. The ring and the badge reach
+        // past it and scale with it, so the whole avatar grows out of the call and back into it.
+        .frame(width: Self.size, height: Self.size)
+        .callMorph(.photo, size: Self.size)
+        .padding(PaeoniaSpacing.space4)
     }
 
     @ViewBuilder
