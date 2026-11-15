@@ -10,7 +10,7 @@ struct BoardGamePlayerInfo: Equatable {
     let style: BoardPieceStyle
 }
 
-/// Whose turn it is, or how the game ended, for the players row.
+/// Whose turn it is, or how the game ended, for the players row and the status row.
 nonisolated enum BoardGameTurnLabel: Equatable, Hashable, Sendable {
     case yourTurn
     case partnerTurn
@@ -63,10 +63,10 @@ struct BoardGameShellContent: Equatable {
     let turn: BoardGameTurnLabel
     let stake: BoardGameStakeState
     let partnerStatus: BoardGamePartnerStatus
-    /// Goes up with each extra turn of mine, so the status row can pop "Another turn".
+    /// Goes up with each extra turn of mine, so the status row can say "Another turn".
     let extraTurnCount: Int
     let score: BoardGameScore?
-    /// A game's own line for the status row, shown instead of who is here.
+    /// A game's own line for the status row, shown instead of whose turn it is.
     var hint: LocalizedStringResource?
     /// Ludo's color circles before the player's first move. Nil in the other games and after.
     var colorChoice: BoardGameColorChoice?

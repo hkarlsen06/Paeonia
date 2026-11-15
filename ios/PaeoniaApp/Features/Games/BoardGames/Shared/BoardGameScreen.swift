@@ -22,8 +22,7 @@ struct BoardGameScreenAction {
 struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
     @Bindable var viewModel: BoardGameViewModel<Board>
     /// A game's own line in the status row, such as Ludo's "Roll again". While
-    /// there is one, it shows instead of who is here, and the "Another turn"
-    /// chip stays quiet because the hint already says it.
+    /// there is one, it shows instead of whose turn it is or "Another turn".
     var hint: LocalizedStringResource?
     /// The board draws over the whole screen behind the rows and fits itself in the
     /// free space between them, as Ludo's does. It reads `boardFitHeight` for that.
@@ -146,7 +145,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             turn: viewModel.turnLabel,
             stake: viewModel.stakeState,
             partnerStatus: viewModel.partnerStatus,
-            extraTurnCount: hint == nil ? viewModel.extraTurnCount : 0,
+            extraTurnCount: viewModel.extraTurnCount,
             score: viewModel.score,
             hint: hint,
             colorChoice: viewModel.colorChoice,

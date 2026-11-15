@@ -4412,7 +4412,7 @@
       }
     },
     "boardGames.status.anotherTurn" : {
-      "comment" : "Chip after this person closed a box in Dots and Boxes, which gives them another move.",
+      "comment" : "Line under the board for a moment after this person earned another move, such as by closing a box in Dots and Boxes. Then it goes back to saying it is their turn.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4466,7 +4466,7 @@
       }
     },
     "boardGames.turn.partner" : {
-      "comment" : "VoiceOver value on the partner's avatar when it is their turn. %@ is the partner's name.",
+      "comment" : "Line under the board in a board game, next to a dot in the partner's color, while it is the partner's turn. VoiceOver also reads it on the partner's avatar. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4502,7 +4502,7 @@
       }
     },
     "boardGames.turn.yours" : {
-      "comment" : "VoiceOver value on this person's avatar on a board game screen when it is their turn.",
+      "comment" : "Line under the board in a board game, next to a dot in this person's color, while it is their turn. VoiceOver also reads it on their avatar.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

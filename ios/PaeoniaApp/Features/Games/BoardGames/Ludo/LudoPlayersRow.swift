@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Ludo players. My avatar is on the leading side, my partner's on the trailing
 /// side. Whoever's turn it is, or whoever won, gets glass in their piece color, a
-/// slightly larger avatar and a bold name. A steady green ring on my partner's avatar shows
-/// they have the game open. Once a game ends, each name has the player's wins
+/// ring in that color round their avatar and a bold name. A steady green ring on
+/// my partner's avatar shows they have the game open. Once a game ends, each name has the player's wins
 /// under it, or the couple's games sit between the two. At accessibility text
 /// sizes the row stacks.
 struct LudoPlayersRow: View {
