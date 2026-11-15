@@ -70,6 +70,14 @@ final class LiveCommunicationCallSystem: CallSystem {
     }
 
     func reportEnded(_ conversationID: UUID, reason: CallEndReason) {
+        guard reason != .noAnswer else {
+            // iOS shows its own "unavailable" sheet over the app for an outgoing call that the
+            // other side ends before it connects, whatever the reason, so the caller ends it here.
+            Task { [manager] in
+                try? await manager.perform([EndConversationAction(conversationUUID: conversationID)])
+            }
+            return
+        }
         report(.conversationEnded(.now, Self.systemReason(reason)), for: conversationID)
     }
 
@@ -92,7 +100,6 @@ final class LiveCommunicationCallSystem: CallSystem {
 
     private static func systemReason(_ reason: CallEndReason) -> Conversation.EndedReason {
         switch reason {
-        // iOS answers `.unanswered` on the caller's phone with its own "Audio unavailable" sheet.
         case .hungUp, .noAnswer:
             .remoteEnded
         case .missed:
