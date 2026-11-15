@@ -46,6 +46,7 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
     @State var markerMeasurements = StoryMarkerMeasurements()
     @State var explorer = HomeMapExplorer()
     @State var isShowingMapDetails = false
+    @State private var isNoteOpen = false
 
     /// Both places, while there is a map to show.
     private var couple: HomeMapCouple? {
@@ -71,8 +72,12 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
                 scrollPage(couple, screen)
             }
         }
-        // A note's keyboard belongs to its cover. Keep Home's map and cards in place behind it.
-        .ignoresSafeArea(.keyboard)
+        // A note's keyboard belongs to its clear cover, so Home's map and cards stay in place
+        // behind it. No other keyboard is ignored. Ignoring one also drops the tab bar's inset,
+        // and Home came back from a sheet's keyboard with that inset gone and its last cards
+        // under the tab bar.
+        .ignoresSafeArea(isNoteOpen ? .keyboard : [])
+        .onPreferenceChange(HomeNoteIsOpenKey.self) { isNoteOpen = $0 }
         .onChange(of: mapState, initial: true) { _, _ in retainMapLocations() }
         .sheet(isPresented: $isShowingMapDetails) {
             if let couple {

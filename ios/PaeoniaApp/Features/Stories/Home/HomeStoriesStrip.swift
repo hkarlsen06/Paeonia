@@ -1,5 +1,15 @@
 import SwiftUI
 
+/// True while the note screen is open over Home. It has a clear background and flies the
+/// avatar back to where it left, so Home keeps still under its keyboard (`HomeMapLayout`).
+struct HomeNoteIsOpenKey: PreferenceKey {
+    static let defaultValue = false
+
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
+    }
+}
+
 /// The two partners at the top of Home. A ring around an avatar means there is a story
 /// from the last day: bright while the partner's is new to you, quiet once you opened it.
 /// Your own avatar opens your stories, and a separate button adds one. A thought bubble over an
@@ -98,6 +108,7 @@ struct HomeStoriesStrip: View {
             .presentationBackground(.clear)
         }
         .preference(key: HomeIsCoveredKey.self, value: viewer != nil || isComposing || openNote != nil || isStyling)
+        .preference(key: HomeNoteIsOpenKey.self, value: openNote != nil)
     }
 
     /// Opens the story a push named. A story that left Home opens alone in the archive style.
