@@ -40404,7 +40404,7 @@
       }
     },
     "settings.presence.footer" : {
-      "comment" : "Footer under the Show when I'm here switch in Settings. It covers only the floating picture and where the person is in the app. The green ring on a game and the typing dots in a chat still show. %1$@ is the partner's name.",
+      "comment" : "Footer under the Show when I'm here switch on its own Settings screen. It covers only the floating picture and where the person is in the app. The green ring on a game and the typing dots in a chat still show. %1$@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -40422,7 +40422,7 @@
       }
     },
     "settings.presence.toggle" : {
-      "comment" : "Settings switch. On, the partner sees this person's picture floating over their screen and where they are in the app while both have Paeonia open.",
+      "comment" : "Settings row under Location, the title of the screen it opens, and the switch on that screen. On, the partner sees this person's picture floating over their screen and where they are in the app while both have Paeonia open.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

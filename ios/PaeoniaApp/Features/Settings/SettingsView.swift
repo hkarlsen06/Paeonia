@@ -134,7 +134,7 @@ struct SettingsView: View {
             }
             Group {
                 youSection
-                relationshipSections
+                relationshipSection
                 appSection
                 AdminSettingsSection(access: adminAccess, gateway: adminGateway)
                 SettingsSubscriptionHelpSection(
@@ -297,9 +297,7 @@ extension SettingsView {
         )
     }
 
-    /// The relationship's own settings, then "Show when I'm here".
-    @ViewBuilder
-    private var relationshipSections: some View {
+    private var relationshipSection: some View {
         SettingsRelationshipSection(
             nicknameRow: partner.map { PartnerNicknameSettingsRow(editor: nicknameEditor, partner: $0) },
             relationshipDateRow: RelationshipDateSettingsRow(
@@ -312,7 +310,6 @@ extension SettingsView {
             locationViewModel: locationViewModel,
             partnerName: partnerName
         )
-        PresenceSettingsSection(partnerName: partnerName)
     }
 
     private var appSection: some View {

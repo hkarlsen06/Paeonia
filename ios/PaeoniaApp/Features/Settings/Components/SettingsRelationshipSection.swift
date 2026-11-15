@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The More tab's relationship section: the partner's nickname, the couple's dates and
-/// location sharing. A date that isn't set yet gets its own row here so it's easy to
+/// The More tab's relationship section: the partner's nickname, the couple's dates,
+/// location sharing and "Show when I'm here". A date that isn't set yet gets its own row here so it's easy to
 /// find. Set dates move to the Important dates screen, since they rarely change.
 struct SettingsRelationshipSection: View {
     /// Hidden while there is no partner.
@@ -45,6 +45,8 @@ struct SettingsRelationshipSection: View {
             } label: {
                 SettingsMenuLabel(.settingsLocationSectionTitle, systemImage: "location.fill", value: locationValue)
             }
+
+            PresenceSettingsRow(partnerName: partnerName)
         } header: {
             Text(.settingsRelationshipSectionTitle)
         }
