@@ -23,7 +23,10 @@ LIBRARIES = {
 }
 # Each library's integrated loudness in LUFS and true peak ceiling in dBTP. Call sounds play
 # louder, because a ringback has to carry from a phone's speaker across a room.
-LEVELS = {"game": (-26.0, -3.0), "call": (-16.0, -1.0)}
+LEVELS = {"game": (-26.0, -3.0), "call": (-12.0, -1.0)}
+# Call sounds are stereo with the same sound on both channels. `AVAudioPlayer` sends a mono
+# file to the first output channel only, which on an iPhone held upright is the earpiece.
+CHANNELS = {"game": 1, "call": 2}
 LOUDNESS_TOLERANCE = 0.5
 
 
@@ -31,14 +34,15 @@ def run(*args):
     return subprocess.run(args, check=True, capture_output=True, text=True).stdout
 
 
-def probe(path):
+def probe(library, path):
     info = json.loads(run("ffprobe", "-v", "error", "-show_streams", "-of", "json", str(path)))
     streams = info["streams"]
     if len(streams) != 1:
         raise ValueError(f"{path.name}: expected one audio stream")
     stream = streams[0]
-    if (stream["codec_name"], stream["sample_rate"], stream["channels"]) != ("pcm_s16le", "44100", 1):
-        raise ValueError(f"{path.name}: expected mono 44.1 kHz signed 16-bit PCM")
+    channels = CHANNELS[library]
+    if (stream["codec_name"], stream["sample_rate"], stream["channels"]) != ("pcm_s16le", "44100", channels):
+        raise ValueError(f"{path.name}: expected {channels}-channel 44.1 kHz signed 16-bit PCM")
     return stream["duration_ts"]
 
 
@@ -68,7 +72,7 @@ def normalize(library, source, destination):
     target, ceiling = LEVELS[library]
     # Oversampling and a small margin keep the resampled, quantized CAF below the ceiling.
     limit = 10 ** ((ceiling - 0.5) / 20)
-    frames = probe(source)
+    frames = probe(library, source)
     loudness, peak = measure(source)
     gain = target - loudness
     for _ in range(12):
@@ -77,8 +81,8 @@ def normalize(library, source, destination):
             filters += (f",aresample=192000,alimiter=limit={limit}:level=false:latency=true"
                         ":attack=5:release=50,aresample=44100")
         run("ffmpeg", "-v", "error", "-y", "-i", str(source), "-af", filters,
-            "-ar", "44100", "-ac", "1", "-c:a", "pcm_s16le", str(destination))
-        if probe(destination) != frames:
+            "-ar", "44100", "-ac", str(CHANNELS[library]), "-c:a", "pcm_s16le", str(destination))
+        if probe(library, destination) != frames:
             raise ValueError(f"{source.name}: normalization changed its frame count")
         actual, actual_peak = measure(destination)
         if conforms(library, actual, actual_peak):
@@ -160,7 +164,7 @@ def process(library, directory, paths, write):
     staging = tempfile.TemporaryDirectory(prefix="game-audio-", dir=directory) if write else nullcontext()
     with staging as scratch:
         for path in paths:
-            probe(path)
+            probe(library, path)
             loudness, peak = measure(path)
             if not conforms(library, loudness, peak) and write:
                 target = Path(scratch) / path.name

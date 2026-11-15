@@ -501,19 +501,23 @@ func finish(_ samples: [Double], peak: Double) -> [Double] {
     return output.map { $0 * peak / loudest }
 }
 
-func write(_ samples: [Double], to url: URL) throws {
+/// Game sounds are mono. Call sounds carry the same samples on two channels, because
+/// `AVAudioPlayer` plays a mono file on the first channel only: an iPhone's earpiece.
+func write(_ samples: [Double], channels: Int, to url: URL) throws {
     let settings: [String: Any] = [
         AVFormatIDKey: kAudioFormatLinearPCM,
         AVSampleRateKey: rate,
-        AVNumberOfChannelsKey: 1,
+        AVNumberOfChannelsKey: channels,
         AVLinearPCMBitDepthKey: 16,
         AVLinearPCMIsFloatKey: false,
     ]
     let file = try AVAudioFile(forWriting: url, settings: settings, commonFormat: .pcmFormatFloat32, interleaved: false)
     let frameCapacity = AVAudioFrameCount(samples.count)
     guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: frameCapacity),
-          let channel = buffer.floatChannelData?[0] else { fail("could not make a buffer") }
-    for (index, value) in samples.enumerated() { channel[index] = Float(value) }
+          let data = buffer.floatChannelData else { fail("could not make a buffer") }
+    for channel in 0..<channels {
+        for (index, value) in samples.enumerated() { data[channel][index] = Float(value) }
+    }
     buffer.frameLength = AVAudioFrameCount(samples.count)
     try file.write(from: buffer)
 }
@@ -533,7 +537,7 @@ for recipe in recipes {
         }
         let url = folder.appendingPathComponent(recipe.library.fileName(recipe.name, variant: variant))
         do {
-            try write(samples, to: url)
+            try write(samples, channels: recipe.library == .call ? 2 : 1, to: url)
         } catch {
             fail("could not write \(url.lastPathComponent): \(error)")
         }

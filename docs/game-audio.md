@@ -4,14 +4,14 @@ Every bundled `GameSound` uses the same file loudness reference. `CallSound` has
 
 ## Files
 
-- Mono CAF, 44.1 kHz signed 16-bit PCM.
-- Integrated loudness of -26 LUFS for game sounds and -16 LUFS for call sounds, within 0.5 LU.
+- CAF, 44.1 kHz signed 16-bit PCM. Game sounds are mono. Call sounds are stereo with the same sound on both channels, because `AVAudioPlayer` plays a mono file on the first output channel only, and on an iPhone held upright that is the earpiece.
+- Integrated loudness of -26 LUFS for game sounds and -12 LUFS for call sounds (-15 LUFS per channel), within 0.5 LU.
 - True peak at or below -3 dBTP for game sounds and -1 dBTP for call sounds. Peak normalization alone does not meet this standard.
 - Measure the entire effect with silence appended to reach 400 ms for shorter clips. This padding is measurement-only. Keep the original frame count and event timing.
 
 `ios/Scripts/normalize-game-sounds.py` owns the numeric limits. It uses static gain when that meets the peak ceiling, otherwise an oversampled lookahead limiter. It measures the final quantized CAF again before accepting it. The script prepares every changed file before replacing originals and leaves files that already conform untouched.
 
-Call sounds (`CallSound` in `ios/PaeoniaApp/Services/Calls/CallSound.swift`) live in `Resources/CallSounds`, one `CallSound<Name>.caf` per case with no variants. The ringback loops, so its file is one whole period, the phrase followed by silence. Their notes sit between 0.9 and 5 kHz, an octave above the game sounds, because a phone's speaker plays little below about 600 Hz. A ringback on A4 at -26 LUFS was barely audible on an iPhone held to the ear.
+Call sounds (`CallSound` in `ios/PaeoniaApp/Services/Calls/CallSound.swift`) live in `Resources/CallSounds`, one `CallSound<Name>.caf` per case with no variants. The ringback loops, so its file is one whole period, the phrase followed by silence. Their notes sit between 0.9 and 5 kHz, an octave above the game sounds, because a phone's speaker plays little below about 600 Hz. A mono ringback on A4 at -26 LUFS was barely audible on an iPhone held to the ear.
 
 ## Playback
 
