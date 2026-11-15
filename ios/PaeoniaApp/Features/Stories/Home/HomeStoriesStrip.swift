@@ -14,8 +14,7 @@ struct HomeNoteIsOpenKey: PreferenceKey {
 /// from the last day: bright while the partner's is new to you, quiet once you opened it.
 /// Your own avatar opens your stories, and a separate button adds one. A thought bubble over an
 /// avatar holds that person's note, and your own bubble opens the note editor. Each marker
-/// reserves room for its note, decoration and the buttons under it: Story under yours, and the
-/// partner's story badge and Call under theirs.
+/// reserves room for its note, decoration and one story action.
 struct HomeStoriesStrip: View {
     let viewModel: StoriesViewModel
     let people: StoryPeople
@@ -292,25 +291,6 @@ extension HomeStoriesStrip {
         .accessibilityIdentifier("stories.add")
     }
 
-    /// Calls the partner, under their avatar as Story sits under yours.
-    private var callButton: some View {
-        CallButton { isInCall in
-            Label {
-                Text(.callsUsCall)
-            } icon: {
-                Image(systemName: isInCall ? "phone.fill" : "phone")
-                    .foregroundStyle(isInCall ? .paeoniaPresence : .paeoniaTextPrimary)
-            }
-            .modifier(StoryBadgeStyle())
-            .frame(
-                minWidth: PaeoniaSpacing.compactButtonHeight,
-                minHeight: PaeoniaSpacing.compactButtonHeight,
-                alignment: .top
-            )
-            .contentShape(Rectangle())
-        }
-    }
-
     private func partnerAvatar(_ stories: [Story], ring: StoryRingState, note: StoryNote?) -> some View {
         let decoration = avatarStyling?.decorations.partner ?? .none
         return VStack(spacing: 0) {
@@ -334,8 +314,6 @@ extension HomeStoriesStrip {
                         .accessibilityLabel(Text(.storiesNotePartnerAccessibility(people.partnerName, note.text)))
                     }
                 }
-            callButton
-                .padding(.top, ring == .noStory ? actionClearance : PaeoniaSpacing.space4)
             if arrange == nil, showsControls {
                 name(Text(people.partnerName))
                     .padding(.top, PaeoniaSpacing.space8)
@@ -362,10 +340,10 @@ extension HomeStoriesStrip {
             )
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { partnerAvatarFrame = $0 }
             .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
-            if ring != .noStory {
-                StoryStatusBadge(ring: ring)
-                    .padding(.top, actionClearance)
-            }
+            StoryStatusBadge(ring: ring == .noStory ? .seen : ring)
+                .opacity(ring == .noStory ? 0 : 1)
+                .frame(minHeight: PaeoniaSpacing.compactButtonHeight, alignment: .top)
+                .padding(.top, actionClearance)
         }
         .frame(width: markerWidth(decoration))
         .contentShape(Rectangle())

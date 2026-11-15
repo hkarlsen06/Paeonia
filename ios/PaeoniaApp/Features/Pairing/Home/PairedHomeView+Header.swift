@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The mark and the streak, in the navigation bar or in the header Home draws itself.
+/// The mark, the call button and the streak, in the navigation bar or in the header Home draws itself.
 extension PairedHomeView {
     /// The brand mark and the streak at the corners, and both partners with their stories
     /// in the middle. The note bubbles over the avatars rise up beside the mark and the
@@ -8,7 +8,7 @@ extension PairedHomeView {
     var homeHeader: some View {
         ZStack(alignment: .top) {
             if drawsOwnHeader {
-                markAndStreakRow
+                markAndStreakRow()
             }
 
             // The strip's top is the top of a full note bubble, which lines up with the
@@ -19,20 +19,33 @@ extension PairedHomeView {
         }
     }
 
-    var markAndStreakRow: some View {
-        HStack {
+    /// The mark on the leading side, the call button and the streak on the trailing side, and
+    /// `title` between them. The sides take equal widths while the title fits, so it sits in the
+    /// middle, and the title only ever gets the room the sides leave.
+    func markAndStreakRow(title: some View = EmptyView()) -> some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
             brandMark(height: Self.markHeight)
-            Spacer(minLength: 0)
-            if dailyChallengeStreak.isVisible {
-                DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
-                    // The label pads itself for a capsule. This adds what the
-                    // toolbar's capsule added, so the pill keeps its old width.
-                    .padding(.horizontal, PaeoniaSpacing.space4)
-                    .frame(minHeight: Self.headerBarHeight)
-                    .glassEffect(.regular.interactive(), in: Capsule())
-                    // Fades in once the streak is known instead of popping in.
-                    .transition(.opacity)
+                .fixedSize()
+                .frame(maxWidth: .infinity, alignment: .leading)
+            title
+                .layoutPriority(1)
+            HStack {
+                // Calls the partner, on the side of the row nearest their avatar.
+                CallButton()
+                    .glassEffect(.regular.interactive(), in: Circle())
+                if dailyChallengeStreak.isVisible {
+                    DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
+                        // The label pads itself for a capsule. This adds what the
+                        // toolbar's capsule added, so the pill keeps its old width.
+                        .padding(.horizontal, PaeoniaSpacing.space4)
+                        .frame(minHeight: Self.headerBarHeight)
+                        .glassEffect(.regular.interactive(), in: Capsule())
+                        // Fades in once the streak is known instead of popping in.
+                        .transition(.opacity)
+                }
             }
+            .fixedSize()
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(height: Self.headerBarHeight)
         // The cards' screen padding is wider than a navigation bar's edge inset.
@@ -59,6 +72,10 @@ extension PairedHomeView {
         // The mark is the brand, not a control, so keep it free of the
         // system's Liquid Glass capsule and let it sit flat on the bar.
         .sharedBackgroundVisibility(.hidden)
+
+        ToolbarItem(placement: .topBarTrailing) {
+            CallButton()
+        }
 
         // Fades in when the streak count becomes available rather than popping in.
         if dailyChallengeStreak.isVisible {
