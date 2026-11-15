@@ -176,13 +176,13 @@ final class CallEngine {
             connectMedia(run)
         case .restartConnection:
             run.media?.restart()
-        case let .finish(reason, server):
-            finish(run, reason: reason, server: server)
+        case let .finish(reason, server, goodbye):
+            finish(run, reason: reason, server: server, goodbye: goodbye)
         case let .ringback(isOn):
             CallAudio.logState(isOn ? "ringback on" : "ringback off")
             sounds.setRingback(isOn)
-        case .playConnectedSound:
-            sounds.play(.connected)
+        case let .playConnected(haptic):
+            playConnected(haptic: haptic)
         }
     }
 
@@ -238,10 +238,11 @@ final class CallEngine {
         }
     }
 
-    private func finish(_ run: CallRun, reason: CallEndReason, server: CallServerEnd?) {
+    private func finish(_ run: CallRun, reason: CallEndReason, server: CallServerEnd?, goodbye: CallGoodbye?) {
         run.stop()
         sounds.stopAll()
         CallAudio.stopEngine()
+        sayGoodbye(goodbye, in: run)
         finishedCallIDs.formUnion([run.callID, run.conversationID])
         pictureInPicture.setEnabled(false)
         if let server {
@@ -256,7 +257,9 @@ final class CallEngine {
             }
         }
         if !run.isEndingFromSystem {
-            system.reportEnded(run.conversationID, reason: reason)
+            afterGoodbye(in: run) { [system] in
+                system.reportEnded(run.conversationID, reason: reason)
+            }
         }
         scheduleClear(of: run)
         refreshCallContext()

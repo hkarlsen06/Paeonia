@@ -48,12 +48,15 @@ extension CallEngine: CallSystemDelegate {
         }
     }
 
+    /// The system keeps the call's audio until the request is fulfilled, so the ended sound
+    /// plays first.
     private func handleEnd(_ request: CallSystemRequest) {
-        if let run, run.conversationID == request.conversationID, !run.isFinished {
-            run.isEndingFromSystem = true
-            send(.hangUp, to: run)
+        guard let run, run.conversationID == request.conversationID, !run.isFinished else {
+            return request.fulfill()
         }
-        request.fulfill()
+        run.isEndingFromSystem = true
+        send(.hangUp, to: run)
+        afterGoodbye(in: run, request.fulfill)
     }
 
     private func handleMute(_ request: CallSystemRequest, isMuted: Bool) {

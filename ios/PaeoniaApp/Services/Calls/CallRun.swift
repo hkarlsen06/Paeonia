@@ -15,6 +15,8 @@ final class CallRun {
     var serverEnd: Task<Void, Never>?
     /// The end came from the system call UI, which already shows it.
     var isEndingFromSystem = false
+    /// Waits while the ended sound plays, before the system hears the call ended.
+    var goodbye: Task<Void, Never>?
 
     init(machine: CallMachine, conversationID: UUID, role: CallMediaSession.Role) {
         self.machine = machine
@@ -44,5 +46,6 @@ final class CallRun {
         ringWatch = nil
         media?.close()
         media = nil
+        goodbye?.cancel()
     }
 }

@@ -482,6 +482,18 @@ let recipes: [Recipe] = [
         }
         return Biquad.lowpass(6_000).run(mix.samples)
     },
+    // The call ended: the connected chime turned around and slowed down, E6, C#6 and A5
+    // falling, with the low A under the last note.
+    Recipe(library: .call, name: "Ended", peak: 0.38) {
+        var mix = Mix()
+        for (index, hz) in [e6, cSharp6, a5].enumerated() {
+            let step = Double(index)
+            mix.add(tine(hz, decay: 0.24 + step * 0.06), at: step * 0.12, gain: 1 - step * 0.08)
+        }
+        mix.add(bar(a4, decay: 0.34), at: 0.24, gain: 0.3)
+        // Short, because the system ends the call once it has played. `finish` fades the tail.
+        return Array(Biquad.lowpass(5_500).run(mix.samples).prefix(count(0.9)))
+    },
 ]
 
 // MARK: Finishing

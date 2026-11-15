@@ -184,11 +184,11 @@ struct CallMachineTests {
     @Test func theConnectedSoundPlaysOnceWhenTheCallFirstConnectsWithAudio() {
         var machine = incoming()
         _ = machine.reduce(.answered, now: start)
-        #expect(!machine.reduce(.connected, now: start + 1).contains(.playConnectedSound))
-        #expect(machine.reduce(.audioActivated, now: start + 2).contains(.playConnectedSound))
+        #expect(!machine.reduce(.connected, now: start + 1).contains(.playConnected(haptic: false)))
+        #expect(machine.reduce(.audioActivated, now: start + 2).contains(.playConnected(haptic: false)))
 
         _ = machine.reduce(.connectionLost, now: start + 30)
-        #expect(!machine.reduce(.connected, now: start + 32).contains(.playConnectedSound))
+        #expect(!machine.reduce(.connected, now: start + 32).contains(.playConnected(haptic: false)))
 
         // A call that drops before its audio arrives stays quiet when it reconnects.
         var dropped = incoming()
@@ -196,6 +196,43 @@ struct CallMachineTests {
         _ = dropped.reduce(.connected, now: start + 1)
         _ = dropped.reduce(.connectionLost, now: start + 2)
         _ = dropped.reduce(.audioActivated, now: start + 3)
-        #expect(!dropped.reduce(.connected, now: start + 4).contains(.playConnectedSound))
+        #expect(!dropped.reduce(.connected, now: start + 4).contains(.playConnected(haptic: false)))
+
+        // Only the caller's phone taps when the partner answers, as an iPhone does.
+        var calling = outgoing()
+        _ = calling.reduce(.registered(callID: callID, answeredIncoming: false), now: start)
+        _ = calling.reduce(.audioActivated, now: start + 1)
+        _ = calling.reduce(.liveCall(row(.active)), now: start + 5)
+        #expect(calling.reduce(.connected, now: start + 6).contains(.playConnected(haptic: true)))
+    }
+
+    @Test func theEndedSoundPlaysOnlyAfterTalkingAndTheHapticOnlyWhenThePartnerEnds() {
+        func talking() -> CallMachine {
+            var machine = incoming()
+            _ = machine.reduce(.answered, now: start)
+            _ = machine.reduce(.audioActivated, now: start + 1)
+            _ = machine.reduce(.connected, now: start + 2)
+            return machine
+        }
+
+        var hungUp = talking()
+        #expect(hungUp.reduce(.hangUp, now: start + 60) == [.finish(.hungUp, server: .end, goodbye: .hungUpHere)])
+
+        var partnerHungUp = talking()
+        #expect(partnerHungUp.reduce(.liveCall(nil), now: start + 60) == [
+            .finish(.hungUp, server: nil, goodbye: .endedThere),
+        ])
+
+        var dropped = talking()
+        _ = dropped.reduce(.connectionLost, now: start + 60)
+        #expect(dropped.reduce(.timerFired(.reconnect), now: start + 90) == [
+            .finish(.failed(.couldNotConnect), server: .end, goodbye: .endedThere),
+        ])
+
+        // A call that never connected ends without a goodbye.
+        var connecting = incoming()
+        _ = connecting.reduce(.answered, now: start)
+        _ = connecting.reduce(.audioActivated, now: start + 1)
+        #expect(connecting.reduce(.hangUp, now: start + 2) == [.finish(.hungUp, server: .end)])
     }
 }

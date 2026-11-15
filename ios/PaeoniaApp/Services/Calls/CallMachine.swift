@@ -49,6 +49,14 @@ nonisolated enum CallServerEnd: Equatable, Sendable {
     case end
 }
 
+/// How a call the two of them talked on ended, for the ended sound and haptic.
+nonisolated enum CallGoodbye: Equatable, Sendable {
+    /// This person hung up.
+    case hungUpHere
+    /// The partner hung up, or the call dropped. The phone taps too, as an iPhone does.
+    case endedThere
+}
+
 /// Work the engine does after a transition.
 nonisolated enum CallEffect: Equatable, Sendable {
     case startTimer(CallTimer, fireAt: Date)
@@ -58,11 +66,13 @@ nonisolated enum CallEffect: Equatable, Sendable {
     /// Reconnect the relay and restart the connection between the phones.
     case restartConnection
     /// The call is over. Tear everything down and tell the system. `server` says what to tell the
-    /// server, if anything.
-    case finish(CallEndReason, server: CallServerEnd?)
+    /// server, if anything. `goodbye` is set when the call had connected and has its audio, so
+    /// the ended sound plays before the system ends the call.
+    case finish(CallEndReason, server: CallServerEnd?, goodbye: CallGoodbye? = nil)
     /// Loop `CallSound.ringback`, or stop it.
     case ringback(isOn: Bool)
-    case playConnectedSound
+    /// The connected sound, and on the caller's phone the haptic, as an iPhone does.
+    case playConnected(haptic: Bool)
 }
 
 /// One call's phase and the facts its transitions depend on. Pure, so the rules in
@@ -144,7 +154,7 @@ nonisolated struct CallMachine: Equatable, Sendable {
         if isConnectedSoundDue, case .active = phase {
             if hasAudio {
                 isConnectedSoundDue = false
-                effects.append(.playConnectedSound)
+                effects.append(.playConnected(haptic: direction == .outgoing))
             }
         } else {
             // Too late once the call has dropped or ended. A reconnect plays nothing.
@@ -174,7 +184,7 @@ nonisolated struct CallMachine: Equatable, Sendable {
             hasAudio = false
             return []
         case .hangUp:
-            return finish(.hungUp, server: serverEnd)
+            return finish(.hungUp, server: serverEnd, isHere: true)
         case let .ended(reason):
             return finish(reason, server: nil)
         case let .failed(failure):
@@ -288,9 +298,18 @@ nonisolated struct CallMachine: Equatable, Sendable {
         hasAudio ? [] : [.startTimer(.audioActivation, fireAt: now + Self.audioActivationTimeout)]
     }
 
-    private mutating func finish(_ reason: CallEndReason, server: CallServerEnd?) -> [CallEffect] {
+    private mutating func finish(
+        _ reason: CallEndReason,
+        server: CallServerEnd?,
+        isHere: Bool = false
+    ) -> [CallEffect] {
+        let hasTalked = switch phase {
+        case .active, .reconnecting: true
+        default: false
+        }
+        let goodbye: CallGoodbye? = hasTalked && hasAudio ? (isHere ? .hungUpHere : .endedThere) : nil
         phase = .ended(reason)
-        return [.finish(reason, server: server)]
+        return [.finish(reason, server: server, goodbye: goodbye)]
     }
 
     /// Declining stops an incoming ring. Everything else that the server knows about ends.

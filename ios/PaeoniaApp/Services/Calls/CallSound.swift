@@ -9,11 +9,15 @@ nonisolated enum CallSound: String, CaseIterable, Sendable {
     case ringback = "Ringback"
     /// Plays once on both phones when the call first connects.
     case connected = "Connected"
+    /// Plays once on both phones when a call they talked on ends. The engine has stopped by then,
+    /// so it plays outside it, and the system ends the call once it has played.
+    case ended = "Ended"
 }
 
 /// Plays the call's sounds. Once WebRTC's audio engine runs, they play inside it: the player is
 /// connected to the engine's main mixer next to the partner's voice (`LKRTCAudioDeviceModuleDelegate`).
-/// Before that, as for the ringback, they play with `AVAudioPlayer` in the call's audio session.
+/// Before that, as for the ringback, and after it, as for the ended sound, they play with
+/// `AVAudioPlayer` in the call's audio session.
 /// Nothing plays in a call before the system activates its audio.
 ///
 /// The engine calls the delegate methods on its own thread, and the lock keeps them in order with
@@ -54,8 +58,11 @@ nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegat
         return buffer
     }
 
-    func play(_ sound: CallSound) {
+    /// Returns how long the sound lasts.
+    @discardableResult
+    func play(_ sound: CallSound) -> Duration {
         lock.withLock { start(sound) }
+        return .seconds(players[sound]?.duration ?? 0)
     }
 
     func setRingback(_ isOn: Bool) {
@@ -77,7 +84,7 @@ nonisolated final class CallSoundPlayer: NSObject, LKRTCAudioDeviceModuleDelegat
     }
 
     private func start(_ sound: CallSound) {
-        if startInEngine(sound) {
+        if sound != .ended, startInEngine(sound) {
             CallAudio.log.notice("\(sound.rawValue, privacy: .public) playing in the engine")
         } else if let player = players[sound] {
             player.currentTime = 0

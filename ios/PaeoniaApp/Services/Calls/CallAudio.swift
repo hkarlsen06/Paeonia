@@ -32,13 +32,12 @@ enum CallAudio {
 
     private static let options: AVAudioSession.CategoryOptions = [.allowBluetoothHFP]
 
-    /// Sets the call's category before the system reports the call.
+    /// Sets the call's category before the system reports the call. iOS mutes haptics while the
+    /// microphone records unless the session allows them, and `CallHaptics` plays during the call.
     static func prepareCategory() {
-        try? AVAudioSession.sharedInstance().setCategory(
-            .playAndRecord,
-            mode: .default,
-            options: options.union(.defaultToSpeaker)
-        )
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playAndRecord, mode: .default, options: options.union(.defaultToSpeaker))
+        try? session.setAllowHapticsAndSystemSoundsDuringRecording(true)
     }
 
     /// Prepares the microphone without starting the engine, so the engine starts once, with the
