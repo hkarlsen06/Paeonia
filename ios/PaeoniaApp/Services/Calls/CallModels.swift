@@ -12,6 +12,9 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     var audioRoute: CallAudioRoute = .receiver
     var isCameraOn = false
     var isPartnerCameraOn = false
+    /// The width of the partner's video over its height, as their phone is held. Nil until the
+    /// first frame arrives. The bubble takes this shape, so it shows the whole picture.
+    var partnerVideoAspectRatio: CGFloat?
     var isUsingFrontCamera = true
     /// The call was answered before the person said whether Paeonia may use the microphone, so
     /// the partner cannot hear them until they open the app and allow it.

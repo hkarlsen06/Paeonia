@@ -84,6 +84,7 @@ final class CallEngine {
     func start() {
         CallAudio.configureAtLaunch(sounds: sounds)
         system.start(delegate: self)
+        partnerVideo.onFrameSize = { [weak self] size in self?.partnerVideoSizeChanged(size) }
         pushRegistry = CallPushRegistry(
             onToken: { token in
                 Task { await PushRegistrationServiceFactory.shared.updateVoIPPushToken(token) }

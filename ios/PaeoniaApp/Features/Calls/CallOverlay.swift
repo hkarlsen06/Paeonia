@@ -96,7 +96,7 @@ final class CallOverlayModel {
     var panelTop: CGFloat?
     /// Where the person dragged the bubble or the partner's avatar to. They share it.
     var spot = CallBubbleSpot.initial
-    /// How much bigger or smaller than `CallBubble.videoSize` the person pinched the video bubble.
+    /// How much bigger or smaller than `CallBubble.videoSize(for:)` the person pinched the video bubble.
     var videoScale: CGFloat = 1
     /// The person pushed the bubble into the side of the screen at `spot.edge`, where it waits as a
     /// tab. It comes back out each time the call shrinks to the bubble again.

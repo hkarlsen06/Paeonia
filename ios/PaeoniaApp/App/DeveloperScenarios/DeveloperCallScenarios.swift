@@ -45,6 +45,7 @@
     ) {
       $0.isCameraOn = true
       $0.isPartnerCameraOn = true
+      $0.partnerVideoAspectRatio = 9.0 / 16
     }
     static let callVideoOwnCamera = screen(
       "call-video-own-camera", "Call · your camera only", "Your camera on, Robin's off",
@@ -86,6 +87,7 @@
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
           $0.isCameraOn = true
           $0.isPartnerCameraOn = true
+          $0.partnerVideoAspectRatio = 9.0 / 16
         },
         presentation: .bubble, game: true)
     }
@@ -98,6 +100,7 @@
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
           $0.isCameraOn = true
           $0.isPartnerCameraOn = true
+          $0.partnerVideoAspectRatio = 9.0 / 16
         },
         presentation: .bubble, partnerDoes: .openedGame(.mindMeld))
     }
@@ -111,6 +114,7 @@
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
           $0.isCameraOn = true
           $0.isPartnerCameraOn = true
+          $0.partnerVideoAspectRatio = 9.0 / 16
         },
         partnerDoes: .openedGame(.mindMeld))
     }

@@ -12,6 +12,7 @@ final class CallPictureInPicture {
     private weak var sourceView: UIView?
     private var isEnabled = false
     private var resignObserver: (any NSObjectProtocol)?
+    private var activeObserver: (any NSObjectProtocol)?
 
     init(feed: CallVideoFeed) {
         let video = feed.makeView()
@@ -23,9 +24,6 @@ final class CallPictureInPicture {
             video.topAnchor.constraint(equalTo: contentController.view.topAnchor),
             video.bottomAnchor.constraint(equalTo: contentController.view.bottomAnchor),
         ])
-        feed.onFrameSize = { [weak self] size in
-            self?.contentController.preferredContentSize = size
-        }
         // The call screen and the bubble swap with animations that end after the last change
         // to window membership, so the source is chosen once more just before the app leaves.
         resignObserver = NotificationCenter.default.addObserver(
@@ -35,6 +33,23 @@ final class CallPictureInPicture {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.update() }
         }
+        // Inside the app the bubble shows the call. iOS can leave Picture in Picture on screen when
+        // the person comes back, next to the bubble, so it closes here.
+        activeObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let controller = self?.controller, controller.isPictureInPictureActive else { return }
+                controller.stopPictureInPicture()
+            }
+        }
+    }
+
+    /// The upright size of the partner's frames, which Picture in Picture's window takes.
+    func setVideoSize(_ size: CGSize) {
+        contentController.preferredContentSize = size
     }
 
     /// Picture in Picture may start while the partner's camera is on during a call. The engine

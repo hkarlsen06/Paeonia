@@ -109,9 +109,8 @@ struct CallBubbleLayer: View {
     /// The video may grow until it fills most of the screen's width or all of the free area's height.
     private func videoScales(in placement: CallBubblePlacement) -> ClosedRange<CGFloat> {
         let range = CallBubble.videoScales
-        let fits = min(
-            placement.area.width * 0.8 / CallBubble.videoSize.width,
-            placement.area.height / CallBubble.videoSize.height)
+        let size = CallBubble.videoSize(for: session)
+        let fits = min(placement.area.width * 0.8 / size.width, placement.area.height / size.height)
         return range.lowerBound...max(range.lowerBound, min(range.upperBound, fits))
     }
 

@@ -7,14 +7,21 @@ struct CallBubble: View {
     let center: CallCenter
     let session: CallSession
     let participants: DailyChallengeParticipants
-    /// How much bigger or smaller than `videoSize` the video shows.
+    /// How much bigger or smaller than `videoSize(for:)` the video shows.
     var videoScale: CGFloat = 1
     /// VoiceOver's swipe up or down makes the video bigger or smaller.
     var resizeVideo: (AccessibilityAdjustmentDirection) -> Void = { _ in }
     /// Pushes the bubble into the side of the screen.
     var tuck: () -> Void = {}
 
-    static let videoSize = CGSize(width: 104, height: 148)
+    /// The video before a pinch, in the shape of the partner's picture so none of it is cut off.
+    /// Every shape covers the same area as a 104 by 148 point bubble.
+    static func videoSize(for session: CallSession) -> CGSize {
+        let area: CGFloat = 104 * 148
+        let ratio = session.partnerVideoAspectRatio ?? 104 / 148
+        return CGSize(width: (area * ratio).squareRoot(), height: (area / ratio).squareRoot())
+    }
+
     /// How far a pinch may shrink or grow the video.
     static let videoScales: ClosedRange<CGFloat> = 0.75...2.5
     private static let avatarSize: CGFloat = 44
@@ -83,8 +90,9 @@ struct CallBubble: View {
     }
 
     private var video: some View {
-        CallVideoView(engine: center.engine, source: .partner)
-            .frame(width: Self.videoSize.width * videoScale, height: Self.videoSize.height * videoScale)
+        let size = Self.videoSize(for: session)
+        return CallVideoView(engine: center.engine, source: .partner)
+            .frame(width: size.width * videoScale, height: size.height * videoScale)
             .clipShape(.rect(cornerRadius: PaeoniaRadius.radius20))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20).strokeBorder(.white.opacity(0.25))

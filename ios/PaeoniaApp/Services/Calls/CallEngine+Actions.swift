@@ -153,6 +153,16 @@ extension CallEngine: CallEngineActions {
         reportCapabilities(of: run)
     }
 
+    /// The partner's frames changed size, such as when they turn their phone. A new resolution in
+    /// the same shape changes nothing on screen.
+    func partnerVideoSizeChanged(_ size: CGSize) {
+        pictureInPicture.setVideoSize(size)
+        guard size.width > 0, size.height > 0, let center, center.session != nil else { return }
+        let ratio = size.width / size.height
+        if let current = center.session?.partnerVideoAspectRatio, abs(current - ratio) < 0.01 { return }
+        center.session?.partnerVideoAspectRatio = ratio
+    }
+
     func updatePictureInPicture() {
         guard let session = center?.session else {
             pictureInPicture.setEnabled(false)
