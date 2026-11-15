@@ -8,7 +8,8 @@
   nonisolated extension DeveloperScenario {
     static let calls: [DeveloperScenario] = [
       callOutgoing, callIncoming, callIncomingPill, callConnecting, callActiveVoice, callActiveVoiceMutedSpeaker,
-      callActiveVoiceAirPods, callActiveVideo, callVideoOwnCamera, callMicrophoneWaiting, callReconnecting,
+      callActiveVoiceAirPods, callActiveVideo, callVideoOwnCamera, callVideoBackCamera, callMicrophoneWaiting,
+      callReconnecting,
       callEnded, callEndedNoAnswer, callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame,
       callBubblePartnerOpenedGame, callScreenPartnerOpenedGame, callScreenPartnerMessage,
       callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
@@ -51,6 +52,15 @@
       "call-video-own-camera", "Call · your camera only", "Your camera on, Robin's off",
       phase: DeveloperCallFixture.active
     ) { $0.isCameraOn = true }
+    static let callVideoBackCamera = screen(
+      "call-video-back-camera", "Call · back camera", "Your back camera on, with the zoom slider",
+      phase: DeveloperCallFixture.active, backCameraZoom: CallCameraZoom(range: 0.5...10, factor: 1)
+    ) {
+      $0.isCameraOn = true
+      $0.isPartnerCameraOn = true
+      $0.partnerVideoAspectRatio = 9.0 / 16
+      $0.isUsingFrontCamera = false
+    }
     static let callReconnecting = screen(
       "call-reconnecting", "Call · reconnecting", "The connection dropped and the phones try again",
       phase: .reconnecting(since: DeveloperCallFixture.startedAt))
@@ -159,11 +169,12 @@
 
     private static func screen(
       _ id: String, _ title: String, _ detail: String, phase: CallPhase, direction: CallDirection = .outgoing,
-      configure: @escaping @Sendable (inout CallSession) -> Void = { _ in }
+      backCameraZoom: CallCameraZoom? = nil, configure: @escaping @Sendable (inout CallSession) -> Void = { _ in }
     ) -> DeveloperScenario {
       DeveloperScenario(id, title, detail, .calls) { _ in
         DeveloperCallScreenHost(
-          session: DeveloperCallFixture.session(phase: phase, direction: direction, configure: configure))
+          session: DeveloperCallFixture.session(phase: phase, direction: direction, configure: configure),
+          backCameraZoom: backCameraZoom)
       }
     }
   }
@@ -232,10 +243,12 @@
     }
   }
 
-  /// A call engine that does nothing. Its video is a still photo of each person, so the tiles look
-  /// like a call, and Robin is in Oslo.
+  /// A call engine that does nothing but zoom. Its video is a still photo of each person, so the
+  /// tiles look like a call, and Robin is in Oslo.
   @MainActor
   final class DeveloperCallEngine: CallEngineActions {
+    weak var center: CallCenter?
+
     func startCall() {}
     func answer() {}
     func decline() {}
@@ -245,6 +258,11 @@
     func setCameraOn(_: Bool) {}
     func flipCamera() {}
     func refreshCallContext() {}
+
+    func setBackCameraZoom(_ factor: Double) {
+      guard let range = center?.backCameraZoom?.range else { return }
+      center?.backCameraZoom?.factor = min(max(factor, range.lowerBound), range.upperBound)
+    }
 
     // swiftlint:disable:next async_without_await
     func partnerTimeZone() async -> TimeZone? {
@@ -268,8 +286,12 @@
     @State private var ring: Task<Void, Never>?
     @State private var presence = PartnerPresenceModel(gateway: UnavailablePartnerPresenceGateway())
 
-    init(session: CallSession) {
-      _center = State(initialValue: CallCenter(engine: DeveloperCallEngine(), session: session))
+    init(session: CallSession, backCameraZoom: CallCameraZoom? = nil) {
+      let engine = DeveloperCallEngine()
+      let center = CallCenter(engine: engine, session: session)
+      center.backCameraZoom = backCameraZoom
+      engine.center = center
+      _center = State(initialValue: center)
     }
 
     var body: some View {

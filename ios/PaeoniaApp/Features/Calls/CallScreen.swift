@@ -6,7 +6,8 @@ import SwiftUI
 /// to the ring pill while the partner's call rings inside the app. What the partner just did in the
 /// app shows above the controls for a few seconds (`CallCallout`), because the partner's avatar and
 /// the app's banners are under the call. During video the controls fade out after a few seconds
-/// without a touch, so nothing covers the partner, and a tap brings them back.
+/// without a touch, so nothing covers the partner, and a tap brings them back. With the back
+/// camera on, a zoom slider sits above them (`CallZoomSlider`).
 struct CallScreen: View {
     let center: CallCenter
     let session: CallSession
@@ -26,6 +27,7 @@ struct CallScreen: View {
     @State private var isHUDHidden = false
     /// Counts taps on the controls, so each one starts the wait before they hide again.
     @State private var hudTouches = 0
+    @State private var isAdjustingZoom = false
 
     private static let avatarSize: CGFloat = 132
     /// The glow at its largest. It breathes between `glowScales`, which never go past 1.
@@ -76,6 +78,7 @@ struct CallScreen: View {
         .gesture(swipeDown)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: session)
         .animation(reduceMotion ? nil : PaeoniaMotion.callOverlay, value: shownCallout)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: center.backCameraZoom != nil)
         .task(id: session.id) {
             partnerTimeZone = await center.engine.partnerTimeZone()
         }
@@ -233,10 +236,16 @@ struct CallScreen: View {
                         .padding(.bottom, PaeoniaSpacing.space16)
                         .transition(.opacity)
                 }
-                // swiftlint:disable:next accessibility_trait_for_button
-                controls
-                    .simultaneousGesture(TapGesture().onEnded { hudTouches += 1 })
-                    .callHUD(isShown: showsHUD)
+                VStack(spacing: PaeoniaSpacing.space16) {
+                    if let zoom = center.backCameraZoom {
+                        CallZoomSlider(zoom: zoom, setZoom: center.engine.setBackCameraZoom) { isAdjustingZoom = $0 }
+                            .transition(.opacity)
+                    }
+                    // swiftlint:disable:next accessibility_trait_for_button
+                    controls
+                        .simultaneousGesture(TapGesture().onEnded { hudTouches += 1 })
+                }
+                .callHUD(isShown: showsHUD)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomHeight = $0 }
             .overlay(alignment: .top) { calloutView }
@@ -330,9 +339,10 @@ extension CallScreen {
     private static let hudFade = PaeoniaMotion.standardCurve(duration: 0.3)
 
     /// Someone who uses VoiceOver, Switch Control or Extra controls keeps the controls on screen.
+    /// They also stay while a finger zooms.
     private var canHideHUD: Bool {
         guard showsPartnerVideo, case .active = session.phase else { return false }
-        return !session.isWaitingForMicrophone && !showsControls
+        return !session.isWaitingForMicrophone && !showsControls && !isAdjustingZoom
     }
 
     private var showsHUD: Bool { !canHideHUD || !isHUDHidden }

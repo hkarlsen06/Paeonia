@@ -5311,6 +5311,24 @@
         }
       }
     },
+    "calls.zoom" : {
+      "comment" : "VoiceOver label of the slider on the call screen that zooms the back camera during a video call.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom"
+          }
+        }
+      }
+    },
     "chat.header.memory" : {
       "comment" : "Small label on the card at the top of the comments on a memory",
       "extractionState" : "manual",

@@ -18,6 +18,8 @@ final class CallMediaSession {
     /// True when the phones reached each other, false when the connection dropped.
     var onConnectionChange: ((Bool) -> Void)?
     var onPartnerCamera: ((Bool) -> Void)?
+    /// The back camera's zoom once it sends, and nil while any other camera or none runs.
+    var onBackCameraZoom: ((CallCameraZoom?) -> Void)?
 
     private let role: Role
     private let relay: CallRelay
@@ -164,20 +166,31 @@ final class CallMediaSession {
             startCamera(front: front)
         } else {
             camera.stop()
+            onBackCameraZoom?(nil)
         }
         videoTransceiver?.sender.track = isOn ? videoTrack : nil
         relay.send(.camera(isOn: isOn))
     }
 
+    /// Returns the zoom the back camera took, or nil when it is not running.
+    func setBackCameraZoom(_ factor: Double) -> Double? {
+        camera.setZoom(factor)
+    }
+
     /// The local video keeps the old camera's last frame and mirroring until the new camera
     /// sends, so flipping never shows the old picture mirrored the new way.
+    ///
+    /// The start in `init` reports its zoom after the engine has set `onBackCameraZoom`, because
+    /// the camera reports from a later turn of the main queue.
     private func startCamera(front: Bool) {
         cameraStarts += 1
         let start = cameraStarts
         localFeed.cameraWillStart()
-        camera.start(front: front) { [weak self] in
+        onBackCameraZoom?(nil)
+        camera.start(front: front) { [weak self] zoom in
             guard let self, start == cameraStarts else { return }
             localFeed.cameraStarted(isMirrored: front)
+            onBackCameraZoom?(zoom)
         }
     }
 

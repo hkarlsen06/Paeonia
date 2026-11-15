@@ -106,6 +106,7 @@
         return
       }
       center.session?.phase = .ended(.hungUp)
+      center.backCameraZoom = nil
       ring?.cancel()
       sounds.stopAll()
       if case .completed = call.outcome {
@@ -131,10 +132,24 @@
 
     func setCameraOn(_ isOn: Bool) {
       center?.session?.isCameraOn = isOn
+      updateBackCameraZoom()
     }
 
     func flipCamera() {
       center?.session?.isUsingFrontCamera.toggle()
+      updateBackCameraZoom()
+    }
+
+    func setBackCameraZoom(_ factor: Double) {
+      guard let range = center?.backCameraZoom?.range else { return }
+      center?.backCameraZoom?.factor = min(max(factor, range.lowerBound), range.upperBound)
+    }
+
+    /// Starts at 1× each time the back camera starts, as `CallCamera` does.
+    private func updateBackCameraZoom() {
+      guard let center else { return }
+      let isBackCameraOn = center.session.map { $0.isCameraOn && !$0.isUsingFrontCamera } ?? false
+      center.backCameraZoom = isBackCameraOn ? CallCameraZoom(range: 0.5...10, factor: 1) : nil
     }
 
     // Unknown, so the call never waits on the night question and the call screen shows no time.

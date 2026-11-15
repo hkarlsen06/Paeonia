@@ -17,6 +17,8 @@ protocol CallEngineActions: AnyObject {
     func toggleSpeaker()
     func setCameraOn(_ isOn: Bool)
     func flipCamera()
+    /// Zooms the back camera. `factor` counts the way `CallCameraZoom` does.
+    func setBackCameraZoom(_ factor: Double)
     /// The partner's time zone for the night check, or nil when it is not known.
     func partnerTimeZone() async -> TimeZone?
     /// Reads the partner and their time zone again in the background, so a call can start and
@@ -27,7 +29,7 @@ protocol CallEngineActions: AnyObject {
 }
 
 /// The live call for the whole app. The call screen, the bubble and the call buttons read it from
-/// the environment. Only the engine changes `session`.
+/// the environment. Only the engine changes `session` and `backCameraZoom`.
 @MainActor
 @Observable
 final class CallCenter {
@@ -40,6 +42,9 @@ final class CallCenter {
         }
     }
     var presentation: CallPresentation = .full
+    /// Nil unless the back camera is on and sending. Kept out of `session`, because the call
+    /// screen animates every change to it, and the zoom slider would then lag behind the finger.
+    var backCameraZoom: CallCameraZoom?
     @ObservationIgnored let engine: any CallEngineActions
 
     init(engine: any CallEngineActions, session: CallSession? = nil) {

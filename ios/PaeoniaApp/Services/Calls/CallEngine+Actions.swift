@@ -80,6 +80,12 @@ extension CallEngine: CallEngineActions {
         }
     }
 
+    func setBackCameraZoom(_ factor: Double) {
+        if let applied = run?.media?.setBackCameraZoom(factor) {
+            center?.backCameraZoom?.factor = applied
+        }
+    }
+
     /// Waits a moment for a fresh read, so a slow network never holds up the call. The read
     /// keeps going and updates `knownPartnerTimeZone` for the next call.
     func partnerTimeZone() async -> TimeZone? {

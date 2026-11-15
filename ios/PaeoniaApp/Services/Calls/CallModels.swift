@@ -36,6 +36,13 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     }
 }
 
+/// The back camera's zoom, counted the way the Camera app counts it, where 1 is the main lens and
+/// 0.5 the ultra wide.
+nonisolated struct CallCameraZoom: Equatable, Sendable {
+    let range: ClosedRange<Double>
+    var factor: Double
+}
+
 nonisolated enum CallDirection: Equatable, Sendable {
     case outgoing
     case incoming

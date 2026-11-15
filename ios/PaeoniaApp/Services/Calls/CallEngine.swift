@@ -221,6 +221,10 @@ final class CallEngine {
             guard let self, let run else { return }
             partnerCameraChanged(isOn, in: run)
         }
+        media.onBackCameraZoom = { [weak self, weak run] zoom in
+            guard let self, let run, run === self.run else { return }
+            center?.backCameraZoom = zoom
+        }
         return media
     }
 
@@ -324,6 +328,7 @@ final class CallEngine {
         clearTask = nil
         run?.stop()
         run = nil
+        center?.backCameraZoom = nil
         sounds.stopAll()
         CallAudio.stopEngine()
         partnerVideo.clear()
