@@ -23,6 +23,12 @@ extension CallCenter {
     func continueCall(from activity: NSUserActivity) {
         (engine as? CallEngine)?.startCall(from: activity)
     }
+
+    /// Ends the call on this phone and on the server before sign-out, account deletion or the end
+    /// of the relationship takes the sign-in or the partner away.
+    func endCallForLeaving() async {
+        await (engine as? CallEngine)?.endForLeaving()
+    }
 }
 
 /// Runs calls with the partner: the system call UI (`CallSystem`), VoIP pushes, the
@@ -33,6 +39,10 @@ final class CallEngine {
     /// How long the call screen shows why a call ended.
     static let endedLinger: Duration = .seconds(2)
     static let heartbeatInterval: Duration = .seconds(15)
+    /// A heartbeat that takes longer is dropped, so the next one goes out on time.
+    static let heartbeatTimeout: Duration = .seconds(5)
+    /// How long leaving the account or the relationship waits for the server to hear the call end.
+    static let leavingTimeout: Duration = .seconds(4)
     /// The local ring timer fires this long after the server's deadline, which the live query
     /// normally reports first.
     static let ringGrace: TimeInterval = 5
@@ -50,6 +60,10 @@ final class CallEngine {
     var reportedCallIDs: Set<UUID> = []
     /// Calls that ended on this phone, so a late push for one is reported and ended at once.
     var finishedCallIDs: Set<UUID> = []
+    /// The partner's time zone from the last read, nil when unknown or while their location
+    /// sharing is off.
+    var knownPartnerTimeZone: TimeZone?
+    var partnerTimeZoneRefresh: Task<Void, Never>?
     private var pushRegistry: CallPushRegistry?
     private var routeObserver: (any NSObjectProtocol)?
     private var clearTask: Task<Void, Never>?
@@ -207,8 +221,10 @@ final class CallEngine {
         let callID = run.callID
         run.heartbeat = Task { [backend] in
             while !Task.isCancelled {
-                try? await backend.heartbeat(callID: callID)
-                try? await Task.sleep(for: Self.heartbeatInterval)
+                let beat = Task { try? await backend.heartbeat(callID: callID) }
+                try? await Task.sleep(for: Self.heartbeatTimeout)
+                beat.cancel()
+                try? await Task.sleep(for: Self.heartbeatInterval - Self.heartbeatTimeout)
             }
         }
     }
@@ -219,7 +235,7 @@ final class CallEngine {
         pictureInPicture.setEnabled(false)
         if let server {
             let callID = run.callID
-            Task { [backend] in
+            run.serverEnd = Task { [backend] in
                 switch server {
                 case .decline:
                     try? await backend.declineCall(callID: callID)
@@ -232,6 +248,21 @@ final class CallEngine {
             system.reportEnded(run.conversationID, reason: reason)
         }
         scheduleClear(of: run)
+        refreshCallContext()
+    }
+
+    /// Hangs up and waits, up to `leavingTimeout`, for the server to hear it while requests still
+    /// carry the sign-in.
+    func endForLeaving() async {
+        guard let run, !run.isFinished else { return }
+        send(.hangUp, to: run)
+        guard let serverEnd = run.serverEnd else { return }
+        let timeout = Task {
+            try? await Task.sleep(for: Self.leavingTimeout)
+            serverEnd.cancel()
+        }
+        await serverEnd.value
+        timeout.cancel()
     }
 
     // MARK: Ending

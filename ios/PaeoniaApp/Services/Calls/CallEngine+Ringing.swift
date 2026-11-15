@@ -63,8 +63,15 @@ extension CallEngine {
                 reportCapabilities(of: run)
             } catch {
                 request.fail()
-                let isBusy = CallBackend.isServerError(error, code: CallBackend.busyCode)
-                send(isBusy ? .ended(.busy) : .failed(CallFailure(error)), to: run)
+                if CallBackend.isServerError(error, code: CallBackend.busyCode) {
+                    send(.ended(.busy), to: run)
+                } else if CallBackend.isServerError(error) {
+                    send(.failed(CallFailure(error)), to: run)
+                } else {
+                    // The answer may be lost after the server started the call, so the partner's
+                    // phone may be ringing.
+                    send(.startUnconfirmed(CallFailure(error)), to: run)
+                }
             }
         }
     }
@@ -118,30 +125,26 @@ extension CallEngine {
         await reportIncoming(ring, mustReport: false)
     }
 
-    /// Rings for the partner's call. A call the system already shows is dropped. A call that
-    /// already ended, or that arrives during another call, is reported and ended at once when
-    /// iOS requires a report.
+    /// Rings for the partner's call, reported to the system before anything slow runs. A call the
+    /// system already shows is dropped. A call that already ended, or that arrives during another
+    /// call, is reported and ended at once when iOS requires a report.
     func reportIncoming(_ ring: IncomingRing, mustReport: Bool) async {
-        if reportedCallIDs.contains(ring.callID) || run?.callID == ring.callID {
+        if let run, !run.isFinished, run.callID == ring.callID || run.conversationID == ring.callID {
             return
         }
-        let staleHandle = CallPartner.handle(userID: ring.callerUserID, name: CallPartner.privateName)
-        guard isIdle, !finishedCallIDs.contains(ring.callID), ring.ringExpiresAt > .now else {
+        guard isIdle, !reportedCallIDs.contains(ring.callID), !finishedCallIDs.contains(ring.callID),
+              ring.ringExpiresAt > .now
+        else {
             if mustReport {
-                await reportEndedCall(ring.callID, handle: staleHandle)
+                await reportEndedCall(ring.callID, handle: CallPartner.handle(
+                    userID: ring.callerUserID, name: CallPartner.privateName
+                ))
             }
             return
         }
-        // Claimed before waiting, so the push and the live query cannot both report it.
         reportedCallIDs.insert(ring.callID)
-        let partner = await CallPartner.current()
-        guard isIdle else {
-            if mustReport {
-                reportedCallIDs.remove(ring.callID)
-                await reportEndedCall(ring.callID, handle: staleHandle)
-            }
-            return
-        }
+        // The store cannot be read on a locked phone, and the report cannot wait for it.
+        let partner = CallPartner.cached
         let name = ring.showsName && partner?.userID == ring.callerUserID ? partner?.name : nil
         let handle = CallPartner.handle(userID: ring.callerUserID, name: name ?? CallPartner.privateName)
         let (machine, effects) = CallMachine.incoming(
@@ -188,7 +191,9 @@ extension CallEngine {
             do {
                 try await backend.answerCall(callID: run.callID, deviceID: deviceID)
                 guard run === self.run, run.machine.phase == .ringing else {
+                    // The call ended here while the server took the answer, so end it there too.
                     request.fail()
+                    try? await backend.endCall(callID: run.callID)
                     return
                 }
                 request.fulfill()

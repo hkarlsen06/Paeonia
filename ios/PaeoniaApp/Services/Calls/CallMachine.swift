@@ -23,6 +23,9 @@ nonisolated enum CallEvent: Equatable, Sendable {
     case ended(CallEndReason)
     /// Something failed on this phone.
     case failed(CallFailure)
+    /// `start_call` failed without an answer from the server, such as a timeout. The server may
+    /// have started the call anyway.
+    case startUnconfirmed(CallFailure)
     case timerFired(CallTimer)
 }
 
@@ -135,6 +138,10 @@ nonisolated struct CallMachine: Equatable, Sendable {
             return finish(reason, server: nil)
         case let .failed(failure):
             return finish(.failed(failure), server: serverEnd)
+        case let .startUnconfirmed(failure):
+            // Ending a call the server never started does nothing, and it stops the partner's
+            // phone ringing when the server did start it.
+            return finish(.failed(failure), server: .end)
         case let .timerFired(timer):
             return fire(timer)
         }

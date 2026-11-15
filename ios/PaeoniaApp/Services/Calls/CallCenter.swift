@@ -19,6 +19,9 @@ protocol CallEngineActions: AnyObject {
     func flipCamera()
     /// The partner's time zone for the night check, or nil when it is not known.
     func partnerTimeZone() async -> TimeZone?
+    /// Reads the partner and their time zone again in the background, so a call can start and
+    /// ring without waiting for them.
+    func refreshCallContext()
     /// A view that shows one side's video. The engine keeps it current while the call runs.
     func makeVideoView(_ source: CallVideoSource) -> UIView
 }
@@ -28,7 +31,14 @@ protocol CallEngineActions: AnyObject {
 @MainActor
 @Observable
 final class CallCenter {
-    var session: CallSession?
+    var session: CallSession? {
+        didSet {
+            let usesProximitySensor = session?.usesProximitySensor ?? false
+            if UIDevice.current.isProximityMonitoringEnabled != usesProximitySensor {
+                UIDevice.current.isProximityMonitoringEnabled = usesProximitySensor
+            }
+        }
+    }
     var presentation: CallPresentation = .full
     @ObservationIgnored let engine: any CallEngineActions
 

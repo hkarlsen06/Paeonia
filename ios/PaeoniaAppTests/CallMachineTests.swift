@@ -106,6 +106,17 @@ struct CallMachineTests {
         #expect(unregistered.reduce(.hangUp, now: start) == [.finish(.hungUp, server: nil)])
     }
 
+    @Test func aStartWithoutAnAnswerStillEndsTheCallOnTheServer() {
+        // A refusal means the server has no call, but a lost answer may hide one that rings.
+        var refused = outgoing()
+        #expect(refused.reduce(.failed(.other), now: start) == [.finish(.failed(.other), server: nil)])
+
+        var unconfirmed = outgoing()
+        let effects = unconfirmed.reduce(.startUnconfirmed(.offline), now: start)
+        #expect(effects == [.finish(.failed(.offline), server: .end)])
+        #expect(unconfirmed.phase == .ended(.failed(.offline)))
+    }
+
     @Test func nothingMovesAfterTheCallEnded() {
         var machine = incoming()
         _ = machine.reduce(.ended(.busy), now: start)

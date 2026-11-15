@@ -346,6 +346,10 @@ extension RootViewModel {
             return
         }
 
+        // A lapsed subscription lets a call in progress finish. An ended relationship does not.
+        if permanently {
+            await systemSideEffects.endCall()
+        }
         // The partner's games on the Lock Screen go with the relationship, whoever ended it.
         await systemSideEffects.endGameLiveActivities()
         let purgeID = UUID()

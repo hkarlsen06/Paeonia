@@ -135,6 +135,8 @@ private struct LiveActivitySystemSideEffects: RootSystemSideEffecting {
     func reconcileDeliveredNotifications() {}
 
     func clearAppBadge() {}
+
+    func endCall() {}
 }
 
 @MainActor

@@ -12,6 +12,17 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     var isCameraOn = false
     var isPartnerCameraOn = false
     var isUsingFrontCamera = true
+
+    /// A voice call on the earpiece, which the person holds to their ear, so the screen turns off
+    /// and their cheek cannot press anything. An incoming ring is the system's to show.
+    var usesProximitySensor: Bool {
+        guard audioRoute == .receiver, !isCameraOn, !isPartnerCameraOn else { return false }
+        return switch phase {
+        case .ringing: direction == .outgoing
+        case .connecting, .active, .reconnecting: true
+        case .ended: false
+        }
+    }
 }
 
 nonisolated enum CallDirection: Equatable, Sendable {

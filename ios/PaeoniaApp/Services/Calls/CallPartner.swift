@@ -19,13 +19,21 @@ nonisolated struct CallPartner: Equatable, Sendable {
         Handle(type: .generic, value: userID.uuidString.lowercased(), displayName: name)
     }
 
-    /// The partner from the local store, or nil when signed out, unpaired, or before the first
-    /// unlock after a restart, when the store cannot be read.
+    /// The partner from the local store, or nil when signed out or unpaired. A locked phone
+    /// cannot read the store, so it gets the partner from the last read instead (`cached`).
     @MainActor
     static func current() async -> CallPartner? {
-        guard UIApplication.shared.isProtectedDataAvailable,
-              let ownerUserID = WidgetSyncIdentityStore.shared.load().currentUserID
-        else {
+        guard UIApplication.shared.isProtectedDataAvailable else {
+            return cached
+        }
+        let partner = await fromStore()
+        cache(partner)
+        return partner
+    }
+
+    @MainActor
+    private static func fromStore() async -> CallPartner? {
+        guard let ownerUserID = WidgetSyncIdentityStore.shared.load().currentUserID else {
             return nil
         }
         let store = SwiftDataAccessSyncSnapshotRepository(container: PaeoniaLocalStore.shared.container)
@@ -35,5 +43,38 @@ nonisolated struct CallPartner: Equatable, Sendable {
             return nil
         }
         return CallPartner(userID: partnerUserID, name: relationship.partnerName.displayOrFallback)
+    }
+}
+
+/// The partner from the last read of the store, so a call can ring with their name on a locked
+/// phone. UserDefaults stays readable after the first unlock. The privacy purge clears it.
+nonisolated extension CallPartner {
+    private static let cacheKey = "paeonia.calls.partner"
+    private static let userIDKey = "user_id"
+    private static let nameKey = "name"
+
+    static var cached: CallPartner? {
+        guard let stored = UserDefaults.standard.dictionary(forKey: cacheKey),
+              let userID = (stored[userIDKey] as? String).flatMap(UUID.init(uuidString:)),
+              let name = stored[nameKey] as? String
+        else {
+            return nil
+        }
+        return CallPartner(userID: userID, name: name)
+    }
+
+    static func cache(_ partner: CallPartner?) {
+        guard let partner else {
+            clearCache()
+            return
+        }
+        UserDefaults.standard.set(
+            [userIDKey: partner.userID.uuidString, nameKey: partner.name],
+            forKey: cacheKey
+        )
+    }
+
+    static func clearCache() {
+        UserDefaults.standard.removeObject(forKey: cacheKey)
     }
 }

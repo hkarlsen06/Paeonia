@@ -63,6 +63,7 @@ extension RootViewModel {
             // Send what still can go while requests carry the account's token.
             // The purge below removes whatever is left, as the log-out alert says.
             await syncService.flushPendingWrites(timeout: .seconds(4))
+            await systemSideEffects.endCall()
             try await authService.signOut()
             await endSession(purgingLocalData: true)
         }
@@ -131,6 +132,7 @@ extension RootViewModel {
         // Right away, because RootView sees the new route only after this
         // request has gone out.
         PaeoniaAnalytics.stopSharingAndDeleteQueued()
+        await systemSideEffects.endCall()
 
         do {
             let outcome = try await authService.requestAccountDeletion(
@@ -162,6 +164,8 @@ extension RootViewModel {
         leaveRelationshipSurfaces()
         welcomeFlow.sessionEnded()
         route = .signedOut
+        // A session that ended elsewhere still has its call running here.
+        await systemSideEffects.endCall()
         await liveSync?.stop()
         if purgingLocalData {
             await syncService.resetForUserChange()

@@ -11,6 +11,8 @@ protocol RootSystemSideEffecting {
     /// out or has no relationship, and the live feed that sets the number only
     /// runs inside one.
     func clearAppBadge()
+    /// Hangs up a call on this phone and tells the server, while requests still carry the sign-in.
+    func endCall() async
 }
 
 struct LiveRootSystemSideEffects: RootSystemSideEffecting {
@@ -33,6 +35,10 @@ struct LiveRootSystemSideEffects: RootSystemSideEffecting {
     func clearAppBadge() {
         Task { await AppBadgeLiveFeed.clear() }
     }
+
+    func endCall() async {
+        await CallCenter.shared.endCallForLeaving()
+    }
 }
 
 struct NoOpRootSystemSideEffects: RootSystemSideEffecting {
@@ -41,4 +47,5 @@ struct NoOpRootSystemSideEffects: RootSystemSideEffecting {
     func endGameLiveActivities() {}
     func reconcileDeliveredNotifications() {}
     func clearAppBadge() {}
+    func endCall() {}
 }

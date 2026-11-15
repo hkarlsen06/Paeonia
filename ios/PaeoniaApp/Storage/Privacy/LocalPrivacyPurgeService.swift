@@ -308,6 +308,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await purgeContentCaches(scope: scope)
 
         WidgetSyncIdentityStore.shared.clear()
+        CallPartner.clearCache()
         WidgetCanvasSyncService.clearPersistedState()
         // Delivered alerts name the partner and point into this relationship.
         DeliveredNotifications.clearAll()

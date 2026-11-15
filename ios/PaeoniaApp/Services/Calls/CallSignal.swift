@@ -5,9 +5,12 @@ import Foundation
 /// is ignored.
 nonisolated struct CallSignal: Equatable, Sendable {
     nonisolated enum Message: Equatable, Sendable {
-        /// The caller's session description. A later offer restarts the connection.
-        case offer(sdp: String)
-        case answer(sdp: String)
+        /// The caller's session description. A later offer restarts the connection. `number`
+        /// counts the call's offers.
+        case offer(sdp: String, number: Int)
+        /// Carries the `number` of the offer it answers, so the caller can drop an answer to an
+        /// offer it already replaced.
+        case answer(sdp: String, number: Int)
         case candidate(CallIceCandidate)
         /// The sender turned their camera on or off.
         case camera(isOn: Bool)
@@ -53,6 +56,7 @@ nonisolated extension CallSignal: Codable {
         case callID = "call_id"
         case type
         case sdp
+        case offerNumber = "offer_number"
         case candidate
         case sdpMid = "sdp_mid"
         case sdpMLineIndex = "sdp_m_line_index"
@@ -65,9 +69,15 @@ nonisolated extension CallSignal: Codable {
         let type = try container.decode(String.self, forKey: .type)
         switch type {
         case "offer":
-            message = try .offer(sdp: container.decode(String.self, forKey: .sdp))
+            message = try .offer(
+                sdp: container.decode(String.self, forKey: .sdp),
+                number: container.decode(Int.self, forKey: .offerNumber)
+            )
         case "answer":
-            message = try .answer(sdp: container.decode(String.self, forKey: .sdp))
+            message = try .answer(
+                sdp: container.decode(String.self, forKey: .sdp),
+                number: container.decode(Int.self, forKey: .offerNumber)
+            )
         case "candidate":
             message = try .candidate(CallIceCandidate(
                 sdp: container.decode(String.self, forKey: .candidate),
@@ -91,12 +101,14 @@ nonisolated extension CallSignal: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(callID, forKey: .callID)
         switch message {
-        case let .offer(sdp):
+        case let .offer(sdp, number):
             try container.encode("offer", forKey: .type)
             try container.encode(sdp, forKey: .sdp)
-        case let .answer(sdp):
+            try container.encode(number, forKey: .offerNumber)
+        case let .answer(sdp, number):
             try container.encode("answer", forKey: .type)
             try container.encode(sdp, forKey: .sdp)
+            try container.encode(number, forKey: .offerNumber)
         case let .candidate(candidate):
             try container.encode("candidate", forKey: .type)
             try container.encode(candidate.sdp, forKey: .candidate)

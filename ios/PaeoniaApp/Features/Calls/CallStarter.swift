@@ -24,9 +24,14 @@ final class CallStarter {
         self.nightPrompt = nightPrompt
     }
 
-    /// Opens the call screen while a call is live. Otherwise asks first when it is night for the
-    /// partner, then calls.
+    /// Answers the partner's ringing call, and opens the call screen while any other call is live.
+    /// Otherwise asks first when it is night for the partner, then calls.
     func start(partnerName: String, now: @escaping () -> Date = Date.init) {
+        if let session = center.session, session.direction == .incoming, session.phase == .ringing {
+            center.presentation = .full
+            center.engine.answer()
+            return
+        }
         guard !center.isInCall else {
             center.presentation = .full
             return

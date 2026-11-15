@@ -32,7 +32,10 @@ final class CallMediaSession {
     private var remoteVideoTrack: RTCVideoTrack?
     private var isCameraOn: Bool
     private var isConnected = false
-    private var offersSent = 0
+    /// The number of the newest offer this phone sent. Only its answer applies.
+    private var offerNumber = 0
+    /// An offer waits in `work`, so another reason to offer needs no second one.
+    private var isOfferQueued = false
     /// Candidates that arrived before a session description they belong to.
     private var pendingCandidates: [RTCIceCandidate] = []
     /// Every relay message and every reason to offer, handled one at a time in order, so a
@@ -46,6 +49,7 @@ final class CallMediaSession {
     private enum Work {
         case signal(CallSignal.Message)
         case partnerPresent
+        case offer
     }
 
     init(
@@ -169,7 +173,7 @@ final class CallMediaSession {
             guard !isConnected else { return }
             switch role {
             case .offerer:
-                await sendOffer()
+                queueOffer()
             case .answerer where peerConnection.remoteDescription != nil:
                 relay.send(.restart)
             case .answerer:
@@ -177,15 +181,25 @@ final class CallMediaSession {
             }
         case let .signal(message):
             await receive(message)
+        case .offer:
+            isOfferQueued = false
+            await sendOffer()
         }
+    }
+
+    /// Offers once for every reason to offer that arrives before the offer goes out.
+    private func queueOffer() {
+        guard !isOfferQueued else { return }
+        isOfferQueued = true
+        work.yield(.offer)
     }
 
     private func receive(_ message: CallSignal.Message) async {
         switch message {
-        case let .offer(sdp) where role == .answerer:
-            await acceptOffer(sdp)
-        case let .answer(sdp) where role == .offerer:
-            guard peerConnection.signalingState == .haveLocalOffer else { return }
+        case let .offer(sdp, number) where role == .answerer:
+            await acceptOffer(sdp, number: number)
+        case let .answer(sdp, number) where role == .offerer:
+            guard number == offerNumber, peerConnection.signalingState == .haveLocalOffer else { return }
             try? await peerConnection.setRemoteDescription(RTCSessionDescription(type: .answer, sdp: sdp))
             await addPendingCandidates()
         case let .candidate(candidate):
@@ -202,7 +216,7 @@ final class CallMediaSession {
         case let .camera(isOn):
             onPartnerCamera?(isOn)
         case .restart where role == .offerer:
-            await sendOffer()
+            queueOffer()
         case .offer, .answer, .restart:
             break
         }
@@ -214,21 +228,21 @@ final class CallMediaSession {
                 // The partner's phone rejoined before it answered, so the last offer is lost.
                 try await peerConnection.setLocalDescription(RTCSessionDescription(type: .rollback, sdp: ""))
             }
-            if offersSent > 0 {
+            if offerNumber > 0 {
                 peerConnection.restartIce()
             }
             let offer = try await peerConnection.offer(
                 for: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
             )
             try await peerConnection.setLocalDescription(offer)
-            offersSent += 1
-            relay.send(.offer(sdp: offer.sdp))
+            offerNumber += 1
+            relay.send(.offer(sdp: offer.sdp, number: offerNumber))
         } catch {
             // The next time the partner joins, or the call's connect timer, tries again.
         }
     }
 
-    private func acceptOffer(_ sdp: String) async {
+    private func acceptOffer(_ sdp: String, number: Int) async {
         do {
             try await peerConnection.setRemoteDescription(RTCSessionDescription(type: .offer, sdp: sdp))
             if videoTransceiver == nil {
@@ -239,7 +253,7 @@ final class CallMediaSession {
                 for: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
             )
             try await peerConnection.setLocalDescription(answer)
-            relay.send(.answer(sdp: answer.sdp))
+            relay.send(.answer(sdp: answer.sdp, number: number))
         } catch {
             // The caller offers again when the connection does not come up.
         }

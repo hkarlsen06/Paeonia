@@ -88,6 +88,8 @@
       nil
     }
 
+    func refreshCallContext() {}
+
     func makeVideoView(_ source: CallVideoSource) -> UIView {
       stills.makeVideoView(source)
     }

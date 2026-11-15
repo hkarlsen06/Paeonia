@@ -66,9 +66,29 @@ extension CallEngine: CallEngineActions {
         }
     }
 
+    /// Waits a moment for a fresh read, so a slow network never holds up the call. The read
+    /// keeps going and updates `knownPartnerTimeZone` for the next call.
     func partnerTimeZone() async -> TimeZone? {
-        guard let identifier = try? await backend.partnerTimeZoneID() else { return nil }
-        return TimeZone(identifier: identifier)
+        refreshCallContext()
+        let deadline = ContinuousClock.now + .milliseconds(1_500)
+        // Waiting on the read's task cannot stop early, so check every 50 ms.
+        while partnerTimeZoneRefresh != nil, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        return knownPartnerTimeZone
+    }
+
+    func refreshCallContext() {
+        Task { _ = await CallPartner.current() }
+        guard partnerTimeZoneRefresh == nil else { return }
+        partnerTimeZoneRefresh = Task {
+            defer { partnerTimeZoneRefresh = nil }
+            do {
+                knownPartnerTimeZone = try await backend.partnerTimeZoneID().flatMap(TimeZone.init(identifier:))
+            } catch {
+                // Keep the last zone the server sent.
+            }
+        }
     }
 
     func makeVideoView(_ source: CallVideoSource) -> UIView {

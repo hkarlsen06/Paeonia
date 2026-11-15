@@ -118,6 +118,7 @@ private struct CallOverlayHost: ViewModifier {
                 window.show(model.layer)
             }
             .onDisappear { window.remove() }
+            .task { center.engine.refreshCallContext() }
     }
 }
 

@@ -144,11 +144,13 @@ nonisolated struct CallBackend: Sendable {
 }
 
 nonisolated extension CallBackend {
-    static func isServerError(_ error: any Error, code: String) -> Bool {
+    /// The server answered with an error, rather than the request failing on the way. With `code`,
+    /// only that error.
+    static func isServerError(_ error: any Error, code: String? = nil) -> Bool {
         guard case let .server(errorCode, _)? = error as? PaeoniaConvexError else {
             return false
         }
-        return errorCode == code
+        return code == nil || errorCode == code
     }
 }
 

@@ -178,6 +178,7 @@
     func toggleSpeaker() {}
     func setCameraOn(_: Bool) {}
     func flipCamera() {}
+    func refreshCallContext() {}
 
     // swiftlint:disable:next async_without_await
     func partnerTimeZone() async -> TimeZone? {
