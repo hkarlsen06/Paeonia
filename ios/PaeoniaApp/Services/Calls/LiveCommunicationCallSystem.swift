@@ -73,9 +73,7 @@ final class LiveCommunicationCallSystem: CallSystem {
         guard reason != .noAnswer else {
             // iOS shows its own "unavailable" sheet over the app for an outgoing call that the
             // other side ends before it connects, whatever the reason, so the caller ends it here.
-            Task { [manager] in
-                try? await manager.perform([EndConversationAction(conversationUUID: conversationID)])
-            }
+            Task { try? await requestEnd(conversationID) }
             return
         }
         report(.conversationEnded(.now, Self.systemReason(reason)), for: conversationID)
