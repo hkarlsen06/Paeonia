@@ -66,6 +66,9 @@ final class CallOverlayModel {
     var bubbleFrame = CGRect.zero
     /// Where the ring pill is in the window, for the same reason.
     var ringFrame = CGRect.zero
+    /// The layer the window draws. It follows `layer` once the window shows, because a view that
+    /// appears in a hidden window skips its transition.
+    var shownLayer = Layer.hidden
 
     init(center: CallCenter, participants: DailyChallengeParticipants) {
         self.center = center
@@ -135,7 +138,7 @@ private struct CallOverlayRoot: View {
     var body: some View {
         ZStack {
             if let session = model.center.session {
-                switch model.layer {
+                switch model.shownLayer {
                 case .screen:
                     CallScreen(center: model.center, session: session, participants: model.participants)
                         .transition(reduceMotion ? .opacity : .move(edge: .bottom))
@@ -151,7 +154,7 @@ private struct CallOverlayRoot: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.12), value: model.layer)
+        .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.12), value: model.shownLayer)
         .preferredColorScheme(.dark)
     }
 }
@@ -181,8 +184,14 @@ final class CallOverlayWindowController {
     }
 
     func show(_ layer: CallOverlayModel.Layer) {
-        guard let window else { return }
+        guard let window, let model = window.model else { return }
         hideTask?.cancel()
+        if layer == .hidden || !window.isHidden {
+            model.shownLayer = layer
+        } else {
+            // The window shows first, so the layer's entrance animates.
+            DispatchQueue.main.async { if model.layer == layer { model.shownLayer = layer } }
+        }
         window.rootViewController?.view.accessibilityViewIsModal = layer == .screen
         switch layer {
         case .hidden:
