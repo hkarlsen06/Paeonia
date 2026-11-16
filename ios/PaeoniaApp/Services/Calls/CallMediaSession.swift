@@ -208,7 +208,7 @@ final class CallMediaSession {
             onBackCameraZoom?(nil)
         }
         videoTransceiver?.sender.track = isOn ? videoTrack : nil
-        relay.send(.camera(cameraState))
+        send(.camera(cameraState))
     }
 
     /// Returns the zoom the back camera took, or nil when it is not running.
@@ -242,15 +242,15 @@ final class CallMediaSession {
             guard !isHeld else { return }
             // The partner may have missed the last camera, screen and connection messages while
             // their phone reconnected.
-            relay.send(.camera(cameraState))
-            relay.send(.screen(isOn: screen.isSharing))
-            relay.send(.connection(isWeak: health.isMineWeak))
+            send(.camera(cameraState))
+            send(.screen(isOn: screen.isSharing))
+            send(.connection(isWeak: health.isMineWeak))
             guard !isConnected else { return }
             switch role {
             case .offerer:
                 queueOffer()
             case .answerer where peerConnection.remoteDescription != nil:
-                relay.send(.restart)
+                send(.restart)
             case .answerer:
                 break
             }
@@ -263,7 +263,15 @@ final class CallMediaSession {
             guard isHeld else { return }
             isHeld = false
             await sendAnswer()
+            send(.camera(cameraState))
+            send(.screen(isOn: screen.isSharing))
         }
+    }
+
+    /// Every message to the relay goes through here, so a ringing phone sends nothing.
+    private func send(_ message: CallSignal.Message) {
+        guard !isHeld else { return }
+        relay.send(message)
     }
 
     /// Offers once for every reason to offer that arrives before the offer goes out.
@@ -283,8 +291,8 @@ final class CallMediaSession {
             try? await peerConnection.setRemoteDescription(LKRTCSessionDescription(type: .answer, sdp: sdp))
             await addPendingCandidates()
             // The answering phone ignored the camera and screen messages it heard while it rang.
-            relay.send(.camera(cameraState))
-            relay.send(.screen(isOn: screen.isSharing))
+            send(.camera(cameraState))
+            send(.screen(isOn: screen.isSharing))
         case let .candidate(candidate):
             await receive(candidate)
         case let .camera(state):
@@ -318,7 +326,7 @@ final class CallMediaSession {
             ))
             try await peerConnection.setLocalDescription(offer)
             offerNumber += 1
-            relay.send(.offer(sdp: offer.sdp, number: offerNumber))
+            send(.offer(sdp: offer.sdp, number: offerNumber))
         } catch {
             // The next time the partner joins, or the call's connect timer, tries again.
         }
@@ -366,7 +374,7 @@ extension CallMediaSession {
                 for: LKRTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
             ))
             try await peerConnection.setLocalDescription(answer)
-            relay.send(.answer(sdp: answer.sdp, number: offerNumber))
+            send(.answer(sdp: answer.sdp, number: offerNumber))
         } catch {
             // The caller offers again when the connection does not come up.
         }
@@ -428,7 +436,7 @@ extension CallMediaSession {
     // MARK: Connection
 
     fileprivate func sendCandidate(_ candidate: CallIceCandidate) {
-        relay.send(.candidate(candidate))
+        send(.candidate(candidate))
     }
 
     fileprivate func receive(_ candidate: CallIceCandidate) async {
@@ -461,7 +469,7 @@ extension CallMediaSession {
             statsLog.stop()
             // The call shows "Reconnecting" instead, and judges the new connection afresh.
             if health.isMineWeak {
-                relay.send(.connection(isWeak: false))
+                send(.connection(isWeak: false))
             }
             health = CallConnectionHealth()
             onWeakConnection?(nil)
@@ -493,7 +501,7 @@ extension CallMediaSession {
 
     private func checkSendingHealth(_ sample: CallStatsSample) {
         guard health.add(sample) else { return }
-        relay.send(.connection(isWeak: health.isMineWeak))
+        send(.connection(isWeak: health.isMineWeak))
         onWeakConnection?(health.weakSide)
     }
 
@@ -514,7 +522,7 @@ extension CallMediaSession {
     private func cameraInterrupted(_ isInterrupted: Bool) {
         guard isInterrupted != isCameraInterrupted else { return }
         isCameraInterrupted = isInterrupted
-        relay.send(.camera(cameraState))
+        send(.camera(cameraState))
     }
 
     private func networkChanged(_ path: NWPath) {
@@ -543,7 +551,7 @@ extension CallMediaSession {
 
     fileprivate func screenSharingChanged(_ isOn: Bool) {
         applyVideoLimits()
-        relay.send(.screen(isOn: isOn))
+        send(.screen(isOn: isOn))
         onScreenShare?(isOn)
     }
 }
