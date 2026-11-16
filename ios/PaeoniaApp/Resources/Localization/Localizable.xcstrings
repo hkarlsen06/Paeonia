@@ -16171,6 +16171,24 @@
         }
       }
     },
+    "games.drawAndGuess.reveal.time.a11y" : {
+      "comment" : "VoiceOver label for the solve time under the Draw & Guess reveal headline. %@ is a duration such as 18 seconds.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solved in %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Løst på %@"
+          }
+        }
+      }
+    },
     "games.drawAndGuess.reveal.title" : {
       "comment" : "Title when the player guessed the word.",
       "extractionState" : "manual",

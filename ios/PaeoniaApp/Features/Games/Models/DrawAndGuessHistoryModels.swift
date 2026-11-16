@@ -61,13 +61,10 @@ nonisolated extension RemoteDrawAndGuessHistoryRound {
         endedAt ?? startedAt
     }
 
-    /// Past this, the time says more about the day than about the guess.
-    static let longestShownSolveMs = 600_000
-
     /// The solve time worth showing, or nil when it is missing or too long.
     var shownSolveMs: Int? {
-        guard isSolved, let solveMs, solveMs <= Self.longestShownSolveMs else { return nil }
-        return solveMs
+        guard isSolved else { return nil }
+        return solveMs.flatMap(DrawAndGuessHistoryFormat.shownSolveMs)
     }
 
     /// How many guesses it took, the right one included.
@@ -159,6 +156,14 @@ nonisolated extension RemoteDrawAndGuessState {
 
 /// How the history writes a time and a word.
 nonisolated enum DrawAndGuessHistoryFormat {
+    /// Past this, the time says more about the day than about the guess.
+    static let longestShownSolveMs = 600_000
+
+    /// The solve time worth showing, or nil when it is too long.
+    static func shownSolveMs(_ ms: Int) -> Int? {
+        ms <= longestShownSolveMs ? ms : nil
+    }
+
     /// "24 sec" or "1 min 5 sec". A time under a second reads as 1 second.
     static func duration(ms: Int, width: Duration.UnitsFormatStyle.UnitWidth = .abbreviated) -> String {
         let seconds = max(1, Int((Double(ms) / 1_000).rounded()))

@@ -178,7 +178,10 @@ struct DrawAndGuessGuessView: View {
                 if timeline.titleShown {
                     DrawAndGuessRevealTitle(
                         title: reveal.isSolved ? .gamesDrawAndGuessRevealTitle : .gamesDrawAndGuessMissedTitle,
-                        isFocused: $isTitleFocused
+                        isFocused: $isTitleFocused,
+                        solveMs: reveal.solveMs,
+                        earnedSpeedBonus: viewModel.revealEarnedSpeedBonus,
+                        animates: !timeline.wasSkipped && !reduceMotion
                     )
                     .transition(transition)
                 }
@@ -372,15 +375,24 @@ private struct DrawAndGuessReplayAccessibility: ViewModifier {
 struct DrawAndGuessRevealTitle: View {
     let title: LocalizedStringResource
     var isFocused: AccessibilityFocusState<Bool>.Binding
+    /// How long the guess took, shown under the headline. Nil shows nothing.
+    let solveMs: Int?
+    let earnedSpeedBonus: Bool
+    let animates: Bool
 
     var body: some View {
-        Text(title)
-            .font(PaeoniaTypography.largeTitle)
-            .foregroundStyle(.paeoniaTextPrimary)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-            .accessibilityAddTraits(.isHeader)
-            .accessibilityFocused(isFocused)
-            .accessibilityIdentifier("draw.reveal.title")
+        VStack(spacing: PaeoniaSpacing.space8) {
+            Text(title)
+                .font(PaeoniaTypography.largeTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityFocused(isFocused)
+                .accessibilityIdentifier("draw.reveal.title")
+            if let solveMs {
+                DrawAndGuessSolveTime(ms: solveMs, earnedSpeedBonus: earnedSpeedBonus, animates: animates)
+            }
+        }
     }
 }

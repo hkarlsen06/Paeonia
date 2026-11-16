@@ -34,7 +34,8 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
     /// When a queued correct guess was made, before the server confirms it.
     var localSolvedAt: Date?
     let endedAt: Date?
-    let solveMs: Int?
+    /// A queued correct guess carries the time the phone measured, until the server confirms.
+    var solveMs: Int?
     /// A queued correct guess carries the tier the screen showed, until the server confirms.
     var speedBonus: Int
     /// A queued correct guess carries the phone's prediction, until the server confirms.

@@ -236,6 +236,7 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         if let solved = guesses.first(where: \.isCorrect) {
             round.state = .solved
             round.localSolvedAt = solved.createdAt
+            round.solveMs = solved.solveMs
             // What the phone promised, until the server's numbers replace it.
             round.hintsUsed = solved.hintsUsed ?? 0
             round.speedBonus = round.hintsUsed > 0 ? 0 : solved.speedBonus ?? 0

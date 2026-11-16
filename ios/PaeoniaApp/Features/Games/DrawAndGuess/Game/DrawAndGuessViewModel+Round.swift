@@ -146,6 +146,12 @@ extension DrawAndGuessViewModel {
         )
     }
 
+    /// The solved round on the reveal earned the speed bonus, which only
+    /// "Against each other" has.
+    var revealEarnedSpeedBonus: Bool {
+        settings?.playStyle == .against && (reveal?.speedBonus ?? 0) > 0
+    }
+
     /// Any hint takes the speed bonus away, so the label and the line go.
     func updateSpeedBonus() {
         guard hintCount == 0 else {
@@ -220,6 +226,7 @@ extension DrawAndGuessViewModel {
             speedBonus: isSolved ? round.speedBonus : 0,
             firstTryBonus: isSolved ? round.firstTryBonus : 0,
             pointsForMe: isSolved ? round.points + bonuses : 0,
+            solveMs: isSolved ? round.solveMs.flatMap(DrawAndGuessHistoryFormat.shownSolveMs) : nil,
             attempts: round.attempts,
             isConfirmed: isConfirmed
         )

@@ -148,6 +148,10 @@ nonisolated struct DrawAndGuessReveal: Equatable, Sendable {
     /// What this person earned. The drawer gets the word's points. The guesser also
     /// gets the speed bonus and the first-try bonus.
     let pointsForMe: Int
+    /// How long the guesser looked at the drawing before the right guess. Nil
+    /// for a missed round, and for a time that is missing or longer than the
+    /// history shows.
+    let solveMs: Int?
     let attempts: [DrawAndGuessAttemptView]
     /// The server has confirmed the result, so the points are final.
     let isConfirmed: Bool

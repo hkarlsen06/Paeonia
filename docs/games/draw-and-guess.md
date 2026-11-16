@@ -34,7 +34,7 @@ Keep this file current. When a decision lands or the design changes, update it i
 The game never ends. A couple has one ongoing Draw & Guess game, and a turn has two halves done in one sitting.
 
 1. **Guess.** Open the game and your partner's drawing starts playing back. Guess by tapping letter tiles. You can guess while the drawing is still playing.
-2. **Reveal.** The word locks in, the rest of the drawing finishes at once, and the phone gives a success haptic. The screen says who got it and how the points changed, and little else.
+2. **Reveal.** The word locks in, the rest of the drawing finishes at once, and the phone gives a success haptic. The screen says who got it, how long the guess took and how the points changed, and little else. The time sits in a small capsule under the headline (`DrawAndGuessSolveTime`), counts up from zero as it appears, and has a gold stopwatch when the guess earned the speed bonus. A missed round, or a time over 10 minutes, shows no capsule.
 3. **Result.** Either partner can react, and either partner can star the round (see "History and stars").
 4. **Draw back.** You pick a word and draw it for your partner.
 

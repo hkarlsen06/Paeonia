@@ -19,6 +19,7 @@ struct DrawAndGuessRevealScoreTests {
             speedBonus: bonus,
             firstTryBonus: firstTry,
             pointsForMe: solved ? 2 + (outcome == .iSolvedIt ? bonus + firstTry : 0) : 0,
+            solveMs: nil,
             attempts: [],
             isConfirmed: isConfirmed
         )

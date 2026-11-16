@@ -230,7 +230,10 @@ struct DrawAndGuessDrawerResultView: View {
                     title: reveal.isSolved
                         ? .gamesDrawAndGuessResultGotIt(viewModel.partnerName)
                         : .gamesDrawAndGuessResultMissed(viewModel.partnerName),
-                    isFocused: $isTitleFocused
+                    isFocused: $isTitleFocused,
+                    solveMs: reveal.solveMs,
+                    earnedSpeedBonus: viewModel.revealEarnedSpeedBonus,
+                    animates: !timeline.wasSkipped && !reduceMotion
                 )
                 .transition(transition)
             }
