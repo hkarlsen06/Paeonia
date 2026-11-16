@@ -12,7 +12,7 @@ import Foundation
 @main
 enum CallMediaProbe {
     /// How long the call runs on the direct path it finds, then on TURN's limits, then with the
-    /// caller sharing its screen beside its camera on each path's limits.
+    /// caller sharing its screen beside its camera in each of `ScreenPhase.all`.
     static let directSeconds = 20.0
     static let turnSeconds = 10.0
     static let screenSeconds = 10.0
@@ -37,8 +37,9 @@ enum CallMediaProbe {
         let peers = [caller, partner]
         let (direct, turn) = await run(peers, tuned: tuned, microphone)
         say("Sharing the caller's \(ScreenSource.width)x\(ScreenSource.height) screen of scrolling text at 60 fps "
-            + "beside its camera, for \(Int(screenSeconds)) s on the direct path's limits, then on TURN's.")
-        let (screenDirect, screenTurn) = await shareScreen(caller, tuned: tuned, microphone)
+            + "beside its camera, for \(Int(screenSeconds)) s on the direct path's limits, then on TURN's, "
+            + "then on the direct path's for a hot phone.")
+        let screenPhases = await shareScreen(caller, tuned: tuned, microphone)
 
         let offer = caller.connection.localDescription?.sdp ?? ""
         let answer = partner.connection.localDescription?.sdp ?? ""
@@ -49,7 +50,7 @@ enum CallMediaProbe {
             Check("the answer asks for Opus DTX (usedtx=1)", .tuning, holds: opusAsksForDTX(answer)),
         ]
             + peers.flatMap { checks($0, direct[$0.name] ?? []) + turnChecks($0, turn[$0.name] ?? []) }
-            + screenChecks(caller, shownBy: partner, direct: screenDirect, turn: screenTurn)
+            + screenChecks(caller, shownBy: partner, screenPhases)
         let passed = report(checks, tuned: tuned)
         caller.connection.close()
         partner.connection.close()
@@ -258,43 +259,41 @@ extension CallMediaProbe {
     }
 
     /// Turns the caller's screen share on the way `CallMediaSession` does, and records the caller
-    /// on the direct path's limits, then on TURN's.
+    /// in each phase.
     static func shareScreen(
         _ caller: Peer,
         tuned: Bool,
         _ microphone: FakeMicrophone
-    ) async -> (direct: [Timed], turn: [Timed]) {
+    ) async -> [(ScreenPhase, [Timed])] {
         caller.screenSender.track = caller.screenTrack
         caller.screen.start()
         defer { caller.screen.stop() }
-        var phases: [[Timed]] = []
-        for path in [CallMediaPath.direct, .turn] {
+        var phases: [(ScreenPhase, [Timed])] = []
+        for phase in ScreenPhase.all {
             if tuned {
-                CallCodecs.limitVideo(caller.videoSender, to: CallVideoLimits(path: path, besideScreen: true))
-                CallCodecs.limitScreen(caller.screenSender, to: .screen(path: path))
+                CallCodecs.limitVideo(
+                    caller.videoSender,
+                    to: CallVideoLimits(path: phase.path, heat: phase.heat, besideScreen: true)
+                )
+                CallCodecs.limitScreen(caller.screenSender, to: .screen(path: phase.path, heat: phase.heat))
             }
-            phases.append(await record([caller], for: screenSeconds, microphone) { _, _ in }[caller.name] ?? [])
+            let samples = await record([caller], for: screenSeconds, microphone) { _, _ in }[caller.name] ?? []
+            phases.append((phase, samples))
         }
-        return (phases[0], phases[1])
+        return phases
     }
 
-    /// The caller's screen beside its camera, on each path's limits.
-    static func screenChecks(_ caller: Peer, shownBy partner: Peer, direct: [Timed], turn: [Timed]) -> [Check] {
+    /// The caller's screen beside its camera, in each phase.
+    static func screenChecks(_ caller: Peer, shownBy partner: Peer, _ phases: [(ScreenPhase, [Timed])]) -> [Check] {
         let shown = partner.partnerScreen.snapshot()
         say("partner showed \(shown.frames) frames of the caller's screen, last \(shown.size)")
-        // WebRTC's own limit for a screen this size is the direct path's 2.5 Mbps already.
-        return screenChecks(on: "direct", direct, screenBudget: 2_500_000, .always, cameraBudget: 1_500_000)
-            + screenChecks(on: "TURN", turn, screenBudget: 1_000_000, .tuning, cameraBudget: 500_000)
+        return phases.flatMap { screenChecks($0, $1) }
             + [Check("the partner shows over 100 frames of the caller's screen", .always, holds: shown.frames > 100)]
     }
 
-    static func screenChecks(
-        on pathName: String,
-        _ samples: [Timed],
-        screenBudget: Double,
-        _ screenBudgetKind: Check.Kind,
-        cameraBudget: Double
-    ) -> [Check] {
+    static func screenChecks(_ phase: ScreenPhase, _ samples: [Timed]) -> [Check] {
+        let screenBudget = phase.screenBudget
+        let cameraBudget = phase.cameraBudget
         let settled = samples.filter { $0.sample.seconds - (samples.first?.sample.seconds ?? 0) >= 2 }
         let screens = settled.map(\.sample.screen)
         let screenTarget = screens.compactMap(\.sent.targetBitsPerSecond).max() ?? 0
@@ -302,11 +301,11 @@ extension CallMediaProbe {
         let widths = screens.compactMap(\.frameWidth)
         let fastest = screens.compactMap(\.framesPerSecond).max() ?? 0
         let codec = screens.last?.sent.codec
-        say("caller screen on \(pathName)'s limits: \(codec ?? "-"), highest encoder target "
+        say("caller screen on \(phase.name): \(codec ?? "-"), highest encoder target "
             + "\(Int(screenTarget / 1_000)) kbps, frames \(widths.min() ?? 0) to \(widths.max() ?? 0) wide, "
             + "up to \(Int(fastest)) fps; camera beside it: highest encoder target \(Int(cameraTarget / 1_000)) kbps")
-        let caller = "the caller's screen on \(pathName)"
-        let camera = "the caller's camera beside its screen on \(pathName)"
+        let caller = "the caller's screen on \(phase.name)"
+        let camera = "the caller's camera beside its screen on \(phase.name)"
         return [
             Check("\(caller) goes as video/H265", .tuning, holds: codec == "video/H265"),
             Check(
@@ -314,10 +313,14 @@ extension CallMediaProbe {
                 .tunedRunOnly,
                 holds: widths.min() == ScreenSource.width
             ),
-            Check("\(caller) sends at most 16 frames a second", .tuning, holds: fastest > 0 && fastest <= 16),
+            Check(
+                "\(caller) sends at most \(phase.maxFramesPerSecond) frames a second",
+                .tuning,
+                holds: fastest > 0 && fastest <= Double(phase.maxFramesPerSecond)
+            ),
             Check(
                 "\(caller) has an encoder target at or under \(Int(screenBudget / 1_000)) kbps",
-                screenBudgetKind,
+                phase.screenBudgetKind,
                 holds: screenTarget > 0 && screenTarget <= screenBudget
             ),
             Check(
@@ -327,6 +330,34 @@ extension CallMediaProbe {
             ),
         ]
     }
+}
+
+/// One stretch of the screen share: the limits it runs on, and what the checks expect of it.
+struct ScreenPhase {
+    let name: String
+    let path: CallMediaPath
+    let heat: CallHeat
+    let screenBudget: Double
+    let screenBudgetKind: Check.Kind
+    /// One over `CallVideoLimits`, because the stats' frame rate wobbles around the limit.
+    let maxFramesPerSecond: Int
+    let cameraBudget: Double
+
+    static let all = [
+        // WebRTC's own limit for a screen this size is the direct path's 2.5 Mbps already.
+        ScreenPhase(
+            name: "direct", path: .direct, heat: .normal,
+            screenBudget: 2_500_000, screenBudgetKind: .always, maxFramesPerSecond: 16, cameraBudget: 1_500_000
+        ),
+        ScreenPhase(
+            name: "TURN", path: .turn, heat: .normal,
+            screenBudget: 1_000_000, screenBudgetKind: .tuning, maxFramesPerSecond: 16, cameraBudget: 500_000
+        ),
+        ScreenPhase(
+            name: "direct when hot", path: .direct, heat: .hot,
+            screenBudget: 400_000, screenBudgetKind: .tuning, maxFramesPerSecond: 6, cameraBudget: 200_000
+        ),
+    ]
 }
 
 struct Check {
