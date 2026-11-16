@@ -11,9 +11,11 @@ import Foundation
 
 @main
 enum CallMediaProbe {
-    /// How long the call runs on the direct path it finds, then on TURN's limits.
+    /// How long the call runs on the direct path it finds, then on TURN's limits, then with the
+    /// caller sharing its screen beside its camera on each path's limits.
     static let directSeconds = 20.0
     static let turnSeconds = 10.0
+    static let screenSeconds = 10.0
     static let sampleInterval = Duration.milliseconds(100)
 
     static func main() async {
@@ -34,6 +36,9 @@ enum CallMediaProbe {
 
         let peers = [caller, partner]
         let (direct, turn) = await run(peers, tuned: tuned, microphone)
+        say("Sharing the caller's \(ScreenSource.width)x\(ScreenSource.height) screen of scrolling text at 60 fps "
+            + "beside its camera, for \(Int(screenSeconds)) s on the direct path's limits, then on TURN's.")
+        let (screenDirect, screenTurn) = await shareScreen(caller, tuned: tuned, microphone)
 
         let offer = caller.connection.localDescription?.sdp ?? ""
         let answer = partner.connection.localDescription?.sdp ?? ""
@@ -44,6 +49,7 @@ enum CallMediaProbe {
             Check("the answer asks for Opus DTX (usedtx=1)", .tuning, holds: opusAsksForDTX(answer)),
         ]
             + peers.flatMap { checks($0, direct[$0.name] ?? []) + turnChecks($0, turn[$0.name] ?? []) }
+            + screenChecks(caller, shownBy: partner, direct: screenDirect, turn: screenTurn)
         let passed = report(checks, tuned: tuned)
         caller.connection.close()
         partner.connection.close()
@@ -112,13 +118,15 @@ enum CallMediaProbe {
             configure(video)
             video.sender.track = caller.videoTrack
         }
+        addScreenTransceiver(to: caller, tuned: factory != nil, configure: configure)
         do {
             try await caller.connection.setLocalDescription(dtx(caller.connection.offer(for: noConstraints)))
             try await partner.connection.setRemoteDescription(caller.gatheredDescription())
-            for transceiver in partner.connection.transceivers {
+            for (index, transceiver) in partner.connection.transceivers.enumerated() {
                 transceiver.setDirection(.sendRecv, error: nil)
                 configure(transceiver)
-                transceiver.sender.track = transceiver.mediaType == .audio ? partner.audioTrack : partner.videoTrack
+                // Audio, then the camera. The screen's transceiver sends nothing until a share.
+                transceiver.sender.track = [partner.audioTrack, partner.videoTrack].dropFirst(index).first
             }
             try await partner.connection.setLocalDescription(dtx(partner.connection.answer(for: noConstraints)))
             try await caller.connection.setRemoteDescription(partner.gatheredDescription())
@@ -231,6 +239,93 @@ enum CallMediaProbe {
     static func fail(_ message: String) -> Never {
         FileHandle.standardError.write(Data("call-media-probe: \(message)\n".utf8))
         exit(1)
+    }
+}
+
+/// The screen share: the caller shares a scrolling screen beside its camera.
+extension CallMediaProbe {
+    /// The third transceiver, which sends nothing until a share, as `CallMediaSession` adds it.
+    static func addScreenTransceiver(to caller: Peer, tuned: Bool, configure: (LKRTCRtpTransceiver) -> Void) {
+        let transceiverInit = LKRTCRtpTransceiverInit()
+        transceiverInit.direction = .sendRecv
+        guard let screen = caller.connection.addTransceiver(of: .video, init: transceiverInit) else {
+            fail("could not add the caller's screen transceiver")
+        }
+        configure(screen)
+        if tuned {
+            CallCodecs.limitScreen(screen.sender, to: .screen(path: .turn))
+        }
+    }
+
+    /// Turns the caller's screen share on the way `CallMediaSession` does, and records the caller
+    /// on the direct path's limits, then on TURN's.
+    static func shareScreen(
+        _ caller: Peer,
+        tuned: Bool,
+        _ microphone: FakeMicrophone
+    ) async -> (direct: [Timed], turn: [Timed]) {
+        caller.screenSender.track = caller.screenTrack
+        caller.screen.start()
+        defer { caller.screen.stop() }
+        var phases: [[Timed]] = []
+        for path in [CallMediaPath.direct, .turn] {
+            if tuned {
+                CallCodecs.limitVideo(caller.videoSender, to: CallVideoLimits(path: path, besideScreen: true))
+                CallCodecs.limitScreen(caller.screenSender, to: .screen(path: path))
+            }
+            phases.append(await record([caller], for: screenSeconds, microphone) { _, _ in }[caller.name] ?? [])
+        }
+        return (phases[0], phases[1])
+    }
+
+    /// The caller's screen beside its camera, on each path's limits.
+    static func screenChecks(_ caller: Peer, shownBy partner: Peer, direct: [Timed], turn: [Timed]) -> [Check] {
+        let shown = partner.partnerScreen.snapshot()
+        say("partner showed \(shown.frames) frames of the caller's screen, last \(shown.size)")
+        // WebRTC's own limit for a screen this size is the direct path's 2.5 Mbps already.
+        return screenChecks(on: "direct", direct, screenBudget: 2_500_000, .always, cameraBudget: 1_500_000)
+            + screenChecks(on: "TURN", turn, screenBudget: 1_000_000, .tuning, cameraBudget: 500_000)
+            + [Check("the partner shows over 100 frames of the caller's screen", .always, holds: shown.frames > 100)]
+    }
+
+    static func screenChecks(
+        on pathName: String,
+        _ samples: [Timed],
+        screenBudget: Double,
+        _ screenBudgetKind: Check.Kind,
+        cameraBudget: Double
+    ) -> [Check] {
+        let settled = samples.filter { $0.sample.seconds - (samples.first?.sample.seconds ?? 0) >= 2 }
+        let screens = settled.map(\.sample.screen)
+        let screenTarget = screens.compactMap(\.sent.targetBitsPerSecond).max() ?? 0
+        let cameraTarget = settled.compactMap(\.sample.video.targetBitsPerSecond).max() ?? 0
+        let widths = screens.compactMap(\.frameWidth)
+        let fastest = screens.compactMap(\.framesPerSecond).max() ?? 0
+        let codec = screens.last?.sent.codec
+        say("caller screen on \(pathName)'s limits: \(codec ?? "-"), highest encoder target "
+            + "\(Int(screenTarget / 1_000)) kbps, frames \(widths.min() ?? 0) to \(widths.max() ?? 0) wide, "
+            + "up to \(Int(fastest)) fps; camera beside it: highest encoder target \(Int(cameraTarget / 1_000)) kbps")
+        let caller = "the caller's screen on \(pathName)"
+        let camera = "the caller's camera beside its screen on \(pathName)"
+        return [
+            Check("\(caller) goes as video/H265", .tuning, holds: codec == "video/H265"),
+            Check(
+                "\(caller) keeps its full \(ScreenSource.width)-wide picture",
+                .tunedRunOnly,
+                holds: widths.min() == ScreenSource.width
+            ),
+            Check("\(caller) sends at most 16 frames a second", .tuning, holds: fastest > 0 && fastest <= 16),
+            Check(
+                "\(caller) has an encoder target at or under \(Int(screenBudget / 1_000)) kbps",
+                screenBudgetKind,
+                holds: screenTarget > 0 && screenTarget <= screenBudget
+            ),
+            Check(
+                "\(camera) stays at or under \(Int(cameraBudget / 1_000)) kbps",
+                .tuning,
+                holds: cameraTarget > 0 && cameraTarget <= cameraBudget
+            ),
+        ]
     }
 }
 
@@ -352,11 +447,14 @@ final class Peer {
     let connection: LKRTCPeerConnection
     let audioTrack: LKRTCAudioTrack
     let videoTrack: LKRTCVideoTrack
+    let screenTrack: LKRTCVideoTrack
+    let screen: ScreenSource
     let partnerVideo = FrameCounter()
+    let partnerScreen = FrameCounter()
     /// The path this peer's video limits were last set for. `CallCodecs.configure` starts at TURN's.
     var videoPath = CallMediaPath.turn
     private let camera: NoiseCamera
-    private var partnerTrack: LKRTCVideoTrack?
+    private var partnerTracks: [LKRTCVideoTrack] = []
 
     init(name: String, factory: LKRTCPeerConnectionFactory) {
         self.name = name
@@ -378,6 +476,9 @@ final class Peer {
         videoTrack = factory.videoTrack(with: source, trackId: "video")
         camera = NoiseCamera(source: source)
         camera.start()
+        let screenSource = factory.videoSource(forScreenCast: true)
+        screenTrack = factory.videoTrack(with: screenSource, trackId: "screen")
+        screen = ScreenSource(source: screenSource)
     }
 
     /// The session description once every network candidate is in it, so the other end needs
@@ -392,16 +493,28 @@ final class Peer {
     }
 
     var videoSender: LKRTCRtpSender {
-        guard let sender = connection.transceivers.first(where: { $0.mediaType == .video })?.sender else {
-            CallMediaProbe.fail("\(name) has no video sender")
-        }
-        return sender
+        videoSenders[0]
     }
 
-    /// Keeps the track, because a track removes its renderers when it is freed.
+    var screenSender: LKRTCRtpSender {
+        videoSenders[1]
+    }
+
+    /// The camera's, then the screen's, as `CallMediaSession` adds them.
+    private var videoSenders: [LKRTCRtpSender] {
+        let senders = connection.transceivers.filter { $0.mediaType == .video }.map(\.sender)
+        guard senders.count == 2 else { CallMediaProbe.fail("\(name) has \(senders.count) video senders, not 2") }
+        return senders
+    }
+
+    /// Keeps the tracks, because a track removes its renderers when it is freed.
     func watchPartnerVideo() {
-        partnerTrack = connection.transceivers.lazy.compactMap { $0.receiver.track as? LKRTCVideoTrack }.first
-        partnerTrack?.add(partnerVideo)
+        partnerTracks = connection.transceivers.compactMap { $0.receiver.track as? LKRTCVideoTrack }
+        guard partnerTracks.count == 2 else {
+            CallMediaProbe.fail("\(name) receives \(partnerTracks.count) videos, not 2")
+        }
+        partnerTracks[0].add(partnerVideo)
+        partnerTracks[1].add(partnerScreen)
     }
 }
 
@@ -485,6 +598,85 @@ nonisolated final class NoiseCamera: @unchecked Sendable {
                 for column in 0..<Self.width {
                     let grain = UInt8(truncatingIfNeeded: random.next()) % 9
                     luma[row * lumaRow + column] = picture[from + column] / 2 &+ grain
+                }
+            }
+            let chromaBytes = CVPixelBufferGetBytesPerRowOfPlane(buffer, 1) * CVPixelBufferGetHeightOfPlane(buffer, 1)
+            memset(chroma, 128, chromaBytes)
+        }
+        CVPixelBufferUnlockBaseAddress(buffer, [])
+        let frame = LKRTCVideoFrame(
+            buffer: LKRTCCVPixelBuffer(pixelBuffer: buffer),
+            rotation: ._0,
+            timeStampNs: Int64(CMClockGetTime(CMClockGetHostTimeClock()).seconds * 1_000_000_000)
+        )
+        source.capturer(capturer, didCapture: frame)
+    }
+}
+
+/// A phone screen at the size `CallScreenCapture` asks ScreenCaptureKit for, of lines of text-like
+/// marks that scroll at 60 fps, the most ScreenCaptureKit sends on iOS.
+nonisolated final class ScreenSource: @unchecked Sendable {
+    static let width = 978
+    static let height = 2_120
+
+    private let source: LKRTCVideoSource
+    private let capturer: LKRTCVideoCapturer
+    private let queue = DispatchQueue(label: "screen-source")
+    private var timer: DispatchSourceTimer?
+    private var pool: CVPixelBufferPool?
+    /// Twice the screen's height, so a screen-sized window can scroll down it.
+    private let page: [UInt8]
+    private var frameNumber = 0
+
+    init(source: LKRTCVideoSource) {
+        self.source = source
+        capturer = LKRTCVideoCapturer(delegate: source)
+        let attributes: [CFString: Any] = [
+            kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+            kCVPixelBufferWidthKey: Self.width,
+            kCVPixelBufferHeightKey: Self.height,
+            kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary,
+        ]
+        CVPixelBufferPoolCreate(nil, nil, attributes as CFDictionary, &pool)
+        var random = Random(state: 0x2545_f491_4f6c_dd1d)
+        let markCount = (Self.width / 8 + 1) * (2 * Self.height / 24 + 1)
+        let marks = (0..<markCount).map { _ in random.next() % 3 != 0 }
+        page = (0..<(2 * Self.width * Self.height)).map { index in
+            let row = index / Self.width
+            let column = index % Self.width
+            let inLine = row % 24 < 14 && column % 8 < 6 && column > 30 && column < Self.width - 30
+            return inLine && marks[(row / 24) * (Self.width / 8) + column / 8] ? 30 : 235
+        }
+    }
+
+    func start() {
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now(), repeating: .nanoseconds(1_000_000_000 / 60))
+        timer.setEventHandler { [weak self] in self?.sendFrame() }
+        timer.resume()
+        self.timer = timer
+    }
+
+    func stop() {
+        timer?.cancel()
+        timer = nil
+    }
+
+    private func sendFrame() {
+        guard let pool else { return }
+        var buffer: CVPixelBuffer?
+        CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer)
+        guard let buffer else { return }
+        frameNumber += 1
+        let top = frameNumber * 4 % Self.height
+        CVPixelBufferLockBaseAddress(buffer, [])
+        if let luma = CVPixelBufferGetBaseAddressOfPlane(buffer, 0)?.assumingMemoryBound(to: UInt8.self),
+           let chroma = CVPixelBufferGetBaseAddressOfPlane(buffer, 1) {
+            let lumaRow = CVPixelBufferGetBytesPerRowOfPlane(buffer, 0)
+            page.withUnsafeBufferPointer { page in
+                guard let start = page.baseAddress else { return }
+                for row in 0..<Self.height {
+                    (luma + row * lumaRow).update(from: start + (top + row) * Self.width, count: Self.width)
                 }
             }
             let chromaBytes = CVPixelBufferGetBytesPerRowOfPlane(buffer, 1) * CVPixelBufferGetHeightOfPlane(buffer, 1)

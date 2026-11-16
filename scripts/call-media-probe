@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Checks how calls compress their media: runs ios/Scripts/call-media-probe.swift, a call
 # between two WebRTC connections in one Mac process, against the app's real CallCodecs.swift
-# and CallStatsLog.swift and the pinned LiveKitWebRTC build. Takes about 30 seconds.
+# and CallStatsLog.swift and the pinned LiveKitWebRTC build. Takes about a minute and a half.
 #
 #   scripts/call-media-probe             checks the app's codec choices
 #   scripts/call-media-probe --defaults  shows WebRTC's own choices, where each tuned check fails
