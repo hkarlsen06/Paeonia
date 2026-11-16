@@ -370,3 +370,41 @@ struct GiveUpGameRoundPendingOperationHandler: PendingSyncOperationHandling {
         }
     }
 }
+
+/// "Keep drawing" puts the sent drawing's round back in drawing on the server.
+/// It is queued only once the drawing reached the server, so it never waits for
+/// a send. A round that ended first refuses it quietly, because the reveal shows
+/// how the round ended.
+struct ReopenGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
+    nonisolated let operationKind: SyncPendingOperationKind = .reopenGameDrawing
+
+    private let gateway: any DrawAndGuessGateway
+    private let cache: any GamesCaching
+
+    init(gateway: any DrawAndGuessGateway, cache: any GamesCaching) {
+        self.gateway = gateway
+        self.cache = cache
+    }
+
+    func send(
+        _ operation: PendingSyncOperationSnapshot,
+        context _: SyncContext
+    ) async throws -> PendingSyncOperationSendResult {
+        guard let data = operation.requestData,
+              let payload = try? JSONDecoder().decode(GameReopenDrawingPayload.self, from: data)
+        else {
+            return .terminalFailure("Missing keep drawing payload")
+        }
+        do {
+            _ = try await gateway.reopenDrawing(roundID: payload.roundID, operation: operation.operation)
+            return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+        } catch let error as PaeoniaConvexError {
+            if GameServerRejection.isAlreadyDone(error) {
+                return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+            }
+            guard await GameServerRejection.shouldDrop(error, of: operation, cache: cache) else { throw error }
+            await tellAboutRefusal(error, of: operation, in: cache)
+            return .terminalFailure(error.description)
+        }
+    }
+}

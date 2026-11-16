@@ -41,7 +41,8 @@
     static func game(
       state: DrawAndGuessGameState,
       turn: UUID,
-      roundID: UUID? = roundID
+      roundID: UUID? = roundID,
+      version: Int = 9
     ) -> RemoteDrawAndGuessGame {
       RemoteDrawAndGuessGame(
         id: gameID,
@@ -54,7 +55,7 @@
         myPoints: 8,
         partnerPoints: 5,
         turnStartedAt: now.addingTimeInterval(-600),
-        version: 9,
+        version: version,
         createdAt: now.addingTimeInterval(-86_400),
         updatedAt: now.addingTimeInterval(-600)
       )

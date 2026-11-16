@@ -26,7 +26,10 @@ nonisolated protocol DrawAndGuessGateway: GamesGateway {
         hintsUsed: Int?,
         operation: SyncClientOperation
     ) async throws -> RemoteGuessResult
-    func giveUp(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteGiveUpResult
+    func giveUp(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteRoundStateResult
+    /// "Keep drawing": the drawer takes the sent drawing back, and the round is in
+    /// drawing again until the next send.
+    func reopenDrawing(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteRoundStateResult
 
     /// This person moved past the finished round's result. The server keeps the
     /// first time, so a retry is safe.
@@ -97,10 +100,17 @@ nonisolated extension LiveGamesGateway: DrawAndGuessGateway {
         )
     }
 
-    func giveUp(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteGiveUpResult {
+    func giveUp(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteRoundStateResult {
         try await client.mutation(
             "drawAndGuess:give_up_round",
-            args: GiveUpRequest(roundID: roundID, operation: operation)
+            args: RoundMoveRequest(roundID: roundID, operation: operation)
+        )
+    }
+
+    func reopenDrawing(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteRoundStateResult {
+        try await client.mutation(
+            "drawAndGuess:reopen_drawing",
+            args: RoundMoveRequest(roundID: roundID, operation: operation)
         )
     }
 
@@ -254,7 +264,7 @@ nonisolated private struct SubmitGuessRequest: Encodable {
     }
 }
 
-nonisolated private struct GiveUpRequest: Encodable {
+nonisolated private struct RoundMoveRequest: Encodable {
     let roundID: UUID
     let operation: ClientOperationFields
 

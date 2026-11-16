@@ -399,8 +399,12 @@
       throw URLError(.notConnectedToInternet)
     }
 
-    func giveUp(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteGiveUpResult {
-      RemoteGiveUpResult(roundID: roundID, roundState: .missed)
+    func giveUp(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteRoundStateResult {
+      RemoteRoundStateResult(roundID: roundID, roundState: .missed)
+    }
+
+    func reopenDrawing(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteRoundStateResult {
+      RemoteRoundStateResult(roundID: roundID, roundState: .drawing)
     }
 
     func markRoundResultSeen(roundID: UUID) throws -> RemoteResultSeenResult {
@@ -441,29 +445,6 @@
 
     func loadDrawAndGuessRecords() throws -> RemoteDrawAndGuessRecords {
       historyIsEmpty ? DeveloperGamesFixture.emptyRecords : DeveloperGamesFixture.records
-    }
-  }
-
-  /// The partner's drawing for every download: the fixture umbrella. A stalled
-  /// download waits until the screen goes away.
-  struct DeveloperGameDrawingTransfer: GameDrawingTransferring {
-    var stallsDownloads = false
-
-    func uploadDrawing(
-      _: Data,
-      parent _: GameUploadParent,
-      coupleID _: UUID,
-      reserveOperation _: SyncClientOperation,
-      finalizeOperation _: SyncClientOperation
-    ) throws -> UUID {
-      DeveloperGamesFixture.assetID
-    }
-
-    func downloadDrawing(mediaAssetID _: UUID) async throws -> Data {
-      if stallsDownloads {
-        try await Task.sleep(for: .seconds(86_400))
-      }
-      return await MainActor.run { DeveloperGamesFixture.umbrella().dataRepresentation() }
     }
   }
 #endif

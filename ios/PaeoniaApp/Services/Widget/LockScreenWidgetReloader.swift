@@ -41,7 +41,7 @@ nonisolated extension SyncPendingOperationKind {
              .saveVisit, .deleteVisit,
              .submitDailyAnswer,
              .updateLocationSharingPreference,
-             .pickDrawWord, .submitGameDrawing, .submitGameGuess, .giveUpGameRound,
+             .pickDrawWord, .submitGameDrawing, .reopenGameDrawing, .submitGameGuess, .giveUpGameRound,
              .storyChainStartStory, .storyChainAddLine,
              .lockMindMeldWord, .countMindMeldRound,
              .placeConsensioSpot, .guessConsensioSpot,

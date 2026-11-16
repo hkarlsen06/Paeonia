@@ -63,6 +63,46 @@ extension DrawAndGuessViewModel {
         await queueFinishedDrawing(for: round, drawing: board.canonicalDrawing)
     }
 
+    /// "Keep drawing" works until the round ends, once the drawing has reached the
+    /// server. While the send still waits on this phone, taking it back could race
+    /// the upload.
+    var canKeepDrawing: Bool {
+        guard phase == .waitingForGuess, let round, !round.isFinished,
+              !pending.drawings.contains(where: { $0.roundID == round.id })
+        else { return false }
+        return sentDrawing(of: round) != nil
+    }
+
+    /// Takes the sent drawing back to the canvas. It becomes the round's draft
+    /// again, with its description, and the round goes back to drawing.
+    func keepDrawing() async {
+        guard canKeepDrawing, let round, let drawing = sentDrawing(of: round), let userID = currentUserID,
+              let coupleID = participants.coupleID, let drawingPrivacyToken
+        else { return }
+        let store = dependencies.drawingStore
+        do {
+            // Saving the description takes the privacy guard itself, so it stays outside `write`.
+            try store.saveDraftDescription(round.drawingAccessibilityText ?? "", ownerUserID: userID,
+                                           coupleID: coupleID, roundID: round.id, privacyToken: drawingPrivacyToken)
+            try LocalPrivacyWriteGuard.shared.write(ownerUserID: userID, token: drawingPrivacyToken) {
+                store.saveDraft(drawing.dataRepresentation(), ownerUserID: userID, roundID: round.id)
+            }
+        } catch {
+            notice = .couldNotSaveMove
+            return
+        }
+        let payload = GameReopenDrawingPayload(roundID: round.id, createdAt: dependencies.now())
+        await enqueue(.reopenGameDrawing, scope: "game-reopen:\(round.id.uuidString.lowercased())", payload: payload)
+    }
+
+    /// The drawing as sent: still on the canvas, or the server's copy after a relaunch.
+    private func sentDrawing(of round: DrawAndGuessRoundView) -> PKDrawing? {
+        if boardRoundID == round.id, !board.isEmpty {
+            return board.canonicalDrawing
+        }
+        return submittedDrawing?.drawing
+    }
+
     @discardableResult
     private func queueFinishedDrawing(for round: DrawAndGuessRoundView, drawing: PKDrawing) async -> Bool {
         guard let userID = currentUserID, let coupleID = participants.coupleID,

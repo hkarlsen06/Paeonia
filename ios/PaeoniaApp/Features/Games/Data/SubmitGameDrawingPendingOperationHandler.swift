@@ -2,8 +2,8 @@ import Foundation
 
 // MARK: - Send the drawing
 
-/// Uploads the finished drawing and submits it, after the word pick for the
-/// same round has reached the server.
+/// Uploads the finished drawing and submits it, after the word pick and any
+/// "Keep drawing" for the same round have reached the server.
 struct SubmitGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .submitGameDrawing
 
@@ -38,7 +38,7 @@ struct SubmitGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("The drawing belongs to an earlier relationship")
         }
 
-        if try await isWaitingForPick(of: payload.roundID, owner: operation.ownerUserID, context: context) {
+        if try await isWaitingForEarlierMove(of: payload.roundID, before: operation, context: context) {
             return .retry(after: nil)
         }
 
@@ -143,13 +143,20 @@ struct SubmitGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
         return .terminalFailure("The upload expired. The drawing was queued again with a new upload.")
     }
 
-    private func isWaitingForPick(of roundID: UUID, owner: UUID, context: SyncContext) async throws -> Bool {
-        try await context.pendingOperationStore
-            .inFlightOperations(ownerUserID: owner, kind: .pickDrawWord)
+    /// The round's word pick, or a "Keep drawing" made before this drawing, has
+    /// not reached the server yet.
+    private func isWaitingForEarlierMove(
+        of roundID: UUID, before operation: PendingSyncOperationSnapshot, context: SyncContext
+    ) async throws -> Bool {
+        let isPickWaiting = try await context.pendingOperationStore
+            .inFlightOperations(ownerUserID: operation.ownerUserID, kind: .pickDrawWord)
             .contains { snapshot in
                 snapshot.requestData
                     .flatMap { try? JSONDecoder().decode(GamePickWordPayload.self, from: $0) }?
                     .roundID == roundID
             }
+        if isPickWaiting { return true }
+        return try await hasEarlierGameMove(in: roundID, before: operation, context: context,
+                                            kinds: [.reopenGameDrawing])
     }
 }

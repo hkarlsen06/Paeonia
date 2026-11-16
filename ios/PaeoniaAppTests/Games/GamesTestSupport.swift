@@ -207,9 +207,14 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         )
     }
 
-    func giveUp(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteGiveUpResult {
+    func giveUp(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteRoundStateResult {
         try begin("giveUp")
-        return RemoteGiveUpResult(roundID: roundID, roundState: .missed)
+        return RemoteRoundStateResult(roundID: roundID, roundState: .missed)
+    }
+
+    func reopenDrawing(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteRoundStateResult {
+        try begin("reopen")
+        return RemoteRoundStateResult(roundID: roundID, roundState: .drawing)
     }
 
     func markRoundResultSeen(roundID: UUID) throws -> RemoteResultSeenResult {

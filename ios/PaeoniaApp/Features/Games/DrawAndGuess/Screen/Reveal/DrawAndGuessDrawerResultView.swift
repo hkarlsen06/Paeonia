@@ -65,6 +65,7 @@ struct DrawAndGuessDrawerResultView: View {
         } footer: {
             footer
         } bottom: {
+            keepDrawingButton
             if isRevealed, timeline.buttonShown, viewModel.isPartnerChoosingNextWord {
                 Text(.gamesDrawAndGuessWaitChoosing(viewModel.partnerName))
                     .font(PaeoniaTypography.caption)
@@ -142,6 +143,21 @@ struct DrawAndGuessDrawerResultView: View {
         .onDisappear {
             playbackTask?.cancel()
             timeline.stop()
+        }
+    }
+
+    /// Where Done was, so a Done tapped by accident is undone in the same place.
+    @ViewBuilder
+    private var keepDrawingButton: some View {
+        if !isRevealed, viewModel.canKeepDrawing {
+            Button {
+                Task { await viewModel.keepDrawing() }
+            } label: {
+                Text(.gamesDrawAndGuessKeepDrawing)
+            }
+            .buttonStyle(PaeoniaSecondaryButtonStyle())
+            .transition(.opacity)
+            .accessibilityIdentifier("draw.keepDrawing")
         }
     }
 

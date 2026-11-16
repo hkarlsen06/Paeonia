@@ -27,6 +27,28 @@ struct GamesCacheRaceTests {
         #expect(await cache.document(ownerUserID: GameFixture.me).state == newer)
     }
 
+    @Test func aDrawingTakenBackIsNewerThanTheSentStateBecauseTheGameVersionWentUp() async {
+        let cache = InMemoryGamesCache()
+        let sent = GameFixture.state(
+            settings: GameFixture.settings(),
+            game: GameFixture.game(state: .guessing, turn: GameFixture.partner, version: 9),
+            round: GameFixture.round(state: .guessing, drawer: GameFixture.me, hasDrawing: true)
+        )
+        let keptDrawing = GameFixture.state(
+            settings: GameFixture.settings(),
+            game: GameFixture.game(state: .drawing, turn: GameFixture.me, version: 10),
+            round: GameFixture.round(state: .drawing, drawer: GameFixture.me)
+        )
+        await cache.saveState(sent, ownerUserID: GameFixture.me)
+
+        let ticket = await cache.beginFetch()
+        let saved = await cache.saveFetchedState(keptDrawing, ownerUserID: GameFixture.me, ticket: ticket)
+
+        #expect(saved)
+        #expect(await cache.document(ownerUserID: GameFixture.me).state == keptDrawing)
+        #expect(sent.isOlder(than: keptDrawing))
+    }
+
     @Test func aOneShotReadWithNoLiveWriteInBetweenIsSaved() async throws {
         let cache = InMemoryGamesCache()
         let state = GameFixture.state(

@@ -40,11 +40,12 @@ extension SimDriver {
         _ context: LedgerContext
     ) throws -> [UUID: GuessTally] {
         var guessesByRound: [UUID: GuessTally] = [:]
-        for entry in ledger {
+        for (index, entry) in ledger.enumerated() {
             guard let data = entry.requestData else { continue }
             switch entry.kind {
             case .pickDrawWord: try checkPick(entry, data, context)
-            case .submitGameDrawing: try checkDrawing(entry, data, context)
+            case .submitGameDrawing:
+                try checkDrawing(entry, data, context, later: ledger[(index + 1)...])
             case .submitGameGuess: try checkGuess(entry, data, context, tallies: &guessesByRound)
             case .giveUpGameRound: try checkGiveUp(entry, data, context)
             case .markGameRoundResultSeen: try checkResultSeen(entry, data, context)
@@ -90,10 +91,18 @@ extension SimDriver {
         }
     }
 
-    private func checkDrawing(_ entry: SimPendingStore.Entry, _ data: Data, _ context: LedgerContext) throws {
+    /// A sent drawing is the round's drawing, unless a later "Keep drawing" took it back.
+    private func checkDrawing(
+        _ entry: SimPendingStore.Entry,
+        _ data: Data,
+        _ context: LedgerContext,
+        later: ArraySlice<SimPendingStore.Entry>
+    ) throws {
         let name = context.phone.name
         guard let drawing = try? JSONDecoder().decode(GameSubmitDrawingPayload.self, from: data) else { return }
         switch entry.outcome {
+        case .succeeded where isTakenBack(drawing.roundID, by: later):
+            break
         case .succeeded:
             guard let round = server.round(drawing.roundID), let assetID = round.drawingAssetID else {
                 throw fail("\(name) drawing for \(tag(drawing.roundID)) succeeded but the round has none")
@@ -108,6 +117,17 @@ extension SimDriver {
             }
         case .inFlight:
             break
+        }
+    }
+
+    /// A "Keep drawing" for the round reached the server after the drawing did.
+    private func isTakenBack(_ roundID: UUID, by later: ArraySlice<SimPendingStore.Entry>) -> Bool {
+        later.contains { other in
+            guard other.kind == .reopenGameDrawing, case .succeeded = other.outcome,
+                  let data = other.requestData,
+                  let reopen = try? JSONDecoder().decode(GameReopenDrawingPayload.self, from: data)
+            else { return false }
+            return reopen.roundID == roundID
         }
     }
 

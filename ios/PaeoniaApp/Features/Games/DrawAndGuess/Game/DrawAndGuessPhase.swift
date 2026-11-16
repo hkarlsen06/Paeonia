@@ -182,7 +182,7 @@ nonisolated struct DrawAndGuessResolver: Sendable {
     }
 
     /// The server's current round, or the round a queued word pick starts, with
-    /// the unsent drawing, guesses and give up applied.
+    /// the unsent drawing, "Keep drawing", guesses and give up applied.
     func effectiveRound(
         state: RemoteDrawAndGuessState,
         game: RemoteDrawAndGuessGame,
@@ -198,6 +198,10 @@ nonisolated struct DrawAndGuessResolver: Sendable {
             if round.state == .drawing {
                 round.state = .guessing
             }
+        } else if pending.hasReopen(roundID: round.id), round.state == .guessing {
+            // "Keep drawing" the server has not heard yet. A round that ended first stays ended.
+            round.isDrawingSent = false
+            round.state = .drawing
         }
         if !round.isFinished {
             applyUnsentGuesses(to: &round, pending: pending)

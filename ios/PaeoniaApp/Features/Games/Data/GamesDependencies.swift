@@ -177,7 +177,11 @@ nonisolated extension UnavailableGamesGateway: DrawAndGuessGateway {
         throw Unavailable()
     }
 
-    func giveUp(roundID _: UUID, operation _: SyncClientOperation) async throws -> RemoteGiveUpResult {
+    func giveUp(roundID _: UUID, operation _: SyncClientOperation) async throws -> RemoteRoundStateResult {
+        throw Unavailable()
+    }
+
+    func reopenDrawing(roundID _: UUID, operation _: SyncClientOperation) async throws -> RemoteRoundStateResult {
         throw Unavailable()
     }
 

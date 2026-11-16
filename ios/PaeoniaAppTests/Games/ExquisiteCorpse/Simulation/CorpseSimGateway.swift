@@ -132,7 +132,11 @@ final class CorpseSimGateway: DrawAndGuessGateway, ExquisiteCorpseGateway, @unch
         throw Unused()
     }
 
-    func giveUp(roundID _: UUID, operation _: SyncClientOperation) async throws -> RemoteGiveUpResult {
+    func giveUp(roundID _: UUID, operation _: SyncClientOperation) async throws -> RemoteRoundStateResult {
+        throw Unused()
+    }
+
+    func reopenDrawing(roundID _: UUID, operation _: SyncClientOperation) async throws -> RemoteRoundStateResult {
         throw Unused()
     }
 

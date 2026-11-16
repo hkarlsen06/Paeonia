@@ -130,6 +130,7 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case submitGameDrawing = "submit_game_drawing"
     case submitGameGuess = "submit_game_guess"
     case giveUpGameRound = "give_up_game_round"
+    case reopenGameDrawing = "reopen_game_drawing"
     case markGameRoundResultSeen = "mark_game_round_result_seen"
     case storyChainStartStory = "story_chain_start_story"
     case storyChainAddLine = "story_chain_add_line"

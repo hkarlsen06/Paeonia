@@ -258,7 +258,7 @@ nonisolated struct RemoteGuessResult: Decodable, Equatable, Sendable {
     }
 }
 
-nonisolated struct RemoteGiveUpResult: Decodable, Equatable, Sendable {
+nonisolated struct RemoteRoundStateResult: Decodable, Equatable, Sendable {
     let roundID: UUID
     let roundState: DrawAndGuessRoundState
 

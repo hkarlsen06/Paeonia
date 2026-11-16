@@ -14,6 +14,11 @@ extension DrawAndGuessViewModel {
             replayRoundID = round?.id
             restoreLiveSnapshot(userID: userID)
         }
+        // "Keep drawing" took the sent drawing back. Its replay goes, and the live
+        // canvas, or the drawing sent next, takes its place.
+        if let round, !round.isFinished, let loadedAssetID, round.drawingMediaAssetID != loadedAssetID {
+            resetReplay()
+        }
 
         if let round, !round.isDrawer(userID), let language = settings?.language {
             if tilesRoundID != round.id || tilesLanguage != language {

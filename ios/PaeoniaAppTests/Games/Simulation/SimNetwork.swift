@@ -167,7 +167,7 @@ final class SimNetwork {
             throw error
         }
         let writes = [
-            "pick", "submitDrawing", "guess", "giveUp", "reaction",
+            "pick", "submitDrawing", "reopen", "guess", "giveUp", "reaction",
             "resultSeen", "upload", "submitPart", "revealSeen", "star",
         ]
         if writes.contains(callName) {
@@ -252,8 +252,12 @@ final class SimGateway: DrawAndGuessGateway, @unchecked Sendable {
         }
     }
 
-    func giveUp(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteGiveUpResult {
+    func giveUp(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteRoundStateResult {
         try await call("giveUp") { try $0.giveUp(user: $1, roundID: roundID, operation: operation) }
+    }
+
+    func reopenDrawing(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteRoundStateResult {
+        try await call("reopen") { try $0.reopenDrawing(user: $1, roundID: roundID, operation: operation) }
     }
 
     func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult {

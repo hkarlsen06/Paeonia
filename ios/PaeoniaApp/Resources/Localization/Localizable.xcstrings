@@ -14779,60 +14779,6 @@
         }
       }
     },
-    "games.drawAndGuess.draw.sendConfirm.message" : {
-      "comment" : "Message of the alert that asks before the drawer sends the drawing.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You can't draw more after this."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du kan ikke tegne mer etter dette."
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.draw.sendConfirm.send" : {
-      "comment" : "Button in the send-drawing alert that sends the drawing.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.draw.sendConfirm.title" : {
-      "comment" : "Title of the alert that asks before the drawer sends the drawing.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send your drawing?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sende tegningen?"
-          }
-        }
-      }
-    },
     "games.drawAndGuess.draw.tried" : {
       "comment" : "A wrong guess. %1$@ is the partner's name and %2$@ is the word they guessed.",
       "extractionState" : "manual",
@@ -15806,7 +15752,7 @@
       }
     },
     "games.drawAndGuess.keepDrawing" : {
-      "comment" : "Button that closes the send-drawing alert so the drawer can keep drawing.",
+      "comment" : "Button on the drawer's waiting screen that takes the sent drawing back to the canvas.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

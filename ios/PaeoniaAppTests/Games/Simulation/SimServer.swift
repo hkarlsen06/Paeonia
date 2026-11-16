@@ -215,6 +215,12 @@ final class SimServer {
         return id
     }
 
+    /// `queueOrphanedMediaAssetForDelete`, for a drawing its round no longer uses.
+    func queueForDelete(assetID: UUID?) {
+        guard let assetID, !rounds.contains(where: { $0.drawingAssetID == assetID }) else { return }
+        assets[assetID]?.queuedForDelete = true
+    }
+
     /// The weekly sweep: an upload nothing used within seven days is deleted.
     func sweepOrphanedUploads() -> Int {
         var swept = 0

@@ -419,13 +419,15 @@ extension RemoteGamesOverview {
 }
 
 extension RemoteDrawAndGuessState {
-    /// This state is from before `other`. The server only ever moves these
-    /// forward: the game's version goes up, a round gets its drawing, its first
-    /// look and its result seen times once, attempts are only added, and a
-    /// finished round stays finished. A state that has any of them behind `other` for the same
-    /// game is an old answer that arrived late, such as a live feed update sent
-    /// before a move that this phone already read back. Keeping it would put the
-    /// move off the screen again.
+    /// This state is from before `other`. Every change to the game raises its
+    /// version, so a different version decides. Within one version the server
+    /// only moves rounds forward: a round gets its first look and its result
+    /// seen times once, attempts are only added, and a finished round stays
+    /// finished. A round also keeps its drawing until "Keep drawing", which
+    /// raises the version. A state that has any of them behind `other` for the
+    /// same game is an old answer that arrived late, such as a live feed update
+    /// sent before a move that this phone already read back. Keeping it would
+    /// put the move off the screen again.
     nonisolated func isOlder(than other: RemoteDrawAndGuessState) -> Bool {
         guard userID == other.userID,
               dataEpoch == other.dataEpoch,
@@ -435,8 +437,8 @@ extension RemoteDrawAndGuessState {
         else {
             return false
         }
-        if game.version < otherGame.version {
-            return true
+        if game.version != otherGame.version {
+            return game.version < otherGame.version
         }
         let rounds = Dictionary(
             ([currentRound].compactMap(\.self) + recentRounds).map { ($0.id, $0) },

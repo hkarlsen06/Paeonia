@@ -52,7 +52,8 @@ The round starts in Convex the moment the drawer picks a word, not when they fin
 
 - Use the existing PencilKit tools from `WidgetDrawing/Canvas`.
 - No time limit while drawing.
-- The drawer taps Done to send. Done sits right under the canvas, so a stroke that ends low can tap it by accident, and the phone asks "Send your drawing?" first. A correct live guess also ends the drawing (see "Live").
+- The drawer taps Done to send. A correct live guess also ends the drawing (see "Live").
+- Done is not final. Until the round ends, the drawer's waiting screen has "Keep drawing" where Done was, because Done sits right under the canvas and a stroke that ends low can tap it. It takes the sent drawing back to the canvas, with its description. The round goes back to drawing and the turn to the drawer, and the server queues the sent file for deletion (`reopen_drawing`). To the guesser this looks like the drawer still drawing live: their guesses, hints and speed bonus clock stay, and "Show me" and "Show a letter" turn off until the next Done. That Done sends no second push. Keep drawing appears once the drawing has reached the server, so it never races the upload.
 
 ### Replay
 

@@ -17,7 +17,7 @@ extension SimDriver {
         case .reveal:
             await reveal(phone, viewModel)
         case .waitingForGuess, .waitingForWord:
-            idleOnWaitingScreen(phone, viewModel)
+            await idleOnWaitingScreen(phone, viewModel)
         case .waitingToSync:
             log.add("\(phone.name) try again")
             Task { await viewModel.retrySending() }
@@ -49,8 +49,21 @@ extension SimDriver {
         return viewModel
     }
 
-    private func idleOnWaitingScreen(_ phone: SimPhone, _ viewModel: DrawAndGuessViewModel) {
-        if viewModel.invite == .available, random.chance(0.15) {
+    /// "Keep drawing". The sent strokes must come back on the canvas, which the
+    /// draft check holds the board to, and go out again when the round ends.
+    private func keepDrawing(_ phone: SimPhone, _ viewModel: DrawAndGuessViewModel) async {
+        guard let round = viewModel.round, let sent = viewModel.finalDrawing?.drawing.strokes.count else { return }
+        log.add("\(phone.name) keep drawing (\(sent) strokes)")
+        await expectMove(phone, kind: .reopenGameDrawing, "keep drawing", shows: [.drawing, .reveal]) {
+            await viewModel.keepDrawing()
+        }
+        boardStrokes[phone.name] = (round.id, sent)
+    }
+
+    private func idleOnWaitingScreen(_ phone: SimPhone, _ viewModel: DrawAndGuessViewModel) async {
+        if viewModel.canKeepDrawing, random.chance(0.1) {
+            await keepDrawing(phone, viewModel)
+        } else if viewModel.invite == .available, random.chance(0.15) {
             log.add("\(phone.name) invite")
             Task { await viewModel.sendInvite() }
         } else if random.chance(0.2) {

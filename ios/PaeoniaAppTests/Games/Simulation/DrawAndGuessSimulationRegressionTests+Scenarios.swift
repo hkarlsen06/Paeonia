@@ -156,4 +156,41 @@ extension DrawAndGuessSimulationRegressionTests {
             try await driver.checkSettled()
         }
     }
+
+    /// The drawer taps Done, then "Keep drawing". The sent strokes come back on
+    /// the canvas, and the guesser is back to watching with hints off. The next
+    /// Done sends the whole drawing, the guesser solves it, and the reveal has
+    /// every stroke.
+    @Test func keepDrawingTakesTheSentDrawingBackAndTheNextDoneSendsAllOfIt() async {
+        await scenario { driver in
+            let drawer = driver.turnPhone
+            let guesser = driver.partner(of: drawer)
+            try await driver.scriptPick(drawer)
+            try await driver.scriptDraw(drawer, strokes: 2)
+            try await driver.scriptDone(drawer)
+            await driver.settle()
+            let waiting = try driver.require(drawer, in: .waitingForGuess)
+            _ = try driver.require(guesser, in: .guessing)
+            #expect(waiting.canKeepDrawing)
+
+            await waiting.keepDrawing()
+            await driver.settle()
+            let drawing = try driver.require(drawer, in: .drawing)
+            #expect(drawing.board.drawing.strokes.count == 2)
+            let watching = try driver.require(guesser, in: .watchingLive)
+            #expect(!watching.canShowLetter)
+            #expect(driver.server.round(drawing.round?.id ?? UUID())?.drawingAssetID == nil)
+
+            try await driver.scriptDraw(drawer, strokes: 1)
+            try await driver.scriptDone(drawer)
+            await driver.settle()
+            _ = try driver.require(guesser, in: .guessing)
+            try await driver.scriptGuess(guesser, right: true)
+            await driver.settle()
+
+            let revealed = try driver.require(guesser, in: .reveal)
+            #expect(revealed.submittedDrawing?.drawing.strokes.count == 3)
+            try await driver.checkSettled()
+        }
+    }
 }

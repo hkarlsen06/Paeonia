@@ -134,6 +134,32 @@ extension SimServer {
         return RemoteSubmitDrawingResult(roundID: roundID, roundState: round.state, drawingSubmittedAt: now)
     }
 
+    /// `reopen_drawing`: back to drawing with the turn on the drawer, and the sent file queued for deletion.
+    func reopenDrawing(user: UUID, roundID: UUID, operation: SyncClientOperation) throws -> RemoteRoundStateResult {
+        try runOperation(user, operation, request: ["reopen_drawing", roundID.uuidString]) {
+            let index = try requireRound(roundID)
+            var round = rounds[index]
+            guard round.drawer == user else { throw Self.fail("42501", "only the drawer can keep drawing") }
+            if round.state == .drawing { return RemoteRoundStateResult(roundID: roundID, roundState: .drawing) }
+            guard round.state == .guessing else { throw Self.fail("23514", "this round is already finished") }
+            let oldAssetID = round.drawingAssetID
+            round.state = .drawing
+            round.drawingAssetID = nil
+            round.submittedAt = nil
+            rounds[index] = round
+            queueForDelete(assetID: oldAssetID)
+            if var game {
+                game.state = .drawing
+                game.turnUser = user
+                game.turnStartedAt = now
+                patch(&game)
+                self.game = game
+            }
+            changed()
+            return RemoteRoundStateResult(roundID: roundID, roundState: .drawing)
+        }
+    }
+
     func markSeen(user: UUID, roundID: UUID) throws -> RemoteMarkSeenResult {
         let index = try requireRound(roundID)
         var round = rounds[index]
@@ -281,7 +307,7 @@ extension SimServer {
         return !earlier.isEmpty && earlier.allSatisfy { solveMs < ($0.solveMs ?? 0) }
     }
 
-    func giveUp(user: UUID, roundID: UUID, operation: SyncClientOperation) throws -> RemoteGiveUpResult {
+    func giveUp(user: UUID, roundID: UUID, operation: SyncClientOperation) throws -> RemoteRoundStateResult {
         try runOperation(user, operation, request: ["give_up_round", roundID.uuidString]) {
             let index = try requireRound(roundID)
             var round = rounds[index]
@@ -295,7 +321,7 @@ extension SimServer {
                 self.game = game
             }
             changed()
-            return RemoteGiveUpResult(roundID: roundID, roundState: .missed)
+            return RemoteRoundStateResult(roundID: roundID, roundState: .missed)
         }
     }
 

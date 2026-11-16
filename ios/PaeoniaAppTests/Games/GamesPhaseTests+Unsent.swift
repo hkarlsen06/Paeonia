@@ -46,6 +46,36 @@ extension GamesPhaseTests {
         #expect(phase(drawing, pending: pending) == .waitingForGuess)
     }
 
+    @Test func aQueuedKeepDrawingPutsTheDrawerBackOnTheCanvasUntilTheNextDrawing() {
+        let sent = state(
+            game: GameFixture.game(state: .guessing, turn: GameFixture.partner),
+            round: GameFixture.round(state: .guessing, drawer: GameFixture.me, hasDrawing: true)
+        )
+        var reopened = DrawAndGuessPendingWork.none
+        reopened.reopens = [GameReopenDrawingPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now)]
+        var sentAgain = reopened
+        sentAgain.drawings = [
+            GameSubmitDrawingPayload(
+                gameID: GameFixture.gameID,
+                roundID: GameFixture.roundID,
+                coupleID: DeveloperScenarioFixture.coupleID,
+                drawingData: Data(),
+                reserveOperation: SyncClientOperation(clientID: UUID(), clientSequence: 1),
+                finalizeOperation: SyncClientOperation(clientID: UUID(), clientSequence: 2)
+            )
+        ]
+        let solved = state(
+            game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner, roundID: nil),
+            round: GameFixture.round(state: .solved, drawer: GameFixture.me, hasDrawing: true)
+        )
+
+        let back = resolver.resolve(state: sent, pending: reopened, isPartnerDrawingLive: false)
+        #expect(back.phase == .drawing)
+        #expect(back.round?.isDrawingSent == false)
+        #expect(phase(sent, pending: sentAgain) == .waitingForGuess)
+        #expect(phase(solved, pending: reopened) == .reveal)
+    }
+
     @Test func aQueuedCorrectGuessSolvesTheRoundAtOnceAndAGiveUpMissesIt() {
         let guessing = state(
             game: GameFixture.game(state: .guessing, turn: GameFixture.me),
