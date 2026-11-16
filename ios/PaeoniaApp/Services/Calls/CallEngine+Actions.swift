@@ -163,6 +163,9 @@ extension CallEngine: CallEngineActions {
         center.session?.partnerCamera = state
         // A paused camera shows its own symbol instead of a blur.
         partnerVideo.watchForStalls(state == .on)
+        if state == .off {
+            partnerVideo.forgetLatestFrame()
+        }
         updatePictureInPicture()
         reportCapabilities(of: run)
     }

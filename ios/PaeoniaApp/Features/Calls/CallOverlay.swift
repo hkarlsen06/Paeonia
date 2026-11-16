@@ -139,8 +139,12 @@ private struct CallOverlayHost: ViewModifier {
     }
 
     /// Reads "Just us" from this phone's copy, with what the chat needs from the app's environment,
-    /// the first time the call asks for it. A failed read leaves the call as it was.
+    /// the first time the call asks for it, and again once the partner's name or photo changed. A
+    /// failed read leaves the call as it was.
     private func readChat() {
+        if let chat = model.chat, chat.context.participants != chatContext.participants {
+            model.chat = nil
+        }
         guard model.chat == nil, let coupleID = chatContext.coupleID, let banners else {
             if model.chat == nil { center.presentation = .full }
             return

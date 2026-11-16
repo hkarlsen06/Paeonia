@@ -24,6 +24,9 @@ nonisolated final class CallVideoFeed: NSObject, LKRTCVideoRenderer, @unchecked 
     /// The upright size of the latest frame, such as for Picture in Picture's window.
     @MainActor var onFrameSize: ((CGSize) -> Void)?
     @MainActor private var frameSize: CGSize = .zero
+    /// The newest frame, which a view made later shows at once. Without it a view made while frames
+    /// stand still, such as for a paused camera after the call shrank to its bubble, stayed black.
+    @MainActor private var latest: (sample: CallVideoSample, rotation: LKRTCVideoRotation)?
 
     /// True when frames stop for longer than `CallFrameGaps` allows, false when they come again.
     /// Reported only while `watchForStalls(true)` is on.
@@ -36,6 +39,9 @@ nonisolated final class CallVideoFeed: NSObject, LKRTCVideoRenderer, @unchecked 
     func makeView() -> CallVideoLayerView {
         let view = CallVideoLayerView()
         view.isMirrored = isMirrored
+        if let latest {
+            view.enqueue(latest.sample, rotation: latest.rotation)
+        }
         views.removeAll { $0.view == nil }
         views.append(WeakVideoView(view: view))
         return view
@@ -45,8 +51,16 @@ nonisolated final class CallVideoFeed: NSObject, LKRTCVideoRenderer, @unchecked 
     @MainActor
     func clear() {
         watchForStalls(false)
+        forgetLatestFrame()
+    }
+
+    /// Empties every view and forgets the newest frame, so a camera that turns on again later does
+    /// not first show a picture from before.
+    @MainActor
+    func forgetLatestFrame() {
         for view in liveViews { view.flush() }
         frameSize = .zero
+        latest = nil
     }
 
     /// Watches for frames that stop coming, such as while the partner's camera is on. Each start
@@ -119,6 +133,7 @@ nonisolated final class CallVideoFeed: NSObject, LKRTCVideoRenderer, @unchecked 
             frameSize = size
             onFrameSize?(size)
         }
+        latest = (sample, rotation)
         for view in liveViews {
             view.enqueue(sample, rotation: rotation)
         }
