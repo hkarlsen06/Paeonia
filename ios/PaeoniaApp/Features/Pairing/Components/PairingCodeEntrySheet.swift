@@ -22,34 +22,37 @@ struct PairingCodeEntrySheet: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: PaeoniaSpacing.space24) {
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Text(title)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .multilineTextAlignment(.center)
-                        .accessibilityAddTraits(.isHeader)
+        // The content sits in the middle of the space above the keyboard.
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: PaeoniaSpacing.space24) {
+                    VStack(spacing: PaeoniaSpacing.space8) {
+                        Text(title)
+                            .font(PaeoniaTypography.title)
+                            .foregroundStyle(.paeoniaTextPrimary)
+                            .multilineTextAlignment(.center)
+                            .accessibilityAddTraits(.isHeader)
 
-                    Text(message)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
+                        Text(message)
+                            .font(PaeoniaTypography.body)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    codeField
+
+                    pasteButton
+
+                    submitButton
                 }
-
-                codeField
-
-                pasteButton
-
-                submitButton
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space32)
+                .padding(.bottom, PaeoniaSpacing.space16)
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space32)
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .frame(maxWidth: .infinity)
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .scrollBounceBehavior(.basedOnSize)
         .paeoniaScreenBackground()
         // The sheet covers the root's banner, so it mounts its own copy of the same
         // banner to show errors above itself.

@@ -45,21 +45,24 @@ struct EmailSignInSheet: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: PaeoniaSpacing.space24) {
-                switch step {
-                case .email:
-                    emailStep
-                case let .code(sentTo):
-                    codeStep(sentTo: sentTo)
+        // The content sits in the middle of the space above the keyboard.
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: PaeoniaSpacing.space24) {
+                    switch step {
+                    case .email:
+                        emailStep
+                    case let .code(sentTo):
+                        codeStep(sentTo: sentTo)
+                    }
                 }
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space32)
+                .padding(.bottom, PaeoniaSpacing.space16)
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space32)
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .frame(maxWidth: .infinity)
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .scrollBounceBehavior(.basedOnSize)
         .paeoniaScreenBackground()
         .preferredColorScheme(.dark)
         .presentationDetents([.medium, .large])
