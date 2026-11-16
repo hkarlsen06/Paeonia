@@ -56,10 +56,8 @@ private struct CallOverlayHost: ViewModifier {
     @Environment(\.profilePhotoImageProvider) private var photoProvider
     @Environment(\.avatarStyling) private var avatarStyling
     @Environment(\.threadChatContext) private var chatContext
-    @Environment(PaeoniaBannerCenter.self) private var banners: PaeoniaBannerCenter?
-    @Environment(ReactionStore.self) private var reactions: ReactionStore?
-    @Environment(\.mediaAlternativeEditingService) private var mediaAlternativeEditing
     @Environment(\.callTurnOverride) private var turnOverride
+    @Environment(\.callInitialPresentation) private var initialPresentation
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
@@ -83,14 +81,12 @@ private struct CallOverlayHost: ViewModifier {
             .onDockedKeyboardChange { model.keyboardIsUp = $0 }
             .onChange(of: model.callCover, initial: true) { _, cover in model.presence.callCover = cover }
             .onChange(of: model.layer, initial: true) { _, layer in window.show(layer) }
-            .onChange(of: center.session) { _, session in
-                if let session { model.lastSession = session }
-            }
             .onAppear {
+                model.followCalls()
+                starter.overlay = model
+                if initialPresentation == .small { model.minimize() }
                 let root = CallOverlayRoot(model: model)
                     .environment(starter)
-                    // The chat's composer checks it, so nothing records during the call.
-                    .environment(center)
                     .environment(\.profilePhotoImageProvider, photoProvider)
                     .environment(\.avatarStyling, avatarStyling)
                     #if DEBUG
@@ -104,62 +100,16 @@ private struct CallOverlayHost: ViewModifier {
             .task { center.engine.refreshCallContext() }
     }
 
-    /// Starts each call on the full call screen with its videos in their first order, gives the
-    /// partner's shared screen the big spot, and opens or hands over "Just us".
+    /// Gives the partner's shared screen the big spot, and says whether "Just us" can open.
     private func followingTheCall(_ content: Content) -> some View {
         content
-            // Starting or answering a call opens the full call screen. A ring inside the app starts
-            // as the pill.
-            .onChange(of: center.session?.id) { oldID, newID in
-                guard let newID, newID != oldID else { return }
-                model.stageOrder = CallStageOrder()
-                if center.session?.ringsInApp != true { center.presentation = .full }
-            }
             // The partner shares their screen to show it, so it fills the call screen.
             .onChange(of: center.session?.isPartnerSharingScreen == true) { _, isSharing in
                 guard isSharing else { return }
                 withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { model.stageOrder.showPartnerScreen() }
             }
             .onChange(of: chatContext.isAvailable, initial: true) { _, available in model.canOpenChat = available }
-            .onChange(of: chatContext.coupleID) { _, _ in model.chat = nil }
-            .onChange(of: center.presentation == .chat, initial: true) { _, wantsChat in
-                if wantsChat { readChat() }
-            }
-            .onChange(of: endsWithChatOpen) { _, ends in
-                if ends { model.openCallout(.chat(.couple)) }
-            }
             .onChange(of: turnOverride, initial: true) { _, turn in model.turnOverride = turn }
-    }
-
-    /// The call ended while "Just us" was open under it. The chat stays open, slid over the app, so
-    /// the conversation doesn't leave with the call's window.
-    private var endsWithChatOpen: Bool {
-        guard center.presentation == .chat, case .ended? = center.session?.phase else { return false }
-        return true
-    }
-
-    /// Reads "Just us" from this phone's copy, with what the chat needs from the app's environment,
-    /// the first time the call asks for it, and again once the partner's name or photo changed. A
-    /// failed read leaves the call as it was.
-    private func readChat() {
-        if let chat = model.chat, chat.context.participants != chatContext.participants {
-            model.chat = nil
-        }
-        guard model.chat == nil, let coupleID = chatContext.coupleID, let banners else {
-            if model.chat == nil { center.presentation = .full }
-            return
-        }
-        let context = chatContext
-        Task {
-            guard let viewModel = await context.makeViewModel(subject: .couple, header: nil) else {
-                if center.presentation == .chat { center.presentation = .full }
-                return
-            }
-            guard model.chat == nil, chatContext.coupleID == coupleID else { return }
-            model.chat = CallChat(
-                coupleID: coupleID, viewModel: viewModel, context: context, banners: banners, reactions: reactions,
-                mediaAlternativeEditing: mediaAlternativeEditing)
-        }
     }
 }
 
@@ -228,9 +178,9 @@ private struct CallOverlayRoot: View {
         case .screen:
             CallScreen(
                 center: model.center, session: session, participants: model.participants,
-                callout: model.presence.callCallout, openCallout: model.openCallout,
+                callout: model.presence.callCallout, openCallout: model.openCallout, minimize: model.minimize,
                 stageOrder: Bindable(model).stageOrder, previewCorner: Bindable(model).previewCorner,
-                chat: model.chat, canOpenChat: model.canOpenChat, deviceTurn: model.turn)
+                canOpenChat: model.canOpenChat, deviceTurn: model.turn)
                 .transition(.asymmetric(
                     insertion: arrives(from: .ring) || arrives(from: .presence) ? .opacity : .offset(y: screenTravel),
                     removal: leavesByMorph ? .opacity : .offset(y: screenTravel)

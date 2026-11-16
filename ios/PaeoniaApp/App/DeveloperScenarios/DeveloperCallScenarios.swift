@@ -17,7 +17,6 @@
       callVideoScreenShare, callVoiceScreenShare, callSharingScreen, callVideoPaused, callVideoStalled,
       callWeakConnection, callCameraOffBattery, callCameraOffHot, callVideoSideways, callScreenShareSideways,
       callBubbleScreenShare, callBubbleVoiceScreenShare, callBubbleSharingScreen, callBubblePaused,
-      callChatVideo, callChatVoice,
     ]
 
     // MARK: The call screen
@@ -83,7 +82,7 @@
     ) { _ in
       DeveloperCallLocalFlow(
         session: DeveloperCallFixture.session(phase: .ringing, direction: .incoming) { $0.ringsInApp = true },
-        presentation: .bubble)
+        presentation: .small)
     }
 
     static let callBubbleVoiceGame = DeveloperScenario(
@@ -91,7 +90,7 @@
       .calls
     ) { _ in
       DeveloperCallLocalFlow(
-        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active), presentation: .bubble, game: true)
+        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active), presentation: .small, game: true)
     }
 
     static let callBubbleVideoGame = DeveloperScenario(
@@ -104,7 +103,7 @@
           $0.partnerCamera = .on
           $0.partnerVideoAspectRatio = 9.0 / 16
         },
-        presentation: .bubble, game: true)
+        presentation: .small, game: true)
     }
 
     static let callBubblePartnerOpenedGame = DeveloperScenario(
@@ -117,7 +116,7 @@
           $0.partnerCamera = .on
           $0.partnerVideoAspectRatio = 9.0 / 16
         },
-        presentation: .bubble, partnerDoes: .openedGame(.mindMeld))
+        presentation: .small, partnerDoes: .openedGame(.mindMeld))
     }
 
     static let callScreenPartnerOpenedGame = DeveloperScenario(
@@ -179,7 +178,7 @@
       .calls
     ) { _ in
       DeveloperCallLocalFlow(
-        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active), presentation: .bubble,
+        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active), presentation: .small,
         coupleCalls: true)
     }
 
@@ -393,7 +392,6 @@
   /// `backCameraZoom` puts the back camera's zoom slider above the call's buttons, and with `keepsNews`
   /// what the call says stays until the scenario closes (`DeveloperPresenceFixture`).
   /// `coupleCalls` opens "Just us" with its call rows, and `nightPrompt` has the night question up.
-  /// `chatRows` puts the call rows in "Just us" without opening it, for a call that opens it.
   /// With `partnerDoes`, Robin is in the app, playing Mind Meld, and does it a moment after the app
   /// shows.
   struct DeveloperCallLocalFlow: View {
@@ -403,22 +401,21 @@
     private let game: Bool
     private let partnerMoves: Bool
     private let coupleCalls: Bool
-    private let chatRows: Bool
+    private let presentation: CallPresentation
     private let partnerDoes: PresenceNotice?
 
     init(
       session: CallSession? = nil, presentation: CallPresentation = .full,
       backCameraZoom: CallCameraZoom? = nil, game: Bool = false,
-      partnerMoves: Bool = false, keepsNews: Bool = false, coupleCalls: Bool = false, chatRows: Bool = false,
+      partnerMoves: Bool = false, keepsNews: Bool = false, coupleCalls: Bool = false,
       nightPrompt: CallStarter.NightPrompt? = nil, partnerDoes: PresenceNotice? = nil
     ) {
-      self.chatRows = chatRows
+      self.presentation = presentation
       self.partnerDoes = partnerDoes
       _presence = State(initialValue: partnerDoes.map { _ in
         DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.mindMeld]))
       } ?? (keepsNews ? DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.connectFour])) : nil))
       let center = CallCenter(engine: DeveloperCallEngine(), session: session)
-      center.presentation = presentation
       center.backCameraZoom = backCameraZoom
       _center = State(initialValue: center)
       _starter = State(initialValue: CallStarter(center: center, nightPrompt: nightPrompt))
@@ -437,9 +434,6 @@
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: .mindMeldWrite, coupleCalls: true, launchLink: "paeonia://chat",
             avatarStories: .noStory)
-        } else if chatRows {
-          DeveloperLocalFlowHost(
-            seed: .paired, gameConversation: .mindMeldWrite, coupleCalls: true, avatarStories: .noStory)
         } else {
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: partnerDoes == nil ? nil : .mindMeldWrite, avatarStories: .noStory,
@@ -448,6 +442,7 @@
       }
       .environment(center)
       .environment(starter)
+      .environment(\.callInitialPresentation, presentation)
       .task {
         guard let presence, let partnerDoes else { return }
         while !presence.isShown, !Task.isCancelled { try? await Task.sleep(for: .milliseconds(200)) }

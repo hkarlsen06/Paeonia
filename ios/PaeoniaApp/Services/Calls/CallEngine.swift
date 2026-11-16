@@ -118,7 +118,6 @@ final class CallEngine {
     // MARK: Running the state machine
 
     /// Starts a call: the session the screens show, the call's audio category, and its first timers.
-    /// A call opens the full call screen, except a ring inside the app, which starts as the pill.
     @discardableResult
     func begin(_ run: CallRun, effects: [CallEffect], ringsInApp: Bool = false) -> CallRun {
         removeRun()
@@ -126,7 +125,6 @@ final class CallEngine {
         watchPower(of: run)
         PaeoniaAudioSession.setCallActive(true)
         CallAudio.prepareCategory()
-        center?.presentation = ringsInApp ? .bubble : .full
         center?.session = CallSession(
             id: run.callID,
             direction: run.machine.direction,
@@ -279,7 +277,6 @@ final class CallEngine {
             removeRun()
             restoreAppAudio()
         }
-        center?.presentation = .full
         center?.session = CallSession(id: UUID(), direction: .outgoing, phase: .ended(reason))
         clearTask = Task { [weak self] in
             try? await Task.sleep(for: Self.endedLinger)

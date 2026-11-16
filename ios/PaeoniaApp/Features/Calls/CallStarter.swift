@@ -14,6 +14,8 @@ final class CallStarter {
     }
 
     let center: CallCenter
+    /// Shows the call full. `View.callOverlay` sets it.
+    @ObservationIgnored weak var overlay: CallOverlayModel?
     /// Set while the night question shows.
     var nightPrompt: NightPrompt?
     /// The partner's time zone is being read, so a second tap does nothing.
@@ -28,12 +30,12 @@ final class CallStarter {
     /// Otherwise asks first when it is night for the partner, then calls.
     func start(partnerName: String, now: @escaping () -> Date = Date.init) {
         if let session = center.session, session.direction == .incoming, session.phase == .ringing {
-            center.presentation = .full
+            overlay?.showFull()
             center.engine.answer()
             return
         }
         guard !center.isInCall else {
-            center.presentation = .full
+            overlay?.showFull()
             return
         }
         guard !isChecking else { return }
@@ -59,7 +61,6 @@ final class CallStarter {
 
     private func call() {
         guard !center.isInCall else { return }
-        center.presentation = .full
         center.engine.startCall()
     }
 }

@@ -9,16 +9,13 @@ struct CallStageView: View {
     let session: CallSession
     let stage: CallStage
     let partnerName: String
-    /// Where the stage shows in the window: the whole screen, or the preview over the chat.
+    /// Where the stage shows in the window.
     let frame: CGRect
     /// The room the previews leave at the stage's edges, on screen, such as for the controls.
     let margins: EdgeInsets
     /// The screen's own edges inside `frame`, on screen. A shared screen stays inside them.
     let safeArea: EdgeInsets
     let turn: CallTurn
-    /// Over the chat only the big video shows.
-    let showsPreviews: Bool
-    let cornerRadius: CGFloat
     @Binding var corner: CallPreviewCorner
     let bringForward: (CallVideoSource) -> Void
 
@@ -51,7 +48,6 @@ struct CallStageView: View {
     /// building a new one.
     private func tile(_ source: CallVideoSource, at tile: CallStageLayout.Tile, isMain: Bool) -> some View {
         let offset = isMain ? .zero : dragOffset
-        let isShown = isMain || showsPreviews
         let swaps = isMain ? GestureMask.none : .all
         // A preview gets the button trait below. The big video takes no tap of its own.
         // swiftlint:disable:next accessibility_trait_for_button
@@ -74,20 +70,17 @@ struct CallStageView: View {
             .modifier(CallTilePlacement(
                 center: CGPoint(x: tile.center.x + offset.width, y: tile.center.y + offset.height),
                 size: tile.size, degrees: turn.angle.degrees,
-                cornerRadius: mainRadius(source, isMain: isMain, width: tile.size.width), isOutlined: !isMain))
-            .opacity(isShown ? 1 : 0)
-            .allowsHitTesting(isShown)
-            .accessibilityHidden(!isShown)
+                cornerRadius: radius(source, isMain: isMain, width: tile.size.width), isOutlined: !isMain))
             .zIndex(isMain ? 0 : 1)
             // A scale here would grow the whole stage around its middle, so a tile only fades.
             .transition(.opacity)
     }
 
     /// The partner's shared screen rounds like a phone's screen, at its size. Other videos fill the
-    /// stage and take its corners.
-    private func mainRadius(_ source: CallVideoSource, isMain: Bool, width: CGFloat) -> CGFloat {
+    /// screen, square to its edges.
+    private func radius(_ source: CallVideoSource, isMain: Bool, width: CGFloat) -> CGFloat {
         guard isMain else { return Self.previewRadius }
-        return source == .partnerScreen ? width * Self.phoneScreenCornerShare : cornerRadius
+        return source == .partnerScreen ? width * Self.phoneScreenCornerShare : 0
     }
 
     /// Moves every preview together, so they never cover each other, and settles them in the corner

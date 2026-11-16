@@ -2,9 +2,10 @@ import XCTest
 
 /// Calls through the real root, with a partner in place of the call service. One starts from a
 /// game's toolbar, shrinks to the bubble, follows the person into "Just us", and ends from the
-/// bubble with its row in the chat. Another opens "Just us" under the full call and closes it again.
-/// In the last the partner calls while the app is open, and the call rings in its pill, opens to the
-/// call screen and connects when the person answers.
+/// bubble with its row in the chat. Another opens "Just us" from the full call, which shrinks to its
+/// bubble, and grows the call back from the bubble. In the last the partner calls while the app is
+/// open, and the call rings in its pill, opens to the call screen and connects when the person
+/// answers.
 final class CallJourneyUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -44,11 +45,10 @@ final class CallJourneyUITests: XCTestCase {
         attach(app, named: "Just us with the finished call's row")
     }
 
-    /// Message on the call screen raises "Just us" under the call, which shrinks to the top. A
-    /// message sent there shows in the chat, and a tap on the small call closes the chat and grows
-    /// the call back.
+    /// Message on the call screen shrinks the call to its bubble and slides "Just us" over the app. A
+    /// message sent there shows in the chat, and a tap on the bubble opens the full call again.
     @MainActor
-    func testJustUsRisesUnderTheCallAndTheCallGrowsBack() throws {
+    func testMessageSlidesJustUsOverTheAppAndTheBubbleOpensTheCall() throws {
         let app = launch(scenario: "local-flow-call")
 
         let minimize = startCallFromGame(in: app)
@@ -56,26 +56,24 @@ final class CallJourneyUITests: XCTestCase {
         XCTAssertTrue(message.waitForExistence(timeout: 5), app.debugDescription)
         message.tap()
 
+        let bubble = app.descendants(matching: .any)["calls.bubble"].firstMatch
+        XCTAssertTrue(bubble.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(minimize.waitForNonExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(app.buttons["chat.slideOver.back"].waitForExistence(timeout: 10), app.debugDescription)
         let field = app.descendants(matching: .any)["chat.composer.field"].firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 10), app.debugDescription)
-        let smallCall = app.descendants(matching: .any)["calls.chat.preview"].firstMatch
-        XCTAssertTrue(smallCall.waitForExistence(timeout: 5), app.debugDescription)
-        // UI tests still list views hidden from VoiceOver, so the full call's faded controls show
-        // as not hittable instead of gone.
-        XCTAssertTrue(waitUntil(minimize, isHittable: false), app.debugDescription)
         field.tap()
         field.typeText("Can you hear the rain?")
         let send = app.buttons["chat.composer.send"]
         XCTAssertTrue(send.waitForExistence(timeout: 5), app.debugDescription)
         send.tap()
         XCTAssertTrue(app.staticTexts["Can you hear the rain?"].waitForExistence(timeout: 5), app.debugDescription)
-        attach(app, named: "Just us under the call with the sent message")
+        attach(app, named: "Just us slid over the app with the call in its bubble")
 
-        smallCall.tap()
-        XCTAssertTrue(field.waitForNonExistence(timeout: 5), app.debugDescription)
-        XCTAssertTrue(waitUntil(minimize, isHittable: true), app.debugDescription)
+        bubble.tap()
+        XCTAssertTrue(minimize.waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertTrue(app.buttons["calls.end"].isHittable, app.debugDescription)
-        attach(app, named: "The call grown back after closing Just us")
+        attach(app, named: "The full call opened again from the bubble")
     }
 
     @MainActor
@@ -141,14 +139,6 @@ final class CallJourneyUITests: XCTestCase {
             predicate: NSPredicate(format: "label MATCHES %@", ".*\\b[0-9]+:[0-9]{2}\\b.*"), object: status)
         XCTAssertEqual(XCTWaiter.wait(for: [timer], timeout: 10), .completed, status.debugDescription)
         attach(app, named: "Call screen with the call running")
-    }
-
-    /// Waits up to 5 seconds for `element` to become hittable or not.
-    @MainActor
-    private func waitUntil(_ element: XCUIElement, isHittable: Bool) -> Bool {
-        let expectation = XCTNSPredicateExpectation(
-            predicate: NSPredicate(format: "hittable == %@", NSNumber(value: isHittable)), object: element)
-        return XCTWaiter.wait(for: [expectation], timeout: 5) == .completed
     }
 
     @MainActor

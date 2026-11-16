@@ -59,7 +59,6 @@
       guard let center, let session = center.session, session.direction == .incoming, session.phase == .ringing
       else { return }
       ring?.cancel()
-      center.presentation = .full
       center.session?.ringsInApp = false
       connect(haptic: false)
     }
@@ -68,7 +67,6 @@
       script = Task { [weak self] in
         try? await Task.sleep(for: delay)
         guard !Task.isCancelled, let self, let center, !center.isInCall else { return }
-        center.presentation = .bubble
         center.session = CallSession(
           id: UUID(), direction: .incoming, phase: .ringing, audioRoute: .speaker, ringsInApp: true)
         ring = CallRinger.ring()

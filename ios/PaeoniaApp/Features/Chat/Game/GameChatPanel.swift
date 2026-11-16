@@ -227,8 +227,7 @@ private struct GameChatPeekStrip: View {
     }
 }
 
-/// The chat panel itself, under a game or under a call (`CallChatPanel`). A drag down on it closes
-/// it (`GameChatPanelDrag`).
+/// The chat panel itself, under a game. A drag down on it closes it (`GameChatPanelDrag`).
 struct ChatPanelSurface: View {
     let viewModel: ThreadChatViewModel
     let close: () -> Void

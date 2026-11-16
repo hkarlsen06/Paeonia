@@ -7,12 +7,10 @@ extension CallEngine: CallEngineActions {
         Task { await startOutgoing(requestedHandle: nil) }
     }
 
-    /// Opens the full call screen and joins the call through the system, which first hears of a
-    /// call that rang only inside the app.
+    /// Joins the call through the system, which first hears of a call that rang only inside the app.
     func answer() {
         guard let run, !run.isFinished else { return }
         run.quality.noteAnswer(at: .now)
-        center?.presentation = .full
         let unreportedHandle = run.takeUnreportedRing()
         requestSystem { system in
             if let unreportedHandle {

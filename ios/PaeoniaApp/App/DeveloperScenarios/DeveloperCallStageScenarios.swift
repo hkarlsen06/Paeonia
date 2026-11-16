@@ -3,8 +3,7 @@
   import UIKit
 
   /// The call screen and the small call with screen sharing, a paused or late partner video, a weak
-  /// connection, the offer to turn the camera off, the phone held on its side, and "Just us" open
-  /// under the call.
+  /// connection, the offer to turn the camera off, and the phone held on its side.
   nonisolated extension DeveloperScenario {
     static let callVideoScreenShare = screen(
       "call-video-screen-share", "Call · Robin shares their screen",
@@ -83,7 +82,7 @@
           DeveloperCallFixture.bothCameras(&$0)
           DeveloperCallFixture.partnerShares(&$0)
         },
-        presentation: .bubble, game: true)
+        presentation: .small, game: true)
     }
 
     static let callBubbleVoiceScreenShare = DeveloperScenario(
@@ -94,7 +93,7 @@
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
           DeveloperCallFixture.partnerShares(&$0)
         },
-        presentation: .bubble)
+        presentation: .small)
     }
 
     static let callBubbleSharingScreen = DeveloperScenario(
@@ -103,7 +102,7 @@
     ) { _ in
       DeveloperCallLocalFlow(
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) { $0.isSharingScreen = true },
-        presentation: .bubble)
+        presentation: .small)
     }
 
     static let callBubblePaused = DeveloperScenario(
@@ -115,27 +114,7 @@
           DeveloperCallFixture.bothCameras(&$0)
           $0.partnerCamera = .paused
         },
-        presentation: .bubble, game: true)
-    }
-
-    static let callChatVideo = DeveloperScenario(
-      "call-chat-video", "Call · Just us under a video call",
-      "Robin's video shrinks to the top and Just us rises under it", .calls
-    ) { _ in
-      DeveloperCallLocalFlow(
-        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
-          DeveloperCallFixture.bothCameras(&$0)
-        },
-        presentation: .chat, chatRows: true)
-    }
-
-    static let callChatVoice = DeveloperScenario(
-      "call-chat-voice", "Call · Just us under a voice call",
-      "Robin's face, name and call time at the top, and Just us under them", .calls
-    ) { _ in
-      DeveloperCallLocalFlow(
-        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active), presentation: .chat,
-        chatRows: true)
+        presentation: .small, game: true)
     }
   }
 

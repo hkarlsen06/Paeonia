@@ -30,7 +30,7 @@ struct CallRingLayer: View {
     private func pill(photoEdge: HorizontalEdge, opensDownward: Bool) -> some View {
         CallRingPill(
             center: model.center, session: session, participants: model.participants, photoEdge: photoEdge,
-            opensDownward: opensDownward
+            opensDownward: opensDownward, open: model.showFull
         )
         .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
         // The window passes every touch outside this frame to the app underneath.
@@ -50,6 +50,8 @@ struct CallRingPill: View {
     /// A pull down opens the full call screen when the pill is at the top, and a pull up when it is
     /// at the bottom.
     var opensDownward = true
+    /// Opens the full call screen.
+    let open: () -> Void
 
     private static let avatarSize: CGFloat = 48
     private static let buttonSize: CGFloat = 52
@@ -78,7 +80,10 @@ struct CallRingPill: View {
                     systemImage: "phone.fill", label: .callsControlAnswer, size: Self.buttonSize,
                     symbolSize: Self.symbolSize, fill: .paeoniaSuccess, identifier: "calls.ring.answer",
                     morphPart: .answer
-                ) { center.engine.answer() }
+                ) {
+                    open()
+                    center.engine.answer()
+                }
             }
             if photoEdge == .trailing { caller }
         }
@@ -151,9 +156,5 @@ struct CallRingPill: View {
         )
         .callMorph(.photo, size: Self.avatarSize)
         .accessibilityHidden(true)
-    }
-
-    private func open() {
-        center.presentation = .full
     }
 }

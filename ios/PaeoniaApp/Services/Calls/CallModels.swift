@@ -148,13 +148,3 @@ nonisolated enum CallCameraOffSuggestion: Equatable, Sendable {
     /// The phone is hot, and iOS will slow it down.
     case hot
 }
-
-/// How the call shows inside the app: the full call screen, the full call screen with "Just us" open
-/// under it, or small over the other screens, as the floating bubble or, while the partner's call
-/// rings in the app, the ring pill.
-nonisolated enum CallPresentation: Equatable, Sendable {
-    case full
-    /// The call shrinks to a preview at the top of the call screen, and "Just us" rises under it.
-    case chat
-    case bubble
-}

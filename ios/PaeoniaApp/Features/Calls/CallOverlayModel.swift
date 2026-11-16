@@ -9,7 +9,32 @@ nonisolated enum RingAnchor: Equatable, Sendable {
     case avatar(CallBubbleSpot)
 }
 
-/// What the overlay window shows, and where the bubble may go.
+/// How the call shows inside the app: the full call screen, or small over the other screens, as the
+/// floating bubble or, while the partner's call rings in the app, the ring pill.
+nonisolated enum CallPresentation: Equatable, Sendable {
+    case full
+    case small
+
+    /// What the call shows after `old` became `new`. A new call opens the full call screen, except a
+    /// ring inside the app, which starts small as the ring pill. A ring that stops ringing inside the
+    /// app, because the person answered it or it went to the system's call UI, opens the full call
+    /// screen too, where the call shows once it connects. Any other change keeps `current`, which the
+    /// person chose.
+    static func after(_ old: CallSession?, _ new: CallSession?, current: Self) -> Self {
+        guard let new else { return current }
+        if new.id != old?.id { return new.ringsInApp ? .small : .full }
+        if old?.ringsInApp == true, !new.ringsInApp { return .full }
+        return current
+    }
+}
+
+extension EnvironmentValues {
+    /// Starts a developer scenario's call small or full, in place of where a new call starts.
+    @Entry var callInitialPresentation: CallPresentation?
+}
+
+/// What the overlay window shows, and where the bubble may go. It owns whether the call shows full
+/// or small, which follows the call (`CallPresentation.after`) and the person's taps.
 @MainActor
 @Observable
 final class CallOverlayModel {
@@ -65,8 +90,6 @@ final class CallOverlayModel {
     var stageOrder = CallStageOrder()
     /// The corner of the call screen the person dragged the previews to.
     var previewCorner = CallPreviewCorner.initial
-    /// "Just us", read in the app's window the first time the call screen asks for it.
-    var chat: CallChat?
     /// The app has a couple, so "Just us" can open from the call.
     var canOpenChat = false
     /// How the person holds the phone, which the full call screen follows during video.
@@ -89,7 +112,8 @@ final class CallOverlayModel {
     var tabFrame = CGRect.zero
     /// The last call the overlay showed, so the screen, the bubble or the pill can leave on screen
     /// after the engine clears the call.
-    var lastSession: CallSession?
+    private(set) var lastSession: CallSession?
+    private(set) var presentation: CallPresentation
     /// The layer the window draws. It follows `layer` once the window shows, because a view that
     /// appears in a hidden window skips its transition.
     var shownLayer = Layer.hidden {
@@ -112,6 +136,23 @@ final class CallOverlayModel {
         self.center = center
         self.participants = participants
         self.presence = presence
+        lastSession = center.session
+        presentation = .after(nil, center.session, current: .full)
+    }
+
+    /// Follows each change to the call from now on, in the same change, starting with a call that
+    /// began between this model's creation and now.
+    func followCalls() {
+        center.sessionDidChange = { [weak self] old, new in self?.sessionChanged(from: old, to: new) }
+        if center.session != lastSession { sessionChanged(from: lastSession, to: center.session) }
+    }
+
+    /// Each new call starts over with its videos in their first order.
+    private func sessionChanged(from old: CallSession?, to new: CallSession?) {
+        guard let new else { return }
+        lastSession = new
+        if new.id != old?.id { stageOrder = CallStageOrder() }
+        presentation = .after(old, new, current: presentation)
     }
 
     var layer: Layer {
@@ -124,7 +165,7 @@ final class CallOverlayModel {
     var callLayer: Layer? {
         guard let session = center.session else { return nil }
         if session.direction == .incoming, session.phase == .ringing, !session.ringsInApp { return nil }
-        guard center.presentation == .bubble else { return .screen }
+        guard presentation == .small else { return .screen }
         return session.ringsInApp ? .ring : .bubble
     }
 
@@ -142,16 +183,26 @@ final class CallOverlayModel {
         turnOverride ?? deviceTurn.turn
     }
 
+    func showFull() {
+        presentation = .full
+    }
+
+    /// Shrinks the call to its bubble, or to the ring pill while the partner's call rings in the app.
+    func minimize() {
+        presentation = .small
+    }
+
     /// Opens the full call screen from a small window, with that window's video filling it.
     func openFull(showing source: CallVideoSource) {
         if let session = center.session { stageOrder.bringForward(source, in: session) }
-        center.presentation = .full
+        presentation = .full
     }
 
-    /// Opens what the call's callout is about. The call shrinks to its bubble, so what opens shows
-    /// under it, and the covers over the app close first.
+    /// Opens what the call's callout is about, or "Just us" from the call screen's message button.
+    /// The call shrinks to its bubble, so what opens shows under it, and the covers over the app close
+    /// first.
     func openCallout(_ destination: PresenceDestination) {
-        center.presentation = .bubble
+        presentation = .small
         AppCovers.close { [presence] in
             presence.clearCallNotice()
             presence.open(destination)

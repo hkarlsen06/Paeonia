@@ -216,8 +216,6 @@ extension CallEngine {
     func handRingToSystem(_ run: CallRun) async {
         guard run === self.run, let handle = run.takeUnreportedRing() else { return }
         center?.session?.ringsInApp = false
-        // An answer on the system call UI then opens the full call screen, as for any system ring.
-        center?.presentation = .full
         await reportToSystem(run, from: handle)
     }
 

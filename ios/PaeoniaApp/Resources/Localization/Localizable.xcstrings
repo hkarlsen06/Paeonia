@@ -5023,24 +5023,6 @@
         }
       }
     },
-    "calls.chat.backToCall" : {
-      "comment" : "VoiceOver label of the small call at the top of the screen while the couple's chat is open under it. Activating it closes the chat and makes the call big again.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Back to the call"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilbake til samtalen"
-          }
-        }
-      }
-    },
     "calls.control.answer" : {
       "comment" : "Call button that answers the partner's incoming call.",
       "extractionState" : "manual",
@@ -5456,7 +5438,7 @@
       }
     },
     "calls.openChat" : {
-      "comment" : "VoiceOver label of the message button at the top right of the call screen. It opens the couple's chat, called Just us, under the call.",
+      "comment" : "VoiceOver label of the message button at the top right of the call screen. It shrinks the call to its small bubble and opens the couple's chat, called Just us, over the app.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

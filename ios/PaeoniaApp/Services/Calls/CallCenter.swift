@@ -47,9 +47,13 @@ final class CallCenter {
             if UIDevice.current.isProximityMonitoringEnabled != usesProximitySensor {
                 UIDevice.current.isProximityMonitoringEnabled = usesProximitySensor
             }
+            sessionDidChange?(oldValue, session)
         }
     }
-    var presentation: CallPresentation = .full
+    /// Hears each change to `session` as it happens, before any view draws it, so the call's
+    /// overlay can decide in the same change whether the call shows full or small
+    /// (`CallOverlayModel`).
+    @ObservationIgnored var sessionDidChange: ((_ old: CallSession?, _ new: CallSession?) -> Void)?
     /// Nil unless the back camera is on and sending. Kept out of `session`, because the call
     /// screen animates every change to it, and the zoom slider would then lag behind the finger.
     var backCameraZoom: CallCameraZoom?
