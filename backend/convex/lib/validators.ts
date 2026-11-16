@@ -163,8 +163,15 @@ export const welcomeStep = literals(...WELCOME_STEPS);
  * (`calls:report_call_quality`). Facts about the connection only: no content, no location, and no
  * device id. `path` is the last path the media took, and the loss is what this phone lost of what
  * the partner sent. Fields this phone could not measure, such as for a call that never connected,
- * are left out.
+ * are left out. The `screen_` fields come only from a phone that shared its screen (sent, captured,
+ * source, encode, qp, key frames, encoder, pixel format) or received the partner's (received,
+ * dropped, freezes, decode). `*_fps` are medians of 2-second samples, `*_ms` the average time per
+ * frame, `screen_qp` the average quantizer, and `*_limits` the percent of the sending time in which
+ * each `qualityLimitationReason` held. `encoder_*` count the lines the camera's and the screen's
+ * encoders logged about resets, failed frames and dropped frames during the call.
  */
+const limitShares = v.object({ cpu: v.number(), bandwidth: v.number(), other: v.number(), none: v.number() });
+
 export const callQualityReport = v.object({
   end_reason: literals(
     "hung_up",
@@ -190,4 +197,27 @@ export const callQualityReport = v.object({
   video_received_seconds: v.number(),
   hottest_thermal_state: literals("nominal", "fair", "serious", "critical"),
   app_build: v.string(),
+  video_sent_fps: v.optional(v.number()),
+  video_limits: v.optional(limitShares),
+  screen_sent_seconds: v.optional(v.number()),
+  screen_captured_fps: v.optional(v.number()),
+  screen_sent_fps: v.optional(v.number()),
+  screen_source_fps: v.optional(v.number()),
+  screen_sent_width: v.optional(v.number()),
+  screen_sent_height: v.optional(v.number()),
+  screen_limits: v.optional(limitShares),
+  screen_encode_ms: v.optional(v.number()),
+  screen_qp: v.optional(v.number()),
+  screen_key_frames_per_minute: v.optional(v.number()),
+  screen_encoder: v.optional(v.string()),
+  screen_power_efficient_encoder: v.optional(v.boolean()),
+  screen_pixel_format: v.optional(v.string()),
+  screen_received_seconds: v.optional(v.number()),
+  screen_received_fps: v.optional(v.number()),
+  screen_frames_dropped: v.optional(v.number()),
+  screen_freezes: v.optional(v.number()),
+  screen_decode_ms: v.optional(v.number()),
+  encoder_resets: v.optional(v.number()),
+  encoder_failed_frames: v.optional(v.number()),
+  encoder_dropped_frames: v.optional(v.number()),
 });

@@ -229,8 +229,31 @@ const REPORT_LIMITS = {
   video_loss_percent: 100,
   video_sent_seconds: 86_400,
   video_received_seconds: 86_400,
+  video_sent_fps: 1_000,
+  screen_sent_seconds: 86_400,
+  screen_captured_fps: 1_000,
+  screen_sent_fps: 1_000,
+  screen_source_fps: 1_000,
+  screen_sent_width: 16_384,
+  screen_sent_height: 16_384,
+  screen_encode_ms: 60_000,
+  screen_qp: 255,
+  screen_key_frames_per_minute: 100_000,
+  screen_received_seconds: 86_400,
+  screen_received_fps: 1_000,
+  screen_frames_dropped: 100_000_000,
+  screen_freezes: 1_000_000,
+  screen_decode_ms: 60_000,
+  encoder_resets: 100_000_000,
+  encoder_failed_frames: 100_000_000,
+  encoder_dropped_frames: 100_000_000,
 } as const;
+const LIMIT_SHARE_FIELDS = ["video_limits", "screen_limits"] as const;
 const MAX_APP_BUILD_LENGTH = 32;
+/** A four-character code, or its eight hexadecimal digits when a byte is not printable. */
+const MAX_PIXEL_FORMAT_LENGTH = 8;
+/** WebRTC names encoders such as `VideoToolbox`, or several joined for simulcast. */
+const MAX_ENCODER_LENGTH = 64;
 
 /** The couple and caller of call `callId`, from its live row or the row it left in the couple chat. */
 async function reportedCall(ctx: ReaderCtx, callId: string): Promise<{ couple_id: string; caller_user_id: string } | null> {
@@ -253,13 +276,21 @@ export const report_call_quality = mutation({
     const userId = await requireUserId(ctx);
     const callId = uuidArg(args.p_call_id);
     const report = args.p_report;
+    const inRange = (value: number | undefined, max: number) =>
+      value === undefined || (Number.isFinite(value) && value >= 0 && value <= max);
     for (const [field, max] of Object.entries(REPORT_LIMITS)) {
-      const value = report[field as keyof typeof REPORT_LIMITS];
-      if (value !== undefined && !(Number.isFinite(value) && value >= 0 && value <= max)) {
+      if (!inRange(report[field as keyof typeof REPORT_LIMITS], max)) return fail("22023", `${field} is out of range`);
+    }
+    for (const field of LIMIT_SHARE_FIELDS) {
+      if (!Object.values(report[field] ?? {}).every((share) => inRange(share, 100))) {
         return fail("22023", `${field} is out of range`);
       }
     }
     if (report.app_build.length > MAX_APP_BUILD_LENGTH) return fail("22023", "app_build is too long");
+    if ((report.screen_pixel_format?.length ?? 0) > MAX_PIXEL_FORMAT_LENGTH) {
+      return fail("22023", "screen_pixel_format is too long");
+    }
+    if ((report.screen_encoder?.length ?? 0) > MAX_ENCODER_LENGTH) return fail("22023", "screen_encoder is too long");
 
     const call = await reportedCall(ctx, callId);
     const couple = await findCurrentCouple(ctx, userId);

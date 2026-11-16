@@ -579,6 +579,29 @@ describe("quality reports", () => {
     video_received_seconds: 20,
     hottest_thermal_state: "fair" as const,
     app_build: "412",
+    video_sent_fps: 24,
+    video_limits: { cpu: 0, bandwidth: 10, other: 0, none: 90 },
+    screen_sent_seconds: 25,
+    screen_captured_fps: 58.5,
+    screen_source_fps: 4,
+    screen_sent_fps: 3.5,
+    screen_sent_width: 1_080,
+    screen_sent_height: 1_920,
+    screen_limits: { cpu: 80, bandwidth: 0, other: 0, none: 20 },
+    screen_encode_ms: 41.2,
+    screen_qp: 34.5,
+    screen_key_frames_per_minute: 2.4,
+    screen_encoder: "VideoToolbox",
+    screen_power_efficient_encoder: true,
+    screen_pixel_format: "420f",
+    screen_received_seconds: 12,
+    screen_received_fps: 2.5,
+    screen_frames_dropped: 40,
+    screen_freezes: 6,
+    screen_decode_ms: 3.1,
+    encoder_resets: 0,
+    encoder_failed_frames: 2,
+    encoder_dropped_frames: 15,
     ...changes,
   });
   const reportCall = (person: TestCouple["first"], callId: string, changes: Partial<Record<string, unknown>> = {}) =>
@@ -614,13 +637,26 @@ describe("quality reports", () => {
     await reportCall(couple.second, callId, { app_build: "999" });
     expect(await reports(t)).toMatchObject([
       { call_id: callId, couple_id: couple.coupleId, user_id: couple.second.userId, role: "callee", path: "turn", app_build: "412" },
-      { call_id: callId, couple_id: couple.coupleId, user_id: couple.first.userId, role: "caller", path: "direct" },
+      { call_id: callId, couple_id: couple.coupleId, user_id: couple.first.userId, role: "caller", path: "direct", screen_sent_fps: 3.5, screen_limits: { cpu: 80 }, screen_encoder: "VideoToolbox", encoder_dropped_frames: 15 },
     ]);
 
     const missed = await call(couple);
     await couple.second.as.mutation(api.calls.decline_call, { p_call_id: missed });
     await reportCall(couple.first, missed, { end_reason: "no_answer", media_connected: false, path: undefined });
-    for (const wrong of [{ median_rtt_ms: -1 }, { audio_loss_percent: 101 }, { reconnecting_seconds: Number.NaN }, { app_build: "9".repeat(33) }]) {
+    for (const wrong of [
+      { median_rtt_ms: -1 },
+      { audio_loss_percent: 101 },
+      { reconnecting_seconds: Number.NaN },
+      { app_build: "9".repeat(33) },
+      { screen_sent_fps: 1_001 },
+      { screen_frames_dropped: -1 },
+      { screen_limits: { cpu: 101, bandwidth: 0, other: 0, none: 0 } },
+      { video_limits: { cpu: 0, bandwidth: Number.POSITIVE_INFINITY, other: 0, none: 0 } },
+      { screen_pixel_format: "x".repeat(9) },
+      { screen_qp: 256 },
+      { encoder_dropped_frames: -1 },
+      { screen_encoder: "x".repeat(65) },
+    ]) {
       expect((await failure(reportCall(couple.second, missed, wrong))).code).toBe("22023");
     }
     expect((await reports(t)).filter((row) => row.call_id === missed)).toMatchObject([

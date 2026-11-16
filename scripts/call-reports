@@ -12,6 +12,20 @@
 # sent and received, the hottest the phone got, and the app build. The server
 # keeps reports for 30 days. count defaults to 20, at most 200.
 #
+# Under a line, indented lines show how the video kept up, where the phone has
+# the numbers. "camera" is its sent frames per second and the percent of the
+# sending time in which WebRTC said the CPU, the bandwidth, something else or
+# nothing held the encoder back. "screen out" is this phone's shared screen:
+# seconds sent, then frames per second at each step (captured by
+# ScreenCaptureKit, into the encoder, sent), the sent size, the milliseconds the
+# encoder took per frame, the average quantizer (higher is coarser), key frames
+# per minute, the encoder and whether it is power efficient, the same limits and
+# the capture's pixel format. "screen in" is the partner's screen as it
+# arrived: seconds, frames per second, frames dropped, freezes and milliseconds
+# of decoding per frame. "encoder" counts the resets, failed frames and dropped
+# frames the camera's and the screen's encoders logged. Frame rates are medians
+# of 2-second samples.
+#
 # Without --hosted it reads this worktree's local backend (scripts/local-backend),
 # which the CLI reaches through backend/.env.local. --hosted reads api.paeonia.no
 # with the admin key (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from one-s over ssh).
@@ -61,6 +75,43 @@ reports = json.loads(os.environ["REPORTS"])
 if not reports:
     print("No call reports.")
     raise SystemExit
+def limits(shares):
+    if not shares:
+        return "-"
+    return " ".join(f"{name} {shares[name]}%" for name in ("cpu", "bandwidth", "other", "none"))
+
+
+def details(r):
+    lines = []
+    if "video_sent_fps" in r or "video_limits" in r:
+        lines.append(f'camera: {number(r.get("video_sent_fps"), " fps")}, limit {limits(r.get("video_limits"))}')
+    if "screen_sent_seconds" in r:
+        size = f'{r["screen_sent_width"]}x{r["screen_sent_height"]}' if "screen_sent_width" in r else "-"
+        efficient = {True: " (power efficient)", False: " (not power efficient)"}.get(r.get("screen_power_efficient_encoder"), "")
+        lines.append(
+            f'screen out: {number(r["screen_sent_seconds"], " s")}'
+            f', fps captured {number(r.get("screen_captured_fps"))} > encoder {number(r.get("screen_source_fps"))}'
+            f' > sent {number(r.get("screen_sent_fps"))} at {size}'
+            f', encode {number(r.get("screen_encode_ms"), " ms")}/frame, qp {number(r.get("screen_qp"))}'
+            f', {number(r.get("screen_key_frames_per_minute"))} key frames/min'
+            f', by {r.get("screen_encoder", "-")}{efficient}'
+            f', limit {limits(r.get("screen_limits"))}, format {r.get("screen_pixel_format", "-")}'
+        )
+    if "screen_received_seconds" in r:
+        lines.append(
+            f'screen in: {number(r["screen_received_seconds"], " s")}, {number(r.get("screen_received_fps"), " fps")}'
+            f', dropped {number(r.get("screen_frames_dropped"))}, freezes {number(r.get("screen_freezes"))}'
+            f', decode {number(r.get("screen_decode_ms"), " ms")}/frame'
+        )
+    if any(r.get(key) for key in ("encoder_resets", "encoder_failed_frames", "encoder_dropped_frames")):
+        lines.append(
+            f'encoder: {r.get("encoder_resets", 0)} resets, {r.get("encoder_failed_frames", 0)} failed frames'
+            f', {r.get("encoder_dropped_frames", 0)} dropped frames'
+        )
+    return lines
+
+
+extra = [[]]
 rows = [("when", "call", "role", "ended", "connected", "path", "reconnects", "rtt", "lost a/v", "video out/in", "heat", "build")]
 for r in reports:
     when = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00")).astimezone()
@@ -79,7 +130,10 @@ for r in reports:
         r["hottest_thermal_state"],
         r["app_build"],
     ))
+    extra.append(details(r))
 widths = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
-for row in rows:
+for row, lines in zip(rows, extra):
     print("  ".join(cell.ljust(width) for cell, width in zip(row, widths)).rstrip())
+    for line in lines:
+        print("    " + line)
 PY
