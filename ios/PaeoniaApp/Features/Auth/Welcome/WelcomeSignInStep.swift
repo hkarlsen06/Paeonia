@@ -1,4 +1,3 @@
-import AuthenticationServices
 import SafariServices
 import SwiftUI
 import UIKit
@@ -30,6 +29,7 @@ struct WelcomeSignInStep: View {
     @State private var isEmailSheetPresented = false
     @State private var drawing: UIImage?
     @State private var hasLoadedDrawing = false
+    @State private var appleButtonContent: AppleSignInButtonContent?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
@@ -196,7 +196,7 @@ struct WelcomeSignInStep: View {
     // MARK: Providers
 
     private var appleButton: some View {
-        AppleSignInButton(action: onAppleSignIn)
+        AppleSignInButton(action: onAppleSignIn) { appleButtonContent = $0 }
             .frame(height: PaeoniaSpacing.buttonHeight)
             .overlay {
                 if signingInWith == .apple {
@@ -214,16 +214,13 @@ struct WelcomeSignInStep: View {
 
     private var googleButton: some View {
         Button(action: onGoogleSignIn) {
-            // Logo beside the centered title, like Apple's button above.
-            HStack(spacing: PaeoniaSpacing.space8) {
+            SignInProviderLabel(title: .authSignInGoogleButton, appleButtonContent: appleButtonContent) {
                 Image(.googleG)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 18, height: 18)
                     .accessibilityHidden(true)
-                Text(.authSignInGoogleButton)
             }
-            .accessibilityElement(children: .combine)
         }
         .buttonStyle(WelcomeSignInButtonStyle(isLoading: signingInWith == .google))
         .disabled(isWorking && signingInWith != .google)
@@ -234,12 +231,14 @@ struct WelcomeSignInStep: View {
         Button {
             isEmailSheetPresented = true
         } label: {
-            HStack(spacing: PaeoniaSpacing.space8) {
+            SignInProviderLabel(title: .authSignInEmailButton, appleButtonContent: appleButtonContent) {
+                // Resizable, so the symbol's ink fills its frame like the Google logo.
                 Image(systemName: "envelope")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
                     .accessibilityHidden(true)
-                Text(.authSignInEmailButton)
             }
-            .accessibilityElement(children: .combine)
         }
         .buttonStyle(WelcomeSignInButtonStyle(isLoading: signingInWith == .email))
         .disabled(isWorking && signingInWith != .email)
@@ -335,6 +334,62 @@ private struct WelcomeLegalLinks: View {
     }
 }
 
+/// An icon and a title lined up with Apple's button: the icon ends where Apple's logo
+/// ends and the title starts where Apple's title starts, so every button has the same
+/// gap between them. Until Apple's button has been measured, the icon sits beside the
+/// centered title.
+private struct SignInProviderLabel<Icon: View>: View {
+    let title: LocalizedStringResource
+    let appleButtonContent: AppleSignInButtonContent?
+    @ViewBuilder let icon: Icon
+
+    /// Apple's button sets its title in Medium at 0.4 of the button's height (20.8 pt
+    /// at 52 pt, measured from its cap height). The same size here keeps the three
+    /// titles alike, and it still grows with the person's text size.
+    @ScaledMetric(relativeTo: .headline) private var titleSize = PaeoniaSpacing.buttonHeight * 0.4
+
+    private var titleFont: UIFont {
+        .systemFont(ofSize: titleSize, weight: .medium)
+    }
+
+    var body: some View {
+        Group {
+            if let apple = appleButtonContent {
+                // Apple's title edge is measured from its ink, so the text starts that
+                // far left of it.
+                let textMinX = apple.titleMinX - firstLetterBearing
+                HStack(spacing: textMinX - apple.logoMaxX) {
+                    // WelcomeSignInButtonStyle pads its label by space16 on each side.
+                    icon
+                        .frame(width: max(0, apple.logoMaxX - PaeoniaSpacing.space16), alignment: .trailing)
+                    Text(title)
+                    Spacer(minLength: 0)
+                }
+            } else {
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    icon
+                    Text(title)
+                }
+            }
+        }
+        .font(Font(titleFont))
+        .accessibilityElement(children: .combine)
+    }
+
+    /// How far right of the text's leading edge the first letter's ink starts.
+    private var firstLetterBearing: CGFloat {
+        let font = titleFont as CTFont
+        var characters = Array(String(localized: title).prefix(1).utf16)
+        var glyphs = [CGGlyph](repeating: 0, count: characters.count)
+        guard !characters.isEmpty,
+              CTFontGetGlyphsForCharacters(font, &characters, &glyphs, characters.count)
+        else {
+            return 0
+        }
+        return CTFontGetBoundingRectsForGlyphs(font, .horizontal, glyphs, nil, 1).minX
+    }
+}
+
 /// The Google and email buttons. The label stays in place under the spinner during sign-in.
 private struct WelcomeSignInButtonStyle: ButtonStyle {
     let isLoading: Bool
@@ -372,43 +427,6 @@ private struct WelcomeSignInButtonStyle: ButtonStyle {
             .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: configuration.isPressed)
             .allowsHitTesting(!isLoading)
             .accessibilityValue(isLoading ? Text(.commonLoading) : Text(verbatim: ""))
-    }
-}
-
-/// Apple's own Sign in with Apple button. Apple allows a custom button only with the
-/// logo artwork from Apple Design Resources, and App Review checks custom buttons, so
-/// the system button is the safe choice. It translates its title itself.
-private struct AppleSignInButton: UIViewRepresentable {
-    let action: () -> Void
-
-    func makeUIView(context: Context) -> ASAuthorizationAppleIDButton {
-        let button = ASAuthorizationAppleIDButton(authorizationButtonType: .continue, authorizationButtonStyle: .white)
-        button.cornerRadius = PaeoniaRadius.radius16
-        button.accessibilityIdentifier = "auth.signIn.apple"
-        button.addTarget(context.coordinator, action: #selector(Coordinator.tapped), for: .touchUpInside)
-        return button
-    }
-
-    func updateUIView(_ button: ASAuthorizationAppleIDButton, context: Context) {
-        context.coordinator.action = action
-        button.isEnabled = context.environment.isEnabled
-        button.alpha = context.environment.isEnabled ? 1 : 0.5
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(action: action)
-    }
-
-    final class Coordinator: NSObject {
-        var action: () -> Void
-
-        init(action: @escaping () -> Void) {
-            self.action = action
-        }
-
-        @objc func tapped() {
-            action()
-        }
     }
 }
 
