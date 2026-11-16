@@ -27,6 +27,10 @@ struct CallStageView: View {
 
     static let space = "callStage"
     private static let previewRadius = PaeoniaRadius.radius20
+    /// An iPhone's screen corners measured against its width, such as 55 pt on a 393 pt wide phone
+    /// and 62 pt on a 440 pt one. iOS has no public value for it, and the partner's phone could be
+    /// any of them, so the big shared screen rounds at this share of its width.
+    private static let phoneScreenCornerShare: CGFloat = 0.14
 
     var body: some View {
         let layout = CallStageLayout(
@@ -70,13 +74,20 @@ struct CallStageView: View {
             .modifier(CallTilePlacement(
                 center: CGPoint(x: tile.center.x + offset.width, y: tile.center.y + offset.height),
                 size: tile.size, degrees: turn.angle.degrees,
-                cornerRadius: isMain ? cornerRadius : Self.previewRadius, isOutlined: !isMain))
+                cornerRadius: mainRadius(source, isMain: isMain, width: tile.size.width), isOutlined: !isMain))
             .opacity(isShown ? 1 : 0)
             .allowsHitTesting(isShown)
             .accessibilityHidden(!isShown)
             .zIndex(isMain ? 0 : 1)
             // A scale here would grow the whole stage around its middle, so a tile only fades.
             .transition(.opacity)
+    }
+
+    /// The partner's shared screen rounds like a phone's screen, at its size. Other videos fill the
+    /// stage and take its corners.
+    private func mainRadius(_ source: CallVideoSource, isMain: Bool, width: CGFloat) -> CGFloat {
+        guard isMain else { return Self.previewRadius }
+        return source == .partnerScreen ? width * Self.phoneScreenCornerShare : cornerRadius
     }
 
     /// Moves every preview together, so they never cover each other, and settles them in the corner
