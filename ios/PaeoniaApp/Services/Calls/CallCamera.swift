@@ -150,8 +150,15 @@ final class CallCamera {
 
     /// The front camera, or the back camera that joins the most lenses, so zooming out reaches the
     /// ultra wide. A camera with no format the capturer can use is skipped.
+    ///
+    /// Not `LKRTCCameraVideoCapturer.captureDevices()`, which lists only single wide lenses, so the
+    /// back camera could not zoom below 1×.
     private static func camera(front: Bool, besideScreen: Bool) -> (AVCaptureDevice, AVCaptureDevice.Format)? {
-        let devices = LKRTCCameraVideoCapturer.captureDevices()
+        let devices = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInTripleCamera, .builtInDualWideCamera, .builtInDualCamera, .builtInWideAngleCamera],
+            mediaType: .video,
+            position: .unspecified
+        ).devices
         let matching = devices.filter { $0.position == (front ? .front : .back) }
         let candidates = front
             ? Array(matching.prefix(1))
