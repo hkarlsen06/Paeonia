@@ -2,12 +2,13 @@ import SwiftUI
 
 /// The full call screen. The partner's face and name on both partners' petal colors, what the
 /// call is doing, their local time, and the controls. During video the partner's video fills the
-/// screen and your own sits in a corner. A swipe down, or the chevron, shrinks it to the bubble, or
-/// to the ring pill while the partner's call rings inside the app. What the partner just did in the
-/// app shows above the controls for a few seconds (`CallCallout`), because the partner's avatar and
-/// the app's banners are under the call. During video the controls fade out after a few seconds
-/// without a touch, so nothing covers the partner, and a tap brings them back. With the back
-/// camera on, a zoom slider sits above them (`CallZoomSlider`).
+/// screen and your own sits in a corner you drag it to (`CallOwnCameraTile`). A swipe down, or the
+/// chevron, shrinks it to the bubble, or to the ring pill while the partner's call rings inside the
+/// app. What the partner just did in the app shows above the controls for a few seconds
+/// (`CallCallout`), because the partner's avatar and the app's banners are under the call. During
+/// video the controls fade out after a few seconds without a touch, so nothing covers the partner,
+/// and a tap brings them back. With the back camera on, a zoom slider sits above them
+/// (`CallZoomSlider`).
 struct CallScreen: View {
     let center: CallCenter
     let session: CallSession
@@ -15,6 +16,8 @@ struct CallScreen: View {
     var callout: PresenceCallout?
     /// Shrinks the call to its bubble and opens what the callout is about.
     var openCallout: (PresenceDestination) -> Void = { _ in }
+    /// Where the person dragged their own camera to (`CallOwnCameraTile`).
+    @Binding var ownCameraCorner: CallOwnCameraCorner
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
@@ -33,7 +36,6 @@ struct CallScreen: View {
     /// The glow at its largest. It breathes between `glowScales`, which never go past 1.
     private static let glowSize = avatarSize * 1.45
     private static let glowScales: [CGFloat] = [0.86, 1]
-    private static let localTileSize = CGSize(width: 104, height: 152)
     /// How far a drag goes before letting go shrinks the screen.
     private static let minimizeDistance: CGFloat = 120
 
@@ -69,7 +71,7 @@ struct CallScreen: View {
             .padding(.bottom, PaeoniaSpacing.space24)
             .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
         }
-        .overlay(alignment: .topTrailing) { localTile }
+        .overlay { ownCamera }
         // Buttons and the callout win their own taps. While the controls are hidden they take
         // none, so the first tap only brings them back.
         .contentShape(.rect)
@@ -379,25 +381,16 @@ extension CallScreen {
 // MARK: - Your camera
 
 extension CallScreen {
-    /// Your own camera in the top corner, under the chevron's row. It moves up into that row while
-    /// the controls are hidden, unless Reduce Motion is on.
     @ViewBuilder
-    private var localTile: some View {
+    private var ownCamera: some View {
         if session.isCameraOn, !isEnded {
-            CallVideoView(engine: center.engine, source: .local)
-                .frame(width: Self.localTileSize.width, height: Self.localTileSize.height)
-                .clipShape(.rect(cornerRadius: PaeoniaRadius.radius20))
-                .overlay {
-                    RoundedRectangle(cornerRadius: PaeoniaRadius.radius20).strokeBorder(.white.opacity(0.25))
-                }
-                .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
-                .padding(.top, showsHUD || reduceMotion
-                    ? PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space16
-                    : PaeoniaSpacing.space8)
-                .padding(.trailing, PaeoniaSpacing.screenHorizontalPadding)
-                .accessibilityElement()
-                .accessibilityLabel(Text(.callsYourCamera))
-                .transition(.scale(scale: 0.8, anchor: .topTrailing).combined(with: .opacity))
+            CallOwnCameraTile(
+                engine: center.engine,
+                corner: $ownCameraCorner,
+                showsHUD: showsHUD,
+                controlsHeight: (bottomHeight ?? 0) + PaeoniaSpacing.space24
+            )
+            .transition(.scale(scale: 0.8, anchor: ownCameraCorner.anchor).combined(with: .opacity))
         }
     }
 }

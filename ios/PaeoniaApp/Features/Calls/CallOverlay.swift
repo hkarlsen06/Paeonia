@@ -98,6 +98,8 @@ final class CallOverlayModel {
     var spot = CallBubbleSpot.initial
     /// How much bigger or smaller than `CallBubble.videoSize(for:)` the person pinched the video bubble.
     var videoScale: CGFloat = 1
+    /// The corner of the call screen the person dragged their own camera to.
+    var ownCameraCorner = CallOwnCameraCorner.initial
     /// The person pushed the bubble into the side of the screen at `spot.edge`, where it waits as a
     /// tab. It comes back out each time the call shrinks to the bubble again.
     var bubbleIsTucked = false
@@ -335,7 +337,8 @@ private struct CallOverlayRoot: View {
         case .screen:
             CallScreen(
                 center: model.center, session: session, participants: model.participants,
-                callout: model.presence.callCallout, openCallout: model.openCallout)
+                callout: model.presence.callCallout, openCallout: model.openCallout,
+                ownCameraCorner: Bindable(model).ownCameraCorner)
                 .transition(.asymmetric(
                     insertion: arrives(from: .ring) || arrives(from: .presence) ? .opacity : .offset(y: screenTravel),
                     removal: leavesByMorph ? .opacity : .offset(y: screenTravel)
