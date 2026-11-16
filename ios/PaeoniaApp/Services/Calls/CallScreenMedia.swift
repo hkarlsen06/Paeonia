@@ -4,8 +4,10 @@
 /// which sends while the person shares it, and the partner's, which shows in `partnerFeed`. The
 /// partner's screen shows on the simulator too, where this phone cannot share.
 final class CallScreenMedia {
-    /// True once this phone's screen sends, false when the share stops.
-    var onSharingChange: ((Bool) -> Void)?
+    /// Each change to this phone's share (`CallScreenCapture.onShareChange`), after `isSharing`
+    /// follows it.
+    var onShareChange: ((CallScreenShare) -> Void)?
+    /// This phone's screen sends.
     private(set) var isSharing = false
 
     private let track: LKRTCVideoTrack
@@ -19,7 +21,7 @@ final class CallScreenMedia {
         track = factory.videoTrack(with: source, trackId: "screen")
         capture = CallScreenCapture(source: source)
         self.partnerFeed = partnerFeed
-        capture.onSharingChange = { [weak self] isOn in self?.sharingChanged(isOn) }
+        capture.onShareChange = { [weak self] share in self?.shareChanged(share) }
     }
 
     func use(_ transceiver: LKRTCRtpTransceiver, limits: CallVideoLimits) {
@@ -51,9 +53,11 @@ final class CallScreenMedia {
         partnerTrack?.remove(partnerFeed)
     }
 
-    private func sharingChanged(_ isOn: Bool) {
-        isSharing = isOn
-        transceiver?.sender.track = isOn ? track : nil
-        onSharingChange?(isOn)
+    private func shareChanged(_ share: CallScreenShare) {
+        if isSharing != (share == .on) {
+            isSharing = share == .on
+            transceiver?.sender.track = isSharing ? track : nil
+        }
+        onShareChange?(share)
     }
 }

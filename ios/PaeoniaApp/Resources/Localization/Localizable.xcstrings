@@ -5509,6 +5509,24 @@
         }
       }
     },
+    "calls.partnerScreenWaiting" : {
+      "comment" : "VoiceOver value of the partner's shared screen during a call while its first picture has not arrived yet, or no new picture has arrived for a moment, and it shows a spinner. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@'s screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på skjermen til %@"
+          }
+        }
+      }
+    },
     "calls.partnerTime" : {
       "comment" : "Call screen line with the partner's local time. %1$@ is the time, such as 14:02. %2$@ is the partner's name.",
       "extractionState" : "manual",
@@ -5707,6 +5725,60 @@
         }
       }
     },
+    "calls.shareScreen.partnerSharingHint" : {
+      "comment" : "VoiceOver hint of the dimmed share button on the call screen while the partner shares their screen. Only one person can share at a time. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is sharing their screen. You can share once they stop."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ deler skjermen sin. Du kan dele når de stopper."
+          }
+        }
+      }
+    },
+    "calls.shareScreen.starting" : {
+      "comment" : "VoiceOver label of the call screen's share button while this person's screen share is starting, after they chose to share in the system's picker. The button shows a spinner and does nothing when tapped.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starting to share your screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynner å dele skjermen din"
+          }
+        }
+      }
+    },
+    "calls.sharing.failed" : {
+      "comment" : "Short notice on the call, above the buttons or beside the small call bubble, after this person tried to share their screen with their partner and the share did not begin. It goes away after a few seconds.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sharing didn't start. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delingen startet ikke. Prøv igjen."
+          }
+        }
+      }
+    },
     "calls.sharing.stop" : {
       "comment" : "Short button next to 'You're sharing your screen' that stops sharing the screen.",
       "extractionState" : "manual",
@@ -5829,6 +5901,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kobler til igjen…"
+          }
+        }
+      }
+    },
+    "calls.tab.sharing.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the small tab at the screen's edge where the call's bubble is tucked away, while this person shares their screen with their partner. Activating it brings the bubble back with a Stop button. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show %@. You're sharing your screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis %@. Du deler skjermen din"
           }
         }
       }

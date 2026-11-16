@@ -197,6 +197,7 @@ extension CallEngine: CallEngineActions {
         }
         // The partner's shared screen is what a person wants to keep watching in another app.
         pictureInPicture.show(session.isPartnerSharingScreen ? .partnerScreen : .partner)
+        pictureInPicture.setCameraPaused(session.partnerCamera == .paused)
         pictureInPicture.setEnabled(isTalking && (session.isPartnerCameraOn || session.isPartnerSharingScreen))
     }
 }

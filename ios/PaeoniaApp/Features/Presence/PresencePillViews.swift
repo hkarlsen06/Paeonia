@@ -277,6 +277,9 @@ struct PresenceTab: View {
     let label: Text
     var identifier = "presence.tab"
     let hasWaitingNotice: Bool
+    /// A symbol under the chevron for something that goes on while the window is tucked away, such
+    /// as this phone sharing its screen during a call.
+    var mark: String?
 
     init(edge: HorizontalEdge, partnerName: String, hasWaitingNotice: Bool) {
         self.init(
@@ -284,35 +287,46 @@ struct PresenceTab: View {
     }
 
     /// A tab for something else tucked at the edge, such as the call's window of the partner's screen.
-    init(edge: HorizontalEdge, label: Text, identifier: String = "presence.tab", hasWaitingNotice: Bool) {
+    init(
+        edge: HorizontalEdge, label: Text, identifier: String = "presence.tab", hasWaitingNotice: Bool,
+        mark: String? = nil
+    ) {
         self.edge = edge
         self.label = label
         self.identifier = identifier
         self.hasWaitingNotice = hasWaitingNotice
+        self.mark = mark
     }
 
     static let size = CGSize(width: 24, height: 56)
 
     var body: some View {
-        Image(systemName: edge == .trailing ? "chevron.compact.left" : "chevron.compact.right")
-            .font(.system(size: 20, weight: .semibold))
-            .foregroundStyle(.paeoniaTextPrimary)
-            .frame(width: Self.size.width, height: Self.size.height)
-            .glassEffect(.regular.interactive(), in: shape)
-            .overlay(alignment: edge == .trailing ? .topLeading : .topTrailing) {
-                if hasWaitingNotice {
-                    Circle()
-                        .fill(.paeoniaAccentPrimary)
-                        .frame(width: 10, height: 10)
-                        .offset(x: edge == .trailing ? -3 : 3, y: -3)
-                }
+        VStack(spacing: PaeoniaSpacing.space4) {
+            Image(systemName: edge == .trailing ? "chevron.compact.left" : "chevron.compact.right")
+                .font(.system(size: mark == nil ? 20 : 16, weight: .semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+            if let mark {
+                Image(systemName: mark)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.paeoniaError)
             }
-            .shadow(color: .black.opacity(0.25), radius: 8, y: 3)
-            .contentShape(shape)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(label)
-            .accessibilityValue(hasWaitingNotice ? Text(.presenceTabNewNotice) : Text(verbatim: ""))
-            .accessibilityIdentifier(identifier)
+        }
+        .frame(width: Self.size.width, height: Self.size.height)
+        .glassEffect(.regular.interactive(), in: shape)
+        .overlay(alignment: edge == .trailing ? .topLeading : .topTrailing) {
+            if hasWaitingNotice {
+                Circle()
+                    .fill(.paeoniaAccentPrimary)
+                    .frame(width: 10, height: 10)
+                    .offset(x: edge == .trailing ? -3 : 3, y: -3)
+            }
+        }
+        .shadow(color: .black.opacity(0.25), radius: 8, y: 3)
+        .contentShape(shape)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(hasWaitingNotice ? Text(.presenceTabNewNotice) : Text(verbatim: ""))
+        .accessibilityIdentifier(identifier)
     }
 
     /// Rounded on the side that faces the screen, flat against the edge.

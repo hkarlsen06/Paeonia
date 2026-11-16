@@ -25,8 +25,8 @@ final class CallMediaSession {
     var onConnectionChange: ((Bool) -> Void)?
     var onPartnerCamera: ((CallCameraState) -> Void)?
     var onPartnerScreen: ((Bool) -> Void)?
-    /// True once this phone's screen sends, false when the share stops.
-    var onScreenShare: ((Bool) -> Void)?
+    /// Each change to this phone's screen share.
+    var onScreenShare: ((CallScreenShare) -> Void)?
     /// Whose end of the call is weak, or nil while both are fine (`CallConnectionHealth`).
     var onWeakConnection: ((CallWeakSide?) -> Void)?
     /// The back camera's zoom once it sends, and nil while any other camera or none runs.
@@ -126,7 +126,7 @@ final class CallMediaSession {
         observer.session = self
         camera.onInterruption = { [weak self] in self?.cameraInterrupted($0) }
         camera.setMaxFramesPerSecond(CallVideoLimits(path: videoPath, heat: heat).maxFramesPerSecond)
-        screen.onSharingChange = { [weak self] isOn in self?.screenSharingChanged(isOn) }
+        screen.onShareChange = { [weak self] share in self?.screenShareChanged(share) }
         if isCameraOn {
             startCamera(front: isFrontCamera)
         }
@@ -563,12 +563,16 @@ extension CallMediaSession {
         screen.stop()
     }
 
-    fileprivate func screenSharingChanged(_ isOn: Bool) {
-        camera.isBesideScreen = isOn
-        applyVideoLimits()
-        restartCameraInNewSize()
-        send(.screen(isOn: isOn))
-        onScreenShare?(isOn)
+    /// The camera, the limits and the partner follow only a share that turns on or off, not one
+    /// that is starting or failed to.
+    fileprivate func screenShareChanged(_ share: CallScreenShare) {
+        if camera.isBesideScreen != screen.isSharing {
+            camera.isBesideScreen = screen.isSharing
+            applyVideoLimits()
+            restartCameraInNewSize()
+            send(.screen(isOn: screen.isSharing))
+        }
+        onScreenShare?(share)
     }
 }
 

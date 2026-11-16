@@ -2,8 +2,9 @@ import AVKit
 import UIKit
 
 /// Keeps the partner's video going in system Picture in Picture when the app goes to the
-/// background during a video call, or their shared screen while they share it. Inside the app the
-/// floating bubble shows the call instead.
+/// background during a video call, or their shared screen while they share it. While their phone
+/// has paused the camera, the camera's last frame shows blurred with a pause symbol. Inside the app
+/// the floating bubble shows the call instead.
 final class CallPictureInPicture {
     private let contentController = AVPictureInPictureVideoCallViewController()
     private var controller: AVPictureInPictureController?
@@ -11,6 +12,9 @@ final class CallPictureInPicture {
     /// source, which a new source would end.
     private let cameraView: UIView
     private let screenView: UIView
+    /// Over the camera while it is paused. A UIKit view, because the window's content is UIKit.
+    private let pauseCover = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+    private var isCameraPaused = false
     private var shown = CallVideoSource.partner
     /// The upright size of each one's latest frame.
     private var videoSizes: [CallVideoSource: CGSize] = [:]
@@ -26,7 +30,17 @@ final class CallPictureInPicture {
         cameraView = partner.makeView()
         screenView = partnerScreen.makeView()
         screenView.isHidden = true
-        for video in [cameraView, screenView] {
+        let pause = UIImageView(image: UIImage(
+            systemName: "pause.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)))
+        pause.tintColor = .white
+        pause.translatesAutoresizingMaskIntoConstraints = false
+        pauseCover.contentView.addSubview(pause)
+        NSLayoutConstraint.activate([
+            pause.centerXAnchor.constraint(equalTo: pauseCover.contentView.centerXAnchor),
+            pause.centerYAnchor.constraint(equalTo: pauseCover.contentView.centerYAnchor),
+        ])
+        pauseCover.isHidden = true
+        for video in [cameraView, screenView, pauseCover] {
             video.translatesAutoresizingMaskIntoConstraints = false
             contentController.view.addSubview(video)
             NSLayoutConstraint.activate([
@@ -74,7 +88,15 @@ final class CallPictureInPicture {
         shown = source
         cameraView.isHidden = source != .partner
         screenView.isHidden = source != .partnerScreen
+        pauseCover.isHidden = !isCameraPaused || source != .partner
         contentController.preferredContentSize = videoSizes[source] ?? .zero
+    }
+
+    /// The partner's phone paused their camera, so its last frame shows blurred with a pause symbol
+    /// while the camera is what the window shows.
+    func setCameraPaused(_ paused: Bool) {
+        isCameraPaused = paused
+        pauseCover.isHidden = !paused || shown != .partner
     }
 
     /// Picture in Picture may start while the partner's camera is on, or their screen is shared,

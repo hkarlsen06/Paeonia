@@ -13,8 +13,10 @@ import Synchronization
 /// person chooses there. The stream keeps running while Paeonia is in the background because the
 /// app declares the `screen-capture` background mode.
 final class CallScreenCapture {
-    /// True once the stream runs, false when it stops, whether the app or the person stopped it.
-    var onSharingChange: ((Bool) -> Void)?
+    /// `starting` once the person picked, `on` once the stream runs, `failed` when the picker or
+    /// the stream could not start, and `off` when a share stops, whether the app or the person
+    /// stopped it.
+    var onShareChange: ((CallScreenShare) -> Void)?
 
     private enum Phase {
         case idle
@@ -45,7 +47,10 @@ final class CallScreenCapture {
         case .starting, .sharing:
             return
         case .idle:
-            guard picker.isAvailable else { return }
+            guard picker.isAvailable else {
+                onShareChange?(.failed)
+                return
+            }
             // One picker serves the whole app, and while it is active system UI can hand the app
             // a share too, so it is active only while it is up.
             picker.add(frames)
@@ -65,11 +70,9 @@ final class CallScreenCapture {
         switch previous {
         case .idle, .picking:
             break
-        case let .starting(stream):
+        case let .starting(stream), let .sharing(stream):
             stream.stopCapture(completionHandler: nil)
-        case let .sharing(stream):
-            stream.stopCapture(completionHandler: nil)
-            onSharingChange?(false)
+            onShareChange?(.off)
         }
     }
 
@@ -86,15 +89,18 @@ final class CallScreenCapture {
             try stream.addStreamOutput(frames, type: .screen, sampleHandlerQueue: frames.queue)
         } catch {
             phase = .idle
+            onShareChange?(.failed)
             return
         }
         phase = .starting(stream)
+        onShareChange?(.starting)
         Task {
             do {
                 try await stream.startCapture()
             } catch {
                 if case let .starting(current) = phase, current === stream {
                     phase = .idle
+                    onShareChange?(.failed)
                 }
                 return
             }
@@ -105,14 +111,16 @@ final class CallScreenCapture {
             }
             phase = .sharing(stream)
             frames.startResending()
-            onSharingChange?(true)
+            onShareChange?(.on)
         }
     }
 
-    fileprivate func pickerClosed() {
+    /// The person closed the picker without picking, or it could not show (`failed`).
+    fileprivate func pickerClosed(failed: Bool) {
         guard case .picking = phase else { return }
         phase = .idle
         releasePicker()
+        if failed { onShareChange?(.failed) }
     }
 
     /// The system stopped the stream, such as when the person ended the share from its indicator.
@@ -308,11 +316,11 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
     }
 
     func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
-        onMain { $0.pickerClosed() }
+        onMain { $0.pickerClosed(failed: false) }
     }
 
     func contentSharingPickerStartDidFailWithError(_ error: any Error) {
-        onMain { $0.pickerClosed() }
+        onMain { $0.pickerClosed(failed: true) }
     }
 
     private func onMain(_ body: @escaping @MainActor (CallScreenCapture) -> Void) {
@@ -328,7 +336,7 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
 #else
 /// The simulator's SDK has no ScreenCaptureKit, so a share never starts there.
 final class CallScreenCapture {
-    var onSharingChange: ((Bool) -> Void)?
+    var onShareChange: ((CallScreenShare) -> Void)?
 
     static let captured = CallStatsSample.Captured()
 
@@ -336,7 +344,9 @@ final class CallScreenCapture {
 
     func setMaxFramesPerSecond(_: Int) {}
 
-    func start() {}
+    func start() {
+        onShareChange?(.failed)
+    }
 
     func stop() {}
 }

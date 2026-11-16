@@ -17,8 +17,8 @@ protocol CallEngineActions: AnyObject {
     func toggleSpeaker()
     func setCameraOn(_ isOn: Bool)
     func flipCamera()
-    /// Shows the system's screen sharing picker. Sharing starts once the person chooses there,
-    /// and `CallSession.isSharingScreen` turns on when it does. Nothing else can start a share.
+    /// Shows the system's screen sharing picker. Sharing starts once the person chooses there, and
+    /// `CallSession.screenShare` says how the start goes. Nothing else can start a share.
     func startScreenShare()
     /// Ends this person's screen share, and the system's sharing indicator goes away.
     func stopScreenShare()

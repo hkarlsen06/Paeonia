@@ -43,18 +43,24 @@ struct CallBubbleLayer: View {
         }
         .animation(motion, value: callout)
         .animation(motion, value: showsScreen)
-        .animation(motion, value: session.isSharingScreen)
+        .animation(motion, value: session.screenShare)
         .animation(motion, value: session.weakConnection)
         .animation(motion, value: session.cameraOffSuggestion)
     }
 
     private func bubble(in placement: CallBubblePlacement) -> some View {
         let partnerName = model.participants.partnerName
+        // The notices hang off the bubble, so while it is tucked away the tab says what waits there.
+        // A share goes on all the while, so it has a mark of its own instead of the dot.
         return CallFloatingWindow(
             placement: placement, float: Bindable(model).bubble,
             zoomBase: CallBubble.showsVideo(session) ? CallBubble.videoSize(for: session) : nil,
-            tabLabel: Text(.presenceTabAccessibilityLabel(partnerName)), tabIdentifier: "presence.tab",
-            hasWaitingNotice: callout != nil,
+            tabLabel: session.isSharingScreen
+                ? Text(.callsTabSharingAccessibilityLabel(partnerName))
+                : Text(.presenceTabAccessibilityLabel(partnerName)),
+            tabIdentifier: "presence.tab",
+            hasWaitingNotice: CallNotices.hasNews(session, callout: callout),
+            tabMark: session.isSharingScreen ? CallTopBarButtons.shareSymbol : nil,
             frameChanged: { model.bubbleFrame = $0 }, tabFrameChanged: { model.tabFrame = $0 }
         ) { scale, resize, tuck in
             CallBubble(
@@ -84,8 +90,9 @@ struct CallBubbleLayer: View {
     }
 }
 
-/// The partner's shared screen in a window of its own over the app, in the shape of their screen.
-/// A tap opens the call screen with it filling the screen.
+/// The partner's shared screen in a window of its own over the app, in the shape of their screen,
+/// with a spinner while its pictures are on their way (`CallPartnerScreenCover`). A tap opens the call
+/// screen with it filling the screen.
 struct CallScreenWindow: View {
     let engine: any CallEngineActions
     let session: CallSession
@@ -105,6 +112,7 @@ struct CallScreenWindow: View {
     var body: some View {
         let size = Self.size(for: session)
         CallVideoView(engine: engine, source: .partnerScreen)
+            .overlay { CallPartnerScreenCover(session: session) }
             .frame(width: size.width * scale, height: size.height * scale)
             .clipShape(.rect(cornerRadius: PaeoniaRadius.radius20))
             .overlay {
@@ -115,6 +123,7 @@ struct CallScreenWindow: View {
             .onTapGesture(perform: open)
             .accessibilityElement()
             .accessibilityLabel(Text(.callsPartnerScreen(partnerName)))
+            .accessibilityValue(CallPartnerScreenCover.accessibilityValue(of: session, partnerName: partnerName))
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { open() }
             .accessibilityAction(named: Text(.presenceActionTuck), tuck)

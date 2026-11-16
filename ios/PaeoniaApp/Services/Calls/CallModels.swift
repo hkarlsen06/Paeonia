@@ -20,11 +20,15 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     /// camera's first frame. The viewfinder takes this shape, so it shows what the partner sees.
     var localVideoAspectRatio: CGFloat?
     var isUsingFrontCamera = true
-    /// This person shares their screen (`CallScreenCapture`).
-    var isSharingScreen = false
+    /// This person's screen share (`CallScreenCapture`).
+    var screenShare = CallScreenShare.off
     var isPartnerSharingScreen = false
     /// The width of the partner's shared screen over its height. Nil until its first frame arrives.
     var partnerScreenAspectRatio: CGFloat?
+    /// The partner shares their screen, but no new frame has arrived for a moment, so the last one
+    /// would stand still. The screens show it blurred instead. The partner's phone sends the last
+    /// frame again every second while their screen stays still, so a still screen never counts.
+    var isPartnerScreenStalled = false
     /// Set while the call's connection is weak, and says whose end is weak. Nil while it is fine.
     var weakConnection: CallWeakSide?
     /// The partner's camera is on, but no new frame has arrived for a moment, so the last one would
@@ -39,6 +43,11 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     /// Paeonia was open on screen when it came in. It stays set when that ring ends unanswered, so
     /// the ring says why where it rang. Answering it, or handing it to the system, clears it.
     var ringsInApp = false
+
+    /// This person's screen sends to the partner.
+    var isSharingScreen: Bool {
+        screenShare == .on
+    }
 
     /// The partner's video has a window: their camera sends, or iOS paused it for a moment.
     var isPartnerCameraOn: Bool {
@@ -56,6 +65,18 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
         case .ended: false
         }
     }
+}
+
+/// This person's screen share. The system's picker can close without telling the app, so the time
+/// the picker is up counts as `off`.
+nonisolated enum CallScreenShare: Equatable, Sendable {
+    case off
+    /// The person picked in the system's picker, and the stream is starting.
+    case starting
+    case on
+    /// The picker could not show, or the stream did not start. The call says so for a few seconds,
+    /// then it is `off` again.
+    case failed
 }
 
 /// The back camera's zoom, counted the way the Camera app counts it, where 1 is the main lens and

@@ -2,8 +2,12 @@ import Foundation
 
 /// Screen sharing in both directions. `docs/calling-plan.md` has the decisions.
 extension CallEngine {
+    /// How long the call says a share did not start.
+    static let screenShareFailureLinger: Duration = .seconds(4)
+
     func startScreenShare() {
         guard let run, !run.isFinished else { return }
+        if center?.session?.screenShare == .failed { screenShareChanged(.off, in: run) }
         run.media?.startScreenShare()
     }
 
@@ -16,20 +20,34 @@ extension CallEngine {
             guard let self, let run else { return }
             partnerScreenChanged(isOn, in: run)
         }
-        media.onScreenShare = { [weak self, weak run] isOn in
+        media.onScreenShare = { [weak self, weak run] share in
             guard let self, let run else { return }
-            screenShareChanged(isOn, in: run)
+            screenShareChanged(share, in: run)
         }
     }
 
-    /// This phone's share started or stopped, from the call screen, the system's indicator or
-    /// the end of the call.
-    func screenShareChanged(_ isOn: Bool, in run: CallRun) {
-        guard run === self.run, let center, center.session?.isSharingScreen != isOn else { return }
-        center.session?.isSharingScreen = isOn
+    /// This phone's share is starting, on, off or did not start, from the call screen, the
+    /// system's indicator or the end of the call. A failure shows for a moment, then the share is
+    /// off again.
+    func screenShareChanged(_ share: CallScreenShare, in run: CallRun) {
+        guard run === self.run, let center, let session = center.session, session.screenShare != share else { return }
+        let wasSharing = session.isSharingScreen
+        center.session?.screenShare = share
+        run.screenShareFailure?.cancel()
+        run.screenShareFailure = nil
         guard !run.isFinished else { return }
+        if share == .failed {
+            run.screenShareFailure = Task { [weak self, weak run] in
+                try? await Task.sleep(for: Self.screenShareFailureLinger)
+                guard !Task.isCancelled, let self, let run else { return }
+                screenShareChanged(.off, in: run)
+            }
+        }
+        // The stop comes back here as `off`.
+        if stopOwnShareBesidePartners(in: run) { return }
+        guard wasSharing != (share == .on) else { return }
         // The person looks at the screen they share, so the sound leaves the earpiece.
-        if isOn, CallAudio.currentRoute() == .receiver {
+        if share == .on, CallAudio.currentRoute() == .receiver {
             CallAudio.useSpeaker(true)
             refreshAudioRoute()
         }
@@ -39,13 +57,34 @@ extension CallEngine {
     func partnerScreenChanged(_ isOn: Bool, in run: CallRun) {
         guard run === self.run, let center, center.session?.isPartnerSharingScreen != isOn else { return }
         center.session?.isPartnerSharingScreen = isOn
+        // The partner's phone sends its last frame again every second while their screen is still,
+        // so frames that stop mean the stream stalled.
+        partnerScreen.watchForStalls(isOn)
         updatePictureInPicture()
         if !isOn {
             // The next share may have another shape, and must not open on this one's last frame.
             partnerScreen.clear()
             center.session?.partnerScreenAspectRatio = nil
         }
+        stopOwnShareBesidePartners(in: run)
         reportCapabilities(of: run)
+    }
+
+    /// Each phone would show the other's screen while both share, so one share at a time. The share
+    /// button waits while the partner shares, and when both start at once, the caller's share stays
+    /// and the other phone stops its own. True when it stopped this phone's share.
+    @discardableResult
+    private func stopOwnShareBesidePartners(in run: CallRun) -> Bool {
+        guard let session = center?.session, session.direction == .incoming, session.isPartnerSharingScreen,
+              session.screenShare == .starting || session.screenShare == .on
+        else { return false }
+        run.media?.stopScreenShare()
+        return true
+    }
+
+    func partnerScreenStallChanged(_ isStalled: Bool) {
+        guard let center, center.session?.isPartnerScreenStalled != isStalled else { return }
+        center.session?.isPartnerScreenStalled = isStalled
     }
 
     /// The partner's shared screen changed shape, such as when they turn their phone.

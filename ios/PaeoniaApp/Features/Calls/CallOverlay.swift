@@ -140,6 +140,10 @@ private struct CallOverlayRoot: View {
                 ? String(localized: .callsWeakConnectionMine)
                 : String(localized: .callsWeakConnectionPartner(model.participants.partnerName))).post()
         }
+        .onChange(of: model.center.session?.screenShare == .failed) { _, failed in
+            guard failed else { return }
+            AccessibilityNotification.Announcement(String(localized: .callsSharingFailed)).post()
+        }
         // The full call screen follows how the phone is held, like the Camera app.
         .onChange(of: model.shownLayer == .screen, initial: true) { _, isScreen in
             if isScreen { model.deviceTurn.start() } else { model.deviceTurn.stop() }

@@ -2,8 +2,9 @@
   import SwiftUI
   import UIKit
 
-  /// The call screen and the small call with screen sharing, a paused or late partner video, a weak
-  /// connection, the offer to turn the camera off, and the phone held on its side.
+  /// The call screen and the small call with screen sharing as it starts, runs, fails and loads, a paused
+  /// or late partner video, a weak connection, the offer to turn the camera off, and the phone held on
+  /// its side.
   nonisolated extension DeveloperScenario {
     static let callVideoScreenShare = screen(
       "call-video-screen-share", "Call · Robin shares their screen",
@@ -21,7 +22,33 @@
       "call-sharing-screen", "Call · you share your screen",
       "You're sharing your screen, with Stop above the buttons and the share button white",
       phase: DeveloperCallFixture.active
-    ) { $0.isSharingScreen = true }
+    ) { $0.screenShare = .on }
+    static let callShareStarting = screen(
+      "call-share-starting", "Call · your share is starting",
+      "You picked in the system's picker, so the share button shows a spinner and takes no tap",
+      phase: DeveloperCallFixture.active
+    ) { $0.screenShare = .starting }
+    static let callShareFailed = screen(
+      "call-share-failed", "Call · your share did not start",
+      "Above the buttons the call says sharing didn't start and to try again", phase: DeveloperCallFixture.active
+    ) { $0.screenShare = .failed }
+    static let callPartnerScreenLoading = screen(
+      "call-partner-screen-loading", "Call · Robin's screen on its way",
+      "Robin started sharing, and a spinner waits on a dim tile for the first picture",
+      phase: DeveloperCallFixture.active
+    ) {
+      DeveloperCallFixture.bothCameras(&$0)
+      $0.isPartnerSharingScreen = true
+    }
+    static let callPartnerScreenStalled = screen(
+      "call-partner-screen-stalled", "Call · Robin's screen catching up",
+      "No new picture of Robin's screen for a moment, so it shows blurred with a spinner",
+      phase: DeveloperCallFixture.active
+    ) {
+      DeveloperCallFixture.bothCameras(&$0)
+      DeveloperCallFixture.partnerShares(&$0)
+      $0.isPartnerScreenStalled = true
+    }
     static let callVideoPaused = screen(
       "call-video-paused", "Call · Robin's camera paused",
       "Robin left the app, so their last frame shows blurred with a pause sign", phase: DeveloperCallFixture.active
@@ -101,7 +128,7 @@
       "Us with the voice bubble saying you're sharing your screen, with Stop", .calls
     ) { _ in
       DeveloperCallLocalFlow(
-        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) { $0.isSharingScreen = true },
+        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) { $0.screenShare = .on },
         presentation: .small)
     }
 

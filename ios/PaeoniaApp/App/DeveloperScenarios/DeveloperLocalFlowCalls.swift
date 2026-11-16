@@ -159,11 +159,11 @@
     func refreshCallContext() {}
 
     func startScreenShare() {
-      center?.session?.isSharingScreen = true
+      center?.session?.screenShare = .on
     }
 
     func stopScreenShare() {
-      center?.session?.isSharingScreen = false
+      center?.session?.screenShare = .off
     }
 
     func dismissCameraOffSuggestion() {

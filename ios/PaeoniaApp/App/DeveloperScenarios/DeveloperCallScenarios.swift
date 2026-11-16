@@ -14,7 +14,8 @@
       callBubblePartnerOpenedGame, callScreenPartnerOpenedGame, callScreenGameYourTurn, callScreenGameYourTurnZoom,
       callScreenPartnerMessage,
       callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
-      callVideoScreenShare, callVoiceScreenShare, callSharingScreen, callVideoPaused, callVideoStalled,
+      callVideoScreenShare, callVoiceScreenShare, callSharingScreen, callShareStarting, callShareFailed,
+      callPartnerScreenLoading, callPartnerScreenStalled, callVideoPaused, callVideoStalled,
       callWeakConnection, callCameraOffBattery, callCameraOffHot, callVideoSideways, callScreenShareSideways,
       callBubbleScreenShare, callBubbleVoiceScreenShare, callBubbleSharingScreen, callBubblePaused,
     ]
@@ -320,11 +321,11 @@
     }
 
     func startScreenShare() {
-      center?.session?.isSharingScreen = true
+      center?.session?.screenShare = .on
     }
 
     func stopScreenShare() {
-      center?.session?.isSharingScreen = false
+      center?.session?.screenShare = .off
     }
 
     func dismissCameraOffSuggestion() {

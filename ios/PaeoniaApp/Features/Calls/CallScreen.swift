@@ -188,8 +188,8 @@ struct CallScreen: View {
             Spacer(minLength: 0)
             if isUnderWay {
                 CallTopBarButtons(
-                    session: session, engine: center.engine, canOpenChat: canOpenChat,
-                    openChat: { openCallout(.chat(.couple)) })
+                    session: session, engine: center.engine, partnerName: participants.partnerName,
+                    canOpenChat: canOpenChat, openChat: { openCallout(.chat(.couple)) })
                     .transition(.opacity)
             }
         }

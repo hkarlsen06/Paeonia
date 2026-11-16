@@ -89,6 +89,7 @@ final class CallEngine {
         localVideo.onFrameSize = { [weak self] size in self?.localVideoSizeChanged(size) }
         partnerVideo.onStallChange = { [weak self] isStalled in self?.partnerVideoStallChanged(isStalled) }
         partnerScreen.onFrameSize = { [weak self] size in self?.partnerScreenSizeChanged(size) }
+        partnerScreen.onStallChange = { [weak self] isStalled in self?.partnerScreenStallChanged(isStalled) }
         pushRegistry = CallPushRegistry(
             onToken: { token in
                 Task { await PushRegistrationServiceFactory.shared.updateVoIPPushToken(token) }

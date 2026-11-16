@@ -14,6 +14,8 @@ final class CallRun {
     var quality = CallQualityTally()
     /// The phone's heat and battery while the call runs.
     var power: CallDevicePower?
+    /// Turns a share that did not start back to `off` once the call has said so for a moment.
+    var screenShareFailure: Task<Void, Never>?
     /// Reasons the person waved away, so they stay away for the rest of the call.
     var dismissedCameraOffSuggestions: Set<CallCameraOffSuggestion> = []
     var timers: [CallTimer: Task<Void, Never>] = [:]
@@ -81,6 +83,8 @@ final class CallRun {
         power?.stop()
         power = nil
         goodbye?.cancel()
+        screenShareFailure?.cancel()
+        screenShareFailure = nil
         _ = takeUnreportedRing()
     }
 }

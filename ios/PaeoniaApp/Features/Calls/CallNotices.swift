@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// What the call says beside its video, newest worries first: that this person shares their screen,
-/// an offer to turn the camera off, a weak connection, and what the partner just did (`CallCallout`).
-/// The full call screen shows it above its buttons and the bubble beside itself.
+/// What the call says beside its video, newest worries first: that this person shares their screen
+/// or that their share did not start, an offer to turn the camera off, a weak connection, and what
+/// the partner just did (`CallCallout`). The full call screen shows it above its buttons and the
+/// bubble beside itself.
 struct CallNotices: View {
     let session: CallSession
     let engine: any CallEngineActions
@@ -15,8 +16,15 @@ struct CallNotices: View {
     /// Whether any notice shows. An ended call shows none.
     static func showsAny(_ session: CallSession, callout: PresenceCallout?) -> Bool {
         if case .ended = session.phase { return false }
-        return session.isSharingScreen || cameraOffSuggestion(in: session) != nil || session.weakConnection != nil
-            || callout != nil
+        return session.isSharingScreen || hasNews(session, callout: callout)
+    }
+
+    /// Whether a notice other than the share's own shows, which the bubble's tab marks while it is
+    /// tucked away.
+    static func hasNews(_ session: CallSession, callout: PresenceCallout?) -> Bool {
+        if case .ended = session.phase { return false }
+        return session.screenShare == .failed || cameraOffSuggestion(in: session) != nil
+            || session.weakConnection != nil || callout != nil
     }
 
     /// The offer only makes sense while the camera is on.
@@ -29,6 +37,10 @@ struct CallNotices: View {
             VStack(alignment: alignment, spacing: PaeoniaSpacing.space8) {
                 if session.isSharingScreen {
                     CallSharingNotice(stop: engine.stopScreenShare)
+                        .transition(Self.arrival)
+                }
+                if session.screenShare == .failed {
+                    CallShareFailedLine()
                         .transition(Self.arrival)
                 }
                 if let suggestion = Self.cameraOffSuggestion(in: session) {
@@ -170,5 +182,25 @@ private struct CallWeakConnectionLine: View {
         .glassEffect(.regular, in: Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("calls.weakConnection")
+    }
+}
+
+/// The share did not start, such as when the system's picker could not show or the screen could not
+/// be captured. It goes away after a few seconds, or at the next tap on Share.
+private struct CallShareFailedLine: View {
+    var body: some View {
+        Label {
+            Text(.callsSharingFailed)
+        } icon: {
+            Image(systemName: "exclamationmark.circle")
+        }
+        .font(PaeoniaTypography.caption.weight(.semibold))
+        .foregroundStyle(.paeoniaTextPrimary)
+        .padding(.horizontal, PaeoniaSpacing.space12)
+        .padding(.vertical, PaeoniaSpacing.space8)
+        .fixedSize()
+        .glassEffect(.regular, in: Capsule())
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("calls.sharing.failed")
     }
 }

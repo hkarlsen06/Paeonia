@@ -21,6 +21,8 @@ struct CallFloatingWindow<Content: View, Notices: View>: View {
     let tabLabel: Text
     let tabIdentifier: String
     var hasWaitingNotice = false
+    /// A symbol the tab shows while the window is tucked away (`PresenceTab.mark`).
+    var tabMark: String?
     let frameChanged: (CGRect) -> Void
     let tabFrameChanged: (CGRect) -> Void
     /// The window at a scale, with VoiceOver's resize and the tuck it offers.
@@ -97,7 +99,7 @@ struct CallFloatingWindow<Content: View, Notices: View>: View {
         let shownY = placement.center(
             of: CallBubbleSpot(edge: edge, height: .center(y + tabDragHeight)), bubble: size).y
         return PresenceTab(
-            edge: edge, label: tabLabel, identifier: tabIdentifier, hasWaitingNotice: hasWaitingNotice)
+            edge: edge, label: tabLabel, identifier: tabIdentifier, hasWaitingNotice: hasWaitingNotice, mark: tabMark)
             .onTapGesture { untuck() }
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { untuck() }

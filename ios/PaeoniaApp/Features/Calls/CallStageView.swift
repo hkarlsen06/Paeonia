@@ -59,8 +59,7 @@ struct CallStageView: View {
             .gesture(drag, including: swaps)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(source.accessibilityLabel(partnerName: partnerName))
-            .accessibilityValue(source == .partner
-                ? CallPartnerVideoCover.accessibilityValue(of: session, partnerName: partnerName) : Text(verbatim: ""))
+            .accessibilityValue(accessibilityValue(of: source))
             .accessibilityAddTraits(isMain ? [] : .isButton)
             .accessibilityHint(isMain ? Text(verbatim: "") : Text(.callsPreviewHint))
             .accessibilityAction {
@@ -74,6 +73,15 @@ struct CallStageView: View {
             .zIndex(isMain ? 0 : 1)
             // A scale here would grow the whole stage around its middle, so a tile only fades.
             .transition(.opacity)
+    }
+
+    /// What VoiceOver says about the partner's video or screen while it waits for frames.
+    private func accessibilityValue(of source: CallVideoSource) -> Text {
+        switch source {
+        case .partner: CallPartnerVideoCover.accessibilityValue(of: session, partnerName: partnerName)
+        case .partnerScreen: CallPartnerScreenCover.accessibilityValue(of: session, partnerName: partnerName)
+        case .local: Text(verbatim: "")
+        }
     }
 
     /// The partner's shared screen rounds like a phone's screen, at its size. Other videos fill the
@@ -98,7 +106,8 @@ struct CallStageView: View {
 }
 
 /// One video with what it says when the partner's picture stops: blurred with a spinner while it
-/// catches up, or with a pause symbol while their camera is paused.
+/// catches up, or with a pause symbol while their camera is paused. The partner's screen shows a
+/// spinner until its first picture too.
 private struct CallStageTile: View {
     let engine: any CallEngineActions
     let source: CallVideoSource
@@ -108,8 +117,10 @@ private struct CallStageTile: View {
     var body: some View {
         CallVideoView(engine: engine, source: source)
             .overlay {
-                if source == .partner {
-                    CallPartnerVideoCover(session: session, partnerName: partnerName)
+                switch source {
+                case .partner: CallPartnerVideoCover(session: session, partnerName: partnerName)
+                case .partnerScreen: CallPartnerScreenCover(session: session)
+                case .local: EmptyView()
                 }
             }
     }
@@ -158,5 +169,35 @@ struct CallPartnerVideoCover: View {
             .fill(.ultraThinMaterial)
             .overlay { content() }
             .transition(.opacity)
+    }
+}
+
+/// Covers the partner's shared screen with a spinner until its first picture arrives, because it
+/// shows as soon as the partner starts, and blurs its last picture while new ones are late, so it
+/// never stands still as if their screen had frozen.
+struct CallPartnerScreenCover: View {
+    let session: CallSession
+
+    /// No picture has come yet, or none has come for a moment.
+    static func isWaiting(_ session: CallSession) -> Bool {
+        session.partnerScreenAspectRatio == nil || session.isPartnerScreenStalled
+    }
+
+    static func accessibilityValue(of session: CallSession, partnerName: String) -> Text {
+        isWaiting(session) ? Text(.callsPartnerScreenWaiting(partnerName)) : Text(verbatim: "")
+    }
+
+    var body: some View {
+        ZStack {
+            if Self.isWaiting(session) {
+                // The material blurs the video under it, which is a UIKit view that a SwiftUI blur
+                // can't reach. Before the first picture the video is black, so it shows as a dim tile.
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .overlay { ProgressView().tint(.white) }
+                    .transition(.opacity)
+            }
+        }
+        .animation(PaeoniaMotion.standardCurve(duration: 0.3), value: Self.isWaiting(session))
     }
 }
