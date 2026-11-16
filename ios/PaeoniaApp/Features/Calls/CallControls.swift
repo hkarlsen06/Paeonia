@@ -6,6 +6,8 @@ struct CallControls: View {
     let session: CallSession
     let engine: any CallEngineActions
 
+    @Environment(\.callTurn) private var turn
+
     var body: some View {
         // Each button takes an equal share, so five fit on the smallest phone.
         HStack(alignment: .top, spacing: 0) {
@@ -40,6 +42,7 @@ struct CallControls: View {
         if case let .external(name) = session.audioRoute {
             VStack(spacing: PaeoniaSpacing.space8) {
                 CallRoutePicker()
+                    .callTurned()
                     .frame(width: CallControlButton.size, height: CallControlButton.size)
                     .glassEffect(.regular.interactive(), in: Circle())
                     .accessibilityLabel(Text(.callsControlAudioRoute(name)))
@@ -49,6 +52,7 @@ struct CallControls: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                     .lineLimit(1)
                     .frame(maxWidth: CallControlButton.size + PaeoniaSpacing.space12)
+                    .opacity(turn.isSideways ? 0 : 1)
                     .accessibilityHidden(true)
             }
             .frame(maxWidth: .infinity)
@@ -109,9 +113,12 @@ struct CallRoundButton: View {
     }
 }
 
-/// A round call button with its name under it. A switch that is on turns white.
+/// A round call button with its name under it. A switch that is on turns white. With the phone on
+/// its side the symbol turns upright, and the name, which has no room to turn, fades out.
 struct CallControlButton: View {
     static let size: CGFloat = 60
+
+    @Environment(\.callTurn) private var turn
 
     let systemImage: String
     let title: LocalizedStringResource
@@ -141,6 +148,7 @@ struct CallControlButton: View {
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(isOn == true ? Color.paeoniaTextInverse : Color.paeoniaTextPrimary)
                     .contentTransition(.symbolEffect(.replace))
+                    .callTurned()
                     .frame(width: Self.size, height: Self.size)
                     .background { background }
                     .callMorph(morphPart, size: Self.size)
@@ -149,6 +157,7 @@ struct CallControlButton: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
+                    .opacity(turn.isSideways ? 0 : 1)
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())

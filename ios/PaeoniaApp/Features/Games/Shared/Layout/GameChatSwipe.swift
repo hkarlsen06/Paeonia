@@ -274,11 +274,12 @@ struct GameChatPanelDrag: UIViewRepresentable {
             }
         }
 
-        /// On the panel, and on the game above it, where a drag down pulls the panel along.
-        /// Not on a cover or sheet over the panel, such as a photo the chat opened, which
+        /// On the panel, and on the game or the call above it, where a drag down pulls the panel
+        /// along. Not on a cover or sheet over the panel, such as a photo the chat opened, which
         /// shares its window.
         func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-            guard let panel, panel.window != nil, !PaeoniaAppWindow.isCovered else { return false }
+            guard let panel, let window = panel.window, window.rootViewController?.presentedViewController == nil
+            else { return false }
             let frame = panel.convert(panel.bounds, to: nil)
             let point = touch.location(in: nil)
             startedOnGame = point.y < frame.minY

@@ -273,8 +273,23 @@ private struct PresenceActionButton<Icon: View>: View {
 /// dot while a notice waits for it to come back.
 struct PresenceTab: View {
     let edge: HorizontalEdge
-    let partnerName: String
+    /// What VoiceOver calls the tab, the partner's avatar's by default.
+    let label: Text
+    var identifier = "presence.tab"
     let hasWaitingNotice: Bool
+
+    init(edge: HorizontalEdge, partnerName: String, hasWaitingNotice: Bool) {
+        self.init(
+            edge: edge, label: Text(.presenceTabAccessibilityLabel(partnerName)), hasWaitingNotice: hasWaitingNotice)
+    }
+
+    /// A tab for something else tucked at the edge, such as the call's window of the partner's screen.
+    init(edge: HorizontalEdge, label: Text, identifier: String = "presence.tab", hasWaitingNotice: Bool) {
+        self.edge = edge
+        self.label = label
+        self.identifier = identifier
+        self.hasWaitingNotice = hasWaitingNotice
+    }
 
     static let size = CGSize(width: 24, height: 56)
 
@@ -295,9 +310,9 @@ struct PresenceTab: View {
             .shadow(color: .black.opacity(0.25), radius: 8, y: 3)
             .contentShape(shape)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(.presenceTabAccessibilityLabel(partnerName)))
+            .accessibilityLabel(label)
             .accessibilityValue(hasWaitingNotice ? Text(.presenceTabNewNotice) : Text(verbatim: ""))
-            .accessibilityIdentifier("presence.tab")
+            .accessibilityIdentifier(identifier)
     }
 
     /// Rounded on the side that faces the screen, flat against the edge.

@@ -46,186 +46,6 @@ private struct CallOverlayMount: ViewModifier {
     }
 }
 
-/// Where the partner's call rings inside the app.
-nonisolated enum RingAnchor: Equatable, Sendable {
-    /// Under the status bar and the Dynamic Island.
-    case top
-    /// Grown out of the partner's avatar at its spot.
-    case avatar(CallBubbleSpot)
-}
-
-/// What the overlay window shows, and where the bubble may go.
-@MainActor
-@Observable
-final class CallOverlayModel {
-    enum Layer: Equatable {
-        case hidden
-        case screen
-        case bubble
-        /// The partner's call ringing inside the app, as a pill (`ringAnchor`).
-        case ring
-        /// No call, and the partner is here: their avatar at its spot (`PresencePillLayer`).
-        case presence
-    }
-
-    /// Where the window takes touches. Everywhere else they reach the app underneath.
-    enum TouchArea: Equatable {
-        case none
-        case everywhere
-        case frames([CGRect])
-
-        static func frame(_ frame: CGRect) -> Self {
-            .frames([frame])
-        }
-
-        func contains(_ point: CGPoint) -> Bool {
-            switch self {
-            case .none: false
-            case .everywhere: true
-            case let .frames(frames): frames.contains { $0.contains(point) }
-            }
-        }
-    }
-
-    let center: CallCenter
-    let presence: PartnerPresenceModel
-    var participants: DailyChallengeParticipants
-    /// The top of the screen's bottom controls (`PaeoniaBannerBottomEdgeKey`), in global coordinates.
-    var controlsTop: CGFloat?
-    /// The top of the game chat panel while it is open (`CallBubbleBottomEdgeKey`).
-    var panelTop: CGFloat?
-    /// Where the person dragged the bubble or the partner's avatar to. They share it.
-    var spot = CallBubbleSpot.initial
-    /// How much bigger or smaller than `CallBubble.videoSize(for:)` the person pinched the video bubble.
-    var videoScale: CGFloat = 1
-    /// The corner of the call screen the person dragged their own camera to.
-    var ownCameraCorner = CallOwnCameraCorner.initial
-    /// The person pushed the bubble into the side of the screen at `spot.edge`, where it waits as a
-    /// tab. It comes back out each time the call shrinks to the bubble again.
-    var bubbleIsTucked = false
-    /// Where the ring pill shows, decided as it comes on screen so it never moves while it rings.
-    private(set) var ringAnchor = RingAnchor.top
-    /// Where each part is in the window, for `touchArea`. Each has its own, so one that is leaving
-    /// can't move another's.
-    var bubbleFrame = CGRect.zero
-    /// What the partner just did, beside the bubble (`CallCallout`).
-    var bubbleCalloutFrame = CGRect.zero
-    var ringFrame = CGRect.zero
-    /// The partner's avatar with its notice and toolbar.
-    var avatarFrame = CGRect.zero
-    /// The tab at the edge while the avatar or the bubble is tucked away.
-    var tabFrame = CGRect.zero
-    /// The last call the overlay showed, so the screen, the bubble or the pill can leave on screen
-    /// after the engine clears the call.
-    var lastSession: CallSession?
-    /// The layer the window draws. It follows `layer` once the window shows, because a view that
-    /// appears in a hidden window skips its transition.
-    var shownLayer = Layer.hidden {
-        didSet {
-            previousShownLayer = oldValue
-            if shownLayer != .bubble { bubbleIsTucked = false }
-            if shownLayer == .ring, oldValue != .ring { ringAnchor = currentRingAnchor }
-        }
-    }
-    /// The layer the window drew before, so the call screen and the ring pill can tell a morph
-    /// between them from an entrance.
-    private(set) var previousShownLayer = Layer.hidden
-
-    init(
-        center: CallCenter, participants: DailyChallengeParticipants, presence: PartnerPresenceModel
-    ) {
-        self.center = center
-        self.participants = participants
-        self.presence = presence
-    }
-
-    var layer: Layer {
-        callLayer ?? (presence.isShown ? .presence : .hidden)
-    }
-
-    /// The call's layer, which always wins over the partner's avatar. Nil while no call shows in the
-    /// app. An incoming call that rings on the system call UI shows none, and one that rings inside
-    /// the app shows as the ring pill until the person opens the full call screen.
-    var callLayer: Layer? {
-        guard let session = center.session else { return nil }
-        if session.direction == .incoming, session.phase == .ringing, !session.ringsInApp { return nil }
-        guard center.presentation == .bubble else { return .screen }
-        return session.ringsInApp ? .ring : .bubble
-    }
-
-    /// The full call screen says the partner's news only while the call is under way. While it
-    /// rings, connects or has ended, the news goes where it goes beside a small call.
-    var callCover: PresenceCallCover {
-        guard let callLayer else { return .none }
-        switch (callLayer, center.session?.phase) {
-        case (.screen, .active), (.screen, .reconnecting): return .fullScreen
-        default: return .small
-        }
-    }
-
-    /// Opens what the call's callout is about. The call shrinks to its bubble, so what opens shows
-    /// under it, and the covers over the app close first.
-    func openCallout(_ destination: PresenceDestination) {
-        center.presentation = .bubble
-        AppCovers.close { [presence] in
-            presence.clearCallNotice()
-            presence.open(destination)
-        }
-    }
-
-    /// The keyboard is up. It sits above this window and could cover a ring at the avatar, so a ring
-    /// that is already there moves to the top.
-    var keyboardIsUp = false {
-        didSet { if keyboardIsUp, shownLayer == .ring { ringAnchor = .top } }
-    }
-
-    /// The ring grows out of the partner's avatar while it shows at its spot, and else rings at the
-    /// top of the screen, as when the avatar is tucked at an edge, the partner is not here, or the
-    /// keyboard is up.
-    private var currentRingAnchor: RingAnchor {
-        guard presence.isShown, !keyboardIsUp else { return .top }
-        if case .tucked = presence.mode { return .top }
-        return .avatar(spot)
-    }
-
-    /// The partner's avatar comes back once the call has gone, so an ended call's screen or ring pill
-    /// shrinks into it.
-    func endsIntoPresence(_ session: CallSession) -> Bool {
-        guard case .ended = session.phase else { return false }
-        return presence.isShown
-    }
-
-    /// The part the window draws takes the touches. While the avatar's toolbar is open the window
-    /// takes every touch, so a tap outside the toolbar closes it and goes no further.
-    var touchArea: TouchArea {
-        switch shownLayer {
-        case .hidden: .none
-        case .screen: .everywhere
-        case .bubble:
-            if bubbleIsTucked {
-                .frame(tabFrame)
-            } else if presence.callCallout != nil {
-                .frames([bubbleFrame, bubbleCalloutFrame])
-            } else {
-                .frame(bubbleFrame)
-            }
-        case .ring: .frame(ringFrame)
-        case .presence:
-            switch presence.mode {
-            case .avatar: .frame(avatarFrame)
-            case .expanded: .everywhere
-            case .tucked: .frame(tabFrame)
-            }
-        }
-    }
-
-    func placement(in proxy: GeometryProxy) -> CallBubblePlacement {
-        CallBubblePlacement(
-            size: proxy.size, globalMinY: proxy.frame(in: .global).minY, controlsTop: controlsTop, panelTop: panelTop,
-            keyboardIsUp: keyboardIsUp)
-    }
-}
-
 private struct CallOverlayHost: ViewModifier {
     let center: CallCenter
     let participants: DailyChallengeParticipants
@@ -235,6 +55,12 @@ private struct CallOverlayHost: ViewModifier {
     @State private var window = CallOverlayWindowController()
     @Environment(\.profilePhotoImageProvider) private var photoProvider
     @Environment(\.avatarStyling) private var avatarStyling
+    @Environment(\.threadChatContext) private var chatContext
+    @Environment(PaeoniaBannerCenter.self) private var banners: PaeoniaBannerCenter?
+    @Environment(ReactionStore.self) private var reactions: ReactionStore?
+    @Environment(\.mediaAlternativeEditingService) private var mediaAlternativeEditing
+    @Environment(\.callTurnOverride) private var turnOverride
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         center: CallCenter, starter: CallStarter?, participants: DailyChallengeParticipants,
@@ -248,7 +74,7 @@ private struct CallOverlayHost: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        content
+        followingTheCall(content)
             .environment(starter)
             .callNightCheck(starter)
             .onPreferenceChange(PaeoniaBannerBottomEdgeKey.self) { model.controlsTop = $0 }
@@ -256,11 +82,6 @@ private struct CallOverlayHost: ViewModifier {
             .onChange(of: participants) { _, participants in model.participants = participants }
             .onDockedKeyboardChange { model.keyboardIsUp = $0 }
             .onChange(of: model.callCover, initial: true) { _, cover in model.presence.callCover = cover }
-            // Starting or answering a call opens the full call screen. A ring inside the app starts
-            // as the pill.
-            .onChange(of: center.session?.id) { oldID, newID in
-                if let newID, newID != oldID, center.session?.ringsInApp != true { center.presentation = .full }
-            }
             .onChange(of: model.layer, initial: true) { _, layer in window.show(layer) }
             .onChange(of: center.session) { _, session in
                 if let session { model.lastSession = session }
@@ -268,6 +89,8 @@ private struct CallOverlayHost: ViewModifier {
             .onAppear {
                 let root = CallOverlayRoot(model: model)
                     .environment(starter)
+                    // The chat's composer checks it, so nothing records during the call.
+                    .environment(center)
                     .environment(\.profilePhotoImageProvider, photoProvider)
                     .environment(\.avatarStyling, avatarStyling)
                     #if DEBUG
@@ -279,6 +102,60 @@ private struct CallOverlayHost: ViewModifier {
             }
             .onDisappear { window.remove() }
             .task { center.engine.refreshCallContext() }
+    }
+
+    /// Starts each call on the full call screen with its videos in their first order, gives the
+    /// partner's shared screen the big spot, and opens or hands over "Just us".
+    private func followingTheCall(_ content: Content) -> some View {
+        content
+            // Starting or answering a call opens the full call screen. A ring inside the app starts
+            // as the pill.
+            .onChange(of: center.session?.id) { oldID, newID in
+                guard let newID, newID != oldID else { return }
+                model.stageOrder = CallStageOrder()
+                if center.session?.ringsInApp != true { center.presentation = .full }
+            }
+            // The partner shares their screen to show it, so it fills the call screen.
+            .onChange(of: center.session?.isPartnerSharingScreen == true) { _, isSharing in
+                guard isSharing else { return }
+                withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { model.stageOrder.showPartnerScreen() }
+            }
+            .onChange(of: chatContext.isAvailable, initial: true) { _, available in model.canOpenChat = available }
+            .onChange(of: chatContext.coupleID) { _, _ in model.chat = nil }
+            .onChange(of: center.presentation == .chat, initial: true) { _, wantsChat in
+                if wantsChat { readChat() }
+            }
+            .onChange(of: endsWithChatOpen) { _, ends in
+                if ends { model.openCallout(.chat(.couple)) }
+            }
+            .onChange(of: turnOverride, initial: true) { _, turn in model.turnOverride = turn }
+    }
+
+    /// The call ended while "Just us" was open under it. The chat stays open, slid over the app, so
+    /// the conversation doesn't leave with the call's window.
+    private var endsWithChatOpen: Bool {
+        guard center.presentation == .chat, case .ended? = center.session?.phase else { return false }
+        return true
+    }
+
+    /// Reads "Just us" from this phone's copy, with what the chat needs from the app's environment,
+    /// the first time the call asks for it. A failed read leaves the call as it was.
+    private func readChat() {
+        guard model.chat == nil, let coupleID = chatContext.coupleID, let banners else {
+            if model.chat == nil { center.presentation = .full }
+            return
+        }
+        let context = chatContext
+        Task {
+            guard let viewModel = await context.makeViewModel(subject: .couple, header: nil) else {
+                if center.presentation == .chat { center.presentation = .full }
+                return
+            }
+            guard model.chat == nil, chatContext.coupleID == coupleID else { return }
+            model.chat = CallChat(
+                coupleID: coupleID, viewModel: viewModel, context: context, banners: banners, reactions: reactions,
+                mediaAlternativeEditing: mediaAlternativeEditing)
+        }
     }
 }
 
@@ -302,6 +179,16 @@ private struct CallOverlayRoot: View {
             AccessibilityNotification.Announcement(
                 callout.accessibilityLabel(partnerName: model.participants.partnerName)
             ).post()
+        }
+        .onChange(of: model.center.session?.weakConnection) { _, side in
+            guard let side else { return }
+            AccessibilityNotification.Announcement(side == .mine
+                ? String(localized: .callsWeakConnectionMine)
+                : String(localized: .callsWeakConnectionPartner(model.participants.partnerName))).post()
+        }
+        // The full call screen follows how the phone is held, like the Camera app.
+        .onChange(of: model.shownLayer == .screen, initial: true) { _, isScreen in
+            if isScreen { model.deviceTurn.start() } else { model.deviceTurn.stop() }
         }
     }
 
@@ -338,7 +225,8 @@ private struct CallOverlayRoot: View {
             CallScreen(
                 center: model.center, session: session, participants: model.participants,
                 callout: model.presence.callCallout, openCallout: model.openCallout,
-                ownCameraCorner: Bindable(model).ownCameraCorner)
+                stageOrder: Bindable(model).stageOrder, previewCorner: Bindable(model).previewCorner,
+                chat: model.chat, canOpenChat: model.canOpenChat, deviceTurn: model.turn)
                 .transition(.asymmetric(
                     insertion: arrives(from: .ring) || arrives(from: .presence) ? .opacity : .offset(y: screenTravel),
                     removal: leavesByMorph ? .opacity : .offset(y: screenTravel)

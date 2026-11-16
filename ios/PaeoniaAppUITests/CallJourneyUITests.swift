@@ -2,8 +2,9 @@ import XCTest
 
 /// Calls through the real root, with a partner in place of the call service. One starts from a
 /// game's toolbar, shrinks to the bubble, follows the person into "Just us", and ends from the
-/// bubble with its row in the chat. In the other the partner calls while the app is open, and the
-/// call rings in its pill, opens to the call screen and connects when the person answers.
+/// bubble with its row in the chat. Another opens "Just us" under the full call and closes it again.
+/// In the last the partner calls while the app is open, and the call rings in its pill, opens to the
+/// call screen and connects when the person answers.
 final class CallJourneyUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -41,6 +42,38 @@ final class CallJourneyUITests: XCTestCase {
         XCTAssertTrue(callRow.waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(bubble.waitForNonExistence(timeout: 10), app.debugDescription)
         attach(app, named: "Just us with the finished call's row")
+    }
+
+    /// Message on the call screen raises "Just us" under the call, which shrinks to the top. A
+    /// message sent there shows in the chat, and a tap on the small call closes the chat and grows
+    /// the call back.
+    @MainActor
+    func testJustUsRisesUnderTheCallAndTheCallGrowsBack() throws {
+        let app = launch(scenario: "local-flow-call")
+
+        let minimize = startCallFromGame(in: app)
+        let message = app.buttons["calls.openChat"]
+        XCTAssertTrue(message.waitForExistence(timeout: 5), app.debugDescription)
+        message.tap()
+
+        let field = app.descendants(matching: .any)["chat.composer.field"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 10), app.debugDescription)
+        let smallCall = app.descendants(matching: .any)["calls.chat.preview"].firstMatch
+        XCTAssertTrue(smallCall.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(minimize.waitForNonExistence(timeout: 5), app.debugDescription)
+        field.tap()
+        field.typeText("Can you hear the rain?")
+        let send = app.buttons["chat.composer.send"]
+        XCTAssertTrue(send.waitForExistence(timeout: 5), app.debugDescription)
+        send.tap()
+        XCTAssertTrue(app.staticTexts["Can you hear the rain?"].waitForExistence(timeout: 5), app.debugDescription)
+        attach(app, named: "Just us under the call with the sent message")
+
+        smallCall.tap()
+        XCTAssertTrue(field.waitForNonExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(minimize.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(app.buttons["calls.end"].isHittable, app.debugDescription)
+        attach(app, named: "The call grown back after closing Just us")
     }
 
     @MainActor

@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The call, shrunk to a bubble that floats over every screen. A voice call shows the partner's
 /// face, the call time, mute and end. A video call shows the partner's video, at the size the
-/// person pinched it to. A tap opens the call screen again.
+/// person pinched it to, blurred while it has stopped (`CallPartnerVideoCover`). A tap opens the
+/// call screen again.
 struct CallBubble: View {
     let center: CallCenter
     let session: CallSession
@@ -13,6 +14,8 @@ struct CallBubble: View {
     var resizeVideo: (AccessibilityAdjustmentDirection) -> Void = { _ in }
     /// Pushes the bubble into the side of the screen.
     var tuck: () -> Void = {}
+    /// Opens the full call screen.
+    var open: () -> Void = {}
 
     /// The video before a pinch, in the shape of the partner's picture so none of it is cut off.
     /// Every shape covers the same area as a 104 by 148 point bubble.
@@ -92,6 +95,7 @@ struct CallBubble: View {
     private var video: some View {
         let size = Self.videoSize(for: session)
         return CallVideoView(engine: center.engine, source: .partner)
+            .overlay { CallPartnerVideoCover(session: session, partnerName: participants.partnerName) }
             .frame(width: size.width * videoScale, height: size.height * videoScale)
             .clipShape(.rect(cornerRadius: PaeoniaRadius.radius20))
             .overlay {
@@ -100,12 +104,10 @@ struct CallBubble: View {
             .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
             .accessibilityElement()
             .accessibilityLabel(Text(.callsBubbleAccessibilityLabel(participants.partnerName)))
+            .accessibilityValue(
+                CallPartnerVideoCover.accessibilityValue(of: session, partnerName: participants.partnerName))
             .accessibilityAddTraits(.isButton)
             .accessibilityAdjustableAction(resizeVideo)
             .accessibilityIdentifier("calls.bubble")
-    }
-
-    private func open() {
-        center.presentation = .full
     }
 }

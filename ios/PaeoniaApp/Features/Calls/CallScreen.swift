@@ -1,14 +1,17 @@
 import SwiftUI
 
 /// The full call screen. The partner's face and name on both partners' petal colors, what the
-/// call is doing, their local time, and the controls. During video the partner's video fills the
-/// screen and your own sits in a corner you drag it to (`CallOwnCameraTile`). A swipe down, or the
-/// chevron, shrinks it to the bubble, or to the ring pill while the partner's call rings inside the
-/// app. What the partner just did in the app shows above the controls for a few seconds
-/// (`CallCallout`), because the partner's avatar and the app's banners are under the call. During
-/// video the controls fade out after a few seconds without a touch, so nothing covers the partner,
-/// and a tap brings them back. With the back camera on, a zoom slider sits above them
-/// (`CallZoomSlider`).
+/// call is doing, their local time, and the controls. During video one of up to three videos fills
+/// the screen, the partner's camera, their shared screen or your own, and the others are previews in
+/// a corner you drag them to (`CallStageView`). A tap on a preview makes it the big one. A swipe down,
+/// or the chevron, shrinks the call to the bubble, or to the ring pill while the partner's call rings
+/// inside the app. The message button at the top right raises "Just us" under the call, which
+/// shrinks to a preview above it (`CallChatPanel`). What the partner just did and the call's own news
+/// show above the controls (`CallNotices`), because the partner's avatar and the app's banners are
+/// under the call. During video the controls fade out after a few seconds without a touch, so
+/// nothing covers the video, and a tap brings them back. With the back camera on, a zoom slider sits
+/// above them (`CallZoomSlider`). A phone held on its side turns the videos and the symbols the way
+/// it is held, while the screen stays upright (`CallTurn`).
 struct CallScreen: View {
     let center: CallCenter
     let session: CallSession
@@ -16,8 +19,16 @@ struct CallScreen: View {
     var callout: PresenceCallout?
     /// Shrinks the call to its bubble and opens what the callout is about.
     var openCallout: (PresenceDestination) -> Void = { _ in }
-    /// Where the person dragged their own camera to (`CallOwnCameraTile`).
-    @Binding var ownCameraCorner: CallOwnCameraCorner
+    /// Which video fills the screen and how the previews follow it.
+    @Binding var stageOrder: CallStageOrder
+    /// Where the person dragged the previews to.
+    @Binding var previewCorner: CallPreviewCorner
+    /// "Just us" once the overlay has read it, so the panel can rise.
+    var chat: CallChat?
+    /// "Just us" can open, which needs a couple.
+    var canOpenChat = false
+    /// How the phone is held. It turns the videos only while one shows and the chat is closed.
+    var deviceTurn = CallTurn.none
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
@@ -31,18 +42,50 @@ struct CallScreen: View {
     /// Counts taps on the controls, so each one starts the wait before they hide again.
     @State private var hudTouches = 0
     @State private var isAdjustingZoom = false
+    /// The chat panel is on screen, from before it rises until it is down again.
+    @State private var isChatMounted = false
+    @State private var isChatRaised = false
+    /// The whole window's height, under the status bar and the home indicator too.
+    @State private var windowHeight: CGFloat = 0
+    /// The turn the videos and symbols show, which follows `wantedTurn`.
+    @State private var turn = CallTurn.none
+    /// Under Reduce Motion the videos fade out and back in instead of moving (`changeStage`).
+    @State private var stageOpacity: Double = 1
 
-    private static let avatarSize: CGFloat = 132
-    /// The glow at its largest. It breathes between `glowScales`, which never go past 1.
-    private static let glowSize = avatarSize * 1.45
-    private static let glowScales: [CGFloat] = [0.86, 1]
     /// How far a drag goes before letting go shrinks the screen.
     private static let minimizeDistance: CGFloat = 120
 
-    private var showsPartnerVideo: Bool { session.isPartnerCameraOn && !isEnded }
     private var isEnded: Bool {
         if case .ended = session.phase { return true }
         return false
+    }
+
+    private var isUnderWay: Bool {
+        switch session.phase {
+        case .active, .reconnecting: true
+        default: false
+        }
+    }
+
+    private var stage: CallStage {
+        stageOrder.stage(for: session)
+    }
+
+    private var hasMainVideo: Bool {
+        stage.main != nil
+    }
+
+    private var wantsChat: Bool {
+        center.presentation == .chat && chat != nil && !isEnded
+    }
+
+    /// The turn the videos should take: none without video or under the chat.
+    private var wantedTurn: CallTurn {
+        stage.sources.isEmpty || isChatRaised ? .none : deviceTurn
+    }
+
+    private var slide: Animation? {
+        reduceMotion ? nil : .spring(duration: PaeoniaMotion.motionDefault, bounce: 0)
     }
 
     var body: some View {
@@ -50,34 +93,32 @@ struct CallScreen: View {
         // swiftlint:disable:next accessibility_trait_for_button
         ZStack {
             background
-            if showsPartnerVideo {
-                CallVideoView(engine: center.engine, source: .partner)
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-                scrims.callHUD(isShown: showsHUD)
+            CallScreenStage(
+                engine: center.engine, session: session, stage: stage, participants: participants,
+                isChatMounted: isChatMounted, isChatRaised: isChatRaised,
+                makesRoomForControls: showsHUD || reduceMotion,
+                controlsHeight: bottomHeight ?? 0, turn: turn, corner: $previewCorner, bringForward: bringForward,
+                closeChat: closeChat
+            ) { windowHeight = $0 }
+            .opacity(stageOpacity)
+            if hasMainVideo {
+                scrims.callHUD(isShown: showsHUD && !isChatRaised)
             }
-            VStack(spacing: 0) {
-                topBar.callHUD(isShown: showsHUD)
-                if showsPartnerVideo {
-                    Spacer(minLength: 0)
-                } else {
-                    Spacer(minLength: PaeoniaSpacing.space24)
-                    identity
-                    Spacer(minLength: PaeoniaSpacing.space24)
-                }
-                bottom
+            hud
+                .callHUD(isShown: !isChatRaised)
+                .environment(\.callTurn, turn)
+            if isChatMounted, let chat {
+                CallChatPanel(chat: chat, isRaised: isChatRaised, height: chatHeight, close: closeChat)
+                    .transition(.identity)
             }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.bottom, PaeoniaSpacing.space24)
-            .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
         }
-        .overlay { ownCamera }
         // Buttons and the callout win their own taps. While the controls are hidden they take
         // none, so the first tap only brings them back.
         .contentShape(.rect)
-        .onTapGesture(perform: toggleHUD)
+        .gesture(TapGesture().onEnded { toggleHUD() }, including: isChatMounted ? .subviews : .all)
         .offset(y: dragOffset)
-        .gesture(swipeDown)
+        .gesture(swipeDown, including: isChatMounted ? .subviews : .all)
+        .ignoresSafeArea(.keyboard, edges: isChatMounted ? .bottom : [])
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: session)
         .animation(reduceMotion ? nil : PaeoniaMotion.callOverlay, value: shownCallout)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: center.backCameraZoom != nil)
@@ -87,7 +128,15 @@ struct CallScreen: View {
         .task(id: HUDTimer(canHide: canHideHUD, isHidden: isHUDHidden, touches: hudTouches)) {
             await hideHUDWhenIdle()
         }
-        .accessibilityAction(.escape, minimize)
+        .onChange(of: wantsChat, initial: true) { _, wants in
+            if wants { raiseChat() } else { lowerChat() }
+        }
+        .onChange(of: wantedTurn, initial: true) { _, wanted in follow(wanted) }
+        .accessibilityAction(.escape) { isChatMounted ? closeChat() : minimize() }
+    }
+
+    private var chatHeight: CGFloat {
+        windowHeight * CallChatPanel.heightFraction
     }
 
     // MARK: - Layout
@@ -109,7 +158,7 @@ struct CallScreen: View {
             .callMorph(.background)
     }
 
-    /// Dark edges over the partner's video, so the name and the buttons stay readable.
+    /// Dark edges over the big video, so the name and the buttons stay readable.
     private var scrims: some View {
         VStack(spacing: 0) {
             LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .top, endPoint: .bottom)
@@ -122,103 +171,53 @@ struct CallScreen: View {
         .allowsHitTesting(false)
     }
 
+    private var hud: some View {
+        VStack(spacing: 0) {
+            topBar.callHUD(isShown: showsHUD)
+            if hasMainVideo {
+                Spacer(minLength: 0)
+            } else {
+                Spacer(minLength: PaeoniaSpacing.space24)
+                CallIdentity(session: session, participants: participants, partnerTimeZone: partnerTimeZone)
+                Spacer(minLength: PaeoniaSpacing.space24)
+            }
+            bottom
+        }
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.bottom, PaeoniaSpacing.space24)
+        .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
+    }
+
     private var topBar: some View {
         HStack(alignment: .top, spacing: PaeoniaSpacing.space12) {
             Button(action: minimize) {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 17, weight: .semibold))
+                    .callTurned()
             }
             .buttonStyle(PaeoniaGlassCircleButtonStyle(face: PaeoniaSpacing.compactButtonHeight))
             .accessibilityLabel(Text(.callsMinimize))
             .accessibilityIdentifier("calls.minimize")
 
-            if showsPartnerVideo {
+            if hasMainVideo {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                     Text(verbatim: participants.partnerName)
                         .font(PaeoniaTypography.sectionTitle)
                         .foregroundStyle(.paeoniaTextPrimary)
+                        .lineLimit(1)
                     CallStatusLine(phase: session.phase, direction: session.direction, font: PaeoniaTypography.caption)
                 }
                 .accessibilityElement(children: .combine)
                 .transition(.opacity)
             }
             Spacer(minLength: 0)
+            if isUnderWay {
+                CallTopBarButtons(
+                    session: session, engine: center.engine, canOpenChat: canOpenChat, openChat: openChat)
+                    .transition(.opacity)
+            }
         }
         .padding(.top, PaeoniaSpacing.space8)
-    }
-
-    /// The partner's face, their name, what the call is doing and their time.
-    private var identity: some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
-            avatar
-            VStack(spacing: PaeoniaSpacing.space4) {
-                Text(verbatim: participants.partnerName)
-                    .font(PaeoniaTypography.collectionHeroTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .multilineTextAlignment(.center)
-                    .callMorph(.name)
-                CallStatusLine(phase: session.phase, direction: session.direction)
-                partnerTime
-            }
-            .accessibilityElement(children: .combine)
-            // On the combined element, because the children it merges are not exposed.
-            .accessibilityIdentifier("calls.status")
-        }
-    }
-
-    private var avatar: some View {
-        PaeoniaCoupleAvatar(
-            mediaAssetID: participants.partnerProfilePhotoAssetID,
-            name: participants.partnerName,
-            tint: .paeoniaPartnerTwo,
-            size: Self.avatarSize,
-            isCurrentUser: false
-        )
-        // The photo's own frame, which the pill's and the partner's avatar's photos match. A
-        // decoration reaches past it.
-        .frame(width: Self.avatarSize, height: Self.avatarSize)
-        // The glow grows and moves with the photo.
-        .background { ringingGlow.frame(width: Self.glowSize, height: Self.glowSize) }
-        .callMorph(.photo, size: Self.avatarSize)
-        // The frame holds the glow at its largest in every phase, so it never reaches the name
-        // and the name stays put when the call connects.
-        .frame(width: Self.glowSize, height: Self.glowSize)
-        .accessibilityHidden(true)
-    }
-
-    /// A soft glow that breathes while the call rings or connects.
-    @ViewBuilder
-    private var ringingGlow: some View {
-        let glow = Circle().fill(Color.paeoniaPartnerTwo.opacity(0.22))
-        switch session.phase {
-        case .ringing, .connecting, .reconnecting:
-            if reduceMotion {
-                glow
-            } else {
-                glow.phaseAnimator(Self.glowScales) { view, scale in
-                    view.scaleEffect(scale)
-                } animation: { _ in
-                    .easeInOut(duration: 1.1)
-                }
-            }
-        case .active, .ended:
-            EmptyView()
-        }
-    }
-
-    /// Hidden once the call ends, but it keeps its line, so the face above stays put.
-    @ViewBuilder
-    private var partnerTime: some View {
-        if let partnerTimeZone {
-            TimelineView(.everyMinute) { context in
-                Text(.callsPartnerTime(
-                    CallNightCheck.localTime(at: context.date, in: partnerTimeZone), participants.partnerName))
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextTertiary)
-            }
-            .opacity(isEnded ? 0 : 1)
-            .accessibilityHidden(isEnded)
-        }
     }
 
     @ViewBuilder
@@ -250,7 +249,7 @@ struct CallScreen: View {
                 .callHUD(isShown: showsHUD)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomHeight = $0 }
-            .overlay(alignment: .top) { calloutView }
+            .overlay(alignment: .top) { noticesView }
         }
     }
 
@@ -259,16 +258,14 @@ struct CallScreen: View {
     }
 
     /// Above the controls, with no height of its own, so nothing on the screen moves for it. While the
-    /// controls are hidden it moves down into their room, like your own camera, and back up when they
+    /// controls are hidden it moves down into their room, like the previews, and back up when they
     /// show again.
-    @ViewBuilder
-    private var calloutView: some View {
-        if let shownCallout {
-            CallCallout(callout: shownCallout, partnerName: participants.partnerName, open: openCallout)
-                .frame(height: 0, alignment: .bottom)
-                .offset(y: showsHUD || reduceMotion ? -PaeoniaSpacing.space16 : bottomHeight ?? 0)
-                .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
-        }
+    private var noticesView: some View {
+        CallNotices(
+            session: session, engine: center.engine, partnerName: participants.partnerName, callout: shownCallout,
+            openCallout: openCallout)
+            .frame(height: 0, alignment: .bottom)
+            .offset(y: showsHUD || reduceMotion ? -PaeoniaSpacing.space16 : bottomHeight ?? 0)
     }
 
     /// Answering swaps Answer and Decline for the call controls in one place, one fading out
@@ -309,9 +306,13 @@ struct CallScreen: View {
         }
     }
 
+    private func bringForward(_ source: CallVideoSource) {
+        changeStage(.spring(duration: 0.4, bounce: 0.12)) { stageOrder.bringForward(source, in: session) }
+        hudTouches += 1
+    }
 }
 
-// MARK: - Minimizing
+// MARK: - Minimizing and the chat
 
 extension CallScreen {
     private var swipeDown: some Gesture {
@@ -334,6 +335,64 @@ extension CallScreen {
             center.presentation = .bubble
         }
     }
+
+    private func openChat() {
+        center.presentation = .chat
+    }
+
+    private func closeChat() {
+        center.presentation = .full
+    }
+
+    /// Builds the panel under the screen's bottom edge, then slides it up one turn later, when it
+    /// has been built, as the game chat's panel does.
+    private func raiseChat() {
+        isChatMounted = true
+        DispatchQueue.main.async {
+            guard wantsChat else { return }
+            withAnimation(slide) { isChatRaised = true }
+            AccessibilityNotification.ScreenChanged().post()
+        }
+    }
+
+    private func lowerChat() {
+        guard isChatMounted else { return }
+        // The keyboard leaves with the panel, not after it.
+        PaeoniaKeyboard.dismiss()
+        withAnimation(slide) {
+            isChatRaised = false
+        } completion: {
+            guard !isChatRaised else { return }
+            isChatMounted = false
+            AccessibilityNotification.ScreenChanged().post()
+        }
+    }
+}
+
+// MARK: - Moving the videos
+
+extension CallScreen {
+    /// Turns like the Camera app.
+    private func follow(_ wanted: CallTurn) {
+        guard wanted != turn else { return }
+        changeStage(PaeoniaMotion.stateChange) { turn = wanted }
+    }
+
+    /// Moves the videos with `animation`, or under Reduce Motion fades them out and back in at their
+    /// new places.
+    private func changeStage(_ animation: Animation, _ change: @escaping () -> Void) {
+        guard reduceMotion else {
+            withAnimation(animation, change)
+            return
+        }
+        let fade = PaeoniaMotion.standardCurve(duration: 0.15)
+        withAnimation(fade) {
+            stageOpacity = 0
+        } completion: {
+            change()
+            withAnimation(fade) { stageOpacity = 1 }
+        }
+    }
 }
 
 // MARK: - Hiding the controls
@@ -343,9 +402,9 @@ extension CallScreen {
     private static let hudFade = PaeoniaMotion.standardCurve(duration: 0.3)
 
     /// Someone who uses VoiceOver, Switch Control or Extra controls keeps the controls on screen.
-    /// They also stay while a finger zooms.
+    /// They also stay while a finger zooms, and the chat shows none.
     private var canHideHUD: Bool {
-        guard showsPartnerVideo, case .active = session.phase else { return false }
+        guard hasMainVideo, !isChatMounted, case .active = session.phase else { return false }
         return !session.isWaitingForMicrophone && !showsControls && !isAdjustingZoom
     }
 
@@ -377,23 +436,6 @@ extension CallScreen {
     private func toggleHUD() {
         guard canHideHUD else { return }
         withAnimation(Self.hudFade) { isHUDHidden.toggle() }
-    }
-}
-
-// MARK: - Your camera
-
-extension CallScreen {
-    @ViewBuilder
-    private var ownCamera: some View {
-        if session.isCameraOn, !isEnded {
-            CallOwnCameraTile(
-                engine: center.engine,
-                corner: $ownCameraCorner,
-                showsHUD: showsHUD,
-                controlsHeight: (bottomHeight ?? 0) + PaeoniaSpacing.space24
-            )
-            .transition(.scale(scale: 0.8, anchor: ownCameraCorner.anchor).combined(with: .opacity))
-        }
     }
 }
 

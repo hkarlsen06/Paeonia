@@ -4951,6 +4951,96 @@
         }
       }
     },
+    "calls.cameraOff.hot" : {
+      "comment" : "Offer on the call while the phone is getting hot during a video call. Turn off and Not now follow it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your phone is getting hot. Turn off your camera?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonen din blir varm. Vil du slå av kameraet?"
+          }
+        }
+      }
+    },
+    "calls.cameraOff.lowBattery" : {
+      "comment" : "Offer on the call while the phone's battery is low during a video call. Turn off and Not now follow it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your battery is low. Turn off your camera to save it?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Batteriet ditt er nesten tomt. Vil du slå av kameraet for å spare strøm?"
+          }
+        }
+      }
+    },
+    "calls.cameraOff.notNow" : {
+      "comment" : "Button that closes the offer to turn the camera off during a call and keeps the camera on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      }
+    },
+    "calls.cameraOff.turnOff" : {
+      "comment" : "Button that turns this person's camera off during a call, after the offer about a low battery or a hot phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå av"
+          }
+        }
+      }
+    },
+    "calls.chat.backToCall" : {
+      "comment" : "VoiceOver label of the small call at the top of the screen while the couple's chat is open under it. Activating it closes the chat and makes the call big again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to the call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilbake til samtalen"
+          }
+        }
+      }
+    },
     "calls.control.answer" : {
       "comment" : "Call button that answers the partner's incoming call.",
       "extractionState" : "manual",
@@ -5365,6 +5455,78 @@
         }
       }
     },
+    "calls.openChat" : {
+      "comment" : "VoiceOver label of the message button at the top right of the call screen. It opens the couple's chat, called Just us, under the call.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Just us"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Bare oss"
+          }
+        }
+      }
+    },
+    "calls.partnerCamera" : {
+      "comment" : "VoiceOver label of the partner's camera video on the call screen. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s camera"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kameraet til %@"
+          }
+        }
+      }
+    },
+    "calls.partnerCameraPaused" : {
+      "comment" : "Shown over the partner's blurred last video frame while their phone has paused their camera, such as when they left the app. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s camera is paused"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kameraet til %@ er satt på pause"
+          }
+        }
+      }
+    },
+    "calls.partnerScreen" : {
+      "comment" : "VoiceOver label of the partner's shared screen on the call screen and in its small window over the app. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skjermen til %@"
+          }
+        }
+      }
+    },
     "calls.partnerTime" : {
       "comment" : "Call screen line with the partner's local time. %1$@ is the time, such as 14:02. %2$@ is the partner's name.",
       "extractionState" : "manual",
@@ -5379,6 +5541,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Klokka er %1$@ hos %2$@"
+          }
+        }
+      }
+    },
+    "calls.partnerVideoStalled" : {
+      "comment" : "VoiceOver value of the partner's video while no new picture has arrived for a moment and it shows a spinner. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@'s video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på videoen fra %@"
+          }
+        }
+      }
+    },
+    "calls.preview.hint" : {
+      "comment" : "VoiceOver hint on a small video preview on the call screen. Activating it makes that video fill the screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Makes this video fill the screen."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lar denne videoen fylle skjermen."
           }
         }
       }
@@ -5491,6 +5689,96 @@
         }
       }
     },
+    "calls.screenTab" : {
+      "comment" : "VoiceOver label of the small tab at the screen's edge where the partner's shared screen is tucked away during a call. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show %@'s screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis skjermen til %@"
+          }
+        }
+      }
+    },
+    "calls.shareScreen" : {
+      "comment" : "VoiceOver label of the call screen button that opens the system's picker to share the screen with the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share your screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del skjermen din"
+          }
+        }
+      }
+    },
+    "calls.sharing.stop" : {
+      "comment" : "Short button next to 'You're sharing your screen' that stops sharing the screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopp"
+          }
+        }
+      }
+    },
+    "calls.sharing.stop.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the Stop button that stops sharing the screen during a call.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop sharing your screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slutt å dele skjermen"
+          }
+        }
+      }
+    },
+    "calls.sharingScreen" : {
+      "comment" : "Shown on the call while this person shares their phone screen with their partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're sharing your screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du deler skjermen din"
+          }
+        }
+      }
+    },
     "calls.status.calling" : {
       "comment" : "Call screen line while the partner's phone rings.",
       "extractionState" : "manual",
@@ -5577,6 +5865,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Slå på lyden"
+          }
+        }
+      }
+    },
+    "calls.weakConnection.mine" : {
+      "comment" : "Small line on the call while this person's own internet connection is weak.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your connection is weak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forbindelsen din er svak"
+          }
+        }
+      }
+    },
+    "calls.weakConnection.partner" : {
+      "comment" : "Small line on the call while the partner's internet connection is weak. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s connection is weak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har svak forbindelse"
           }
         }
       }

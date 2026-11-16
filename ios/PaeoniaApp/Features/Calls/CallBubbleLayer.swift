@@ -1,179 +1,124 @@
 import SwiftUI
 
-/// Places the bubble at its spot (`CallBubblePlacement`). A drag moves it, and it stays where it is
-/// dropped. Pushed into the side of the screen, it tucks away as a tab there (`PresenceTab`), which
-/// brings it back out. A pinch makes the video bigger or smaller and moves the bubble with the
-/// fingers at the same time (`CallBubbleGesture`). While the partner's avatar is under the call,
-/// what the partner just did shows for a few seconds beside the bubble (`CallCallout`), such as the
-/// game they opened, where a tap joins them.
+/// The small call over the app: the bubble, and while the partner shares their screen, a second
+/// window with it. Each is a `CallFloatingWindow` of its own, so each moves, pinches and tucks away
+/// on its own. The screen's window first shows beside the bubble, never on it. While the partner's
+/// avatar is under the call, what the partner just did shows for a few seconds beside the bubble
+/// (`CallNotices`), such as the game they opened, where a tap joins them, with the call's own news.
 struct CallBubbleLayer: View {
     let model: CallOverlayModel
     let session: CallSession
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var dragOffset = CGSize.zero
-    @State private var bubbleSize = CGSize.zero
-    /// How much the pinch in progress grows the video, on top of `model.videoScale`.
-    @State private var pinch: CGFloat = 1
-    /// How far the tab has been dragged up or down along its edge.
-    @State private var tabDragHeight: CGFloat = 0
 
     private var motion: Animation? {
         reduceMotion ? nil : PaeoniaMotion.callOverlay
-    }
-
-    var body: some View {
-        GeometryReader { proxy in
-            let placement = model.placement(in: proxy)
-            ZStack {
-                if model.bubbleIsTucked {
-                    tab(in: placement)
-                } else {
-                    bubble(in: placement)
-                }
-            }
-        }
-        .animation(motion, value: callout)
     }
 
     private var callout: PresenceCallout? {
         model.presence.callCallout
     }
 
+    private var showsScreen: Bool {
+        CallStageOrder.isShown(.partnerScreen, in: session)
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            let placement = model.placement(in: proxy)
+            ZStack {
+                bubble(in: placement)
+                if showsScreen, let screen = Binding(Bindable(model).screenWindow) {
+                    screenWindow(screen, in: placement)
+                }
+            }
+            .onChange(of: showsScreen, initial: true) { _, shows in
+                model.screenWindow = shows
+                    ? model.screenWindow ?? CallFloat(spot: placement.spot(
+                        beside: model.bubbleFrame.isEmpty
+                            ? nil : model.bubbleFrame.offsetBy(dx: 0, dy: -proxy.frame(in: .global).minY),
+                        at: model.spot, size: CallScreenWindow.size(for: session)))
+                    : nil
+            }
+        }
+        .animation(motion, value: callout)
+        .animation(motion, value: showsScreen)
+        .animation(motion, value: session.isSharingScreen)
+        .animation(motion, value: session.weakConnection)
+        .animation(motion, value: session.cameraOffSuggestion)
+    }
+
     private func bubble(in placement: CallBubblePlacement) -> some View {
-        let scales = videoScales(in: placement)
-        let center = placement.center(of: model.spot, bubble: bubbleSize)
-        let calloutBelow = placement.growsDownward(fromY: center.y, rowHeight: bubbleSize.height)
-        return CallBubble(
-            center: model.center, session: session, participants: model.participants,
-            videoScale: clamp(model.videoScale * pinch, to: scales),
-            resizeVideo: { resize($0, within: scales) },
-            tuck: { withAnimation(motion) { model.bubbleIsTucked = true } }
-        )
-        .fixedSize()
-        .onGeometryChange(for: CGSize.self) { $0.size } action: { bubbleSize = $0 }
-        // The window passes every touch outside this frame to the app underneath.
-        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { model.bubbleFrame = $0 }
-        .overlay(alignment: Alignment(
-            horizontal: model.spot.isLeading ? .leading : .trailing, vertical: calloutBelow ? .bottom : .top
-        )) {
-            calloutView(below: calloutBelow)
+        let partnerName = model.participants.partnerName
+        return CallFloatingWindow(
+            placement: placement, float: Bindable(model).bubble,
+            zoomBase: CallBubble.showsVideo(session) ? CallBubble.videoSize(for: session) : nil,
+            tabLabel: Text(.presenceTabAccessibilityLabel(partnerName)), tabIdentifier: "presence.tab",
+            hasWaitingNotice: callout != nil,
+            frameChanged: { model.bubbleFrame = $0 }, tabFrameChanged: { model.tabFrame = $0 }
+        ) { scale, resize, tuck in
+            CallBubble(
+                center: model.center, session: session, participants: model.participants, videoScale: scale,
+                resizeVideo: resize, tuck: tuck, open: { model.openFull(showing: .partner) })
+        } notices: { _ in
+            CallNotices(
+                session: session, engine: model.center.engine, partnerName: partnerName, callout: callout,
+                openCallout: model.openCallout, alignment: model.spot.isLeading ? .leading : .trailing)
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { model.bubbleNoticesFrame = $0 }
         }
-        .gesture(CallBubbleGesture(zooms: CallBubble.showsVideo(session)) { translation, scale in
-            dragOffset = translation
-            pinch = scale
-        } ended: { translation, scale, velocity in
-            drop(translation: translation, scale: scale, velocity: velocity, in: placement, within: scales)
-        } cancelled: {
-            withAnimation(motion) {
-                dragOffset = .zero
-                pinch = 1
-            }
-        })
-        .position(center)
-        .offset(dragOffset)
-        .transition(.move(edge: model.spot.isLeading ? .leading : .trailing).combined(with: .opacity))
     }
 
-    /// The tab sits at the bubble's height on the side it was pushed into.
-    private func tab(in placement: CallBubblePlacement) -> some View {
-        let edge = model.spot.edge
-        let width = PresenceTab.size.width
-        let y = placement.center(of: model.spot, bubble: bubbleSize).y
-        let shownY = placement.center(
-            of: CallBubbleSpot(edge: edge, height: .center(y + tabDragHeight)), bubble: bubbleSize).y
-        return PresenceTab(edge: edge, partnerName: model.participants.partnerName, hasWaitingNotice: callout != nil)
-            .onTapGesture { untuck() }
+    private func screenWindow(_ screen: Binding<CallFloat>, in placement: CallBubblePlacement) -> some View {
+        let partnerName = model.participants.partnerName
+        return CallFloatingWindow(
+            placement: placement, float: screen, zoomBase: CallScreenWindow.size(for: session),
+            tabLabel: Text(.callsScreenTab(partnerName)), tabIdentifier: "calls.screenWindow.tab",
+            frameChanged: { model.screenFrame = $0 }, tabFrameChanged: { model.screenTabFrame = $0 }
+        ) { scale, resize, tuck in
+            CallScreenWindow(
+                engine: model.center.engine, session: session, partnerName: partnerName, scale: scale,
+                resize: resize, tuck: tuck, open: { model.openFull(showing: .partnerScreen) })
+        } notices: { _ in
+            EmptyView()
+        }
+    }
+}
+
+/// The partner's shared screen in a window of its own over the app, in the shape of their screen.
+/// A tap opens the call screen with it filling the screen.
+struct CallScreenWindow: View {
+    let engine: any CallEngineActions
+    let session: CallSession
+    let partnerName: String
+    let scale: CGFloat
+    let resize: (AccessibilityAdjustmentDirection) -> Void
+    let tuck: () -> Void
+    let open: () -> Void
+
+    /// Before a pinch, as much area as the bubble's video, in the shape of the partner's screen.
+    static func size(for session: CallSession) -> CGSize {
+        let area: CGFloat = 104 * 148
+        let ratio = session.partnerScreenAspectRatio ?? 9 / 19.5
+        return CGSize(width: (area * ratio).squareRoot(), height: (area / ratio).squareRoot())
+    }
+
+    var body: some View {
+        let size = Self.size(for: session)
+        CallVideoView(engine: engine, source: .partnerScreen)
+            .frame(width: size.width * scale, height: size.height * scale)
+            .clipShape(.rect(cornerRadius: PaeoniaRadius.radius20))
+            .overlay {
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius20).strokeBorder(.white.opacity(0.25))
+            }
+            .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
+            .contentShape(.rect(cornerRadius: PaeoniaRadius.radius20))
+            .onTapGesture(perform: open)
+            .accessibilityElement()
+            .accessibilityLabel(Text(.callsPartnerScreen(partnerName)))
             .accessibilityAddTraits(.isButton)
-            .accessibilityAction { untuck() }
-            .gesture(tabDrag(edge: edge, fromY: y, in: placement))
-            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { model.tabFrame = $0 }
-            .position(x: edge == .leading ? width / 2 : placement.size.width - width / 2, y: shownY)
-            .transition(.move(edge: edge == .leading ? .leading : .trailing).combined(with: .opacity))
-    }
-
-    /// Under the bubble, or above it in the bottom half of the screen, at the bubble's side so it
-    /// grows toward the middle.
-    @ViewBuilder
-    private func calloutView(below: Bool) -> some View {
-        if let callout {
-            let gap = PaeoniaSpacing.space8
-            let side: UnitPoint = model.spot.isLeading ? (below ? .topLeading : .bottomLeading)
-                : (below ? .topTrailing : .bottomTrailing)
-            CallCallout(callout: callout, partnerName: model.participants.partnerName, open: model.openCallout)
-                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
-                    model.bubbleCalloutFrame = $0
-                }
-                // No height of its own, so it hangs off the bubble's bottom or top edge.
-                .frame(height: 0, alignment: below ? .top : .bottom)
-                .offset(y: below ? gap : -gap)
-                .transition(.scale(scale: 0.6, anchor: side).combined(with: .opacity))
-        }
-    }
-
-    private func untuck() {
-        withAnimation(motion) { model.bubbleIsTucked = false }
-    }
-
-    /// The video may grow until it fills most of the screen's width or all of the free area's height.
-    private func videoScales(in placement: CallBubblePlacement) -> ClosedRange<CGFloat> {
-        let range = CallBubble.videoScales
-        let size = CallBubble.videoSize(for: session)
-        let fits = min(placement.area.width * 0.8 / size.width, placement.area.height / size.height)
-        return range.lowerBound...max(range.lowerBound, min(range.upperBound, fits))
-    }
-
-    private func resize(_ direction: AccessibilityAdjustmentDirection, within scales: ClosedRange<CGFloat>) {
-        let step: CGFloat = 0.25
-        let scale = switch direction {
-        case .increment: model.videoScale + step
-        case .decrement: model.videoScale - step
-        @unknown default: model.videoScale
-        }
-        withAnimation(motion) {
-            model.videoScale = clamp(scale, to: scales)
-        }
-    }
-
-    private func clamp(_ scale: CGFloat, to scales: ClosedRange<CGFloat>) -> CGFloat {
-        min(max(scale, scales.lowerBound), scales.upperBound)
-    }
-
-    /// The bubble stays where the fingers let it go, at the size they left it. A push over the left
-    /// or right edge, or a hard fling at it, tucks it away.
-    private func drop(
-        translation: CGSize, scale: CGFloat, velocity: CGSize, in placement: CallBubblePlacement,
-        within scales: ClosedRange<CGFloat>
-    ) {
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
-            model.videoScale = clamp(model.videoScale * scale, to: scales)
-            pinch = 1
-        }
-        let landing = placement.landing(
-            from: model.spot, translation: translation, velocity: velocity, bubble: bubbleSize,
-            staysWhereDropped: true)
-        withAnimation(motion) {
-            model.spot = landing.spot
-            if case .tucked = landing { model.bubbleIsTucked = true }
-            dragOffset = .zero
-        }
-    }
-
-    /// The tab slides up and down its edge with the finger and stays where it is dropped. A pull in
-    /// from the edge brings the bubble out there.
-    private func tabDrag(edge: HorizontalEdge, fromY y: CGFloat, in placement: CallBubblePlacement) -> some Gesture {
-        DragGesture(minimumDistance: 8, coordinateSpace: .global)
-            .onChanged { tabDragHeight = $0.translation.height }
-            .onEnded { value in
-                let inward = edge == .leading ? value.translation.width : -value.translation.width
-                let dropped = placement.settledHeight(y + value.translation.height, bubble: bubbleSize)
-                withAnimation(motion) {
-                    model.spot = CallBubbleSpot(edge: edge, height: dropped)
-                    if inward > PresenceTab.size.width * 1.5 { model.bubbleIsTucked = false }
-                    tabDragHeight = 0
-                }
-            }
+            .accessibilityAction { open() }
+            .accessibilityAction(named: Text(.presenceActionTuck), tuck)
+            .accessibilityAdjustableAction(resize)
+            .accessibilityIdentifier("calls.screenWindow")
     }
 }

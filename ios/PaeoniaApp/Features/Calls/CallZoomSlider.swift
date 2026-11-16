@@ -12,7 +12,7 @@ struct CallZoomSlider: View {
             // As wide as the widest value, so the slider never moves while the number changes.
             Text(verbatim: Self.label(8.8))
                 .hidden()
-                .overlay(alignment: .trailing) { Text(verbatim: Self.label(zoom.factor)) }
+                .overlay { Text(verbatim: Self.label(zoom.factor)).callTurned() }
                 .font(PaeoniaTypography.caption.weight(.semibold).monospacedDigit())
                 .foregroundStyle(.white)
                 .accessibilityHidden(true)

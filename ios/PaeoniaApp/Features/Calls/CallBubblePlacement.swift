@@ -127,6 +127,27 @@ nonisolated struct CallBubblePlacement {
         return .spot(landed)
     }
 
+    /// Where a second window of `size` first shows beside the bubble, which is at `bubble` in the layer
+    /// or, before it was ever laid out, at `spot`: right above it, else right below it, else against
+    /// the other edge, so the two never start on top of each other.
+    func spot(beside bubble: CGRect?, at spot: CallBubbleSpot, size: CGSize) -> CallBubbleSpot {
+        let frame = bubble ?? {
+            let unpinched = CGSize(width: 104, height: 148)
+            let center = center(of: spot, bubble: unpinched)
+            return CGRect(
+                origin: CGPoint(x: center.x - unpinched.width / 2, y: center.y - unpinched.height / 2), size: unpinched)
+        }()
+        let gap = Self.margin
+        let x = spot.x.map { _ in frame.midX }
+        if frame.minY - gap - size.height >= area.minY {
+            return CallBubbleSpot(edge: spot.edge, height: .center(frame.minY - gap - size.height / 2), x: x)
+        }
+        if frame.maxY + gap + size.height <= area.maxY {
+            return CallBubbleSpot(edge: spot.edge, height: .center(frame.maxY + gap + size.height / 2), x: x)
+        }
+        return CallBubbleSpot(edge: spot.isLeading ? .trailing : .leading, height: .center(frame.midY))
+    }
+
     /// The height a bubble dropped with its center at `y` keeps.
     func settledHeight(_ y: CGFloat, bubble: CGSize) -> CallBubbleSpot.Height {
         let settled = center(of: CallBubbleSpot(edge: .trailing, height: .center(y)), bubble: bubble).y

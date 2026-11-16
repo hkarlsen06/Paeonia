@@ -14,6 +14,10 @@
       callBubblePartnerOpenedGame, callScreenPartnerOpenedGame, callScreenGameYourTurn, callScreenGameYourTurnZoom,
       callScreenPartnerMessage,
       callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
+      callVideoScreenShare, callVoiceScreenShare, callSharingScreen, callVideoPaused, callVideoStalled,
+      callWeakConnection, callCameraOffBattery, callCameraOffHot, callVideoSideways, callScreenShareSideways,
+      callBubbleScreenShare, callBubbleVoiceScreenShare, callBubbleSharingScreen, callBubblePaused,
+      callChatVideo, callChatVoice,
     ]
 
     // MARK: The call screen
@@ -198,14 +202,15 @@
       .calls
     ) { _ in DeveloperCallLocalFlow(coupleCalls: true) }
 
-    private static func screen(
+    static func screen(
       _ id: String, _ title: String, _ detail: String, phase: CallPhase, direction: CallDirection = .outgoing,
-      backCameraZoom: CallCameraZoom? = nil, configure: @escaping @Sendable (inout CallSession) -> Void = { _ in }
+      backCameraZoom: CallCameraZoom? = nil, turn: CallTurn? = nil,
+      configure: @escaping @Sendable (inout CallSession) -> Void = { _ in }
     ) -> DeveloperScenario {
       DeveloperScenario(id, title, detail, .calls) { _ in
         DeveloperCallScreenHost(
           session: DeveloperCallFixture.session(phase: phase, direction: direction, configure: configure),
-          backCameraZoom: backCameraZoom)
+          backCameraZoom: backCameraZoom, turn: turn)
       }
     }
   }
@@ -233,6 +238,21 @@
       let date = Calendar(identifier: .gregorian).date(from: components) ?? .now
       return CallStarter.NightPrompt(partnerName: "Robin", localTime: CallNightCheck.localTime(at: date, in: utc))
     }
+
+    /// Both cameras on, Robin's held upright.
+    static func bothCameras(_ session: inout CallSession) {
+      session.isCameraOn = true
+      session.partnerCamera = .on
+      session.partnerVideoAspectRatio = 9.0 / 16
+    }
+
+    /// Robin shares their phone's screen.
+    static func partnerShares(_ session: inout CallSession) {
+      session.isPartnerSharingScreen = true
+      session.partnerScreenAspectRatio = sharedScreenSize.width / sharedScreenSize.height
+    }
+
+    static let sharedScreenSize = CGSize(width: 300, height: 650)
 
     static func session(
       phase: CallPhase, direction: CallDirection = .outgoing, configure: (inout CallSession) -> Void = { _ in }
@@ -313,8 +333,14 @@
     }
 
     func makeVideoView(_ source: CallVideoSource) -> UIView {
-      let photo = source == .partner ? DeveloperAvatarFixture.partnerPhoto : DeveloperAvatarFixture.ownPhoto
-      let view = UIImageView(image: DeveloperAvatarFixture.photoData(for: photo).flatMap(UIImage.init(data:)))
+      let photo: UUID? = switch source {
+      case .partner: DeveloperAvatarFixture.partnerPhoto
+      case .local: DeveloperAvatarFixture.ownPhoto
+      case .partnerScreen: nil
+      }
+      let image = photo.map { DeveloperAvatarFixture.photoData(for: $0).flatMap(UIImage.init(data:)) }
+        ?? DeveloperSharedScreen.image()
+      let view = UIImageView(image: image)
       view.contentMode = .scaleAspectFill
       view.backgroundColor = .black
       return view
@@ -323,13 +349,16 @@
 
   /// The full call screen over a plain background. A ringing call plays the ringback, or the ring
   /// for Robin's call, so it can be heard on the simulator.
-  private struct DeveloperCallScreenHost: View {
+  struct DeveloperCallScreenHost: View {
     @State private var center: CallCenter
     @State private var sounds = CallSoundPlayer()
     @State private var ring: Task<Void, Never>?
     @State private var presence = PartnerPresenceModel(gateway: UnavailablePartnerPresenceGateway())
 
-    init(session: CallSession, backCameraZoom: CallCameraZoom? = nil) {
+    private let turn: CallTurn?
+
+    init(session: CallSession, backCameraZoom: CallCameraZoom? = nil, turn: CallTurn? = nil) {
+      self.turn = turn
       let engine = DeveloperCallEngine()
       let center = CallCenter(engine: engine, session: session)
       center.backCameraZoom = backCameraZoom
@@ -342,6 +371,7 @@
         .ignoresSafeArea()
         .callOverlay(participants: DeveloperCallFixture.participants, presence: presence)
         .environment(center)
+        .environment(\.callTurnOverride, turn)
         .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
         .onAppear {
           guard let session = center.session, session.phase == .ringing else { return }
@@ -363,23 +393,26 @@
   /// `backCameraZoom` puts the back camera's zoom slider above the call's buttons, and with `keepsNews`
   /// what the call says stays until the scenario closes (`DeveloperPresenceFixture`).
   /// `coupleCalls` opens "Just us" with its call rows, and `nightPrompt` has the night question up.
+  /// `chatRows` puts the call rows in "Just us" without opening it, for a call that opens it.
   /// With `partnerDoes`, Robin is in the app, playing Mind Meld, and does it a moment after the app
   /// shows.
-  private struct DeveloperCallLocalFlow: View {
+  struct DeveloperCallLocalFlow: View {
     @State private var center: CallCenter
     @State private var starter: CallStarter
     @State private var presence: PartnerPresenceModel?
     private let game: Bool
     private let partnerMoves: Bool
     private let coupleCalls: Bool
+    private let chatRows: Bool
     private let partnerDoes: PresenceNotice?
 
     init(
       session: CallSession? = nil, presentation: CallPresentation = .full,
       backCameraZoom: CallCameraZoom? = nil, game: Bool = false,
-      partnerMoves: Bool = false, keepsNews: Bool = false, coupleCalls: Bool = false,
+      partnerMoves: Bool = false, keepsNews: Bool = false, coupleCalls: Bool = false, chatRows: Bool = false,
       nightPrompt: CallStarter.NightPrompt? = nil, partnerDoes: PresenceNotice? = nil
     ) {
+      self.chatRows = chatRows
       self.partnerDoes = partnerDoes
       _presence = State(initialValue: partnerDoes.map { _ in
         DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.mindMeld]))
@@ -404,6 +437,9 @@
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: .mindMeldWrite, coupleCalls: true, launchLink: "paeonia://chat",
             avatarStories: .noStory)
+        } else if chatRows {
+          DeveloperLocalFlowHost(
+            seed: .paired, gameConversation: .mindMeldWrite, coupleCalls: true, avatarStories: .noStory)
         } else {
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: partnerDoes == nil ? nil : .mindMeldWrite, avatarStories: .noStory,

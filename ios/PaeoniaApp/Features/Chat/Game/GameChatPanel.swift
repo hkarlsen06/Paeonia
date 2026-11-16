@@ -188,7 +188,7 @@ struct GameChatPanel: ViewModifier {
                     .contentShape(Rectangle())
                     .onTapGesture { destination = nil }
                     .accessibilityHidden(true)
-                GameChatPanelSurface(destination: mounted) { destination = nil }
+                ChatPanelSurface(viewModel: mounted.viewModel) { destination = nil }
                     .frame(height: height)
                     .modifier(PanelSlide(offset: isRaised ? 0 : height))
                     .id(mounted.id)
@@ -227,16 +227,17 @@ private struct GameChatPeekStrip: View {
     }
 }
 
-/// The chat panel itself. A drag down on it closes it (`GameChatPanelDrag`).
-private struct GameChatPanelSurface: View {
-    let destination: GameChatDestination
+/// The chat panel itself, under a game or under a call (`CallChatPanel`). A drag down on it closes
+/// it (`GameChatPanelDrag`).
+struct ChatPanelSurface: View {
+    let viewModel: ThreadChatViewModel
     let close: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var dragOffset: CGFloat = 0
 
     var body: some View {
-        ThreadChatScreen(viewModel: destination.viewModel, presentation: .panel, onClose: close)
+        ThreadChatScreen(viewModel: viewModel, presentation: .panel, onClose: close)
             .background(.paeoniaBackgroundPrimary)
             .clipShape(.rect(topLeadingRadius: PaeoniaRadius.radius28, topTrailingRadius: PaeoniaRadius.radius28))
             .background {
