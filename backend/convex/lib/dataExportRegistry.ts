@@ -645,6 +645,13 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       nb: "Emojiene du la på meldinger, svar, stories, minner, tegninger og spillskapninger. Emojiene partneren din la på tingene dine er ikke med.",
     },
   }),
+  call_reports: own("user_id", "by_user_id_created_at", {
+    group: "activity",
+    about: {
+      en: "What your phone measured about the connection of your calls in the last 30 days, such as delay and lost sound. Nothing you said or showed.",
+      nb: "Det telefonen din målte om forbindelsen i samtalene dine de siste 30 dagene, som forsinkelse og tapt lyd. Ingenting av det du sa eller viste.",
+    },
+  }),
   favorites: own("user_id", "by_user_id_created_at", {
     group: "activity",
     about: {

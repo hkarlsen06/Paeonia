@@ -138,3 +138,13 @@ export async function endLiveCallOfUser(ctx: WriterCtx, userId: string): Promise
   const call = couple ? await liveCallOfCouple(ctx, couple.id) : null;
   if (call && isCallMember(call, userId)) await endCall(ctx, call, "left");
 }
+
+/** Deletes the couple's call reports. Returns the rows deleted. */
+export async function deleteCoupleCallReports(ctx: WriterCtx, coupleId: string): Promise<number> {
+  const rows = await ctx.db
+    .query("call_reports")
+    .withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  for (const row of rows) await ctx.db.delete(row._id);
+  return rows.length;
+}

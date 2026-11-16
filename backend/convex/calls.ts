@@ -19,6 +19,7 @@ import { uuidArg } from "./lib/ids";
 import { signLiveTicket } from "./lib/liveTicket";
 import { isPaused, isSharingNow } from "./lib/locationPause";
 import { consumeRateLimit } from "./lib/rateLimits";
+import { callQualityReport } from "./lib/validators";
 import { knownMemberTimeZone } from "./lib/streakDeadlines";
 import { addMs, nowIso } from "./lib/time";
 
@@ -213,6 +214,80 @@ export const create_call_live_ticket = mutation({
     const userId = await requireUserId(ctx);
     const call = await requireLiveCallMember(ctx, userId, uuidArg(args.p_call_id));
     return await signLiveTicket({ coupleId: call.couple_id, userId, channel: "call" });
+  },
+});
+
+// ---- Quality reports ----
+
+/** The largest value each measured number may take. A phone that sends more is refused. */
+const REPORT_LIMITS = {
+  answer_to_connected_ms: 3_600_000,
+  reconnects: 10_000,
+  reconnecting_seconds: 86_400,
+  median_rtt_ms: 60_000,
+  audio_loss_percent: 100,
+  video_loss_percent: 100,
+  video_sent_seconds: 86_400,
+  video_received_seconds: 86_400,
+} as const;
+const MAX_APP_BUILD_LENGTH = 32;
+
+/** The couple and caller of call `callId`, from its live row or the row it left in the couple chat. */
+async function reportedCall(ctx: ReaderCtx, callId: string): Promise<{ couple_id: string; caller_user_id: string } | null> {
+  const live = await getByUuid(ctx, "calls", callId);
+  if (live) return live;
+  const row = await getByUuid(ctx, "thread_messages", callId);
+  return row?.call ? { couple_id: row.couple_id, caller_user_id: row.sender_user_id } : null;
+}
+
+/**
+ * Stores what the viewer's phone measured about the connection of call `p_call_id`, sent once when
+ * the call ends on that phone. Only an active member of the call's couple may report, while the
+ * couple is active, so nothing arrives after the relationship ends and its reports are deleted. A
+ * second report from the same person for the same call changes nothing. Fails with 42501 for anyone
+ * else, and with 22023 for a number that is negative, not finite or too large.
+ */
+export const report_call_quality = mutation({
+  args: { p_call_id: v.string(), p_report: callQualityReport },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const callId = uuidArg(args.p_call_id);
+    const report = args.p_report;
+    for (const [field, max] of Object.entries(REPORT_LIMITS)) {
+      const value = report[field as keyof typeof REPORT_LIMITS];
+      if (value !== undefined && !(Number.isFinite(value) && value >= 0 && value <= max)) {
+        return fail("22023", `${field} is out of range`);
+      }
+    }
+    if (report.app_build.length > MAX_APP_BUILD_LENGTH) return fail("22023", "app_build is too long");
+
+    const call = await reportedCall(ctx, callId);
+    const couple = await findCurrentCouple(ctx, userId);
+    if (!call || couple?.id !== call.couple_id) return fail("42501", "call access is required");
+    const existing = await ctx.db
+      .query("call_reports")
+      .withIndex("by_call_id_user_id", (q) => q.eq("call_id", callId).eq("user_id", userId))
+      .first();
+    if (existing) return null;
+    await ctx.db.insert("call_reports", {
+      ...report,
+      call_id: callId,
+      couple_id: call.couple_id,
+      user_id: userId,
+      role: call.caller_user_id === userId ? "caller" : "callee",
+      created_at: nowIso(),
+    });
+    return null;
+  },
+});
+
+/** The newest call reports on this backend, newest first, for `scripts/call-reports`. */
+export const recent_call_reports = internalQuery({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limit = Math.min(Math.max(Math.floor(args.limit ?? 20), 1), 200);
+    const rows = await ctx.db.query("call_reports").withIndex("by_created_at").order("desc").take(limit);
+    return rows.map(({ _id, _creationTime, ...row }) => row);
   },
 });
 

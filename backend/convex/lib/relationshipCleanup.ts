@@ -1,4 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
+import { deleteCoupleCallReports } from "./calls";
 import { deleteCoupleGameRows } from "./gameRegistry";
 import { endCoupleGameActivities } from "./liveActivities";
 import { deleteHeartsForCouple } from "./hearts";
@@ -307,6 +308,7 @@ export async function cleanupCoupleContent(
 
   await deleteLatestLocationsForCouple(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
+  await deleteCoupleCallReports(ctx, couple.id);
   await deleteCoupleDates(ctx, couple.id);
   await deleteCoupleVisits(ctx, couple.id, budget);
   if (budget.left <= 0) return unfinished();
@@ -543,6 +545,7 @@ export async function purgeCoupleContent(
   if (budget.left <= 0) return unfinished();
   for (const deleted of [
     await deleteHeartsForCouple(ctx, couple.id),
+    await deleteCoupleCallReports(ctx, couple.id),
     await deleteCoupleDates(ctx, couple.id),
     await deleteCoupleTogetherDays(ctx, couple.id),
     await deleteCoupleRecaps(ctx, couple.id),

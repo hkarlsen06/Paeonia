@@ -5,6 +5,7 @@ import {
   apnsEnvironment,
   authProvider,
   avatarDecoration,
+  callQualityReport,
   favoriteKind,
   gameKind,
   liveActivityDelivery,
@@ -1702,6 +1703,22 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_couple_id", ["couple_id"])
     .index("by_state", ["state"]),
+
+  // FK: couple_id -> couples, user_id -> users. What one person's phone measured about one call's
+  // connection, sent when the call ends there (`calls:report_call_quality`). At most one row per call
+  // and person. Deleted when the relationship ends, and after 30 days (`retention.ts`).
+  call_reports: defineTable({
+    call_id: uuid,
+    couple_id: uuid,
+    user_id: uuid,
+    role: literals("caller", "callee"),
+    ...callQualityReport.fields,
+    created_at: ts,
+  })
+    .index("by_call_id_user_id", ["call_id", "user_id"])
+    .index("by_couple_id", ["couple_id"])
+    .index("by_user_id_created_at", ["user_id", "created_at"])
+    .index("by_created_at", ["created_at"]),
 
   // FK: thread_id -> conversation_threads cascade. reply_to_message_id -> thread_messages
   // in the same thread, kept when that message is removed (the reader hides its text).

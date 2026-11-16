@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 // ended call leaves in the couple chat.
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
+import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { failure } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
@@ -560,5 +561,98 @@ describe("ringing", () => {
     ]);
     await couple.second.as.mutation(api.calls.answer_call, { p_call_id: callId, p_device_id: newUuid() });
     expect(await t.query(internal.calls.prepare_call_ring, { call_id: callId })).toEqual([]);
+  });
+});
+
+describe("quality reports", () => {
+  const report = (changes: Partial<Record<string, unknown>> = {}) => ({
+    end_reason: "hung_up" as const,
+    media_connected: true,
+    answer_to_connected_ms: 420,
+    path: "direct" as const,
+    reconnects: 1,
+    reconnecting_seconds: 3,
+    median_rtt_ms: 48,
+    audio_loss_percent: 0.4,
+    video_loss_percent: 1.2,
+    video_sent_seconds: 30,
+    video_received_seconds: 20,
+    hottest_thermal_state: "fair" as const,
+    app_build: "412",
+    ...changes,
+  });
+  const reportCall = (person: TestCouple["first"], callId: string, changes: Partial<Record<string, unknown>> = {}) =>
+    person.as.mutation(api.calls.report_call_quality, { p_call_id: callId, p_report: report(changes) as ReturnType<typeof report> });
+  const reports = (t: TestConvex) => t.query(internal.calls.recent_call_reports, {});
+
+  test("someone outside the call's couple, or no longer in it, cannot report it", async () => {
+    const { t, couple } = await setup();
+    const callId = await call(couple);
+    const stranger = await createSignedInUser(t, {});
+    const strangerCouple = await createCouple(t);
+    for (const outsider of [stranger, strangerCouple.first]) {
+      expect((await failure(reportCall(outsider, callId))).code).toBe("42501");
+    }
+    await expect(t.mutation(api.calls.report_call_quality, { p_call_id: callId, p_report: report() as ReturnType<typeof report> })).rejects.toThrow();
+    expect((await failure(reportCall(couple.first, newUuid()))).code).toBe("42501");
+
+    await couple.first.as.mutation(api.calls.end_call, { p_call_id: callId });
+    await t.run((ctx) => endRelationshipForPair(ctx, couple.pairId, couple.second.userId, "left"));
+    expect((await failure(reportCall(couple.first, callId))).code).toBe("42501");
+    expect(await reports(t)).toEqual([]);
+  });
+
+  test("each person reports a call once, while it runs or after it ended, with numbers in range", async () => {
+    const { t, couple } = await setup();
+    const callId = await call(couple);
+    await couple.second.as.mutation(api.calls.answer_call, { p_call_id: callId, p_device_id: newUuid() });
+    // The phone that hangs up sends its report next to the end, so it can arrive first.
+    await reportCall(couple.first, callId);
+    await couple.first.as.mutation(api.calls.end_call, { p_call_id: callId });
+    tick(1);
+    await reportCall(couple.second, callId, { path: "turn", end_reason: "hung_up" });
+    await reportCall(couple.second, callId, { app_build: "999" });
+    expect(await reports(t)).toMatchObject([
+      { call_id: callId, couple_id: couple.coupleId, user_id: couple.second.userId, role: "callee", path: "turn", app_build: "412" },
+      { call_id: callId, couple_id: couple.coupleId, user_id: couple.first.userId, role: "caller", path: "direct" },
+    ]);
+
+    const missed = await call(couple);
+    await couple.second.as.mutation(api.calls.decline_call, { p_call_id: missed });
+    await reportCall(couple.first, missed, { end_reason: "no_answer", media_connected: false, path: undefined });
+    for (const wrong of [{ median_rtt_ms: -1 }, { audio_loss_percent: 101 }, { reconnecting_seconds: Number.NaN }, { app_build: "9".repeat(33) }]) {
+      expect((await failure(reportCall(couple.second, missed, wrong))).code).toBe("22023");
+    }
+    expect((await reports(t)).filter((row) => row.call_id === missed)).toMatchObject([
+      { user_id: couple.first.userId, end_reason: "no_answer", media_connected: false },
+    ]);
+  });
+
+  test("the couple's reports go when the relationship ends or is purged, and every report after 30 days", async () => {
+    const { t, couple } = await setup();
+    const other = await createCouple(t);
+    for (const pair of [couple, other]) {
+      const callId = await call(pair);
+      await pair.first.as.mutation(api.calls.end_call, { p_call_id: callId });
+      await reportCall(pair.first, callId);
+      await reportCall(pair.second, callId);
+    }
+    await couple.first.as.mutation(api.identity.request_account_deletion, {});
+    expect((await reports(t)).map((row) => row.couple_id)).toEqual([other.coupleId, other.coupleId]);
+
+    const ended = await t.run(async (ctx) => (await ctx.db.query("couples").collect()).find((row) => row.id === couple.coupleId)!);
+    const leftover = { ...report(), call_id: newUuid(), couple_id: couple.coupleId, user_id: couple.second.userId, role: "callee" as const, created_at: new Date().toISOString() };
+    await t.run((ctx) => ctx.db.insert("call_reports", leftover));
+    await t.run((ctx) => cleanupCoupleContent(ctx, ended, new Date().toISOString()));
+    await t.run((ctx) => ctx.db.insert("call_reports", leftover));
+    await t.run((ctx) => purgeCoupleContent(ctx, ended));
+    expect((await reports(t)).map((row) => row.couple_id)).toEqual([other.coupleId, other.coupleId]);
+
+    tick(29 * 86_400);
+    await t.mutation(internal.retention.prune_expired_rows, {});
+    expect(await reports(t)).toHaveLength(2);
+    tick(2 * 86_400);
+    await t.mutation(internal.retention.prune_expired_rows, {});
+    expect(await reports(t)).toEqual([]);
   });
 });

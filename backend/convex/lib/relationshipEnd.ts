@@ -1,7 +1,7 @@
 import type { WriterCtx } from "./db";
 import { withUpdatedAt } from "./db";
 import { fail } from "./errors";
-import { endLiveCallOfCouple } from "./calls";
+import { deleteCoupleCallReports, endLiveCallOfCouple } from "./calls";
 import { deleteHeartsForCouple } from "./hearts";
 import { endCoupleGameActivities } from "./liveActivities";
 import { queueBadgeUpdate } from "./badges";
@@ -90,6 +90,7 @@ export async function endRelationshipForPair(
   await deleteCoupleTogetherDays(ctx, couple.id);
   await deleteCoupleRecaps(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
+  await deleteCoupleCallReports(ctx, couple.id);
   // A nickname is a private note about one person, so it ends with the relationship.
   await clearPartnerNicknames(ctx, couple.id);
   // Open game screens and typing dots of both partners go at once, and so does the partner's game on a Lock Screen.

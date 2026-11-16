@@ -157,3 +157,37 @@ export const WELCOME_STEPS = [
   "signed_in",
 ] as const;
 export const welcomeStep = literals(...WELCOME_STEPS);
+
+/**
+ * What one person's phone measured about a call's connection, sent once when the call ends on it
+ * (`calls:report_call_quality`). Facts about the connection only: no content, no location, and no
+ * device id. `path` is the last path the media took, and the loss is what this phone lost of what
+ * the partner sent. Fields this phone could not measure, such as for a call that never connected,
+ * are left out.
+ */
+export const callQualityReport = v.object({
+  end_reason: literals(
+    "hung_up",
+    "no_answer",
+    "missed",
+    "answered_elsewhere",
+    "busy",
+    "offline",
+    "could_not_connect",
+    "microphone_denied",
+    "not_partner",
+    "other",
+  ),
+  media_connected: v.boolean(),
+  answer_to_connected_ms: v.optional(v.number()),
+  path: v.optional(literals("direct", "turn")),
+  reconnects: v.number(),
+  reconnecting_seconds: v.number(),
+  median_rtt_ms: v.optional(v.number()),
+  audio_loss_percent: v.optional(v.number()),
+  video_loss_percent: v.optional(v.number()),
+  video_sent_seconds: v.number(),
+  video_received_seconds: v.number(),
+  hottest_thermal_state: literals("nominal", "fair", "serious", "critical"),
+  app_build: v.string(),
+});

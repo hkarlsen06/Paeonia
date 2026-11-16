@@ -12,6 +12,7 @@ import { TOGETHER_DAYS_KEPT } from "./lib/together";
 // notification_outbox, widget_push_outbox, live_activity_push_outbox: a row is sent or failed
 // within hours, so an old row protects nothing. The Lock Screen push key repeats, and only its
 // newest row is ever checked.
+// call_reports: what a phone measured about a call's connection, read to find problems soon after.
 // together_days: dates the partners were together, from location or a visit that changed after
 // them, kept TOGETHER_DAYS_KEPT days by date. A row that starts earlier keeps its later dates.
 const RETENTION_DAYS = 30;
@@ -39,6 +40,10 @@ export const prune_expired_rows = internalMutation({
         .take(BATCH),
       await ctx.db
         .query("live_activity_push_outbox")
+        .withIndex("by_created_at", (q) => q.lt("created_at", cutoff))
+        .take(BATCH),
+      await ctx.db
+        .query("call_reports")
         .withIndex("by_created_at", (q) => q.lt("created_at", cutoff))
         .take(BATCH),
     ];
