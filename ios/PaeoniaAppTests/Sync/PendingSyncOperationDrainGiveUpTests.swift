@@ -143,6 +143,63 @@ struct PendingSyncOperationDrainGiveUpTests {
         #expect(inFlight.first?.status == .failedRetryable)
     }
 
+    @Test func aWriteThatKeepsRunningOutOfTimeGivesUpAfterThreeTriesWhateverItsAge() async throws {
+        let store = InMemoryPendingSyncOperationRepository()
+        let slow = try await enqueue(1, createdAt: Date(), in: store)
+        let handler = ScriptedHandler(sleepingOn: slow.id)
+        let stream = PendingSyncOperationDrainStream(
+            handlers: [handler],
+            retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0),
+            operationTimeout: .milliseconds(50),
+            foregroundStint: { 0 }
+        )
+
+        for _ in 0..<2 {
+            try await stream.push(context: context(store))
+        }
+        #expect(try await store.inFlightOperations(ownerUserID: owner, kind: .submitDailyAnswer).count == 1)
+        #expect(await handler.gaveUpIDs.isEmpty)
+
+        try await stream.push(context: context(store))
+
+        #expect(try await store.inFlightOperations(ownerUserID: owner, kind: .submitDailyAnswer).isEmpty)
+        #expect(await handler.gaveUpIDs == [slow.id])
+    }
+
+    @Test func aWriteThatRunsOutOfTimeWhileThePersonLeftTheAppNeverGivesUp() async throws {
+        let store = InMemoryPendingSyncOperationRepository()
+        let slow = try await enqueue(1, createdAt: Date(), in: store)
+        let handler = ScriptedHandler(sleepingOn: slow.id)
+        let leaves = LeaveCounter()
+        let stream = PendingSyncOperationDrainStream(
+            handlers: [handler],
+            retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0),
+            operationTimeout: .milliseconds(50),
+            foregroundStint: { await leaves.next() }
+        )
+
+        for _ in 0..<5 {
+            try await stream.push(context: context(store))
+        }
+
+        #expect(await handler.sentIDs == Array(repeating: slow.id, count: 5))
+        let inFlight = try await store.inFlightOperations(ownerUserID: owner, kind: .submitDailyAnswer)
+        #expect(inFlight.first?.status == .failedRetryable)
+        #expect(await handler.gaveUpIDs.isEmpty)
+    }
+
+    @Test func aWriteThatStatesALongerLimitIsNotCutOffByTheDrainsLimit() async throws {
+        let store = InMemoryPendingSyncOperationRepository()
+        let upload = try await enqueue(1, createdAt: Date(), in: store)
+        let handler = ScriptedHandler(sleepingOn: upload.id, for: .milliseconds(200), timeLimit: .seconds(10))
+        let stream = PendingSyncOperationDrainStream(handlers: [handler], operationTimeout: .milliseconds(50))
+
+        try await stream.push(context: context(store))
+
+        #expect(try await store.inFlightOperations(ownerUserID: owner, kind: .submitDailyAnswer).isEmpty)
+        #expect(await handler.gaveUpIDs.isEmpty)
+    }
+
     @Test func aFailedWriteIsNotSentAgainBeforeItsRetryDate() async throws {
         let store = InMemoryPendingSyncOperationRepository()
         let waiting = try await enqueue(1, createdAt: Date(), in: store)
@@ -186,6 +243,16 @@ struct PendingSyncOperationDrainGiveUpTests {
     }
 }
 
+/// An app the person leaves during every try, so each reading differs from the last.
+private actor LeaveCounter {
+    private var leaves = 0
+
+    func next() -> Int? {
+        leaves += 1
+        return leaves
+    }
+}
+
 private enum ScriptedFailure: Error {
     case serverError
 }
@@ -196,6 +263,8 @@ private actor ScriptedHandler: PendingSyncOperationHandling {
     nonisolated let showsGivenUpWrites: Bool
     private let failure: (any Error)?
     private let sleepingID: UUID?
+    private let sleepDuration: Duration
+    private nonisolated let statedTimeLimit: Duration?
     private(set) var sentIDs: [UUID] = []
     private(set) var gaveUpIDs: [UUID] = []
 
@@ -203,12 +272,20 @@ private actor ScriptedHandler: PendingSyncOperationHandling {
         self.failure = failure
         self.showsGivenUpWrites = showsGivenUpWrites
         sleepingID = nil
+        sleepDuration = .zero
+        statedTimeLimit = nil
     }
 
-    init(sleepingOn sleepingID: UUID) {
+    init(sleepingOn sleepingID: UUID, for sleep: Duration = .seconds(60), timeLimit: Duration? = nil) {
         failure = nil
         showsGivenUpWrites = true
         self.sleepingID = sleepingID
+        sleepDuration = sleep
+        statedTimeLimit = timeLimit
+    }
+
+    nonisolated func timeLimit(for _: PendingSyncOperationSnapshot) -> Duration? {
+        statedTimeLimit
     }
 
     func send(
@@ -217,7 +294,7 @@ private actor ScriptedHandler: PendingSyncOperationHandling {
     ) async throws -> PendingSyncOperationSendResult {
         sentIDs.append(operation.operation.id)
         if operation.operation.id == sleepingID {
-            try await Task.sleep(for: .seconds(60))
+            try await Task.sleep(for: sleepDuration)
         }
         if let failure {
             throw failure

@@ -540,7 +540,7 @@ private actor RecordingPrivateContentPurger: LocalPrivateContentPurging {
         calls.append(PrivacyFilePurgeCall(ownerUserID: ownerUserID, scope: scope))
     }
 
-    func removePrivateFiles() {}
+    func removePrivateFiles(scope _: LocalPrivacyPurgeScope) {}
 }
 
 private actor FlakyPrivateFilePurger: LocalPrivateContentPurging {
@@ -553,7 +553,7 @@ private actor FlakyPrivateFilePurger: LocalPrivateContentPurging {
 
     func purge(ownerUserID _: UUID, scope _: LocalPrivacyPurgeScope) {}
 
-    func removePrivateFiles() throws {
+    func removePrivateFiles(scope _: LocalPrivacyPurgeScope) throws {
         if failuresRemaining > 0 {
             failuresRemaining -= 1
             throw CocoaError(.fileWriteNoPermission)

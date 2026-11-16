@@ -13,7 +13,7 @@ struct MemoriesViewModelTests {
             title: "  First trip  ",
             date: "2026-06-30",
             note: "  We made it.  ",
-            photos: []
+            media: []
         )
 
         #expect(saved)
@@ -40,7 +40,7 @@ struct MemoriesViewModelTests {
             title: "Beach day",
             date: "2026-06-30",
             note: "",
-            photos: [makeImageData()]
+            media: MemoryDraftMedia.photos([makeImageData()])
         )
 
         #expect(saved)
@@ -57,7 +57,7 @@ struct MemoriesViewModelTests {
         let uploader = MemoryTestMediaUploader()
         let env = makeEnvironment(uploader: uploader)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "First", photos: [])
+        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "First", media: [])
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
 
         let added = await env.viewModel.saveEdits(MemoryEdit(
@@ -65,7 +65,7 @@ struct MemoriesViewModelTests {
             title: "Trip",
             date: "2026-06-30",
             note: "First",
-            newPhotos: [makeImageData()],
+            newMedia: MemoryDraftMedia.photos([makeImageData()]),
             removedMedia: [],
             place: record.snapshot.place
         ))
@@ -81,7 +81,7 @@ struct MemoriesViewModelTests {
     @Test func deleteMemoryRemovesItFromTheTimeline() async throws {
         let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", photos: [])
+        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", media: [])
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
 
         await env.viewModel.deleteMemory(record)
@@ -187,7 +187,7 @@ struct MemoriesViewModelTests {
         env.viewModel.flushDraft()
         #expect(try store.draft(for: env.userID) != nil)
 
-        let saved = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Great", photos: [])
+        let saved = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Great", media: [])
 
         #expect(saved)
         #expect(env.viewModel.draft.isEmpty)
@@ -201,18 +201,18 @@ struct MemoriesViewModelTests {
             draftStore: store
         )
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        env.viewModel.updateDraft(MemoryDraft(title: "Trip", photos: [MemoryDraftPhoto(data: makeImageData())]))
+        env.viewModel.updateDraft(MemoryDraft(title: "Trip", media: MemoryDraftMedia.photos([makeImageData()])))
 
         let saved = await env.viewModel.createMemory(
             title: "Trip",
             date: "2026-06-30",
             note: "",
-            photos: [makeImageData()]
+            media: MemoryDraftMedia.photos([makeImageData()])
         )
 
         #expect(!saved)
         #expect(try store.draft(for: env.userID)?.title == "Trip")
-        #expect(try store.draft(for: env.userID)?.photos.count == 1)
+        #expect(try store.draft(for: env.userID)?.media.count == 1)
     }
 
     @Test func typingWaitsForAPauseBeforeSavingButPhotosSaveAtOnce() async throws {
@@ -228,9 +228,9 @@ struct MemoriesViewModelTests {
         #expect(try store.draft(for: env.userID)?.title == "Trip")
 
         var withPhoto = env.viewModel.draft
-        withPhoto.photos = [MemoryDraftPhoto(data: makeImageData())]
+        withPhoto.media = [MemoryDraftMedia(content: .photo(makeImageData()))]
         env.viewModel.updateDraft(withPhoto)
-        #expect(try store.draft(for: env.userID)?.photos.count == 1)
+        #expect(try store.draft(for: env.userID)?.media.count == 1)
     }
 
     @Test func discardingTheDraftClearsTheSavedCopy() async throws {

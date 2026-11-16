@@ -1,7 +1,9 @@
 import CoreGraphics
 import Foundation
+import ImageIO
 import Testing
 import UIKit
+import UniformTypeIdentifiers
 @testable import PaeoniaApp
 
 private let sidewaysOrientations: [UIImage.Orientation] = [
@@ -48,7 +50,51 @@ struct ImageCompressorTests {
         #expect(Int(decoded.size.height * decoded.scale) == result.height)
     }
 
+    @Test func animatedGIFStaysAsItIs() throws {
+        let gif = try Self.gif(frames: 3, width: 120, height: 80)
+
+        let result = try ImageCompressor.compressKeepingAnimation(gif)
+
+        #expect(result.data == gif)
+        #expect(result.mediaType == "image/gif")
+        #expect(result.fileExtension == "gif")
+        #expect(result.width == 120)
+        #expect(result.height == 80)
+    }
+
+    @Test func animatedGIFOverTheLimitIsTooBig() throws {
+        var gif = try Self.gif(frames: 2, width: 120, height: 80)
+        gif.append(Data(count: ImageCompressor.maxAnimatedGIFBytes))
+
+        #expect(throws: ImageCompressor.CompressionError.animatedGIFTooBig) {
+            try ImageCompressor.compressKeepingAnimation(gif)
+        }
+    }
+
+    @Test func oneFrameGIFBecomesAJPEG() throws {
+        let gif = try Self.gif(frames: 1, width: 120, height: 80)
+
+        let result = try ImageCompressor.compressKeepingAnimation(gif)
+
+        #expect(result.mediaType == "image/jpeg")
+        #expect(result.width == 120)
+        #expect(result.height == 80)
+    }
+
     // MARK: - Fixtures
+
+    private static func gif(frames: Int, width: Int, height: Int) throws -> Data {
+        let data = NSMutableData()
+        let destination = try #require(
+            CGImageDestinationCreateWithData(data, UTType.gif.identifier as CFString, frames, nil)
+        )
+        let frame = try #require(solidImage(width: width, height: height).cgImage)
+        for _ in 0..<frames {
+            CGImageDestinationAddImage(destination, frame, nil)
+        }
+        try #require(CGImageDestinationFinalize(destination))
+        return data as Data
+    }
 
     private static func solidImage(width: Int, height: Int) -> UIImage {
         let format = UIGraphicsImageRendererFormat.default()

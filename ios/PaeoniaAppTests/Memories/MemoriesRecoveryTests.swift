@@ -8,7 +8,7 @@ struct MemoriesRecoveryTests {
     @Test func failedReloadKeepsTheTimelineAndOpenMemory() async throws {
         let env = makeEnvironment()
         await env.model.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.model.createMemory(title: "Lake", date: "2026-06-30", note: "Cold water", photos: [])
+        _ = await env.model.createMemory(title: "Lake", date: "2026-06-30", note: "Cold water", media: [])
         let record = try #require(env.model.timeline.flatMap(\.memories).first)
         await env.service.setReadFailure(true)
 
@@ -44,11 +44,13 @@ struct MemoriesRecoveryTests {
     @Test func partialSaveReturnsTheSavedBaselineAndRetriesOnlyRemainingPhotos() async throws {
         let env = makeEnvironment(uploader: MemoryTestMediaUploader(failingCalls: [1]))
         await env.model.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.model.createMemory(title: "Lake", date: "2026-06-30", note: "First", photos: [])
+        _ = await env.model.createMemory(title: "Lake", date: "2026-06-30", note: "First", media: [])
         let record = try #require(env.model.timeline.flatMap(\.memories).first)
-        let photo = MemoryDraftPhoto(data: makeMemoryTestImageData(color: .blue), accessibilityText: "Our lake")
-        let draft = MemoryDraft(title: "Our trip", note: "Cold water", photos: [photo])
-        let result = await env.model.saveEdits(edit(record, title: draft.title, note: draft.note, photos: [photo.data]))
+        let photo = MemoryDraftMedia(
+            content: .photo(makeMemoryTestImageData(color: .blue)), accessibilityText: "Our lake"
+        )
+        let draft = MemoryDraft(title: "Our trip", note: "Cold water", media: [photo])
+        let result = await env.model.saveEdits(edit(record, title: draft.title, note: draft.note, media: [photo]))
 
         guard case .partial(let saved) = result else {
             Issue.record("The editor must disclose the durable part of the edit")
@@ -61,11 +63,11 @@ struct MemoriesRecoveryTests {
         let savedDraft = draft.savedBaseline(from: baseline)
         #expect(savedDraft.title == draft.title)
         #expect(savedDraft.note == draft.note)
-        #expect(savedDraft.photos.isEmpty)
-        #expect(draft.photos == [photo])
+        #expect(savedDraft.media.isEmpty)
+        #expect(draft.media == [photo])
 
         let retry = await env.model.saveEdits(edit(
-            baseline, title: draft.title, note: draft.note, photos: [photo.data]
+            baseline, title: draft.title, note: draft.note, media: [photo]
         ))
         #expect(retry.isSaved)
         #expect(env.model.record(for: record.snapshot.memoryID)?.snapshot.visibleMediaAssetIDs.count == 1)
@@ -76,7 +78,7 @@ struct MemoriesRecoveryTests {
     @Test func partialSaveRebasesUntouchedFieldsWithoutOverwritingThePartnerOnRetry() async throws {
         let env = makeEnvironment(uploader: MemoryTestMediaUploader(failingCalls: [1]))
         await env.model.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.model.createMemory(title: "Trip", date: "2026-06-30", note: "First", photos: [])
+        _ = await env.model.createMemory(title: "Trip", date: "2026-06-30", note: "First", media: [])
         let original = try #require(env.model.timeline.flatMap(\.memories).first)
         try await env.store.saveRemote([.fixture(
             ownerUserID: env.userID, memoryID: original.snapshot.memoryID, coupleID: env.coupleID,
@@ -85,10 +87,10 @@ struct MemoriesRecoveryTests {
         )], ownerUserID: env.userID, mergePolicy: .overwriteLocalChanges)
         var draft = MemoryDraft(
             title: "Trip", date: try #require(MemoryTimeline.pickerDate(forLocalDate: "2026-06-30")),
-            note: "New note", photos: [MemoryDraftPhoto(data: makeMemoryTestImageData(color: .blue))]
+            note: "New note", media: [MemoryDraftMedia(content: .photo(makeMemoryTestImageData(color: .blue)))]
         )
         let result = await env.model.saveEdits(edit(
-            original, title: draft.title, note: draft.note, photos: draft.photos.map(\.data)
+            original, title: draft.title, note: draft.note, media: draft.media
         ))
         guard case .partial(let saved) = result, let saved else {
             Issue.record("Expected a partial save after the upload failed")
@@ -97,9 +99,9 @@ struct MemoriesRecoveryTests {
         draft.rebaseUntouchedFields(from: original, to: saved)
         #expect(draft.title == "Partner's title")
         #expect(draft.note == "New note")
-        #expect(draft.photos.count == 1)
+        #expect(draft.media.count == 1)
         let retry = await env.model.saveEdits(edit(
-            saved, title: draft.title, note: draft.note, photos: draft.photos.map(\.data)
+            saved, title: draft.title, note: draft.note, media: draft.media
         ))
         #expect(retry.isSaved)
         #expect(env.model.record(for: original.snapshot.memoryID)?.snapshot.title == "Partner's title")
@@ -110,14 +112,16 @@ struct MemoriesRecoveryTests {
         await env.model.configure(currentUserID: env.userID, coupleID: env.coupleID)
         _ = await env.model.createMemory(
             title: "Lake", date: "2026-06-30", note: "First",
-            photos: [makeMemoryTestImageData(color: .blue), makeMemoryTestImageData(color: .red)]
+            media: MemoryDraftMedia.photos([
+                makeMemoryTestImageData(color: .blue), makeMemoryTestImageData(color: .red)
+            ])
         )
         let record = try #require(env.model.timeline.flatMap(\.memories).first)
         await env.service.failRemoval(call: 2)
         var change = edit(record, title: "Lake", note: "First")
         change = MemoryEdit(
             base: record, title: change.title, date: change.date, note: change.note,
-            newPhotos: [], removedMedia: record.snapshot.media, place: record.snapshot.place
+            newMedia: [], removedMedia: record.snapshot.media, place: record.snapshot.place
         )
         let result = await env.model.saveEdits(change)
 
@@ -133,12 +137,15 @@ struct MemoriesRecoveryTests {
         let store = FailingMemoryDraftStore()
         let env = makeEnvironment(draftStore: store)
         await env.model.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        let photos = [MemoryDraftPhoto(data: Data([1]), accessibilityText: "Lake"), MemoryDraftPhoto(data: Data([2]))]
+        let photos = [
+            MemoryDraftMedia(content: .photo(Data([1])), accessibilityText: "Lake"),
+            MemoryDraftMedia(content: .photo(Data([2])))
+        ]
         store.failsWrites = true
-        env.model.updateDraft(MemoryDraft(title: "Trip", photos: photos))
+        env.model.updateDraft(MemoryDraft(title: "Trip", media: photos))
         env.model.flushDraft()
 
-        #expect(env.model.draft.photos == photos)
+        #expect(env.model.draft.media == photos)
         #expect(env.model.draftNeedsSaving)
         #expect(env.model.draftFailure == .write)
         store.failsWrites = false
@@ -148,8 +155,8 @@ struct MemoriesRecoveryTests {
 
         let reopened = makeEnvironment(draftStore: store)
         await reopened.model.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        #expect(reopened.model.draft.photos.map(\.data) == photos.map(\.data))
-        #expect(reopened.model.draft.photos.map(\.accessibilityText) == photos.map(\.accessibilityText))
+        #expect(reopened.model.draft.media.compactMap(\.photoData) == photos.compactMap(\.photoData))
+        #expect(reopened.model.draft.media.map(\.accessibilityText) == photos.map(\.accessibilityText))
     }
 
     @Test(arguments: [false, true])
@@ -163,13 +170,13 @@ struct MemoriesRecoveryTests {
             mediaUploader: MemoryTestMediaUploader(), imageProvider: nil, draftStore: makeIsolatedMemoryDraftStore()
         )
         await model.configure(currentUserID: userID, coupleID: UUID())
-        #expect(await model.createMemory(title: "Original", date: "2026-06-30", note: "Cold water", photos: []))
+        #expect(await model.createMemory(title: "Original", date: "2026-06-30", note: "Cold water", media: []))
         let original = try #require(model.timeline.flatMap(\.memories).first)
         await store.failWrites(true)
         let title = addingPhoto ? "Original" : "Replacement"
         let photos = addingPhoto ? [makeMemoryTestImageData(color: .blue)] : []
         let kind: SyncPendingOperationKind = addingPhoto ? .attachMemoryMedia : .updateMemory
-        let result = await model.saveEdits(edit(original, title: title, photos: photos))
+        let result = await model.saveEdits(edit(original, title: title, media: MemoryDraftMedia.photos(photos)))
         guard case .partial(let saved) = result else {
             Issue.record("Discard must disclose the edit already in the outbox")
             return
@@ -179,9 +186,9 @@ struct MemoriesRecoveryTests {
         let operations = try await pending.inFlightOperations(ownerUserID: userID, kind: kind)
         #expect(operations.count == 1)
         #expect(queued.pendingOperationID == operations.first?.operation.id)
-        #expect(await !model.saveEdits(edit(queued, title: title, photos: photos)).isSaved)
+        #expect(await !model.saveEdits(edit(queued, title: title, media: MemoryDraftMedia.photos(photos))).isSaved)
         await store.failWrites(false)
-        #expect(await model.saveEdits(edit(queued, title: title, photos: photos)).isSaved)
+        #expect(await model.saveEdits(edit(queued, title: title, media: MemoryDraftMedia.photos(photos))).isSaved)
         let retried = try await pending.inFlightOperations(ownerUserID: userID, kind: kind)
         #expect(retried.map(\.operation.id) == operations.map(\.operation.id))
         #expect(model.record(for: original.snapshot.memoryID)?.snapshot.title == title)
@@ -189,11 +196,11 @@ struct MemoriesRecoveryTests {
     }
 
     private func edit(
-        _ record: MemoryRecord, title: String, note: String = "Cold water", photos: [Data] = []
+        _ record: MemoryRecord, title: String, note: String = "Cold water", media: [MemoryDraftMedia] = []
     ) -> MemoryEdit {
         MemoryEdit(
             base: record, title: title, date: record.snapshot.memoryDate, note: note,
-            newPhotos: photos, removedMedia: [], place: record.snapshot.place
+            newMedia: media, removedMedia: [], place: record.snapshot.place
         )
     }
 

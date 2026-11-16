@@ -261,5 +261,5 @@ extension HoldingMediaAlternativeGateway: MediaAlternativeGateway {}
 private struct MetadataTestPrivateContentPurger: LocalPrivateContentPurging {
     // swiftlint:disable:next async_without_await
     func purge(ownerUserID _: UUID, scope _: LocalPrivacyPurgeScope) async {}
-    func removePrivateFiles() {}
+    func removePrivateFiles(scope _: LocalPrivacyPurgeScope) {}
 }

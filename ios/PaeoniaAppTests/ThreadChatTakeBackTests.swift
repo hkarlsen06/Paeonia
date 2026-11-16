@@ -23,7 +23,8 @@ struct ThreadChatTakeBackTests {
     private func takeBackATriedMessage(
         _ fixture: ChatTestFixture,
         service: ThreadChatService,
-        body: String
+        body: String,
+        attachments: ThreadChatAttachmentsPayload? = nil
     ) async throws -> (send: SyncClientOperation, message: ThreadChatMessage) {
         let send = fixture.operationProvider.makeOperation()
         let message = try await service.queueMessage(
@@ -32,7 +33,7 @@ struct ThreadChatTakeBackTests {
             subject: .question(fixture.question.questionID),
             threadID: fixture.threadID,
             body: body,
-            photos: nil,
+            attachments: attachments,
             createThread: false,
             replyTo: nil,
             operation: send
@@ -108,6 +109,81 @@ struct ThreadChatTakeBackTests {
         #expect(await fixture.cachedMessages().map(\.isDeleted) == [true])
     }
 
+    @Test func aTakenBackVideoThatNeverFinishedUploadingLosesItsFileAndIsNeverSent() async throws {
+        let fixture = ChatTestFixture()
+        let service = makeService(fixture)
+        let file = ThreadChatMediaFiles.url(named: "\(UUID().uuidString.lowercased()).mp4")
+        try FileManager.default.createDirectory(at: ThreadChatMediaFiles.directory, withIntermediateDirectories: true)
+        try Data("a prepared video".utf8).write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let video = ThreadChatAttachmentsPayload(messageID: UUID(), items: [
+            ThreadChatAttachmentsPayload.Item(
+                kind: .video, local: .file(name: file.lastPathComponent), width: 720, height: 1_280,
+                durationMs: 42_000, reserveOperation: fixture.operationProvider.makeOperation(),
+                finalizeOperation: fixture.operationProvider.makeOperation()
+            )
+        ])
+        let (send, _) = try await takeBackATriedMessage(fixture, service: service, body: "", attachments: video)
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+
+        let queued = try #require(try await fixture.queuedOperations(.sendThreadMessage).first)
+        #expect(queued.operation.id == send.id)
+        let uploader = ChatVoiceUploader(assetID: UUID())
+        let handler = SendChatMessageOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache,
+            mediaUploadService: uploader
+        )
+        let result = try await handler.send(
+            queued,
+            context: chatSyncContext(ownerUserID: fixture.ownerUserID, pendingStore: fixture.pendingStore)
+        )
+
+        // The test uploader finished no upload earlier, so the server cannot have the message.
+        #expect(result == .terminalFailure("Taken back before it reached the server"))
+        #expect(await uploader.uploadedMimeTypes.isEmpty)
+        #expect(await fixture.gateway.lastMediaAssetIDs == nil)
+    }
+
+    @Test func aTakenBackMessageDropsTheCachedCopiesOfItsFinishedUploads() async throws {
+        let fixture = ChatTestFixture()
+        let service = makeService(fixture)
+        let photoReserve = fixture.operationProvider.makeOperation()
+        let unfinishedReserve = fixture.operationProvider.makeOperation()
+        let item = { (reserve: SyncClientOperation) in
+            ThreadChatAttachmentsPayload.Item(
+                kind: .photo, local: .bytes(Data("a photo".utf8)), width: 600, height: 800,
+                reserveOperation: reserve, finalizeOperation: fixture.operationProvider.makeOperation()
+            )
+        }
+        let photos = ThreadChatAttachmentsPayload(messageID: UUID(), items: [
+            item(photoReserve), item(unfinishedReserve), item(fixture.operationProvider.makeOperation()),
+        ])
+        _ = try await takeBackATriedMessage(fixture, service: service, body: "", attachments: photos)
+        let queued = try #require(try await fixture.queuedOperations(.sendThreadMessage).first)
+        let finishedAssetID = UUID()
+        let evictions = EvictionRecorder()
+        let uploader = ChatVoiceUploader(assetID: UUID(), finishedAssetIDs: [photoReserve.id: finishedAssetID])
+        let handler = SendChatMessageOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache,
+            mediaUploadService: uploader,
+            imageCache: evictions
+        )
+
+        let result = try await handler.send(
+            queued,
+            context: chatSyncContext(ownerUserID: fixture.ownerUserID, pendingStore: fixture.pendingStore)
+        )
+
+        // The second photo never finished, so the message stops here, and the first photo's
+        // copy in the caches goes with it. The third upload never started, so nothing asks about it.
+        #expect(result == .terminalFailure("Taken back before it reached the server"))
+        #expect(await evictions.evicted == [finishedAssetID])
+        #expect(await uploader.askedReserveOperationIDs == [photoReserve.id, unfinishedReserve.id])
+        #expect(await fixture.gateway.lastMediaAssetIDs == nil)
+    }
+
     @Test func aDeleteBehindASendThatNeverReachedTheServerHasNothingToDelete() async throws {
         let fixture = ChatTestFixture()
         let service = makeService(fixture)
@@ -137,7 +213,7 @@ struct ThreadChatTakeBackTests {
         let service = makeService(fixture, mediaCache: evictions)
         let assetID = UUID()
         var old = fixture.partnerMessage(body: "Secret", id: fixture.messageID, at: 1)
-        old.photos = [ThreadChatPhoto(mediaAssetID: assetID)]
+        old.attachments = [ThreadChatAttachment(kind: .photo, mediaAssetID: assetID)]
         await fixture.cache.saveMessages(
             [old, fixture.partnerMessage(body: "Newer", at: 10)],
             ownerUserID: fixture.ownerUserID,
@@ -149,7 +225,7 @@ struct ThreadChatTakeBackTests {
         let cached = await fixture.cachedMessages()
         #expect(cached.map(\.isDeleted) == [true, false])
         #expect(cached.first?.body.isEmpty == true)
-        #expect(cached.first?.photos == nil)
+        #expect(cached.first?.attachments == nil)
         #expect(await evictions.evicted == [assetID])
     }
 

@@ -59,7 +59,12 @@ struct StoryTimelineTests {
         {"couple_id":"\(StoryFixture.couple.uuidString.lowercased())","stories":[
           {"id":"\(UUID().uuidString.lowercased())","author_user_id":"\(StoryFixture.partner.uuidString.lowercased())",
            "media_asset_id":"\(UUID().uuidString.lowercased())","caption":"Thinking of you",
-           "created_at":"2026-10-16T08:30:00.123Z","seen_at":null}
+           "media_type":"image","mime_type":"image/jpeg","width":1568,"height":1176,"duration_ms":null,
+           "created_at":"2026-10-16T08:30:00.123Z","seen_at":null},
+          {"id":"\(UUID().uuidString.lowercased())","author_user_id":"\(StoryFixture.partner.uuidString.lowercased())",
+           "media_asset_id":"\(UUID().uuidString.lowercased())","caption":null,
+           "media_type":"video","mime_type":"video/mp4","width":720,"height":1280,"duration_ms":12500,
+           "created_at":"2026-10-16T08:40:00.000Z","seen_at":null}
         ],"notes":[{"user_id":"\(StoryFixture.partner.uuidString.lowercased())","text":"coffee?",
           "created_at":"2026-10-16T08:31:00.000Z"}]}
         """
@@ -68,6 +73,11 @@ struct StoryTimelineTests {
         #expect(story.authorUserID == StoryFixture.partner)
         #expect(story.caption == "Thinking of you")
         #expect(story.seenAt == nil)
+        #expect(!story.isVideo)
+        let video = try #require(remote.stories.last)
+        #expect(video.isVideo)
+        #expect(video.durationMs == 12_500)
+        #expect(video.width == 720 && video.height == 1_280)
         #expect(remote.notes.first?.text == "coffee?")
     }
 
@@ -103,7 +113,7 @@ struct StoriesViewModelTests {
         let model = await makeModel(gateway: gateway, cache: cache)
         #expect(!model.hasPostedBefore)
 
-        let posted = await model.post(photo: StoryFixture.photo, caption: "  hello  ")
+        let posted = await model.post(.photo(StoryFixture.photo), caption: "  hello  ")
         await model.reload()
 
         #expect(posted)
@@ -119,16 +129,40 @@ struct StoriesViewModelTests {
         await gateway.failNextPost()
         let model = await makeModel(gateway: gateway)
 
-        let first = await model.post(photo: StoryFixture.photo, caption: "hi")
+        let first = await model.post(.photo(StoryFixture.photo), caption: "hi")
         #expect(!first)
         #expect(model.error == .postFailed)
-        let retry = await model.post(photo: StoryFixture.photo, caption: "hi")
+        let retry = await model.post(.photo(StoryFixture.photo), caption: "hi")
         #expect(retry)
 
         let posts = await gateway.posts
         #expect(posts.count == 2)
         #expect(posts[0].id == posts[1].id)
         #expect(posts[0].postOperationID == posts[1].postOperationID)
+    }
+
+    @Test func aVideoUploadsAsAVideoAndARetrySendsTheSameStory() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("story.mp4")
+        try Data(repeating: 7, count: 64).write(to: file)
+        let video = PreparedVideo(fileURL: file, width: 720, height: 1_280, durationMs: 12_500, byteSize: 64)
+        let gateway = FakeStoriesGateway()
+        await gateway.failNextPost()
+        let model = await makeModel(gateway: gateway)
+
+        let first = await model.post(.video(video), caption: "hi")
+        let retry = await model.post(.video(video), caption: "hi")
+
+        #expect(!first)
+        #expect(retry)
+        let posts = await gateway.posts
+        #expect(posts.count == 2)
+        #expect(posts[0].id == posts[1].id)
+        #expect(posts[1].mimeType == "video/mp4")
+        #expect(posts[1].durationMs == 12_500)
     }
 
     @Test func openingThePartnersStoryMarksItSeenHereAndOnTheServer() async throws {
@@ -165,7 +199,7 @@ struct StoriesViewModelTests {
         await gateway.runBeforeAnswer { await cache.clearAll() }
         let model = await makeModel(gateway: gateway, cache: cache)
 
-        let posted = await model.post(photo: StoryFixture.photo, caption: "hi")
+        let posted = await model.post(.photo(StoryFixture.photo), caption: "hi")
         let saved = await model.setNote("hi")
 
         #expect(posted)
@@ -271,6 +305,8 @@ actor FakeStoriesGateway {
         let id: UUID
         let caption: String?
         let postOperationID: UUID
+        let mimeType: String
+        let durationMs: Int?
     }
 
     private(set) var posts: [Post] = []
@@ -307,12 +343,15 @@ actor FakeStoriesGateway {
 
     func post(
         id: UUID,
-        photo: MemoryUploadMedia,
+        media: MemoryUploadMedia,
         caption: String?,
         coupleID: UUID,
         operations: StoryPostOperations
     ) async throws -> Story? {
-        posts.append(Post(id: id, caption: caption, postOperationID: operations.post.id))
+        posts.append(Post(
+            id: id, caption: caption, postOperationID: operations.post.id,
+            mimeType: media.mimeType, durationMs: media.durationMs
+        ))
         await beforeAnswer?()
         if failsNextPost {
             failsNextPost = false

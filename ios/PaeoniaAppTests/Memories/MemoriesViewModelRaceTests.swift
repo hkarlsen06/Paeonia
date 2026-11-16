@@ -14,10 +14,14 @@ struct MemoriesViewModelRaceTests {
         let photo = makeImageData()
 
         let first = Task {
-            await env.viewModel.createMemory(title: "Beach", date: "2026-06-30", note: "", photos: [photo])
+            await env.viewModel.createMemory(
+                title: "Beach", date: "2026-06-30", note: "", media: MemoryDraftMedia.photos([photo])
+            )
         }
         await waitUntil { env.viewModel.isSaving }
-        let second = await env.viewModel.createMemory(title: "Beach", date: "2026-06-30", note: "", photos: [photo])
+        let second = await env.viewModel.createMemory(
+            title: "Beach", date: "2026-06-30", note: "", media: MemoryDraftMedia.photos([photo])
+        )
 
         #expect(!second)
         #expect(await first.value)
@@ -31,8 +35,12 @@ struct MemoriesViewModelRaceTests {
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
         let photos = [makeImageData(color: .systemPink), makeImageData(color: .systemBlue)]
 
-        let failed = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "", photos: photos)
-        let saved = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "", photos: photos)
+        let failed = await env.viewModel.createMemory(
+            title: "Trip", date: "2026-06-30", note: "", media: MemoryDraftMedia.photos(photos)
+        )
+        let saved = await env.viewModel.createMemory(
+            title: "Trip", date: "2026-06-30", note: "", media: MemoryDraftMedia.photos(photos)
+        )
 
         #expect(!failed)
         #expect(saved)
@@ -52,7 +60,7 @@ struct MemoriesViewModelRaceTests {
             title: "Twice",
             date: "2026-06-30",
             note: "",
-            photos: [photo, photo]
+            media: MemoryDraftMedia.photos([photo, photo])
         )
 
         #expect(saved)
@@ -65,7 +73,7 @@ struct MemoriesViewModelRaceTests {
     @Test func editingTheNoteKeepsATitleThePartnerChangedMeanwhile() async throws {
         let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "First", photos: [])
+        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "First", media: [])
         let openedWith = try #require(env.viewModel.timeline.flatMap(\.memories).first)
         try await env.memoryStore.saveRemote(
             [.fixture(
@@ -87,7 +95,7 @@ struct MemoriesViewModelRaceTests {
             title: "Trip",
             date: "2026-06-30",
             note: "Second thoughts",
-            newPhotos: [],
+            newMedia: [],
             removedMedia: [],
             place: openedWith.snapshot.place
         ))
@@ -119,7 +127,7 @@ struct MemoriesViewModelRaceTests {
         await service.holdNextLoad()
         let staleLoad = Task { await viewModel.load() }
         await service.waitUntilHolding()
-        _ = await viewModel.createMemory(title: "New", date: "2026-06-30", note: "Note", photos: [])
+        _ = await viewModel.createMemory(title: "New", date: "2026-06-30", note: "Note", media: [])
         #expect(viewModel.timeline.flatMap(\.memories).count == 1)
 
         await service.release()
@@ -142,7 +150,7 @@ struct MemoriesViewModelRaceTests {
         let (userID, partnerID, coupleID, visitID, partnersMemory) = (UUID(), UUID(), UUID(), UUID(), UUID())
         await viewModel.configure(currentUserID: userID, coupleID: coupleID)
         _ = await viewModel.createMemory(
-            title: "Bergen", date: "2026-06-30", note: "Rain", photos: [], visitID: visitID
+            title: "Bergen", date: "2026-06-30", note: "Rain", media: [], visitID: visitID
         )
         let waiting = try #require(viewModel.timeline.flatMap(\.memories).first)
         try await store.saveRemote(
@@ -156,7 +164,7 @@ struct MemoriesViewModelRaceTests {
 
         let saved = await viewModel.saveEdits(MemoryEdit(
             base: waiting, title: "Bergen", date: "2026-06-30", note: "Rain all week",
-            newPhotos: [], removedMedia: [], place: nil
+            newMedia: [], removedMedia: [], place: nil
         ))
 
         #expect(!saved.isSaved)
@@ -181,7 +189,7 @@ struct MemoriesViewModelRaceTests {
     @Test func deletingAMemoryThePartnerAlreadyDeletedIsQuiet() async throws {
         let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", photos: [])
+        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", media: [])
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
         try await env.memoryStore.saveRemote(
             [.fixture(
@@ -209,7 +217,7 @@ struct MemoriesViewModelRaceTests {
         let uploader = MemoryTestMediaUploader()
         let env = makeEnvironment(uploader: uploader)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", photos: [])
+        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", media: [])
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
         try await env.memoryStore.saveRemote(
             [.fixture(
@@ -230,7 +238,7 @@ struct MemoriesViewModelRaceTests {
             title: "Trip",
             date: "2026-06-30",
             note: "Note",
-            newPhotos: [makeImageData()],
+            newMedia: MemoryDraftMedia.photos([makeImageData()]),
             removedMedia: [],
             place: record.snapshot.place
         ))

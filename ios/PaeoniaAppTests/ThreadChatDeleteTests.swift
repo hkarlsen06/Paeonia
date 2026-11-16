@@ -3,19 +3,21 @@ import Testing
 @testable import PaeoniaApp
 
 /// Records which cached media files the chat asked to remove.
-actor EvictionRecorder: MediaCacheEvicting {
+actor EvictionRecorder: DailyAnswerMediaImageCacheWriting {
     private(set) var evicted: [UUID] = []
 
     func evict(mediaAssetIDs: [UUID]) {
         evicted.append(contentsOf: mediaAssetIDs)
     }
+
+    func cacheImageData(_: Data, for _: UUID) {}
 }
 
 @MainActor
 struct ThreadChatDeleteTests {
     private func ownSentMessage(_ fixture: ChatTestFixture, photoAssetID: UUID? = nil) -> ThreadChatMessage {
         var message = fixture.ownServerCopy(body: "Oops", at: 3)
-        if let photoAssetID { message.photos = [ThreadChatPhoto(mediaAssetID: photoAssetID)] }
+        if let photoAssetID { message.attachments = [ThreadChatAttachment(kind: .photo, mediaAssetID: photoAssetID)] }
         return message
     }
 
@@ -48,7 +50,7 @@ struct ThreadChatDeleteTests {
         let shown = try #require(await fixture.cachedMessages().first)
         #expect(shown.isDeleted)
         #expect(shown.body.isEmpty)
-        #expect(shown.photos == nil)
+        #expect(shown.attachments == nil)
         let queued = try await fixture.queuedOperations(.deleteThreadMessage)
         #expect(queued.count == 1)
         #expect(await evictions.evicted == [assetID])
@@ -82,7 +84,7 @@ struct ThreadChatDeleteTests {
         let assetID = UUID()
         let shown = fixture.partnerMessage(body: "", id: fixture.messageID)
         var withPhoto = shown
-        withPhoto.photos = [ThreadChatPhoto(mediaAssetID: assetID)]
+        withPhoto.attachments = [ThreadChatAttachment(kind: .photo, mediaAssetID: assetID)]
         await fixture.cache.saveMessages([withPhoto], ownerUserID: fixture.ownerUserID, subjectID: shown.subjectID)
         var gone = shown
         gone.deletedAt = Date(timeIntervalSince1970: 9)
@@ -107,7 +109,7 @@ struct ThreadChatDeleteTests {
             subject: .question(fixture.question.questionID),
             threadID: fixture.threadID,
             body: "Wrong chat",
-            photos: nil,
+            attachments: nil,
             createThread: false,
             replyTo: nil,
             operation: fixture.operationProvider.makeOperation()
@@ -124,7 +126,7 @@ struct ThreadChatDeleteTests {
         #expect(await fixture.cachedMessages().isEmpty)
     }
 
-    @Test func aMessageThatIsSendingRightNowCannotBeTakenBackYet() async throws {
+    @Test func aMessageThatIsSendingRightNowIsTakenBackAndItsDeleteWaitsBehindTheSend() async throws {
         let fixture = ChatTestFixture()
         let service = makeService(fixture)
         let sending = try await service.queueMessage(
@@ -133,22 +135,26 @@ struct ThreadChatDeleteTests {
             subject: .question(fixture.question.questionID),
             threadID: fixture.threadID,
             body: "On its way",
-            photos: nil,
+            attachments: nil,
             createThread: false,
             replyTo: nil,
             operation: fixture.operationProvider.makeOperation()
         )
         try await fixture.pendingStore.markSending(clientOperationID: sending.id, at: Date())
 
-        await #expect(throws: ThreadChatServiceError.stillSending) {
-            try await service.deleteMessage(
-                ownerUserID: fixture.ownerUserID,
-                message: sending,
-                operation: fixture.operationProvider.makeOperation()
-            )
-        }
+        try await service.deleteMessage(
+            ownerUserID: fixture.ownerUserID,
+            message: sending,
+            operation: fixture.operationProvider.makeOperation()
+        )
+
+        // The server may have it already, so the delete follows the send, which now only checks.
         #expect(try await fixture.queuedOperations(.sendThreadMessage).count == 1)
-        #expect(await fixture.cachedMessages().map(\.delivery) == [.sending])
+        let deletes = try await fixture.queuedOperations(.deleteThreadMessage)
+        let data = try #require(deletes.first?.requestData)
+        let payload = try JSONDecoder().decode(DeleteChatMessagePayload.self, from: data)
+        #expect(payload.target == .sentBy(operationID: sending.id))
+        #expect(await fixture.cachedMessages().isEmpty)
     }
 
     @Test func theFirstMessageStaysWhileLaterMessagesWaitForItsChat() async throws {
@@ -160,7 +166,7 @@ struct ThreadChatDeleteTests {
             subject: .question(fixture.question.questionID),
             threadID: nil,
             body: "First",
-            photos: nil,
+            attachments: nil,
             createThread: true,
             replyTo: nil,
             operation: fixture.operationProvider.makeOperation()
@@ -171,7 +177,7 @@ struct ThreadChatDeleteTests {
             subject: .question(fixture.question.questionID),
             threadID: nil,
             body: "Second",
-            photos: nil,
+            attachments: nil,
             createThread: false,
             replyTo: nil,
             operation: fixture.operationProvider.makeOperation()

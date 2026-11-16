@@ -99,7 +99,7 @@ struct ThreadChatPresenceModelTests {
         // swiftlint:disable:next function_parameter_count
         func queueMessage(
             ownerUserID _: UUID, coupleID _: UUID, subject _: ThreadChatSubject, threadID _: UUID?, body _: String,
-            photos _: ThreadChatPhotosPayload?, createThread _: Bool, replyTo _: ThreadChatItemID?,
+            attachments _: ThreadChatAttachmentsPayload?, createThread _: Bool, replyTo _: ThreadChatItemID?,
             operation _: SyncClientOperation
         ) throws -> ThreadChatMessage { throw ThreadChatServiceError.unavailable }
     }

@@ -125,6 +125,10 @@ nonisolated final class MemoryTestPhotoSaver: PhotoLibrarySaving, @unchecked Sen
     func saveImage(_ data: Data) -> PhotoLibrarySaveResult {
         result
     }
+
+    func saveVideo(fileURL: URL) -> PhotoLibrarySaveResult {
+        result
+    }
 }
 
 /// A draft store backed by a throwaway defaults suite and temp directory, so tests never

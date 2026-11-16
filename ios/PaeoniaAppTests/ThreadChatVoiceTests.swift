@@ -97,9 +97,17 @@ struct ThreadChatVoiceTests {
         await cache.append(message, ownerUserID: owner)
 
         await cache.confirm(
-            ownerUserID: owner, subject: .question(message.subjectID), coupleID: UUID(),
-            clientOperationID: operationID,
-            threadID: UUID(), messageID: message.id, body: "", senderUserID: owner, createdAt: message.createdAt
+            ThreadChatConfirmedSend(
+                subject: .question(message.subjectID),
+                coupleID: UUID(),
+                clientOperationID: operationID,
+                threadID: UUID(),
+                messageID: message.id,
+                body: "",
+                senderUserID: owner,
+                createdAt: message.createdAt
+            ),
+            ownerUserID: owner
         )
 
         let reopened = FileThreadChatCache(directoryURL: directory)
@@ -118,14 +126,18 @@ struct ThreadChatVoiceTests {
         )
         let viewModel = fixture.makeViewModel()
         await viewModel.prepare()
-        let photos = [
-            ThreadChatPhoto(data: Data([1]), width: 400, height: 300, accessibilityText: "The red boat"),
-            ThreadChatPhoto(data: Data([2]), width: 300, height: 400, accessibilityText: "The old dock"),
+        let attachments = [
+            ThreadChatAttachment(
+                kind: .photo, local: .bytes(Data([1])), width: 400, height: 300, accessibilityText: "The red boat"
+            ),
+            ThreadChatAttachment(
+                kind: .photo, local: .bytes(Data([2])), width: 300, height: 400, accessibilityText: "The old dock"
+            ),
         ]
 
-        #expect(await viewModel.send("Look", photos: photos))
+        #expect(await viewModel.send("Look", attachments: attachments))
         let pending = viewModel.messages.last
-        #expect(pending?.photos?.map(\.data) == [Data([1]), Data([2])])
+        #expect(pending?.attachments?.map(\.localBytes) == [Data([1]), Data([2])])
         #expect(pending?.body == "Look")
 
         let uploader = ChatVoiceUploader(assetID: UUID())
@@ -144,6 +156,51 @@ struct ThreadChatVoiceTests {
         #expect(Set(parentIDs).count == 1)
         #expect(parentIDs.first == pending?.id)
         #expect(await fixture.gateway.lastMediaAssetIDs?.count == 2)
+    }
+
+    @Test func aQueuedVideoKeepsItsKindAndFileUntilTheSendIsSaved() async throws {
+        let fixture = ChatTestFixture()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        let bytes = Data("a prepared video".utf8)
+        let name = "\(UUID().uuidString.lowercased()).mp4"
+        try FileManager.default.createDirectory(at: ThreadChatMediaFiles.directory, withIntermediateDirectories: true)
+        try bytes.write(to: ThreadChatMediaFiles.url(named: name))
+        defer { try? FileManager.default.removeItem(at: ThreadChatMediaFiles.url(named: name)) }
+        let video = ThreadChatAttachment(
+            kind: .video, local: .file(name: name), width: 720, height: 1_280, durationMs: 42_000,
+            accessibilityText: "Waves on the pier"
+        )
+
+        let viewModel = fixture.makeViewModel()
+        await viewModel.prepare()
+        #expect(await viewModel.send("", attachments: [video]))
+        let queued = try #require(try await fixture.queuedOperations(.sendThreadMessage).first)
+        let requestData = try #require(queued.requestData)
+        #expect(!requestData.contains(Data(bytes.base64EncodedString().utf8)))
+
+        // A new screen reads the message back from the send queue.
+        let reopened = fixture.makeViewModel()
+        await reopened.prepare()
+        let pending = try #require(reopened.messages.last?.attachments?.first)
+        #expect(pending.kind == .video)
+        #expect(pending.localFileURL == ThreadChatMediaFiles.url(named: name))
+        #expect(pending.durationMs == 42_000)
+
+        let uploader = ChatVoiceUploader(assetID: UUID())
+        let handler = SendChatMessageOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache,
+            mediaUploadService: uploader
+        )
+        let context = chatSyncContext(ownerUserID: fixture.ownerUserID)
+        #expect(try await handler.send(queued, context: context) == .succeeded)
+        #expect(await uploader.uploadedMimeTypes == ["video/mp4"])
+        #expect(await uploader.uploadedAccessibilityTexts == ["Waves on the pier"])
+
+        // The app may stop before the send queue saves the success, and then sends again.
+        #expect(try await handler.send(queued, context: context) == .succeeded)
+        await handler.didRecordSuccess(of: queued)
+        #expect(!FileManager.default.fileExists(atPath: ThreadChatMediaFiles.url(named: name).path))
     }
 
     @Test func theServerCopyOfAVoiceMessageIsMatchedByItsID() {

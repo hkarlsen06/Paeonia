@@ -65,7 +65,7 @@ extension DailyChatRoundsTests {
             eyebrow: "Memory",
             title: "Cabin weekend",
             detail: nil,
-            photoAssetID: nil,
+            media: nil,
             notes: [ThreadChatNote(isOwn: true, body: "Mine"), ThreadChatNote(isOwn: false, body: "Theirs")]
         )
         var input = input(rounds: [], messages: [first, second])

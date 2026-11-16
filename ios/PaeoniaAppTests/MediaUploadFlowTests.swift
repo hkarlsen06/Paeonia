@@ -75,6 +75,26 @@ struct MediaUploadFlowTests {
         #expect(stub.finalizeArgs["p_storage_id"] as? String == Self.storageID)
     }
 
+    @Test func aRetryWhoseFileIsAlreadyFinalizedSendsNothingAgain() async throws {
+        let stub = MediaUploadStub()
+        stub.reservesFinalizedAsset = true
+        let service = LiveDailyAnswerMediaUploadService(client: try stub.makeClient())
+        let media = DailyAnswerUploadMedia(
+            data: Data([0x01]), purpose: .photo, mimeType: "image/jpeg", fileExtension: "jpg"
+        )
+
+        let assetID = try await service.uploadMedia(
+            media,
+            answerID: UUID(),
+            coupleID: UUID(),
+            reserveOperation: Self.operation(sequence: 1),
+            finalizeOperation: Self.operation(sequence: 2)
+        )
+
+        #expect(assetID == stub.mediaAssetID)
+        #expect(stub.requestLabels == ["mutation media:create_pending_media_upload"])
+    }
+
     @Test func memoryUploadFailsLocallyWhenSignedOut() async throws {
         let stub = MediaUploadStub()
         let service = LiveMemoryMediaUploadService(client: try stub.makeClient(), isSignedIn: { false })
@@ -242,6 +262,13 @@ private final class MediaUploadStub: @unchecked Sendable {
     private var reserve: [String: Any] = [:]
     private var finalize: [String: Any] = [:]
     private var uploadsFail = false
+    private var finalizedReservation = false
+
+    /// While set, the reservation is a replay of one whose file is already finalized.
+    var reservesFinalizedAsset: Bool {
+        get { lock.withLock { finalizedReservation } }
+        set { lock.withLock { finalizedReservation = newValue } }
+    }
 
     /// While set, every upload fails as if the connection dropped.
     var failsUploads: Bool {
@@ -287,10 +314,14 @@ private final class MediaUploadStub: @unchecked Sendable {
         let value: String
         switch path {
         case "media:create_pending_media_upload":
-            lock.withLock { reserve = args }
+            let status = lock.withLock {
+                reserve = args
+                return finalizedReservation ? "finalized" : "pending"
+            }
             value = """
             [{"media_asset_id":"\(mediaAssetID.uuidString)","bucket":"couple-media",
-            "storage_path":"couple/asset.bin","upload_url":"https://\(host)/upload/abc"}]
+            "storage_path":"couple/asset.bin","upload_url":"https://\(host)/upload/abc",
+            "upload_status":"\(status)"}]
             """
         case "media:finalize_media_upload":
             lock.withLock { finalize = args }

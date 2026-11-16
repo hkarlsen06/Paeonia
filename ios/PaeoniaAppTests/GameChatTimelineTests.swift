@@ -17,7 +17,7 @@ struct GameChatTimelineTests {
         let operation = fixture.operationProvider.makeOperation()
         let queued = try await service.queueMessage(
             ownerUserID: ownerID, coupleID: coupleID,
-            subject: .game(subject), threadID: nil, body: "That was close", photos: nil,
+            subject: .game(subject), threadID: nil, body: "That was close", attachments: nil,
             createThread: true, replyTo: .gameResult(source), operation: operation)
         #expect(queued.replyTo == .gameResult(source))
         let pending = try await fixture.pendingStore.inFlightOperations(

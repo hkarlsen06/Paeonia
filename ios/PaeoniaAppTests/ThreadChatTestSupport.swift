@@ -46,12 +46,28 @@ final class ChatTestOperationProvider: SyncClientOperationProviding {
 
 actor ChatVoiceUploader {
     let assetID: UUID
+    /// Asset ids of uploads an earlier try finished, by reserve operation id.
+    private let finishedAssetIDs: [UUID: UUID]
+    /// The reserve operations a send asked about, which reserves each on a real server.
+    private(set) var askedReserveOperationIDs: [UUID] = []
     private(set) var uploadedParentIDs: [UUID] = []
     private(set) var uploadedPurposes: [DailyAnswerMediaPurpose] = []
     private(set) var uploadedAccessibilityTexts: [String?] = []
+    private(set) var uploadedMimeTypes: [String] = []
 
-    init(assetID: UUID) {
+    init(assetID: UUID, finishedAssetIDs: [UUID: UUID] = [:]) {
         self.assetID = assetID
+        self.finishedAssetIDs = finishedAssetIDs
+    }
+
+    func finishedUpload(
+        of _: DailyAnswerUploadMedia,
+        answerID _: UUID,
+        coupleID _: UUID,
+        reserveOperation: SyncClientOperation
+    ) -> UUID? {
+        askedReserveOperationIDs.append(reserveOperation.id)
+        return finishedAssetIDs[reserveOperation.id]
     }
 
     func uploadMedia(
@@ -64,6 +80,7 @@ actor ChatVoiceUploader {
         uploadedParentIDs.append(answerID)
         uploadedPurposes.append(media.purpose)
         uploadedAccessibilityTexts.append(media.accessibilityText)
+        uploadedMimeTypes.append(media.mimeType)
         return assetID
     }
 }
@@ -215,15 +232,17 @@ extension ChatTestFixture {
     /// Records the server's answer to a queued message in the cache.
     func confirm(_ operation: SyncClientOperation, body: String) async {
         await cache.confirm(
-            ownerUserID: ownerUserID,
-            subject: .question(question.questionID),
-            coupleID: question.coupleID,
-            clientOperationID: operation.id,
-            threadID: threadID,
-            messageID: messageID,
-            body: body,
-            senderUserID: ownerUserID,
-            createdAt: operation.localCreatedAt
+            ThreadChatConfirmedSend(
+                subject: .question(question.questionID),
+                coupleID: question.coupleID,
+                clientOperationID: operation.id,
+                threadID: threadID,
+                messageID: messageID,
+                body: body,
+                senderUserID: ownerUserID,
+                createdAt: operation.localCreatedAt
+            ),
+            ownerUserID: ownerUserID
         )
     }
 }

@@ -166,7 +166,11 @@ struct MemoryPlaceTests {
                 partnerNote: nil,
                 visibleMemoryMediaIDs: [],
                 visibleMediaAssetIDs: photo.map { [$0] } ?? [],
-                media: [],
+                media: photo.map {
+                    [MemoryMediaSnapshot(
+                        memoryMediaID: UUID(), mediaAssetID: $0, ownerUserID: owner, sortOrder: 0, updatedAt: now
+                    )]
+                } ?? [],
                 threadID: nil,
                 visitID: nil
             )

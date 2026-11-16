@@ -68,5 +68,5 @@ private struct PurgeFixture {
 
 private struct NoPrivateFiles: LocalPrivateContentPurging {
     func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) {}
-    func removePrivateFiles() {}
+    func removePrivateFiles(scope _: LocalPrivacyPurgeScope) {}
 }

@@ -180,7 +180,8 @@ actor VisitJoinServer: MemoryGateway {
                 memoryMediaID: photo.linkID, mediaAssetID: photo.assetID, ownerUserID: photo.owner,
                 sortOrder: index + 1, deletedAt: photo.isRemoved ? updatedAt : nil, moderationStatus: .visible,
                 assetDeletedAt: photo.isRemoved ? updatedAt : nil, assetModerationStatus: .visible,
-                assetStorageDeleteStatus: photo.isRemoved ? "pending" : "none", accessibilityText: photo.text,
+                assetStorageDeleteStatus: photo.isRemoved ? "pending" : "none", mediaType: .image, durationMs: nil,
+                accessibilityText: photo.text,
                 updatedAt: updatedAt
             )
         }

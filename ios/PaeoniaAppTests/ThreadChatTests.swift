@@ -117,15 +117,17 @@ struct ThreadChatViewModelTests {
         let creates = try await fixture.queuedOperations(.createChatThreadWithMessage)
         let operation = try #require(creates.first)
         await fixture.cache.confirm(
-            ownerUserID: fixture.ownerUserID,
-            subject: .question(fixture.question.questionID),
-            coupleID: fixture.question.coupleID,
-            clientOperationID: operation.operation.id,
-            threadID: fixture.threadID,
-            messageID: fixture.messageID,
-            body: "One message",
-            senderUserID: fixture.ownerUserID,
-            createdAt: operation.operation.localCreatedAt
+            ThreadChatConfirmedSend(
+                subject: .question(fixture.question.questionID),
+                coupleID: fixture.question.coupleID,
+                clientOperationID: operation.operation.id,
+                threadID: fixture.threadID,
+                messageID: fixture.messageID,
+                body: "One message",
+                senderUserID: fixture.ownerUserID,
+                createdAt: operation.operation.localCreatedAt
+            ),
+            ownerUserID: fixture.ownerUserID
         )
         try await fixture.pendingStore.markSucceeded(
             clientOperationID: operation.operation.id,

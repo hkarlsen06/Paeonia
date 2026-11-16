@@ -66,7 +66,8 @@ struct MemoriesJoinedMemoryTests {
         let (userID, partnerID, coupleID, visitID, joinedID) = (UUID(), UUID(), UUID(), UUID(), UUID())
         await viewModel.configure(currentUserID: userID, coupleID: coupleID)
         let created = await viewModel.createMemory(
-            title: "Bergen", date: "2026-06-30", note: "Rain", photos: [makeMemoryTestImageData(color: .systemPink)],
+            title: "Bergen", date: "2026-06-30", note: "Rain",
+            media: MemoryDraftMedia.photos([makeMemoryTestImageData(color: .systemPink)]),
             visitID: visitID
         )
         #expect(created)
@@ -98,7 +99,8 @@ struct MemoriesJoinedMemoryTests {
             MemoryMediaStateRow(
                 memoryMediaID: photo.id, mediaAssetID: photo.id, ownerUserID: photo.owner, sortOrder: index + 1,
                 deletedAt: nil, moderationStatus: .visible, assetDeletedAt: nil, assetModerationStatus: .visible,
-                assetStorageDeleteStatus: "none", accessibilityText: nil, updatedAt: at
+                assetStorageDeleteStatus: "none", mediaType: .image, durationMs: nil, accessibilityText: nil,
+                updatedAt: at
             )
         }
         return MemoryRemoteRow(

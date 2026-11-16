@@ -182,15 +182,17 @@ struct ThreadChatCacheRaceTests {
 
         // The send's confirmation can land before the queued message is added to the cache.
         await cache.confirm(
-            ownerUserID: fixture.ownerUserID,
-            subject: .question(fixture.question.questionID),
-            coupleID: fixture.question.coupleID,
-            clientOperationID: operation.id,
-            threadID: fixture.threadID,
-            messageID: fixture.messageID,
-            body: "Hi",
-            senderUserID: fixture.ownerUserID,
-            createdAt: operation.localCreatedAt
+            ThreadChatConfirmedSend(
+                subject: .question(fixture.question.questionID),
+                coupleID: fixture.question.coupleID,
+                clientOperationID: operation.id,
+                threadID: fixture.threadID,
+                messageID: fixture.messageID,
+                body: "Hi",
+                senderUserID: fixture.ownerUserID,
+                createdAt: operation.localCreatedAt
+            ),
+            ownerUserID: fixture.ownerUserID
         )
         await cache.append(
             ThreadChatMessage(

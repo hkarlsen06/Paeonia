@@ -4,7 +4,7 @@ import Testing
 
 @MainActor
 struct StoryRetainedContentTests {
-    private let header = ThreadChatHeader(eyebrow: "Story", title: "", detail: nil, photoAssetID: nil)
+    private let header = ThreadChatHeader(eyebrow: "Story", title: "", detail: nil, media: nil)
 
     private func story() -> Story {
         Story(id: UUID(), authorUserID: UUID(), mediaAssetID: UUID(), caption: nil, createdAt: .now, seenAt: nil)

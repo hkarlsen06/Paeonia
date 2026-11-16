@@ -74,7 +74,7 @@ actor PausingChatService: ThreadChatServicing {
         subject: ThreadChatSubject,
         threadID: UUID?,
         body: String,
-        photos: ThreadChatPhotosPayload?,
+        attachments: ThreadChatAttachmentsPayload?,
         createThread: Bool,
         replyTo: ThreadChatItemID?,
         operation: SyncClientOperation
@@ -85,7 +85,7 @@ actor PausingChatService: ThreadChatServicing {
             subject: subject,
             threadID: threadID,
             body: body,
-            photos: photos,
+            attachments: attachments,
             createThread: createThread,
             replyTo: replyTo,
             operation: operation

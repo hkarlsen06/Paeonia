@@ -128,7 +128,7 @@ struct MemoriesViewModelPlaceTests {
     @Test func anEditThatChangesThePlaceSendsIt() async throws {
         let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", photos: [])
+        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", media: [])
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
 
         let saved = await env.viewModel.saveEdits(edit(of: record, place: bryggen))
@@ -144,7 +144,7 @@ struct MemoriesViewModelPlaceTests {
     @Test func anEditThatLeavesThePlaceAloneKeepsThePartnersPlace() async throws {
         let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", photos: [])
+        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", media: [])
         let openedWith = try #require(env.viewModel.timeline.flatMap(\.memories).first)
         await env.viewModel.setPlace(bryggen, forMemory: openedWith.snapshot.memoryID)
 
@@ -166,10 +166,10 @@ struct MemoriesViewModelPlaceTests {
             title: "Placed",
             date: "2026-06-30",
             note: "Note",
-            photos: [],
+            media: [],
             place: bryggen
         )
-        _ = await env.viewModel.createMemory(title: "Not placed", date: "2026-06-29", note: "Note", photos: [])
+        _ = await env.viewModel.createMemory(title: "Not placed", date: "2026-06-29", note: "Note", media: [])
 
         #expect(env.viewModel.mapContent.placed.map(\.title) == ["Placed"])
         #expect(env.viewModel.mapContent.unplaced.map(\.snapshot.title) == ["Not placed"])
@@ -189,7 +189,7 @@ struct MemoriesViewModelPlaceTests {
             title: title,
             date: record.snapshot.memoryDate,
             note: record.snapshot.ownNote?.body ?? "",
-            newPhotos: [],
+            newMedia: [],
             removedMedia: [],
             place: place
         )
