@@ -38,6 +38,12 @@ nonisolated enum DrawAndGuessPhase: Equatable, Sendable {
             false
         }
     }
+
+    /// "Show a letter" and "Show me" work only on a sent drawing. While the
+    /// partner still draws live, they wait for Done.
+    var allowsHintsAndShowMe: Bool {
+        self == .guessing
+    }
 }
 
 extension DrawAndGuessPhase {

@@ -307,7 +307,7 @@ extension DrawAndGuessViewModel {
 
     /// "Show me": the round counts as missed and the answer shows.
     func giveUp() async {
-        guard phase.allowsGuessing, let round else { return }
+        guard phase.allowsHintsAndShowMe, let round else { return }
         let payload = GameGiveUpPayload(roundID: round.id, createdAt: dependencies.now())
         await enqueue(.giveUpGameRound, scope: "game-giveup:\(round.id.uuidString.lowercased())", payload: payload)
     }

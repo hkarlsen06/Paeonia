@@ -11,7 +11,7 @@ extension DrawAndGuessViewModel {
     /// The "Show a letter" button works. Hints stop one letter short of the
     /// whole word.
     var canShowLetter: Bool {
-        guard phase.allowsGuessing, !isShowingWrongGuess, slots.status != .correct,
+        guard phase.allowsHintsAndShowMe, !isShowingWrongGuess, slots.status != .correct,
               let round, tilesRoundID == round.id, !round.isFinished
         else { return false }
         return hintCount < slots.maxHints && slots.nextHintIndex(seed: hintSeed(round.id)) != nil

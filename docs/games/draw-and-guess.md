@@ -69,6 +69,7 @@ The round starts in Convex the moment the drawer picks a word, not when they fin
 - Guesses ignore case. Tiles show capital letters.
 - Attempts are unlimited. A "Show me" button reveals the answer, and the round counts as missed.
 - A quiet "Show a letter" button places a random letter of the answer in its slot and locks that slot. The phone can show at most all letters but one. Any hint takes both bonuses away for the round (see "Scoring").
+- "Show me" and "Show a letter" are off while the partner still draws live, because the drawing can still change. They turn on when the drawer taps Done.
 - Every attempt is saved in Convex with a timestamp. In a live round the drawer sees each wrong guess appear while drawing. In an async round the drawer watches the guesses in order afterward ("They tried CAT, then HAT..."). That is the drawer's payoff for the turn.
 
 ## Live

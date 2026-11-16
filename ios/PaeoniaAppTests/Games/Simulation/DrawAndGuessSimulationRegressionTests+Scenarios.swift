@@ -135,7 +135,7 @@ extension DrawAndGuessSimulationRegressionTests {
         }
     }
 
-    /// The guesser gave up before the drawer tapped Done, so the reveal waited
+    /// The guesser solved it before the drawer tapped Done, so the reveal waited
     /// for the drawing. Its download failed after the server answered. The
     /// round was over, so no later change tried again, and the reveal stayed
     /// on "Try again" with the network back.
@@ -146,16 +146,13 @@ extension DrawAndGuessSimulationRegressionTests {
             try await driver.scriptPick(drawer)
             try await driver.scriptDraw(drawer)
             await driver.settle()
-            guard let viewModel = guesser.activeViewModel, viewModel.phase.allowsGuessing else {
-                throw SimFailure(message: "guesser cannot give up in \(guesser.viewModel?.phase as Any)")
-            }
 
             guesser.network.failNext("download", with: .dropAfter)
-            await viewModel.giveUp()
+            try await driver.scriptGuess(guesser, right: true)
             await driver.settle()
 
             let revealed = try driver.require(guesser, in: .reveal)
-            #expect(revealed.finalDrawing?.drawing.strokes.count == 2)
+            #expect(revealed.submittedDrawing?.drawing.strokes.count == 2)
             try await driver.checkSettled()
         }
     }

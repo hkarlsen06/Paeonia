@@ -121,7 +121,10 @@ struct PaeoniaQuietButtonStyle: ButtonStyle {
             .padding(.horizontal, PaeoniaSpacing.space12)
             .padding(.vertical, PaeoniaSpacing.space8)
             .frame(minWidth: PaeoniaSpacing.compactButtonHeight, minHeight: PaeoniaSpacing.compactButtonHeight)
-            .foregroundStyle(isEnabled ? .paeoniaTextSecondary : .paeoniaTextTertiary)
+            .foregroundStyle(.paeoniaTextSecondary)
+            // Tertiary text is too close to secondary to read as off. A disabled
+            // control needs no contrast, so it dims instead.
+            .opacity(isEnabled ? 1 : 0.4)
             .background(backgroundColor(isPressed: configuration.isPressed))
             .clipShape(Capsule(style: .continuous))
             .contentShape(Capsule(style: .continuous))

@@ -75,6 +75,24 @@ struct DrawAndGuessLiveHandoffTests {
         #expect(env.transfer.downloads == [GameFixture.assetID])
     }
 
+    @Test func hintsAndShowMeWaitUntilTheDrawerTapsDone() async throws {
+        let watching = await watchingLive(canvasArrives: true)
+        let (env, viewModel) = (watching.env, watching.viewModel)
+        #expect(viewModel.phase == .watchingLive)
+
+        #expect(!viewModel.canShowLetter)
+        viewModel.showLetter()
+        await viewModel.giveUp()
+        #expect(viewModel.hintCount == 0)
+        #expect(viewModel.phase == .watchingLive)
+
+        await env.cache.saveState(drawingSent, ownerUserID: GameFixture.me)
+        await viewModel.reload()
+
+        #expect(viewModel.phase == .guessing)
+        #expect(viewModel.canShowLetter)
+    }
+
     @Test func aGuesserWhoSeesTheDrawingLiveKeepsTheLiveCanvasAndSkipsTheDownload() async throws {
         let watching = await watchingLive(canvasArrives: true)
         let (env, viewModel) = (watching.env, watching.viewModel)

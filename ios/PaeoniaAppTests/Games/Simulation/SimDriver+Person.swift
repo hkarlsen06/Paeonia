@@ -168,7 +168,7 @@ extension SimDriver {
         let action = random.weighted([
             ("right", canSee ? 3.0 : 0.5),
             ("wrong", 4.5),
-            ("showMe", 0.6),
+            ("showMe", viewModel.phase.allowsHintsAndShowMe ? 0.6 : 0),
             ("hint", viewModel.canShowLetter ? 1.2 : 0),
             ("wait", 1.5),
         ])

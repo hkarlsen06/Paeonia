@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The two quiet buttons under the tiles: "Show a letter" and "Show me". Both
-/// ask first when asking costs something. They fade out on the reveal and keep
-/// their space, so nothing below the tiles jumps.
+/// ask first when asking costs something, and both stay off while the partner
+/// still draws live. They fade out on the reveal and keep their space, so
+/// nothing below the tiles jumps.
 struct DrawAndGuessGuessActions: View {
     let viewModel: DrawAndGuessViewModel
     let isRevealed: Bool
@@ -73,6 +74,7 @@ struct DrawAndGuessGuessActions: View {
             Text(.gamesDrawAndGuessShowMe)
         }
         .buttonStyle(PaeoniaQuietButtonStyle())
+        .disabled(!viewModel.phase.allowsHintsAndShowMe)
         .accessibilityIdentifier("draw.showMe")
     }
 
