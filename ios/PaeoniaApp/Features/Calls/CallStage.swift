@@ -60,7 +60,8 @@ nonisolated extension CallVideoSource {
     /// phone is on its side, because the camera then sends wide pictures.
     func previewSize(in session: CallSession, sideways: Bool) -> CGSize {
         let ratio: CGFloat = switch self {
-        case .local: sideways ? 152 / 104 : 104 / 152
+        // Until the first frame, the shape the camera captures in (`CallCamera`, 1080p).
+        case .local: session.localVideoAspectRatio ?? (sideways ? 16 / 9 : 9 / 16)
         case .partner: session.partnerVideoAspectRatio ?? 104 / 152
         case .partnerScreen: session.partnerScreenAspectRatio ?? 9 / 19.5
         }

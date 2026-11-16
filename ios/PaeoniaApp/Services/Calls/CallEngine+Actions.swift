@@ -180,6 +180,14 @@ extension CallEngine: CallEngineActions {
         center.session?.partnerVideoAspectRatio = ratio
     }
 
+    /// This phone's camera frames changed shape, such as when the person turns the phone.
+    func localVideoSizeChanged(_ size: CGSize) {
+        guard size.width > 0, size.height > 0, let center, center.session != nil else { return }
+        let ratio = size.width / size.height
+        if let current = center.session?.localVideoAspectRatio, abs(current - ratio) < 0.01 { return }
+        center.session?.localVideoAspectRatio = ratio
+    }
+
     func updatePictureInPicture() {
         guard let session = center?.session else {
             pictureInPicture.setEnabled(false)

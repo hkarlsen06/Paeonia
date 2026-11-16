@@ -86,6 +86,7 @@ final class CallEngine {
         CallAudio.configureAtLaunch(sounds: sounds)
         system.start(delegate: self)
         partnerVideo.onFrameSize = { [weak self] size in self?.partnerVideoSizeChanged(size) }
+        localVideo.onFrameSize = { [weak self] size in self?.localVideoSizeChanged(size) }
         partnerVideo.onStallChange = { [weak self] isStalled in self?.partnerVideoStallChanged(isStalled) }
         partnerScreen.onFrameSize = { [weak self] size in self?.partnerScreenSizeChanged(size) }
         pushRegistry = CallPushRegistry(

@@ -16,6 +16,9 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     /// The width of the partner's video over its height, as their phone is held. Nil until the
     /// first frame arrives. The bubble takes this shape, so it shows the whole picture.
     var partnerVideoAspectRatio: CGFloat?
+    /// The width of this person's own video over its height, as the phone is held. Nil until the
+    /// camera's first frame. The viewfinder takes this shape, so it shows what the partner sees.
+    var localVideoAspectRatio: CGFloat?
     var isUsingFrontCamera = true
     /// This person shares their screen (`CallScreenCapture`).
     var isSharingScreen = false
