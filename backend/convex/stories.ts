@@ -19,10 +19,12 @@ import { charLength } from "./lib/text";
 import { addMs, nowIso } from "./lib/time";
 import { isUsableMediaAsset } from "./lib/mediaAssetState";
 
-// A story is a photo with an optional short caption that one partner posts as an
+// A story is a photo or a short video with an optional short caption that one partner posts as an
 // "I thought about you" check-in. The phone shows it in a ring on Home for 24 hours after
 // `created_at`, then keeps it in the Stories archive. The server stores no expiry and runs no cron.
 
+/** A story video is at most a minute long. Chat and memory videos may run longer. */
+const MAX_STORY_VIDEO_DURATION_MS = 60_000;
 /** The app caps captions at 100 characters. Code points are counted here, so an emoji never trips it. */
 const MAX_CAPTION_CODE_POINTS = 200;
 /** The app caps notes at 60 characters. */
@@ -50,6 +52,11 @@ async function storyRow(ctx: ReaderCtx, row: Doc<"stories">) {
     author_user_id: row.author_user_id,
     media_asset_id: row.media_asset_id,
     caption: row.caption ?? null,
+    media_type: asset?.media_type ?? null,
+    mime_type: asset?.mime_type ?? null,
+    width: asset?.width ?? null,
+    height: asset?.height ?? null,
+    duration_ms: asset?.duration_ms ?? null,
     accessibility_text: asset && asset.deleted_at === undefined && asset.moderation_status === "visible" &&
       asset.storage_delete_status === "none" ? asset.accessibility_text ?? null : null,
     created_at: row.created_at,
@@ -92,7 +99,8 @@ export const get_stories = query({
 });
 
 /**
- * Posts the story `p_story_id` with the finalized photo `p_media_asset_id`. The phone picks
+ * Posts the story `p_story_id` with the finalized photo or video `p_media_asset_id`, a video
+ * of at most `MAX_STORY_VIDEO_DURATION_MS`. The phone picks
  * the id, so a post and its retries are the same write. The caption is trimmed, and an empty
  * one means none. Queues a push to the partner that never holds the caption. Returns the
  * story as stored now, also on a replay, or null when its author deleted it since.
@@ -133,16 +141,19 @@ export const post_story = mutation({
 
       const asset = await getByUuid(ctx, "media_assets", assetId);
       if (!asset || asset.owner_user_id !== userId || asset.couple_id !== coupleId) {
-        return fail("42501", "story photo is not available");
+        return fail("42501", "story media is not available");
       }
       if (
         asset.upload_purpose !== "story_photo" ||
-        asset.media_type !== "image" ||
+        !(asset.media_type === "image" || asset.media_type === "video") ||
         asset.reserved_parent_kind !== "story" ||
         asset.reserved_parent_id !== storyId ||
         !isUsableMediaAsset(asset)
       ) {
-        return fail("23514", "story photo is not usable");
+        return fail("23514", "story media is not usable");
+      }
+      if (asset.media_type === "video" && (asset.duration_ms ?? 0) > MAX_STORY_VIDEO_DURATION_MS) {
+        return fail("23514", "story video is too long");
       }
 
       const docId = await ctx.db.insert("stories", {

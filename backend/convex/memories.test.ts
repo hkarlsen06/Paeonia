@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
-import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
+import { endCouple, failure, op, photo, setMediaEnv, uploadAsset, video } from "./media.testing";
 import { newUuid } from "./lib/ids";
 import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
@@ -257,13 +257,42 @@ describe("memory media", () => {
       code: "23514",
       message: "a memory can attach at most 10 media assets at once",
     });
-    expect(await attach(photos)).toEqual({ code: "23514", message: "each partner can add at most 5 photos to a memory" });
+    expect(await attach(photos)).toEqual({ code: "23514", message: "each partner can add at most 5 photos or videos to a memory" });
     expect(await t.run((ctx) => ctx.db.query("memory_media").collect())).toHaveLength(0);
     await couple.first.as.mutation(api.memories.attach_memory_media, {
       ...op(),
       p_memory_id: memoryId,
       p_media_asset_ids: photos.slice(0, 5),
     });
+  });
+
+  test("a memory carries videos, and photos and videos share each partner's limit of five", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const clip = await uploadAsset(t, couple.first, video(couple.coupleId));
+    const photos = [];
+    for (let i = 0; i < 4; i += 1) photos.push((await uploadAsset(t, couple.first, photo(couple.coupleId))).assetId);
+    const memoryId = await createMemory(couple.first, { p_media_asset_ids: [clip.assetId, ...photos] });
+
+    const [row] = await getMemories(couple.second);
+    expect(row.media_asset_ids).toEqual([clip.assetId, ...photos]);
+    expect(row.memory_media_states[0]).toMatchObject({
+      media_asset_id: clip.assetId,
+      media_type: "video",
+      mime_type: "video/mp4",
+      width: 720,
+      height: 1280,
+      duration_ms: 4000,
+    });
+    expect(row.memory_media_states[1]).toMatchObject({ media_type: "image", mime_type: "image/jpeg", duration_ms: null });
+
+    const sixth = await uploadAsset(t, couple.first, video(couple.coupleId));
+    expect(
+      await failure(couple.first.as.mutation(api.memories.attach_memory_media, { ...op(), p_memory_id: memoryId, p_media_asset_ids: [sixth.assetId] })),
+    ).toEqual({ code: "23514", message: "each partner can add at most 5 photos or videos to a memory" });
+    const partnerClip = await uploadAsset(t, couple.second, video(couple.coupleId));
+    await couple.second.as.mutation(api.memories.attach_memory_media, { ...op(), p_memory_id: memoryId, p_media_asset_ids: [partnerClip.assetId] });
+    expect(await t.run((ctx) => ctx.db.query("memory_media").collect())).toHaveLength(6);
   });
 
   test("rejects assets that are not the caller's finalized memory media", async () => {

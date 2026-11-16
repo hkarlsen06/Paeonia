@@ -182,7 +182,7 @@ describe("files", () => {
   } as const;
 
   test("a path groups files by what they are", () => {
-    expect(mediaFilePath(asset)).toBe(`files/memory-photos/2026-10-21_${asset.id}.jpg`);
+    expect(mediaFilePath(asset)).toBe(`files/memory-media/2026-10-21_${asset.id}.jpg`);
     expect(mediaFilePath({ ...asset, upload_purpose: "voice_note", storage_path: "x", media_type: "voice" })).toMatch(/voice-messages\/.*\.m4a$/);
   });
 

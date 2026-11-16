@@ -22,7 +22,7 @@ export type ReadmeInput = {
   /** The zip files that make up this download, in order. */
   partNames: string[];
   files: ReadmeFile[];
-  /** How many photos, voice messages and drawings are in the download, and how many could not be included. */
+  /** How many photos, videos, voice messages and drawings are in the download, and how many could not be included. */
   mediaCount: number;
   mediaSkippedCount: number;
 };
@@ -84,7 +84,7 @@ function english(input: ReadmeInput): string {
   ];
   if (multiple) {
     lines.push(
-      `The download comes in ${input.partNames.length} zip files because it is big. Part 1 has this README. The data files and the photos, voice messages and drawings are spread over the parts, and \`manifest.json\` says which zip file holds each one. Unzip them all into the same folder.`,
+      `The download comes in ${input.partNames.length} zip files because it is big. Part 1 has this README. The data files and the photos, videos, voice messages and drawings are spread over the parts, and \`manifest.json\` says which zip file holds each one. Unzip them all into the same folder.`,
       "",
       ...input.partNames.map((name, index) => `- Part ${index + 1}: ${name}`),
       "",
@@ -99,12 +99,12 @@ function english(input: ReadmeInput): string {
   );
   if (input.includeFiles) {
     lines.push(
-      `You uploaded ${input.mediaCount + input.mediaSkippedCount} photos, voice messages and drawings. ${input.mediaCount} of them are in the \`files\` folder, in the original quality we store.${input.mediaSkippedCount > 0 ? ` ${input.mediaSkippedCount} could not be included because they were removed or are no longer stored.` : ""} \`files/media_assets.json\` says which file belongs to which entry, in the field \`file\`.`,
+      `You uploaded ${input.mediaCount + input.mediaSkippedCount} photos, videos, voice messages and drawings. ${input.mediaCount} of them are in the \`files\` folder, in the original quality we store.${input.mediaSkippedCount > 0 ? ` ${input.mediaSkippedCount} could not be included because they were removed or are no longer stored.` : ""} \`files/media_assets.json\` says which file belongs to which entry, in the field \`file\`.`,
       "",
     );
   } else {
     lines.push(
-      "You chose to leave out your photos, voice messages and drawings. The entries that point to them are still in the data files, and you can make a new download with them any time.",
+      "You chose to leave out your photos, videos, voice messages and drawings. The entries that point to them are still in the data files, and you can make a new download with them any time.",
       "",
     );
   }
@@ -117,7 +117,7 @@ function english(input: ReadmeInput): string {
     "",
     "## What is not in this download",
     "",
-    "- **Your partner's own things.** What your partner wrote or uploaded, their photos and voice messages, their location, their settings and phones, and what they marked privately. This is their personal data, and the law asks us to protect it too (GDPR Art. 15(4) and 20(4)). In shared things, such as a story you wrote together, your own lines are in full and your partner's lines only show the number and time.",
+    "- **Your partner's own things.** What your partner wrote or uploaded, their photos, videos and voice messages, their location, their settings and phones, and what they marked privately. This is their personal data, and the law asks us to protect it too (GDPR Art. 15(4) and 20(4)). In shared things, such as a story you wrote together, your own lines are in full and your partner's lines only show the number and time.",
     "- **Things you share with your partner as one.** These are included while you are together: the relationship, memories, countdowns, streaks, chats, and the scores and results of games. Secrets inside a game, such as a word or a spot your partner chose and you have not guessed yet, are left out.",
     "- **Reports about you.** If someone reported you, the report is not included, to protect the person who reported.",
     "- **Short-lived technical records.** For example copies of what your phone sent, which we keep for 30 days so nothing runs twice. What they contain is already in the files above.",
@@ -130,7 +130,7 @@ function english(input: ReadmeInput): string {
     "- **What we use it for.** To make your account, connect you with your partner, run the shared features, show your subscription, send the notifications you allow, answer support, keep Paeonia safe, and follow the law. We use usage statistics and your location only if you agreed, and you can say no or change your mind any time.",
     "- **The legal reasons.** Mostly that we need it to give you Paeonia, which is our agreement with you (GDPR Art. 6(1)(b)). Usage statistics, location sharing and notifications rest on your consent (Art. 6(1)(a)). Keeping Paeonia safe and secure rests on our legitimate interest (Art. 6(1)(f)). Records we must keep, such as for accounting, rest on the law (Art. 6(1)(c)).",
     "- **Where it came from.** From you. From Apple or Google when you sign in. From Apple for your purchases. From your partner for the shared things.",
-    "- **Who gets it.** These companies work for us and only to run Paeonia. Apple (Sign in with Apple, payments and subscriptions, notifications). Google (Sign in with Google). Clerk (sign-in and sessions). Cloudflare (stores your photos, voice messages and drawings in the EU, and passes live drawings between you and your partner without storing them). PostHog (usage statistics, only if you agreed, stored in Frankfurt). Our database and server run on a rented server in Leipzig, Germany. We do not sell data and we do not use it for advertising.",
+    "- **Who gets it.** These companies work for us and only to run Paeonia. Apple (Sign in with Apple, payments and subscriptions, notifications). Google (Sign in with Google). Clerk (sign-in and sessions). Cloudflare (stores your photos, videos, voice messages and drawings in the EU, and passes live drawings between you and your partner without storing them). PostHog (usage statistics, only if you agreed, stored in Frankfurt). Our database and server run on a rented server in Leipzig, Germany. We do not sell data and we do not use it for advertising.",
     "- **Outside the EU.** PostHog, Inc. is a US company. Your data stays in Germany, and any access from the US is covered by the EU-US Data Privacy Framework and the EU standard contractual clauses. Email contact@paeonia.no for a copy of these.",
     "- **How long we keep it.** While your account is active. When a relationship ends, what you shared is hidden at once and deleted after about 30 days. Your latest shared location is deleted at once. Notifications and technical records are deleted after about 30 days. Deleted data can stay in backups for up to 14 days. Usage statistics are deleted after a year without use. Records about reports, subscriptions and safety can be kept longer when we need them for safety, accounting or the law.",
     "- **Decisions by a computer.** Nothing about you is decided only by a computer.",

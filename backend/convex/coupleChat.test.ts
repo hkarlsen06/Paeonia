@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
-import { failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
+import { failure, op, photo, setMediaEnv, uploadAsset, video } from "./media.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 // The couple chat ("Just us") is the one chat a couple has that is not about anything in
@@ -90,6 +90,27 @@ describe("couple chat", () => {
     });
     const [summary] = await couple.first.as.query(api.threads.get_conversation_threads, {});
     expect(summary).toMatchObject({ thread_id: row.thread_id, kind: "couple", last_message_media_type: "image" });
+  });
+
+  test("a video message reaches the partner with its kind and length, and its caption can be edited", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const up = await uploadAsset(t, couple.first, video(couple.coupleId, "thread_message_media", "thread_media"));
+    const [row] = await couple.first.as.mutation(api.threads.create_couple_thread_with_message, {
+      ...op(),
+      p_couple_id: couple.coupleId,
+      p_body: "look",
+      p_media_asset_ids: [up.assetId],
+    });
+    const [summary] = await couple.second.as.query(api.threads.get_conversation_threads, {});
+    expect(summary).toMatchObject({ thread_id: row.thread_id, last_message_media_type: "video" });
+    const { messages } = await couple.second.as.query(api.threads.get_thread_messages, { p_thread_id: row.thread_id, p_limit: 50 });
+    expect(messages[0].media).toEqual([
+      { media_asset_id: up.assetId, media_type: "video", mime_type: "video/mp4", width: 720, height: 1280, duration_ms: 4000, accessibility_text: null },
+    ]);
+    await couple.first.as.mutation(api.threads.edit_thread_message, { p_message_id: row.message_id, p_body: "look at this" });
+    const edited = await couple.second.as.query(api.threads.get_thread_messages, { p_thread_id: row.thread_id, p_limit: 50 });
+    expect(edited.messages[0].body).toBe("look at this");
   });
 
   test("the partner's push opens the couple chat, keeps the thread and message ids, and never holds the text", async () => {

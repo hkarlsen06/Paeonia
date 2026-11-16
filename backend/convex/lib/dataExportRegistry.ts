@@ -521,8 +521,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   thread_message_media: child("thread_messages", "id", "message_id", "by_message_id_sort_order", {
     group: "chat",
     about: {
-      en: "Which photos and voice messages belong to your chat messages. The files are in the files folder.",
-      nb: "Hvilke bilder og talemeldinger som hører til meldingene dine. Filene ligger i mappen files.",
+      en: "Which photos, videos and voice messages belong to your chat messages. The files are in the files folder.",
+      nb: "Hvilke bilder, videoer og talemeldinger som hører til meldingene dine. Filene ligger i mappen files.",
     },
   }),
   thread_read_states: own("user_id", "by_user_id", {
@@ -550,8 +550,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   memory_media: own("owner_user_id", "by_owner_user_id_memory_id", {
     group: "memories",
     about: {
-      en: "Which photos you added to which memory. The files are in the files folder.",
-      nb: "Hvilke bilder du la til i hvilke minner. Filene ligger i mappen files.",
+      en: "Which photos and videos you added to which memory. The files are in the files folder.",
+      nb: "Hvilke bilder og videoer du la til i hvilke minner. Filene ligger i mappen files.",
     },
   }),
   memory_threads: child("memories", "id", "memory_id", "by_memory_id", {
@@ -563,8 +563,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   stories: yours("by_couple_id_created_at", "author_user_id", {
     group: "stories",
     about: {
-      en: "The stories you posted: caption and time. The photos are in the files folder.",
-      nb: "Storyene du la ut: bildetekst og tidspunkt. Bildene ligger i mappen files.",
+      en: "The stories you posted: caption and time. The photos and videos are in the files folder.",
+      nb: "Storyene du la ut: bildetekst og tidspunkt. Bildene og videoene ligger i mappen files.",
     },
   }),
   story_threads: child("stories", "id", "story_id", "by_story_id", {
@@ -834,8 +834,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   media_assets: own("owner_user_id", "by_owner_user_id_created_at", {
     group: "files",
     about: {
-      en: "Every photo, voice message and drawing file you uploaded. The `file` field says where the file is in this download.",
-      nb: "Hvert bilde, hver talemelding og hver tegningsfil du har lastet opp. Feltet `file` sier hvor filen ligger i denne nedlastingen.",
+      en: "Every photo, video, voice message and drawing file you uploaded. The `file` field says where the file is in this download.",
+      nb: "Hvert bilde, hver video, hver talemelding og hver tegningsfil du har lastet opp. Feltet `file` sier hvor filen ligger i denne nedlastingen.",
     },
     hide: ["storage_id", "reserved_by_client_operation_id"],
   }),
@@ -903,7 +903,7 @@ export function shapeRow(spec: ExportedTable, doc: Row, me: string): Row | null 
 
 const MEDIA_FOLDERS: Record<string, string> = {
   profile_photo: "profile-photos",
-  memory_photo: "memory-photos",
+  memory_photo: "memory-media",
   voice_note: "voice-messages",
   daily_answer_media: "answer-media",
   thread_media: "chat-media",
@@ -911,7 +911,7 @@ const MEDIA_FOLDERS: Record<string, string> = {
   game_drawing_payload: "game-drawings",
   exquisite_corpse_drawing: "odd-creatures",
   exquisite_corpse_strip: "odd-creatures",
-  story_photo: "story-photos",
+  story_photo: "story-media",
   letter_image: "letter-images",
   guess_my_spot_photo: "guess-my-spot-photos",
 };
@@ -932,11 +932,11 @@ export function isExportableMedia(row: Doc<"media_assets">): boolean {
   );
 }
 
-/** Where a media file sits in the archive, for example `files/memory-photos/2026-10-21_<id>.jpg`. */
+/** Where a media file sits in the archive, for example `files/memory-media/2026-10-21_<id>.jpg`. */
 export function mediaFilePath(row: Pick<Doc<"media_assets">, "id" | "created_at" | "upload_purpose" | "storage_path" | "media_type">): string {
   const folder = MEDIA_FOLDERS[row.upload_purpose] ?? "other";
   const extension = /\.([a-z0-9]{1,16})$/i.exec(row.storage_path)?.[1]?.toLowerCase();
-  const fallback = row.media_type === "image" ? "jpg" : row.media_type === "voice" ? "m4a" : "pkdrawing";
+  const fallback = { image: "jpg", video: "mp4", voice: "m4a" }[row.media_type as string] ?? "pkdrawing";
   return `${EXPORT_GROUPS.files.folder}/${folder}/${row.created_at.slice(0, 10)}_${row.id}.${extension ?? fallback}`;
 }
 

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { answerDetails, currentQuestionFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
-import { endCouple, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
+import { endCouple, op, photo, setMediaEnv, uploadAsset, video } from "./media.testing";
 import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple } from "./test.setup";
 
 type Target = FunctionArgs<typeof api.media.update_accessibility_text>["p_target"];
@@ -18,7 +18,7 @@ async function setup(kind: Target["kind"]) {
   return { t, couple, ...fixture };
 }
 
-async function chat(t: TestConvex, couple: TestCouple) {
+async function chat(t: TestConvex, couple: TestCouple, media = photo) {
   const memoryId = newUuid();
   await couple.first.as.mutation(api.memories.create_memory, {
     ...op(), p_memory_id: memoryId, p_title: "Test memory", p_memory_date: "2026-10-01", p_note_body: "Test note",
@@ -26,7 +26,7 @@ async function chat(t: TestConvex, couple: TestCouple) {
   const [thread] = await couple.first.as.mutation(api.threads.create_memory_thread_with_message, {
     ...op(), p_memory_id: memoryId, p_body: "Unchanged message",
   });
-  const upload = await uploadAsset(t, couple.first, photo(couple.coupleId, "thread_message_media", "thread_media"));
+  const upload = await uploadAsset(t, couple.first, media(couple.coupleId, "thread_message_media", "thread_media"));
   await couple.first.as.mutation(api.threads.send_thread_message, {
     ...op(), p_thread_id: thread.thread_id, p_body: "Unchanged caption", p_media_asset_ids: [upload.assetId],
   });
@@ -36,9 +36,9 @@ async function chat(t: TestConvex, couple: TestCouple) {
   return { target, read, remove, assetId: upload.assetId };
 }
 
-async function story(t: TestConvex, couple: TestCouple) {
+async function story(t: TestConvex, couple: TestCouple, media = photo) {
   const storyId = newUuid();
-  const upload = await uploadAsset(t, couple.first, { ...photo(couple.coupleId, "story", "story_photo"), parentId: storyId });
+  const upload = await uploadAsset(t, couple.first, { ...media(couple.coupleId, "story", "story_photo"), parentId: storyId });
   await couple.first.as.mutation(api.stories.post_story, {
     ...op(), p_story_id: storyId, p_media_asset_id: upload.assetId, p_caption: "Unchanged caption",
   });
@@ -109,6 +109,15 @@ describe("correcting authored media alternatives", () => {
     expect(JSON.stringify(await read())).toContain("Unchanged caption");
     await couple.first.as.mutation(api.media.update_accessibility_text, { ...op(), p_target: target, p_text: " " });
     expect(JSON.stringify(await read())).not.toContain("Corrected description");
+  });
+
+  test.each(["chat", "story"] as const)("a %s video takes a description", async kind => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { target, read } = kind === "chat" ? await chat(t, couple, video) : await story(t, couple, video);
+    await expect(couple.first.as.mutation(api.media.update_accessibility_text, { ...op(), p_target: target, p_text: "Waves at dusk" }))
+      .resolves.toEqual({ accessibility_text: "Waves at dusk" });
+    expect(JSON.stringify(await read())).toContain("Waves at dusk");
   });
 
   test("daily corrections preserve all reveal reads, answer time and sent content, including after reveal", async () => {

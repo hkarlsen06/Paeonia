@@ -107,6 +107,7 @@ describe("create_pending_media_upload", () => {
     const [second] = await couple.first.as.mutation(api.media.create_pending_media_upload, args);
     expect(second.media_asset_id).toBe(first.media_asset_id);
     expect(second.storage_path).toBe(first.storage_path);
+    expect(second.upload_status).toBe("pending");
     expect(second.upload_url).toMatch(/^https:\/\//);
     expect(await t.run((ctx) => ctx.db.query("media_assets").collect())).toHaveLength(1);
   });
@@ -127,17 +128,20 @@ describe("create_pending_media_upload", () => {
     expect(error).toEqual({ code: "42501", message: "active entitled couple access is required" });
   });
 
-  test("a replay after finalize returns the finalized asset, so a retried send can finish", async () => {
+  test("a replay after finalize says the asset is finalized, so a retried send skips the upload", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     const up = await reserveAndStore(t, couple.first, couple.coupleId);
     const finalizeArgs = up.finalize({ p_sha256_hex: up.sha });
     const [finalized] = await couple.first.as.mutation(api.media.finalize_media_upload, finalizeArgs);
-    // Sending the answer failed after finalize, so the app retries reserve, upload, and finalize.
+    // Sending the answer failed after finalize, so the app replays the reservation.
     vi.setSystemTime(new Date("2026-10-10T14:00:00.000Z"));
     const [replay] = await couple.first.as.mutation(api.media.create_pending_media_upload, up.reserve);
-    expect(replay).toMatchObject({ media_asset_id: up.row.media_asset_id, storage_path: up.row.storage_path });
-    expect(replay.upload_url).toMatch(/^https:\/\//);
+    expect(replay).toMatchObject({
+      media_asset_id: up.row.media_asset_id,
+      storage_path: up.row.storage_path,
+      upload_status: "finalized",
+    });
     expect(await couple.first.as.mutation(api.media.finalize_media_upload, finalizeArgs)).toEqual([finalized]);
     expect(await asset(t, up.row.media_asset_id)).toMatchObject({ upload_status: "finalized", storage_id: up.storageId });
   });
@@ -177,6 +181,12 @@ describe("create_pending_media_upload", () => {
     ["an unsupported extension", { p_file_extension: "j p g" }, "22023", "file extension is not supported"],
     ["a purpose the parent kind does not allow", { p_reserved_parent_kind: "daily_answer_media" }, "23514", "relationship media upload contract is invalid"],
     ["a purpose nobody supports", { p_upload_purpose: "banner" }, "23514", "upload purpose is not supported"],
+    [
+      "a video for a daily answer",
+      { p_reserved_parent_kind: "daily_answer_media", p_upload_purpose: "daily_answer_media", p_media_type: "video", p_file_extension: "mp4" },
+      "23514",
+      "relationship media upload contract is invalid",
+    ],
     ["a report snapshot", { p_upload_purpose: "report_snapshot" }, "42501", "report snapshot uploads require a trusted service path"],
     ["relationship media without a couple", { p_couple_id: null }, "23514", "relationship media requires a couple id"],
     ["an expiry in the next five minutes", { p_upload_expires_at: "2026-10-10T12:04:00.000Z" }, "23514", "upload expiration is out of range"],
@@ -473,6 +483,101 @@ describe("finalize_media_upload", () => {
     });
     const [ok] = await couple.first.as.mutation(api.media.finalize_media_upload, { ...args, p_duration_ms: 900 });
     expect(ok.upload_status).toBe("finalized");
+  });
+
+  /**
+   * Reserves an upload of `mediaType`, a memory's unless `place` says otherwise, stores bytes with
+   * `contentType`, and returns the finalize arguments.
+   */
+  async function reserveStored(
+    t: TestConvex,
+    user: TestUser,
+    coupleId: string,
+    mediaType: string,
+    extension: string,
+    contentType: string,
+    place = { kind: "memory_media", purpose: "memory_photo" },
+  ) {
+    const operationId = newUuid();
+    const parentId = newUuid();
+    const [row] = await user.as.mutation(api.media.create_pending_media_upload, {
+      ...reserveArgs(coupleId, {
+        ...op(operationId),
+        p_reserved_parent_id: parentId,
+        p_reserved_parent_kind: place.kind,
+        p_upload_purpose: place.purpose,
+      }),
+      p_media_type: mediaType,
+      p_file_extension: extension,
+    });
+    const bytes = new TextEncoder().encode(`${mediaType}-${newUuid()}`);
+    const storageId = await storeBlob(t, bytes, contentType);
+    return {
+      assetId: row.media_asset_id as string,
+      args: {
+        ...op(),
+        p_media_asset_id: row.media_asset_id,
+        p_reserved_by_client_operation_id: operationId,
+        p_bucket: row.bucket,
+        p_storage_path: row.storage_path,
+        p_storage_id: storageId,
+        p_reserved_parent_kind: place.kind,
+        p_reserved_parent_id: parentId,
+        p_upload_purpose: place.purpose,
+        p_media_type: mediaType,
+        p_mime_type: contentType,
+        p_byte_size: bytes.length,
+        p_sha256_hex: await sha256Hex(bytes),
+      },
+    };
+  }
+
+  test("a video needs its size and duration, an mp4 file, and at most three minutes", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { assetId, args } = await reserveStored(t, couple.first, couple.coupleId, "video", "mp4", "video/mp4");
+    const finalize = (overrides: Record<string, unknown>) =>
+      couple.first.as.mutation(api.media.finalize_media_upload, { ...args, p_width: 720, p_height: 1280, p_duration_ms: 30_000, ...overrides });
+    const needs = { code: "23514", message: "video uploads require dimensions and duration" };
+    expect(await failure(finalize({ p_duration_ms: null }))).toEqual(needs);
+    expect(await failure(finalize({ p_width: null }))).toEqual(needs);
+    expect(await failure(finalize({ p_duration_ms: 180_001 }))).toEqual({ code: "23514", message: "video is too long" });
+    expect(await failure(finalize({ p_mime_type: "video/quicktime" }))).toEqual({
+      code: "23514",
+      message: "mime type does not match media type",
+    });
+    const [ok] = await finalize({ p_duration_ms: 180_000 });
+    expect(ok.upload_status).toBe("finalized");
+    expect(await asset(t, assetId)).toMatchObject({ media_type: "video", mime_type: "video/mp4", duration_ms: 180_000 });
+  });
+
+  test("a chat GIF finalizes as a photo, and a GIF anywhere else is refused", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const chat = { kind: "thread_message_media", purpose: "thread_media" };
+    const { assetId, args } = await reserveStored(t, couple.first, couple.coupleId, "image", "gif", "image/gif", chat);
+    const [ok] = await couple.first.as.mutation(api.media.finalize_media_upload, { ...args, p_width: 200, p_height: 150 });
+    expect(ok.upload_status).toBe("finalized");
+    expect(await asset(t, assetId)).toMatchObject({ media_type: "image", mime_type: "image/gif" });
+
+    expect(
+      await failure(
+        couple.first.as.mutation(
+          api.media.create_pending_media_upload,
+          reserveArgs(couple.coupleId, { p_file_extension: "gif" }),
+        ),
+      ),
+    ).toEqual({ code: "23514", message: "file extension does not match media type" });
+    const memoryPng = await reserveStored(t, couple.first, couple.coupleId, "image", "png", "image/gif");
+    expect(
+      await failure(
+        couple.first.as.mutation(api.media.finalize_media_upload, {
+          ...memoryPng.args,
+          p_width: 200,
+          p_height: 150,
+        }),
+      ),
+    ).toEqual({ code: "23514", message: "mime type does not match media type" });
   });
 });
 

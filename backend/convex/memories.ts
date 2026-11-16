@@ -24,7 +24,12 @@ import { normalizePlace, placeArg, type Place } from "./lib/places";
 const nullableUuidArray = v.optional(v.union(v.null(), v.array(v.string())));
 
 const MAX_NOTE_CODE_POINTS = 4000;
+/** Photos and videos together. */
 const MAX_PHOTOS_PER_PARTNER = 5;
+
+function isVisualMedia(asset: Doc<"media_assets">): boolean {
+  return asset.media_type === "image" || asset.media_type === "video";
+}
 
 /** Port of `internal.normalize_memory_title`. */
 export function normalizeMemoryTitle(title: string | null | undefined): string {
@@ -87,7 +92,7 @@ export async function assertMemoryMediaAllowed(
     asset.reserved_parent_kind !== "memory_media" ||
     asset.reserved_parent_id !== row.id ||
     !["memory_photo", "voice_note"].includes(asset.upload_purpose) ||
-    !["image", "voice"].includes(asset.media_type) ||
+    !["image", "video", "voice"].includes(asset.media_type) ||
     !isUsableMediaAsset(asset)
   ) {
     fail("23514", "memory media asset is not usable");
@@ -220,24 +225,24 @@ async function requireWritableMemory(ctx: ReaderCtx, userId: string, memoryId: s
   return memory;
 }
 
-/** How many photos `userId` shows on the memory, and the highest sort order of their media on it. */
+/** How many photos and videos `userId` shows on the memory, and the highest sort order of their media on it. */
 async function ownMemoryMedia(ctx: ReaderCtx, memoryId: string, userId: string) {
   const mine = await ctx.db
     .query("memory_media")
     .withIndex("by_memory_id_owner_user_id_sort_order", (q) => q.eq("memory_id", memoryId).eq("owner_user_id", userId))
     .collect();
-  let imageCount = 0;
+  let visualCount = 0;
   let maxSortOrder = 0;
   for (const link of mine) {
     if (link.deleted_at !== undefined) continue;
     maxSortOrder = Math.max(maxSortOrder, link.sort_order);
     if (link.moderation_status !== "visible") continue;
     const asset = await getByUuid(ctx, "media_assets", link.media_asset_id);
-    if (asset && asset.media_type === "image" && asset.deleted_at === undefined && asset.moderation_status === "visible") {
-      imageCount += 1;
+    if (asset && isVisualMedia(asset) && asset.deleted_at === undefined && asset.moderation_status === "visible") {
+      visualCount += 1;
     }
   }
-  return { imageCount, maxSortOrder };
+  return { visualCount, maxSortOrder };
 }
 
 /** Port of `internal.attach_memory_media_assets`. Returns the new memory_media ids. */
@@ -254,7 +259,7 @@ async function attachMemoryMediaAssets(
 
   const memory = await requireWritableMemory(ctx, userId, memoryId);
   const own = await ownMemoryMedia(ctx, memory.id, userId);
-  let activeImageCount = own.imageCount;
+  let activeVisualCount = own.visualCount;
   const maxSortOrder = own.maxSortOrder;
 
   const inserted: string[] = [];
@@ -266,15 +271,15 @@ async function attachMemoryMediaAssets(
       asset.couple_id !== memory.couple_id ||
       asset.reserved_parent_kind !== "memory_media" ||
       !["memory_photo", "voice_note"].includes(asset.upload_purpose) ||
-      !["image", "voice"].includes(asset.media_type) ||
+      !["image", "video", "voice"].includes(asset.media_type) ||
       !isUsableMediaAsset(asset)
     ) {
       return fail("23514", "memory media asset is not usable");
     }
-    if (asset.media_type === "image") {
-      activeImageCount += 1;
-      if (activeImageCount > MAX_PHOTOS_PER_PARTNER) {
-        fail("23514", `each partner can add at most ${MAX_PHOTOS_PER_PARTNER} photos to a memory`);
+    if (isVisualMedia(asset)) {
+      activeVisualCount += 1;
+      if (activeVisualCount > MAX_PHOTOS_PER_PARTNER) {
+        fail("23514", `each partner can add at most ${MAX_PHOTOS_PER_PARTNER} photos or videos to a memory`);
       }
     }
     await insertMemoryMedia(ctx, {
@@ -322,8 +327,8 @@ async function joinVisitMemory(
       .first();
     if (ownNote) return false;
   }
-  const { imageCount } = await ownMemoryMedia(ctx, memory.id, userId);
-  if (imageCount + input.mediaIds.length > MAX_PHOTOS_PER_PARTNER) return false;
+  const { visualCount } = await ownMemoryMedia(ctx, memory.id, userId);
+  if (visualCount + input.mediaIds.length > MAX_PHOTOS_PER_PARTNER) return false;
 
   if (note !== null) await insertMemoryNote(ctx, { memory_id: memory.id, user_id: userId, body: note });
   await attachMemoryMediaAssets(ctx, userId, memory.id, input.mediaIds);
@@ -799,6 +804,11 @@ async function buildMemoryRow(ctx: ReaderCtx, userId: string, memory: Doc<"memor
       asset_deleted_at: asset.deleted_at ?? null,
       asset_moderation_status: asset.moderation_status,
       asset_storage_delete_status: asset.storage_delete_status,
+      media_type: asset.media_type,
+      mime_type: asset.mime_type ?? null,
+      width: asset.width ?? null,
+      height: asset.height ?? null,
+      duration_ms: asset.duration_ms ?? null,
       accessibility_text: visibleMemory && link.deleted_at === undefined && link.moderation_status === "visible" &&
         asset.deleted_at === undefined && asset.moderation_status === "visible" ? asset.accessibility_text ?? null : null,
       updated_at: updatedAt,

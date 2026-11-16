@@ -134,7 +134,8 @@ async function writableTarget(ctx: WriterCtx, userId: string, coupleId: string, 
           message.moderation_status !== "visible" || !thread || thread.couple_id !== coupleId ||
           thread.deleted_at !== undefined || thread.moderation_status !== "visible" || !link || !subject ||
           !(await isChatSubjectAvailable(ctx, coupleId, subject))) fail("42501", "media description is not writable");
-      const asset = requireUsableAsset(await getByUuid(ctx, "media_assets", target.media_asset_id), userId, coupleId);
+      const asset = requireUsableAsset(await getByUuid(ctx, "media_assets", target.media_asset_id), userId, coupleId,
+        ["image", "video", "voice"]);
       if (asset.reserved_parent_kind !== "thread_message_media" || asset.reserved_parent_id !== message.id ||
           !["thread_media", "voice_note"].includes(asset.upload_purpose)) fail("42501", "media description is not writable");
       return { kind: "asset", row: asset };
@@ -144,9 +145,10 @@ async function writableTarget(ctx: WriterCtx, userId: string, coupleId: string, 
       if (!story || story.author_user_id !== userId || story.couple_id !== coupleId || story.deleted_at !== undefined) {
         return fail("42501", "media description is not writable");
       }
-      const asset = requireUsableAsset(await getByUuid(ctx, "media_assets", story.media_asset_id), userId, coupleId);
+      const asset = requireUsableAsset(await getByUuid(ctx, "media_assets", story.media_asset_id), userId, coupleId,
+        ["image", "video"]);
       if (asset.reserved_parent_kind !== "story" || asset.reserved_parent_id !== story.id ||
-          asset.upload_purpose !== "story_photo" || asset.media_type !== "image") fail("42501", "media description is not writable");
+          asset.upload_purpose !== "story_photo") fail("42501", "media description is not writable");
       return { kind: "asset", row: asset };
     }
     case "daily": {

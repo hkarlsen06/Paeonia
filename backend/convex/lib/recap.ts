@@ -16,7 +16,8 @@ const RECAP_MIN_DAYS = 14;
 const MAX_HIGHLIGHTS = 3;
 
 // A counting call reads whole sources while they fit in a page, and pages through at most one source
-// that does not, since Convex allows one `.paginate` per function. It stops before CALL_READS.
+// that does not, since Convex allows one `.paginate` per function. It stops before CALL_READS. A source
+// that reads another document for each row gets pages of PAGE / readsPerRow rows.
 const PAGE = 400;
 const CALL_READS = 1_000;
 
@@ -174,7 +175,9 @@ type Source<T> = {
   /** The rows to read, or null when there are none. */
   rows: (step: Step) => Promise<Rows<T> | null>;
   /** Adds one batch of rows to the counts. Batches come in index order. */
-  add: (step: Step, rows: T[]) => void;
+  add: (step: Step, rows: T[]) => void | Promise<void>;
+  /** Reads per row, the row included, when `add` reads more documents. */
+  readsPerRow?: number;
 };
 
 const source = <T>(spec: Source<T>): Source<unknown> => spec as Source<unknown>;
@@ -202,14 +205,17 @@ function photosOf(member: number) {
       ctx.db
         .query("memory_media")
         .withIndex("by_owner_user_id_memory_id", (q) => q.eq("owner_user_id", counting.member_ids[member])),
-    add: ({ counting }, photos) => {
+    add: async ({ ctx, counting }, links) => {
       const index = new Map(counting.memories.map((memory, at) => [memory.id, at]));
-      for (const photo of photos) {
-        const at = index.get(photo.memory_id);
-        if (at === undefined || photo.deleted_at !== undefined || photo.moderation_status !== "visible") continue;
+      for (const link of links) {
+        const at = index.get(link.memory_id);
+        if (at === undefined || link.deleted_at !== undefined || link.moderation_status !== "visible") continue;
+        // Videos and voice notes share the table, and the recap counts photos.
+        if ((await getByUuid(ctx, "media_assets", link.media_asset_id))?.media_type !== "image") continue;
         counting.memories[at].photos += 1;
       }
     },
+    readsPerRow: 2,
   });
 }
 
@@ -410,28 +416,29 @@ export async function countRecapStep(
   let read = 0;
   let paged = false;
   while (counting.source < SOURCES.length) {
-    const { rows, add } = SOURCES[counting.source];
+    const { rows, add, readsPerRow = 1 } = SOURCES[counting.source];
+    const pageRows = Math.floor(PAGE / readsPerRow);
     if (counting.cursor === null) {
-      if (read + PAGE + 1 > CALL_READS) break;
+      if (read + (pageRows + 1) * readsPerRow > CALL_READS) break;
       const query = await rows(step);
       if (!query) {
         next();
         continue;
       }
-      const all = await query.take(PAGE + 1);
-      read += all.length;
-      if (all.length <= PAGE) {
-        add(step, all);
+      const all = await query.take(pageRows + 1);
+      read += all.length * readsPerRow;
+      if (all.length <= pageRows) {
+        await add(step, all);
         next();
         continue;
       }
     }
     // Too big for one read: page through it, one page per call.
-    if (paged || read + PAGE > CALL_READS) break;
+    if (paged || read + pageRows * readsPerRow > CALL_READS) break;
     paged = true;
-    const page = await (await rows(step))!.paginate({ numItems: PAGE, cursor: counting.cursor });
-    read += page.page.length;
-    add(step, page.page);
+    const page = await (await rows(step))!.paginate({ numItems: pageRows, cursor: counting.cursor });
+    read += page.page.length * readsPerRow;
+    await add(step, page.page);
     if (page.isDone) {
       next();
     } else {

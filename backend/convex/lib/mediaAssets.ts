@@ -16,33 +16,44 @@ export function mediaByteLimit(mediaType: string): number {
     case "voice":
     case "report_snapshot":
       return 52_428_800;
+    case "video":
+      // 80 MiB. Cloudflare in front of the API refuses requests over 100 MB.
+      return 83_886_080;
     default:
       return 0;
   }
 }
 
 const MIME_TYPES: Record<string, string[]> = {
-  image: ["image/jpeg", "image/png", "image/heic", "image/heif", "image/webp"],
+  image: ["image/jpeg", "image/png", "image/heic", "image/heif", "image/webp", "image/gif"],
+  video: ["video/mp4"],
   voice: ["audio/mp4", "audio/mpeg", "audio/aac", "audio/wav", "audio/x-caf"],
   drawing_payload: ["application/octet-stream", "application/x-pkdrawing"],
   report_snapshot: ["image/jpeg", "image/png", "application/pdf", "application/json"],
 };
 
 const EXTENSIONS: Record<string, string[]> = {
-  image: ["jpg", "png", "heic", "heif", "webp"],
+  image: ["jpg", "png", "heic", "heif", "webp", "gif"],
+  video: ["mp4"],
   voice: ["m4a", "mp4", "aac", "caf", "wav", "mp3"],
   drawing_payload: ["pkdrawing"],
   report_snapshot: ["jpg", "png", "pdf", "json"],
 };
 
-/** Port of `internal.media_mime_matches_type`. Expects a trimmed, lowercase mime type. */
-export function mediaMimeMatchesType(mediaType: string, mimeType: string): boolean {
-  return (MIME_TYPES[mediaType] ?? []).includes(mimeType.trim().toLowerCase());
+/** Only chat keeps an animated GIF. Memories, stories and every other place show still photos. */
+function isGifOutsideChat(uploadPurpose: string, mimeOrExtension: string): boolean {
+  return (mimeOrExtension === "image/gif" || mimeOrExtension === "gif") && uploadPurpose !== "thread_media";
 }
 
-/** Port of `internal.media_extension_matches_type`. */
-export function mediaExtensionMatchesType(mediaType: string, extension: string): boolean {
-  return (EXTENSIONS[mediaType] ?? []).includes(extension);
+/** Port of `internal.media_mime_matches_type`, plus the GIF rule. Expects a trimmed, lowercase mime type. */
+export function mediaMimeMatchesType(mediaType: string, mimeType: string, uploadPurpose: string): boolean {
+  const normalized = mimeType.trim().toLowerCase();
+  return (MIME_TYPES[mediaType] ?? []).includes(normalized) && !isGifOutsideChat(uploadPurpose, normalized);
+}
+
+/** Port of `internal.media_extension_matches_type`, plus the GIF rule. */
+export function mediaExtensionMatchesType(mediaType: string, extension: string, uploadPurpose: string): boolean {
+  return (EXTENSIONS[mediaType] ?? []).includes(extension) && !isGifOutsideChat(uploadPurpose, extension);
 }
 
 /** Port of `internal.normalize_media_file_extension`. */

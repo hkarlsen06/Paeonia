@@ -52,7 +52,7 @@ export async function storeBlob(t: TestConvex, bytes: Uint8Array, contentType: s
 export type UploadSpec = {
   kind: "memory_media" | "thread_message_media" | "daily_answer_media" | "widget_drawing_revision" | "game_move" | "exquisite_corpse_part" | "story" | "guess_my_spot_round" | "profile_photo" | "letter";
   purpose: "memory_photo" | "voice_note" | "thread_media" | "daily_answer_media" | "widget_drawing_payload" | "game_drawing_payload" | "exquisite_corpse_drawing" | "exquisite_corpse_strip" | "story_photo" | "guess_my_spot_photo" | "profile_photo" | "letter_image";
-  mediaType: "image" | "voice" | "drawing_payload";
+  mediaType: "image" | "video" | "voice" | "drawing_payload";
   extension: string;
   mime: string;
   parentId?: string;
@@ -62,6 +62,8 @@ export type UploadSpec = {
   pathContext?: Record<string, unknown>;
   bytes?: Uint8Array;
   accessibilityText?: string;
+  /** A video's length. Videos default to 4 seconds. */
+  durationMs?: number;
 };
 
 export type Uploaded = {
@@ -81,6 +83,15 @@ export const photo = (coupleId: string, kind: UploadSpec["kind"] = "memory_media
   mediaType: "image",
   extension: "jpg",
   mime: "image/jpeg",
+  coupleId,
+});
+
+export const video = (coupleId: string, kind: UploadSpec["kind"] = "memory_media", purpose: UploadSpec["purpose"] = "memory_photo"): UploadSpec => ({
+  kind,
+  purpose,
+  mediaType: "video",
+  extension: "mp4",
+  mime: "video/mp4",
   coupleId,
 });
 
@@ -120,6 +131,7 @@ export async function uploadAsset(t: TestConvex, user: TestUser, spec: UploadSpe
     p_sha256_hex: sha256,
     ...(spec.mediaType === "image" ? { p_width: 100, p_height: 80 } : {}),
     ...(spec.mediaType === "voice" ? { p_duration_ms: 1500 } : {}),
+    ...(spec.mediaType === "video" ? { p_width: 720, p_height: 1280, p_duration_ms: spec.durationMs ?? 4000 } : {}),
   });
   return {
     assetId: reservation.media_asset_id,

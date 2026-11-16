@@ -535,7 +535,7 @@ describe("send_thread_message", () => {
     const message = messages.find((item: { message_id: string }) => item.message_id === a.parentId);
     expect(message).toMatchObject({ body: null, media_asset_ids: [a.assetId] });
     expect(message!.media).toEqual([
-      { media_asset_id: a.assetId, media_type: "image", width: expect.anything(), height: expect.anything(), duration_ms: null, accessibility_text: "A red boat" },
+      { media_asset_id: a.assetId, media_type: "image", mime_type: "image/jpeg", width: expect.anything(), height: expect.anything(), duration_ms: null, accessibility_text: "A red boat" },
     ]);
     expect(message!.media_states).toEqual([
       {

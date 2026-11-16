@@ -103,12 +103,42 @@ async function insertMemory(t: TestConvex, couple: TestCouple, date: string, fie
   return id;
 }
 
-async function insertPhotoLink(t: TestConvex, couple: TestCouple, memoryId: string, sortOrder: number) {
+async function insertMediaLink(
+  t: TestConvex,
+  couple: TestCouple,
+  memoryId: string,
+  sortOrder: number,
+  mediaType: "image" | "video" = "image",
+) {
   await t.run(async (ctx) => {
+    const linkId = newUuid();
+    const assetId = newUuid();
+    await ctx.db.insert("media_assets", {
+      id: assetId,
+      owner_user_id: couple.second.userId,
+      couple_id: couple.coupleId,
+      reserved_parent_kind: "memory_media",
+      reserved_parent_id: linkId,
+      reserved_by_client_operation_id: newUuid(),
+      bucket: "couple-media",
+      storage_path: `${couple.coupleId}/${mediaType}/${assetId}`,
+      media_type: mediaType,
+      upload_purpose: "memory_photo",
+      expected_media_type: mediaType,
+      expected_bucket: "couple-media",
+      upload_status: "finalized",
+      upload_expires_at: NOW,
+      upload_finalized_at: NOW,
+      moderation_status: "visible",
+      storage_delete_status: "none",
+      storage_delete_attempts: 0,
+      created_at: NOW,
+      updated_at: NOW,
+    });
     await ctx.db.insert("memory_media", {
-      id: newUuid(),
+      id: linkId,
       memory_id: memoryId,
-      media_asset_id: newUuid(),
+      media_asset_id: assetId,
       owner_user_id: couple.second.userId,
       sort_order: sortOrder,
       moderation_status: "visible",
@@ -165,8 +195,9 @@ describe("ensure_anniversary_recap", () => {
     await insertRound(t, earlier, "2026-02-02", versionId, both);
 
     const withPhotos = await insertMemory(t, couple, "2026-07-01");
-    await insertPhotoLink(t, couple, withPhotos, 0);
-    await insertPhotoLink(t, couple, withPhotos, 1);
+    await insertMediaLink(t, couple, withPhotos, 0);
+    await insertMediaLink(t, couple, withPhotos, 1);
+    await insertMediaLink(t, couple, withPhotos, 2, "video");
     await insertMemory(t, couple, "2026-08-01");
     await insertMemory(t, couple, "2026-08-02", { deleted_at: NOW });
     await insertMemory(t, couple, "2026-08-03", { moderation_status: "hidden" });

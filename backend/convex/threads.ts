@@ -90,7 +90,7 @@ async function assertThreadMessageMediaAllowed(ctx: ReaderCtx, messageId: string
     asset.reserved_parent_kind !== "thread_message_media" ||
     asset.reserved_parent_id !== messageId ||
     !["thread_media", "voice_note"].includes(asset.upload_purpose) ||
-    !["image", "voice"].includes(asset.media_type) ||
+    !["image", "video", "voice"].includes(asset.media_type) ||
     !isUsableMediaAsset(asset)
   ) {
     fail("23514", "thread message media asset is not usable");
@@ -377,7 +377,7 @@ export const MESSAGE_EDIT_WINDOW_MS = 5 * 60 * 1000;
 
 /**
  * Replaces the text of the caller's own message within five minutes of sending.
- * Voice messages have no text to change, and a photo message keeps a caption.
+ * Voice messages have no text to change, and a photo or video message keeps a caption.
  * Saving the same text again changes nothing. The live message query carries
  * the edit to both phones, so there is no push.
  */
@@ -404,7 +404,7 @@ export const edit_thread_message = mutation({
       fail("23514", "messages can only be edited for 5 minutes after sending");
     }
     if (message.body === undefined) fail("23514", "only messages with text can be edited");
-    // A photo's caption can change. A voice message has nothing to read, so it can't.
+    // A photo's or a video's caption can change. A voice message has nothing to read, so it can't.
     for (const link of await ctx.db
       .query("thread_message_media")
       .withIndex("by_message_id_sort_order", (q) => q.eq("message_id", message.id))
@@ -426,7 +426,7 @@ export const edit_thread_message = mutation({
 });
 
 /**
- * Takes back the caller's own message, whatever it holds: text, photos or a voice message.
+ * Takes back the caller's own message, whatever it holds: text, photos, videos or a voice message.
  * There is no time limit. The row stays as a tombstone (`deleted_at`) so the chat shows
  * "Message deleted" where it was and a reply that quoted it still has something to point at.
  * The text, the reactions and the media files go. A partner who has not read the message yet
@@ -816,7 +816,7 @@ export const get_conversation_threads = query({
         last.deleted_at === undefined &&
         last.moderation_status === "visible";
       // What the newest message carries when it has no text, so the preview can say
-      // "Photo" or "Voice message".
+      // "Photo", "Video" or "Voice message".
       const lastMedia = visible
         ? await ctx.db
             .query("thread_message_media")

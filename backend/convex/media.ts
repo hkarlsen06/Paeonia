@@ -32,6 +32,7 @@ import { isUsableMediaAsset } from "./lib/mediaAssetState";
 type MediaAsset = Doc<"media_assets">;
 
 const HOUR_MS = 3_600_000;
+const MAX_VIDEO_DURATION_MS = 180_000;
 const nullableInt = v.optional(v.union(v.null(), v.number()));
 
 export const update_accessibility_text = mutation({
@@ -83,7 +84,7 @@ export const create_pending_media_upload = mutation({
     const pathContext = args.p_path_context ?? {};
     if (!isJsonObject(pathContext)) fail("23514", "path context must be an object");
     const extension = normalizeMediaFileExtension(args.p_file_extension);
-    if (!mediaExtensionMatchesType(args.p_media_type, extension)) {
+    if (!mediaExtensionMatchesType(args.p_media_type, extension, args.p_upload_purpose)) {
       fail("23514", "file extension does not match media type");
     }
     const coupleArg = optionalUuidArg(args.p_couple_id);
@@ -122,6 +123,7 @@ export const create_pending_media_upload = mutation({
         const purpose = args.p_upload_purpose;
         const kind = args.p_reserved_parent_kind;
         const mediaType = args.p_media_type;
+        const isVisualMedia = mediaType === "image" || mediaType === "video";
 
         if (purpose === "profile_photo") {
           if (kind !== "profile_photo" || parentId !== userId || mediaType !== "image" || coupleArg !== undefined) {
@@ -135,19 +137,19 @@ export const create_pending_media_upload = mutation({
             fail("42501", "active entitled couple access is required");
           }
           const contractOk =
-            (purpose === "memory_photo" && kind === "memory_media" && mediaType === "image") ||
+            (purpose === "memory_photo" && kind === "memory_media" && isVisualMedia) ||
             (purpose === "voice_note" &&
               ["memory_media", "daily_answer_media", "thread_message_media"].includes(kind) &&
               mediaType === "voice") ||
             (purpose === "daily_answer_media" && kind === "daily_answer_media" && mediaType === "image") ||
-            (purpose === "thread_media" && kind === "thread_message_media" && mediaType === "image");
+            (purpose === "thread_media" && kind === "thread_message_media" && isVisualMedia);
           if (!contractOk) fail("23514", "relationship media upload contract is invalid");
           bucket = "couple-media";
           coupleId = coupleArg;
           storagePath = `${coupleArg}/${mediaType}/${assetId}.${extension}`;
         } else if (purpose === "story_photo") {
-          if (kind !== "story" || mediaType !== "image" || coupleArg === undefined) {
-            fail("23514", "story photo upload contract is invalid");
+          if (kind !== "story" || !isVisualMedia || coupleArg === undefined) {
+            fail("23514", "story upload contract is invalid");
           }
           if (!(await canAccessCoupleContent(ctx, userId, coupleArg))) {
             fail("42501", "active entitled couple access is required");
@@ -283,9 +285,9 @@ export const create_pending_media_upload = mutation({
       await assertFirstDayDraftAllowed(ctx, userId, { entitled: true });
     }
     // A queued daily answer retries reserve, upload, and finalize with the same operations
-    // until it is sent, so a replay must not fail for good. A finalized asset replays as is.
-    // Finalize then replays too and ignores the new bytes, which the orphan blob sweep
-    // removes. A reservation that ran out before any upload is renewed.
+    // until it is sent, so a replay must not fail for good. A finalized asset replays as is,
+    // and `upload_status` tells the app to skip the upload and finalize. A reservation that
+    // ran out before any upload is renewed.
     const now = nowIso();
     const live = asset.deleted_at === undefined && (asset.upload_status === "finalized" || asset.upload_status === "pending");
     const ranOut =
@@ -311,6 +313,7 @@ export const create_pending_media_upload = mutation({
       {
         ...stored,
         upload_expires_at: ranOut ? expiresAt : asset.upload_expires_at,
+        upload_status: ranOut ? ("pending" as const) : asset.upload_status,
         upload_url: await ctx.storage.generateUploadUrl(),
       },
     ];
@@ -417,7 +420,7 @@ export const finalize_media_upload = mutation({
         if (!(args.p_byte_size > 0) || args.p_byte_size > mediaByteLimit(args.p_media_type)) {
           fail("23514", "byte size is out of range");
         }
-        if (!mediaMimeMatchesType(args.p_media_type, mimeType)) {
+        if (!mediaMimeMatchesType(args.p_media_type, mimeType, args.p_upload_purpose)) {
           fail("23514", "mime type does not match media type");
         }
         if (args.p_media_type === "image" && (width === undefined || height === undefined)) {
@@ -425,6 +428,12 @@ export const finalize_media_upload = mutation({
         }
         if (args.p_media_type === "voice" && durationMs === undefined) {
           fail("23514", "voice uploads require duration");
+        }
+        if (args.p_media_type === "video") {
+          if (width === undefined || height === undefined || durationMs === undefined) {
+            fail("23514", "video uploads require dimensions and duration");
+          }
+          if (durationMs > MAX_VIDEO_DURATION_MS) fail("23514", "video is too long");
         }
 
         // The reserved object must exist. A finalized asset checks its own blob, so a retry

@@ -35,7 +35,7 @@ export const mediaBucket = literals(
   "game-drawings",
   "report-snapshots",
 );
-export const mediaType = literals("image", "voice", "drawing_payload", "report_snapshot");
+export const mediaType = literals("image", "video", "voice", "drawing_payload", "report_snapshot");
 export const memberStatus = literals(
   "active",
   "left",

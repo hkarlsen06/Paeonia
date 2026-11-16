@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
-import { failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
+import { failure, op, photo, setMediaEnv, uploadAsset, video } from "./media.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
@@ -60,6 +60,11 @@ describe("post_story and get_stories", () => {
       author_user_id: couple.first.userId,
       media_asset_id: older.up.assetId,
       caption: "Thinking of you",
+      media_type: "image",
+      mime_type: "image/jpeg",
+      width: 100,
+      height: 80,
+      duration_ms: null,
       accessibility_text: null,
       created_at: timestamp(NOW),
       seen_at: null,
@@ -180,6 +185,29 @@ describe("post_story and get_stories", () => {
     });
     expect((await send(couple.first, pending.media_asset_id)).code).toBe("23514");
     expect(await storyRows(t)).toHaveLength(0);
+  });
+
+  test("posts a video of up to a minute, and the partner reads its kind and length", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const postVideo = async (durationMs: number) => {
+      const storyId = newUuid();
+      const up = await uploadAsset(t, couple.first, { ...video(couple.coupleId, "story", "story_photo"), parentId: storyId, durationMs });
+      return couple.first.as.mutation(api.stories.post_story, { p_story_id: storyId, p_media_asset_id: up.assetId, ...op() });
+    };
+
+    expect(await failure(postVideo(60_001))).toEqual({ code: "23514", message: "story video is too long" });
+    const posted = await postVideo(60_000);
+    const [seen] = (await getStories(couple.second)).stories;
+    expect(seen).toMatchObject({
+      id: posted!.id,
+      media_type: "video",
+      mime_type: "video/mp4",
+      width: 720,
+      height: 1280,
+      duration_ms: 60_000,
+    });
+    expect(await storyRows(t)).toHaveLength(1);
   });
 
   test("refuses a user without a couple and a couple without a subscription", async () => {
