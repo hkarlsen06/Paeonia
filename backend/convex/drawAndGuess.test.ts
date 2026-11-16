@@ -456,6 +456,72 @@ describe("submit_drawing", () => {
   });
 });
 
+describe("reopen_drawing", () => {
+  const reopen = (user: TestUser, roundId: string) =>
+    user.as.mutation(api.drawAndGuess.reopen_drawing, { ...op(), p_round_id: roundId });
+
+  test("puts a sent round back in drawing with the turn on the drawer, and queues the sent file for deletion", async () => {
+    const s = await startGame();
+    const picked = await pick(s.a, s.gameId, "easy");
+    const up = await uploadDrawing(s, s.a, picked.round_id);
+    await s.a.as.mutation(api.drawAndGuess.submit_drawing, { ...op(), p_round_id: picked.round_id, p_media_asset_id: up.assetId });
+
+    expect(await reopen(s.a, picked.round_id)).toEqual({ round_id: picked.round_id, round_state: "drawing" });
+
+    const data = await view(s.b);
+    expect(data.game).toMatchObject({ state: "drawing", turn_user_id: s.a.userId });
+    expect(data.current_round).toMatchObject({ state: "drawing" });
+    expect(data.current_round?.drawing_media_asset_id ?? null).toBeNull();
+    const asset = await s.t.run((ctx) =>
+      ctx.db.query("media_assets").filter((q) => q.eq(q.field("id"), up.assetId)).first(),
+    );
+    expect(asset?.storage_delete_status).toBe("pending");
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("only the drawer can keep drawing, and nobody outside the couple can", async () => {
+    const s = await startGame();
+    const picked = await pick(s.a, s.gameId, "easy");
+    await sendDrawing(s, s.a, picked.round_id);
+    const stranger = await createCouple(s.t);
+
+    expect((await failure(reopen(s.b, picked.round_id))).code).toBe("42501");
+    expect((await failure(reopen(stranger.first, picked.round_id))).code).toBe("42501");
+    expect((await view(s.b)).current_round).toMatchObject({ state: "guessing" });
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a round still in drawing stays as it is, and a finished round cannot be reopened", async () => {
+    const s = await startGame();
+    const picked = await pick(s.a, s.gameId, "easy");
+    expect(await reopen(s.a, picked.round_id)).toEqual({ round_id: picked.round_id, round_state: "drawing" });
+
+    await sendDrawing(s, s.a, picked.round_id);
+    await guess(s.b, picked.round_id, picked.word);
+    expect((await failure(reopen(s.a, picked.round_id))).code).toBe("23514");
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("the guesser keeps their guesses and first look, and sending again gives the turn back without a second push", async () => {
+    const s = await startGame();
+    const picked = await pick(s.a, s.gameId, "easy");
+    await sendDrawing(s, s.a, picked.round_id);
+    const seen = await s.b.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id });
+    await guess(s.b, picked.round_id, "wrong");
+
+    await reopen(s.a, picked.round_id);
+    tick(20);
+    await sendDrawing(s, s.a, picked.round_id);
+
+    const data = await view(s.b);
+    expect(data.game).toMatchObject({ state: "guessing", turn_user_id: s.b.userId });
+    expect(data.current_round).toMatchObject({ state: "guessing", guesser_first_seen_at: seen.guesser_first_seen_at });
+    expect(data.current_round?.attempts).toHaveLength(1);
+    expect((await outbox(s.t)).filter((row) => row.kind === "game_turn_ready")).toHaveLength(1);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
 describe("guessing", () => {
   test("a wrong guess is stored with its time and the round stays open", async () => {
     const s = await startGame();

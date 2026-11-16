@@ -42,6 +42,8 @@ import { charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
 import { literals } from "./lib/validators";
 import { isUsableMediaAsset } from "./lib/mediaAssetState";
+import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
+import { refreshGameActivityTurns } from "./lib/liveActivities";
 
 // Draw & Guess functions. The rules and decisions are in docs/games-plan.md and
 // docs/games/draw-and-guess.md. Helpers are in lib/drawAndGuess.ts. Settings, invites, presence,
@@ -349,6 +351,55 @@ export const submit_drawing = mutation({
 });
 
 /** Records when the guesser first saw the drawing. The first call wins. The speed bonus counts from it. */
+/**
+ * "Keep drawing": the drawer takes a sent drawing back to the canvas. The round returns to
+ * `drawing` and the turn to the drawer, as before the send, and the sent file is queued for
+ * deletion. It works until the round ends. To the guesser this looks like the drawer drawing
+ * live, so guesses, hints and the first look stay. Sending again gives the turn back without a
+ * second push, because the turn push is deduplicated per round.
+ *
+ * Result: `{ round_id, round_state }`. A round already back in drawing returns the same.
+ */
+export const reopen_drawing = mutation({
+  args: { p_round_id: v.string(), ...clientOperationArgs },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const roundId = uuidArg(args.p_round_id);
+
+    return await runClientOperation(
+      ctx,
+      userId,
+      toClientOperation(args, {
+        kind: "reopen_drawing",
+        scope: "games",
+        request: ["reopen_drawing", roundId],
+      }),
+      async () => {
+        const { move, game } = await requireRound(ctx, userId, roundId);
+        if (move.drawer_user_id !== userId) fail("42501", "only the drawer can keep drawing");
+        if (move.state === "drawing") return { round_id: move.id, round_state: move.state };
+        if (move.state !== "guessing") fail("23514", "this round is already finished");
+
+        const oldAssetId = move.drawing_media_asset_id;
+        await patchMove(ctx, move, {
+          state: "drawing",
+          drawing_media_asset_id: undefined,
+          drawing_submitted_at: undefined,
+        });
+        await patchGame(ctx, game, {
+          state: "drawing",
+          turn_user_id: userId,
+          turn_started_at: nowIso(),
+          turn_reminder_sent_at: undefined,
+        });
+        await queueOrphanedMediaAssetForDelete(ctx, oldAssetId);
+        await refreshGameActivityTurns(ctx, game.couple_id, "draw_and_guess", userId);
+        return { round_id: move.id, round_state: "drawing" as const };
+      },
+    );
+  },
+});
+
 export const mark_round_seen = mutation({
   args: { p_round_id: v.string() },
   handler: async (ctx, args) => {
