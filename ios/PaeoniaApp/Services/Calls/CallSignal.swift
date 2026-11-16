@@ -12,8 +12,10 @@ nonisolated struct CallSignal: Equatable, Sendable {
         /// offer it already replaced.
         case answer(sdp: String, number: Int)
         case candidate(CallIceCandidate)
-        /// The sender turned their camera on or off.
-        case camera(isOn: Bool)
+        /// The sender's camera turned on or off, or iOS paused or resumed it.
+        case camera(CallCameraState)
+        /// Whether what the sender sends reaches this phone badly (`CallConnectionHealth`).
+        case connection(isWeak: Bool)
         /// From the answering phone: its connection dropped, so the caller should offer again.
         case restart
     }
@@ -60,7 +62,8 @@ nonisolated extension CallSignal: Codable {
         case candidate
         case sdpMid = "sdp_mid"
         case sdpMLineIndex = "sdp_m_line_index"
-        case isOn = "on"
+        case cameraState = "state"
+        case isWeak = "weak"
     }
 
     init(from decoder: any Decoder) throws {
@@ -85,7 +88,9 @@ nonisolated extension CallSignal: Codable {
                 sdpMLineIndex: container.decode(Int32.self, forKey: .sdpMLineIndex)
             ))
         case "camera":
-            message = try .camera(isOn: container.decode(Bool.self, forKey: .isOn))
+            message = try .camera(container.decode(CallCameraState.self, forKey: .cameraState))
+        case "connection":
+            message = try .connection(isWeak: container.decode(Bool.self, forKey: .isWeak))
         case "restart":
             message = .restart
         default:
@@ -114,11 +119,37 @@ nonisolated extension CallSignal: Codable {
             try container.encode(candidate.sdp, forKey: .candidate)
             try container.encodeIfPresent(candidate.sdpMid, forKey: .sdpMid)
             try container.encode(candidate.sdpMLineIndex, forKey: .sdpMLineIndex)
-        case let .camera(isOn):
+        case let .camera(state):
             try container.encode("camera", forKey: .type)
-            try container.encode(isOn, forKey: .isOn)
+            try container.encode(state, forKey: .cameraState)
+        case let .connection(isWeak):
+            try container.encode("connection", forKey: .type)
+            try container.encode(isWeak, forKey: .isWeak)
         case .restart:
             try container.encode("restart", forKey: .type)
+        }
+    }
+}
+
+/// Sent as `"off"`, `"on"` or `"paused"`.
+nonisolated extension CallCameraState: Codable {
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        switch try container.decode(String.self) {
+        case "off": self = .off
+        case "on": self = .on
+        case "paused": self = .paused
+        case let other:
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unknown camera state \(other)")
+        }
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .off: try container.encode("off")
+        case .on: try container.encode("on")
+        case .paused: try container.encode("paused")
         }
     }
 }

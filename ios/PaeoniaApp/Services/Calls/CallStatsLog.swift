@@ -2,10 +2,11 @@ import Foundation
 import OSLog
 @preconcurrency import LiveKitWebRTC
 
-/// Logs one line about the call's media every 10 seconds while the phones are connected:
-/// codecs, bitrates, losses, round trip time and whether the media goes direct or through TURN.
-/// Read it in Console with the `CallStats` category. Each sample also goes to `onSample`, the
-/// first one as soon as the phones connect.
+/// Reads the call's media stats every 2 seconds while the phones are connected, and logs one line
+/// about them every 10 seconds: codecs, bitrates, losses, round trip time and whether the media
+/// goes direct or through TURN. Read it in Console with the `CallStats` category. Each sample also
+/// goes to `onSample`, the first one as soon as the phones connect, so the call can notice a weak
+/// connection within seconds (`CallConnectionHealth`).
 final class CallStatsLog {
     private static let logger = Logger(subsystem: "no.paeonia.app", category: "CallStats")
 
@@ -14,30 +15,38 @@ final class CallStatsLog {
         logger.notice("\(line, privacy: .public)")
     }
 
-    private let interval: Duration
+    private let sampleInterval: Duration
+    private let lineInterval: Duration
     private let write: (String) -> Void
     private var task: Task<Void, Never>?
 
     init(
-        interval: Duration = .seconds(10),
+        sampleInterval: Duration = .seconds(2),
+        lineInterval: Duration = .seconds(10),
         write: @escaping (String) -> Void = { logger.notice("\($0, privacy: .public)") }
     ) {
-        self.interval = interval
+        self.sampleInterval = sampleInterval
+        self.lineInterval = lineInterval
         self.write = write
     }
 
     func start(_ peerConnection: LKRTCPeerConnection, onSample: @escaping (CallStatsSample) -> Void = { _ in }) {
         guard task == nil else { return }
-        task = Task { [interval, write] in
-            var previous = await CallStatsSample.read(peerConnection)
-            onSample(previous)
+        let lineSeconds = Double(lineInterval.components.seconds)
+        task = Task { [sampleInterval, write] in
+            var lastLine = await CallStatsSample.read(peerConnection)
+            onSample(lastLine)
             while true {
-                try? await Task.sleep(for: interval)
+                try? await Task.sleep(for: sampleInterval)
                 guard !Task.isCancelled else { return }
                 let current = await CallStatsSample.read(peerConnection)
                 onSample(current)
-                write(current.line(since: previous))
-                previous = current
+                // Stats timestamps drift a little from the sleep, so a line goes out once most of
+                // the interval has passed.
+                if current.seconds - lastLine.seconds >= lineSeconds - 0.5 {
+                    write(current.line(since: lastLine))
+                    lastLine = current
+                }
             }
         }
     }
@@ -97,6 +106,9 @@ nonisolated struct CallStatsSample: Sendable {
     var audioReceived = Inbound()
     /// The partner's camera, and their shared screen while they share it.
     var videoReceived = Inbound()
+    /// What the partner's phone reports it never got of what this phone sent, audio and video
+    /// together, from their receiver reports. It lags `packetsSent` by up to a report interval.
+    var packetsLostAtPartner = 0
     var roundTripSeconds: Double?
     var availableOutgoingBitsPerSecond: Double?
     /// `host`, `srflx`, `prflx` or `relay` for each end of the path in use. Never an address.
@@ -116,6 +128,10 @@ nonisolated struct CallStatsSample: Sendable {
     /// Nil until the phones have picked a path.
     var mediaPath: CallMediaPath? {
         localCandidateType.map { CallMediaPath(localCandidateType: $0, remoteCandidateType: remoteCandidateType) }
+    }
+
+    init(seconds: Double) {
+        self.seconds = seconds
     }
 
     static func read(_ peerConnection: LKRTCPeerConnection) async -> CallStatsSample {
@@ -147,8 +163,9 @@ nonisolated struct CallStatsSample: Sendable {
                 } else {
                     audio = sent
                 }
-            case "remote-inbound-rtp" where stat.string("kind") == "video":
-                partnerJitterSeconds = stat.number("jitter")
+            case "remote-inbound-rtp":
+                packetsLostAtPartner += Int(stat.number("packetsLost") ?? 0)
+                partnerJitterSeconds = stat.string("kind") == "video" ? stat.number("jitter") : partnerJitterSeconds
             case "inbound-rtp":
                 let kind: WritableKeyPath<Self, Inbound> =
                     stat.string("kind") == "video" ? \.videoReceived : \.audioReceived

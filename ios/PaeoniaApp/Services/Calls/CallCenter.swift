@@ -21,6 +21,9 @@ protocol CallEngineActions: AnyObject {
     /// recording indicator goes away. Starting one goes through the system's broadcast picker
     /// (`CallScreenShare.extensionBundleID`), because only the person can start a broadcast.
     func stopScreenShare()
+    /// Hides `CallSession.cameraOffSuggestion` for the rest of the call. The same reason does not
+    /// come back, though the other reason can.
+    func dismissCameraOffSuggestion()
     /// Zooms the back camera. `factor` counts the way `CallCameraZoom` does.
     func setBackCameraZoom(_ factor: Double)
     /// The partner's time zone for the night check, or nil when it is not known.

@@ -69,6 +69,7 @@ extension CallEngine: CallEngineActions {
                 refreshAudioRoute()
             }
             reportCapabilities(of: run)
+            updateCameraOffSuggestion(in: run)
         }
     }
 
@@ -157,9 +158,11 @@ extension CallEngine: CallEngineActions {
         }
     }
 
-    func partnerCameraChanged(_ isOn: Bool, in run: CallRun) {
-        guard run === self.run, let center, center.session?.isPartnerCameraOn != isOn else { return }
-        center.session?.partnerCamera = isOn ? .on : .off
+    func partnerCameraChanged(_ state: CallCameraState, in run: CallRun) {
+        guard run === self.run, let center, center.session?.partnerCamera != state else { return }
+        center.session?.partnerCamera = state
+        // A paused camera shows its own symbol instead of a blur.
+        partnerVideo.watchForStalls(state == .on)
         updatePictureInPicture()
         reportCapabilities(of: run)
     }

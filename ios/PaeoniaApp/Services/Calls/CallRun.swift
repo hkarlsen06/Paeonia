@@ -12,6 +12,10 @@ final class CallRun {
     var mediaStart: Task<Void, Never>?
     /// What this phone measured about the connection, for the report sent when the call ends.
     var quality = CallQualityTally()
+    /// The phone's heat and battery while the call runs.
+    var power: CallDevicePower?
+    /// Reasons the person waved away, so they stay away for the rest of the call.
+    var dismissedCameraOffSuggestions: Set<CallCameraOffSuggestion> = []
     var timers: [CallTimer: Task<Void, Never>] = [:]
     var heartbeat: Task<Void, Never>?
     /// Reads the server's row while the call rings (`CallEngine.updateRingWatch`).
@@ -74,6 +78,8 @@ final class CallRun {
         mediaStart = nil
         media?.close()
         media = nil
+        power?.stop()
+        power = nil
         goodbye?.cancel()
         _ = takeUnreportedRing()
     }

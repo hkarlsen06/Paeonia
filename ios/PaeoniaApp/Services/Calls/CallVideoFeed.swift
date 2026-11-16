@@ -25,6 +25,13 @@ nonisolated final class CallVideoFeed: NSObject, LKRTCVideoRenderer, @unchecked 
     @MainActor var onFrameSize: ((CGSize) -> Void)?
     @MainActor private var frameSize: CGSize = .zero
 
+    /// True when frames stop for longer than `CallFrameGaps` allows, false when they come again.
+    /// Reported only while `watchForStalls(true)` is on.
+    @MainActor var onStallChange: ((Bool) -> Void)?
+    @MainActor private var gaps = CallFrameGaps()
+    @MainActor private var isStalled = false
+    @MainActor private var stallWatch: Task<Void, Never>?
+
     @MainActor
     func makeView() -> CallVideoLayerView {
         let view = CallVideoLayerView()
@@ -37,8 +44,35 @@ nonisolated final class CallVideoFeed: NSObject, LKRTCVideoRenderer, @unchecked 
     /// Empties every view, such as when a call ends.
     @MainActor
     func clear() {
+        watchForStalls(false)
         for view in liveViews { view.flush() }
         frameSize = .zero
+    }
+
+    /// Watches for frames that stop coming, such as while the partner's camera is on. Each start
+    /// waits for a first frame, so a camera that is still starting does not count as stalled.
+    @MainActor
+    func watchForStalls(_ isOn: Bool) {
+        guard isOn != (stallWatch != nil) else { return }
+        stallWatch?.cancel()
+        stallWatch = nil
+        gaps = CallFrameGaps()
+        setStalled(false)
+        guard isOn else { return }
+        stallWatch = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard let self, !Task.isCancelled else { return }
+                setStalled(gaps.isStalled(at: ProcessInfo.processInfo.systemUptime))
+            }
+        }
+    }
+
+    @MainActor
+    private func setStalled(_ stalled: Bool) {
+        guard stalled != isStalled else { return }
+        isStalled = stalled
+        onStallChange?(stalled)
     }
 
     @MainActor private var liveViews: [CallVideoLayerView] {
@@ -77,6 +111,10 @@ nonisolated final class CallVideoFeed: NSObject, LKRTCVideoRenderer, @unchecked 
     @MainActor
     private func show(_ sample: CallVideoSample, rotation: LKRTCVideoRotation, size: CGSize) {
         guard !isWaitingForCamera else { return }
+        if stallWatch != nil {
+            gaps.frameArrived(at: ProcessInfo.processInfo.systemUptime)
+            setStalled(false)
+        }
         if size != frameSize {
             frameSize = size
             onFrameSize?(size)
@@ -158,6 +196,43 @@ nonisolated final class CallVideoFeed: NSObject, LKRTCVideoRenderer, @unchecked 
 
     private struct WeakVideoView {
         weak var view: CallVideoLayerView?
+    }
+}
+
+/// When a video's frames have stopped long enough that its last frame would stand still. A gap
+/// counts from 1 second, or from 3 times the usual gap between frames when the video is slow, up
+/// to 3 seconds, so video that runs at 1 or 2 frames a second on a weak connection is not
+/// called stalled between each frame. The freeze count in WebRTC's stats also starts from 3 times
+/// the average gap over the last 30 frames, with a floor of the average plus 150 ms, which suits a
+/// counter more than a blur on screen.
+nonisolated struct CallFrameGaps {
+    static let minStall: TimeInterval = 1
+    static let maxStall: TimeInterval = 3
+    static let averagedFrames = 30
+
+    private var lastFrame: TimeInterval?
+    private var intervals: [TimeInterval] = []
+
+    mutating func frameArrived(at time: TimeInterval) {
+        if let lastFrame {
+            intervals.append(time - lastFrame)
+            if intervals.count > Self.averagedFrames {
+                intervals.removeFirst()
+            }
+        }
+        lastFrame = time
+    }
+
+    /// Nothing is stalled before the first frame.
+    func isStalled(at time: TimeInterval) -> Bool {
+        guard let lastFrame else { return false }
+        return time - lastFrame >= threshold
+    }
+
+    private var threshold: TimeInterval {
+        guard !intervals.isEmpty else { return Self.minStall }
+        let average = intervals.reduce(0, +) / Double(intervals.count)
+        return min(max(3 * average, Self.minStall), Self.maxStall)
     }
 }
 

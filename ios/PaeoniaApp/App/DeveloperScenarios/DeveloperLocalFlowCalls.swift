@@ -162,6 +162,10 @@
 
     func stopScreenShare() {}
 
+    func dismissCameraOffSuggestion() {
+      center?.session?.cameraOffSuggestion = nil
+    }
+
     func makeVideoView(_ source: CallVideoSource) -> UIView {
       stills.makeVideoView(source)
     }

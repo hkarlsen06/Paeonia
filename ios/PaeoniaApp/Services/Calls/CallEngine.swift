@@ -86,6 +86,7 @@ final class CallEngine {
         CallAudio.configureAtLaunch(sounds: sounds)
         system.start(delegate: self)
         partnerVideo.onFrameSize = { [weak self] size in self?.partnerVideoSizeChanged(size) }
+        partnerVideo.onStallChange = { [weak self] isStalled in self?.partnerVideoStallChanged(isStalled) }
         pushRegistry = CallPushRegistry(
             onToken: { token in
                 Task { await PushRegistrationServiceFactory.shared.updateVoIPPushToken(token) }
@@ -120,6 +121,7 @@ final class CallEngine {
     func begin(_ run: CallRun, effects: [CallEffect], ringsInApp: Bool = false) -> CallRun {
         removeRun()
         self.run = run
+        watchPower(of: run)
         PaeoniaAudioSession.setCallActive(true)
         CallAudio.prepareCategory()
         center?.presentation = ringsInApp ? .bubble : .full
@@ -199,16 +201,18 @@ final class CallEngine {
             localFeed: localVideo,
             isMuted: session?.isMuted ?? false,
             isCameraOn: session?.isCameraOn ?? false,
-            isFrontCamera: session?.isUsingFrontCamera ?? true
+            isFrontCamera: session?.isUsingFrontCamera ?? true,
+            heat: run.power?.state.heat ?? .normal
         )
         media.onConnectionChange = { [weak self, weak run] isConnected in
             guard let self, let run else { return }
             send(isConnected ? .connected : .connectionLost, to: run)
         }
-        media.onPartnerCamera = { [weak self, weak run] isOn in
+        media.onPartnerCamera = { [weak self, weak run] state in
             guard let self, let run else { return }
-            partnerCameraChanged(isOn, in: run)
+            partnerCameraChanged(state, in: run)
         }
+        watchConnection(of: media, in: run)
         media.onBackCameraZoom = { [weak self, weak run] zoom in
             guard let self, let run, run === self.run else { return }
             center?.backCameraZoom = zoom
@@ -259,20 +263,6 @@ final class CallEngine {
         }
         scheduleClear(of: run)
         refreshCallContext()
-    }
-
-    /// Hangs up and waits, up to `leavingTimeout`, for the server to hear it while requests still
-    /// carry the sign-in.
-    func endForLeaving() async {
-        guard let run, !run.isFinished else { return }
-        send(.hangUp, to: run)
-        guard let serverEnd = run.serverEnd else { return }
-        let timeout = Task {
-            try? await Task.sleep(for: Self.leavingTimeout)
-            serverEnd.cancel()
-        }
-        await serverEnd.value
-        timeout.cancel()
     }
 
     // MARK: Ending
@@ -373,6 +363,20 @@ private extension CallEngine {
 }
 
 extension CallEngine {
+    /// Hangs up and waits, up to `leavingTimeout`, for the server to hear it while requests still
+    /// carry the sign-in.
+    func endForLeaving() async {
+        guard let run, !run.isFinished else { return }
+        send(.hangUp, to: run)
+        guard let serverEnd = run.serverEnd else { return }
+        let timeout = Task {
+            try? await Task.sleep(for: Self.leavingTimeout)
+            serverEnd.cancel()
+        }
+        await serverEnd.value
+        timeout.cancel()
+    }
+
     /// Hangs up while iOS closes the app. Nothing runs once `applicationWillTerminate` returns, so
     /// this keeps the main run loop going until the server has heard, which `endForLeaving`
     /// limits to `leavingTimeout`. Without it the partner's phone shows "Reconnecting" for 30

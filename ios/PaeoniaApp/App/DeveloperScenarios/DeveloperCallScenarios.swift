@@ -302,6 +302,10 @@
 
     func stopScreenShare() {}
 
+    func dismissCameraOffSuggestion() {
+      center?.session?.cameraOffSuggestion = nil
+    }
+
     func makeVideoView(_ source: CallVideoSource) -> UIView {
       let photo = source == .partner ? DeveloperAvatarFixture.partnerPhoto : DeveloperAvatarFixture.ownPhoto
       let view = UIImageView(image: DeveloperAvatarFixture.photoData(for: photo).flatMap(UIImage.init(data:)))

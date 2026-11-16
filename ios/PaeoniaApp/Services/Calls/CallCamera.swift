@@ -3,17 +3,26 @@ import AVFoundation
 
 /// The phone's camera for a video call. Frames go to the call's video source.
 final class CallCamera {
-    /// Sharp full screen on the partner's iPad. Through TURN, and on a weak connection, WebRTC
-    /// sends it smaller (`CallMediaPath`).
+    /// Sharp full screen on the partner's iPad. Through TURN, on a hot phone and on a weak
+    /// connection, WebRTC sends it smaller (`CallVideoLimits`).
     private static let targetPixels = 1_920 * 1_080
-    private static let maxFramesPerSecond = 30.0
     /// Past this the picture is too soft to be worth sending.
     private static let maxZoom = 10.0
 
+    /// True when iOS stops the running camera for now, such as when the app leaves the screen
+    /// without Picture in Picture or another app takes the camera, and false when it sends again.
+    var onInterruption: ((Bool) -> Void)?
+
     private let capturer: LKRTCCameraVideoCapturer
     private var isCapturing = false
+    private var isInterrupted = false
+    /// The running camera, so its frame rate can change without a restart.
+    private var device: AVCaptureDevice?
     /// The back camera while it runs, so the call screen can zoom it.
     private var backCamera: AVCaptureDevice?
+    /// Lowered while the phone is hot (`CallVideoLimits`).
+    private var maxFramesPerSecond = 30
+    private var observers: [any NSObjectProtocol] = []
 
     init(source: LKRTCVideoSource) {
         capturer = LKRTCCameraVideoCapturer(delegate: source)
@@ -21,6 +30,20 @@ final class CallCamera {
         // Keeps the camera sending while the partner's video plays in Picture in Picture.
         if session.isMultitaskingCameraAccessSupported {
             session.isMultitaskingCameraAccessEnabled = true
+        }
+        observers = [
+            (AVCaptureSession.wasInterruptedNotification, true),
+            (AVCaptureSession.interruptionEndedNotification, false),
+        ].map { name, isInterrupted in
+            NotificationCenter.default.addObserver(forName: name, object: session, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.setInterrupted(isInterrupted) }
+            }
+        }
+    }
+
+    isolated deinit {
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
         }
     }
 
@@ -33,14 +56,14 @@ final class CallCamera {
     /// multi-camera session, and adding the new one throws.
     func start(front: Bool, onStarted: @escaping @MainActor @Sendable (CallCameraZoom?) -> Void) {
         guard case let (device, format)? = Self.camera(front: front) else { return }
-        let maxRate = format.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? Self.maxFramesPerSecond
         stop()
         isCapturing = true
+        self.device = device
         backCamera = front ? nil : device
         capturer.startCapture(
             with: device,
             format: format,
-            fps: Int(min(maxRate, Self.maxFramesPerSecond)),
+            fps: Self.frameRate(maxFramesPerSecond, in: format),
             completionHandler: { @Sendable [weak self] _ in
                 DispatchQueue.main.async {
                     MainActor.assumeIsolated {
@@ -54,9 +77,38 @@ final class CallCamera {
 
     func stop() {
         backCamera = nil
+        device = nil
+        setInterrupted(false)
         guard isCapturing else { return }
         isCapturing = false
         capturer.stopCapture()
+    }
+
+    /// Caps the frame rate the camera captures at, now and for the next start.
+    func setMaxFramesPerSecond(_ rate: Int) {
+        guard rate != maxFramesPerSecond else { return }
+        maxFramesPerSecond = rate
+        guard let device, (try? device.lockForConfiguration()) != nil else { return }
+        let duration = CMTime(value: 1, timescale: CMTimeScale(Self.frameRate(rate, in: device.activeFormat)))
+        device.activeVideoMinFrameDuration = duration
+        device.activeVideoMaxFrameDuration = duration
+        device.unlockForConfiguration()
+    }
+
+    private func setInterrupted(_ interrupted: Bool) {
+        guard interrupted != isInterrupted, !interrupted || isCapturing else { return }
+        isInterrupted = interrupted
+        onInterruption?(interrupted)
+    }
+
+    /// `rate`, kept inside what the camera's format can do, because a frame duration outside
+    /// its range raises an exception.
+    private static func frameRate(_ rate: Int, in format: AVCaptureDevice.Format) -> Int {
+        let ranges = format.videoSupportedFrameRateRanges
+        guard let lowest = ranges.map(\.minFrameRate).min(), let highest = ranges.map(\.maxFrameRate).max() else {
+            return rate
+        }
+        return Int(min(max(Double(rate), lowest.rounded(.up)), highest))
     }
 
     /// Zooms the back camera to `factor`, kept inside its range. Returns the zoom it set, or nil

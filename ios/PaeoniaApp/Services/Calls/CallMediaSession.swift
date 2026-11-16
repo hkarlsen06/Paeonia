@@ -22,7 +22,9 @@ final class CallMediaSession {
 
     /// True when the phones reached each other, false when the connection dropped.
     var onConnectionChange: ((Bool) -> Void)?
-    var onPartnerCamera: ((Bool) -> Void)?
+    var onPartnerCamera: ((CallCameraState) -> Void)?
+    /// Whose end of the call is weak, or nil while both are fine (`CallConnectionHealth`).
+    var onWeakConnection: ((CallWeakSide?) -> Void)?
     /// The back camera's zoom once it sends, and nil while any other camera or none runs.
     var onBackCameraZoom: ((CallCameraZoom?) -> Void)?
     /// Each `CallStatsLog` sample while the phones are connected.
@@ -41,11 +43,15 @@ final class CallMediaSession {
     private var videoTransceiver: LKRTCRtpTransceiver?
     private var remoteVideoTrack: LKRTCVideoTrack?
     private var isCameraOn: Bool
+    /// iOS stopped the camera for now, so the partner sees it as paused.
+    private var isCameraInterrupted = false
     /// Counts camera starts, so only the newest one ends the wait in `localFeed`.
     private var cameraStarts = 0
     private var isConnected = false
     /// The path the video's limits were last set for. `CallCodecs.configure` starts at TURN's.
     private var videoPath = CallMediaPath.turn
+    private var heat: CallHeat
+    private var health = CallConnectionHealth()
     /// The number of the newest offer: the one this phone sent, whose answer alone applies, or on
     /// the answering phone the one it took.
     private var offerNumber = 0
@@ -79,7 +85,8 @@ final class CallMediaSession {
         localFeed: CallVideoFeed,
         isMuted: Bool,
         isCameraOn: Bool,
-        isFrontCamera: Bool
+        isFrontCamera: Bool,
+        heat: CallHeat
     ) throws {
         let factory = CallMediaFactory.shared
         let observer = PeerConnectionObserver()
@@ -90,6 +97,7 @@ final class CallMediaSession {
         self.localFeed = localFeed
         self.isCameraOn = isCameraOn
         isHeld = role == .answerer
+        self.heat = heat
         relay = CallRelay(callID: callID, backend: backend)
         audioTrack = factory.audioTrack(
             with: factory.audioSource(with: LKRTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)),
@@ -107,6 +115,8 @@ final class CallMediaSession {
             addTransceivers()
         }
         observer.session = self
+        camera.onInterruption = { [weak self] in self?.cameraInterrupted($0) }
+        camera.setMaxFramesPerSecond(CallVideoLimits(path: videoPath, heat: heat).maxFramesPerSecond)
         if isCameraOn {
             startCamera(front: isFrontCamera)
         }
@@ -189,7 +199,7 @@ final class CallMediaSession {
             onBackCameraZoom?(nil)
         }
         videoTransceiver?.sender.track = isOn ? videoTrack : nil
-        relay.send(.camera(isOn: isOn))
+        relay.send(.camera(cameraState))
     }
 
     /// Returns the zoom the back camera took, or nil when it is not running.
@@ -221,8 +231,10 @@ final class CallMediaSession {
         switch item {
         case .partnerPresent:
             guard !isHeld else { return }
-            // The partner may have missed the last camera message while their phone reconnected.
-            relay.send(.camera(isOn: isCameraOn))
+            // The partner may have missed the last camera and connection messages while their
+            // phone reconnected.
+            relay.send(.camera(cameraState))
+            relay.send(.connection(isWeak: health.isMineWeak))
             guard !isConnected else { return }
             switch role {
             case .offerer:
@@ -261,7 +273,7 @@ final class CallMediaSession {
             try? await peerConnection.setRemoteDescription(LKRTCSessionDescription(type: .answer, sdp: sdp))
             await addPendingCandidates()
             // The answering phone ignored the camera messages it heard while it rang.
-            relay.send(.camera(isOn: isCameraOn))
+            relay.send(.camera(cameraState))
         case let .candidate(candidate):
             let iceCandidate = LKRTCIceCandidate(
                 sdp: candidate.sdp,
@@ -273,9 +285,13 @@ final class CallMediaSession {
             } else {
                 try? await peerConnection.add(iceCandidate)
             }
-        case let .camera(isOn):
+        case let .camera(state):
             guard !isHeld else { return }
-            onPartnerCamera?(isOn)
+            onPartnerCamera?(state)
+        case let .connection(isWeak):
+            guard !isHeld else { return }
+            health.isPartnersWeak = isWeak
+            onWeakConnection?(health.weakSide)
         case .restart where role == .offerer:
             queueOffer()
         case .offer, .answer, .restart:
@@ -392,6 +408,7 @@ extension CallMediaSession {
     private func useVideoTransceiver(_ transceiver: LKRTCRtpTransceiver) {
         videoTransceiver = transceiver
         transceiver.sender.track = isCameraOn ? videoTrack : nil
+        applyVideoLimits()
         remoteVideoTrack = transceiver.receiver.track as? LKRTCVideoTrack
         remoteVideoTrack?.add(partnerFeed)
     }
@@ -410,12 +427,19 @@ extension CallMediaSession {
             statsLog.start(peerConnection) { [weak self] sample in
                 self?.useVideoPath(sample.mediaPath)
                 self?.onStatsSample?(sample)
+                self?.checkSendingHealth(sample)
             }
             onConnectionChange?(true)
         case .disconnected, .failed:
             guard isConnected else { return }
             isConnected = false
             statsLog.stop()
+            // The call shows "Reconnecting" instead, and judges the new connection afresh.
+            if health.isMineWeak {
+                relay.send(.connection(isWeak: false))
+            }
+            health = CallConnectionHealth()
+            onWeakConnection?(nil)
             onConnectionChange?(false)
         default:
             break
@@ -424,9 +448,43 @@ extension CallMediaSession {
 
     /// The phones pick a new path after a network change, so this runs for every stats sample.
     private func useVideoPath(_ path: CallMediaPath?) {
-        guard let path, path != videoPath, let sender = videoTransceiver?.sender else { return }
+        guard let path, path != videoPath, videoTransceiver != nil else { return }
         videoPath = path
-        CallCodecs.limitVideo(sender, on: path)
+        applyVideoLimits()
+    }
+
+    private func applyVideoLimits() {
+        let limits = CallVideoLimits(path: videoPath, heat: heat)
+        camera.setMaxFramesPerSecond(limits.maxFramesPerSecond)
+        if let sender = videoTransceiver?.sender {
+            CallCodecs.limitVideo(sender, to: limits)
+        }
+    }
+
+    private func checkSendingHealth(_ sample: CallStatsSample) {
+        guard health.add(sample) else { return }
+        relay.send(.connection(isWeak: health.isMineWeak))
+        onWeakConnection?(health.weakSide)
+    }
+
+    // MARK: Camera and heat
+
+    /// Lowers or restores what the video sends as the phone heats up or cools down.
+    func setHeat(_ heat: CallHeat) {
+        guard heat != self.heat else { return }
+        self.heat = heat
+        applyVideoLimits()
+    }
+
+    private var cameraState: CallCameraState {
+        guard isCameraOn else { return .off }
+        return isCameraInterrupted ? .paused : .on
+    }
+
+    private func cameraInterrupted(_ isInterrupted: Bool) {
+        guard isInterrupted != isCameraInterrupted else { return }
+        isCameraInterrupted = isInterrupted
+        relay.send(.camera(cameraState))
     }
 
     private func networkChanged(_ path: NWPath) {

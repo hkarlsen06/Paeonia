@@ -57,18 +57,18 @@ enum CallMediaProbe {
         tuned: Bool,
         _ microphone: FakeMicrophone
     ) async -> (direct: [String: [Timed]], turn: [String: [Timed]]) {
-        let statsLog = CallStatsLog(interval: .seconds(10)) { say("CallStatsLog caller: \($0)") }
+        let statsLog = CallStatsLog { say("CallStatsLog caller: \($0)") }
         statsLog.start(peers[0].connection)
         defer { statsLog.stop() }
         let direct = await record(peers, for: directSeconds, microphone) { peer, sample in
             if tuned, let path = sample.mediaPath, path != peer.videoPath {
                 peer.videoPath = path
-                CallCodecs.limitVideo(peer.videoSender, on: path)
+                CallCodecs.limitVideo(peer.videoSender, to: CallVideoLimits(path: path))
             }
         }
         if tuned {
             for peer in peers {
-                CallCodecs.limitVideo(peer.videoSender, on: .turn)
+                CallCodecs.limitVideo(peer.videoSender, to: CallVideoLimits(path: .turn))
             }
         }
         return (direct, await record(peers, for: turnSeconds, microphone) { _, _ in })

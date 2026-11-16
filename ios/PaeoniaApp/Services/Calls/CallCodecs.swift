@@ -16,19 +16,22 @@ nonisolated enum CallCodecs {
                 + codecs.filter { !first.contains($0.name.lowercased()) }
             try? transceiver.setCodecPreferences(preferred, error: ())
         case .video:
-            limitVideo(transceiver.sender, on: .turn)
+            limitVideo(transceiver.sender, to: CallVideoLimits(path: .turn))
         default:
             break
         }
     }
 
-    /// Sets the video's largest bitrate and picture size for the path. The camera captures 1080p.
-    /// WebRTC can change both during a call without a new offer.
-    static func limitVideo(_ sender: LKRTCRtpSender, on path: CallMediaPath) {
+    /// Sets the video's largest bitrate, picture size and frame rate. The camera captures 1080p.
+    /// WebRTC can change them during a call without a new offer, and still goes lower on its own
+    /// for the network estimate or a busy encoder (`qualityLimitationReason`), so these are
+    /// ceilings that never fight its adaptation.
+    static func limitVideo(_ sender: LKRTCRtpSender, to limits: CallVideoLimits) {
         let parameters = sender.parameters
         for encoding in parameters.encodings {
-            encoding.maxBitrateBps = NSNumber(value: path.maxVideoBitsPerSecond)
-            encoding.scaleResolutionDownBy = NSNumber(value: path.videoScaleDown)
+            encoding.maxBitrateBps = NSNumber(value: limits.maxBitsPerSecond)
+            encoding.scaleResolutionDownBy = NSNumber(value: limits.scaleDown)
+            encoding.maxFramerate = NSNumber(value: limits.maxFramesPerSecond)
         }
         sender.parameters = parameters
     }
@@ -82,23 +85,73 @@ nonisolated enum CallMediaPath: Equatable, Sendable {
     init(localCandidateType: String, remoteCandidateType: String?) {
         self = localCandidateType == "relay" || remoteCandidateType == "relay" ? .turn : .direct
     }
+}
+
+/// How hot the phone is, for the video it sends. iOS lowers FaceTime's frame rate at `serious`,
+/// and Apple asks apps to stop using the camera at `critical` (WWDC19 session 422).
+nonisolated enum CallHeat: Equatable, Sendable {
+    case normal
+    /// `serious`, or Low Power Mode, which asks apps to save energy.
+    case warm
+    /// `critical`. The call screen also offers to turn the camera off.
+    case hot
+
+    init(_ thermalState: ProcessInfo.ThermalState, isLowPowerMode: Bool) {
+        switch thermalState {
+        case .critical: self = .hot
+        case .serious: self = .warm
+        default: self = isLowPowerMode ? .warm : .normal
+        }
+    }
+}
+
+/// The most one video sender may send. The path and the phone's heat each set limits, and the
+/// video takes the lower of each. These two tables are the only place the limits live.
+nonisolated struct CallVideoLimits: Equatable, Sendable {
+    var maxBitsPerSecond: Int
+    /// How much WebRTC shrinks the camera's 1080p picture before it encodes it.
+    var scaleDown: Double
+    /// Also the camera's capture rate, because capturing costs heat too.
+    var maxFramesPerSecond: Int
+
+    init(path: CallMediaPath, heat: CallHeat = .normal) {
+        let path = Self.limits(for: path)
+        let heat = Self.limits(for: heat)
+        maxBitsPerSecond = min(path.maxBitsPerSecond, heat.maxBitsPerSecond)
+        scaleDown = max(path.scaleDown, heat.scaleDown)
+        maxFramesPerSecond = min(path.maxFramesPerSecond, heat.maxFramesPerSecond)
+    }
+
+    private init(_ maxBitsPerSecond: Int, _ scaleDown: Double, _ maxFramesPerSecond: Int) {
+        self.maxBitsPerSecond = maxBitsPerSecond
+        self.scaleDown = scaleDown
+        self.maxFramesPerSecond = maxFramesPerSecond
+    }
 
     /// A direct call sends 1080p at up to 4 Mbps, which looks sharp full screen on an iPad. H.265
     /// looks good on a phone at 720p and 1.5 Mbps, so TURN traffic stays there. The limit also
     /// replaces WebRTC's own, which would hold 1080p at 2.5 Mbps and 320x180 at 600 kbps.
-    var maxVideoBitsPerSecond: Int {
-        switch self {
-        case .direct: 4_000_000
-        case .turn: 1_500_000
+    private static func limits(for path: CallMediaPath) -> CallVideoLimits {
+        switch path {
+        case .direct: CallVideoLimits(4_000_000, 1, 30)
+        case .turn: CallVideoLimits(1_500_000, 1.5, 30)
         }
     }
 
-    /// How much WebRTC shrinks the camera's 1080p picture before it encodes it.
-    var videoScaleDown: Double {
-        switch self {
-        case .direct: 1
-        case .turn: 1.5
+    /// A warm phone sends 720p at 24 frames a second, a third of the pixels each second that 1080p
+    /// at 30 takes, and a hot one 540p at 15, an eighth. Both still show a face well on a phone.
+    private static func limits(for heat: CallHeat) -> CallVideoLimits {
+        switch heat {
+        case .normal: CallVideoLimits(4_000_000, 1, 30)
+        case .warm: CallVideoLimits(1_500_000, 1.5, 24)
+        case .hot: CallVideoLimits(600_000, 2, 15)
         }
+    }
+
+    /// The part of the bitrate for one of several video senders, such as the camera next to a
+    /// shared screen.
+    func share(_ fraction: Double) -> CallVideoLimits {
+        CallVideoLimits(Int(Double(maxBitsPerSecond) * fraction), scaleDown, maxFramesPerSecond)
     }
 }
 
