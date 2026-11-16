@@ -8,7 +8,8 @@ import Foundation
 /// It is good when the loss is under 4%, the round trip under 0.3 seconds and the video has
 /// 250 kbps or more. Anything between is neither. The connection turns weak after 3 bad samples
 /// in a row, about 6 seconds, so a blip of a second or two never shows, and turns fine again only
-/// after 5 good samples in a row, about 10 seconds, so the warning does not flicker.
+/// after 5 good samples in a row, about 10 seconds, so the warning does not flicker. The video is
+/// the camera's, or the shared screen's while it sends without the camera.
 nonisolated struct CallConnectionHealth {
     static let enterStreak = 3
     static let exitStreak = 5
@@ -68,14 +69,14 @@ nonisolated struct CallConnectionHealth {
     }
 
     private func grade(_ sample: CallStatsSample, since earliest: CallStatsSample, previous: CallStatsSample) -> Grade {
-        let sent = (sample.audio.packetsSent + sample.video.packetsSent)
-            - (earliest.audio.packetsSent + earliest.video.packetsSent)
+        // The partner's receiver reports count the shared screen's losses too.
+        let sent = Self.packetsSent(sample) - Self.packetsSent(earliest)
         let lost = max(sample.packetsLostAtPartner - earliest.packetsLostAtPartner, 0)
         let loss = sent >= Self.minPacketsForLoss ? Double(lost) / Double(sent) : nil
         let roundTrip = sample.roundTripSeconds
         // WebRTC lowers the video for the network estimate on most calls. It means a weak
         // connection only when the estimate leaves the video next to nothing.
-        let videoRoom = sample.video.bytesSent > previous.video.bytesSent && sample.qualityLimitation == "bandwidth"
+        let videoRoom = Self.isVideoShortOfBits(sample, previous: previous)
             ? sample.availableOutgoingBitsPerSecond
             : nil
 
@@ -86,5 +87,17 @@ nonisolated struct CallConnectionHealth {
             return .good
         }
         return .unclear
+    }
+
+    private static func packetsSent(_ sample: CallStatsSample) -> Int {
+        sample.audio.packetsSent + sample.video.packetsSent + sample.screen.sent.packetsSent
+    }
+
+    private static func isVideoShortOfBits(_ sample: CallStatsSample, previous: CallStatsSample) -> Bool {
+        if sample.video.bytesSent > previous.video.bytesSent {
+            return sample.qualityLimitation == "bandwidth"
+        }
+        return sample.screen.sent.bytesSent > previous.screen.sent.bytesSent
+            && sample.screen.qualityLimitation == "bandwidth"
     }
 }

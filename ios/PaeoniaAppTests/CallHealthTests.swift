@@ -10,6 +10,9 @@ struct CallConnectionHealthTests {
         var sent = 0
         var lost = 0
         var videoBytes = 0
+        /// A shared screen's packets in each sample, next to the voice's.
+        var screenPackets = 0
+        var screenSent = 0
 
         /// Adds one sample where `lossShare` of the new packets never reached the partner.
         /// Returns whether the verdict changed.
@@ -18,13 +21,16 @@ struct CallConnectionHealthTests {
             lossShare: Double = 0,
             roundTrip: Double = 0.05,
             packets: Int = 100,
-            videoLimitedTo available: Double? = nil
+            videoLimitedTo available: Double? = nil,
+            screenLimitedTo screenAvailable: Double? = nil
         ) -> Bool {
             seconds += 2
             sent += packets
-            lost += Int((Double(packets) * lossShare).rounded())
+            screenSent += screenPackets
+            lost += Int((Double(packets + screenPackets) * lossShare).rounded())
             var sample = CallStatsSample(seconds: seconds)
             sample.audio.packetsSent = sent
+            sample.screen.sent.packetsSent = screenSent
             sample.packetsLostAtPartner = lost
             sample.roundTripSeconds = roundTrip
             if let available {
@@ -32,6 +38,11 @@ struct CallConnectionHealthTests {
                 sample.video.bytesSent = videoBytes
                 sample.qualityLimitation = "bandwidth"
                 sample.availableOutgoingBitsPerSecond = available
+            }
+            if let screenAvailable {
+                sample.screen.sent.bytesSent = screenSent * 1_000
+                sample.screen.qualityLimitation = "bandwidth"
+                sample.availableOutgoingBitsPerSecond = screenAvailable
             }
             return health.add(sample)
         }
@@ -95,6 +106,18 @@ struct CallConnectionHealthTests {
         var squeezed = Feed()
         for _ in 0..<4 { squeezed.add(videoLimitedTo: 100_000) }
         #expect(squeezed.health.isMineWeak)
+    }
+
+    @Test func aSharedScreensLossesCountAgainstItsOwnPackets() {
+        var feed = Feed(screenPackets: 400)
+        for _ in 0..<6 { feed.add(lossShare: 0.06) }
+        #expect(!feed.health.isMineWeak)
+    }
+
+    @Test func aSqueezedScreenIsWeakWhileItSendsWithoutTheCamera() {
+        var feed = Feed(screenPackets: 100)
+        for _ in 0..<4 { feed.add(screenLimitedTo: 100_000) }
+        #expect(feed.health.isMineWeak)
     }
 
     @Test func eachPhoneNamesItsOwnEndWhenBothAreWeak() {

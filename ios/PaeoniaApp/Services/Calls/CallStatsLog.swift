@@ -95,6 +95,7 @@ nonisolated struct CallStatsSample: Sendable {
         var frameWidth: Int?
         var frameHeight: Int?
         var framesPerSecond: Double?
+        var qualityLimitation: String?
     }
 
     var seconds: Double
@@ -198,7 +199,8 @@ nonisolated struct CallStatsSample: Sendable {
                 sent: sent,
                 frameWidth: stat.number("frameWidth").map { Int($0) },
                 frameHeight: stat.number("frameHeight").map { Int($0) },
-                framesPerSecond: stat.number("framesPerSecond")
+                framesPerSecond: stat.number("framesPerSecond"),
+                qualityLimitation: stat.string("qualityLimitationReason")
             )
             return
         }
