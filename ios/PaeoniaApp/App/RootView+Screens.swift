@@ -164,6 +164,8 @@ extension RootView {
             pendingInviteCode: pendingJoinInviteCode,
             onAppleSignIn: signInWithApple,
             onGoogleSignIn: signInWithGoogle,
+            onSendEmailCode: viewModel.sendEmailSignInCode(to:),
+            onVerifyEmailCode: viewModel.signInWithEmailCode,
             onSubmitInviteCode: captureInviteCode,
             onForgetInviteCode: { pendingJoinInviteCode = nil }
         )

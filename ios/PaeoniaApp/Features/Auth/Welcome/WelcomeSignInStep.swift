@@ -2,7 +2,7 @@ import SafariServices
 import SwiftUI
 import UIKit
 
-/// The last signed-out step: Continue with Apple or Google, under a headline that says
+/// The last signed-out step: Continue with Apple, Google or email, under a headline that says
 /// why this person is signing in (`WelcomeSignInMode`). A picture shows what they sign in
 /// for: the first drawing they made, or the welcome peonies. Someone joining sees that
 /// their invite code is saved and can change it. The privacy, terms and support
@@ -15,6 +15,10 @@ struct WelcomeSignInStep: View {
     let onBack: () -> Void
     let onAppleSignIn: () -> Void
     let onGoogleSignIn: () -> Void
+    /// Emails a sign-in code. Returns nil once it is on its way.
+    let onSendEmailCode: (String) async -> EmailSignInError?
+    /// Signs in with the emailed code. Returns nil once signed in.
+    let onVerifyEmailCode: (String) async -> EmailSignInError?
     /// Saves a replacement invite code.
     let onSubmitInviteCode: (String) -> Void
     let onAppear: () -> Void
@@ -22,6 +26,7 @@ struct WelcomeSignInStep: View {
     let loadDrawing: () async -> UIImage?
 
     @State private var isInviteSheetPresented = false
+    @State private var isEmailSheetPresented = false
     @State private var drawing: UIImage?
     @State private var hasLoadedDrawing = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -58,6 +63,9 @@ struct WelcomeSignInStep: View {
                 return true
             }
         }
+        .sheet(isPresented: $isEmailSheetPresented) {
+            EmailSignInSheet(onSendCode: onSendEmailCode, onVerifyCode: onVerifyEmailCode)
+        }
     }
 
     private var regularContent: some View {
@@ -80,6 +88,7 @@ struct WelcomeSignInStep: View {
         VStack(spacing: PaeoniaSpacing.space12) {
             appleButton
             googleButton
+            emailButton
             if mode == .joining {
                 inviteCodeSavedRow
             }
@@ -228,6 +237,27 @@ struct WelcomeSignInStep: View {
         .accessibilityIdentifier("auth.signIn.google")
     }
 
+    private var emailButton: some View {
+        Button {
+            isEmailSheetPresented = true
+        } label: {
+            HStack(spacing: PaeoniaSpacing.space12) {
+                Image(systemName: "envelope")
+                    .frame(width: PaeoniaSpacing.space24)
+                    .accessibilityHidden(true)
+                Text(.authSignInEmailButton)
+                    .frame(maxWidth: .infinity)
+                Color.clear
+                    .frame(width: PaeoniaSpacing.space24, height: 1)
+                    .accessibilityHidden(true)
+            }
+            .accessibilityElement(children: .combine)
+        }
+        .buttonStyle(WelcomeSignInButtonStyle(provider: .email, isLoading: signingInWith == .email))
+        .disabled(isWorking && signingInWith != .email)
+        .accessibilityIdentifier("auth.signIn.email")
+    }
+
     // MARK: Invite code
 
     private var inviteCodeSavedRow: some View {
@@ -351,7 +381,7 @@ private struct WelcomeSignInButtonStyle: ButtonStyle {
                 in: shape
             )
             .overlay {
-                if provider == .google {
+                if provider != .apple {
                     shape.strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
                 }
             }
@@ -407,6 +437,8 @@ private struct SafariView: UIViewControllerRepresentable {
             onBack: {},
             onAppleSignIn: {},
             onGoogleSignIn: {},
+            onSendEmailCode: { _ in nil },
+            onVerifyEmailCode: { _ in nil },
             onSubmitInviteCode: { _ in },
             onAppear: {},
             loadDrawing: { UIImage(resource: .placeholderSketch) }

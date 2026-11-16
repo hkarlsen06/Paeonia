@@ -17,8 +17,6 @@ struct PairingCodeEntrySheet: View {
     @State private var isSubmitting = false
     @FocusState private var fieldFocused: Bool
 
-    @ScaledMetric(relativeTo: .title2) private var codeCellHeight: CGFloat = 56
-
     private var isComplete: Bool {
         code.count == PairingInviteCode.length
     }
@@ -84,7 +82,7 @@ struct PairingCodeEntrySheet: View {
                 .onSubmit(submit)
 
             PairingCodeCellLayout { index in
-                characterCell(at: index)
+                PairingCodeCell(code: code, index: index, isFocused: fieldFocused)
             }
             .allowsHitTesting(false)
         }
@@ -114,38 +112,6 @@ struct PairingCodeEntrySheet: View {
         .disabled(!isComplete)
     }
 
-    private func characterCell(at index: Int) -> some View {
-        let characters = Array(code)
-        let character = index < characters.count ? String(characters[index]) : ""
-        let isFilled = index < characters.count
-        let isCurrent = fieldFocused && index == characters.count
-
-        return Text(character)
-            .font(.system(.title2, design: .rounded).weight(.semibold))
-            .foregroundStyle(.paeoniaTextPrimary)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: codeCellHeight)
-            .background(Color.paeoniaBackgroundElevated)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                    .strokeBorder(
-                        borderColor(isCurrent: isCurrent, isFilled: isFilled),
-                        lineWidth: isCurrent ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
-                    )
-            }
-    }
-
-    private func borderColor(isCurrent: Bool, isFilled: Bool) -> Color {
-        if isCurrent {
-            return .paeoniaAccentPrimary
-        }
-        if isFilled {
-            return Color.paeoniaAccentPrimary.opacity(0.4)
-        }
-        return Color.paeoniaTextTertiary.opacity(0.25)
-    }
-
     private func submit() {
         guard !isSubmitting else {
             return
@@ -167,6 +133,47 @@ struct PairingCodeEntrySheet: View {
                 fieldFocused = true
             }
         }
+    }
+}
+
+/// One character of a typed code. The cell where the next character goes is outlined
+/// while the field has focus. The email sign-in sheet uses it for its code too.
+struct PairingCodeCell: View {
+    let code: String
+    let index: Int
+    let isFocused: Bool
+
+    @ScaledMetric(relativeTo: .title2) private var height: CGFloat = 56
+
+    var body: some View {
+        let characters = Array(code)
+        let isFilled = index < characters.count
+        let isCurrent = isFocused && index == characters.count
+
+        Text(isFilled ? String(characters[index]) : "")
+            .font(.system(.title2, design: .rounded).weight(.semibold))
+            .foregroundStyle(.paeoniaTextPrimary)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: height)
+            .background(Color.paeoniaBackgroundElevated)
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+                    .strokeBorder(
+                        borderColor(isCurrent: isCurrent, isFilled: isFilled),
+                        lineWidth: isCurrent ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
+                    )
+            }
+    }
+
+    private func borderColor(isCurrent: Bool, isFilled: Bool) -> Color {
+        if isCurrent {
+            return .paeoniaAccentPrimary
+        }
+        if isFilled {
+            return Color.paeoniaAccentPrimary.opacity(0.4)
+        }
+        return Color.paeoniaTextTertiary.opacity(0.25)
     }
 }
 

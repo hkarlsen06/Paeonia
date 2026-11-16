@@ -483,6 +483,8 @@
         pendingInviteCode: pendingInviteCode,
         onAppleSignIn: {},
         onGoogleSignIn: {},
+        onSendEmailCode: { _ in nil },
+        onVerifyEmailCode: { _ in nil },
         onSubmitInviteCode: { pendingInviteCode = $0 },
         onForgetInviteCode: { pendingInviteCode = nil }
       )

@@ -32,7 +32,7 @@ Product constraints:
 - Type-safe localization from the beginning.
 - Shared daily prompts, memories, countdowns, widgets, respectful notifications, and couple pairing.
 - Minimum deployment target is iOS 27.0.
-- Auth uses Sign in with Apple and Google Sign-In only for MVP; no separate sign-up page, passkey flow, email/password, or email magic-link auth for MVP. The production Clerk instance allows only Apple and Google, and `api.paeonia.no` trusts only it. Local backends (`scripts/local-backend`) trust the development Clerk instance instead, where the test couple from `scripts/test-couple` lives.
+- Auth uses Sign in with Apple, Google Sign-In and a 6-digit code sent by email for MVP. There is no separate sign-up page, passkey flow, password, or email magic link. A new email address gets its account by entering its first code. The production Clerk instance allows only Apple, Google and email codes, and `api.paeonia.no` trusts only it. Local backends (`scripts/local-backend`) trust the development Clerk instance instead, where the test couple from `scripts/test-couple` lives.
 - Project setup stays nearly identical to Tidex. Discuss deviations with the user before making them.
 - Localization must use Xcode String Catalog generated symbols from day one. Start with English and Norwegian Bokmal.
 

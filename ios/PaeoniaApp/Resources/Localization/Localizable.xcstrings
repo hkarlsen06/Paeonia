@@ -2197,6 +2197,276 @@
         }
       }
     },
+    "auth.email.change" : {
+      "comment" : "Button on the code step that goes back to typing a different email address.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use another email"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk en annen e-post"
+          }
+        }
+      }
+    },
+    "auth.email.code.hint" : {
+      "comment" : "VoiceOver hint on the field for the 6-digit code from the sign-in email.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double tap to type the 6 digits."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dobbeltrykk for å skrive de 6 sifrene."
+          }
+        }
+      }
+    },
+    "auth.email.code.label" : {
+      "comment" : "VoiceOver label of the field for the 6-digit code from the sign-in email.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code from the email"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koden fra e-posten"
+          }
+        }
+      }
+    },
+    "auth.email.code.message" : {
+      "comment" : "Message on the code step. The argument is the email address the code went to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the 6-digit code we sent to %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv inn den sekssifrede koden vi sendte til %@."
+          }
+        }
+      }
+    },
+    "auth.email.code.title" : {
+      "comment" : "Title of the sheet step where the person types the 6-digit code from the email.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your email"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk e-posten din"
+          }
+        }
+      }
+    },
+    "auth.email.error.codeExpired" : {
+      "comment" : "Error under the code field when the sign-in code expired or was already used.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That code no longer works. Send a new one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koden virker ikke lenger. Send en ny."
+          }
+        }
+      }
+    },
+    "auth.email.error.invalidEmail" : {
+      "comment" : "Error under the email field when the typed text is not an email address.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That doesn't look like an email address. Check it and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det ser ikke ut som en e-postadresse. Sjekk den og prøv igjen."
+          }
+        }
+      }
+    },
+    "auth.email.error.tooManyTries" : {
+      "comment" : "Error on the email sign-in sheet after too many wrong codes or too many emails in a short time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many tries. Wait a minute, then try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For mange forsøk. Vent litt, og prøv igjen."
+          }
+        }
+      }
+    },
+    "auth.email.error.wrongCode" : {
+      "comment" : "Error under the code field when the typed sign-in code is wrong.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That code isn't right. Check the email and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koden stemmer ikke. Sjekk e-posten og prøv igjen."
+          }
+        }
+      }
+    },
+    "auth.email.field.label" : {
+      "comment" : "Label and placeholder of the email address field on the email sign-in sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email address"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-postadresse"
+          }
+        }
+      }
+    },
+    "auth.email.message" : {
+      "comment" : "Message under the email sign-in title. The person gets a 6-digit code by email instead of a password.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll email you a 6-digit code. No password needed."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi sender deg en sekssifret kode på e-post. Du trenger ikke passord."
+          }
+        }
+      }
+    },
+    "auth.email.resend" : {
+      "comment" : "Button on the code step that emails a new sign-in code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send a new code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send ny kode"
+          }
+        }
+      }
+    },
+    "auth.email.resent" : {
+      "comment" : "Confirmation under the code field after a new sign-in code was emailed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We sent a new code."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi har sendt en ny kode."
+          }
+        }
+      }
+    },
+    "auth.email.send" : {
+      "comment" : "Button that emails the sign-in code to the typed address.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send kode"
+          }
+        }
+      }
+    },
+    "auth.email.title" : {
+      "comment" : "Title of the sheet where the person types their email address to sign in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in with email"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg inn med e-post"
+          }
+        }
+      }
+    },
     "auth.notice.deleteAccountFailed.message" : {
       "comment" : "Alert message shown when account deletion fails because the phone is offline.",
       "extractionState" : "manual",
@@ -2751,6 +3021,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fortsett med Apple"
+          }
+        }
+      }
+    },
+    "auth.signIn.email.button" : {
+      "comment" : "Button that opens email sign-in, under Continue with Apple and Continue with Google.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with email"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett med e-post"
           }
         }
       }

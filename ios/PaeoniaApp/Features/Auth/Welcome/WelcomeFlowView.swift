@@ -11,6 +11,8 @@ struct WelcomeFlowView: View {
     let pendingInviteCode: String?
     let onAppleSignIn: () -> Void
     let onGoogleSignIn: () -> Void
+    let onSendEmailCode: (String) async -> EmailSignInError?
+    let onVerifyEmailCode: (String) async -> EmailSignInError?
     /// Saves a partner's invite code, which moves the flow to sign-in for joining.
     let onSubmitInviteCode: (String) -> Void
     let onForgetInviteCode: () -> Void
@@ -61,6 +63,8 @@ struct WelcomeFlowView: View {
                     onBack: back,
                     onAppleSignIn: onAppleSignIn,
                     onGoogleSignIn: onGoogleSignIn,
+                    onSendEmailCode: onSendEmailCode,
+                    onVerifyEmailCode: onVerifyEmailCode,
                     onSubmitInviteCode: onSubmitInviteCode,
                     onAppear: model.signInAppeared,
                     loadDrawing: model.waitingDrawingImage

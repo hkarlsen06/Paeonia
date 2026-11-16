@@ -63,7 +63,7 @@ The project compiles with `MemberImportVisibility`, so a file that uses a member
 
 ### Signing a simulator in
 
-The app offers only Apple and Google sign-in. The test couple lives on the development Clerk instance, which only local backends trust, so start `scripts/local-backend` in your worktree, then build and install the app from that worktree. To sign the simulator into one of the two test accounts, run:
+The app offers Apple, Google and email code sign-in. The test couple lives on the development Clerk instance, which only local backends trust, so start `scripts/local-backend` in your worktree, then build and install the app from that worktree. To sign the simulator into one of the two test accounts, run:
 
 ```bash
 scripts/sim-sign-in "<simulator name or UDID>" <first|second>
