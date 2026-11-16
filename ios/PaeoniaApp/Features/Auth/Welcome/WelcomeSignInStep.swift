@@ -214,18 +214,14 @@ struct WelcomeSignInStep: View {
 
     private var googleButton: some View {
         Button(action: onGoogleSignIn) {
-            HStack(spacing: PaeoniaSpacing.space12) {
+            // Logo beside the centered title, like Apple's button above.
+            HStack(spacing: PaeoniaSpacing.space8) {
                 Image(.googleG)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 18, height: 18)
-                    .frame(width: PaeoniaSpacing.space24)
                     .accessibilityHidden(true)
                 Text(.authSignInGoogleButton)
-                    .frame(maxWidth: .infinity)
-                Color.clear
-                    .frame(width: PaeoniaSpacing.space24, height: 1)
-                    .accessibilityHidden(true)
             }
             .accessibilityElement(children: .combine)
         }
@@ -238,15 +234,10 @@ struct WelcomeSignInStep: View {
         Button {
             isEmailSheetPresented = true
         } label: {
-            HStack(spacing: PaeoniaSpacing.space12) {
+            HStack(spacing: PaeoniaSpacing.space8) {
                 Image(systemName: "envelope")
-                    .frame(width: PaeoniaSpacing.space24)
                     .accessibilityHidden(true)
                 Text(.authSignInEmailButton)
-                    .frame(maxWidth: .infinity)
-                Color.clear
-                    .frame(width: PaeoniaSpacing.space24, height: 1)
-                    .accessibilityHidden(true)
             }
             .accessibilityElement(children: .combine)
         }
