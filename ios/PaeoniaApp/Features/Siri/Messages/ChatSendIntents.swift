@@ -53,7 +53,7 @@ struct SendChatMessageIntent {
         let message = try await SiriChats.write {
             try await service.queueMessage(
                 ownerUserID: couple.ownerUserID, coupleID: couple.coupleID,
-                subject: conversation.subject, threadID: conversation.threadID, body: body, photos: nil,
+                subject: conversation.subject, threadID: conversation.threadID, body: body, attachments: nil,
                 createThread: conversation.threadID == nil && !pending, replyTo: nil,
                 operation: SyncClientOperationFactory.shared.makeOperation())
         }

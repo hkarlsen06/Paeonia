@@ -28,16 +28,21 @@ struct PaeoniaShareable: Identifiable {
     /// Makes the picture. The sheet calls it when it opens, so a surface can load
     /// a download or draw a card here. A nil result shows "Try again".
     let makeImage: @MainActor () async -> PaeoniaShareImage?
+    /// Makes a local video file, for a video. The sheet then shares and saves the file,
+    /// and `makeImage` makes its poster. A nil result shows "Try again".
+    let makeVideo: (@MainActor () async -> URL?)?
 
     init(
         title: String,
         text: String? = nil,
         allowsSharing: Bool = true,
+        makeVideo: (@MainActor () async -> URL?)? = nil,
         makeImage: @escaping @MainActor () async -> PaeoniaShareImage?
     ) {
         self.title = title
         self.text = text
         self.allowsSharing = allowsSharing
+        self.makeVideo = makeVideo
         self.makeImage = makeImage
     }
 

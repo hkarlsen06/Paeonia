@@ -82,8 +82,8 @@ struct ThreadChatReplyPreview: Hashable {
     /// Nil when the quoted message or answer is no longer in the chat.
     let snippet: String?
     let isVoice: Bool
-    /// The quoted message's photos, shown as small thumbnails.
-    var photos: [ThreadChatPhoto] = []
+    /// The quoted message's attachments, shown as small thumbnails.
+    var attachments: [ThreadChatAttachment] = []
     /// The sender took the quoted message back.
     var isDeleted = false
 
@@ -259,11 +259,11 @@ struct ThreadChatProjection {
             senderName: message == nil ? input.partnerName : (isOwn ? input.youName : input.partnerName),
             snippet: message.map { $0.voice == nil ? $0.body : "" },
             isVoice: message?.voice != nil,
-            photos: message?.photos ?? []
+            attachments: message?.attachments ?? []
         )
     }
 
-    /// The quote of an answer: whose answer it is, and its text, pick, photos or recording.
+    /// The quote of an answer: whose answer it is, and its text, pick, attachments or recording.
     static func answerPreview(of answerID: UUID, input: Input) -> ThreadChatReplyPreview {
         let found = input.rounds.lazy.compactMap { round in
             round.answers.first { $0.answerID == answerID }.map { (answer: $0, mediaKind: round.mediaKind) }
@@ -287,8 +287,8 @@ struct ThreadChatProjection {
                 : String(localized: .dailyChatAnswerPartnerTitle(input.partnerName)),
             snippet: isVoice ? "" : snippet,
             isVoice: isVoice,
-            photos: answer.hasMedia && !isVoice
-                ? answer.mediaAssetIDs.map { ThreadChatPhoto(mediaAssetID: $0) }
+            attachments: answer.hasMedia && !isVoice
+                ? answer.mediaAssetIDs.map { ThreadChatAttachment(kind: .photo, mediaAssetID: $0) }
                 : []
         )
     }

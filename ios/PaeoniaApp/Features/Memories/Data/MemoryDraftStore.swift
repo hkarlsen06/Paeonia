@@ -13,22 +13,23 @@ protocol MemoryDraftStoring: AnyObject {
 
 /// Text fields go to `UserDefaults` as one JSON blob per user, like the daily answer
 /// drafts. Picked photos are written as files in a private directory, like the staged
-/// daily answer media, so large images stay out of `UserDefaults`. Reads and writes
-/// fail as a whole, so a restored draft never silently omits an attachment.
+/// daily answer media, so large images stay out of `UserDefaults`. A picked video is
+/// already a file, so the blob keeps only its name. Reads and writes fail as a whole,
+/// so a restored draft never silently omits an attachment.
 final class LocalMemoryDraftStore: MemoryDraftStoring {
     static let shared = LocalMemoryDraftStore()
 
     /// Identifies the current development storage shape. Change the storage key
     /// when that shape changes; development drafts do not need migration.
-    private static let schemaVersion = 1
+    private static let schemaVersion = 2
 
     private let defaults: UserDefaults
     private let directoryURL: URL
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
-    /// The photos last written per user, so typing in the title or note doesn't
+    /// The media last written per user, so typing in the title or note doesn't
     /// rewrite every photo file on each keystroke.
-    private var writtenPhotos: [UUID: [UUID]] = [:]
+    private var writtenMedia: [UUID: [UUID]] = [:]
 
     init(
         defaults: UserDefaults = .standard,
@@ -47,22 +48,22 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
     func draft(for userID: UUID) throws -> MemoryDraft? {
         guard let data = defaults.data(forKey: key(for: userID)) else { return nil }
         let stored = try decoder.decode(StoredDraft.self, from: data)
-        guard stored.photoCount >= 0, stored.photoDescriptions.count == stored.photoCount else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
-        let photos = try (0..<stored.photoCount).map { index in
-            MemoryDraftPhoto(
-                data: try Data(contentsOf: photoURL(userID: userID, index: index)),
-                accessibilityText: stored.photoDescriptions[index]
-            )
+        let media = try stored.media.enumerated().map { index, item in
+            let content: MemoryDraftMedia.Content
+            if let video = item.video {
+                content = .video(try video.prepared())
+            } else {
+                content = .photo(try Data(contentsOf: photoURL(userID: userID, index: index)))
+            }
+            return MemoryDraftMedia(content: content, accessibilityText: item.accessibilityText)
         }
         // These files are what's on disk now, so typing in a restored draft doesn't rewrite them.
-        writtenPhotos[userID] = photos.map(\.id)
+        writtenMedia[userID] = media.map(\.id)
         let draft = MemoryDraft(
             title: stored.title,
             date: stored.date,
             note: stored.note,
-            photos: photos,
+            media: media,
             place: stored.place,
             visitID: stored.visitID
         )
@@ -75,21 +76,22 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
             return
         }
 
-        let photoIDs = draft.photos.map(\.id)
+        let mediaIDs = draft.media.map(\.id)
         let stored = StoredDraft(
             schemaVersion: Self.schemaVersion,
             title: draft.title,
             date: draft.date,
             note: draft.note,
-            photoCount: draft.photos.count,
-            photoDescriptions: draft.photos.map(\.accessibilityText),
+            media: draft.media.map { item in
+                StoredMedia(accessibilityText: item.accessibilityText, video: item.video.map(StoredVideo.init))
+            },
             place: draft.place,
             visitID: draft.visitID
         )
         let data = try encoder.encode(stored)
-        if writtenPhotos[userID] != photoIDs {
-            try writePhotos(draft.photos.map(\.data), userID: userID)
-            writtenPhotos[userID] = photoIDs
+        if writtenMedia[userID] != mediaIDs {
+            try writePhotos(draft.media, userID: userID)
+            writtenMedia[userID] = mediaIDs
         }
         defaults.set(data, forKey: key(for: userID))
     }
@@ -97,14 +99,16 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
     func clearDraft(for userID: UUID) {
         defaults.removeObject(forKey: key(for: userID))
         try? FileManager.default.removeItem(at: userDirectory(for: userID))
-        writtenPhotos[userID] = nil
+        writtenMedia[userID] = nil
     }
 
     /// Writes the photos to a staging directory and swaps it in only when every file
-    /// was written, so a failed write leaves the previously saved photos in place.
-    private func writePhotos(_ photos: [Data], userID: UUID) throws {
+    /// was written, so a failed write leaves the previously saved photos in place. Each
+    /// photo's file is named by its place in `media`.
+    private func writePhotos(_ media: [MemoryDraftMedia], userID: UUID) throws {
         let fileManager = FileManager.default
         let directory = userDirectory(for: userID)
+        let photos = media.enumerated().compactMap { index, item in item.photoData.map { (index, $0) } }
         guard !photos.isEmpty else {
             try? fileManager.removeItem(at: directory)
             return
@@ -117,7 +121,7 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
         do {
             try? fileManager.removeItem(at: staging)
             try fileManager.createDirectory(at: staging, withIntermediateDirectories: true)
-            for (index, data) in photos.enumerated() {
+            for (index, data) in photos {
                 try data.write(to: staging.appendingPathComponent("\(index)", isDirectory: false))
             }
             if fileManager.fileExists(atPath: directory.path) {
@@ -132,8 +136,25 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
         }
     }
 
+    /// The video files that any saved draft names, of every account on this phone.
+    func videoFileNamesInAllDrafts() -> Set<String> {
+        let prefix = key(forUserIDString: "")
+        var names = Set<String>()
+        for (key, value) in defaults.dictionaryRepresentation() where key.hasPrefix(prefix) {
+            guard let data = value as? Data,
+                  let stored = try? decoder.decode(StoredDraft.self, from: data)
+            else { continue }
+            names.formUnion(stored.media.compactMap(\.video?.fileName))
+        }
+        return names
+    }
+
     private func key(for userID: UUID) -> String {
-        "paeonia.memories.draft.v1.\(userID.uuidString)"
+        key(forUserIDString: userID.uuidString)
+    }
+
+    private func key(forUserIDString userID: String) -> String {
+        "paeonia.memories.draft.v\(Self.schemaVersion).\(userID)"
     }
 
     private func userDirectory(for userID: UUID) -> URL {
@@ -150,8 +171,37 @@ private struct StoredDraft: Codable {
     var title: String
     var date: Date
     var note: String
-    var photoCount: Int
-    var photoDescriptions: [String]
+    var media: [StoredMedia]
     var place: MemoryPlace?
     var visitID: UUID?
+}
+
+private struct StoredMedia: Codable {
+    var accessibilityText: String
+    /// Nil for a photo, whose bytes are a file in the user's draft directory.
+    var video: StoredVideo?
+}
+
+/// A prepared video by file name, since the app's container path can change between launches.
+private struct StoredVideo: Codable {
+    var fileName: String
+    var width: Int
+    var height: Int
+    var durationMs: Int
+    var byteSize: Int64
+
+    init(_ video: PreparedVideo) {
+        fileName = video.fileURL.lastPathComponent
+        width = video.width
+        height = video.height
+        durationMs = video.durationMs
+        byteSize = video.byteSize
+    }
+
+    /// Throws when the file is gone, so the draft fails as a whole instead of losing the video.
+    func prepared() throws -> PreparedVideo {
+        let fileURL = MemoryDraftMedia.videoDirectoryURL().appendingPathComponent(fileName, isDirectory: false)
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { throw CocoaError(.fileReadNoSuchFile) }
+        return PreparedVideo(fileURL: fileURL, width: width, height: height, durationMs: durationMs, byteSize: byteSize)
+    }
 }

@@ -9,12 +9,12 @@ nonisolated enum MemoryImageDecoding {
     private static let referenceScale: CGFloat = 3
     private static let maxPixelSizeLimit = 2_048
 
-    /// NSCache is thread safe, so sharing this one instance across actors is safe.
-    nonisolated(unsafe) private static let cache: NSCache<NSString, UIImage> = {
-        let cache = NSCache<NSString, UIImage>()
-        cache.totalCostLimit = 64 * 1_024 * 1_024
-        return cache
-    }()
+    private static let cache = PurgeableImageCache()
+
+    /// Read before loading a photo to store, so a privacy purge since keeps it out.
+    static var generation: PurgeableImageCache.Generation {
+        cache.generation
+    }
 
     /// Longest-side pixel size for an aspect-fill photo in a frame this many points tall.
     /// Frames are wider than tall, so 1.5x the height covers the width in practice.
@@ -23,22 +23,25 @@ nonisolated enum MemoryImageDecoding {
     }
 
     static func cachedImage(for mediaAssetID: UUID, maxPixelSize: Int) -> UIImage? {
-        cache.object(forKey: key(mediaAssetID, maxPixelSize))
+        cache.image(forKey: key(mediaAssetID, maxPixelSize))
     }
 
     /// Drops every decoded photo. The privacy purge calls this on sign-out and when a relationship ends.
     static func removeAll() {
-        cache.removeAllObjects()
+        cache.removeAll()
     }
 
     static func remove(_ mediaAssetID: UUID, maxPixelSize: Int) {
-        cache.removeObject(forKey: key(mediaAssetID, maxPixelSize))
+        cache.remove(forKey: key(mediaAssetID, maxPixelSize))
     }
 
-    static func store(_ image: UIImage, for mediaAssetID: UUID, maxPixelSize: Int) {
-        // Cost is the decoded size in bytes, which is what the 64 MB limit counts.
-        let cost = image.cgImage.map { $0.width * $0.height * 4 } ?? 0
-        cache.setObject(image, forKey: key(mediaAssetID, maxPixelSize), cost: cost)
+    static func store(
+        _ image: UIImage,
+        for mediaAssetID: UUID,
+        maxPixelSize: Int,
+        generation: PurgeableImageCache.Generation
+    ) {
+        cache.store(image, forKey: key(mediaAssetID, maxPixelSize), generation: generation)
     }
 
     /// Decodes `data` straight to a thumbnail whose longest side is at most
@@ -62,7 +65,7 @@ nonisolated enum MemoryImageDecoding {
         return UIImage(cgImage: cgImage)
     }
 
-    private static func key(_ mediaAssetID: UUID, _ maxPixelSize: Int) -> NSString {
-        "\(mediaAssetID.uuidString)-\(maxPixelSize)" as NSString
+    private static func key(_ mediaAssetID: UUID, _ maxPixelSize: Int) -> String {
+        "\(mediaAssetID.uuidString)-\(maxPixelSize)"
     }
 }

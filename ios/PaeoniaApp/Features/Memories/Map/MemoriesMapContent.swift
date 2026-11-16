@@ -16,7 +16,8 @@ nonisolated struct MemoryMapEntry: Identifiable, Hashable, Sendable {
     /// Couple-local `yyyy-MM-dd`. For a round, the day its photo was taken.
     let memoryDate: String
     let place: MemoryPlace
-    /// The first photo, shown on the pin. Nil shows the heart tile.
+    /// The first photo, shown on the pin. Nil shows the heart tile, also for a memory with
+    /// only videos, so the map never downloads a video for a pin.
     let photoAssetID: UUID?
     var kind: MemoryMapEntryKind = .memory
 }
@@ -43,7 +44,7 @@ nonisolated struct MemoriesMapContent: Equatable, Sendable {
                 title: snapshot.title ?? "",
                 memoryDate: snapshot.memoryDate,
                 place: place,
-                photoAssetID: snapshot.visibleMediaAssetIDs.first
+                photoAssetID: snapshot.firstPhotoAssetID
             ))
         }
         // Newest first. On the same day a memory comes before a round.

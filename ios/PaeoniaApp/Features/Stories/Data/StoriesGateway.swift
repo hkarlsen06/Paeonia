@@ -1,13 +1,13 @@
 import Foundation
 
 /// The story backend functions (`backend/convex/stories.ts`). Posting needs a connection,
-/// because the photo goes up first, like a memory photo.
+/// because the photo or video goes up first, like a memory's.
 nonisolated protocol StoriesGateway: Sendable {
-    /// Uploads the photo and posts the story. Returns the story as stored, or nil when it
+    /// Uploads the photo or video and posts the story. Returns the story as stored, or nil when it
     /// was deleted before a retry of the same post arrived.
     func post(
         id: UUID,
-        photo: MemoryUploadMedia,
+        media: MemoryUploadMedia,
         caption: String?,
         coupleID: UUID,
         operations: StoryPostOperations
@@ -39,13 +39,13 @@ nonisolated struct LiveStoriesGateway: StoriesGateway {
 
     func post(
         id: UUID,
-        photo: MemoryUploadMedia,
+        media: MemoryUploadMedia,
         caption: String?,
         coupleID: UUID,
         operations: StoryPostOperations
     ) async throws -> Story? {
         let upload = try await uploader.uploadMedia(
-            photo,
+            media,
             memoryMediaID: id,
             coupleID: coupleID,
             reserveOperation: operations.reserve,

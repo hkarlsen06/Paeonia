@@ -333,13 +333,16 @@ struct MailLetterPhoto: View {
             return
         }
         load = .loading
+        let generation = MemoryImageDecoding.generation
         var decoded: UIImage?
         if let data = await MemoryMediaImageProviderFactory.shared?.imageData(for: mediaAssetID) {
             decoded = await MemoryImageDecoding.downsample(data, maxPixelSize: Self.maxPixelSize)
         }
         guard !Task.isCancelled else { return }
         if let decoded {
-            MemoryImageDecoding.store(decoded, for: mediaAssetID, maxPixelSize: Self.maxPixelSize)
+            MemoryImageDecoding.store(
+                decoded, for: mediaAssetID, maxPixelSize: Self.maxPixelSize, generation: generation
+            )
         }
         withAnimation(PaeoniaMotion.stateChange) {
             load = ImageLoad(decoded, for: mediaAssetID)

@@ -6,7 +6,8 @@ nonisolated protocol DailyAnswerMediaImageProviding: Sendable {
     func imageData(for mediaAssetID: UUID?) async -> Data?
 }
 
-nonisolated protocol DailyAnswerMediaImageCacheWriting: Sendable {
+/// Its `evict` also removes the copies a send left in the video cache and the memory cache.
+nonisolated protocol DailyAnswerMediaImageCacheWriting: MediaCacheEvicting {
     /// Saves bytes this phone just uploaded, so showing them never downloads them again.
     func cacheImageData(_ data: Data, for mediaAssetID: UUID) async
 }
@@ -78,12 +79,14 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
         store(data, for: mediaAssetID)
     }
 
-    func evict(mediaAssetIDs: [UUID]) {
+    /// A chat message may hold a video, so its file goes too.
+    func evict(mediaAssetIDs: [UUID]) async {
         for mediaAssetID in mediaAssetIDs {
             PaeoniaImageMemoryCache.remove(mediaAssetID: mediaAssetID)
             inFlightDownloads.removeValue(forKey: mediaAssetID)?.cancel()
             try? FileManager.default.removeItem(at: fileURL(for: mediaAssetID))
         }
+        await VideoFileCache.shared?.evict(mediaAssetIDs: mediaAssetIDs)
     }
 
     func clearAll() {

@@ -132,7 +132,7 @@ struct MemoryDetailView: View {
         return TabView(selection: selection) {
             ForEach(mediaItems, id: \.memoryMediaID) { media in
                 MemoryMediaImageView(
-                    mediaAssetID: media.mediaAssetID,
+                    media: media.media,
                     accessibilityText: media.accessibilityText,
                     provider: mediaImageProvider,
                     height: photoCarouselHeight,
@@ -146,13 +146,14 @@ struct MemoryDetailView: View {
                     savePhotoButton(for: media)
                 }
                 .accessibilityAction(named: Text(.memoriesPhotoSave)) {
-                    Task { await viewModel.savePhotoToLibrary(mediaAssetID: media.mediaAssetID) }
+                    Task { await viewModel.saveToLibrary(media) }
                 }
                 .padding(.bottom, mediaItems.count > 1 ? photoCarouselPageControlInset : 0)
                 .tag(Optional(media.mediaAssetID))
-                .appEntityIdentifier(
-                    EntityIdentifier(for: MemoryPhotoEntity.self, identifier: .saved(mediaAssetID: media.mediaAssetID))
-                )
+                // Siri knows photos only.
+                .appEntityIdentifier(media.isVideo ? nil : EntityIdentifier(
+                    for: MemoryPhotoEntity.self, identifier: .saved(mediaAssetID: media.mediaAssetID)
+                ))
             }
         }
         .tabViewStyle(.page(indexDisplayMode: mediaItems.count > 1 ? .automatic : .never))
@@ -161,7 +162,7 @@ struct MemoryDetailView: View {
 
     private func savePhotoButton(for media: MemoryMediaSnapshot) -> some View {
         Button {
-            Task { await viewModel.savePhotoToLibrary(mediaAssetID: media.mediaAssetID) }
+            Task { await viewModel.saveToLibrary(media) }
         } label: {
             Label { Text(.memoriesPhotoSave) } icon: { Image(systemName: "square.and.arrow.down") }
         }
@@ -241,11 +242,11 @@ struct MemoryDetailView: View {
 
     /// Opens the full-screen viewer on the tapped photo, with every photo of the memory
     /// to swipe through. Each page loads the full-resolution photo itself; the carousel
-    /// only holds smaller copies.
+    /// only holds smaller copies. A video plays in its own viewer, so it is left out.
     private func presentImageViewer(initialMediaAssetID: UUID?, mediaItems: [MemoryMediaSnapshot]) {
         guard let initialMediaAssetID else { return }
         let provider = mediaImageProvider
-        let items = mediaItems.map { media in
+        let items = mediaItems.filter { !$0.isVideo }.map { media in
             let mediaAssetID = media.mediaAssetID
             return PaeoniaImageViewerItem(
                 id: mediaAssetID, accessibilityText: PhotoDescription.label(media.accessibilityText)

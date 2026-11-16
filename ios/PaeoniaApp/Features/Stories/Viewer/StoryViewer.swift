@@ -29,11 +29,12 @@ struct StoryViewer: View {
 
     @State private var stories: [Story]
     @State private var index: Int
-    /// 0 to 1 through the current story on Home.
+    /// 0 to 1 through the current story on Home. A video's follows its playback.
     @State private var progress: Double = 0
     @State private var isAutoAdvancePaused = false
-    /// The story whose photo is on screen. The timer waits for it.
+    /// The story whose photo or first video frame showed. The timer waits for it.
     @State private var shownPhotoID: UUID?
+    @State private var videoPlayback = StoryVideoPlayback()
     @State private var dragOffset: CGFloat = 0
     /// When the finger came down on the story, while it is down.
     @State private var touchStart: Date?
@@ -51,6 +52,7 @@ struct StoryViewer: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityEnabled) private var assistiveTechnologyEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @AccessibilityPresentation(.controls) private var showsControls
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
 
@@ -76,8 +78,15 @@ struct StoryViewer: View {
         stories.indices.contains(index) ? stories[index] : nil
     }
 
+    /// The current story's photo or video is on screen. A video that failed, or is
+    /// loading again, is not, so its timer stops and the retry button owns the screen.
+    private var isMediaShown: Bool {
+        guard let story, shownPhotoID == story.id else { return false }
+        return !story.isVideo || videoPlayback.isReady(story.mediaAssetID)
+    }
+
     /// A finger is on the story, the delete question or the share screen is open, or the
-    /// delete is on its way.
+    /// delete is on its way. A video pauses too.
     private var isPaused: Bool {
         touchStart != nil || isConfirmingDelete || isDeleting || shareable != nil || isReplyFocused || isShowingReplies
             || isReadingDescription || replies.hasUnsentReply
@@ -92,6 +101,7 @@ struct StoryViewer: View {
 
     /// Reading and scanning must not race a timer. The same controls remain available
     /// when automatic advance is off, including when a system preference changes here.
+    /// A video still plays then, and stays on its last frame at the end.
     private var playsOnItsOwn: Bool {
         content.mode == .home && !assistiveTechnologyEnabled && !reduceMotion && !isAutoAdvancePaused
     }
@@ -103,22 +113,35 @@ struct StoryViewer: View {
                 // The tap zones sit under the photo, which only takes taps on its retry
                 // button, so a failed photo can be retried without moving on.
                 tapZones(for: story)
-                StoryPhotoView(mediaAssetID: story.mediaAssetID) { shownPhotoID = story.id }
-                    .id(story.id)
-                    .ignoresSafeArea(edges: .bottom)
+                Group {
+                    if story.isVideo {
+                        StoryVideoView(playback: videoPlayback, mediaAssetID: story.mediaAssetID) {
+                            shownPhotoID = story.id
+                        }
+                    } else {
+                        StoryPhotoView(mediaAssetID: story.mediaAssetID) { shownPhotoID = story.id }
+                    }
+                }
+                .id(story.id)
+                .ignoresSafeArea(edges: .bottom)
                 overlay(for: story)
             }
         }
         .offset(y: dragOffset)
         .preferredColorScheme(.dark)
         .task(id: TimerKey(
-            storyID: story?.id, photoShown: shownPhotoID == story?.id,
-            isPaused: isPaused, playsOnItsOwn: playsOnItsOwn
+            storyID: story?.id, mediaShown: isMediaShown,
+            isPaused: isPaused, playsOnItsOwn: playsOnItsOwn, isAppActive: scenePhase == .active
         )) {
             await runTimer()
         }
         .onChange(of: story?.id, initial: true) { _, _ in
             progress = 0
+            if let story, story.isVideo {
+                videoPlayback.load(story.mediaAssetID)
+            } else {
+                videoPlayback.stop()
+            }
             if let story {
                 viewModel.markSeen(story)
                 Task { await loadReplies(for: story) }
@@ -144,6 +167,7 @@ struct StoryViewer: View {
         } message: {
             Text(.storiesViewerDeleteMessage)
         }
+        .onDisappear { videoPlayback.stop() }
         .paeoniaShareSheet(item: $shareable)
         // The cover hides the app's banner, so show it here too.
         .paeoniaBanner(bannerCenter)
@@ -164,9 +188,14 @@ struct StoryViewer: View {
         // One VoiceOver element with next and previous actions stands in for the gesture.
         .accessibilityElement()
         .accessibilityLabel(Text(.storiesViewerPhotoAccessibility(people.name(of: story))))
-        .accessibilityValue(Text(verbatim: PhotoDescription.label(story.accessibilityText)))
+        .accessibilityValue(Text(verbatim: mediaDescription(of: story)))
         .accessibilityAction(named: Text(.storiesViewerNext)) { goForward() }
         .accessibilityAction(named: Text(.storiesViewerPrevious)) { goBack() }
+    }
+
+    private func mediaDescription(of story: Story) -> String {
+        guard story.isVideo else { return PhotoDescription.label(story.accessibilityText) }
+        return VideoBadge.accessibilityLabel(durationMs: story.durationMs, description: story.accessibilityText)
     }
 
     private func overlay(for story: Story) -> some View {
@@ -285,20 +314,40 @@ struct StoryViewer: View {
 
     private struct TimerKey: Equatable {
         let storyID: UUID?
-        let photoShown: Bool
+        let mediaShown: Bool
         let isPaused: Bool
         let playsOnItsOwn: Bool
+        let isAppActive: Bool
     }
 
     /// Fills the current bar while the photo shows, then moves on. Starts again from
-    /// where it was after the delete question closes.
+    /// where it was after the delete question closes. A video plays while nothing pauses
+    /// the story, and its bar follows the video's time.
     private func runTimer() async {
-        guard playsOnItsOwn, shownPhotoID == story?.id, !isPaused else { return }
+        guard let story, isMediaShown else { return }
+        if story.isVideo {
+            await runVideo()
+            return
+        }
+        guard playsOnItsOwn, !isPaused else { return }
         while progress < 1 {
             try? await Task.sleep(for: .seconds(Self.tick))
             guard !Task.isCancelled else { return }
             progress = min(progress + Self.tick / Self.storyDuration, 1)
         }
+        goForward()
+    }
+
+    private func runVideo() async {
+        let plays = !isPaused && scenePhase == .active
+        videoPlayback.setPlaying(plays)
+        guard plays, playsOnItsOwn else { return }
+        while !videoPlayback.hasEnded {
+            progress = videoPlayback.progress
+            try? await Task.sleep(for: .seconds(Self.tick))
+            guard !Task.isCancelled else { return }
+        }
+        progress = 1
         goForward()
     }
 
@@ -315,6 +364,7 @@ struct StoryViewer: View {
             index -= 1
         } else {
             progress = 0
+            if story?.isVideo == true { videoPlayback.restart() }
         }
     }
 

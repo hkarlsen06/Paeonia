@@ -81,6 +81,7 @@ struct PaeoniaProfilePhotoAvatar: View {
             loadedAssetID = nil
         }
 
+        let generation = PaeoniaImageMemoryCache.generation
         let load = { () async -> UIImage? in
             let provider = environmentPhotoProvider ?? profilePhotoProvider
             guard let data = await provider.profilePhotoData(for: mediaAssetID) else {
@@ -103,7 +104,7 @@ struct PaeoniaProfilePhotoAvatar: View {
         profileImage = image
         loadedAssetID = mediaAssetID
         if let mediaAssetID {
-            PaeoniaImageMemoryCache.store(image, for: mediaAssetID)
+            PaeoniaImageMemoryCache.store(image, for: mediaAssetID, generation: generation)
         }
     }
 

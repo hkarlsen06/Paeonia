@@ -9,7 +9,7 @@ struct MemoryMapRow<Trailing: View>: View {
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            MemoryMapThumbnail(photoAssetID: photoAssetID, size: 44)
+            MemoryMapThumbnail(media: photoAssetID.map(MediaReference.photo), size: 44)
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                 if let caption {
                     Text(caption)
@@ -43,7 +43,7 @@ struct MemoriesUnplacedList: View {
         LazyVStack(spacing: 0) {
             ForEach(records, id: \.snapshot.memoryID) { record in
                 MemoryMapRow(
-                    photoAssetID: record.snapshot.visibleMediaAssetIDs.first,
+                    photoAssetID: record.snapshot.firstPhotoAssetID,
                     caption: MemoryMapText.date(record.snapshot.memoryDate),
                     title: record.snapshot.title ?? ""
                 ) {

@@ -2,13 +2,12 @@ import Foundation
 
 /// What the edit form asks to save. `base` is the memory as it was when the form opened.
 struct MemoryEdit {
-    var photoDescriptions: [String] = []
     var existingDescriptions: [UUID: String] = [:]
     let base: MemoryRecord
     let title: String
     let date: String
     let note: String
-    let newPhotos: [Data]
+    let newMedia: [MemoryDraftMedia]
     let removedMedia: [MemoryMediaSnapshot]
     let place: MemoryPlace?
 }

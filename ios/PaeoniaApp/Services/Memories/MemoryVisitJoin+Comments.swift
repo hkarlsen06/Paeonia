@@ -43,7 +43,7 @@ extension MemoryPendingOperationRefresh {
                   payload.subject == .memory(waitingID) else { return nil }
             return try JSONEncoder().encode(CreateChatThreadPayload(
                 subject: joined, coupleID: payload.coupleID, body: payload.body, voice: payload.voice,
-                photos: payload.photos, replyToAnswerID: payload.replyToAnswerID,
+                attachments: payload.attachments, replyToAnswerID: payload.replyToAnswerID,
                 replyToGameResultSource: payload.replyToGameResultSource
             ))
         }
@@ -51,7 +51,7 @@ extension MemoryPendingOperationRefresh {
               payload.subject == .memory(waitingID) else { return nil }
         return try JSONEncoder().encode(SendChatMessagePayload(
             subject: joined, coupleID: payload.coupleID, threadID: payload.threadID, body: payload.body,
-            voice: payload.voice, photos: payload.photos, replyTo: payload.replyTo
+            voice: payload.voice, attachments: payload.attachments, replyTo: payload.replyTo
         ))
     }
 

@@ -36,6 +36,15 @@ nonisolated enum DailyVoiceAudioSession {
         }
     }
 
+    /// A full-screen video the person started plays with sound even with the silent switch
+    /// on, and pauses their music. `deactivate` lets the music resume.
+    static func configureForVideoPlayback() async {
+        _ = nextRequest()
+        try? await gate.activate { session in
+            try session.setCategory(.playback, mode: .moviePlayback)
+        }
+    }
+
     /// Releases the session, tells apps we ducked (music, podcasts) to come back up, and
     /// returns to the app's resting `.ambient` session. Used after both recording and
     /// playback. Nothing waits for it. A recording or playback that asks for the session

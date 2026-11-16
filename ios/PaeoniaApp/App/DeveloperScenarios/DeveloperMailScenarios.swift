@@ -257,7 +257,9 @@ enum DeveloperMailFixture {
     private static func seedPhoto() {
         if let url = Bundle.main.url(forResource: "scenario-memory-oslo-opera", withExtension: "jpg"),
            let image = UIImage(contentsOfFile: url.path) {
-            MemoryImageDecoding.store(image, for: photo, maxPixelSize: 2_048)
+            MemoryImageDecoding.store(
+                image, for: photo, maxPixelSize: 2_048, generation: MemoryImageDecoding.generation
+            )
         }
     }
 }

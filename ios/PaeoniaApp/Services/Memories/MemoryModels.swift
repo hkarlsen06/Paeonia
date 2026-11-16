@@ -90,10 +90,20 @@ nonisolated struct MemoryNoteSnapshot: Codable, Equatable, Sendable {
     }
 }
 
+/// What a memory's media file is. The server's `media_type`.
+nonisolated enum MemoryMediaKind: String, Codable, Sendable {
+    case image
+    case video
+    case voice
+}
+
 nonisolated struct MemoryMediaSnapshot: Codable, Equatable, Sendable {
     let memoryMediaID: UUID
     let mediaAssetID: UUID
     let ownerUserID: UUID
+    let kind: MemoryMediaKind
+    /// A video's length. Nil for a photo.
+    let durationMs: Int?
     let sortOrder: Int
     let deletedAt: Date?
     let moderationStatus: MemoryModerationStatus
@@ -107,6 +117,8 @@ nonisolated struct MemoryMediaSnapshot: Codable, Equatable, Sendable {
         memoryMediaID: UUID,
         mediaAssetID: UUID,
         ownerUserID: UUID,
+        kind: MemoryMediaKind = .image,
+        durationMs: Int? = nil,
         sortOrder: Int,
         deletedAt: Date? = nil,
         moderationStatus: MemoryModerationStatus = .visible,
@@ -119,6 +131,8 @@ nonisolated struct MemoryMediaSnapshot: Codable, Equatable, Sendable {
         self.memoryMediaID = memoryMediaID
         self.mediaAssetID = mediaAssetID
         self.ownerUserID = ownerUserID
+        self.kind = kind
+        self.durationMs = durationMs
         self.sortOrder = sortOrder
         self.deletedAt = deletedAt
         self.moderationStatus = moderationStatus
@@ -135,6 +149,14 @@ nonisolated struct MemoryMediaSnapshot: Codable, Equatable, Sendable {
             && assetDeletedAt == nil
             && assetModerationStatus == .visible
             && assetStorageDeleteStatus == "none"
+    }
+
+    var isVideo: Bool {
+        kind == .video
+    }
+
+    var media: MediaReference {
+        isVideo ? .video(mediaAssetID, durationMs: durationMs) : .photo(mediaAssetID)
     }
 }
 
@@ -238,6 +260,23 @@ nonisolated struct MemorySnapshot: Codable, Equatable, Sendable {
         guard isVisible else { return [] }
         return Set(visibleMediaAssetIDs).union(media.filter(\.isVisible).map(\.mediaAssetID))
     }
+
+    /// The photos and videos the server lists as shown, in its order.
+    var visibleMedia: [MemoryMediaSnapshot] {
+        let byAssetID = Dictionary(media.map { ($0.mediaAssetID, $0) }) { _, latest in latest }
+        return visibleMediaAssetIDs.compactMap { byAssetID[$0] }.filter { $0.kind != .voice }
+    }
+
+    /// What a card shows for the memory: its first photo, else the first frame of its first video.
+    var cover: MemoryMediaSnapshot? {
+        let shown = visibleMedia
+        return shown.first { $0.kind == .image } ?? shown.first
+    }
+
+    /// The first photo, for small tiles that show a heart without one rather than load a video.
+    var firstPhotoAssetID: UUID? {
+        visibleMedia.first { $0.kind == .image }?.mediaAssetID
+    }
 }
 
 nonisolated struct MemoryRecord: Codable, Equatable, Sendable {
@@ -268,6 +307,8 @@ extension MemoryMediaSnapshot {
             memoryMediaID: memoryMediaID,
             mediaAssetID: mediaAssetID,
             ownerUserID: ownerUserID,
+            kind: kind,
+            durationMs: durationMs,
             sortOrder: sortOrder,
             deletedAt: date,
             moderationStatus: moderationStatus,

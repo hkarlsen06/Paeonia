@@ -23,6 +23,7 @@ enum MemoriesNotice: Equatable {
     case photoSaved
     case photoSaveDenied
     case photoSaveFailed
+    case videoSaveFailed
 
     var banner: PaeoniaBannerContent {
         switch self {
@@ -62,6 +63,8 @@ enum MemoriesNotice: Equatable {
             .memoriesNoticePhotoSaveDeniedTitle
         case .photoSaveFailed, .photoSaved, .ownPartRemovedAfterJoin, .placeNotAddedAfterJoin:
             .memoriesNoticePhotoSaveFailedTitle
+        case .videoSaveFailed:
+            .memoriesNoticeVideoSaveFailedTitle
         }
     }
 
@@ -81,7 +84,8 @@ enum MemoriesNotice: Equatable {
             .memoriesNoticeOwnPartRemovedMessage
         case .placeNotAddedAfterJoin:
             .memoriesNoticePlaceNotAddedMessage
-        case .createFailed, .editFailed, .loadFailed, .deleteFailed, .noteFailed, .photoSaveFailed, .photoSaved:
+        case .createFailed, .editFailed, .loadFailed, .deleteFailed, .noteFailed, .photoSaveFailed, .videoSaveFailed,
+             .photoSaved:
             .memoriesNoticeRetryMessage
         }
     }

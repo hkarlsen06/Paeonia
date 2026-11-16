@@ -95,13 +95,15 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
 
     /// Cancelling the photo's download keeps it from saving the photo again, because the
     /// download checks for cancellation after the network call and after it saves. Only
-    /// `clearAll` bumps the shared generation, so other photos keep loading.
+    /// `clearAll` bumps the shared generation, so other photos keep loading. A memory or a
+    /// story may hold a video, so its file goes too.
     func evict(mediaAssetIDs: [UUID]) async {
         for mediaAssetID in mediaAssetIDs {
             inFlightDownloads.removeValue(forKey: mediaAssetID)?.cancel()
             PaeoniaImageMemoryCache.remove(mediaAssetID: mediaAssetID)
             await cache.remove(for: mediaAssetID)
         }
+        await VideoFileCache.shared?.evict(mediaAssetIDs: mediaAssetIDs)
     }
 
     func imageData(for mediaAssetID: UUID?) async -> Data? {

@@ -21,6 +21,8 @@ final class PaeoniaShareModel {
 
     let shareable: PaeoniaShareable
     private(set) var phase = Phase.preparing
+    /// The file that is shared and saved for a video. The picture is its poster.
+    private(set) var videoURL: URL?
     private(set) var saveState = SaveState.idle
     /// The person turned off photo access, so saving needs a trip to Settings.
     var isShowingPermissionAlert = false
@@ -40,6 +42,13 @@ final class PaeoniaShareModel {
     func prepare() async {
         if case .ready = phase { return }
         phase = .preparing
+        if let makeVideo = shareable.makeVideo {
+            videoURL = await makeVideo()
+            guard videoURL != nil else {
+                phase = .failed
+                return
+            }
+        }
         let image = await shareable.makeImage()
         guard !Task.isCancelled else { return }
         if let image, let preview = UIImage(data: image.data) {
@@ -52,7 +61,12 @@ final class PaeoniaShareModel {
     func save() async {
         guard case let .ready(image, _) = phase, saveState != .saving, saveState != .saved else { return }
         saveState = .saving
-        switch await saver.saveImage(image.data) {
+        let result = if let videoURL {
+            await saver.saveVideo(fileURL: videoURL)
+        } else {
+            await saver.saveImage(image.data)
+        }
+        switch result {
         case .saved:
             saveState = .saved
             PaeoniaHaptics.drawingSaved()

@@ -67,7 +67,7 @@ extension ThreadChatService {
         else { return nil }
 
         return ThreadChatMessage(
-            id: content.voice?.messageID ?? content.photos?.messageID ?? operation.operation.id,
+            id: content.voice?.messageID ?? content.attachments?.messageID ?? operation.operation.id,
             threadID: content.threadID,
             subjectID: subjectID,
             senderUserID: operation.ownerUserID,
@@ -76,7 +76,7 @@ extension ThreadChatService {
             clientOperationID: operation.operation.id,
             delivery: .sending,
             voice: content.voice?.pendingVoice,
-            photos: content.photos?.pendingPhotos,
+            attachments: content.attachments?.pendingAttachments,
             replyTo: content.replyTo
         )
     }
@@ -88,7 +88,7 @@ extension ThreadChatService {
         subject: ThreadChatSubject,
         threadID: UUID?,
         body: String,
-        photos: ThreadChatPhotosPayload?,
+        attachments: ThreadChatAttachmentsPayload?,
         createThread: Bool,
         replyTo: ThreadChatItemID?,
         operation: SyncClientOperation
@@ -100,7 +100,7 @@ extension ThreadChatService {
                 subject: subject,
                 threadID: threadID,
                 body: body,
-                photos: photos,
+                attachments: attachments,
                 createThread: createThread,
                 replyTo: replyTo,
                 operation: operation
@@ -152,7 +152,7 @@ extension ThreadChatService {
     }
 }
 
-/// One chat message on its way into the outbox, with the text, photos or voice it carries.
+/// One chat message on its way into the outbox, with the text, attachments or voice it carries.
 private nonisolated struct OutgoingChatMessage {
     let ownerUserID: UUID
     let coupleID: UUID
@@ -160,7 +160,7 @@ private nonisolated struct OutgoingChatMessage {
     let threadID: UUID?
     let body: String
     var voice: ThreadChatVoicePayload?
-    var photos: ThreadChatPhotosPayload?
+    var attachments: ThreadChatAttachmentsPayload?
     let createThread: Bool
     let replyTo: ThreadChatItemID?
     let operation: SyncClientOperation
@@ -177,7 +177,7 @@ private nonisolated struct OutgoingChatMessage {
                     coupleID: coupleID,
                     body: body,
                     voice: voice,
-                    photos: photos,
+                    attachments: attachments,
                     replyToAnswerID: replyTo?.answerID,
                     replyToGameResultSource: replyTo?.gameResultSource
                 )
@@ -190,7 +190,7 @@ private nonisolated struct OutgoingChatMessage {
                 threadID: threadID,
                 body: body,
                 voice: voice,
-                photos: photos,
+                attachments: attachments,
                 replyTo: replyTo
             )
         )
@@ -199,7 +199,7 @@ private nonisolated struct OutgoingChatMessage {
     /// The copy shown in the chat while the message is still sending.
     var sendingCopy: ThreadChatMessage {
         ThreadChatMessage(
-            id: voice?.messageID ?? photos?.messageID ?? operation.id,
+            id: voice?.messageID ?? attachments?.messageID ?? operation.id,
             threadID: threadID,
             subjectID: subject.id,
             senderUserID: ownerUserID,
@@ -208,7 +208,7 @@ private nonisolated struct OutgoingChatMessage {
             clientOperationID: operation.id,
             delivery: .sending,
             voice: voice?.pendingVoice,
-            photos: photos?.pendingPhotos,
+            attachments: attachments?.pendingAttachments,
             // A first message can reply to a question's answer or a game's result.
             replyTo: replyTo
         )
@@ -220,7 +220,7 @@ private nonisolated struct PendingChatContent {
     let body: String
     let threadID: UUID?
     let voice: ThreadChatVoicePayload?
-    let photos: ThreadChatPhotosPayload?
+    let attachments: ThreadChatAttachmentsPayload?
     var replyTo: ThreadChatItemID?
 
     /// Nil when the operation is not a chat message, or belongs to another question or couple.
@@ -234,7 +234,7 @@ private nonisolated struct PendingChatContent {
             body = payload.body
             threadID = nil
             voice = payload.voice
-            photos = payload.photos
+            attachments = payload.attachments
             replyTo = payload.replyToGameResultSource.map(ThreadChatItemID.gameResult)
                 ?? payload.replyToAnswerID.map(ThreadChatItemID.answer)
         case .sendThreadMessage:
@@ -244,7 +244,7 @@ private nonisolated struct PendingChatContent {
             body = payload.body
             threadID = payload.threadID
             voice = payload.voice
-            photos = payload.photos
+            attachments = payload.attachments
             replyTo = payload.replyTo
         default:
             return nil

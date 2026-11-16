@@ -313,7 +313,8 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             nextRetryAt: operation.nextRetryAt,
             lastError: operation.lastError,
             lastFailureKind: operation.lastFailureKind,
-            completedAt: operation.completedAt
+            completedAt: operation.completedAt,
+            timedOutAttempts: operation.timedOutAttempts
         )
     }
 }

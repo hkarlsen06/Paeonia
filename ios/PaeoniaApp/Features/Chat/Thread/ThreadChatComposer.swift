@@ -2,7 +2,7 @@ import PhotosUI
 import SwiftUI
 
 /// The chat's own composer, in place of ExyteChat's. The field, the reply banner, and
-/// the photo drawer follow Tidex's chat. With an empty field the round button records
+/// the attachment drawer follow Tidex's chat. With an empty field the round button records
 /// a voice message instead of sending, using the same recorder as voice answers.
 ///
 /// Recording: tap the microphone to start, Stop to review, or the bin to
@@ -23,10 +23,10 @@ struct ThreadChatComposer: View {
     let onCancelEdit: () -> Void
     let onSaveEdit: (String) async -> ThreadChatViewModel.EditOutcome
     let onSendText: (String) async -> Bool
-    let onSendPhotos: (String, [ThreadChatPhoto]) async -> Bool
+    let onSendAttachments: (String, [ThreadChatAttachment]) async -> Bool
     let onSendVoice: (URL, Int, String) async -> Bool
     let beginVoiceDraft: () -> ThreadChatVoiceDraftEditing?
-    let beginPhotoDraft: () -> ThreadChatPhotoDraftEditing?
+    let beginAttachmentDraft: () -> ThreadChatAttachmentDraftEditing?
     let onTextChanged: (String) -> Void
 
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -39,7 +39,7 @@ struct ThreadChatComposer: View {
     @State var voiceTranscript = ""
     @AccessibilityPresentation(.media) var showsMediaAlternatives
     @State var voiceDraftEditing: ThreadChatVoiceDraftEditing?
-    @State var staging = ThreadChatPhotoStaging()
+    @State var staging = ThreadChatAttachmentStaging()
     @State var isSubmitting = false
     /// Set when the microphone is tapped during a call, which explains why nothing records.
     /// Each tap starts the hint's time again.
@@ -79,7 +79,7 @@ struct ThreadChatComposer: View {
                 .buttonStyle(PaeoniaQuietButtonStyle())
             }
             if !staging.staged.isEmpty || staging.isProcessing {
-                ThreadChatStagedPhotosRow(staging: staging)
+                ThreadChatStagedAttachmentsRow(staging: staging)
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.9, anchor: .bottom)))
             }
             fieldScrollView
@@ -103,7 +103,7 @@ struct ThreadChatComposer: View {
         }
         .onChange(of: text.wrappedValue) { _, newText in
             onTextChanged(newText)
-            savePhotoDraftCaption()
+            saveAttachmentDraftCaption()
         }
         // Typing closes the drawer. Opening the drawer puts the keyboard away.
         .onChange(of: isFocused) { _, focused in if focused { staging.isDrawerOpen = false } }
@@ -112,7 +112,7 @@ struct ThreadChatComposer: View {
             isPresented: $staging.isShowingLibrary,
             selection: $staging.pickerItems,
             maxSelectionCount: staging.librarySelectionLimit,
-            matching: .images,
+            matching: .any(of: [.images, .videos]),
             photoLibrary: .shared()
         )
         .fullScreenCover(isPresented: $staging.isShowingCamera) {
@@ -131,7 +131,7 @@ struct ThreadChatComposer: View {
         }
         .onAppear {
             restoreRecording()
-            restorePhotoDraft()
+            restoreAttachmentDraft()
         }
         .task(id: callRecordHint) {
             guard callRecordHint != nil else { return }
@@ -147,7 +147,7 @@ struct ThreadChatComposer: View {
             recorder.finishForDisappear()
             saveRecordingDraft()
             if !staging.staged.isEmpty || !text.wrappedValue.isEmpty {
-                savePhotoDraftCaption()
+                saveAttachmentDraftCaption()
             }
         }
     }
@@ -173,7 +173,7 @@ struct ThreadChatComposer: View {
         return switch recorder.setback {
         case .permissionDenied: .dailyChatComposerPermissionDenied
         case .takeTooShort: .dailyChallengeVoiceTooShort
-        case .startFailed, nil: nil
+        case .startFailed, nil: staging.notice
         }
     }
 
@@ -217,7 +217,7 @@ struct ThreadChatComposer: View {
         text.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Something to send: text, picked photos, or both.
+    /// Something to send: text, picked attachments, or both.
     private var canSend: Bool {
         (!trimmedText.isEmpty || !staging.staged.isEmpty) && !staging.isProcessing
     }
@@ -255,8 +255,9 @@ struct ThreadChatComposer: View {
             .lineLimit(1...7)
             .focused($isFocused)
             .accessibilityIdentifier("chat.composer.field")
+            .pastingAttachments(into: staging, isEnabled: editingMessage == nil)
             // While an edit saves, the text stays as sent, so the result can't overwrite new typing.
-            .disabled(staging.isProcessing || (editingMessage != nil && isSubmitting))
+            .disabled(editingMessage != nil && isSubmitting)
             .padding(.vertical, PaeoniaSpacing.space12 + 2)
             .frame(minHeight: Self.controlHeight)
 
@@ -337,18 +338,18 @@ extension ThreadChatComposer {
 
     private func sendText() {
         let body = trimmedText
-        let photos = staging.photos
-        let sentPhotos = staging.staged
+        let attachments = staging.attachments
+        let sentAttachments = staging.staged
         let originalText = text.wrappedValue
         guard canSend, !isSubmitting else { return }
         isSubmitting = true
         Task {
-            let sent = photos.isEmpty ? await onSendText(body) : await onSendPhotos(body, photos)
+            let sent = attachments.isEmpty ? await onSendText(body) : await onSendAttachments(body, attachments)
             if sent {
                 // Keep anything typed, picked or described while this send was being saved.
                 if text.wrappedValue == originalText { text.wrappedValue = "" }
-                staging.removeSent(sentPhotos)
-                savePhotoDraftCaption()
+                staging.removeSent(sentAttachments)
+                saveAttachmentDraftCaption()
             }
             isSubmitting = false
         }

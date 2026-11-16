@@ -58,6 +58,7 @@ extension RootViewModel {
     /// Home. Every other saved state keeps waiting for the server, since a
     /// wrong paywall, onboarding or invite screen is worse than a short wait.
     func showSavedLaunchPreview() async {
+        let generation = PaeoniaImageMemoryCache.generation
         let pending = savedLaunchState ?? Task { await loadSavedLaunchState() }
         savedLaunchState = nil
         guard case .launching = route,
@@ -71,7 +72,7 @@ extension RootViewModel {
 
         // Before Home is built, so its avatars start with the photos instead of initials.
         for (mediaAssetID, photo) in saved.profilePhotos {
-            PaeoniaImageMemoryCache.store(photo, for: mediaAssetID)
+            PaeoniaImageMemoryCache.store(photo, for: mediaAssetID, generation: generation)
         }
         route = .resolvingAccess(saved.session, previous: saved.resolution, holding: .launching)
     }

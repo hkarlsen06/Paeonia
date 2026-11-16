@@ -58,7 +58,7 @@ protocol ThreadChatServicing: Actor {
         subject: ThreadChatSubject,
         threadID: UUID?,
         body: String,
-        photos: ThreadChatPhotosPayload?,
+        attachments: ThreadChatAttachmentsPayload?,
         createThread: Bool,
         replyTo: ThreadChatItemID?,
         operation: SyncClientOperation
@@ -82,8 +82,8 @@ protocol ThreadChatServicing: Actor {
     /// Takes back the user's own message for both people. A message the server has is
     /// shown as deleted at once, and the delete waits in the send queue when the phone is
     /// offline. A message still sending or failed is dropped from this phone instead, and
-    /// never goes out. Throws `ThreadChatServiceError.stillSending` while the
-    /// message is on its way to the server and can't be stopped.
+    /// its send stops. Throws `ThreadChatServiceError.stillSending` for the first message of
+    /// a chat while later messages wait for that chat.
     func deleteMessage(
         ownerUserID: UUID,
         message: ThreadChatMessage,
@@ -218,7 +218,7 @@ actor ThreadChatService: ThreadChatServicing {
     let gateway: any ThreadChatGateway
     let cache: any ThreadChatCaching
     let pendingOperationStore: any PendingSyncOperationPersisting
-    /// Removes the files of deleted photos and voice messages from this phone.
+    /// Removes the files of deleted attachments and voice messages from this phone.
     let mediaCache: (any MediaCacheEvicting)?
     let encoder = JSONEncoder()
     var gameTimelineVersions: [GameChatSubject: Int] = [:]
@@ -500,7 +500,8 @@ nonisolated struct ThreadChatEditWindowClosedError: Error, Equatable, Sendable {
 
 nonisolated enum ThreadChatServiceError: Error, Equatable, Sendable {
     case unavailable
-    /// The message is on its way to the server, so it can't be taken back yet.
+    /// The first message of a chat, while later messages wait for that chat. It can be taken
+    /// back once the chat exists.
     case stillSending
     case missingResponse
 }

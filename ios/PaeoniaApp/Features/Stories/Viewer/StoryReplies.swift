@@ -82,7 +82,7 @@ extension ThreadChatHeader {
                 : String(localized: .chatHeaderStory(people.partnerName)),
             title: story.caption ?? "",
             detail: story.createdAt.formatted(date: .abbreviated, time: .shortened),
-            photoAssetID: story.mediaAssetID
+            media: story.media
         )
     }
 }

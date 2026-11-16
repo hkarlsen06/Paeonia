@@ -15,8 +15,10 @@ final class ThreadChatViewModel {
         case voiceFailed
         case voiceDraftReadFailed
         case voiceDraftSaveFailed
-        /// Picked photos could not be prepared or saved on this phone.
-        case photoFailed
+        /// A message with attachments could not be saved to send. Everything stays in the composer.
+        case attachmentsFailed
+        /// A saved draft's video is no longer on this phone, so the draft lost it.
+        case draftMediaMissing
         case photoDraftReadFailed
         case photoDraftSaveFailed
         /// A change to a sent message didn't reach the server. The text stays in the box.
@@ -38,8 +40,8 @@ final class ThreadChatViewModel {
     let coupleID: UUID
     let voiceDraftStore: FileThreadChatVoiceDraftStore
     let voiceDraftGeneration: Int
-    let photoDraftStore: FileThreadChatPhotoDraftStore
-    let photoDraftGeneration: Int
+    let attachmentDraftStore: FileThreadChatAttachmentDraftStore
+    let attachmentDraftGeneration: Int
     /// The card that opens a memory's or a story's chat. Nil in a question's chat, which opens
     /// with its question. `ThreadChatScreen` replaces it when a memory's note changes.
     var header: ThreadChatHeader?
@@ -131,14 +133,14 @@ final class ThreadChatViewModel {
         operationProvider: (any SyncClientOperationProviding)? = nil,
         syncAfterLocalChange: (@MainActor () async -> Void)? = nil,
         voiceDraftStore: FileThreadChatVoiceDraftStore = .shared,
-        photoDraftStore: FileThreadChatPhotoDraftStore = .shared
+        attachmentDraftStore: FileThreadChatAttachmentDraftStore = .shared
     ) {
         self.subject = subject
         self.coupleID = coupleID
         self.voiceDraftStore = voiceDraftStore
         voiceDraftGeneration = voiceDraftStore.generation
-        self.photoDraftStore = photoDraftStore
-        photoDraftGeneration = photoDraftStore.generation
+        self.attachmentDraftStore = attachmentDraftStore
+        attachmentDraftGeneration = attachmentDraftStore.generation
         self.header = header
         self.question = question
         self.participants = participants
@@ -403,12 +405,12 @@ extension ThreadChatViewModel {
         replacingFailed failedOperationID: UUID? = nil,
         replyTo retriedReply: ThreadChatItemID? = nil
     ) async -> Bool {
-        await send(text, photos: [], replacingFailed: failedOperationID, replyTo: retriedReply)
+        await send(text, attachments: [], replacingFailed: failedOperationID, replyTo: retriedReply)
     }
 
     func send(
         _ text: String,
-        photos: [ThreadChatPhoto],
+        attachments: [ThreadChatAttachment],
         replacingFailed failedOperationID: UUID?,
         replyTo retriedReply: ThreadChatItemID?
     ) async -> Bool {
@@ -417,7 +419,7 @@ extension ThreadChatViewModel {
             return false
         }
         let body = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !body.isEmpty || !photos.isEmpty else { return false }
+        guard !body.isEmpty || !attachments.isEmpty else { return false }
         // The server counts code points, so one emoji made of several counts as several.
         guard body.unicodeScalars.count <= Self.maximumMessageLength else {
             notice = .messageTooLong
@@ -429,7 +431,7 @@ extension ThreadChatViewModel {
         defer { isQueueing = false }
 
         let reply = failedOperationID == nil ? replyTarget?.id : retriedReply
-        let photosPayload = photosPayload(for: photos)
+        let attachmentsPayload = attachmentsPayload(for: attachments)
         do {
             try await queue(ownerUserID: ownerUserID, replacingFailed: failedOperationID) { createThread in
                 _ = try await service.queueMessage(
@@ -438,7 +440,7 @@ extension ThreadChatViewModel {
                     subject: subject,
                     threadID: threadID,
                     body: body,
-                    photos: photosPayload,
+                    attachments: attachmentsPayload,
                     createThread: createThread,
                     replyTo: reply,
                     operation: operationProvider.makeOperation()
@@ -447,26 +449,28 @@ extension ThreadChatViewModel {
             if failedOperationID == nil { replyTarget = nil }
             return true
         } catch {
-            notice = photos.isEmpty ? .sendFailed : .photoFailed
+            notice = attachments.isEmpty ? .sendFailed : .attachmentsFailed
             return false
         }
     }
 
-    /// The queued form of compressed photos. Every photo is reserved under one new
+    /// The queued form of prepared attachments. Every attachment is reserved under one new
     /// message id, with fixed upload operations so a retry reuses them.
-    private func photosPayload(for photos: [ThreadChatPhoto]) -> ThreadChatPhotosPayload? {
-        guard !photos.isEmpty else { return nil }
-        return ThreadChatPhotosPayload(
+    private func attachmentsPayload(for attachments: [ThreadChatAttachment]) -> ThreadChatAttachmentsPayload? {
+        guard !attachments.isEmpty else { return nil }
+        return ThreadChatAttachmentsPayload(
             messageID: UUID(),
-            items: photos.compactMap { photo in
-                photo.data.map { data in
-                    ThreadChatPhotosPayload.Item(
-                        data: data,
-                        width: photo.width ?? 0,
-                        height: photo.height ?? 0,
+            items: attachments.compactMap { attachment in
+                attachment.local.map { local in
+                    ThreadChatAttachmentsPayload.Item(
+                        kind: attachment.kind,
+                        local: local,
+                        width: attachment.width ?? 0,
+                        height: attachment.height ?? 0,
+                        durationMs: attachment.durationMs,
                         reserveOperation: operationProvider.makeOperation(),
                         finalizeOperation: operationProvider.makeOperation(),
-                        accessibilityText: photo.accessibilityText
+                        accessibilityText: attachment.accessibilityText
                     )
                 }
             }

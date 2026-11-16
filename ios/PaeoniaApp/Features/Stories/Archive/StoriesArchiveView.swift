@@ -77,12 +77,13 @@ struct StoriesArchiveView: View {
 
     private func tile(_ story: Story) -> some View {
         MemoryMediaImageView(
-            mediaAssetID: story.mediaAssetID,
+            media: story.media,
             height: Self.tileHeight,
             cornerRadius: PaeoniaRadius.radius12,
             allowsViewing: false
         )
-        .overlay(alignment: .bottomLeading) {
+        // A video's badge takes the bottom corner, so who and when move to the top.
+        .overlay(alignment: story.isVideo ? .topLeading : .bottomLeading) {
             HStack(spacing: PaeoniaSpacing.space4) {
                 PaeoniaProfilePhotoAvatar(
                     mediaAssetID: people.photoAssetID(of: story),
@@ -109,16 +110,23 @@ struct StoriesArchiveView: View {
                 story.createdAt.formatted(date: .abbreviated, time: .omitted)
             ))
         )
-        .accessibilityValue(
-            chatContext.summaries?.summary(for: .story(story.id)) != nil
-                ? Text(.storiesArchiveTileReplies)
-                : Text(verbatim: "")
-        )
+        .accessibilityValue(tileValue(for: story))
         .accessibilityAddTraits(.isButton)
     }
 }
 
 extension StoriesArchiveView {
+    /// "Video, 12 seconds" for a video, and whether the story has replies.
+    fileprivate func tileValue(for story: Story) -> Text {
+        let parts = [
+            story.isVideo ? VideoBadge.accessibilityLabel(durationMs: story.durationMs) : nil,
+            chatContext.summaries?.summary(for: .story(story.id)) != nil
+                ? String(localized: .storiesArchiveTileReplies)
+                : nil,
+        ]
+        return Text(verbatim: parts.compactMap(\.self).joined(separator: ", "))
+    }
+
     /// A story with replies says so, with a dot when the partner wrote one not read yet.
     @ViewBuilder
     fileprivate func repliesMark(for story: Story) -> some View {
@@ -185,8 +193,9 @@ struct MemoriesStoriesRow: View {
     private var thumbnails: some View {
         HStack(spacing: -Self.thumbnailSize / 2) {
             ForEach(stories.prefix(3)) { story in
+                // Without a length, a video's badge is only the play glyph, which fits here.
                 MemoryMediaImageView(
-                    mediaAssetID: story.mediaAssetID,
+                    media: story.media.withoutDuration,
                     height: Self.thumbnailSize,
                     cornerRadius: Self.thumbnailSize / 2,
                     allowsViewing: false

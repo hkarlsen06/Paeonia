@@ -9,8 +9,8 @@ nonisolated struct ThreadChatHeader: Hashable, Sendable {
     let title: String
     /// A date line.
     let detail: String?
-    /// The photo to show: the memory's first photo or the story's photo.
-    let photoAssetID: UUID?
+    /// The memory's first photo, or the story's photo or video.
+    let media: MediaReference?
     /// A memory's notes, shown under the card from the person who wrote each, the way a
     /// question's chat opens with the answers. They are not messages: they take no reply or
     /// reaction, and they never count as unread.
@@ -51,9 +51,9 @@ struct ThreadChatHeaderCard: View {
 
     private var card: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            if header.photoAssetID != nil {
+            if let media = header.media {
                 MemoryMediaImageView(
-                    mediaAssetID: header.photoAssetID,
+                    media: media.withoutDuration,
                     height: Self.photoSize,
                     cornerRadius: PaeoniaRadius.radius12,
                     allowsViewing: false

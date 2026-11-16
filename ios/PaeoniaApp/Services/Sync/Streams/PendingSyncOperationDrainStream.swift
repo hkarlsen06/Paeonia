@@ -23,13 +23,35 @@ nonisolated protocol PendingSyncOperationHandling: Sendable {
     /// returns. Show the person that it did not send, in the place where the
     /// feature shows a refused write. Does nothing by default.
     func gaveUp(on operation: PendingSyncOperationSnapshot, context: SyncContext) async
+
+    /// The drain saved that `operation` succeeded, so it is never sent again. Delete
+    /// files that only a replay needed. Until now, a crash replays the send, which
+    /// still needs them. Does nothing by default.
+    func didRecordSuccess(of operation: PendingSyncOperationSnapshot) async
+
+    /// How long one try of `operation` may run, such as longer for a send that uploads a
+    /// big file (`UploadTimeLimit`). Nil, the default, uses the drain's limit.
+    nonisolated func timeLimit(for operation: PendingSyncOperationSnapshot) -> Duration?
+
+    /// The person took `operation` back after it was tried. A try that is running when
+    /// this turns true stops, and the write waits for its next try, which `send` makes
+    /// without starting anything new. False by default.
+    func isTakenBack(_ operation: PendingSyncOperationSnapshot, context: SyncContext) async -> Bool
 }
 
 extension PendingSyncOperationHandling {
     nonisolated var showsGivenUpWrites: Bool { false }
 
+    nonisolated func timeLimit(for _: PendingSyncOperationSnapshot) -> Duration? { nil }
+
+    // swiftlint:disable:next async_without_await
+    func isTakenBack(_: PendingSyncOperationSnapshot, context _: SyncContext) async -> Bool { false }
+
     // swiftlint:disable:next async_without_await
     func gaveUp(on _: PendingSyncOperationSnapshot, context _: SyncContext) async {}
+
+    // swiftlint:disable:next async_without_await
+    func didRecordSuccess(of _: PendingSyncOperationSnapshot) async {}
 }
 
 /// Thrown when the saved payload of a queued write is missing or cannot be read.
@@ -56,6 +78,20 @@ extension JSONDecoder {
 /// connection it does not stop the run, so the writes behind it still go.
 private nonisolated struct OperationDeadlineExceeded: Error {}
 
+/// The person took the write back while it was sending.
+private nonisolated struct OperationTakenBack: Error {}
+
+/// How long a send that uploads files may run: five minutes, or as long as the bytes take at
+/// 256 kbit/s, a slow mobile connection. An 80 MB video gets about 44 minutes.
+nonisolated enum UploadTimeLimit {
+    static let minimum: Duration = .seconds(300)
+    static let slowestBytesPerSecond: Int64 = 32_000
+
+    static func forUploading(_ byteCount: Int64) -> Duration {
+        max(minimum, .seconds(byteCount / slowestBytesPerSecond))
+    }
+}
+
 nonisolated enum PendingSyncOperationDrainError: Error, Equatable, Sendable {
     case unsupportedOperationKind(String)
 }
@@ -67,19 +103,23 @@ struct PendingSyncOperationDrainStream: SyncStream {
     private let batchSize: Int
     private let retryPolicy: PendingSyncOperationRetryPolicy
     private let operationTimeout: Duration
+    private let foregroundStint: @Sendable () async -> Int?
 
     nonisolated init(
         handlers: [any PendingSyncOperationHandling],
         batchSize: Int = 25,
         retryPolicy: PendingSyncOperationRetryPolicy = PendingSyncOperationRetryPolicy(),
-        // Photo and voice uploads run inside a send, so this is long. The sync run
-        // has no timeout of its own while this stream drains.
-        operationTimeout: Duration = .seconds(300)
+        // Photo and voice uploads run inside a send, so this is long, and a handler that
+        // uploads more states its own. The sync run has no timeout of its own while this
+        // stream drains.
+        operationTimeout: Duration = UploadTimeLimit.minimum,
+        foregroundStint: @escaping @Sendable () async -> Int? = { @MainActor in AppForeground.stint() }
     ) {
         self.handlers = Dictionary(uniqueKeysWithValues: handlers.map { ($0.operationKind, $0) })
         self.batchSize = batchSize
         self.retryPolicy = retryPolicy
         self.operationTimeout = operationTimeout
+        self.foregroundStint = foregroundStint
     }
 
     nonisolated func scope(for _: SyncSession) -> SyncStreamScope? {
@@ -95,9 +135,10 @@ struct PendingSyncOperationDrainStream: SyncStream {
     /// A write that is waiting out its retry delay stays put, except on a pull to
     /// refresh, which tries everything. The retry timer starts a run when the delay
     /// ends. Each write is tried at most once per run. A write that takes longer
-    /// than `operationTimeout` fails like any other, so the writes behind it still
-    /// go. When the network is down, the run stops, because every other write
-    /// would only wait out its own timeout.
+    /// than its time limit fails like any other, so the writes behind it still
+    /// go, and gives up after `retryPolicy.maximumTimeouts` of them that ran with the app
+    /// in front the whole time. When the network is down, the run stops, because every
+    /// other write would only wait out its own timeout.
     func push(context: SyncContext) async throws {
         let ownerUserID = context.session.userID
         // Writes the server accepted still hold what was sent, and nothing reads
@@ -158,17 +199,26 @@ struct PendingSyncOperationDrainStream: SyncStream {
         } catch PendingSyncOperationClaimError.notPending {
             return false
         }
+        let stint = await foregroundStint()
 
         do {
             let result = try await Self.sendWithinLimit(
                 operation,
                 with: handler,
                 context: context,
-                within: operationTimeout
+                within: handler.timeLimit(for: operation) ?? operationTimeout
             )
             try await record(result, for: operation, attemptNumber: attemptNumber, handler: handler, context: context)
         } catch let error as CancellationError {
             throw error
+        } catch is OperationTakenBack {
+            // The next try only finds out whether the server has it, so it may go at once.
+            try await store.markRetryableFailure(
+                clientOperationID: operationID,
+                failure: .retryLater,
+                nextRetryAt: Date(),
+                at: Date()
+            )
         } catch is PendingSyncOperationPayloadError {
             await handler.gaveUp(on: operation, context: context)
             try await store.markTerminalFailure(
@@ -177,21 +227,41 @@ struct PendingSyncOperationDrainStream: SyncStream {
                 at: Date()
             )
         } catch {
-            let isNetworkDown = Self.isNetworkDown(error)
-            try await recordRetryOrTerminalFailure(
-                operation: operation,
-                attemptNumber: attemptNumber,
-                failure: PendingSyncFailure(error),
-                nextRetryAt: nil,
-                // A write that waits for a connection is safe on the phone, however long it waits.
-                // A slow upload that ran out of time is the same case.
-                mayGiveUp: !isNetworkDown && !Self.isWeakConnection(error),
-                handler: handler,
-                context: context
-            )
-            return isNetworkDown
+            try await recordFailedTry(error, of: operation, startedIn: stint, handler: handler, context: context)
+            return Self.isNetworkDown(error)
         }
         return false
+    }
+
+    private func recordFailedTry(
+        _ error: any Error,
+        of operation: PendingSyncOperationSnapshot,
+        startedIn stint: Int?,
+        handler: any PendingSyncOperationHandling,
+        context: SyncContext
+    ) async throws {
+        let timedOut = error is OperationDeadlineExceeded
+        // The time limit's clock runs on while iOS pauses the app in the background, so a
+        // try the person left the app during may have had little time to send.
+        let timedOutInFront = if timedOut, let stint { await foregroundStint() == stint } else { false }
+        var failure = PendingSyncFailure(error)
+        failure.timedOut = timedOutInFront
+        try await recordRetryOrTerminalFailure(
+            operation: operation,
+            attemptNumber: operation.attemptCount + 1,
+            failure: failure,
+            nextRetryAt: nil,
+            // A write that waits for a connection is safe on the phone, however long it waits.
+            // A send that keeps running out of time with the app in front on a working
+            // connection will not get through, so it gives up after a few tries and shows
+            // as not sent.
+            mayGiveUp: timedOut
+                ? timedOutInFront && retryPolicy.hasTimedOutTooOften(operation.timedOutAttempts + 1)
+                : !Self.isNetworkDown(error) && !Self.isWeakConnection(error),
+            ignoresAge: timedOut,
+            handler: handler,
+            context: context
+        )
     }
 
     private func record(
@@ -205,6 +275,7 @@ struct PendingSyncOperationDrainStream: SyncStream {
         switch result {
         case .succeeded:
             try await store.markSucceeded(clientOperationID: operation.operation.id, at: Date())
+            await handler.didRecordSuccess(of: operation)
             // The server has the change, so the Lock Screen widgets can fetch it.
             if operation.operationKind?.changesLockScreenWidgets == true {
                 LockScreenWidgetReloader.reloadIfNotActive()
@@ -227,20 +298,35 @@ struct PendingSyncOperationDrainStream: SyncStream {
         }
     }
 
-    /// Cancels the send once `limit` passes and throws `OperationDeadlineExceeded`.
+    /// Cancels the send once `limit` passes and throws `OperationDeadlineExceeded`, or
+    /// once the person takes it back and throws `OperationTakenBack`.
     private nonisolated static func sendWithinLimit(
         _ operation: PendingSyncOperationSnapshot,
         with handler: any PendingSyncOperationHandling,
         context: SyncContext,
         within limit: Duration
     ) async throws -> PendingSyncOperationSendResult {
-        try await withThrowingTaskGroup(of: PendingSyncOperationSendResult.self) { group in
+        // Listens before asking, so a take-back between the two is not missed.
+        let changes = LocalStoreChanges.changes(in: .pendingOperations)
+        let wasTakenBack = await handler.isTakenBack(operation, context: context)
+        return try await withThrowingTaskGroup(of: PendingSyncOperationSendResult.self) { group in
             group.addTask {
                 try await handler.send(operation, context: context)
             }
             group.addTask {
-                try await Task.sleep(for: limit)
+                // Runs on while iOS pauses the app in the background, so `recordFailedTry`
+                // counts a timeout toward giving up only when the app stayed in front.
+                try await Task.sleep(for: limit, clock: .suspending)
                 throw OperationDeadlineExceeded()
+            }
+            // A send that starts taken back makes no new upload, so it runs to its end.
+            if !wasTakenBack {
+                group.addTask {
+                    for await change in changes where change.ownerUserID == operation.ownerUserID {
+                        if await handler.isTakenBack(operation, context: context) { throw OperationTakenBack() }
+                    }
+                    throw CancellationError()
+                }
             }
             defer { group.cancelAll() }
             guard let result = try await group.next() else {
@@ -252,7 +338,6 @@ struct PendingSyncOperationDrainStream: SyncStream {
 
     /// Failures a better connection fixes, without the network being down.
     private nonisolated static func isWeakConnection(_ error: any Error) -> Bool {
-        if error is OperationDeadlineExceeded { return true }
         guard let urlError = error as? URLError else { return false }
         switch urlError.code {
         case .cannotFindHost, .dnsLookupFailed, .dataNotAllowed, .internationalRoamingOff:
@@ -281,11 +366,12 @@ struct PendingSyncOperationDrainStream: SyncStream {
         failure: PendingSyncFailure,
         nextRetryAt: Date?,
         mayGiveUp: Bool = true,
+        ignoresAge: Bool = false,
         handler: any PendingSyncOperationHandling,
         context: SyncContext
     ) async throws {
         let now = Date()
-        if mayGiveUp, handler.showsGivenUpWrites, retryPolicy.shouldMarkTerminal(
+        if mayGiveUp, handler.showsGivenUpWrites, ignoresAge || retryPolicy.shouldMarkTerminal(
             attemptNumber: attemptNumber,
             createdAt: operation.operation.localCreatedAt,
             now: now
@@ -318,6 +404,10 @@ nonisolated struct PendingSyncOperationRetryPolicy: Equatable, Sendable {
     let maximumAgeSeconds: TimeInterval?
     let baseDelaySeconds: TimeInterval
     let maximumDelaySeconds: TimeInterval
+    /// A write that ran out of its time limit this many times with the app in front shows as
+    /// not sent. The limit already allows a slow connection, so trying more only spends data
+    /// again.
+    let maximumTimeouts: Int
 
     init(
         maximumAttempts: Int? = nil,
@@ -325,12 +415,18 @@ nonisolated struct PendingSyncOperationRetryPolicy: Equatable, Sendable {
         baseDelaySeconds: TimeInterval = 60,
         // Retries only run while the app is open. Five minutes keeps a write made
         // offline from waiting long after the connection comes back.
-        maximumDelaySeconds: TimeInterval = 300
+        maximumDelaySeconds: TimeInterval = 300,
+        maximumTimeouts: Int = 3
     ) {
         self.maximumAttempts = maximumAttempts
         self.maximumAgeSeconds = maximumAgeSeconds
         self.baseDelaySeconds = baseDelaySeconds
         self.maximumDelaySeconds = maximumDelaySeconds
+        self.maximumTimeouts = maximumTimeouts
+    }
+
+    func hasTimedOutTooOften(_ timeouts: Int) -> Bool {
+        timeouts >= maximumTimeouts
     }
 
     /// Age alone never ends a write on its first tries, so one bad response after a

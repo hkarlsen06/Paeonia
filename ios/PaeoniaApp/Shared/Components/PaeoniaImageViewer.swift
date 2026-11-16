@@ -7,6 +7,9 @@ struct PaeoniaImageViewerItem: Identifiable {
     let id: String
     let image: UIImage?
     let imageLoader: (@Sendable () async throws -> UIImage?)?
+    /// Set for an animated GIF. Its page plays the bytes, and Save keeps them, so the
+    /// saved GIF still moves.
+    var animatedDataLoader: (@Sendable () async throws -> Data?)?
 
     init(id: String = UUID().uuidString, image: UIImage, accessibilityText: String? = nil) {
         self.id = id
@@ -44,6 +47,21 @@ struct PaeoniaImageViewerItem: Identifiable {
         self.accessibilityText = accessibilityText
         self.image = image
         self.imageLoader = imageLoader
+    }
+}
+
+extension PaeoniaImageViewerItem {
+    /// An animated GIF, played one frame at a time. It does not zoom.
+    init(
+        id: String,
+        accessibilityText: String? = nil,
+        animatedDataLoader: @escaping @Sendable () async throws -> Data?
+    ) {
+        self.id = id
+        self.accessibilityText = accessibilityText
+        self.image = nil
+        self.imageLoader = nil
+        self.animatedDataLoader = animatedDataLoader
     }
 }
 
@@ -93,7 +111,6 @@ struct PaeoniaImageViewerOverlay: View {
     private static let flickDistance: CGFloat = 30
     private static let flickPredictedDistance: CGFloat = 350
     private static let fadeDistance: CGFloat = 400
-    private static let controlBackground = Color.black.opacity(0.75)
 
     init(
         items: [PaeoniaImageViewerItem],
@@ -173,20 +190,28 @@ struct PaeoniaImageViewerOverlay: View {
     private var pages: some View {
         TabView(selection: $selectedItemID) {
             ForEach(items) { item in
-                PaeoniaImageViewerPage(
-                    item: item,
-                    isSelected: item.id == selectedItemID,
-                    zoomControls: zoomControls,
-                    onZoomStateChanged: { isZoomed in
-                        if item.id == selectedItemID {
-                            selectedPageIsZoomed = isZoomed
-                        }
-                    },
-                    onFailureChanged: { failed in
-                        if failed { failedItemIDs.insert(item.id) }
-                        else { failedItemIDs.remove(item.id) }
+                Group {
+                    if let animatedDataLoader = item.animatedDataLoader {
+                        PaeoniaAnimatedImageViewerPage(
+                            item: item,
+                            loader: animatedDataLoader,
+                            isSelected: item.id == selectedItemID,
+                            onFailureChanged: { failed in pageFailureChanged(item.id, failed: failed) }
+                        )
+                    } else {
+                        PaeoniaImageViewerPage(
+                            item: item,
+                            isSelected: item.id == selectedItemID,
+                            zoomControls: zoomControls,
+                            onZoomStateChanged: { isZoomed in
+                                if item.id == selectedItemID {
+                                    selectedPageIsZoomed = isZoomed
+                                }
+                            },
+                            onFailureChanged: { failed in pageFailureChanged(item.id, failed: failed) }
+                        )
                     }
-                )
+                }
                 .tag(item.id)
             }
         }
@@ -197,54 +222,24 @@ struct PaeoniaImageViewerOverlay: View {
         )
     }
 
-    private var topBar: some View {
-        HStack {
-            saveButton
-            Spacer()
-
-            Button {
-                onDismiss()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 30))
-                    .foregroundStyle(Color.white.opacity(0.88))
-                    .frame(width: 44, height: 44)
-                    .background(Circle().fill(Self.controlBackground))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(.commonClose))
-            .accessibilityIdentifier("imageViewer.close")
-            .keyboardShortcut(.cancelAction)
-        }
-        .padding(.vertical, PaeoniaSpacing.space4)
+    private func pageFailureChanged(_ itemID: String, failed: Bool) {
+        if failed { failedItemIDs.insert(itemID) }
+        else { failedItemIDs.remove(itemID) }
     }
 
-    /// Saves the photo on screen to the photo library. It spins while saving and
-    /// turns into a check once the photo is in Photos, like Tidex's gallery.
-    private var saveButton: some View {
-        let isSaved = savedItemIDs.contains(selectedItemID)
-        return Button {
-            Task { await saveSelectedImage() }
-        } label: {
-            ZStack {
-                if isSaving {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    Image(systemName: isSaved ? "checkmark.circle.fill" : "arrow.down.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundStyle(Color.white.opacity(0.88))
-                        .contentTransition(.symbolEffect(.replace))
-                        .symbolEffect(.bounce, value: isSaved)
-                }
+    private var topBar: some View {
+        HStack {
+            PaeoniaViewerSaveButton(
+                isSaving: isSaving,
+                isSaved: savedItemIDs.contains(selectedItemID),
+                accessibilityIdentifier: "imageViewer.save"
+            ) {
+                Task { await saveSelectedImage() }
             }
-            .frame(width: 44, height: 44)
-            .background(Circle().fill(Self.controlBackground))
+            Spacer()
+            PaeoniaViewerCloseButton(accessibilityIdentifier: "imageViewer.close", action: onDismiss)
         }
-        .buttonStyle(.plain)
-        .disabled(isSaving || isSaved)
-        .accessibilityLabel(Text(isSaved ? .imageViewerSaved : .imageViewerSave))
-        .accessibilityIdentifier("imageViewer.save")
+        .padding(.vertical, PaeoniaSpacing.space4)
     }
 
     private func changePage(by offset: Int) {
@@ -320,15 +315,20 @@ extension PaeoniaImageViewerOverlay {
         isSaving = true
         defer { isSaving = false }
         var loaded = item.image
+        var animatedData: Data?
         do {
-            if loaded == nil { loaded = try await item.imageLoader?() }
+            if let animatedDataLoader = item.animatedDataLoader {
+                animatedData = try await animatedDataLoader()
+            } else if loaded == nil {
+                loaded = try await item.imageLoader?()
+            }
         } catch {
             guard !Task.isCancelled else { return }
             showSaveFailure(PaeoniaFailure(error))
             return
         }
         guard !Task.isCancelled else { return }
-        guard let data = loaded?.pngData() else {
+        guard let data = animatedData ?? loaded?.pngData() else {
             showSaveFailure(.other)
             return
         }
@@ -378,6 +378,60 @@ extension View {
             }
             // Keep the underlying screen visible as the dragged backdrop fades.
             .presentationBackground(.clear)
+        }
+    }
+}
+
+/// A GIF's page. It plays one frame at a time and does not zoom.
+private struct PaeoniaAnimatedImageViewerPage: View {
+    let item: PaeoniaImageViewerItem
+    let loader: @Sendable () async throws -> Data?
+    let isSelected: Bool
+    let onFailureChanged: (Bool) -> Void
+
+    @State private var data: Data?
+    @State private var failure: PaeoniaFailure?
+    @State private var loadAttempt = 0
+
+    var body: some View {
+        ZStack {
+            if let data {
+                AnimatedImageView(
+                    id: item.id,
+                    data: data,
+                    accessibilityLabel: Text(verbatim: PhotoDescription.label(item.accessibilityText)),
+                    contentMode: .fit
+                )
+                .accessibilityIdentifier("imageViewer.photo")
+                .accessibilityIgnoresInvertColors()
+            } else if let failure {
+                PaeoniaImageViewerLoadFailure(
+                    failure: failure, description: item.accessibilityText,
+                    retry: { loadAttempt += 1 }
+                )
+            } else {
+                ProgressView()
+                    .tint(.white.opacity(0.8))
+                    .accessibilityLabel(Text(.imageViewerLoading))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityHidden(!isSelected)
+        .contentShape(Rectangle())
+        .task(id: loadAttempt) { await load() }
+        .onChange(of: failure, initial: true) { _, failure in onFailureChanged(failure != nil) }
+    }
+
+    private func load() async {
+        guard data == nil else { return }
+        failure = nil
+        do {
+            let loaded = try await loader()
+            guard !Task.isCancelled else { return }
+            if let loaded { data = loaded } else { failure = .other }
+        } catch {
+            guard !Task.isCancelled else { return }
+            failure = PaeoniaFailure(error)
         }
     }
 }

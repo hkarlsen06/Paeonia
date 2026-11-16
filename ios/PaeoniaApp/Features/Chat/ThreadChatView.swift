@@ -45,6 +45,7 @@ struct ThreadChatView: View {
     @State private var isVisible = false
     @State var composerHeight: CGFloat = 0
     @State private var photoViewer: PaeoniaImageViewerSelection?
+    @State private var videoViewer: PaeoniaVideoViewerItem?
     @State private var projectionStore = ThreadChatProjectionStore()
     @State private var timestampReveal = ThreadChatTimestampReveal()
     @State private var highlightedRowID: String?
@@ -150,6 +151,7 @@ struct ThreadChatView: View {
         .onChange(of: viewModel.hasLoadedRounds) { applyOpeningScroll() }
         .onChange(of: revealingRowID, initial: true) { finishRevealAfterItPlays() }
         .paeoniaImageViewer(selection: $photoViewer)
+        .paeoniaVideoViewer(item: $videoViewer)
         .dailyChatDeleteConfirmation(viewModel: viewModel)
     }
 
@@ -215,10 +217,10 @@ struct ThreadChatView: View {
                     onCancelEdit: viewModel.cancelEdit,
                     onSaveEdit: { await viewModel.saveEdit($0) },
                     onSendText: { await viewModel.send($0) },
-                    onSendPhotos: { await viewModel.send($0, photos: $1) },
+                    onSendAttachments: { await viewModel.send($0, attachments: $1) },
                     onSendVoice: { await viewModel.sendVoice(fileURL: $0, durationMs: $1, transcript: $2) },
                     beginVoiceDraft: { viewModel.beginVoiceDraftEditing() },
-                    beginPhotoDraft: { viewModel.beginPhotoDraftEditing() },
+                    beginAttachmentDraft: { viewModel.beginAttachmentDraftEditing() },
                     onTextChanged: viewModel.draftChanged
                 )
                 .chatDraftFromSiri(viewModel: viewModel, text: params.text)
@@ -290,7 +292,7 @@ struct ThreadChatView: View {
             reactionChoices: ReactionPalette.shared.emojis,
             onRetry: { retry(row.message) },
             onTapQuoted: jumpToMessage,
-            onOpenPhoto: openPhoto,
+            onOpenAttachment: openAttachment,
             onOpenHeader: onOpenHeader,
             onToggleGameResult: { reference in Task { await viewModel.toggleGameResult(reference) } },
             onToggleGameRun: { viewModel.toggleGameRun($0) },
@@ -354,8 +356,8 @@ extension ThreadChatView {
         Task {
             if message.voice != nil {
                 await viewModel.resendVoice(message)
-            } else if !(message.photos ?? []).isEmpty {
-                await viewModel.resendPhotos(message)
+            } else if !(message.attachments ?? []).isEmpty {
+                await viewModel.resendAttachments(message)
             } else {
                 _ = await viewModel.send(
                     message.body,
@@ -409,31 +411,48 @@ extension ThreadChatView {
         }
     }
 
-    /// Opens every photo in the chat in the full-screen viewer, at the tapped one, so a
-    /// swipe goes through the rest. Like Tidex's chat gallery.
-    private func openPhoto(_ tapped: ThreadChatPhoto) {
-        let photos = viewModel.messages.flatMap { $0.photos ?? [] }
-        let items = photos.compactMap { photo -> PaeoniaImageViewerItem? in
-            guard let key = ThreadChatPhotoLayout.cacheKey(for: photo) else { return nil }
+    /// A video plays on its own. A photo or a GIF opens in the full-screen viewer with every
+    /// photo and GIF in the chat, at the tapped one, so a swipe goes through the rest. Like
+    /// Tidex's chat gallery.
+    private func openAttachment(_ tapped: ThreadChatAttachment) {
+        guard let initial = ThreadChatAttachmentLayout.cacheKey(for: tapped) else { return }
+        if tapped.kind == .video {
+            let message = viewModel.messages.first { $0.attachments?.contains(tapped) == true }
+            videoViewer = PaeoniaVideoViewerItem(id: initial) { [viewModel] in
+                // A send recorded while the viewer is open deletes the file it was tapped with,
+                // and gives the video the uploaded id it plays from after that.
+                var current = tapped
+                if let message { current = await viewModel.currentAttachment(tapped, of: message) }
+                return PaeoniaVideoFile(
+                    url: try await ThreadChatAttachmentLayout.videoFile(of: current, priority: .playback),
+                    mediaAssetID: current.mediaAssetID
+                )
+            }
+            return
+        }
+        let pictures = viewModel.messages.flatMap { $0.attachments ?? [] }.filter { $0.kind != .video }
+        let items = pictures.compactMap { attachment -> PaeoniaImageViewerItem? in
+            guard let key = ThreadChatAttachmentLayout.cacheKey(for: attachment) else { return nil }
+            if attachment.kind == .gif {
+                return PaeoniaImageViewerItem(id: key, accessibilityText: attachment.accessibilityText) {
+                    await ThreadChatAttachmentLayout.imageData(of: attachment)
+                }
+            }
             return PaeoniaImageViewerItem(
                 id: key,
                 image: nil,
-                accessibilityText: photo.accessibilityText,
-                imageLoader: { await Self.fullImage(of: photo) }
+                accessibilityText: attachment.accessibilityText,
+                imageLoader: { await Self.fullImage(of: attachment) }
             )
         }
-        guard let initial = ThreadChatPhotoLayout.cacheKey(for: tapped), !items.isEmpty else { return }
+        guard !items.isEmpty else { return }
         photoViewer = PaeoniaImageViewerSelection(items: items, initialItemID: initial)
     }
 
     /// The whole photo for the viewer, from this phone's copy or the downloaded file.
     @concurrent
-    private nonisolated static func fullImage(of photo: ThreadChatPhoto) async -> UIImage? {
-        if let data = photo.data { return UIImage(data: data) }
-        guard let mediaAssetID = photo.mediaAssetID,
-              let data = await DailyAnswerMediaImageProviderFactory.shared?.imageData(for: mediaAssetID)
-        else { return nil }
-        return UIImage(data: data)
+    private nonisolated static func fullImage(of attachment: ThreadChatAttachment) async -> UIImage? {
+        await ThreadChatAttachmentLayout.imageData(of: attachment).flatMap(UIImage.init(data:))
     }
 
     /// Tapping a quote scrolls to the message or answer it replies to and lights it up for a moment.

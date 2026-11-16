@@ -7,7 +7,8 @@ import SwiftUI
 /// adds it. Set, it shows a small map, the name, the city and country, and a remove button.
 struct MemoryPlaceField: View {
     @Binding var place: MemoryPlace?
-    let photos: [MemoryDraftPhoto]
+    /// The picked photos and videos. Only photos carry a spot.
+    let media: [MemoryDraftMedia]
     let knownPlaces: [MemoryPlace]
 
     @State private var photoSpots: [CLLocationCoordinate2D] = []
@@ -37,7 +38,7 @@ struct MemoryPlaceField: View {
                 place = picked
             }
         }
-        .task(id: photos.map(\.id)) {
+        .task(id: media.map(\.id)) {
             await readPhotoSpots()
         }
     }
@@ -147,7 +148,7 @@ struct MemoryPlaceField: View {
     /// Reads the photos' spots off the main actor, then names the first one's city for
     /// the suggestion. Camera shots and photos shared without their location have no spot.
     private func readPhotoSpots() async {
-        let spots = await PhotoLocation.spots(in: photos.map(\.data))
+        let spots = await PhotoLocation.spots(in: media.compactMap(\.photoData))
         guard !Task.isCancelled else { return }
         photoSpots = spots
         guard let first = spots.first else {

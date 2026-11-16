@@ -31,14 +31,14 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Paeonia uses your camera so you can take photos for your answers, messages, and memories, and so your partner can see you on video calls."
+            "state" : "translated",
+            "value" : "Paeonia uses your camera so you can take photos for your answers, messages, memories, and stories, record story videos, and so your partner can see you on video calls."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia bruker kameraet ditt så du kan ta bilder til svar, meldinger og minner, og så partneren din kan se deg i videosamtaler."
+            "value" : "Paeonia bruker kameraet ditt så du kan ta bilder til svar, meldinger, minner og stories, spille inn story-videoer, og så partneren din kan se deg i videosamtaler."
           }
         }
       }
@@ -103,13 +103,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia uses your microphone so you can talk to your partner on calls and record voice answers and voice messages."
+            "value" : "Paeonia uses your microphone so you can talk to your partner on calls, record voice answers and voice messages, and record sound in story videos."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia bruker mikrofonen din så du kan snakke med partneren din i samtaler og spille inn lydsvar og talemeldinger."
+            "value" : "Paeonia bruker mikrofonen din så du kan snakke med partneren din i samtaler, spille inn lydsvar og talemeldinger, og ta opp lyd i story-videoer."
           }
         }
       }
@@ -121,13 +121,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia saves a picture to your photo library when you tap Save to Photos."
+            "value" : "Paeonia saves a picture or video to your photo library when you tap Save to Photos."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia lagrer et bilde i bildebiblioteket ditt når du trykker på Lagre i Bilder."
+            "value" : "Paeonia lagrer et bilde eller en video i bildebiblioteket ditt når du trykker på Lagre i Bilder."
           }
         }
       }

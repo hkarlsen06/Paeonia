@@ -17,7 +17,7 @@ struct NewMemoryEditor: View {
         MemoryEditorView(
             draft: Binding(get: { saving ?? viewModel.draft }, set: { viewModel.updateDraft($0) }),
             allowsPhotos: viewModel.canAttachPhotos,
-            uploadProgress: viewModel.photoUploadProgress,
+            uploadProgress: viewModel.mediaUploadProgress,
             knownPlaces: viewModel.knownPlaces,
             draftFailure: viewModel.draftFailure,
             draftNeedsSaving: viewModel.draftNeedsSaving,
@@ -29,12 +29,11 @@ struct NewMemoryEditor: View {
                 }
             },
             onDiscardDraft: { viewModel.discardDraft() }
-        ) { title, date, note, photos, _, place in
+        ) { title, date, note, media, _, place in
             saving = viewModel.draft
             let memoryID = UUID()
             let saved = await viewModel.createMemory(
-                memoryID: memoryID, title: title, date: date, note: note, photos: photos,
-                photoDescriptions: viewModel.draft.photos.map(\.accessibilityText), place: place,
+                memoryID: memoryID, title: title, date: date, note: note, media: media, place: place,
                 visitID: viewModel.draft.visitLink(forCardOf: visitID)
             )
             guard saved else {

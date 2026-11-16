@@ -127,6 +127,7 @@ nonisolated struct ThreadMessageRow: Decodable {
     nonisolated struct MediaRow: Decodable {
         let mediaAssetID: UUID
         let mediaType: String
+        var mimeType: String?
         let width: Int?
         let height: Int?
         let durationMs: Int?
@@ -136,15 +137,25 @@ nonisolated struct ThreadMessageRow: Decodable {
             ThreadChatVoice(mediaAssetID: mediaAssetID, durationMs: durationMs, transcript: accessibilityText)
         }
 
-        var photo: ThreadChatPhoto {
-            ThreadChatPhoto(
-                mediaAssetID: mediaAssetID, width: width, height: height, accessibilityText: accessibilityText
-            )
+        /// Nil for a voice recording, or a kind this version of the app can't show.
+        var attachment: ThreadChatAttachment? {
+            let kind: ThreadChatAttachment.Kind? = switch mediaType {
+            case "image": mimeType == "image/gif" ? .gif : .photo
+            case "video": .video
+            default: nil
+            }
+            return kind.map {
+                ThreadChatAttachment(
+                    kind: $0, mediaAssetID: mediaAssetID, width: width, height: height,
+                    durationMs: durationMs, accessibilityText: accessibilityText
+                )
+            }
         }
 
         enum CodingKeys: String, CodingKey {
             case mediaAssetID = "media_asset_id"
             case mediaType = "media_type"
+            case mimeType = "mime_type"
             case width
             case height
             case durationMs = "duration_ms"
@@ -174,8 +185,8 @@ nonisolated struct ThreadMessageRow: Decodable {
             MediaRow(mediaAssetID: $0, mediaType: "voice", width: nil, height: nil, durationMs: nil)
         }
         let voice = media.first { $0.mediaType == "voice" }?.voice
-        let photos = media.filter { $0.mediaType == "image" }.map(\.photo)
-        guard body != nil || voice != nil || !photos.isEmpty || call != nil else { return nil }
+        let attachments = media.compactMap(\.attachment)
+        guard body != nil || voice != nil || !attachments.isEmpty || call != nil else { return nil }
         return ThreadChatMessage(
             id: messageID,
             threadID: threadID,
@@ -186,7 +197,7 @@ nonisolated struct ThreadMessageRow: Decodable {
             clientOperationID: nil,
             delivery: .sent,
             voice: voice,
-            photos: photos.isEmpty ? nil : photos,
+            attachments: attachments.isEmpty ? nil : attachments,
             replyTo: replyToGameResultSource.map(ThreadChatItemID.gameResult)
                 ?? ThreadChatItemID(messageID: replyToMessageID, answerID: replyToAnswerID),
             editedAt: editedAt,

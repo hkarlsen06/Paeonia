@@ -118,7 +118,7 @@ extension View {
 extension ThreadChatHeader {
     static func game(_ subject: GameChatSubject) -> Self {
         Self(eyebrow: String(localized: .gamesConversationGame), title: String(localized: subject.kind.name),
-             detail: nil, photoAssetID: nil, gameSubject: subject)
+             detail: nil, media: nil, gameSubject: subject)
     }
 }
 

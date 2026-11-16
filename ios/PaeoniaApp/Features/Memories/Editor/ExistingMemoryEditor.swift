@@ -31,7 +31,7 @@ struct ExistingMemoryEditor: View {
                 date: MemoryTimeline.pickerDate(forLocalDate: record.snapshot.memoryDate)
                     ?? record.snapshot.createdAt,
                 note: record.snapshot.ownNote?.visibleBody ?? "",
-                photos: [],
+                media: [],
                 place: record.snapshot.place
             )
         )
@@ -49,18 +49,17 @@ struct ExistingMemoryEditor: View {
             isMemoryRemoved: latest == nil,
             join: join,
             allowsPhotos: viewModel.canAttachPhotos,
-            uploadProgress: viewModel.photoUploadProgress,
+            uploadProgress: viewModel.mediaUploadProgress,
             knownPlaces: viewModel.knownPlaces
-        ) { title, date, note, photos, removedMedia, place in
+        ) { title, date, note, media, removedMedia, place in
             let result = await viewModel.saveEdits(
                 MemoryEdit(
-                    photoDescriptions: draft.photos.map(\.accessibilityText),
                     existingDescriptions: draft.existingDescriptions,
                     base: base,
                     title: title,
                     date: date,
                     note: note,
-                    newPhotos: photos,
+                    newMedia: media,
                     removedMedia: removedMedia,
                     place: place
                 )

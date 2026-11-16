@@ -10,9 +10,12 @@ nonisolated enum MemoryMediaPurpose: String, Codable, Sendable, Equatable {
     /// The photo in a letter. Only the author reads it until the partner opens the letter.
     case letter = "letter_image"
 
-    var mediaType: String {
+    /// A memory's or a story's file is a video when its MIME type says so.
+    func mediaType(for mimeType: String) -> String {
         switch self {
-        case .photo, .story, .guessMySpot, .letter:
+        case .photo, .story:
+            MediaUpload.isVideo(mimeType: mimeType) ? "video" : "image"
+        case .guessMySpot, .letter:
             "image"
         case .voice:
             "voice"
@@ -66,12 +69,30 @@ nonisolated struct MemoryUploadMedia: Sendable, Equatable {
     }
 }
 
+nonisolated extension MemoryUploadMedia {
+    /// Maps the prepared file instead of reading it into memory.
+    init(video: PreparedVideo, purpose: MemoryMediaPurpose, accessibilityText: String? = nil) throws {
+        try self.init(
+            data: Data(contentsOf: video.fileURL, options: .mappedIfSafe),
+            purpose: purpose,
+            mimeType: MediaUpload.videoMimeType,
+            fileExtension: MediaUpload.videoFileExtension,
+            width: video.width,
+            height: video.height,
+            durationMs: video.durationMs,
+            accessibilityText: accessibilityText
+        )
+    }
+}
+
 nonisolated struct MemoryMediaUploadResult: Equatable, Sendable {
     let memoryMediaID: UUID
     let mediaAssetID: UUID
 
     func optimisticSnapshot(
         ownerUserID: UUID,
+        kind: MemoryMediaKind = .image,
+        durationMs: Int? = nil,
         sortOrder: Int,
         updatedAt: Date = Date(),
         accessibilityText: String? = nil
@@ -80,6 +101,8 @@ nonisolated struct MemoryMediaUploadResult: Equatable, Sendable {
             memoryMediaID: memoryMediaID,
             mediaAssetID: mediaAssetID,
             ownerUserID: ownerUserID,
+            kind: kind,
+            durationMs: durationMs,
             sortOrder: sortOrder,
             updatedAt: updatedAt,
             accessibilityText: accessibilityText
@@ -124,7 +147,7 @@ nonisolated struct LiveMemoryMediaUploadService: MemoryMediaUploading {
                 parentKind: media.purpose.reservedParentKind,
                 parentID: memoryMediaID,
                 purpose: media.purpose.rawValue,
-                mediaType: media.purpose.mediaType,
+                mediaType: media.purpose.mediaType(for: media.mimeType),
                 mimeType: media.mimeType,
                 fileExtension: media.fileExtension,
                 coupleID: coupleID,

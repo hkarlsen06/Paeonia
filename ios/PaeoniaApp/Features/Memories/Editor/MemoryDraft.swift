@@ -1,53 +1,78 @@
 import Foundation
 
-/// The in-progress contents of the new-memory form. Held by the memories view model and
-/// saved on the device, not by the sheet, so dismissing the sheet (including an
-/// accidental swipe-down while reaching for the keyboard) keeps the work. Reopening
-/// restores it; a successful save (or a deliberate Cancel) resets it.
-/// A photo picked for the draft. The id stays the same for the life of the photo, so
-/// comparing drafts and keying thumbnails never has to compare the image bytes.
-struct MemoryDraftPhoto: Identifiable, Equatable, Sendable {
+/// A photo or video picked for the draft. The id stays the same for the life of the item,
+/// so comparing drafts and keying thumbnails never has to compare the bytes.
+struct MemoryDraftMedia: Identifiable, Equatable, Sendable {
+    enum Content: Sendable {
+        case photo(Data)
+        /// A video ready to send. Its file stays in `videoDirectoryURL()` until the memory
+        /// is saved or the draft is thrown away, and never goes into the draft's JSON.
+        case video(PreparedVideo)
+    }
+
     let id: UUID
-    let data: Data
+    let content: Content
     var accessibilityText: String = ""
 
-    init(id: UUID = UUID(), data: Data, accessibilityText: String = "") {
+    init(id: UUID = UUID(), content: Content, accessibilityText: String = "") {
         self.id = id
-        self.data = data
+        self.content = content
         self.accessibilityText = accessibilityText
     }
 
-    static func photos(_ data: [Data], descriptions: [String]) -> [Self] {
-        data.enumerated().map { index, bytes in
-            Self(data: bytes, accessibilityText: descriptions.indices.contains(index) ? descriptions[index] : "")
-        }
+    static func photos(_ data: [Data]) -> [Self] {
+        data.map { Self(content: .photo($0)) }
+    }
+
+    var photoData: Data? {
+        if case .photo(let data) = content { data } else { nil }
+    }
+
+    var video: PreparedVideo? {
+        if case .video(let video) = content { video } else { nil }
     }
 
     /// Description edits must also trigger draft persistence.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id && lhs.accessibilityText == rhs.accessibilityText
     }
+
+    /// Where picked videos wait. The privacy purge deletes the whole outgoing folder.
+    nonisolated static func videoDirectoryURL() -> URL {
+        PreparedVideo.outgoingMediaDirectoryURL().appendingPathComponent("memories", isDirectory: true)
+    }
+
+    /// Deletes the files of the videos in `media`, once they are sent or thrown away.
+    static func deleteVideoFiles(of media: [Self]) {
+        for video in media.compactMap(\.video) {
+            try? FileManager.default.removeItem(at: video.fileURL)
+        }
+    }
 }
 
+/// The in-progress contents of the new-memory form. Held by the memories view model and
+/// saved on the device, not by the sheet, so dismissing the sheet (including an
+/// accidental swipe-down while reaching for the keyboard) keeps the work. Reopening
+/// restores it; a successful save (or a deliberate Cancel) resets it.
 struct MemoryDraft: Equatable {
     var existingDescriptions: [UUID: String] = [:]
     var title: String = ""
     var date: Date = Date()
     var note: String = ""
-    var photos: [MemoryDraftPhoto] = []
+    var media: [MemoryDraftMedia] = []
     var place: MemoryPlace?
     var visitID: UUID?
 
     var isEmpty: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && photos.isEmpty
+            && media.isEmpty
             && place == nil
     }
 
     /// The written parts, for copying out when the memory can no longer be saved.
     var copyableText: String {
-        ([title, note] + photos.map(\.accessibilityText) + Array(existingDescriptions.values))
+        ([title, note] + media.map(\.accessibilityText) + Array(existingDescriptions.values))
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .joined(separator: "\n\n")
@@ -85,13 +110,13 @@ extension MemoryDraft {
         return movesTitle
     }
 
-    /// The durable part of an edit. New photo picks remain unsaved until attached.
+    /// The durable part of an edit. New photo and video picks remain unsaved until attached.
     func savedBaseline(from record: MemoryRecord) -> MemoryDraft {
         var baseline = MemoryDraft(
             title: record.snapshot.title ?? "",
             date: MemoryTimeline.pickerDate(forLocalDate: record.snapshot.memoryDate) ?? record.snapshot.createdAt,
             note: record.snapshot.ownNote?.visibleBody ?? "",
-            photos: [],
+            media: [],
             place: record.snapshot.place
         )
         baseline.existingDescriptions = existingDescriptions.reduce(into: [:]) { result, entry in

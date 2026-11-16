@@ -14,8 +14,9 @@ nonisolated enum MemoryMediaImageProviderFactory {
 /// while loading or if it can't be fetched, and a tap on the failed state tries again. The
 /// surface rectangle owns the size so a `scaledToFill` photo crops within these bounds
 /// rather than widening its container (same approach as `DailyAnswerImageView`).
+/// A video shows its first frame with `VideoBadge`, and a tap plays it full screen.
 struct MemoryMediaImageView: View {
-    let mediaAssetID: UUID?
+    let media: MediaReference?
     let accessibilityText: String?
     let provider: (any MemoryMediaImageProviding)?
     let height: CGFloat
@@ -25,9 +26,10 @@ struct MemoryMediaImageView: View {
 
     @State private var load = ImageLoad<UUID?>.loading
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
+    @State private var videoViewerItem: PaeoniaVideoViewerItem?
 
     init(
-        mediaAssetID: UUID?,
+        media: MediaReference?,
         accessibilityText: String? = nil,
         provider: (any MemoryMediaImageProviding)? = MemoryMediaImageProviderFactory.shared,
         height: CGFloat = 240,
@@ -35,7 +37,7 @@ struct MemoryMediaImageView: View {
         allowsViewing: Bool = true,
         onTapImage: ((UUID?, UIImage) -> Void)? = nil
     ) {
-        self.mediaAssetID = mediaAssetID
+        self.media = media
         self.accessibilityText = accessibilityText
         self.provider = provider
         self.height = height
@@ -44,7 +46,7 @@ struct MemoryMediaImageView: View {
         self.onTapImage = onTapImage
 
         // Seed from the cache so a cached photo is in the very first frame, with no spinner.
-        if let mediaAssetID,
+        if let mediaAssetID = media?.assetID,
            let cached = MemoryImageDecoding.cachedImage(
                for: mediaAssetID,
                maxPixelSize: MemoryImageDecoding.maxPixelSize(forHeight: height)
@@ -55,9 +57,22 @@ struct MemoryMediaImageView: View {
 
     var body: some View {
         imageSurface
-            .accessibilityLabel(Text(verbatim: PhotoDescription.label(accessibilityText)))
+            .accessibilityLabel(accessibilityLabel)
             .paeoniaImageViewer(selection: $imageViewerSelection)
+            .paeoniaVideoViewer(item: $videoViewerItem)
     }
+
+    private var accessibilityLabel: Text {
+        guard isVideo else { return Text(verbatim: PhotoDescription.label(accessibilityText)) }
+        return Text(verbatim: VideoBadge.accessibilityLabel(
+            durationMs: videoDurationMs,
+            description: accessibilityText
+        ))
+    }
+
+    private var mediaAssetID: UUID? { media?.assetID }
+    private var isVideo: Bool { media?.isVideo ?? false }
+    private var videoDurationMs: Int? { media?.videoDurationMs }
 
     private var image: UIImage? { load.image(for: mediaAssetID) }
     private var didFail: Bool { load.hasFailed(for: mediaAssetID) }
@@ -87,6 +102,14 @@ struct MemoryMediaImageView: View {
             .frame(maxWidth: .infinity)
             .frame(height: height)
             .overlay { content }
+            // On the frame, not the photo: a filled photo reaches past the visible corner.
+            .overlay(alignment: .bottomLeading) {
+                if isVideo, image != nil {
+                    VideoBadge(durationMs: videoDurationMs)
+                        .padding(PaeoniaSpacing.space8)
+                        .accessibilityHidden(true)
+                }
+            }
             .clipShape(imageShape)
             // The loaded photo (or the failure glyph) fades in over the quiet
             // placeholder instead of snapping into the frame when the download lands.
@@ -107,7 +130,7 @@ struct MemoryMediaImageView: View {
                 .scaledToFill()
                 .accessibilityHidden(true)
         } else if didFail {
-            Image(systemName: "photo")
+            Image(systemName: isVideo ? "video" : "photo")
                 .font(.largeTitle)
                 .foregroundStyle(.paeoniaTextTertiary)
                 .accessibilityHidden(true)
@@ -131,12 +154,15 @@ struct MemoryMediaImageView: View {
         }
 
         load = .loading
+        let generation = MemoryImageDecoding.generation
         var decoded: UIImage?
-        if let data = await provider.imageData(for: mediaAssetID) {
+        if isVideo {
+            decoded = await VideoPoster.image(forMediaAsset: mediaAssetID, maxPixelSize: CGFloat(maxPixelSize))
+        } else if let data = await provider.imageData(for: mediaAssetID) {
             decoded = await MemoryImageDecoding.downsample(data, maxPixelSize: maxPixelSize)
         }
         if let decoded {
-            MemoryImageDecoding.store(decoded, for: mediaAssetID, maxPixelSize: maxPixelSize)
+            MemoryImageDecoding.store(decoded, for: mediaAssetID, maxPixelSize: maxPixelSize, generation: generation)
         }
 
         // A cancelled load (the view moved to another asset or went away) must not
@@ -148,7 +174,14 @@ struct MemoryMediaImageView: View {
     private func handleTap() {
         guard allowsViewing else { return }
 
-        if let mediaAssetID, let image {
+        if isVideo, let mediaAssetID, image != nil {
+            videoViewerItem = PaeoniaVideoViewerItem(id: mediaAssetID.uuidString) {
+                guard let cache = VideoFileCache.shared else { throw VideoFileCacheError.unavailable }
+                return PaeoniaVideoFile(
+                    url: try await cache.fileURL(for: mediaAssetID, priority: .playback), mediaAssetID: mediaAssetID
+                )
+            }
+        } else if let mediaAssetID, let image {
             presentImageViewer(mediaAssetID: mediaAssetID, image: image)
         } else if didFail {
             Task { await loadPhoto() }

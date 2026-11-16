@@ -56,12 +56,15 @@ enum DeveloperAvatarFixture {
         // Existing marketing portraits.
         for id in [ownPhoto, partnerPhoto] {
             if let data = photoData(for: id), let photo = UIImage(data: data) {
-                PaeoniaImageMemoryCache.store(photo, for: id)
+                PaeoniaImageMemoryCache.store(photo, for: id, generation: PaeoniaImageMemoryCache.generation)
             }
         }
         if let url = Bundle.main.url(forResource: "scenario-memory-oslo-opera", withExtension: "jpg"),
            let photo = UIImage(contentsOfFile: url.path) {
-            MemoryImageDecoding.store(photo, for: storyPhoto, maxPixelSize: StoryPhotoView.maxPixelSize)
+            MemoryImageDecoding.store(
+                photo, for: storyPhoto, maxPixelSize: StoryPhotoView.maxPixelSize,
+                generation: MemoryImageDecoding.generation
+            )
         }
     }
 
@@ -117,7 +120,7 @@ actor DeveloperAvatarStoriesCache: StoriesCaching {
 // Protocol methods replace the network boundary with local results.
 // swiftlint:disable async_without_await
 struct DeveloperAvatarStoriesGateway: StoriesGateway {
-    func post(id: UUID, photo: MemoryUploadMedia, caption: String?, coupleID: UUID,
+    func post(id: UUID, media: MemoryUploadMedia, caption: String?, coupleID: UUID,
               operations: StoryPostOperations) async throws -> Story? {
         Story(id: id, authorUserID: DeveloperScenarioFixture.currentUserID,
               mediaAssetID: DeveloperAvatarFixture.storyPhoto, caption: caption, createdAt: .now, seenAt: nil)

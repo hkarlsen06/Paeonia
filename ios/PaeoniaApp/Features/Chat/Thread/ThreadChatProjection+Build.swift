@@ -491,8 +491,8 @@ extension ThreadChatProjection {
         let delivery: ThreadChatDelivery
         let voiceAssetID: UUID?
         let hasLocalVoice: Bool
-        let photoAssetIDs: [UUID?]
-        let hasLocalPhotos: Bool
+        let attachmentAssetIDs: [UUID?]
+        let hasLocalAttachments: Bool
         let isEdited: Bool
         let isDeleted: Bool
         let call: ThreadChatCall?
@@ -512,8 +512,8 @@ extension ThreadChatProjection {
             delivery = message.delivery
             voiceAssetID = message.voice?.mediaAssetID
             hasLocalVoice = message.voice?.data != nil
-            photoAssetIDs = (message.photos ?? []).map(\.mediaAssetID)
-            hasLocalPhotos = (message.photos ?? []).contains { $0.data != nil }
+            attachmentAssetIDs = (message.attachments ?? []).map(\.mediaAssetID)
+            hasLocalAttachments = (message.attachments ?? []).contains { $0.local != nil }
             isEdited = message.editedAt != nil
             isDeleted = message.isDeleted
             call = message.call

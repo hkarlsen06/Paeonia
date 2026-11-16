@@ -96,7 +96,7 @@
       title: "Rain all weekend",
       date: DeveloperScenarioFixture.now,
       note: "We hid in every café on Bryggen and didn't mind the rain one bit.",
-      photos: DeveloperMemoriesMapFixture.bryggenPhotoWithLocation().map { [MemoryDraftPhoto(data: $0)] } ?? []
+      media: DeveloperMemoriesMapFixture.bryggenPhotoWithLocation().map { MemoryDraftMedia.photos([$0]) } ?? []
     )
 
     var body: some View {

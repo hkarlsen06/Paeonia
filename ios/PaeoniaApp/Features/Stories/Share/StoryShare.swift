@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 /// What the share sheet offers for a story: the photo, with its caption on it as
-/// the viewer shows it.
+/// the viewer shows it, or the video file as it was posted.
 ///
 /// A story is a small check-in that one partner makes for the other, so only its
 /// author can send it on. The partner can save it to their own Photos, like a
@@ -12,16 +12,31 @@ enum StoryShare {
     static func shareable(for story: Story, people: StoryPeople) -> PaeoniaShareable {
         let mediaAssetID = story.mediaAssetID
         let caption = story.caption
-        return PaeoniaShareable(
-            title: String(localized: .shareTitleStory),
-            text: [story.caption, story.accessibilityText].compactMap { $0?.trimmedNonEmpty }.joined(separator: "\n\n"),
-            allowsSharing: people.isOwn(story)
-        ) {
+        let title = String(localized: .shareTitleStory)
+        let text = [story.caption, story.accessibilityText]
+            .compactMap { $0?.trimmedNonEmpty }
+            .joined(separator: "\n\n")
+        if story.isVideo {
+            return PaeoniaShareable(
+                title: title, text: text, allowsSharing: people.isOwn(story),
+                makeVideo: { try? await VideoFileCache.shared?.fileURL(for: mediaAssetID) },
+                makeImage: { await poster(of: mediaAssetID) }
+            )
+        }
+        return PaeoniaShareable(title: title, text: text, allowsSharing: people.isOwn(story)) {
             guard let data = await MemoryMediaImageProviderFactory.shared?.imageData(for: mediaAssetID),
                   let photo = UIImage(data: data)
             else { return nil }
             return image(of: photo, caption: caption)
         }
+    }
+
+    /// A video's first frame as a JPEG, for the share sheet's preview.
+    private static func poster(of mediaAssetID: UUID) async -> PaeoniaShareImage? {
+        guard let poster = await VideoPoster.image(
+            forMediaAsset: mediaAssetID, maxPixelSize: CGFloat(StoryPhotoView.maxPixelSize)
+        ) else { return nil }
+        return poster.jpegData(compressionQuality: 0.9).map { PaeoniaShareImage(data: $0, format: .jpeg) }
     }
 
     /// The photo as a JPEG, upright, with the caption over its lower edge when the

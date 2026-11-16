@@ -11,7 +11,7 @@ nonisolated struct MediaUpload: Sendable, Equatable {
     var parentID: UUID
     /// `upload_purpose`, such as `memory_photo`.
     var purpose: String
-    /// `media_type`: `image`, `voice` or `drawing_payload`.
+    /// `media_type`: `image`, `video`, `voice` or `drawing_payload`.
     var mediaType: String
     var mimeType: String
     var fileExtension: String
@@ -24,6 +24,16 @@ nonisolated struct MediaUpload: Sendable, Equatable {
 }
 
 nonisolated extension MediaUpload {
+    /// Every video is the mp4 that `VideoTranscoder` writes.
+    static let videoMimeType = "video/mp4"
+    static let videoFileExtension = "mp4"
+    /// The server's limit for a video (`mediaByteLimit` in `backend/convex/lib/mediaAssets.ts`).
+    static let maxVideoByteSize: Int64 = 83_886_080
+
+    static func isVideo(mimeType: String) -> Bool {
+        mimeType.lowercased().hasPrefix("video/")
+    }
+
     /// The `.pkdrawing` of a widget drawing revision. The first day drawing uses it too,
     /// before the couple's canvas exists.
     static func widgetDrawing(
@@ -80,12 +90,17 @@ nonisolated struct MediaUploadReservation: Decodable, Sendable, Equatable {
     let bucket: String
     let storagePath: String
     let uploadURL: URL
+    /// `finalized` when a replayed reservation's file is already uploaded and finalized.
+    var uploadStatus: String?
+
+    var isFinalized: Bool { uploadStatus == "finalized" }
 
     enum CodingKeys: String, CodingKey {
         case mediaAssetID = "media_asset_id"
         case bucket
         case storagePath = "storage_path"
         case uploadURL = "upload_url"
+        case uploadStatus = "upload_status"
     }
 }
 
@@ -104,14 +119,19 @@ nonisolated private struct FinalizedMediaUploadResponse: Decodable, Sendable {
 nonisolated struct MediaUploader: Sendable {
     let client: PaeoniaConvexClient
 
-    /// Reserves, uploads and finalizes `data`, and returns its media asset id.
+    /// Reserves, uploads and finalizes `data`, and returns its media asset id. A retry
+    /// whose earlier run got as far as finalize sends nothing again.
     func upload(
         _ data: Data,
         as upload: MediaUpload,
         reserveOperation: SyncClientOperation,
         finalizeOperation: SyncClientOperation
     ) async throws -> UUID {
+        // A short switch to another app would otherwise stop a long video upload.
+        let backgroundTask = await BackgroundTaskToken(name: "Media upload")
+        defer { Task { @MainActor in backgroundTask.end() } }
         let reservation = try await reserve(upload, operation: reserveOperation)
+        if reservation.isFinalized { return reservation.mediaAssetID }
         let storageID = try await client.upload(data, contentType: upload.mimeType, to: reservation.uploadURL)
         return try await finalize(
             upload,

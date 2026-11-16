@@ -11,7 +11,8 @@ extension ThreadChatViewModel.Notice {
         case .voiceFailed: .dailyChatErrorVoiceTitle
         case .voiceDraftReadFailed: .chatPhotoDraftReadFailedTitle
         case .voiceDraftSaveFailed: .chatPhotoDraftSaveFailedTitle
-        case .photoFailed: .dailyChatErrorPhotoTitle
+        case .attachmentsFailed: .dailyChatErrorSendTitle
+        case .draftMediaMissing: .chatAttachmentDraftVideoMissingTitle
         case .photoDraftReadFailed: .chatPhotoDraftReadFailedTitle
         case .photoDraftSaveFailed: .chatPhotoDraftSaveFailedTitle
         case .editFailed: .dailyChatErrorEditTitle
@@ -34,7 +35,8 @@ extension ThreadChatViewModel.Notice {
         case .voiceFailed: .dailyChatErrorVoiceMessage
         case .voiceDraftReadFailed: .chatVoiceDraftRestoreFailed
         case .voiceDraftSaveFailed: .chatVoiceDraftSaveFailedMessage
-        case .photoFailed: .dailyChatErrorPhotoMessage
+        case .attachmentsFailed: .dailyChatErrorAttachmentsMessage
+        case .draftMediaMissing: .chatAttachmentDraftVideoMissingMessage
         case .photoDraftReadFailed: .chatPhotoDraftReadFailedMessage
         case .photoDraftSaveFailed: .chatPhotoDraftSaveFailedMessage
         case .editFailed(let failure):

@@ -11,7 +11,7 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
     let lastMessageAt: Date?
     let lastMessageSenderUserID: UUID?
     let lastMessageBody: String?
-    /// The media type of the newest message's first attachment ("image" or "voice").
+    /// The media type of the newest message's first attachment ("image", "video" or "voice").
     var lastMessageMediaType: String?
     /// The timestamp and message ID read on any device, compared as one cursor.
     var viewerReadThroughAt: Date?
@@ -37,7 +37,12 @@ nonisolated struct ThreadChatSummary: Codable, Equatable, Sendable {
         if let lastMessageCall { return lastMessageCall.preview }
         if let body = lastMessageBody?.trimmedNonEmpty { return body }
         guard lastMessageID != nil else { return nil }
-        return String(localized: lastMessageMediaType == "image" ? .dailyChatPhotoPreview : .dailyChatVoicePreview)
+        let label: LocalizedStringResource = switch lastMessageMediaType {
+        case "voice": .dailyChatVoicePreview
+        case "video": .mediaVideoLabel
+        default: .dailyChatPhotoPreview
+        }
+        return String(localized: label)
     }
 
     /// The partner wrote something the user has not read: `readThrough` on this phone, or
@@ -109,9 +114,8 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
     var delivery: ThreadChatDelivery
     /// Set when the message is a voice message instead of text.
     var voice: ThreadChatVoice?
-    /// Photos in the message, in order. The text, if any, is their caption. Optional, so
-    /// messages cached before photos existed still decode.
-    var photos: [ThreadChatPhoto]?
+    /// Photos, GIFs and videos in the message, in order. The text, if any, is their caption.
+    var attachments: [ThreadChatAttachment]?
     /// The earlier message or the answer this one replies to.
     var replyTo: ThreadChatItemID?
     /// When the sender last changed the text.
@@ -144,7 +148,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
     }
 
     /// The user's own message that is on the server and still shown. They can take back
-    /// text, photos and voice messages, with no time limit. A message that is still
+    /// text, attachments and voice messages, with no time limit. A message that is still
     /// sending or failed is removed from this phone instead (`isUnsent`).
     func canDelete(by userID: UUID?) -> Bool {
         senderUserID == userID && !isDeleted && call == nil && (isUnsent || threadID != nil)
@@ -193,9 +197,9 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
         return cached.filter { !$0.isDeleted && deletedIDs.contains($0.id) }.flatMap(\.mediaAssetIDs)
     }
 
-    /// The uploaded files of the message's photos or voice recording.
+    /// The uploaded files of the message's attachments or voice recording.
     var mediaAssetIDs: [UUID] {
-        (photos ?? []).compactMap(\.mediaAssetID) + [voice?.mediaAssetID].compactMap(\.self)
+        (attachments ?? []).compactMap(\.mediaAssetID) + [voice?.mediaAssetID].compactMap(\.self)
     }
 
     static func visibleOrdered(
@@ -317,7 +321,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
             clientOperationID: operationID,
             delivery: .sent,
             voice: voice,
-            photos: photos,
+            attachments: attachments,
             replyTo: replyTo,
             editedAt: editedAt,
             reactions: reactions,
@@ -327,7 +331,12 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
     }
 
     var hasMedia: Bool {
-        voice != nil || !(photos ?? []).isEmpty
+        voice != nil || !(attachments ?? []).isEmpty
+    }
+
+    /// The server's name for the message's first file, which the chat's preview reads.
+    var summaryMediaType: String? {
+        voice != nil ? "voice" : attachments?.first?.kind.serverMediaType
     }
 }
 
@@ -393,41 +402,6 @@ nonisolated enum ThreadChatReplyTarget: Equatable, Sendable {
         case let .message(message): .message(message.id)
         case let .answer(answer): .answer(answer.answerID)
         case let .gameResult(result): .gameResult(result.source)
-        }
-    }
-}
-
-/// One photo in a chat message.
-nonisolated struct ThreadChatPhoto: Codable, Equatable, Hashable, Sendable {
-    /// The uploaded photo. Nil until the message is sent.
-    var mediaAssetID: UUID?
-    /// The compressed photo on this phone while it sends, or after it failed.
-    var data: Data?
-    var width: Int?
-    var height: Int?
-    var accessibilityText: String?
-}
-
-/// The photos of a queued message, already compressed. Every photo is reserved under
-/// the message's id, and the upload operations are fixed so a retry reuses them.
-nonisolated struct ThreadChatPhotosPayload: Codable, Equatable, Sendable {
-    nonisolated struct Item: Codable, Equatable, Sendable {
-        let data: Data
-        let width: Int
-        let height: Int
-        let reserveOperation: SyncClientOperation
-        let finalizeOperation: SyncClientOperation
-        var accessibilityText: String?
-    }
-
-    let messageID: UUID
-    let items: [Item]
-
-    var pendingPhotos: [ThreadChatPhoto] {
-        items.map { item in
-            ThreadChatPhoto(
-                data: item.data, width: item.width, height: item.height, accessibilityText: item.accessibilityText
-            )
         }
     }
 }
@@ -508,7 +482,7 @@ nonisolated struct CreateChatThreadPayload: Codable, Equatable, Sendable {
     let coupleID: UUID
     let body: String
     var voice: ThreadChatVoicePayload?
-    var photos: ThreadChatPhotosPayload?
+    var attachments: ThreadChatAttachmentsPayload?
     /// The first message can reply to an answer. There are no messages to reply to yet.
     var replyToAnswerID: UUID?
     var replyToGameResultSource: GameConversationSource?
@@ -520,7 +494,7 @@ nonisolated struct SendChatMessagePayload: Codable, Equatable, Sendable {
     let threadID: UUID?
     let body: String
     var voice: ThreadChatVoicePayload?
-    var photos: ThreadChatPhotosPayload?
+    var attachments: ThreadChatAttachmentsPayload?
     var replyTo: ThreadChatItemID?
 }
 

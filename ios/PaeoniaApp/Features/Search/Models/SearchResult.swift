@@ -64,7 +64,7 @@ nonisolated struct SearchResult: Identifiable, Hashable, Sendable {
     let date: Date?
     /// True when `date` is midnight UTC of a calendar day, which has no time zone. False for a moment.
     let dateIsCalendarDay: Bool
-    let photoAssetID: UUID?
+    let media: MediaReference?
     let destination: SearchDestination
 
     var id: String { "\(kind.rawValue)-\(key.uuidString)" }
@@ -78,7 +78,7 @@ nonisolated struct SearchResult: Identifiable, Hashable, Sendable {
         authorUserID: UUID? = nil,
         date: Date? = nil,
         dateIsCalendarDay: Bool = false,
-        photoAssetID: UUID? = nil,
+        media: MediaReference? = nil,
         destination: SearchDestination
     ) {
         self.kind = kind
@@ -89,7 +89,7 @@ nonisolated struct SearchResult: Identifiable, Hashable, Sendable {
         self.authorUserID = authorUserID
         self.date = date
         self.dateIsCalendarDay = dateIsCalendarDay
-        self.photoAssetID = photoAssetID
+        self.media = media
         self.destination = destination
     }
 }

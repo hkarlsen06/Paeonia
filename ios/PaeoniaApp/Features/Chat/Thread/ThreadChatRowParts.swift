@@ -111,11 +111,14 @@ struct ThreadChatReplyPreviewContent: View {
 
     @ViewBuilder
     private var snippet: some View {
-        if !preview.photos.isEmpty {
+        if let first = preview.attachments.first {
             HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
-                ThreadChatPhotoThumbnails(photos: preview.photos)
+                ThreadChatAttachmentThumbnails(attachments: preview.attachments)
                 if let text = preview.snippet?.trimmedNonEmpty {
                     Text(verbatim: text)
+                } else if first.kind != .photo {
+                    // The thumbnails alone don't show that it moves or plays.
+                    Text(first.previewLabel)
                 }
             }
         } else if preview.isVoice {

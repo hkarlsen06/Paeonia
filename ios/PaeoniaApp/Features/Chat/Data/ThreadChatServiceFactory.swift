@@ -38,7 +38,7 @@ actor EmptyThreadChatService: ThreadChatServicing {
         subject _: ThreadChatSubject,
         threadID _: UUID?,
         body _: String,
-        photos _: ThreadChatPhotosPayload?,
+        attachments _: ThreadChatAttachmentsPayload?,
         createThread _: Bool,
         replyTo _: ThreadChatItemID?,
         operation _: SyncClientOperation

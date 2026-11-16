@@ -19,6 +19,7 @@ final class LocalPendingSyncOperation {
     var lastError: String?
     var lastFailureKindRawValue: String?
     var completedAt: Date?
+    var timedOutAttempts = 0
 
     init(
         ownerUserID: UUID,
@@ -83,6 +84,7 @@ final class LocalPendingSyncOperation {
         self.nextRetryAt = nextRetryAt
         lastError = failure.description
         lastFailureKindRawValue = failure.kind.rawValue
+        if failure.timedOut { timedOutAttempts += 1 }
     }
 
     func markTerminalFailure(_ errorDescription: String, at date: Date = Date()) {

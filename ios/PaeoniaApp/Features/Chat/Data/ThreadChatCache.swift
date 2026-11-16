@@ -4,6 +4,8 @@ protocol ThreadChatCaching: Actor {
     func updateMediaAlternative(_ edit: MediaAlternativeEdit, ownerUserID: UUID, unlessPurgedSince generation: Int)
     func summaries(ownerUserID: UUID) -> [ThreadChatSummary]
     func messages(ownerUserID: UUID, subjectID: UUID) -> [ThreadChatMessage]
+    /// The messages still sending or failed, in every chat.
+    func unsentMessages(ownerUserID: UUID) -> [ThreadChatMessage]
     /// Keeps the summaries. Returns whether they differ from what was kept.
     @discardableResult
     func saveSummaries(_ summaries: [ThreadChatSummary], ownerUserID: UUID) -> Bool
@@ -28,18 +30,8 @@ protocol ThreadChatCaching: Actor {
     /// Returns the media files the message had.
     @discardableResult
     func markDeletedInAnyChat(ownerUserID: UUID, messageID: UUID, at date: Date) -> [UUID]
-    // swiftlint:disable:next function_parameter_count
-    func confirm(
-        ownerUserID: UUID,
-        subject: ThreadChatSubject,
-        coupleID: UUID,
-        clientOperationID: UUID,
-        threadID: UUID,
-        messageID: UUID,
-        body: String,
-        senderUserID: UUID,
-        createdAt: Date
-    )
+    /// Replaces the copy shown while the message was sending with the one the server accepted.
+    func confirm(_ send: ThreadChatConfirmedSend, ownerUserID: UUID)
     func clearAll()
     /// Counts purges. A writer that suspends between reading and saving reads this
     /// first, then saves with `saveMessages(_:ownerUserID:subjectID:unlessPurgedSince:)`.
@@ -189,6 +181,10 @@ actor FileThreadChatCache: ThreadChatCaching {
         subjectDocument(ownerUserID, subjectID.uuidString).messages
     }
 
+    func unsentMessages(ownerUserID: UUID) -> [ThreadChatMessage] {
+        subjectKeys(ownerUserID).flatMap { subjectDocument(ownerUserID, $0).messages.filter(\.isUnsent) }
+    }
+
     @discardableResult
     func saveSummaries(_ summaries: [ThreadChatSummary], ownerUserID: UUID) -> Bool {
         updateCore(ownerUserID) { $0.summaries = summaries }
@@ -235,7 +231,7 @@ actor FileThreadChatCache: ThreadChatCaching {
                     clientOperationID: clientOperationID,
                     delivery: .failed,
                     voice: message.voice,
-                    photos: message.photos,
+                    attachments: message.attachments,
                     replyTo: message.replyTo
                 )
             }
@@ -257,29 +253,8 @@ actor FileThreadChatCache: ThreadChatCaching {
         }
     }
 
-    // swiftlint:disable:next function_parameter_count
-    func confirm(
-        ownerUserID: UUID,
-        subject: ThreadChatSubject,
-        coupleID: UUID,
-        clientOperationID: UUID,
-        threadID: UUID,
-        messageID: UUID,
-        body: String,
-        senderUserID: UUID,
-        createdAt: Date
-    ) {
-        let send = ThreadChatConfirmedSend(
-            subject: subject,
-            coupleID: coupleID,
-            clientOperationID: clientOperationID,
-            threadID: threadID,
-            messageID: messageID,
-            body: body,
-            senderUserID: senderUserID,
-            createdAt: createdAt
-        )
-        updateSubject(ownerUserID, subject.id.uuidString) { $0.storeConfirmedMessage(send) }
+    func confirm(_ send: ThreadChatConfirmedSend, ownerUserID: UUID) {
+        updateSubject(ownerUserID, send.subject.id.uuidString) { $0.storeConfirmedMessage(send) }
         updateCore(ownerUserID) { $0.updateSummary(for: send) }
     }
 

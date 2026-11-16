@@ -62,7 +62,7 @@ struct VisitEditorView: View {
 
             datesSection
 
-            MemoryPlaceField(place: $place, photos: [], knownPlaces: knownPlaces)
+            MemoryPlaceField(place: $place, media: [], knownPlaces: knownPlaces)
 
             if visit != nil {
                 Button(role: .destructive) {

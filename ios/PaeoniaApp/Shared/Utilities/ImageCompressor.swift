@@ -1,5 +1,7 @@
 import Foundation
+import ImageIO
 import UIKit
+import UniformTypeIdentifiers
 
 /// Utility for compressing images before upload.
 /// This follows Tidex's JPEG path: downscale large images, then reduce quality
@@ -26,8 +28,17 @@ nonisolated enum ImageCompressor {
         let height: Int
     }
 
+    nonisolated enum CompressionError: Error, Equatable, Sendable {
+        /// An animated GIF over `maxAnimatedGIFBytes`.
+        case animatedGIFTooBig
+        /// The data is not an image.
+        case unreadable
+    }
+
     static let maxDimension: CGFloat = 1_568
     static let maxUploadBytes = 1_500_000
+    /// Under the server's 10 MiB image limit, and the copy says "8 MB".
+    static let maxAnimatedGIFBytes = 8_000_000
     private static let defaultQuality: CGFloat = 0.8
     private static let minimumQuality: CGFloat = 0.45
     private static let iterativeDownscaleFactor: CGFloat = 0.85
@@ -39,6 +50,25 @@ nonisolated enum ImageCompressor {
         }
 
         return compress(image, quality: quality)
+    }
+
+    /// Keeps an animated GIF (more than one frame) byte for byte, so it still moves when
+    /// it arrives. Anything else, a one-frame GIF included, becomes a JPEG as in `compress`.
+    static func compressKeepingAnimation(_ data: Data) throws -> CompressedImage {
+        if let source = CGImageSourceCreateWithData(data as CFData, nil),
+           CGImageSourceGetType(source) == UTType.gif.identifier as CFString,
+           CGImageSourceGetCount(source) > 1 {
+            guard data.count <= maxAnimatedGIFBytes else { throw CompressionError.animatedGIFTooBig }
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+            guard let width = properties?[kCGImagePropertyPixelWidth] as? Int,
+                  let height = properties?[kCGImagePropertyPixelHeight] as? Int
+            else { throw CompressionError.unreadable }
+            return CompressedImage(
+                data: data, mediaType: "image/gif", fileExtension: "gif", width: width, height: height
+            )
+        }
+        guard let compressed = compress(data) else { throw CompressionError.unreadable }
+        return compressed
     }
 
     static func compress(_ image: UIImage, quality: CGFloat = defaultQuality) -> CompressedImage? {

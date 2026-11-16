@@ -76,11 +76,12 @@ final class MemoryPinTileView: UIView {
             return
         }
         imageView.image = nil
+        let generation = MemoryImageDecoding.generation
         loadTask = Task { [weak self] in
             guard let data = await MemoryMediaImageProviderFactory.shared?.imageData(for: photoAssetID),
                   let image = await MemoryImageDecoding.downsample(data, maxPixelSize: size)
             else { return }
-            MemoryImageDecoding.store(image, for: photoAssetID, maxPixelSize: size)
+            MemoryImageDecoding.store(image, for: photoAssetID, maxPixelSize: size, generation: generation)
             guard !Task.isCancelled, let self, self.assetID == photoAssetID else { return }
             UIView.transition(with: self.imageView, duration: 0.2, options: .transitionCrossDissolve) {
                 self.imageView.image = image

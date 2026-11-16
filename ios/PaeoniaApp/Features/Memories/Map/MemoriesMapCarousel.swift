@@ -55,7 +55,7 @@ struct MemoriesMapCarousel: View {
             onOpen(entry.id)
         } label: {
             layout {
-                MemoryMapThumbnail(photoAssetID: entry.photoAssetID, size: 56)
+                MemoryMapThumbnail(media: entry.photoAssetID.map(MediaReference.photo), size: 56)
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                     Text(entry.title)
                         .font(PaeoniaTypography.bodyEmphasis)
@@ -86,16 +86,17 @@ struct MemoriesMapCarousel: View {
     }
 }
 
-/// A memory's first photo in a small rounded tile, or the heart tile without one.
+/// A memory's first photo or a story's photo or video in a small rounded tile, or the heart
+/// tile without one.
 struct MemoryMapThumbnail: View {
-    let photoAssetID: UUID?
+    let media: MediaReference?
     var size: CGFloat = 44
 
     var body: some View {
         Group {
-            if let photoAssetID {
+            if let media {
                 MemoryMediaImageView(
-                    mediaAssetID: photoAssetID,
+                    media: media.withoutDuration,
                     height: size,
                     cornerRadius: PaeoniaRadius.radius12,
                     allowsViewing: false

@@ -13,7 +13,7 @@ enum MemoryDraftFailure: Equatable {
 final class MemoriesViewModel {
     let memoryService: any MemoryDataServicing
     let operationProvider: any SyncClientOperationProviding
-    let photoUploads: MemoryPhotoUploads
+    let mediaUploads: MemoryMediaUploads
     private let imageProvider: (any MemoryMediaImageProviding)?
     private let photoSaver: any PhotoLibrarySaving
     let draftStore: any MemoryDraftStoring
@@ -62,7 +62,7 @@ final class MemoriesViewModel {
     /// user on the device and restored when the user's session loads. A successful save
     /// or a deliberate discard clears it.
     var draft = MemoryDraft()
-    @ObservationIgnored var pendingImportedPhotos: [UUID: [MemoryDraftPhoto]] = [:]
+    @ObservationIgnored var pendingImportedPhotos: [UUID: [MemoryDraftMedia]] = [:]
     @ObservationIgnored var pendingDraftSave: Task<Void, Never>?
 
     init(
@@ -77,7 +77,7 @@ final class MemoriesViewModel {
         let operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.memoryService = memoryService ?? MemoryDataServiceFactory.makeDefault()
         self.operationProvider = operationProvider
-        self.photoUploads = MemoryPhotoUploads(
+        self.mediaUploads = MemoryMediaUploads(
             uploader: mediaUploader,
             imageCache: mediaImageCache,
             operationProvider: operationProvider
@@ -91,15 +91,15 @@ final class MemoriesViewModel {
         try? LiveMemoryMediaUploadService.live()
     }
 
-    /// Whether photo attachment is possible. False in previews/tests with no uploader,
-    /// so those surfaces can hide the photo controls instead of failing on tap.
+    /// Whether photo and video attachment is possible. False in previews/tests with no
+    /// uploader, so those surfaces can hide the controls instead of failing on tap.
     var canAttachPhotos: Bool {
-        photoUploads.isAvailable && coupleID != nil
+        mediaUploads.isAvailable && coupleID != nil
     }
 
-    /// Which photo a running save is sending, for the save button.
-    var photoUploadProgress: MemoryPhotoUploadProgress? {
-        photoUploads.progress
+    /// Which photo or video a running save is sending, for the save button.
+    var mediaUploadProgress: MemoryMediaUploadProgress? {
+        mediaUploads.progress
     }
 
     /// Wires the tab to the app's sync engine so a just-saved memory is pushed promptly
@@ -129,7 +129,7 @@ final class MemoriesViewModel {
         joinedMemoryIDs = [:]
         hasLoadedOnce = false
         loadFailure = nil
-        photoUploads.reset()
+        mediaUploads.reset()
         restoreDraft()
 
         guard currentUserID != nil else { return }
@@ -215,8 +215,8 @@ final class MemoriesViewModel {
 
     // MARK: - Changes
 
-    /// Saves a new memory. Title is required, plus at least a note or one photo (the UI
-    /// enforces both before enabling Save; the guards here are a backstop). Photos are
+    /// Saves a new memory. Title is required, plus at least a note or one photo or video (the
+    /// UI enforces both before enabling Save; the guards here are a backstop). Media is
     /// uploaded first so the created memory references real assets; if any upload fails
     /// nothing is saved and the form stays put so the user can retry. Content is never
     /// silently dropped. Returns whether the memory was saved.
@@ -225,8 +225,7 @@ final class MemoriesViewModel {
         title: String,
         date: String,
         note: String,
-        photos: [Data],
-        photoDescriptions: [String] = [],
+        media: [MemoryDraftMedia],
         place: MemoryPlace? = nil,
         visitID: UUID? = nil
     ) async -> Bool {
@@ -237,13 +236,13 @@ final class MemoriesViewModel {
         }
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTitle.isEmpty, !trimmedNote.isEmpty || !photos.isEmpty else { return false }
+        guard !trimmedTitle.isEmpty, !trimmedNote.isEmpty || !media.isEmpty else { return false }
 
         isSaving = true
         defer { isSaving = false }
 
-        guard let media = await photoUploads.upload(
-            MemoryDraftPhoto.photos(photos, descriptions: photoDescriptions),
+        guard let uploaded = await mediaUploads.upload(
+            media,
             coupleID: coupleID,
             ownerUserID: currentUserID,
             startingSortOrder: 0
@@ -259,7 +258,7 @@ final class MemoriesViewModel {
                 title: trimmedTitle,
                 memoryDate: date,
                 noteBody: trimmedNote.isEmpty ? nil : trimmedNote,
-                optimisticMedia: media,
+                optimisticMedia: uploaded,
                 place: place,
                 visitID: visitID,
                 operation: self.operationProvider.makeOperation()
@@ -267,9 +266,11 @@ final class MemoriesViewModel {
         }
         guard created else { return false }
 
-        photoUploads.reset()
-        PaeoniaHaptics.memorySaved()
+        // The draft lets go of the videos before their files go, so a draft never names a
+        // file that is gone.
         updateDraft(MemoryDraft())
+        finishUploads(of: media)
+        PaeoniaHaptics.memorySaved()
         await load()
         syncInBackground()
         return true
@@ -300,7 +301,7 @@ final class MemoriesViewModel {
                 changed = true
             }
             // A failed read is not evidence that the partner removed the memory.
-            let steps = [saveDetails, savePlace, saveNote, removePhotos, addPhotos]
+            let steps = [saveDetails, savePlace, saveNote, removePhotos, addMedia]
             for step in steps {
                 guard let current = try await storedVisibleRecord(edit.base.snapshot.memoryID) else {
                     await noticeRemovalUnlessJoined(edit.base.snapshot.memoryID)
@@ -330,25 +331,38 @@ final class MemoriesViewModel {
         return .partial(savedRecord: queued ?? savedRecord)
     }
 
-    /// Adds a memory photo to the person's photo library, asking for add-only access the
-    /// first time.
-    func savePhotoToLibrary(mediaAssetID: UUID) async {
-        guard let data = await imageProvider?.imageData(for: mediaAssetID) else {
-            notice = .photoSaveFailed
-            return
+    func dismissNotice() {
+        notice = nil
+    }
+}
+
+extension MemoriesViewModel {
+    /// Adds a memory photo or video to the person's photo library, asking for add-only access
+    /// the first time.
+    func saveToLibrary(_ media: MemoryMediaSnapshot) async {
+        let failed: MemoriesNotice = media.isVideo ? .videoSaveFailed : .photoSaveFailed
+        let result: PhotoLibrarySaveResult
+        if media.isVideo {
+            guard let file = try? await VideoFileCache.shared?.fileURL(for: media.mediaAssetID) else {
+                notice = failed
+                return
+            }
+            result = await photoSaver.saveVideo(fileURL: file)
+        } else {
+            guard let data = await imageProvider?.imageData(for: media.mediaAssetID) else {
+                notice = failed
+                return
+            }
+            result = await photoSaver.saveImage(data)
         }
-        switch await photoSaver.saveImage(data) {
+        switch result {
         case .saved:
             notice = .photoSaved
         case .permissionDenied:
             notice = .photoSaveDenied
         case .failed:
-            notice = .photoSaveFailed
+            notice = failed
         }
-    }
-
-    func dismissNotice() {
-        notice = nil
     }
 }
 

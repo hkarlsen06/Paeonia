@@ -38,7 +38,7 @@ struct GameConversationSpot: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            MemoryMediaImageView(mediaAssetID: round.photoMediaAssetID,
+            MemoryMediaImageView(media: .photo(round.photoMediaAssetID),
                                  accessibilityText: round.photoAccessibilityText, height: 200, allowsViewing: true)
             MediaAlternativeReadout(text: round.photoAccessibilityText, isVoice: false)
             if let place = round.placeName {

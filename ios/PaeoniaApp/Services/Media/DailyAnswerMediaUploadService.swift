@@ -6,13 +6,16 @@ import Foundation
 nonisolated enum DailyAnswerMediaPurpose: String, Codable, Sendable, Equatable {
     case photo = "daily_answer_media"
     case voice = "voice_note"
-    /// A photo in a question chat message.
+    /// A photo, a GIF or a video in a question chat message.
     case threadPhoto = "thread_media"
 
-    var mediaType: String {
+    /// A chat message's file is a video when its MIME type says so.
+    func mediaType(for mimeType: String) -> String {
         switch self {
-        case .photo, .threadPhoto:
+        case .photo:
             "image"
+        case .threadPhoto:
+            MediaUpload.isVideo(mimeType: mimeType) ? "video" : "image"
         case .voice:
             "voice"
         }
@@ -62,6 +65,26 @@ nonisolated protocol DailyAnswerMediaUploading: Sendable {
         reserveOperation: SyncClientOperation,
         finalizeOperation: SyncClientOperation
     ) async throws -> UUID
+
+    /// The media asset an earlier `uploadMedia` with the same reserve operation finished,
+    /// or nil when it did not finish. Sends no bytes, so `media.data` may be empty.
+    func finishedUpload(
+        of media: DailyAnswerUploadMedia,
+        answerID: UUID,
+        coupleID: UUID,
+        reserveOperation: SyncClientOperation
+    ) async throws -> UUID?
+}
+
+extension DailyAnswerMediaUploading {
+    // swiftlint:disable async_without_await
+    func finishedUpload(
+        of _: DailyAnswerUploadMedia,
+        answerID _: UUID,
+        coupleID _: UUID,
+        reserveOperation _: SyncClientOperation
+    ) async throws -> UUID? { nil }
+    // swiftlint:enable async_without_await
 }
 
 /// Uploads daily-answer media scoped to the `daily_answer_media` parent, so the asset
@@ -87,21 +110,39 @@ nonisolated struct LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading 
     ) async throws -> UUID {
         try await uploader.upload(
             media.data,
-            as: MediaUpload(
-                parentKind: reservedParentKind,
-                parentID: answerID,
-                purpose: media.purpose.rawValue,
-                mediaType: media.purpose.mediaType,
-                mimeType: media.mimeType,
-                fileExtension: media.fileExtension,
-                coupleID: coupleID,
-                accessibilityText: media.accessibilityText,
-                width: media.width,
-                height: media.height,
-                durationMs: media.durationMs
-            ),
+            as: upload(media, answerID: answerID, coupleID: coupleID),
             reserveOperation: reserveOperation,
             finalizeOperation: finalizeOperation
+        )
+    }
+
+    /// Replays the reservation, which the server answers from its record of the first one.
+    func finishedUpload(
+        of media: DailyAnswerUploadMedia,
+        answerID: UUID,
+        coupleID: UUID,
+        reserveOperation: SyncClientOperation
+    ) async throws -> UUID? {
+        let reservation = try await uploader.reserve(
+            upload(media, answerID: answerID, coupleID: coupleID),
+            operation: reserveOperation
+        )
+        return reservation.isFinalized ? reservation.mediaAssetID : nil
+    }
+
+    private func upload(_ media: DailyAnswerUploadMedia, answerID: UUID, coupleID: UUID) -> MediaUpload {
+        MediaUpload(
+            parentKind: reservedParentKind,
+            parentID: answerID,
+            purpose: media.purpose.rawValue,
+            mediaType: media.purpose.mediaType(for: media.mimeType),
+            mimeType: media.mimeType,
+            fileExtension: media.fileExtension,
+            coupleID: coupleID,
+            accessibilityText: media.accessibilityText,
+            width: media.width,
+            height: media.height,
+            durationMs: media.durationMs
         )
     }
 }

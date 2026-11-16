@@ -40,7 +40,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Paeonia uses your camera so you can take photos for your answers, messages, and memories, and so your partner can see you on video calls.</string>
+	<string>Paeonia uses your camera so you can take photos for your answers, messages, memories, and stories, record story videos, and so your partner can see you on video calls.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Paeonia uses Face ID to unlock the app when you turn on the app lock.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -48,9 +48,9 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Paeonia uses your location only when you turn on sharing. Your partner sees your latest location, and on a day your phones are less than 1 km apart, your streak can rest.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Paeonia uses your microphone so you can talk to your partner on calls and record voice answers and voice messages.</string>
+	<string>Paeonia uses your microphone so you can talk to your partner on calls, record voice answers and voice messages, and record sound in story videos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Paeonia saves a picture to your photo library when you tap Save to Photos.</string>
+	<string>Paeonia saves a picture or video to your photo library when you tap Save to Photos.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSScreenCaptureUsageDescription</key>

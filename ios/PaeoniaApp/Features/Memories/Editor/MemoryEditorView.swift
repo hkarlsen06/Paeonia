@@ -2,9 +2,9 @@ import SwiftUI
 import UIKit
 
 /// The memory form, for a new memory or an edit. Title and date are required. A new
-/// memory also needs a note or at least one photo, so it always carries something to
-/// remember. Photos are uploaded only when the memory is saved; the form just stages
-/// picked images until then.
+/// memory also needs a note or at least one photo or video, so it always carries something
+/// to remember. Media is uploaded only when the memory is saved; the form just stages
+/// picked photos and prepared videos until then.
 ///
 /// A new memory should take as few taps as possible: the title is focused when the form
 /// opens, Return moves on to the note, the date starts at today, and Save sits in the
@@ -41,12 +41,12 @@ struct MemoryEditorView: View {
     var isMemoryRemoved = false
     /// Set once the memory joined another memory for the same visit, which the form now edits.
     var join: MemoryJoinNotice?
-    /// Whether photo attachment is available (false in previews/tests without an
-    /// uploader, or before the active couple is known). When false the photo controls
-    /// are hidden and a note is required.
+    /// Whether photo and video attachment is available (false in previews/tests without an
+    /// uploader, or before the active couple is known). When false the controls are hidden
+    /// and a note is required.
     let allowsPhotos: Bool
-    /// Which photo is being sent while the memory saves, shown on the save button.
-    var uploadProgress: MemoryPhotoUploadProgress?
+    /// Which photo or video is being sent while the memory saves, shown on the save button.
+    var uploadProgress: MemoryMediaUploadProgress?
     /// Places on the couple's other memories, for the place sheet.
     var knownPlaces: [MemoryPlace] = []
     var draftFailure: MemoryDraftFailure?
@@ -59,7 +59,7 @@ struct MemoryEditorView: View {
         _ title: String,
         _ date: String,
         _ note: String,
-        _ photos: [Data],
+        _ media: [MemoryDraftMedia],
         _ removedMedia: [MemoryMediaSnapshot],
         _ place: MemoryPlace?
     ) async -> MemorySaveResult
@@ -68,7 +68,8 @@ struct MemoryEditorView: View {
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    @State private var loadingPhotoCount = 0
+    @State private var loadingMediaCount = 0
+    @State private var isDiscarded = false
     @State private var isSaving = false
     @State private var isConfirmingDiscard = false
     @State private var removedExistingMediaIDs: Set<UUID> = []
@@ -107,7 +108,7 @@ struct MemoryEditorView: View {
                 .alert(Text(.memoriesEditorDiscardTitle), isPresented: $isConfirmingDiscard) {
                     Button(role: .cancel) {} label: { Text(.memoriesEditorDiscardKeepEditing) }
                     Button(role: .destructive) {
-                        if mode == .create { discardNewDraft() } else { dismiss() }
+                        if mode == .create { discardNewDraft() } else { discardEdit() }
                     } label: { Text(.memoriesEditorDiscardAction) }
                     .accessibilityIdentifier("memories.editor.discard")
                 } message: {
@@ -118,9 +119,11 @@ struct MemoryEditorView: View {
         // failed save would look like nothing happened.
         .paeoniaBanner(bannerCenter)
         .presentationBackground(.paeoniaBackgroundPrimary)
-        // Only a persisted new draft can be swiped away. Edits require an explicit
-        // discard, and every form stays open while saving.
-        .interactiveDismissDisabled(isSaving || hasUnsavedEdits || draftNeedsSaving || draftFailure != nil)
+        // Only a persisted new draft can be swiped away, and not while a pick still loads.
+        // Edits require an explicit discard, and every form stays open while saving.
+        .interactiveDismissDisabled(
+            isSaving || hasUnsavedEdits || draftNeedsSaving || draftFailure != nil || loadingMediaCount > 0
+        )
         .onAppear {
             switch mode {
             case .create:
@@ -180,7 +183,7 @@ struct MemoryEditorView: View {
             titleField
             noteField
             dateField
-            MemoryPlaceField(place: $draft.place, photos: draft.photos, knownPlaces: knownPlaces)
+            MemoryPlaceField(place: $draft.place, media: draft.media, knownPlaces: knownPlaces)
                 .disabled(isSaving)
             if dynamicTypeSize.isAccessibilitySize {
                 accessibleActions
@@ -190,14 +193,15 @@ struct MemoryEditorView: View {
 
     @ViewBuilder
     private var photoFields: some View {
-        // Photos come first so the keyboard, which opens on the title, never
+        // Photos and videos come first so the keyboard, which opens on the title, never
         // covers them.
         if allowsPhotos || !existingMedia.isEmpty {
             MemoryEditorPhotosField(
-                photos: $draft.photos,
+                media: $draft.media,
                 existingDescriptions: $draft.existingDescriptions,
                 removedExistingMediaIDs: $removedExistingMediaIDs,
-                loadingPhotoCount: $loadingPhotoCount,
+                loadingCount: $loadingMediaCount,
+                isDiscarded: $isDiscarded,
                 existingMedia: existingMedia,
                 currentUserID: currentUserID,
                 allowsPhotos: allowsPhotos,
@@ -301,7 +305,7 @@ struct MemoryEditorView: View {
         }
     }
 
-    /// While photos send, the title counts them, since saving can take a while.
+    /// While photos and videos send, the title counts them, since saving can take a while.
     private var navigationTitle: Text {
         if isSaving, let uploadProgress {
             Text(.memoriesEditorUploadingPhoto(
@@ -322,8 +326,8 @@ struct MemoryEditorView: View {
     }
 
     private var canSave: Bool {
-        guard !isMemoryRemoved, !isNoteTooLong, draftFailure != .read, loadingPhotoCount == 0 else { return false }
-        guard (draft.photos.map(\.accessibilityText) + Array(draft.existingDescriptions.values))
+        guard !isMemoryRemoved, !isNoteTooLong, draftFailure != .read, loadingMediaCount == 0 else { return false }
+        guard (draft.media.map(\.accessibilityText) + Array(draft.existingDescriptions.values))
             .allSatisfy({ $0.unicodeScalars.count <= 10_000 }) else { return false }
         guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
@@ -331,7 +335,7 @@ struct MemoryEditorView: View {
 
         switch mode {
         case .create:
-            return !draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !draft.photos.isEmpty
+            return !draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !draft.media.isEmpty
         case .edit:
             return !isClearingExistingNote
         }
@@ -343,7 +347,7 @@ struct MemoryEditorView: View {
             || draft.title != initialDraft.title
             || draft.note != initialDraft.note
             || draft.place != initialDraft.place
-            || !draft.photos.isEmpty
+            || !draft.media.isEmpty
             || !removedExistingMediaIDs.isEmpty
             || MemoryTimeline.localDateString(for: draft.date) != MemoryTimeline.localDateString(for: initialDraft.date)
     }
@@ -368,7 +372,7 @@ struct MemoryEditorView: View {
             if hasUnsavedEdits {
                 isConfirmingDiscard = true
             } else {
-                dismiss()
+                discardEdit()
             }
         }
     }
@@ -383,7 +387,7 @@ struct MemoryEditorView: View {
             draft.title,
             MemoryTimeline.localDateString(for: draft.date),
             draft.note,
-            draft.photos.map(\.data),
+            draft.media,
             existingMedia.filter { removedExistingMediaIDs.contains($0.memoryMediaID) },
             draft.place
         )
@@ -403,7 +407,15 @@ struct MemoryEditorView: View {
     }
 
     private func discardNewDraft() {
+        isDiscarded = true
         if let onDiscardDraft { onDiscardDraft() } else { draft = MemoryDraft() }
+        dismiss()
+    }
+
+    /// An edit's picks live only in this form, so their prepared videos go with it.
+    private func discardEdit() {
+        isDiscarded = true
+        MemoryDraftMedia.deleteVideoFiles(of: draft.media)
         dismiss()
     }
 }

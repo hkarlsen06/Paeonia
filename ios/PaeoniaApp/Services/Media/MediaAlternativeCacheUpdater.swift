@@ -126,9 +126,9 @@ nonisolated extension ThreadChatMessage {
               senderUserID == ownerUserID, !isDeleted, !isUnsent else { return self }
         var updated = self
         if updated.voice?.mediaAssetID == assetID { updated.voice?.transcript = edit.text.trimmedNonEmpty }
-        updated.photos = photos?.map { photo in
-            guard photo.mediaAssetID == assetID else { return photo }
-            var updated = photo
+        updated.attachments = attachments?.map { attachment in
+            guard attachment.mediaAssetID == assetID else { return attachment }
+            var updated = attachment
             updated.accessibilityText = edit.text.trimmedNonEmpty
             return updated
         }

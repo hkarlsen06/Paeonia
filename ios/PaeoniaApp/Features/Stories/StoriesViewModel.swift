@@ -9,7 +9,7 @@ import OSLog
 ///
 /// `stories` is the cached server list, newest first, so both screens show it offline and
 /// either partner's story arrives through the live feed. Posting and deleting need a
-/// connection: the photo goes up first, and a failed post keeps the composer open so
+/// connection: the photo or video goes up first, and a failed post keeps the composer open so
 /// nothing is lost. Opening the partner's story marks it seen on this phone at once and
 /// tells the server in the background.
 /// A push asked to open one story. Each request is its own value, so asking for the same story twice
@@ -135,9 +135,9 @@ final class StoriesViewModel {
         hasLoaded = true
     }
 
-    /// Shares `photo` with an optional caption. Returns false and sets `error` when it
-    /// could not be sent, so the composer stays open with the photo and caption.
-    func post(photo: Data, caption: String, accessibilityText: String = "") async -> Bool {
+    /// Shares a photo or a prepared video with an optional caption. Returns false and sets
+    /// `error` when it could not be sent, so the composer stays open with the media and caption.
+    func post(_ media: StoryPostMedia, caption: String, accessibilityText: String = "") async -> Bool {
         guard !isPosting else { return false }
         guard ownerUserID != nil, let coupleID, let gateway else {
             error = .postFailed
@@ -148,27 +148,26 @@ final class StoriesViewModel {
         defer { isPosting = false }
 
         let stamp = await writeStamp()
-        guard let compressed = await Self.compress(photo) else {
-            error = .photoUnreadable
+        // Read before the upload, so a purge while it runs keeps the video out of the cache.
+        let videoCache = VideoFileCache.shared
+        let videoGeneration = await videoCache?.privacyGeneration ?? 0
+        guard let upload = await Self.upload(media, accessibilityText: accessibilityText) else {
+            error = media.isVideo ? .videoUnreadable : .photoUnreadable
             return false
         }
-        let attempt = postAttempt(photo: photo, caption: caption, accessibilityText: accessibilityText)
+        let attempt = postAttempt(media: media, caption: caption, accessibilityText: accessibilityText)
         do {
             let story = try await gateway.post(
                 id: attempt.id,
-                photo: MemoryUploadMedia(
-                    data: compressed.data,
-                    purpose: .story,
-                    mimeType: compressed.mediaType,
-                    fileExtension: compressed.fileExtension,
-                    width: compressed.width,
-                    height: compressed.height,
-                    accessibilityText: accessibilityText
-                ),
+                media: upload,
                 caption: caption,
                 coupleID: coupleID,
                 operations: attempt.operations
             )
+            if case let .video(video) = media, let story {
+                // The sender plays their own video from this copy instead of downloading it.
+                await videoCache?.store(video.fileURL, for: story.mediaAssetID, privacyGeneration: videoGeneration)
+            }
             await finishPost(story, stamp: stamp)
             return true
         } catch {
@@ -282,14 +281,14 @@ final class StoriesViewModel {
         LocalStoreChanges.post(.stories, ownerUserID: owner)
     }
 
-    /// The failed post again when the photo and caption are unchanged, otherwise a new one.
-    private func postAttempt(photo: Data, caption: String?, accessibilityText: String) -> FailedPost {
-        if let failedPost, failedPost.matches(photo: photo, caption: caption),
+    /// The failed post again when the media and words are unchanged, otherwise a new one.
+    private func postAttempt(media: StoryPostMedia, caption: String?, accessibilityText: String) -> FailedPost {
+        if let failedPost, failedPost.media == media, failedPost.caption == caption,
            failedPost.accessibilityText == accessibilityText {
             return failedPost
         }
         return FailedPost(
-            photo: photo, caption: caption, accessibilityText: accessibilityText,
+            media: media, caption: caption, accessibilityText: accessibilityText,
             id: UUID(), operations: makeOperations()
         )
     }
@@ -313,22 +312,47 @@ final class StoriesViewModel {
     }
 
     /// Compressing a full camera photo takes a noticeable moment, so it runs off the
-    /// main actor and the post spinner keeps moving.
+    /// main actor and the post spinner keeps moving. A video is already prepared, and
+    /// its file is mapped rather than read.
     @concurrent
-    private nonisolated static func compress(_ photo: Data) async -> ImageCompressor.CompressedImage? {
-        ImageCompressor.compress(photo)
+    private nonisolated static func upload(
+        _ media: StoryPostMedia,
+        accessibilityText: String
+    ) async -> MemoryUploadMedia? {
+        switch media {
+        case let .photo(photo):
+            guard let compressed = ImageCompressor.compress(photo) else { return nil }
+            return MemoryUploadMedia(
+                data: compressed.data,
+                purpose: .story,
+                mimeType: compressed.mediaType,
+                fileExtension: compressed.fileExtension,
+                width: compressed.width,
+                height: compressed.height,
+                accessibilityText: accessibilityText
+            )
+        case let .video(video):
+            return try? MemoryUploadMedia(video: video, purpose: .story, accessibilityText: accessibilityText)
+        }
     }
 
+    /// A video compares by its prepared file, never by its bytes.
     private struct FailedPost {
-        let photo: Data
+        let media: StoryPostMedia
         let caption: String?
         let accessibilityText: String
         let id: UUID
         let operations: StoryPostOperations
+    }
+}
 
-        func matches(photo: Data, caption: String?) -> Bool {
-            self.photo == photo && self.caption == caption
-        }
+/// What a story shares: a photo as it was taken or picked, or a video the composer prepared.
+nonisolated enum StoryPostMedia: Equatable, Sendable {
+    case photo(Data)
+    case video(PreparedVideo)
+
+    var isVideo: Bool {
+        if case .video = self { true } else { false }
     }
 }
 
@@ -336,6 +360,7 @@ nonisolated enum StoriesError: Equatable, Sendable {
     case postOffline
     case postFailed
     case photoUnreadable
+    case videoUnreadable
     case deleteOffline
     case deleteFailed
     case noteOffline
@@ -349,6 +374,8 @@ nonisolated enum StoriesError: Equatable, Sendable {
             String(localized: .storiesErrorPostFailed)
         case .photoUnreadable:
             String(localized: .storiesErrorPhotoUnreadable)
+        case .videoUnreadable:
+            String(localized: .mediaVideoPrepareFailed)
         case .deleteOffline:
             String(localized: .storiesErrorDeleteOffline)
         case .deleteFailed:

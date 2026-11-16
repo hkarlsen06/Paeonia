@@ -240,6 +240,7 @@ struct DailyAnswerImageView: View {
             return
         }
 
+        let generation = PaeoniaImageMemoryCache.generation
         let data = await provider.imageData(for: mediaAssetID)
         guard !Task.isCancelled else { return }
         // Decoded off the main thread at the size this frame needs, so the memory cache
@@ -254,7 +255,7 @@ struct DailyAnswerImageView: View {
         }
         guard !Task.isCancelled else { return }
         if let loaded {
-            PaeoniaImageMemoryCache.store(loaded, forKey: key)
+            PaeoniaImageMemoryCache.store(loaded, forKey: key, generation: generation)
         }
         load = ImageLoad(loaded, for: loadKey)
     }

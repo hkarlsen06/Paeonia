@@ -2,15 +2,18 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
-/// The photos part of the memory form: photos already on the memory, photos picked
-/// for this save, placeholders while picked photos load, and the library and camera
-/// buttons. Each partner can add up to five photos to a memory.
+/// The photos part of the memory form: photos and videos already on the memory, ones
+/// picked for this save, placeholders while picked ones load, and the library and camera
+/// buttons. Each partner can add up to five photos and videos to a memory.
 struct MemoryEditorPhotosField: View {
-    @Binding var photos: [MemoryDraftPhoto]
+    @Binding var media: [MemoryDraftMedia]
     @Binding var existingDescriptions: [UUID: String]
     @Binding var removedExistingMediaIDs: Set<UUID>
-    /// Picked photos still loading from the library. The form can't save until they're in.
-    @Binding var loadingPhotoCount: Int
+    /// Picked photos still loading and videos still being prepared. The form can't save
+    /// until they're in.
+    @Binding var loadingCount: Int
+    /// Set when the person threw the form away. A pick that finishes later is dropped.
+    @Binding var isDiscarded: Bool
     let existingMedia: [MemoryMediaSnapshot]
     let currentUserID: UUID?
     let allowsPhotos: Bool
@@ -21,22 +24,24 @@ struct MemoryEditorPhotosField: View {
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isCameraPresented = false
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
+    @State private var videoViewerItem: PaeoniaVideoViewerItem?
 
+    /// Photos and videos together.
     static let maxPhotosPerPartner = 5
     private let thumbnailSize: CGFloat = 104
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            if !visibleExistingMedia.isEmpty || !photos.isEmpty || loadingPhotoCount > 0 {
+            if !visibleExistingMedia.isEmpty || !media.isEmpty || loadingCount > 0 {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: PaeoniaSpacing.space8) {
                         ForEach(visibleExistingMedia, id: \.memoryMediaID) { media in
                             existingPhotoEditor(media)
                         }
-                        ForEach(photos) { photo in
-                            stagedPhotoEditor(photo)
+                        ForEach(media) { item in
+                            stagedMediaEditor(item)
                         }
-                        ForEach(0..<loadingPhotoCount, id: \.self) { _ in
+                        ForEach(0..<loadingCount, id: \.self) { _ in
                             loadingThumbnail
                         }
                     }
@@ -48,13 +53,14 @@ struct MemoryEditorPhotosField: View {
             }
         }
         .onChange(of: pickerItems) { _, items in
-            loadPickedPhotos(items)
+            loadPickedMedia(items)
         }
         .fullScreenCover(isPresented: $isCameraPresented) {
             DailyCameraPicker(onCapture: appendCapturedPhoto)
                 .ignoresSafeArea()
         }
         .paeoniaImageViewer(selection: $imageViewerSelection)
+        .paeoniaVideoViewer(item: $videoViewerItem)
     }
 
     private func existingPhotoEditor(_ media: MemoryMediaSnapshot) -> some View {
@@ -73,14 +79,14 @@ struct MemoryEditorPhotosField: View {
         }
     }
 
-    private func stagedPhotoEditor(_ photo: MemoryDraftPhoto) -> some View {
+    private func stagedMediaEditor(_ item: MemoryDraftMedia) -> some View {
         VStack {
-            stagedThumbnail(photo)
+            stagedThumbnail(item)
             PhotoDescriptionField(text: Binding(
-                get: { photos.first { $0.id == photo.id }?.accessibilityText ?? "" },
+                get: { media.first { $0.id == item.id }?.accessibilityText ?? "" },
                 set: { value in
-                    if let index = photos.firstIndex(where: { $0.id == photo.id }) {
-                        photos[index].accessibilityText = value
+                    if let index = media.firstIndex(where: { $0.id == item.id }) {
+                        media[index].accessibilityText = value
                     }
                 }
             ))
@@ -92,7 +98,7 @@ struct MemoryEditorPhotosField: View {
     private func existingThumbnail(_ media: MemoryMediaSnapshot) -> some View {
         ZStack(alignment: .topTrailing) {
             MemoryMediaImageView(
-                mediaAssetID: media.mediaAssetID,
+                media: media.media,
                 accessibilityText: media.accessibilityText,
                 height: thumbnailSize,
                 cornerRadius: PaeoniaRadius.radius12
@@ -100,27 +106,33 @@ struct MemoryEditorPhotosField: View {
             .frame(width: thumbnailSize)
 
             if media.ownerUserID == currentUserID {
-                removeButton {
+                removeButton(isVideo: media.isVideo) {
                     animateStrip { _ = removedExistingMediaIDs.insert(media.memoryMediaID) }
                 }
             }
         }
     }
 
-    private func stagedThumbnail(_ photo: MemoryDraftPhoto) -> some View {
+    private func stagedThumbnail(_ item: MemoryDraftMedia) -> some View {
         ZStack(alignment: .topTrailing) {
-            MemoryStagedPhotoThumbnail(photo: photo, size: thumbnailSize, cornerRadius: PaeoniaRadius.radius12)
+            MemoryStagedMediaThumbnail(item: item, size: thumbnailSize, cornerRadius: PaeoniaRadius.radius12)
                 .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
                 .onTapGesture {
-                    presentStagedImage(photo.data)
+                    presentStaged(item)
                 }
-                .accessibilityLabel(Text(verbatim: PhotoDescription.label(photo.accessibilityText)))
+                .accessibilityLabel(Text(verbatim: stagedAccessibilityLabel(item)))
                 .accessibilityAddTraits(.isButton)
 
-            removeButton {
-                animateStrip { photos.removeAll { $0.id == photo.id } }
+            removeButton(isVideo: item.video != nil) {
+                animateStrip { media.removeAll { $0.id == item.id } }
+                MemoryDraftMedia.deleteVideoFiles(of: [item])
             }
         }
+    }
+
+    private func stagedAccessibilityLabel(_ item: MemoryDraftMedia) -> String {
+        guard let video = item.video else { return PhotoDescription.label(item.accessibilityText) }
+        return VideoBadge.accessibilityLabel(durationMs: video.durationMs, description: item.accessibilityText)
     }
 
     private var loadingThumbnail: some View {
@@ -131,7 +143,7 @@ struct MemoryEditorPhotosField: View {
             .accessibilityHidden(true)
     }
 
-    private func removeButton(_ action: @escaping () -> Void) -> some View {
+    private func removeButton(isVideo: Bool, _ action: @escaping () -> Void) -> some View {
         Button(role: .destructive, action: action) {
             Image(systemName: "xmark.circle.fill")
                 .font(.title3)
@@ -140,7 +152,7 @@ struct MemoryEditorPhotosField: View {
                 .accessibilityHidden(true)
         }
         .padding(PaeoniaSpacing.space4)
-        .accessibilityLabel(Text(.memoriesPhotoRemove))
+        .accessibilityLabel(Text(isVideo ? .memoriesVideoRemove : .memoriesPhotoRemove))
         .disabled(isSaving)
     }
 
@@ -149,7 +161,7 @@ struct MemoryEditorPhotosField: View {
             PhotosPicker(
                 selection: $pickerItems,
                 maxSelectionCount: max(1, remainingPhotoSlots),
-                matching: .images
+                matching: .any(of: [.images, .videos])
             ) {
                 Label {
                     Text(.memoriesEditorAddPhoto)
@@ -183,35 +195,66 @@ struct MemoryEditorPhotosField: View {
 
     private var remainingPhotoSlots: Int {
         let ownVisible = visibleExistingMedia.filter { $0.ownerUserID == currentUserID }.count
-        return max(0, Self.maxPhotosPerPartner - ownVisible - photos.count - loadingPhotoCount)
+        return max(0, Self.maxPhotosPerPartner - ownVisible - media.count - loadingCount)
     }
 
-    private func loadPickedPhotos(_ items: [PhotosPickerItem]) {
+    private func loadPickedMedia(_ items: [PhotosPickerItem]) {
         guard !items.isEmpty else { return }
         let picked = Array(items.prefix(remainingPhotoSlots))
         pickerItems = []
-        animateStrip { loadingPhotoCount += picked.count }
+        animateStrip { loadingCount += picked.count }
+        let ticket = VideoPreparation.ticket()
         Task {
-            var loaded: [Data] = []
-            for item in picked {
-                if let data = try? await item.loadTransferable(type: Data.self) {
-                    loaded.append(data)
-                }
+            let (loaded, failure) = await Self.load(picked, ticket: ticket)
+            guard !isDiscarded, VideoPreparation.isCurrent(ticket) else {
+                MemoryDraftMedia.deleteVideoFiles(of: loaded)
+                loadingCount -= picked.count
+                return
             }
             // One append, so a saved draft writes its photo files once.
             animateStrip {
-                loadingPhotoCount -= picked.count
-                photos.append(contentsOf: loaded.map { MemoryDraftPhoto(data: $0) })
+                loadingCount -= picked.count
+                media.append(contentsOf: loaded)
             }
-            if loaded.count < picked.count {
-                bannerCenter.show(.error(message: String(localized: .memoriesEditorPhotoLoadFailed)))
+            if let failure {
+                bannerCenter.show(.error(message: String(localized: failure)))
             }
         }
     }
 
+    /// A photo loads as data. A video is made small enough to send, which can take a while
+    /// for a long one. Also returns what to tell about the picks that failed.
+    private static func load(
+        _ items: [PhotosPickerItem],
+        ticket: VideoPreparation.Ticket
+    ) async -> ([MemoryDraftMedia], LocalizedStringResource?) {
+        var loaded: [MemoryDraftMedia] = []
+        var videoFailure: (any Error)?
+        var photoFailed = false
+        for item in items {
+            if item.isVideo {
+                do {
+                    loaded.append(MemoryDraftMedia(content: .video(try await VideoPreparation.prepare(
+                        item, into: MemoryDraftMedia.videoDirectoryURL(), cap: .threeMinutes, ticket: ticket
+                    ))))
+                } catch {
+                    // A video that is too long is the most useful to tell about.
+                    if videoFailure == nil || error as? VideoTranscodeError == .tooLong { videoFailure = error }
+                }
+            } else if let data = try? await item.loadTransferable(type: Data.self) {
+                loaded.append(MemoryDraftMedia(content: .photo(data)))
+            } else {
+                photoFailed = true
+            }
+        }
+        let failure = videoFailure.flatMap { VideoLengthCap.threeMinutes.message(for: $0) }
+            ?? (photoFailed ? .memoriesEditorPhotoLoadFailed : nil)
+        return (loaded, failure)
+    }
+
     private func appendCapturedPhoto(_ data: Data) {
         guard allowsPhotos, remainingPhotoSlots > 0 else { return }
-        animateStrip { photos.append(MemoryDraftPhoto(data: data)) }
+        animateStrip { media.append(MemoryDraftMedia(content: .photo(data))) }
     }
 
     /// Tiles fade in and out and the strip and the fields below glide to their new
@@ -220,8 +263,14 @@ struct MemoryEditorPhotosField: View {
         withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange, change)
     }
 
-    private func presentStagedImage(_ data: Data) {
-        guard let uiImage = UIImage(data: data) else { return }
-        imageViewerSelection = PaeoniaImageViewerSelection(image: uiImage)
+    private func presentStaged(_ item: MemoryDraftMedia) {
+        switch item.content {
+        case .photo(let data):
+            guard let uiImage = UIImage(data: data) else { return }
+            imageViewerSelection = PaeoniaImageViewerSelection(image: uiImage)
+        case .video(let video):
+            let fileURL = video.fileURL
+            videoViewerItem = PaeoniaVideoViewerItem(id: item.id.uuidString) { PaeoniaVideoFile(url: fileURL) }
+        }
     }
 }

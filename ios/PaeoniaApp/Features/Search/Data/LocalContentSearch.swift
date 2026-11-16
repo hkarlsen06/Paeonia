@@ -40,7 +40,7 @@ nonisolated enum LocalContentSearch {
                 label: memory.place?.shortName,
                 date: day ?? memory.createdAt,
                 dateIsCalendarDay: day != nil,
-                photoAssetID: memory.visibleMediaAssetIDs.first,
+                media: memory.firstPhotoAssetID.map(MediaReference.photo),
                 destination: .memory(memory.memoryID)
             )
         }
@@ -61,7 +61,7 @@ nonisolated enum LocalContentSearch {
                     title: story.caption.map { SearchText.snippet(of: $0, words: query.words) },
                     authorUserID: story.authorUserID,
                     date: story.createdAt,
-                    photoAssetID: story.mediaAssetID,
+                    media: story.media,
                     destination: .story(story.id)
                 )
             }

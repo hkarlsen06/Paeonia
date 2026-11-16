@@ -1,25 +1,24 @@
 import Foundation
 
-// MARK: - Photo and voice messages
+// MARK: - Attachment and voice messages
 
 extension ThreadChatViewModel {
-    /// Queues a message with photos from the composer, already compressed, and the
+    /// Queues a message with attachments from the composer, already prepared, and the
     /// text as their caption.
-    func send(_ text: String, photos: [ThreadChatPhoto]) async -> Bool {
-        guard photos.allSatisfy({ DailyAnswerDraft.measuredLength(of: $0.accessibilityText ?? "") <= 10_000 })
+    func send(_ text: String, attachments: [ThreadChatAttachment]) async -> Bool {
+        guard attachments.allSatisfy({ DailyAnswerDraft.measuredLength(of: $0.accessibilityText ?? "") <= 10_000 })
         else { return false }
-        return await send(text, photos: photos, replacingFailed: nil, replyTo: nil)
+        return await send(text, attachments: attachments, replacingFailed: nil, replyTo: nil)
     }
 
-    /// Sends a failed photo message again from the compressed copies kept on this phone.
-    func resendPhotos(_ message: ThreadChatMessage) async {
-        let photos = (message.photos ?? []).compactMap { photo -> ThreadChatPhoto? in
-            photo.data == nil ? nil : photo
-        }
-        guard message.delivery == .failed, !photos.isEmpty else { return }
+    /// Sends a failed message again from the copies kept on this phone. A video sends from
+    /// the same prepared file.
+    func resendAttachments(_ message: ThreadChatMessage) async {
+        let attachments = (message.attachments ?? []).filter { $0.local != nil }
+        guard message.delivery == .failed, !attachments.isEmpty else { return }
         _ = await send(
             message.body,
-            photos: photos,
+            attachments: attachments,
             replacingFailed: message.clientOperationID,
             replyTo: message.replyTo
         )
@@ -94,5 +93,19 @@ extension ThreadChatViewModel {
             notice = .voiceFailed
             return false
         }
+    }
+
+    /// An attachment as the chat holds it now. Once its send is recorded, an attachment
+    /// learns its uploaded id, and the server's copy of the message may replace this one.
+    func currentAttachment(_ attachment: ThreadChatAttachment, of message: ThreadChatMessage) -> ThreadChatAttachment {
+        guard let offset = message.attachments?.firstIndex(of: attachment),
+              let current = messages.first(where: { candidate in
+                  if candidate.id == message.id { return true }
+                  guard let operationID = message.clientOperationID else { return false }
+                  return candidate.clientOperationID == operationID
+              }),
+              let attachments = current.attachments, attachments.indices.contains(offset)
+        else { return attachment }
+        return attachments[offset]
     }
 }

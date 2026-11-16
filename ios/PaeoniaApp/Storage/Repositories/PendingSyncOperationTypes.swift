@@ -50,6 +50,8 @@ nonisolated struct PendingSyncOperationSnapshot: Equatable, Sendable {
     /// Set by a failed try that will be retried. Nil after a terminal failure.
     var lastFailureKind: PendingSyncFailureKind?
     let completedAt: Date?
+    /// Tries that ran out of their time limit. The drain gives up after a few.
+    var timedOutAttempts = 0
 }
 
 /// Why the last try of a queued write did not get through, as a screen needs it.
@@ -67,10 +69,13 @@ nonisolated enum PendingSyncFailureKind: String, Sendable {
 nonisolated struct PendingSyncFailure: Equatable, Sendable {
     let kind: PendingSyncFailureKind
     let description: String
+    /// The try ran out of its time limit. The store counts these.
+    var timedOut = false
 
-    init(kind: PendingSyncFailureKind, description: String) {
+    init(kind: PendingSyncFailureKind, description: String, timedOut: Bool = false) {
         self.kind = kind
         self.description = description
+        self.timedOut = timedOut
     }
 
     init(_ error: any Error) {

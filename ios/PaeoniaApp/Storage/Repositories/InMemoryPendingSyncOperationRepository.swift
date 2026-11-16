@@ -145,7 +145,8 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
                     nextRetryAt: nextRetryAt,
                     lastError: failure.description,
                     lastFailureKind: failure.kind,
-                    completedAt: operation.completedAt
+                    completedAt: operation.completedAt,
+                    timedOut: failure.timedOut
                 )
             )
         }
@@ -241,6 +242,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
         let lastError: String?
         var lastFailureKind: PendingSyncFailureKind?
         let completedAt: Date?
+        var timedOut = false
     }
 
     private func snapshot(
@@ -260,7 +262,8 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
             nextRetryAt: progress.nextRetryAt,
             lastError: progress.lastError,
             lastFailureKind: progress.lastFailureKind,
-            completedAt: progress.completedAt
+            completedAt: progress.completedAt,
+            timedOutAttempts: operation.timedOutAttempts + (progress.timedOut ? 1 : 0)
         )
     }
 }

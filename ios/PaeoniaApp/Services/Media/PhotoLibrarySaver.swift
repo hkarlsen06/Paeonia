@@ -1,9 +1,9 @@
 import Foundation
 import Photos
 
-/// The outcome of trying to add an image to the device's photo library.
+/// The outcome of trying to add an image or a video to the device's photo library.
 enum PhotoLibrarySaveResult: Equatable, Sendable {
-    /// The image was added to the photo library.
+    /// The image or video was added to the photo library.
     case saved
     /// The person has turned off permission for Paeonia to add to their photos.
     /// They need to change it in the system Settings before we can save.
@@ -12,12 +12,14 @@ enum PhotoLibrarySaveResult: Equatable, Sendable {
     case failed
 }
 
-/// Adds an image to the device's photo library, asking for add-only access the
-/// first time. Abstracted behind a protocol so the save flow can be unit-tested
+/// Adds an image or a video to the device's photo library, asking for add-only access
+/// the first time. Abstracted behind a protocol so the save flow can be unit-tested
 /// without touching the real photo library.
 nonisolated protocol PhotoLibrarySaving: Sendable {
     /// `data` is encoded image data, such as PNG or JPEG.
     func saveImage(_ data: Data) async -> PhotoLibrarySaveResult
+    /// `fileURL` is a video file, such as an mp4. Photos copies it, so the file stays.
+    func saveVideo(fileURL: URL) async -> PhotoLibrarySaveResult
 }
 
 /// Live implementation backed by the Photos framework. Uses add-only access,
@@ -25,6 +27,16 @@ nonisolated protocol PhotoLibrarySaving: Sendable {
 /// photos, it only writes new ones.
 struct PhotoLibrarySaver: PhotoLibrarySaving {
     func saveImage(_ data: Data) async -> PhotoLibrarySaveResult {
+        await save { $0.addResource(with: .photo, data: data, options: nil) }
+    }
+
+    func saveVideo(fileURL: URL) async -> PhotoLibrarySaveResult {
+        await save { $0.addResource(with: .video, fileURL: fileURL, options: nil) }
+    }
+
+    private func save(
+        _ addResource: @escaping @Sendable (PHAssetCreationRequest) -> Void
+    ) async -> PhotoLibrarySaveResult {
         switch await ensureAddAuthorization() {
         case .authorized, .limited:
             break
@@ -38,8 +50,7 @@ struct PhotoLibrarySaver: PhotoLibrarySaving {
 
         do {
             try await PHPhotoLibrary.shared().performChanges {
-                let request = PHAssetCreationRequest.forAsset()
-                request.addResource(with: .photo, data: data, options: nil)
+                addResource(PHAssetCreationRequest.forAsset())
             }
             return .saved
         } catch {

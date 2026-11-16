@@ -131,7 +131,15 @@ struct PaeoniaShareSheet: View {
         } icon: {
             Image(systemName: "square.and.arrow.up")
         }
-        if case let .ready(image, preview) = model.phase {
+        if case let .ready(_, preview) = model.phase, let videoURL = model.videoURL {
+            // The poster is for the share sheet, which reads the title aloud.
+            // swiftlint:disable:next accessibility_label_for_image
+            ShareLink(item: videoURL, preview: SharePreview(model.shareable.title, image: Image(uiImage: preview))) {
+                label
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .accessibilityIdentifier("share.share")
+        } else if case let .ready(image, preview) = model.phase {
             PaeoniaShareImageLink(image: image, preview: preview, title: model.shareable.title) { label }
                 .buttonStyle(PaeoniaPrimaryButtonStyle())
                 .accessibilityIdentifier("share.share")

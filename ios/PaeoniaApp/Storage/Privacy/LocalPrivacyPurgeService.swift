@@ -29,7 +29,7 @@ nonisolated protocol LocalPrivateContentPurging: Sendable {
     func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) async
     /// Deletes the private media files on disk. A failure leaves the purge request
     /// queued, so the next retry deletes them again.
-    func removePrivateFiles() async throws
+    func removePrivateFiles(scope: LocalPrivacyPurgeScope) async throws
 }
 
 actor LocalPrivacyPurgeService: LocalPrivacyPurging {
@@ -148,7 +148,7 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
     private func purgeRetryably(for request: LocalPrivacyPurgeRequest) async throws {
         var fileFailure: (any Error)?
         do {
-            try await privateContentPurger.removePrivateFiles()
+            try await privateContentPurger.removePrivateFiles(scope: request.scope)
         } catch {
             fileFailure = error
         }
@@ -207,6 +207,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let partnerAvatar: (any PartnerAvatarSharing)?
     private let dailyAnswerMediaCache: (any DailyAnswerMediaCacheClearing)?
     private let memoryMediaCache: (any MemoryMediaImageCacheClearing)?
+    private let videoFileCache: VideoFileCache?
     private let profilePhotoCache: (any ProfilePhotoImageCacheClearing)?
     private let dailyAnswerMediaDraftStore: any DailyAnswerMediaDraftStoring
     private let dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching
@@ -239,6 +240,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         partnerAvatar: (any PartnerAvatarSharing)? = PartnerAvatarSharingServiceFactory.shared,
         dailyAnswerMediaCache: (any DailyAnswerMediaCacheClearing)? = DailyAnswerMediaImageService.shared,
         memoryMediaCache: (any MemoryMediaImageCacheClearing)? = MemoryMediaImageService.shared,
+        videoFileCache: VideoFileCache? = VideoFileCache.shared,
         profilePhotoCache: (any ProfilePhotoImageCacheClearing)? = ProfilePhotoImageService.shared,
         dailyAnswerMediaDraftStore: any DailyAnswerMediaDraftStoring = FileDailyAnswerMediaDraftStore.live(),
         dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching = FileDailyChallengeSnapshotCache.live(),
@@ -270,6 +272,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.partnerAvatar = partnerAvatar
         self.dailyAnswerMediaCache = dailyAnswerMediaCache
         self.memoryMediaCache = memoryMediaCache
+        self.videoFileCache = videoFileCache
         self.profilePhotoCache = profilePhotoCache
         self.dailyAnswerMediaDraftStore = dailyAnswerMediaDraftStore
         self.dailyChallengeSnapshotCache = dailyChallengeSnapshotCache
@@ -316,7 +319,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         let shouldPurgeOwnedContent = scope != .relationshipAccessHidden
         if shouldPurgeOwnedContent {
             FileThreadChatVoiceDraftStore.shared.clearAll()
-            FileThreadChatPhotoDraftStore.shared.clearAll()
+            FileThreadChatAttachmentDraftStore.shared.clearAll()
             dailyAnswerMediaDraftStore.clearAll()
             await mailCache.clearDrafts()
             Self.removeTemporaryVoiceFiles(in: temporaryDirectory)
@@ -381,6 +384,9 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
             await widgetSync.clearForPrivacy()
             await widgetCanvas.clearForPrivacy()
         }
+        // First, so no video download that started before the purge finishes after the
+        // image caches below are empty.
+        await videoFileCache?.clearAll()
         await partnerAvatar?.clear()
         await dailyAnswerMediaCache?.clearAll()
         await memoryMediaCache?.clearAll()
@@ -416,11 +422,21 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         gameDrawingStore.purge(for: scope)
     }
 
-    func removePrivateFiles() async throws {
+    func removePrivateFiles(scope: LocalPrivacyPurgeScope) async throws {
         // Earlier builds sent backend calls and media downloads through URLSession.shared,
         // which kept the responses here on disk.
         URLCache.shared.removeAllCachedResponses()
-        var urls = [DailyAnswerMediaImageService.defaultDirectoryURL(), MemoryMediaImageService.defaultDirectoryURL()]
+        var urls = [
+            DailyAnswerMediaImageService.defaultDirectoryURL(),
+            MemoryMediaImageService.defaultDirectoryURL(),
+            VideoFileCache.defaultDirectoryURL(),
+        ]
+        // Videos and GIFs not sent yet are the person's own. A temporary access hide keeps them, so
+        // the same send can go on later.
+        if scope != .relationshipAccessHidden {
+            VideoPreparation.invalidateTickets()
+            urls += [PreparedVideo.outgoingMediaDirectoryURL(), VideoPreparation.workingDirectoryURL()]
+        }
         if let containerURL = PaeoniaAppGroup.containerURL {
             urls.append(containerURL.appendingPathComponent(PaeoniaAppGroup.communicationPartnerAvatarPath))
         }

@@ -53,7 +53,7 @@ struct SearchResultRow: View {
     private var tile: some View {
         switch result.kind {
         case .memory, .story:
-            MemoryMapThumbnail(photoAssetID: result.photoAssetID, size: Self.tileSize)
+            MemoryMapThumbnail(media: result.media, size: Self.tileSize)
         case .question, .answer, .message, .storyChain, .drawing, .round, .creature:
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
                 .fill(.paeoniaSurfaceSecondary)

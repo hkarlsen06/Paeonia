@@ -1,7 +1,7 @@
 import Foundation
 
-/// A photo, with an optional caption, that one partner shares as a small check-in
-/// (`backend/convex/stories.ts`). It shows on Home for `lifetime` after it was posted,
+/// A photo or a short video, with an optional caption, that one partner shares as a small
+/// check-in (`backend/convex/stories.ts`). It shows on Home for `lifetime` after it was posted,
 /// then stays in the Stories section of Memories until its author deletes it.
 nonisolated struct Story: Codable, Equatable, Identifiable, Sendable {
     let id: UUID
@@ -12,11 +12,27 @@ nonisolated struct Story: Codable, Equatable, Identifiable, Sendable {
     let createdAt: Date
     /// When the partner first opened it. Nil until then.
     var seenAt: Date?
+    /// Nil when the server no longer has the file, which then shows like a photo that failed.
+    var mediaType: StoryMediaType?
+    var width: Int?
+    var height: Int?
+    /// Set for a video.
+    var durationMs: Int?
 
     /// How long a story shows on Home.
     static let lifetime: TimeInterval = 24 * 60 * 60
     /// The composer caps captions at this many characters.
     static let maxCaptionLength = 100
+    /// The longest video a story takes. `post_story` refuses a longer one.
+    static let maxVideoDurationMs = VideoLengthCap.oneMinute.maxDurationMs
+
+    var isVideo: Bool {
+        mediaType == .video
+    }
+
+    var media: MediaReference {
+        isVideo ? .video(mediaAssetID, durationMs: durationMs) : .photo(mediaAssetID)
+    }
 
     var expiresAt: Date {
         createdAt.addingTimeInterval(Self.lifetime)
@@ -34,7 +50,16 @@ nonisolated struct Story: Codable, Equatable, Identifiable, Sendable {
         case accessibilityText = "accessibility_text"
         case createdAt = "created_at"
         case seenAt = "seen_at"
+        case mediaType = "media_type"
+        case width
+        case height
+        case durationMs = "duration_ms"
     }
+}
+
+nonisolated enum StoryMediaType: String, Codable, Sendable {
+    case image
+    case video
 }
 
 /// A partner's short note, shown in a bubble over their avatar on Home for a day after

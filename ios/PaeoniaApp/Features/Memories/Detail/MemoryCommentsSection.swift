@@ -107,8 +107,9 @@ struct MemoryCommentsSection: View {
 }
 
 extension ThreadChatHeader {
-    /// The card at the top of a memory's chat: its photo, title and date, then both partners'
-    /// notes in the order the memory page shows them.
+    /// The card at the top of a memory's chat: its first photo, title and date, then both
+    /// partners' notes in the order the memory page shows them. A video is left out, since
+    /// the card shows pictures only.
     init(memory record: MemoryRecord) {
         let snapshot = record.snapshot
         let date = MemoryTimeline.parseLocalDate(snapshot.memoryDate) ?? snapshot.createdAt
@@ -118,7 +119,8 @@ extension ThreadChatHeader {
             eyebrow: String(localized: .chatHeaderMemory),
             title: snapshot.title ?? "",
             detail: date.formatted(MemoryDateStyle.long),
-            photoAssetID: snapshot.media.filter(\.isVisible).sortedForMemoryDisplay().first?.mediaAssetID,
+            media: snapshot.media.filter { $0.isVisible && !$0.isVideo }
+                .sortedForMemoryDisplay().first?.media,
             notes: [own, partner].compactMap(\.self)
         )
     }

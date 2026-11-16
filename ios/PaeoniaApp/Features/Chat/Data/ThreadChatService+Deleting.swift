@@ -57,7 +57,7 @@ extension ThreadChatService {
         LocalStoreChanges.post(.threadChat, ownerUserID: ownerUserID)
     }
 
-    /// A server result with the user's pending deletes applied. The photos and voice
+    /// A server result with the user's pending deletes applied. The attachments and voice
     /// recordings of every message it shows as deleted leave this phone, whoever deleted
     /// them, so a deleted file does not stay in the cache on the partner's phone.
     func withDeletions(
@@ -110,9 +110,12 @@ extension ThreadChatService {
     }
 
     /// Takes back a message the server has not confirmed. One that was never tried is
-    /// removed from the queue and the chat, so it never goes out. One that was tried may be
-    /// on the server already, because its answer can get lost, so the delete waits in the
-    /// queue behind the send. A failed one is no longer in the queue, so only the chat copy goes.
+    /// removed from the queue and the chat, so it never goes out. One that was tried, or is
+    /// sending now, may be on the server already, because its answer can get lost. Its send
+    /// stops, and its next try only asks the server whether every upload finished, which
+    /// sends no bytes (`ThreadChatSendAttachments.isTakenBack`). The delete waits in the queue behind it. A
+    /// failed one is no longer in the queue, so only the chat copy goes. A GIF's or a video's
+    /// file goes with the message in every case.
     private func dropUnsentMessage(
         _ message: ThreadChatMessage,
         ownerUserID: UUID,
@@ -121,22 +124,18 @@ extension ThreadChatService {
         guard let operationID = message.clientOperationID else { return }
         if message.delivery == .sending {
             guard let waiting = try await waitingOperation(operationID, ownerUserID: ownerUserID),
-                  waiting.status != .sending
+                  !(try await otherMessagesWaitForThread(
+                      of: waiting,
+                      subjectID: message.subjectID,
+                      ownerUserID: ownerUserID
+                  ))
             else { throw ThreadChatServiceError.stillSending }
-            if waiting.attemptCount > 0 {
+            if !(try await pendingOperationStore.discardUnsent(clientOperationID: operationID)) {
                 try await enqueueDeletion(
                     DeleteChatMessagePayload(subjectID: message.subjectID, target: .sentBy(operationID: operationID)),
                     ownerUserID: ownerUserID,
                     operation: operation
                 )
-            } else {
-                guard !(try await otherMessagesWaitForThread(
-                        of: waiting,
-                        subjectID: message.subjectID,
-                        ownerUserID: ownerUserID
-                      )),
-                      try await pendingOperationStore.discardUnsent(clientOperationID: operationID)
-                else { throw ThreadChatServiceError.stillSending }
             }
         }
         await cache.discardUnsent(
@@ -144,6 +143,7 @@ extension ThreadChatService {
             subjectID: message.subjectID,
             clientOperationID: operationID
         )
+        ThreadChatMediaFiles.delete(message.attachments ?? [])
     }
 
     private func waitingOperation(
@@ -158,7 +158,7 @@ extension ThreadChatService {
     }
 
     /// The first message of a chat creates its thread, and messages queued after it wait for
-    /// that thread. Taking the first one back would leave them waiting for good.
+    /// that thread. Taking the first one back could leave them without a chat.
     private func otherMessagesWaitForThread(
         of operation: PendingSyncOperationSnapshot,
         subjectID: UUID,

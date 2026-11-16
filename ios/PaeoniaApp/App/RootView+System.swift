@@ -21,6 +21,9 @@ extension RootView {
         await viewModel.finishDeferredLaunchStartup()
         hasFinishedPostLaunchWork = true
         await performWidgetSyncIfPaired(viewModel.state)
+        if allowsSystemIntegrations, let userID = viewModel.currentSession.flatMap({ UUID(uuidString: $0.id) }) {
+            await OutgoingMediaSweep.run(ownerUserID: userID)
+        }
     }
 
     /// One pass per activation. Our location refresh runs next to the

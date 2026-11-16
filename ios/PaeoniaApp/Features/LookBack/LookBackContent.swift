@@ -28,7 +28,7 @@ struct LookBackContent<Header: View>: View {
             pictureRow {
                 if let photoID = memory.photoMediaAssetID {
                     MemoryMediaImageView(
-                        mediaAssetID: photoID,
+                        media: .photo(photoID),
                         height: LookBackLayout.pictureSide,
                         cornerRadius: LookBackLayout.pictureRadius,
                         allowsViewing: false

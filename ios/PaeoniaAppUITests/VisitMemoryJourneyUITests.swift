@@ -34,7 +34,7 @@ final class VisitMemoryJourneyUITests: XCTestCase {
         app.typeText("Rainy Bergen")
 
         // The system photo picker runs out of process, and its grid shows in the app's tree.
-        app.buttons["Add photo"].tap()
+        app.buttons["Library"].tap()
         let firstPhoto = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
         XCTAssertTrue(firstPhoto.waitForExistence(timeout: 10))
         firstPhoto.tap()

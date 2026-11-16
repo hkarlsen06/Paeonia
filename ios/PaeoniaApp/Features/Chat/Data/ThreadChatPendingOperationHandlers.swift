@@ -35,7 +35,13 @@ struct CreateChatThreadOperationHandler: PendingSyncOperationHandling {
             await markChatMessageFailed(operation, cache: cache)
             return .terminalFailure("The chat belongs to an earlier relationship")
         }
-        let mediaAssetIDs = try await uploadAttachments(of: payload, with: mediaUploadService, imageCache: imageCache)
+        let uploads = try await ThreadChatSendAttachments.upload(
+            operation, of: payload, with: mediaUploadService, imageCache: imageCache, context: context
+        )
+        guard case let .ready(mediaAssetIDs) = uploads else {
+            try await failMessagesWaitingForThread(of: payload.subject, operation, context: context)
+            return await stopSend(operation, after: uploads, cache: cache)
+        }
         let response: ThreadChatMessageResponse
         do {
             response = try await gateway.createThreadWithMessage(
@@ -49,10 +55,11 @@ struct CreateChatThreadOperationHandler: PendingSyncOperationHandling {
                 return .retry(after: nil)
             }
             await markChatMessageFailed(operation, cache: cache)
+            await imageCache?.evict(mediaAssetIDs: mediaAssetIDs)
             try await failMessagesWaitingForThread(of: payload.subject, operation, context: context)
             return .terminalFailure("The chat is no longer available")
         }
-        await confirmSent(operation, response: response, of: payload, in: cache)
+        await confirmSent(operation, response: response, mediaAssetIDs: mediaAssetIDs, of: payload, in: cache)
         return .succeeded
     }
 
@@ -60,6 +67,22 @@ struct CreateChatThreadOperationHandler: PendingSyncOperationHandling {
 
     func gaveUp(on operation: PendingSyncOperationSnapshot, context _: SyncContext) async {
         await markChatMessageFailed(operation, cache: cache)
+        await ThreadChatSendAttachments.evictFinishedUploads(
+            of: operation, as: CreateChatThreadPayload.self, with: mediaUploadService, from: imageCache
+        )
+    }
+
+    // swiftlint:disable:next async_without_await
+    func didRecordSuccess(of operation: PendingSyncOperationSnapshot) async {
+        ThreadChatSendAttachments.deleteFiles(of: operation, as: CreateChatThreadPayload.self)
+    }
+
+    nonisolated func timeLimit(for operation: PendingSyncOperationSnapshot) -> Duration? {
+        ThreadChatSendAttachments.timeLimit(of: operation, as: CreateChatThreadPayload.self)
+    }
+
+    func isTakenBack(_ operation: PendingSyncOperationSnapshot, context: SyncContext) async -> Bool {
+        await ThreadChatSendAttachments.isTakenBack(operation, context: context)
     }
 
     /// A comment on a memory this phone saved but has not sent yet. The server does not have the
@@ -145,7 +168,12 @@ struct SendChatMessageOperationHandler: PendingSyncOperationHandling {
             return .retry(after: nil)
         }
 
-        let mediaAssetIDs = try await uploadAttachments(of: payload, with: mediaUploadService, imageCache: imageCache)
+        let uploads = try await ThreadChatSendAttachments.upload(
+            operation, of: payload, with: mediaUploadService, imageCache: imageCache, context: context
+        )
+        guard case let .ready(mediaAssetIDs) = uploads else {
+            return await stopSend(operation, after: uploads, cache: cache)
+        }
         let response: ThreadChatMessageResponse
         do {
             response = try await gateway.sendMessage(
@@ -158,9 +186,10 @@ struct SendChatMessageOperationHandler: PendingSyncOperationHandling {
         } catch {
             guard isPermanentChatFailure(error) else { throw error }
             await markChatMessageFailed(operation, cache: cache)
+            await imageCache?.evict(mediaAssetIDs: mediaAssetIDs)
             return .terminalFailure("Thread message was rejected")
         }
-        await confirmSent(operation, response: response, of: payload, in: cache)
+        await confirmSent(operation, response: response, mediaAssetIDs: mediaAssetIDs, of: payload, in: cache)
         return .succeeded
     }
 
@@ -168,38 +197,47 @@ struct SendChatMessageOperationHandler: PendingSyncOperationHandling {
 
     func gaveUp(on operation: PendingSyncOperationSnapshot, context _: SyncContext) async {
         await markChatMessageFailed(operation, cache: cache)
+        await ThreadChatSendAttachments.evictFinishedUploads(
+            of: operation, as: SendChatMessagePayload.self, with: mediaUploadService, from: imageCache
+        )
+    }
+
+    // swiftlint:disable:next async_without_await
+    func didRecordSuccess(of operation: PendingSyncOperationSnapshot) async {
+        ThreadChatSendAttachments.deleteFiles(of: operation, as: SendChatMessagePayload.self)
+    }
+
+    nonisolated func timeLimit(for operation: PendingSyncOperationSnapshot) -> Duration? {
+        ThreadChatSendAttachments.timeLimit(of: operation, as: SendChatMessagePayload.self)
+    }
+
+    func isTakenBack(_ operation: PendingSyncOperationSnapshot, context: SyncContext) async -> Bool {
+        await ThreadChatSendAttachments.isTakenBack(operation, context: context)
     }
 }
-
-/// What the handlers read from either kind of queued chat message.
-private nonisolated protocol ChatMessagePayload {
-    var subject: ThreadChatSubject { get }
-    var coupleID: UUID { get }
-    var body: String { get }
-    var voice: ThreadChatVoicePayload? { get }
-    var photos: ThreadChatPhotosPayload? { get }
-}
-
-extension CreateChatThreadPayload: ChatMessagePayload {}
-extension SendChatMessagePayload: ChatMessagePayload {}
 
 /// Replaces the message shown while sending with the one the server confirmed.
 private func confirmSent(
     _ operation: PendingSyncOperationSnapshot,
     response: ThreadChatMessageResponse,
+    mediaAssetIDs: [UUID],
     of payload: some ChatMessagePayload,
     in cache: any ThreadChatCaching
 ) async {
     await cache.confirm(
-        ownerUserID: operation.ownerUserID,
-        subject: payload.subject,
-        coupleID: payload.coupleID,
-        clientOperationID: operation.operation.id,
-        threadID: response.threadID,
-        messageID: response.messageID,
-        body: payload.body,
-        senderUserID: operation.ownerUserID,
-        createdAt: operation.operation.localCreatedAt
+        ThreadChatConfirmedSend(
+            subject: payload.subject,
+            coupleID: payload.coupleID,
+            clientOperationID: operation.operation.id,
+            threadID: response.threadID,
+            messageID: response.messageID,
+            body: payload.body,
+            senderUserID: operation.ownerUserID,
+            createdAt: operation.operation.localCreatedAt,
+            mediaAssetIDs: mediaAssetIDs,
+            mediaType: payload.voice != nil ? "voice" : payload.attachments?.items.first?.kind.serverMediaType
+        ),
+        ownerUserID: operation.ownerUserID
     )
     LocalStoreChanges.post(.threadChat, ownerUserID: operation.ownerUserID)
 }
@@ -211,56 +249,20 @@ private nonisolated func isInCurrentCouple(_ coupleID: UUID, context: SyncContex
     context.session.activeCoupleID.map { $0 == coupleID } ?? true
 }
 
-/// Uploads a message's photos, or its voice recording, and returns the media asset ids
-/// in order. The fixed operations make a retry pick up the same uploads. Upload
-/// errors throw, so the operation retries later.
-private func uploadAttachments(
-    of payload: some ChatMessagePayload,
-    with uploader: (any DailyAnswerMediaUploading)?,
-    imageCache: (any DailyAnswerMediaImageCacheWriting)?
-) async throws -> [UUID] {
-    guard payload.voice != nil || payload.photos != nil else { return [] }
-    guard let uploader else { throw ThreadChatServiceError.unavailable }
-    var assetIDs: [UUID] = []
-    for photo in payload.photos?.items ?? [] {
-        let assetID = try await uploader.uploadMedia(
-            DailyAnswerUploadMedia(
-                data: photo.data,
-                purpose: .threadPhoto,
-                mimeType: "image/jpeg",
-                fileExtension: "jpg",
-                width: photo.width,
-                height: photo.height,
-                accessibilityText: photo.accessibilityText
-            ),
-            answerID: payload.photos?.messageID ?? UUID(),
-            coupleID: payload.coupleID,
-            reserveOperation: photo.reserveOperation,
-            finalizeOperation: photo.finalizeOperation
-        )
-        assetIDs.append(assetID)
-        // The sender's own photo then shows from this phone, with no download or flash
-        // when the server's copy of the message replaces the local one.
-        await imageCache?.cacheImageData(photo.data, for: assetID)
-        _ = await ThreadChatPhotoLayout.decodeAndCache(photo.data, key: "chat-\(assetID.uuidString)")
+/// Ends a send whose attachments cannot go. A missing file shows the message as not sent.
+/// A taken-back message is already gone from the chat.
+private func stopSend(
+    _ operation: PendingSyncOperationSnapshot,
+    after uploads: ThreadChatSendAttachments.Outcome,
+    cache: any ThreadChatCaching
+) async -> PendingSyncOperationSendResult {
+    switch uploads {
+    case .ready, .takenBack:
+        return .terminalFailure("Taken back before it reached the server")
+    case .missingFile:
+        await markChatMessageFailed(operation, cache: cache)
+        return .terminalFailure("An attachment is no longer on this phone")
     }
-    if let voice = payload.voice {
-        assetIDs.append(try await uploader.uploadMedia(
-            DailyAnswerUploadMedia(
-                data: voice.data,
-                purpose: .voice,
-                mimeType: ThreadChatVoiceRecording.mimeType,
-                fileExtension: ThreadChatVoiceRecording.fileExtension,
-                durationMs: voice.durationMs,
-                accessibilityText: voice.transcript
-            ),
-            answerID: voice.messageID,
-            coupleID: payload.coupleID,
-            reserveOperation: voice.reserveOperation,
-            finalizeOperation: voice.finalizeOperation
-        ))
-    }
-    return assetIDs
 }
 
 /// Server rejections that sending again cannot fix. The Convex client puts the

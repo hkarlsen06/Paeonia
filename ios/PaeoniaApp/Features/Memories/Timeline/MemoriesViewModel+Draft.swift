@@ -5,13 +5,13 @@ extension MemoriesViewModel {
     /// empty draft removes the saved one, which is how Cancel discards a draft.
     ///
     /// Typing saves after a short pause, because each save rewrites the stored draft.
-    /// Adding or removing a photo, and emptying the draft, save right away.
+    /// Adding or removing a photo or video, and emptying the draft, save right away.
     func updateDraft(_ newDraft: MemoryDraft) {
         guard newDraft != draft else { return }
-        let changesPhotosOrEmpties = newDraft.photos != draft.photos || newDraft.isEmpty
+        let changesMediaOrEmpties = newDraft.media != draft.media || newDraft.isEmpty
         draft = newDraft
         draftNeedsSaving = true
-        if changesPhotosOrEmpties {
+        if changesMediaOrEmpties {
             saveDraftNow()
         } else {
             scheduleDraftSave()
@@ -24,17 +24,17 @@ extension MemoriesViewModel {
     /// the tab then loads.
     func startNewMemory(adding photos: [Data], for userID: UUID?) {
         guard let userID else { return }
-        let added = photos.map { MemoryDraftPhoto(data: $0) }
+        let added = MemoryDraftMedia.photos(photos)
         if currentUserID == userID, draftFailure == .read {
             pendingImportedPhotos[userID, default: []] += added
         } else if currentUserID == userID {
             var next = draft
-            next.photos += added
+            next.media += added
             updateDraft(next)
         } else {
             do {
                 var stored = try draftStore.draft(for: userID) ?? MemoryDraft()
-                stored.photos += added
+                stored.media += added
                 try draftStore.setDraft(stored, for: userID)
             } catch {
                 // Keep the incoming images in this model and surface the failure.
@@ -61,7 +61,7 @@ extension MemoriesViewModel {
         do {
             draft = try draftStore.draft(for: currentUserID) ?? MemoryDraft()
             if let imported = pendingImportedPhotos.removeValue(forKey: currentUserID) {
-                draft.photos += imported
+                draft.media += imported
                 draftNeedsSaving = true
                 saveDraftNow()
             }
@@ -76,6 +76,7 @@ extension MemoriesViewModel {
         pendingDraftSave?.cancel()
         pendingDraftSave = nil
         draftStore.clearDraft(for: currentUserID)
+        MemoryDraftMedia.deleteVideoFiles(of: draft.media)
         draft = MemoryDraft()
         draftFailure = nil
         draftNeedsSaving = false
@@ -110,11 +111,11 @@ extension MemoriesViewModel {
 }
 
 extension MemoriesViewModel {
-    func addPhotos(_ edit: MemoryEdit, _ latest: MemoryRecord, _ userID: UUID) async -> StepResult {
-        guard !edit.newPhotos.isEmpty else { return .unchanged }
+    func addMedia(_ edit: MemoryEdit, _ latest: MemoryRecord, _ userID: UUID) async -> StepResult {
+        guard !edit.newMedia.isEmpty else { return .unchanged }
         let coupleID = latest.snapshot.coupleID
-        guard let uploaded = await photoUploads.upload(
-            MemoryDraftPhoto.photos(edit.newPhotos, descriptions: edit.photoDescriptions),
+        guard let uploaded = await mediaUploads.upload(
+            edit.newMedia,
             coupleID: coupleID,
             ownerUserID: userID,
             startingSortOrder: (latest.snapshot.media.map(\.sortOrder).max() ?? 0) + 1,
@@ -126,7 +127,7 @@ extension MemoriesViewModel {
         let visibleIDs = Set(latest.snapshot.media.filter(\.isVisible).map(\.memoryMediaID))
         let remaining = uploaded.filter { !visibleIDs.contains($0.memoryMediaID) }
         guard !remaining.isEmpty else {
-            photoUploads.reset()
+            finishUploads(of: edit.newMedia)
             return .unchanged
         }
         let attached = await perform(
@@ -140,7 +141,14 @@ extension MemoriesViewModel {
             )
         }
         guard attached else { return .failed }
-        photoUploads.reset()
+        finishUploads(of: edit.newMedia)
         return .saved
+    }
+
+    /// Forgets the sent uploads and deletes the sent videos' files. Before the memory has them,
+    /// a retry may still need both.
+    func finishUploads(of media: [MemoryDraftMedia]) {
+        mediaUploads.reset()
+        MemoryDraftMedia.deleteVideoFiles(of: media)
     }
 }

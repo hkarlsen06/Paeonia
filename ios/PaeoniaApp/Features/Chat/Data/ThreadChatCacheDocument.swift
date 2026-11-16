@@ -42,13 +42,25 @@ nonisolated struct ThreadChatConfirmedSend {
     let body: String
     let senderUserID: UUID
     let createdAt: Date
+    /// The uploaded attachments in order, then the voice recording.
+    var mediaAssetIDs: [UUID] = []
+    /// What the chat's preview calls a message with no text, as the server names it.
+    var mediaType: String?
 }
 
 nonisolated extension ThreadChatSubjectDocument {
     mutating func storeConfirmedMessage(_ send: ThreadChatConfirmedSend) {
         let index = messages.firstIndex(where: { $0.clientOperationID == send.clientOperationID })
         // A voice message keeps playing from this phone's copy until the server's
-        // copy, which carries the uploaded file, replaces it.
+        // copy, which carries the uploaded file, replaces it. Attachments learn their
+        // uploaded ids, so a sent video shows from the video cache once its file is gone.
+        let attachments = index.flatMap { messages[$0].attachments }.map { attachments in
+            attachments.enumerated().map { offset, attachment in
+                var uploaded = attachment
+                if send.mediaAssetIDs.indices.contains(offset) { uploaded.mediaAssetID = send.mediaAssetIDs[offset] }
+                return uploaded
+            }
+        }
         let confirmed = ThreadChatMessage(
             id: send.messageID,
             threadID: send.threadID,
@@ -59,7 +71,7 @@ nonisolated extension ThreadChatSubjectDocument {
             clientOperationID: send.clientOperationID,
             delivery: .sent,
             voice: index.flatMap { messages[$0].voice },
-            photos: index.flatMap { messages[$0].photos },
+            attachments: attachments,
             replyTo: index.flatMap { messages[$0].replyTo }
         )
         if let index {
@@ -86,6 +98,7 @@ nonisolated extension ThreadChatCoreDocument {
             lastMessageAt: message.createdAt,
             lastMessageSenderUserID: message.senderUserID,
             lastMessageBody: message.body,
+            lastMessageMediaType: message.summaryMediaType,
             viewerReadThroughAt: summary.viewerReadThroughAt,
             viewerReadThroughMessageID: summary.viewerReadThroughMessageID,
             topicKey: summary.topicKey,
@@ -131,6 +144,7 @@ nonisolated extension ThreadChatCoreDocument {
                 lastMessageAt: send.createdAt,
                 lastMessageSenderUserID: send.senderUserID,
                 lastMessageBody: send.body,
+                lastMessageMediaType: send.mediaType,
                 viewerReadThroughAt: summary.viewerReadThroughAt,
                 viewerReadThroughMessageID: summary.viewerReadThroughMessageID,
                 topicKey: summary.topicKey,
@@ -147,7 +161,8 @@ nonisolated extension ThreadChatCoreDocument {
                     lastMessageID: send.messageID,
                     lastMessageAt: send.createdAt,
                     lastMessageSenderUserID: send.senderUserID,
-                    lastMessageBody: send.body
+                    lastMessageBody: send.body,
+                    lastMessageMediaType: send.mediaType
                 )
             )
         }

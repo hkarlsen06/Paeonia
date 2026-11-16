@@ -33,7 +33,7 @@ struct MemoryCardView: View {
 
     @ViewBuilder
     private var content: some View {
-        if !photoAssetIDs.isEmpty, !dynamicTypeSize.isAccessibilitySize {
+        if cover != nil, !dynamicTypeSize.isAccessibilitySize {
             HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
                 textContent
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -43,7 +43,7 @@ struct MemoryCardView: View {
         } else {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
                 textContent
-                if !photoAssetIDs.isEmpty { photo }
+                if cover != nil { photo }
             }
         }
     }
@@ -63,7 +63,7 @@ struct MemoryCardView: View {
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaMemory)
             }
-            if photoAssetIDs.isEmpty {
+            if cover == nil {
                 date
                     .foregroundStyle(.paeoniaMemory)
             }
@@ -92,7 +92,7 @@ struct MemoryCardView: View {
     private var photo: some View {
         GeometryReader { geometry in
             MemoryMediaImageView(
-                mediaAssetID: photoAssetIDs.first,
+                media: cover?.media,
                 height: geometry.size.width,
                 cornerRadius: PaeoniaRadius.radius12,
                 allowsViewing: false
@@ -113,8 +113,8 @@ struct MemoryCardView: View {
                 }
         }
         .overlay(alignment: .bottomTrailing) {
-            if photoAssetIDs.count > 1 {
-                Text("+\(photoAssetIDs.count - 1)")
+            if media.count > 1 {
+                Text("+\(media.count - 1)")
                     .font(PaeoniaTypography.caption.weight(.semibold))
                     .foregroundStyle(.white)
                     .padding(PaeoniaSpacing.space8)
@@ -131,11 +131,17 @@ struct MemoryCardView: View {
         if let preview = notePreview {
             parts.append(preview)
         }
-        if !photoAssetIDs.isEmpty {
-            let count = photoAssetIDs.count == 1
+        let videoCount = media.count { $0.isVideo }
+        let photoCount = media.count - videoCount
+        if photoCount > 0 {
+            parts.append(photoCount == 1
                 ? String(localized: .memoriesCardPhotoCountOne)
-                : String(localized: .memoriesCardPhotoCount(photoAssetIDs.count.formatted()))
-            parts.append(count)
+                : String(localized: .memoriesCardPhotoCount(photoCount.formatted())))
+        }
+        if videoCount > 0 {
+            parts.append(videoCount == 1
+                ? String(localized: .memoriesCardVideoCountOne)
+                : String(localized: .memoriesCardVideoCount(videoCount.formatted())))
         }
         if let place = record.snapshot.place {
             parts.append(place.shortName)
@@ -147,8 +153,12 @@ struct MemoryCardView: View {
         MemoryTimeline.parseLocalDate(record.snapshot.memoryDate) ?? record.snapshot.createdAt
     }
 
-    private var photoAssetIDs: [UUID] {
-        record.snapshot.visibleMediaAssetIDs
+    private var media: [MemoryMediaSnapshot] {
+        record.snapshot.visibleMedia
+    }
+
+    private var cover: MemoryMediaSnapshot? {
+        record.snapshot.cover
     }
 
     private var notePreview: String? {

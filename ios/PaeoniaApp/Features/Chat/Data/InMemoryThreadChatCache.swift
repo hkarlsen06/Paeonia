@@ -64,6 +64,10 @@
             storedMessages[ownerUserID]?[subjectID] ?? []
         }
 
+        func unsentMessages(ownerUserID: UUID) -> [ThreadChatMessage] {
+            (storedMessages[ownerUserID] ?? [:]).values.flatMap { $0.filter(\.isUnsent) }
+        }
+
         func gameTimeline(ownerUserID: UUID, subjectID: UUID) -> GameChatTimeline? {
             storedTimelines[ownerUserID]?[subjectID]
         }
@@ -153,7 +157,7 @@
                     clientOperationID: clientOperationID,
                     delivery: .failed,
                     voice: message.voice,
-                    photos: message.photos,
+                    attachments: message.attachments,
                     replyTo: message.replyTo
                 )
                 return
@@ -198,26 +202,10 @@
             return []
         }
 
-        // swiftlint:disable:next function_parameter_count
-        func confirm(
-            ownerUserID: UUID,
-            subject: ThreadChatSubject,
-            coupleID: UUID,
-            clientOperationID: UUID,
-            threadID: UUID,
-            messageID: UUID,
-            body: String,
-            senderUserID: UUID,
-            createdAt: Date
-        ) {
-            let send = ThreadChatConfirmedSend(
-                subject: subject, coupleID: coupleID, clientOperationID: clientOperationID,
-                threadID: threadID, messageID: messageID, body: body,
-                senderUserID: senderUserID, createdAt: createdAt
-            )
-            var document = ThreadChatSubjectDocument(messages: storedMessages[ownerUserID]?[subject.id] ?? [])
+        func confirm(_ send: ThreadChatConfirmedSend, ownerUserID: UUID) {
+            var document = ThreadChatSubjectDocument(messages: storedMessages[ownerUserID]?[send.subject.id] ?? [])
             document.storeConfirmedMessage(send)
-            storedMessages[ownerUserID, default: [:]][subject.id] = document.messages
+            storedMessages[ownerUserID, default: [:]][send.subject.id] = document.messages
             var core = ThreadChatCoreDocument(summaries: storedSummaries[ownerUserID] ?? [])
             core.updateSummary(for: send)
             storedSummaries[ownerUserID] = core.summaries

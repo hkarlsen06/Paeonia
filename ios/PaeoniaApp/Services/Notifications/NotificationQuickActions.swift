@@ -138,7 +138,7 @@ nonisolated enum NotificationQuickActionHandler {
             subject: subject,
             threadID: threadID,
             body: body,
-            photos: nil,
+            attachments: nil,
             createThread: false,
             replyTo: nil,
             operation: operation

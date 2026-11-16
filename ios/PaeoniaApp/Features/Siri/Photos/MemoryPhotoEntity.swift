@@ -118,11 +118,11 @@ struct MemoryPhotoEntity: IndexedEntity, OwnershipProvidingEntity {
         isPortraitModeEnabled = nil
     }
 
-    /// The visible photos of `records`, in each memory's order.
+    /// The visible photos of `records`, in each memory's order. Videos are not photos to Siri.
     static func all(in records: [MemoryRecord]) -> [MemoryPhotoEntity] {
         records.flatMap { record in
             record.snapshot.media
-                .filter(\.isVisible)
+                .filter { $0.isVisible && !$0.isVideo }
                 .sorted { $0.sortOrder < $1.sortOrder }
                 .map { MemoryPhotoEntity(media: $0, in: record) }
         }

@@ -28,7 +28,7 @@ struct ThreadChatMessageRow: View {
     var reactionChoices: [String] = []
     let onRetry: () -> Void
     let onTapQuoted: (ThreadChatItemID) -> Void
-    var onOpenPhoto: (ThreadChatPhoto) -> Void = { _ in }
+    var onOpenAttachment: (ThreadChatAttachment) -> Void = { _ in }
     /// Opens the memory or story a header row shows. Nil leaves the header without a tap.
     var onOpenHeader: (() -> Void)?
     var onToggleGameResult: (GameChatResultReference) -> Void = { _ in }
@@ -176,8 +176,8 @@ struct ThreadChatMessageRow: View {
                     Group {
                         if message.voice != nil {
                             voicePayload(message)
-                        } else if let photos = message.photos, !photos.isEmpty {
-                            photoPayloads(photos, message: message)
+                        } else if let attachments = message.attachments, !attachments.isEmpty {
+                            attachmentPayloads(attachments, message: message)
                         } else {
                             bubbleBody(fill: bubbleFill) {
                                 messageText(message.body)
@@ -301,16 +301,16 @@ extension ThreadChatMessageRow {
 
     /// Each photo is its own bubble, stacked and joined into one group with the caption
     /// last, like Tidex's photo messages.
-    func photoPayloads(_ photos: [ThreadChatPhoto], message: ThreadChatMessage) -> some View {
+    func attachmentPayloads(_ attachments: [ThreadChatAttachment], message: ThreadChatMessage) -> some View {
         let caption = message.body
         let hasCaption = !caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let count = photos.count + (hasCaption ? 1 : 0)
+        let count = attachments.count + (hasCaption ? 1 : 0)
         return VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 2) {
-            ForEach(Array(photos.enumerated()), id: \.offset) { index, photo in
-                Button { if !isInMenu { onOpenPhoto(photo) } } label: {
-                    ThreadChatPhotoCard(
-                        photo: photo,
-                        size: ThreadChatPhotoLayout.frameSize(for: photo),
+            ForEach(Array(attachments.enumerated()), id: \.offset) { index, attachment in
+                Button { if !isInMenu { onOpenAttachment(attachment) } } label: {
+                    ThreadChatAttachmentCard(
+                        attachment: attachment,
+                        size: ThreadChatAttachmentLayout.frameSize(for: attachment),
                         shape: ThreadChatBubbleShape.shape(for: payloadGroupContext(index: index, count: count)),
                         isCurrentUser: isCurrentUser
                     )
@@ -319,8 +319,8 @@ extension ThreadChatMessageRow {
                 .frameGetterIfNeeded(index == count - 1 ? messageFrame : nil)
                 .disabled(isInMenu)
                 DailyMediaAccessibilityText(
-                    text: photo.accessibilityText, isVoice: false,
-                    editingTarget: mediaEditingTarget(message: message, assetID: photo.mediaAssetID)
+                    text: attachment.accessibilityText, isVoice: false,
+                    editingTarget: mediaEditingTarget(message: message, assetID: attachment.mediaAssetID)
                 )
             }
             if hasCaption {

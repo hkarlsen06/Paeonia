@@ -6013,6 +6013,42 @@
         }
       }
     },
+    "chat.attachmentDraft.videoMissing.message" : {
+      "comment" : "Banner message when a saved chat draft lost a GIF or a video because its file is no longer on the phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A GIF or video you picked is no longer on this phone. Pick it again to send it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En GIF eller video du valgte, finnes ikke lenger på denne telefonen. Velg den på nytt for å sende den."
+          }
+        }
+      }
+    },
+    "chat.attachmentDraft.videoMissing.title" : {
+      "comment" : "Banner title when a saved chat draft lost a GIF or a video because its file is no longer on the phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something you picked is missing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe du valgte, mangler"
+          }
+        }
+      }
+    },
     "chat.header.memory" : {
       "comment" : "Small label on the card at the top of the comments on a memory",
       "extractionState" : "manual",
@@ -6140,19 +6176,19 @@
       }
     },
     "chat.photoDraft.saveFailed.message" : {
-      "comment" : "The composer retains photos and text after a local draft write fails.",
+      "comment" : "Error message when the chat composer could not save its unsent text, photos, GIFs or videos as a draft. They stay in the composer.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keep this chat open and try sending again. Your unsent photos and text are still here."
+            "value" : "Keep this chat open and try sending again. Everything you haven't sent is still here."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold samtalen åpen og prøv å sende på nytt. Bildene og teksten du ikke har sendt, er fortsatt her."
+            "value" : "Hold samtalen åpen og prøv å sende på nytt. Alt du ikke har sendt, er fortsatt her."
           }
         }
       }
@@ -10388,19 +10424,19 @@
       }
     },
     "dailyChat.composer.addPhoto" : {
-      "comment" : "VoiceOver label for the plus button that opens the photo drawer in the chat composer.",
+      "comment" : "VoiceOver label of the plus button that opens the drawer for adding photos, GIFs and videos to a chat message",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add photos"
+            "value" : "Add photos or videos"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Legg til bilder"
+            "value" : "Legg til bilder eller videoer"
           }
         }
       }
@@ -10549,6 +10585,24 @@
         }
       }
     },
+    "dailyChat.composer.pickFailed" : {
+      "comment" : "Shown above the chat message field when a picked or pasted photo could not be read",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo could not be added. Try another one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette bildet kunne ikke legges til. Prøv et annet."
+          }
+        }
+      }
+    },
     "dailyChat.composer.placeholder" : {
       "comment" : "Placeholder in the daily question chat message field",
       "extractionState" : "manual",
@@ -10563,6 +10617,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skriv en melding"
+          }
+        }
+      }
+    },
+    "dailyChat.composer.preparingVideo" : {
+      "comment" : "Shown next to a spinner above the chat message field while a picked video is made ready to send",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Getting your video ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør klar videoen"
           }
         }
       }
@@ -10621,6 +10693,24 @@
         }
       }
     },
+    "dailyChat.composer.removeGif" : {
+      "comment" : "VoiceOver label of the button that takes a picked GIF out of the next chat message",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove GIF"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern GIF-en"
+          }
+        }
+      }
+    },
     "dailyChat.composer.removePhoto" : {
       "comment" : "VoiceOver label for the button that takes a picked photo out of the message.",
       "extractionState" : "manual",
@@ -10635,6 +10725,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fjern bildet"
+          }
+        }
+      }
+    },
+    "dailyChat.composer.removeVideo" : {
+      "comment" : "VoiceOver label of the button that takes a picked video out of the next chat message",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern videoen"
           }
         }
       }
@@ -10725,6 +10833,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Legg til tekst"
+          }
+        }
+      }
+    },
+    "dailyChat.composer.videoDescription" : {
+      "comment" : "Label above the field where the sender describes a picked video for people who can't see it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video description"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videobeskrivelse"
+          }
+        }
+      }
+    },
+    "dailyChat.composer.videoHint" : {
+      "comment" : "Placeholder of the field where the sender describes a picked video for people who can't see it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what happens in this video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv hva som skjer i videoen"
           }
         }
       }
@@ -10869,6 +11013,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du slettet denne meldingen"
+          }
+        }
+      }
+    },
+    "dailyChat.error.attachments.message" : {
+      "comment" : "Banner message when a chat message with photos or videos could not be saved to send. They stay in the message field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your photos and videos are still here. Tap send to try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildene og videoene dine er fortsatt her. Trykk på send for å prøve igjen."
           }
         }
       }
@@ -11107,42 +11269,6 @@
         }
       }
     },
-    "dailyChat.error.photo.message" : {
-      "comment" : "Banner message when picked chat photos could not be prepared or saved.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try picking them again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prøv å velge dem på nytt."
-          }
-        }
-      }
-    },
-    "dailyChat.error.photo.title" : {
-      "comment" : "Banner title when picked chat photos could not be prepared or saved.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't send your photos"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke sende bildene"
-          }
-        }
-      }
-    },
     "dailyChat.error.send.message" : {
       "comment" : "Message when a chat message could not be saved on this phone. The text stays in the message field.",
       "extractionState" : "manual",
@@ -11283,6 +11409,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kunne ikke lagre talemeldingen"
+          }
+        }
+      }
+    },
+    "dailyChat.gif.preview" : {
+      "comment" : "Chat preview and reply quote for a message that is an animated GIF with no text",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GIF"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GIF"
           }
         }
       }
@@ -28131,6 +28275,96 @@
         }
       }
     },
+    "media.gif.tooBig" : {
+      "comment" : "Shown when the person picks or pastes an animated GIF larger than 8 MB",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This GIF is too big. Pick a GIF under 8 MB."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne GIF-en er for stor. Velg en GIF under 8 MB."
+          }
+        }
+      }
+    },
+    "media.video.label" : {
+      "comment" : "Spoken by VoiceOver before a video's length, on a video in chat, memories or stories",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video"
+          }
+        }
+      }
+    },
+    "media.video.prepareFailed" : {
+      "comment" : "Shown when the app could not read or shrink a video the person picked",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This video could not be added. Try another video."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne videoen kunne ikke legges til. Prøv en annen video."
+          }
+        }
+      }
+    },
+    "media.video.tooLong.oneMinute" : {
+      "comment" : "Shown when the person picks a video longer than 1 minute for a story",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This video is too long. Pick a video under 1 minute."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne videoen er for lang. Velg en video under 1 minutt."
+          }
+        }
+      }
+    },
+    "media.video.tooLong.threeMinutes" : {
+      "comment" : "Shown when the person picks a video longer than 3 minutes for a chat or a memory",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This video is too long. Pick a video under 3 minutes."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne videoen er for lang. Velg en video under 3 minutter."
+          }
+        }
+      }
+    },
     "memories.add.accessibility" : {
       "comment" : "Accessibility label for the toolbar button that opens the new-memory form.",
       "extractionState" : "manual",
@@ -28181,6 +28415,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 bilde"
+          }
+        }
+      }
+    },
+    "memories.card.videoCount" : {
+      "comment" : "VoiceOver description of a memory card with several videos. The value is the number of videos",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ videos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ videoer"
+          }
+        }
+      }
+    },
+    "memories.card.videoCount.one" : {
+      "comment" : "VoiceOver description of a memory card with one video",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 video"
           }
         }
       }
@@ -28474,19 +28744,19 @@
       }
     },
     "memories.editor.addPhoto" : {
-      "comment" : "Button to pick a photo from the library for a memory.",
+      "comment" : "Button in the memory form that opens the photo library to pick photos and videos",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add photo"
+            "value" : "Library"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Legg til bilde"
+            "value" : "Bibliotek"
           }
         }
       }
@@ -28762,7 +29032,7 @@
       }
     },
     "memories.editor.photoLoadFailed" : {
-      "comment" : "Banner message when a photo picked from the library could not be loaded into the memory form",
+      "comment" : "Banner when a picked photo could not be loaded into the memory form",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -28906,19 +29176,19 @@
       }
     },
     "memories.editor.uploadingPhoto" : {
-      "comment" : "Save button label while photos upload. The first value is the photo number and the second is the total, for example Adding photo 2 of 3",
+      "comment" : "Save button label while photos and videos upload. The first value is the number of the photo or video being sent and the second is the total, for example Adding 2 of 3",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adding photo %1$@ of %2$@"
+            "value" : "Adding %1$@ of %2$@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Legger til bilde %1$@ av %2$@"
+            "value" : "Legger til %1$@ av %2$@"
           }
         }
       }
@@ -29446,55 +29716,55 @@
       }
     },
     "memories.notice.ownPartRemoved.message" : {
-      "comment" : "Banner after the person confirmed deleting their visit memory, which had just become part of the memory their partner saved for the same visit. Only the person's own photos and note were removed; the partner's memory stays.",
+      "comment" : "Banner after a person deleted their memory that had joined their partner's memory for a visit",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your memory had become part of your partner's memory from this visit, so only your photos and note were removed."
+            "value" : "Your memory had become part of your partner's memory from this visit, so only your photos, videos and note were removed."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Minnet ditt hadde blitt en del av partnerens minne fra dette besøket, så bare bildene og notatet ditt ble fjernet."
+            "value" : "Minnet ditt hadde blitt en del av partnerens minne fra dette besøket, så bare bildene, videoene og notatet ditt ble fjernet."
           }
         }
       }
     },
     "memories.notice.photoFailed.message" : {
-      "comment" : "Error banner body shown when photo upload failed, suggesting a connection check.",
+      "comment" : "Banner message when the photos or videos of a memory could not be uploaded",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your photos weren't added. Try adding them again."
+            "value" : "They weren't added. Try adding them again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bildene ble ikke lagt til. Prøv å legge dem til igjen."
+            "value" : "De ble ikke lagt til. Prøv å legge dem til igjen."
           }
         }
       }
     },
     "memories.notice.photoFailed.title" : {
-      "comment" : "Error banner title shown when adding photos to a memory failed.",
+      "comment" : "Banner title when the photos or videos of a memory could not be uploaded",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't add your photos"
+            "value" : "We couldn't add your photos or videos"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi klarte ikke å legge til bildene"
+            "value" : "Vi klarte ikke å legge til bildene eller videoene"
           }
         }
       }
@@ -29639,6 +29909,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "For langt til å lagre"
+          }
+        }
+      }
+    },
+    "memories.notice.videoSaveFailed.title" : {
+      "comment" : "Banner title when a memory video could not be saved to the photo library",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save the video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å lagre videoen"
           }
         }
       }
@@ -29981,6 +30269,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fra bildet ditt: %@"
+          }
+        }
+      }
+    },
+    "memories.video.remove" : {
+      "comment" : "Accessibility label for the control that removes a picked video before saving.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern video"
           }
         }
       }
@@ -44265,13 +44571,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia can't use the camera. Turn it on in Settings, or choose a photo below."
+            "value" : "Paeonia can't use the camera. Turn it on in Settings, or choose a photo or video below."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia får ikke bruke kameraet. Slå det på i Innstillinger, eller velg et bilde under."
+            "value" : "Paeonia får ikke bruke kameraet. Slå det på i Innstillinger, eller velg et bilde eller en video under."
           }
         }
       }
@@ -44283,13 +44589,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The camera isn't available. Choose a photo below instead."
+            "value" : "The camera isn't available. Choose a photo or video below instead."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kameraet er ikke tilgjengelig. Velg et bilde under i stedet."
+            "value" : "Kameraet er ikke tilgjengelig. Velg et bilde eller en video under i stedet."
           }
         }
       }
@@ -44313,19 +44619,37 @@
       }
     },
     "stories.composer.choosePhoto" : {
-      "comment" : "Button that picks a photo from the library for a new story.",
+      "comment" : "Button under the story camera that opens the photo library to pick a photo or a video",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose a photo"
+            "value" : "Choose a photo or video"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg et bilde"
+            "value" : "Velg et bilde eller en video"
+          }
+        }
+      }
+    },
+    "stories.composer.deleteRecording" : {
+      "comment" : "Button under a story video recording that could not be made ready. Deletes the recording.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett video"
           }
         }
       }
@@ -44366,6 +44690,24 @@
         }
       }
     },
+    "stories.composer.noMicrophone" : {
+      "comment" : "Banner when a story video records while Paeonia may not use the microphone",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This video has no sound. To record sound, turn on the microphone for Paeonia in Settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne videoen får ikke lyd. For å ta opp lyd, slå på mikrofonen for Paeonia i Innstillinger."
+          }
+        }
+      }
+    },
     "stories.composer.photoAccessibility" : {
       "comment" : "VoiceOver label for the picked photo in a new story.",
       "extractionState" : "manual",
@@ -44380,6 +44722,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bildet til storyen din"
+          }
+        }
+      }
+    },
+    "stories.composer.preparing" : {
+      "comment" : "VoiceOver label of the spinner while a recorded or picked story video is made ready",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Getting your video ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør klar videoen din"
+          }
+        }
+      }
+    },
+    "stories.composer.recordingNotReady" : {
+      "comment" : "Shown over the story camera when a video the person recorded could not be made ready to share. Buttons below say Try again and Delete video.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't get your video ready. Try again, or delete it and record a new one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke gjort klar videoen din. Prøv igjen, eller slett den og ta opp en ny."
+          }
+        }
+      }
+    },
+    "stories.composer.recordVideo" : {
+      "comment" : "VoiceOver action on the story camera's shutter button that starts recording a video",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record a video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta opp en video"
           }
         }
       }
@@ -44402,6 +44798,24 @@
         }
       }
     },
+    "stories.composer.removeVideo" : {
+      "comment" : "VoiceOver label of the button that removes the chosen video from a new story",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern videoen"
+          }
+        }
+      }
+    },
     "stories.composer.share" : {
       "comment" : "Button that shares the story. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -44416,6 +44830,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Del med %@"
+          }
+        }
+      }
+    },
+    "stories.composer.stopRecording" : {
+      "comment" : "VoiceOver label of the story camera's shutter button while a video records",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop recording"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopp opptaket"
           }
         }
       }
@@ -44452,6 +44884,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ny story"
+          }
+        }
+      }
+    },
+    "stories.composer.videoAccessibility" : {
+      "comment" : "VoiceOver label of the video preview in the story composer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your story video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videoen til storyen din"
           }
         }
       }
@@ -44578,6 +45028,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du er frakoblet, så storyen ble ikke delt. Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "stories.error.recordingFailed" : {
+      "comment" : "Error when the story camera could not record a video",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't record that video. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke ta opp den videoen. Prøv igjen."
           }
         }
       }
@@ -45190,6 +45658,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sett av %@"
+          }
+        }
+      }
+    },
+    "stories.viewer.videoFailed" : {
+      "comment" : "Shown in the story viewer when a story video could not load. Tapping it tries again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load the video. Tap to try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste videoen. Trykk for å prøve igjen."
           }
         }
       }
@@ -49180,6 +49666,114 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ja, del"
+          }
+        }
+      }
+    },
+    "videoViewer.loadFailed" : {
+      "comment" : "Message when a video could not load in the full-screen viewer for a reason other than being offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This video could not load. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videoen kunne ikke lastes inn. Prøv igjen."
+          }
+        }
+      }
+    },
+    "videoViewer.loading" : {
+      "comment" : "VoiceOver label for the spinner while a video loads in the full-screen video viewer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading video"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laster videoen"
+          }
+        }
+      }
+    },
+    "videoViewer.loadOffline" : {
+      "comment" : "Message when a video could not load in the full-screen viewer because the phone is offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This video could not load because you are offline. Try again when you have a connection."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videoen kunne ikke lastes inn fordi du er frakoblet. Prøv igjen når du har nett."
+          }
+        }
+      }
+    },
+    "videoViewer.saveFailed" : {
+      "comment" : "Banner when saving a video to the Photos app failed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This video could not be saved. Try Save to Photos again. Your video is still here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videoen kunne ikke lagres. Prøv Lagre i Bilder igjen. Videoen din er fortsatt her."
+          }
+        }
+      }
+    },
+    "videoViewer.savePermission.message" : {
+      "comment" : "Message of the alert shown in the full-screen video viewer when the app can't save a video because photo access is turned off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To save videos, turn on photo access for Paeonia in Settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For å lagre videoer, slå på bildetilgang for Paeonia i Innstillinger."
+          }
+        }
+      }
+    },
+    "videoViewer.saveRestricted" : {
+      "comment" : "Banner when the device does not allow saving to the Photos app, for example because of parental controls",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device restricts saving to Photos. You can still watch the video here. Check with the person who manages this device."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne enheten har begrenset lagring i Bilder. Du kan fortsatt se videoen her. Spør den som administrerer enheten."
           }
         }
       }

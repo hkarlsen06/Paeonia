@@ -1,24 +1,20 @@
 import PhotosUI
 import SwiftUI
 
-/// Shares a photo, with an optional caption, as a story. It opens straight into the
-/// camera: a live viewfinder with the round shutter button, and "Choose a photo" under
-/// it. A taken or picked photo replaces the viewfinder, with a caption field below. The
-/// first time, it explains that a story shows on Home for a day and then stays in
-/// Memories. A failed post keeps the photo and caption here, and the error shows in the banner.
+/// Shares a photo or a short video, with an optional caption, as a story. It opens
+/// straight into the camera: a live viewfinder with the round shutter button, and
+/// "Choose a photo or video" under it. A tap takes a photo and a hold records a video.
+/// A taken or picked photo or video replaces the viewfinder, with a caption field below.
+/// The first time, it explains that a story shows on Home for a day and then stays in
+/// Memories. A failed post keeps the media and caption here, and the error shows in the banner.
 struct StoryComposerView: View {
     let viewModel: StoriesViewModel
     let partnerName: String
 
-    @State private var camera = StoryCamera()
-    @State private var cameraAvailability: StoryCamera.Availability = .unknown
-    @State private var isCapturing = false
-    @State private var photo: Data?
-    @State private var preview: UIImage?
+    @State private var model = StoryComposerModel()
     @State private var caption = ""
     @State private var accessibilityText = ""
     @State private var pickerItem: PhotosPickerItem?
-    @State private var isLoadingPhoto = false
     @State private var showsExplainer = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
@@ -43,7 +39,7 @@ struct StoryComposerView: View {
                     }
                 }
                 .paeoniaBottomBar {
-                    if photo != nil {
+                    if model.media != nil {
                         shareButton
                     }
                 }
@@ -51,16 +47,21 @@ struct StoryComposerView: View {
         // The sheet covers the app's banner, so show it here too.
         .paeoniaBanner(bannerCenter)
         .presentationBackground(.paeoniaBackgroundPrimary)
-        // A picked photo or a running post can't be swiped away by accident. Cancel still closes.
-        .interactiveDismissDisabled(viewModel.isPosting || photo != nil)
+        // A photo, a video, a recording or a running post can't be swiped away by accident.
+        // Cancel still closes.
+        .interactiveDismissDisabled(viewModel.isPosting || model.holdsMedia)
         .task {
-            cameraAvailability = await camera.prepare()
-            updateCamera()
+            model.onMessage = { bannerCenter.show($0) }
+            await model.open()
+            model.updateCamera(isAppActive: scenePhase == .active)
         }
-        .onDisappear { camera.stop() }
-        .onChange(of: photo == nil) { _, _ in updateCamera() }
-        .onChange(of: scenePhase) { _, _ in updateCamera() }
-        .onChange(of: pickerItem) { _, item in loadPicked(item) }
+        .onDisappear { model.close() }
+        .onChange(of: scenePhase) { _, phase in model.updateCamera(isAppActive: phase == .active) }
+        .onChange(of: pickerItem) { _, item in
+            guard let item else { return }
+            pickerItem = nil
+            model.loadPicked(item)
+        }
         .onAppear { showsExplainer = !viewModel.hasPostedBefore }
     }
 
@@ -70,7 +71,7 @@ struct StoryComposerView: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             mediaArea
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            if photo == nil {
+            if model.media == nil {
                 choosePhotoButton
             } else {
                 captionField
@@ -89,7 +90,7 @@ struct StoryComposerView: View {
         .paeoniaReadableWidth()
     }
 
-    // MARK: - Viewfinder and photo
+    // MARK: - Viewfinder, photo and video
 
     private var mediaShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
@@ -97,7 +98,8 @@ struct StoryComposerView: View {
 
     @ViewBuilder
     private var mediaArea: some View {
-        if let preview {
+        switch model.media {
+        case let .photo(_, preview):
             Color.clear
                 .overlay {
                     Image(uiImage: preview)
@@ -106,23 +108,28 @@ struct StoryComposerView: View {
                         .accessibilityLabel(Text(.storiesComposerPhotoAccessibility))
                 }
                 .clipShape(mediaShape)
-                .overlay(alignment: .topTrailing) { retakeButton }
-        } else {
-            StoryViewfinder(
-                camera: camera,
-                availability: cameraAvailability,
-                isBusy: isCapturing || isLoadingPhoto,
-                shape: mediaShape
-            ) {
-                Task { await capture() }
-            }
+                .overlay(alignment: .topTrailing) { removeButton(label: .storiesComposerRemovePhoto) }
+        case let .video(video):
+            StoryPlayerLayerView(player: model.previewPlayer.player, videoGravity: .resizeAspectFill)
+                .background(.black)
+                .clipShape(mediaShape)
+                .overlay(alignment: .bottomLeading) {
+                    VideoBadge(durationMs: video.durationMs)
+                        .padding(PaeoniaSpacing.space12)
+                        .accessibilityHidden(true)
+                }
+                .accessibilityElement()
+                .accessibilityLabel(Text(.storiesComposerVideoAccessibility))
+                .accessibilityValue(Text(verbatim: VideoBadge.accessibilityLabel(durationMs: video.durationMs)))
+                .overlay(alignment: .topTrailing) { removeButton(label: .storiesComposerRemoveVideo) }
+        case nil:
+            StoryViewfinder(model: model, shape: mediaShape)
         }
     }
 
-    private var retakeButton: some View {
+    private func removeButton(label: LocalizedStringResource) -> some View {
         Button {
-            photo = nil
-            preview = nil
+            model.removeMedia()
             accessibilityText = ""
         } label: {
             Image(systemName: "xmark")
@@ -133,12 +140,14 @@ struct StoryComposerView: View {
         }
         .buttonStyle(.plain)
         .padding(PaeoniaSpacing.space12)
-        .accessibilityLabel(Text(.storiesComposerRemovePhoto))
+        .accessibilityLabel(Text(label))
         .disabled(viewModel.isPosting)
     }
 
     private var choosePhotoButton: some View {
-        PhotosPicker(selection: $pickerItem, matching: .images) {
+        // The default encoding, so Photos renders a slow-motion video's slow parts. Its
+        // original file plays at normal speed.
+        PhotosPicker(selection: $pickerItem, matching: .any(of: [.images, .videos])) {
             Label {
                 Text(.storiesComposerChoosePhoto)
             } icon: {
@@ -147,7 +156,7 @@ struct StoryComposerView: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(PaeoniaSecondaryButtonStyle())
-        .disabled(isCapturing || isLoadingPhoto)
+        .disabled(model.shutter != .idle || model.isPreparing || model.failedRecording != nil)
     }
 
     // MARK: - Caption and share
@@ -186,57 +195,9 @@ struct StoryComposerView: View {
 
     // MARK: - Actions
 
-    /// The camera runs only while the viewfinder shows and the app is in front.
-    private func updateCamera() {
-        if photo == nil, cameraAvailability == .ready, scenePhase == .active {
-            camera.start()
-        } else {
-            camera.stop()
-        }
-    }
-
-    private func capture() async {
-        guard !isCapturing else { return }
-        isCapturing = true
-        defer { isCapturing = false }
-        if let data = await camera.capture() {
-            PaeoniaHaptics.selection()
-            setPhoto(data)
-        } else {
-            bannerCenter.show(.error(message: String(localized: .storiesErrorPhotoUnreadable)))
-        }
-    }
-
-    private func loadPicked(_ item: PhotosPickerItem?) {
-        guard let item else { return }
-        pickerItem = nil
-        isLoadingPhoto = true
-        Task {
-            let data = try? await item.loadTransferable(type: Data.self)
-            isLoadingPhoto = false
-            if let data {
-                setPhoto(data)
-            } else {
-                bannerCenter.show(.error(message: String(localized: .storiesErrorPhotoUnreadable)))
-            }
-        }
-    }
-
-    private func setPhoto(_ data: Data) {
-        Task {
-            let image = await MemoryImageDecoding.downsample(data, maxPixelSize: StoryPhotoView.maxPixelSize)
-            guard let image else {
-                bannerCenter.show(.error(message: String(localized: .storiesErrorPhotoUnreadable)))
-                return
-            }
-            preview = image
-            photo = data
-        }
-    }
-
     private func post() async {
-        guard let photo else { return }
-        if await viewModel.post(photo: photo, caption: caption, accessibilityText: accessibilityText) {
+        guard let media = model.postMedia else { return }
+        if await viewModel.post(media, caption: caption, accessibilityText: accessibilityText) {
             PaeoniaHaptics.storyShared()
             dismiss()
         }

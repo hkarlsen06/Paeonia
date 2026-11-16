@@ -45,9 +45,9 @@ struct SubjectConversationCard: View {
     private var thumbnail: some View {
         if let game = header.gameSubject {
             GameChatThumbnail(kind: game.kind)
-        } else if let photoAssetID = header.photoAssetID {
+        } else if let media = header.media {
             MemoryMediaImageView(
-                mediaAssetID: photoAssetID,
+                media: media.withoutDuration,
                 height: Self.photoSize,
                 cornerRadius: PaeoniaRadius.radius12,
                 allowsViewing: false
