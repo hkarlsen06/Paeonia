@@ -37,11 +37,11 @@ nonisolated struct CallStageLayout {
 
     let tiles: [CallVideoSource: Tile]
 
-    /// `frame` is where the videos show on screen, and `margins` the room around the previews inside
-    /// it, on screen.
+    /// `frame` is where the videos show on screen, `margins` the room around the previews inside it,
+    /// and `safeArea` the screen's own edges inside it, all on screen.
     init(
-        stage: CallStage, session: CallSession, in frame: CGRect, margins: EdgeInsets, corner: CallPreviewCorner,
-        turn: CallTurn
+        stage: CallStage, session: CallSession, in frame: CGRect, margins: EdgeInsets, safeArea: EdgeInsets,
+        corner: CallPreviewCorner, turn: CallTurn
     ) {
         let seen = turn.asSeen(frame.size)
         let room = turn.asSeen(margins)
@@ -53,7 +53,20 @@ nonisolated struct CallStageLayout {
 
         var tiles: [CallVideoSource: Tile] = [:]
         if let main = stage.main {
-            tiles[main] = Tile(center: middle, size: seen)
+            if main == .partnerScreen {
+                // A shared screen is read, not looked at, so it shows whole: cropped like a camera, its
+                // edges went under the status bar and out of sight.
+                let safe = turn.asSeen(safeArea)
+                let box = CGRect(
+                    x: safe.leading, y: safe.top,
+                    width: max(0, seen.width - safe.leading - safe.trailing),
+                    height: max(0, seen.height - safe.top - safe.bottom))
+                tiles[main] = Tile(
+                    center: onScreen(CGPoint(x: box.midX, y: box.midY)),
+                    size: Self.fit(session.partnerScreenAspectRatio, in: box.size))
+            } else {
+                tiles[main] = Tile(center: middle, size: seen)
+            }
         }
         let sizes = stage.previews.map { $0.previewSize(in: session, sideways: turn.isSideways) }
         let total = sizes.reduce(0) { $0 + $1.height } + Self.previewGap * CGFloat(max(0, sizes.count - 1))
@@ -69,6 +82,14 @@ nonisolated struct CallStageLayout {
             tiles[source] = Tile(center: onScreen(CGPoint(x: x, y: y)), size: scaled)
         }
         self.tiles = tiles
+    }
+
+    /// The largest size of the shape `aspectRatio` (width over height) that fits in `box`.
+    private static func fit(_ aspectRatio: CGFloat?, in box: CGSize) -> CGSize {
+        guard let aspectRatio, aspectRatio > 0, box.width > 0, box.height > 0 else { return box }
+        return box.width / box.height > aspectRatio
+            ? CGSize(width: box.height * aspectRatio, height: box.height)
+            : CGSize(width: box.width, height: box.width / aspectRatio)
     }
 
     /// The corner a drag that ends at `point` on screen heads for.

@@ -47,6 +47,8 @@ struct CallScreen: View {
     @State private var isChatRaised = false
     /// The whole window's height, under the status bar and the home indicator too.
     @State private var windowHeight: CGFloat = 0
+    /// Measured here, because the stage ignores the safe area and reads none of its own.
+    @State private var safeArea = EdgeInsets()
     /// The turn the videos and symbols show, which follows `wantedTurn`.
     @State private var turn = CallTurn.none
     /// Under Reduce Motion the videos fade out and back in instead of moving (`changeStage`).
@@ -97,7 +99,8 @@ struct CallScreen: View {
                 engine: center.engine, session: session, stage: stage, participants: participants,
                 isChatMounted: isChatMounted, isChatRaised: isChatRaised,
                 makesRoomForControls: showsHUD || reduceMotion,
-                controlsHeight: bottomHeight ?? 0, turn: turn, corner: $previewCorner, bringForward: bringForward,
+                controlsHeight: bottomHeight ?? 0, safeArea: safeArea, turn: turn, corner: $previewCorner,
+                bringForward: bringForward,
                 closeChat: closeChat
             ) { windowHeight = $0 }
             .opacity(stageOpacity)
@@ -114,6 +117,7 @@ struct CallScreen: View {
         }
         // Buttons and the callout win their own taps. While the controls are hidden they take
         // none, so the first tap only brings them back.
+        .onGeometryChange(for: EdgeInsets.self, of: { $0.safeAreaInsets }, action: { safeArea = $0 })
         .contentShape(.rect)
         .gesture(TapGesture().onEnded { toggleHUD() }, including: isChatMounted ? .subviews : .all)
         .offset(y: dragOffset)

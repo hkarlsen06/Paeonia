@@ -13,6 +13,8 @@ struct CallStageView: View {
     let frame: CGRect
     /// The room the previews leave at the stage's edges, on screen, such as for the controls.
     let margins: EdgeInsets
+    /// The screen's own edges inside `frame`, on screen. A shared screen stays inside them.
+    let safeArea: EdgeInsets
     let turn: CallTurn
     /// Over the chat only the big video shows.
     let showsPreviews: Bool
@@ -28,7 +30,8 @@ struct CallStageView: View {
 
     var body: some View {
         let layout = CallStageLayout(
-            stage: stage, session: session, in: frame, margins: margins, corner: corner, turn: turn)
+            stage: stage, session: session, in: frame, margins: margins, safeArea: safeArea, corner: corner,
+            turn: turn)
         ZStack {
             ForEach(stage.sources, id: \.self) { source in
                 if let tile = layout.tiles[source] {

@@ -14,6 +14,8 @@ struct CallScreenStage: View {
     let makesRoomForControls: Bool
     /// From the bottom of the safe area to the top of the controls' stack.
     let controlsHeight: CGFloat
+    /// The window's safe area, measured outside the stage.
+    let safeArea: EdgeInsets
     let turn: CallTurn
     @Binding var corner: CallPreviewCorner
     let bringForward: (CallVideoSource) -> Void
@@ -24,13 +26,14 @@ struct CallScreenStage: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let insets = proxy.safeAreaInsets
+            let insets = safeArea
             let window = CGRect(origin: .zero, size: proxy.size)
             let preview = chatPreviewFrame(in: window, insets: insets)
             ZStack {
                 CallStageView(
                     engine: engine, session: session, stage: stage, partnerName: participants.partnerName,
                     frame: isChatRaised ? preview : window, margins: previewMargins(insets),
+                    safeArea: isChatRaised ? EdgeInsets() : insets,
                     turn: turn, showsPreviews: !isChatRaised,
                     cornerRadius: isChatRaised ? Self.chatPreviewRadius : 0,
                     corner: $corner, bringForward: bringForward)
