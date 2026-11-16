@@ -197,6 +197,7 @@ struct MainTabView: View {
     /// over the game once the tab is on screen.
     @State var pendingGameChatSheet: GameChatDestination?
     @State var openingGameChatID: UUID?
+    @State var gameChatVisit: GameChatVisit?
     @State var gameChatReturn = GameChatReturnTransition()
     @State var visibleChatSubject: ThreadChatSubject?
     @State var messageNoticeStartedAt = Date()

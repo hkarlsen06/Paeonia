@@ -19,7 +19,7 @@ struct GameChatReturnTransition {
 /// The five tabs and the views they show.
 extension MainTabView {
     var tabNavigation: some View {
-        TabView(selection: Binding<MainTab>(get: { selection.wrappedValue }, set: { selectTab($0) })) {
+        TabView(selection: Binding<MainTab>(get: { selection.wrappedValue }, set: selectTabFromTabBar)) {
             ForEach(tabs) { tab in
                 Tab(value: tab) {
                     content(for: tab)
@@ -57,6 +57,7 @@ extension MainTabView {
             gameChatReturn.waitsForKeyboard = false
             gameChatReturn.layoutReadyFrame = nil
         }
+        .onChange(of: gamesPath) { _, path in gamesPathChanged(to: path) }
         .onChange(of: gameChatDestination?.id) { _, _ in
             gameChatReturn.isPending = false
             gameChatReturn.waitsForKeyboard = false
@@ -162,7 +163,7 @@ extension MainTabView {
     private var gamesTab: some View {
         clearingGamesBadge(
             on: GamesRootView(viewModel: gamesViewModel, path: $gamesPath, tabBarVisibility: gameTabBarVisibility)
-                .gameChatPanel($gameChatSheet)
+                .gameChatPanel($gameChatSheet, onClosed: gameChatClosed)
                 .environment(\.gameChatIsOpen, gameChatIsOpen)
         )
     }

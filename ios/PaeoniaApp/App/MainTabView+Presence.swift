@@ -99,14 +99,17 @@ extension MainTabView {
             openChatAction(for: subject)()
         case let .game(kind):
             isCoupleChatSlidOver = false
+            gameChatVisit = nil
             dismissGameChatSheet()
             openGameFromHome(.game(kind))
         case .drawing:
             isCoupleChatSlidOver = false
+            gameChatVisit = nil
             dismissGameChatSheet()
             actions.openWidgetDrawing()
         case let .link(link):
             isCoupleChatSlidOver = false
+            gameChatVisit = nil
             PaeoniaNotificationRouter.shared.route(link)
         case nil:
             break
@@ -115,6 +118,7 @@ extension MainTabView {
 
     /// "Just us" slides over whatever is on screen, without a switch of tab.
     private func slideOverCoupleChat() {
+        gameChatVisit = nil
         dismissGameChatSheet()
         isCoupleChatSlidOver = true
     }

@@ -9,6 +9,27 @@ struct GameChatDestination: Hashable, Identifiable {
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
+/// A game's chat that a tap on another tab opened over its game, which switched to Games. Backing
+/// out of it returns the person to that tab, and Games gets back the stack it had before. It is
+/// dropped when anything else makes that way back wrong.
+struct GameChatVisit {
+    enum Stage {
+        /// The chat is over the game. Closing it ends the visit.
+        case chat
+        /// The person tapped the game above the chat to stay in it. The game's Back ends the visit.
+        case game
+    }
+
+    let kind: GameKind
+    /// The tab the person came from.
+    let origin: MainTab
+    /// The Games stack before the visit.
+    let originGamesPath: [GamesDestination]
+    /// The Games stack the visit shows.
+    let gamesPath: [GamesDestination]
+    var stage = Stage.chat
+}
+
 extension MainTabView {
     func resetGameChatNavigation() {
         gameChatReturn.isPending = false
@@ -17,6 +38,7 @@ extension MainTabView {
         messageNoticeStartedAt = Date()
         visibleChatSubject = nil
         gameChatDestination = nil
+        gameChatVisit = nil
         dismissGameChatSheet()
         openingGameChatID = nil
     }
@@ -71,8 +93,9 @@ extension MainTabView {
     }
 
     /// Opens a game's chat over the game, switching to Games and opening the game first
-    /// when another screen is in front. A game that can't open yet, because Games has not
-    /// loaded or the first-time steps come first, has its chat open in Chats instead.
+    /// when another tab is in front, which starts a visit (`GameChatVisit`). A game that can't
+    /// open yet, because Games has not loaded or the first-time steps come first, has its chat
+    /// open in Chats instead.
     func openGameChat(
         kind: GameKind, source: GameConversationSource? = nil, result: GameConversationResult? = nil
     ) {
@@ -130,6 +153,7 @@ extension MainTabView {
         if tab != .games {
             // The game under the sheet is no longer on screen.
             dismissGameChatSheet()
+            gameChatVisit = nil
         } else if let pending = pendingGameChatSheet {
             pendingGameChatSheet = nil
             // A turn later, once the game is laid out on screen, so the panel measures it.
@@ -139,16 +163,20 @@ extension MainTabView {
         }
     }
 
-    /// Brings a screen of the game to the front of Games and selects the tab. A screen of the
-    /// game already open there stays. False when the game can't open yet.
+    /// Brings a screen of the game to the front of Games and selects the tab, which starts a visit
+    /// when another tab was in front. A screen of the game already open there stays. False when
+    /// the game can't open yet.
     private func showGame(_ kind: GameKind, for requestID: UUID) async -> Bool {
+        // Another game's chat ends a visit under way.
+        if gameChatVisit?.kind != kind { gameChatVisit = nil }
+        if gamesPath.last?.gameKind != kind, !gamesViewModel.opensDirectly(kind) {
+            // From this phone only, so a chat that has to open in Chats does not wait on the network.
+            gamesViewModel.configure(participants: gamesParticipants)
+            await gamesViewModel.reload()
+            guard openingGameChatID == requestID, gamesViewModel.opensDirectly(kind) else { return false }
+        }
+        let originGamesPath = gamesPath
         if gamesPath.last?.gameKind != kind {
-            if !gamesViewModel.opensDirectly(kind) {
-                // From this phone only, so a chat that has to open in Chats does not wait on the network.
-                gamesViewModel.configure(participants: gamesParticipants)
-                await gamesViewModel.reload()
-                guard openingGameChatID == requestID, gamesViewModel.opensDirectly(kind) else { return false }
-            }
             gameChatSheet = nil
             // At once, so the screen it replaces is gone before the new one shrinks under the
             // panel. Both share the stack the shrink draws smaller.
@@ -156,8 +184,51 @@ extension MainTabView {
             transaction.disablesAnimations = true
             withTransaction(transaction) { gamesPath = [.game(kind)] }
         }
-        if selection.wrappedValue != .games { selectTab(.games) }
+        let origin = selection.wrappedValue
+        if origin != .games {
+            selectTab(.games)
+            gameChatVisit = GameChatVisit(
+                kind: kind, origin: origin, originGamesPath: originGamesPath, gamesPath: gamesPath)
+        }
         return true
+    }
+
+    /// A tap on the tab bar, even on Games, says where the person wants to be.
+    func selectTabFromTabBar(_ tab: MainTab) {
+        gameChatVisit = nil
+        selectTab(tab)
+    }
+
+    /// The person closed the game's chat over the game, and it is out of sight. False when that
+    /// ended a visit, so the game is no longer in front.
+    func gameChatClosed(_ closing: GameChatClosing) -> Bool {
+        guard let visit = gameChatVisit, visit.stage == .chat else { return true }
+        switch closing {
+        case .toGame:
+            gameChatVisit?.stage = .game
+            return true
+        case .away:
+            endGameChatVisit(visit)
+            return false
+        }
+    }
+
+    /// Back from the visit's game ends it. Any other change in Games makes the way back wrong.
+    func gamesPathChanged(to path: [GamesDestination]) {
+        guard let visit = gameChatVisit, path != visit.gamesPath else { return }
+        if visit.stage == .game, path.count < visit.gamesPath.count, visit.gamesPath.starts(with: path) {
+            endGameChatVisit(visit)
+        } else {
+            gameChatVisit = nil
+        }
+    }
+
+    private func endGameChatVisit(_ visit: GameChatVisit) {
+        gameChatVisit = nil
+        selectTab(visit.origin)
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { gamesPath = visit.originGamesPath }
     }
 
     /// Opens the couple chat in Chats, over whatever that tab had pushed. Already open over

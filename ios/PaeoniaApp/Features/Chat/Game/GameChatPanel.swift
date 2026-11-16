@@ -1,10 +1,21 @@
 import SwiftUI
 
 extension View {
-    /// Shows a game's chat over the lower part of the Games tab.
-    func gameChatPanel(_ destination: Binding<GameChatDestination?>) -> some View {
-        modifier(GameChatPanel(destination: destination))
+    /// Shows a game's chat over the lower part of the Games tab. `onClosed` hears how the person
+    /// closed it once it is out of sight, and returns false when the game is no longer in front.
+    func gameChatPanel(
+        _ destination: Binding<GameChatDestination?>, onClosed: @escaping (GameChatClosing) -> Bool
+    ) -> some View {
+        modifier(GameChatPanel(destination: destination, onClosed: onClosed))
     }
+}
+
+/// How the person closed a game's chat.
+enum GameChatClosing {
+    /// A tap on the small game above the panel. The person wants the game.
+    case toGame
+    /// The close button, a drag down, the sheet's own swipe down or VoiceOver's escape.
+    case away
 }
 
 /// A game's chat as a panel under the game. The whole game screen shows smaller above the
@@ -22,6 +33,7 @@ struct GameChatPanel: ViewModifier {
     private static let peekLift: CGFloat = 56
 
     @Binding var destination: GameChatDestination?
+    let onClosed: (GameChatClosing) -> Bool
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -42,6 +54,8 @@ struct GameChatPanel: ViewModifier {
     /// The game whose chat peeks up. It stays until the peek is down again.
     @State private var peekKind: GameKind?
     @State private var isPeekRaised = false
+    /// How the person closed the chat, until the tabs have heard it.
+    @State private var closing: GameChatClosing?
 
     private var isPanel: Bool {
         horizontalSizeClass == .compact && verticalSizeClass == .regular
@@ -84,11 +98,11 @@ struct GameChatPanel: ViewModifier {
                     lower()
                 }
             }
-            .sheet(item: isPanel ? .constant(nil) : $destination) { destination in
+            .sheet(item: isPanel ? .constant(nil) : sheetDestination, onDismiss: reportClosing) { destination in
                 ThreadChatScreen(
                     viewModel: destination.viewModel,
                     presentation: .sheet,
-                    onClose: { self.destination = nil }
+                    onClose: { close(.away) }
                 )
                 // Half height leaves the board visible. The keyboard raises the sheet to full height.
                 .presentationDetents([.medium, .large])
@@ -118,9 +132,32 @@ struct GameChatPanel: ViewModifier {
         )
     }
 
+    /// The sheet's own swipe down is the person closing it.
+    private var sheetDestination: Binding<GameChatDestination?> {
+        Binding(get: { destination }, set: { if $0 == nil { close(.away) } })
+    }
+
+    private func close(_ how: GameChatClosing) {
+        guard destination != nil else { return }
+        closing = how
+        destination = nil
+    }
+
+    /// Tells the tabs how the person closed the chat. Someone who keeps opening the chat with
+    /// its button gets the swipe's tip here, over the game the swipe works on.
+    private func reportClosing() {
+        guard let closing else { return }
+        self.closing = nil
+        guard onClosed(closing), isPanel, SwipeLessons[.gameChat].takeTip() else { return }
+        bannerCenter.show(
+            .info(message: String(localized: .gamesChatSwipeTip), systemImage: "bubble.left.and.bubble.right")
+        )
+    }
+
     /// Builds the chat under the screen's bottom edge, then slides it up one turn later,
     /// when it has been built. A panel on its way down turns round.
     private func raise(_ panel: GameChatDestination) {
+        closing = nil
         mounted = panel
         DispatchQueue.main.async {
             guard destination?.id == panel.id else { return }
@@ -142,12 +179,7 @@ struct GameChatPanel: ViewModifier {
             guard !isRaised else { return }
             mounted = nil
             AccessibilityNotification.ScreenChanged().post()
-        }
-        // Over the game the swipe works on, for someone who keeps opening the chat with its button.
-        if SwipeLessons[.gameChat].takeTip() {
-            bannerCenter.show(
-                .info(message: String(localized: .gamesChatSwipeTip), systemImage: "bubble.left.and.bubble.right")
-            )
+            reportClosing()
         }
     }
 
@@ -186,9 +218,9 @@ struct GameChatPanel: ViewModifier {
                 // A tap on the game goes back to it. The panel has the close button.
                 Color.clear
                     .contentShape(Rectangle())
-                    .onTapGesture { destination = nil }
+                    .onTapGesture { close(.toGame) }
                     .accessibilityHidden(true)
-                ChatPanelSurface(viewModel: mounted.viewModel) { destination = nil }
+                ChatPanelSurface(viewModel: mounted.viewModel) { close(.away) }
                     .frame(height: height)
                     .modifier(PanelSlide(offset: isRaised ? 0 : height))
                     .id(mounted.id)

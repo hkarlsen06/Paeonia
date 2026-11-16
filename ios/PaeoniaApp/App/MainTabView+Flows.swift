@@ -304,6 +304,8 @@ extension MainTabView {
         }
         // The couple chat over the tabs would hide where any other link goes.
         isCoupleChatSlidOver = isCoupleChatSlidOver && deepLink == .coupleChat
+        // A link goes somewhere new, so backing out no longer leads to where a visit began.
+        gameChatVisit = nil
 
         switch deepLink {
         case .widgetDrawing, .search:
