@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SafariServices
 import SwiftUI
 import UIKit
@@ -195,24 +196,20 @@ struct WelcomeSignInStep: View {
     // MARK: Providers
 
     private var appleButton: some View {
-        Button(action: onAppleSignIn) {
-            HStack(spacing: PaeoniaSpacing.space12) {
-                Image(systemName: "apple.logo")
-                    .frame(width: PaeoniaSpacing.space24)
-                    .accessibilityHidden(true)
-                Text(.authSignInAppleButton)
-                    .frame(maxWidth: .infinity)
-                Color.clear
-                    .frame(width: PaeoniaSpacing.space24, height: 1)
-                    .accessibilityHidden(true)
+        AppleSignInButton(action: onAppleSignIn)
+            .frame(height: PaeoniaSpacing.buttonHeight)
+            .overlay {
+                if signingInWith == .apple {
+                    RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
+                        .fill(.white)
+                        .overlay {
+                            ProgressView()
+                                .tint(.black)
+                        }
+                        .accessibilityLabel(Text(.commonLoading))
+                }
             }
-            .accessibilityElement(children: .combine)
-        }
-        // Apple's sign-in button rules allow a custom button in black or white with the
-        // Apple logo. White reads best on the plum background.
-        .buttonStyle(WelcomeSignInButtonStyle(provider: .apple, isLoading: signingInWith == .apple))
-        .disabled(isWorking && signingInWith != .apple)
-        .accessibilityIdentifier("auth.signIn.apple")
+            .disabled(isWorking)
     }
 
     private var googleButton: some View {
@@ -232,7 +229,7 @@ struct WelcomeSignInStep: View {
             }
             .accessibilityElement(children: .combine)
         }
-        .buttonStyle(WelcomeSignInButtonStyle(provider: .google, isLoading: signingInWith == .google))
+        .buttonStyle(WelcomeSignInButtonStyle(isLoading: signingInWith == .google))
         .disabled(isWorking && signingInWith != .google)
         .accessibilityIdentifier("auth.signIn.google")
     }
@@ -253,7 +250,7 @@ struct WelcomeSignInStep: View {
             }
             .accessibilityElement(children: .combine)
         }
-        .buttonStyle(WelcomeSignInButtonStyle(provider: .email, isLoading: signingInWith == .email))
+        .buttonStyle(WelcomeSignInButtonStyle(isLoading: signingInWith == .email))
         .disabled(isWorking && signingInWith != .email)
         .accessibilityIdentifier("auth.signIn.email")
     }
@@ -347,15 +344,19 @@ private struct WelcomeLegalLinks: View {
     }
 }
 
-/// Matching provider buttons keep their labels in place during sign-in.
+/// The Google and email buttons. Google's branding rules allow the colored "G" only on
+/// a white, near-black or light gray button, so both use Google's dark colors
+/// (developers.google.com/identity/branding-guidelines). The label stays in place under
+/// the spinner during sign-in.
 private struct WelcomeSignInButtonStyle: ButtonStyle {
-    let provider: AuthProvider
     let isLoading: Bool
+
+    private static let fill = Color(red: 0x13 / 255, green: 0x13 / 255, blue: 0x14 / 255)
+    private static let stroke = Color(red: 0x8E / 255, green: 0x91 / 255, blue: 0x8F / 255)
+    private static let label = Color(red: 0xE3 / 255, green: 0xE3 / 255, blue: 0xE3 / 255)
 
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private var labelColor: Color { provider == .apple ? .black : .paeoniaTextPrimary }
 
     func makeBody(configuration: Configuration) -> some View {
         let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
@@ -367,23 +368,18 @@ private struct WelcomeSignInButtonStyle: ButtonStyle {
             .padding(.horizontal, PaeoniaSpacing.space16)
             .padding(.vertical, PaeoniaSpacing.space12)
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
-            .foregroundStyle(labelColor)
+            .foregroundStyle(Self.label)
             .opacity(isLoading ? 0 : 1)
             .overlay {
                 if isLoading {
                     ProgressView()
-                        .tint(labelColor)
+                        .tint(Self.label)
                         .accessibilityHidden(true)
                 }
             }
-            .background(
-                provider == .apple ? Color.white : Color.paeoniaSurfacePrimary,
-                in: shape
-            )
+            .background(Self.fill, in: shape)
             .overlay {
-                if provider != .apple {
-                    shape.strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
-                }
+                shape.strokeBorder(Self.stroke, lineWidth: PaeoniaRadius.strokeDefault)
             }
             .opacity(configuration.isPressed ? 0.85 : 1)
             .opacity(isEnabled || isLoading ? 1 : 0.5)
@@ -392,6 +388,43 @@ private struct WelcomeSignInButtonStyle: ButtonStyle {
             .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: configuration.isPressed)
             .allowsHitTesting(!isLoading)
             .accessibilityValue(isLoading ? Text(.commonLoading) : Text(verbatim: ""))
+    }
+}
+
+/// Apple's own Sign in with Apple button. Apple allows a custom button only with the
+/// logo artwork from Apple Design Resources, and App Review checks custom buttons, so
+/// the system button is the safe choice. It translates its title itself.
+private struct AppleSignInButton: UIViewRepresentable {
+    let action: () -> Void
+
+    func makeUIView(context: Context) -> ASAuthorizationAppleIDButton {
+        let button = ASAuthorizationAppleIDButton(authorizationButtonType: .continue, authorizationButtonStyle: .white)
+        button.cornerRadius = PaeoniaRadius.radius16
+        button.accessibilityIdentifier = "auth.signIn.apple"
+        button.addTarget(context.coordinator, action: #selector(Coordinator.tapped), for: .touchUpInside)
+        return button
+    }
+
+    func updateUIView(_ button: ASAuthorizationAppleIDButton, context: Context) {
+        context.coordinator.action = action
+        button.isEnabled = context.environment.isEnabled
+        button.alpha = context.environment.isEnabled ? 1 : 0.5
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(action: action)
+    }
+
+    final class Coordinator: NSObject {
+        var action: () -> Void
+
+        init(action: @escaping () -> Void) {
+            self.action = action
+        }
+
+        @objc func tapped() {
+            action()
+        }
     }
 }
 

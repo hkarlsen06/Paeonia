@@ -3007,24 +3007,6 @@
         }
       }
     },
-    "auth.signIn.apple.button" : {
-      "comment" : "Button that starts Sign in with Apple.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue with Apple"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortsett med Apple"
-          }
-        }
-      }
-    },
     "auth.signIn.email.button" : {
       "comment" : "Button that opens email sign-in, under Continue with Apple and Continue with Google.",
       "extractionState" : "manual",
