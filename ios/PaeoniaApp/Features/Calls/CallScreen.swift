@@ -217,6 +217,9 @@ struct CallScreen: View {
                     .transition(.opacity)
             }
         }
+        // Without it the chevron's accessibility frame spans the whole row once Share and Message
+        // sit in it, so VoiceOver outlines the row and a tap at the frame's middle misses.
+        .accessibilityElement(children: .contain)
         .padding(.top, PaeoniaSpacing.space8)
     }
 

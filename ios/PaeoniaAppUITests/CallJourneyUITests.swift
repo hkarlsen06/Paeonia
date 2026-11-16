@@ -60,7 +60,9 @@ final class CallJourneyUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 10), app.debugDescription)
         let smallCall = app.descendants(matching: .any)["calls.chat.preview"].firstMatch
         XCTAssertTrue(smallCall.waitForExistence(timeout: 5), app.debugDescription)
-        XCTAssertTrue(minimize.waitForNonExistence(timeout: 5), app.debugDescription)
+        // UI tests still list views hidden from VoiceOver, so the full call's faded controls show
+        // as not hittable instead of gone.
+        XCTAssertTrue(waitUntil(minimize, isHittable: false), app.debugDescription)
         field.tap()
         field.typeText("Can you hear the rain?")
         let send = app.buttons["chat.composer.send"]
@@ -71,7 +73,7 @@ final class CallJourneyUITests: XCTestCase {
 
         smallCall.tap()
         XCTAssertTrue(field.waitForNonExistence(timeout: 5), app.debugDescription)
-        XCTAssertTrue(minimize.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(waitUntil(minimize, isHittable: true), app.debugDescription)
         XCTAssertTrue(app.buttons["calls.end"].isHittable, app.debugDescription)
         attach(app, named: "The call grown back after closing Just us")
     }
@@ -139,6 +141,14 @@ final class CallJourneyUITests: XCTestCase {
             predicate: NSPredicate(format: "label MATCHES %@", ".*\\b[0-9]+:[0-9]{2}\\b.*"), object: status)
         XCTAssertEqual(XCTWaiter.wait(for: [timer], timeout: 10), .completed, status.debugDescription)
         attach(app, named: "Call screen with the call running")
+    }
+
+    /// Waits up to 5 seconds for `element` to become hittable or not.
+    @MainActor
+    private func waitUntil(_ element: XCUIElement, isHittable: Bool) -> Bool {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "hittable == %@", NSNumber(value: isHittable)), object: element)
+        return XCTWaiter.wait(for: [expectation], timeout: 5) == .completed
     }
 
     @MainActor
