@@ -158,7 +158,7 @@ extension MainTabView {
             pendingGameChatSheet = nil
             // A turn later, once the game is laid out on screen, so the panel measures it.
             Task { @MainActor in
-                if selection.wrappedValue == .games { gameChatSheet = pending }
+                if selection.wrappedValue == .games, !isCoupleChatSlidOver { gameChatSheet = pending }
             }
         }
     }
@@ -231,8 +231,27 @@ extension MainTabView {
         withTransaction(transaction) { gamesPath = visit.originGamesPath }
     }
 
-    /// Opens the couple chat in Chats, over whatever that tab had pushed. Already open over
-    /// the tabs, it stays there.
+    /// Shows "Just us" after a tap inside the app: Message or a callout on the partner's avatar,
+    /// the call's message button, or a message's banner. Already on screen, it stays. With no chat
+    /// on screen, or only the game's chat that it closes, it slides over what is there. Another
+    /// chat would stay open under it and mark the partner's messages read, so it opens in Chats.
+    func showCoupleChat() {
+        guard visibleChatSubject != .couple, !isCoupleChatSlidOver else { return }
+        SwipeLessons[.justUs].openedWithButton(peeksCanShow: !reduceMotion)
+        let chatOverGame = gameChatSheet.map { ThreadChatSubject.game($0.subject) }
+        if visibleChatSubject == nil || visibleChatSubject == chatOverGame {
+            gameChatVisit = nil
+            // A game's chat still on its way would open under "Just us", or switch tabs under it.
+            openingGameChatID = nil
+            dismissGameChatSheet()
+            isCoupleChatSlidOver = true
+        } else {
+            openCoupleChat()
+        }
+    }
+
+    /// Opens the couple chat in Chats, over whatever that tab had pushed, for a push or a link
+    /// from outside the app. Already open over the tabs, it stays there.
     func openCoupleChat() {
         guard !isCoupleChatSlidOver else { return }
         selectTab(.questions)
@@ -287,7 +306,7 @@ extension MainTabView {
         case .question(let id): { PaeoniaNotificationRouter.shared.route(.dailyChat(questionID: id)) }
         case .memory(let id): { PaeoniaNotificationRouter.shared.route(.memory(memoryID: id, showsComments: true)) }
         case .story(let id): { PaeoniaNotificationRouter.shared.route(.story(storyID: id, showsReplies: true)) }
-        case .couple: { openCoupleChat() }
+        case .couple: { showCoupleChat() }
         }
     }
 }

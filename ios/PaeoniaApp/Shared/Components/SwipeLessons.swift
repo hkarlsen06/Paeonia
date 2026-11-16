@@ -2,11 +2,12 @@ import Foundation
 
 /// How this phone has shown one of the app's swipes (`Swipe`), and whether the person has
 /// used it. First what the swipe opens peeks in a few times, on different days. Someone who
-/// still opens it with its button after that gets one tip in words. Everything stops once
-/// they swipe. It is per phone, like the how-to-play cards.
+/// still opens it with its button after that gets one tip in words. Under Reduce Motion
+/// nothing peeks, so the button opens count from the first. Everything stops once they
+/// swipe. It is per phone, like the how-to-play cards.
 nonisolated struct SwipeLessons: Codable, Equatable {
     static let peekLimit = 3
-    /// Opens with the button after the last peek before the tip shows.
+    /// Opens with the button that count before the tip shows.
     static let buttonOpensBeforeTip = 2
 
     private(set) var peekCount = 0
@@ -34,8 +35,9 @@ nonisolated struct SwipeLessons: Codable, Equatable {
         tipIsDue = false
     }
 
-    mutating func openedWithButton() {
-        guard !hasSwiped, !tipShown, peekCount >= Self.peekLimit else { return }
+    /// `peeksCanShow` is false where no peek runs, under Reduce Motion.
+    mutating func openedWithButton(peeksCanShow: Bool) {
+        guard !hasSwiped, !tipShown, !peeksCanShow || peekCount >= Self.peekLimit else { return }
         buttonOpensAfterPeeks += 1
         tipIsDue = buttonOpensAfterPeeks >= Self.buttonOpensBeforeTip
     }

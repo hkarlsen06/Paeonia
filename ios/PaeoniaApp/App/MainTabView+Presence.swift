@@ -85,16 +85,6 @@ extension MainTabView {
     /// covers over the tabs first.
     private func openPresenceRequest() {
         switch presenceModel.takeOpenRequest() {
-        case .chat(.couple):
-            // With no chat on screen, or only the game's chat that it closes, "Just us" slides over
-            // what is there. Another chat would stay open under it and mark the partner's messages
-            // read, so it opens in Chats instead.
-            let chatOverGame = gameChatSheet.map { ThreadChatSubject.game($0.subject) }
-            if visibleChatSubject == nil || visibleChatSubject == chatOverGame {
-                slideOverCoupleChat()
-            } else {
-                openCoupleChat()
-            }
         case let .chat(subject):
             openChatAction(for: subject)()
         case let .game(kind):
@@ -114,12 +104,5 @@ extension MainTabView {
         case nil:
             break
         }
-    }
-
-    /// "Just us" slides over whatever is on screen, without a switch of tab.
-    private func slideOverCoupleChat() {
-        gameChatVisit = nil
-        dismissGameChatSheet()
-        isCoupleChatSlidOver = true
     }
 }

@@ -140,7 +140,7 @@ struct DailyChallengeScreen: View {
             isCoupleChatRequested.wrappedValue = false
             openCoupleChat()
         }
-        // Someone who keeps opening Just us from its card gets one tip about the swipe as it closes.
+        // Someone who keeps opening Just us with a tap gets one tip about the swipe as it closes.
         .onChange(of: conversationChat?.viewModel.subject) { closed, opened in
             guard closed == .couple, opened == nil, SwipeLessons[.justUs].takeTip() else { return }
             bannerCenter.show(.info(message: String(localized: .chatsCoupleChatSwipeTip), systemImage: "hand.draw"))

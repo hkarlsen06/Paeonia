@@ -42,6 +42,7 @@ private struct CoupleChatSlideOver: ViewModifier {
 
     @Environment(\.threadChatContext) private var chatContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @State private var position = CoupleChatSlidePosition.hidden
     /// On screen from the start of the swipe until the chat has slid away again.
     @State private var isMounted = false
@@ -130,7 +131,7 @@ private struct CoupleChatSlideOver: ViewModifier {
             } else {
                 Group {
                     if let chat {
-                        ThreadChatScreen(viewModel: chat, presentation: .slideOver, onClose: hide)
+                        ThreadChatScreen(viewModel: chat, presentation: .slideOver, onClose: close)
                     } else {
                         Color.paeoniaBackgroundPrimary.ignoresSafeArea()
                     }
@@ -138,7 +139,7 @@ private struct CoupleChatSlideOver: ViewModifier {
                 .shadow(color: .black.opacity(0.25 * progress), radius: 16)
                 .modifier(PanelSlide(offset: offset, axis: .horizontal))
                 .accessibilityAddTraits(.isModal)
-                .accessibilityAction(.escape, hide)
+                .accessibilityAction(.escape, close)
             }
         }
     }
@@ -215,7 +216,16 @@ private struct CoupleChatSlideOver: ViewModifier {
         AccessibilityNotification.ScreenChanged().post()
     }
 
-    private func hide() {
+    /// The person closed the chat. Someone who keeps opening it with a tap gets one tip about the
+    /// swipe once it has slid away, over the screen it covered, where the swipe works.
+    private func close() {
+        hide {
+            guard SwipeLessons[.justUs].takeTip() else { return }
+            bannerCenter.show(.info(message: String(localized: .chatsCoupleChatSwipeTip), systemImage: "hand.draw"))
+        }
+    }
+
+    private func hide(then done: @escaping () -> Void = {}) {
         guard isMounted else { return }
         let wasShown = position == .shown
         PaeoniaKeyboard.dismiss()
@@ -226,6 +236,7 @@ private struct CoupleChatSlideOver: ViewModifier {
             guard position == .hidden else { return }
             isMounted = false
             if wasShown { AccessibilityNotification.ScreenChanged().post() }
+            done()
         }
     }
 }

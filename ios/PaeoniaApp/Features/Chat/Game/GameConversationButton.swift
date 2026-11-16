@@ -8,6 +8,7 @@ struct GameConversationButton: View {
     var result: GameConversationResult?
 
     @Environment(\.threadChatContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var presence: ThreadChatPresenceModel?
 
     init(source: GameConversationSource, result: GameConversationResult? = nil) {
@@ -48,7 +49,7 @@ struct GameConversationButton: View {
     /// drops its effects. The fixed frame keeps the score beside it still when the state changes.
     private var button: some View {
         Button {
-            SwipeLessons[.gameChat].openedWithButton()
+            SwipeLessons[.gameChat].openedWithButton(peeksCanShow: !reduceMotion)
             context.openGameChat?(kind, source, result)
         } label: {
             icon

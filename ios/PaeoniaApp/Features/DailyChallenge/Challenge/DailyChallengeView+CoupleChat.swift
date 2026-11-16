@@ -11,7 +11,7 @@ extension DailyChallengeScreen {
                 summary: chatContext.summaries?.summary(for: .couple),
                 isUnread: chatContext.summaries?.isUnread(.couple) ?? false,
                 onOpen: {
-                    SwipeLessons[.justUs].openedWithButton()
+                    SwipeLessons[.justUs].openedWithButton(peeksCanShow: !reduceMotion)
                     openCoupleChat()
                 }
             )
