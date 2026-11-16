@@ -52,7 +52,7 @@ The round starts in Convex the moment the drawer picks a word, not when they fin
 
 - Use the existing PencilKit tools from `WidgetDrawing/Canvas`.
 - No time limit while drawing.
-- The drawer taps Done to send. A correct live guess also ends the drawing (see "Live").
+- The drawer taps Done to send. Done sits right under the canvas, so a stroke that ends low can tap it by accident, and the phone asks "Send your drawing?" first. A correct live guess also ends the drawing (see "Live").
 
 ### Replay
 
@@ -63,7 +63,7 @@ The round starts in Convex the moment the drawer picks a word, not when they fin
 
 ### Guessing
 
-- Guessing uses tiles, not the keyboard. The screen shows one empty slot per letter, with gaps for spaces. Below the slots are the answer's letters mixed with decoy letters, about 12 tiles for a short word.
+- Guessing uses tiles, not the keyboard. The screen shows one empty slot per letter, with gaps for spaces. Below the slots are the answer's letters mixed with decoy letters, about 12 tiles for a short word. The tiles are in alphabetical order, A to Z and then Æ, Ø and Å, so a letter is quick to find. A QWERTY order would not help, because the grid is 6 tiles wide and does not look like a keyboard.
 - Decoys come from the game language, so a Norwegian word can show æ, ø and å tiles.
 - When every slot is filled with a wrong word, the slots shake and the letters go back to the tiles.
 - Guesses ignore case. Tiles show capital letters.

@@ -8,6 +8,7 @@ struct DrawAndGuessDrawingView: View {
 
     @State private var shownGuess: DrawAndGuessAttemptView?
     @State private var isCompositionPresented = false
+    @State private var isSendAlertPresented = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -47,10 +48,9 @@ struct DrawAndGuessDrawingView: View {
                                              isLocked: board.isFinishing)
             }
         } bottom: {
+            // Done sits under the canvas, so a stroke that ends low can tap it. It asks first.
             Button {
-                PaeoniaHaptics.drawingSent()
-                GameSound.send.play()
-                Task { await viewModel.finishDrawing() }
+                isSendAlertPresented = true
             } label: {
                 Text(.commonDone)
             }
@@ -63,6 +63,21 @@ struct DrawAndGuessDrawingView: View {
             isPresented: $isCompositionPresented,
             drawing: board.drawing, side: board.canvasSide, isLocked: board.isFinishing
         ) { board.applyEdit($0) }
+        .alert(Text(.gamesDrawAndGuessDrawSendConfirmTitle), isPresented: $isSendAlertPresented) {
+            Button {
+                PaeoniaHaptics.drawingSent()
+                GameSound.send.play()
+                Task { await viewModel.finishDrawing() }
+            } label: {
+                Text(.gamesDrawAndGuessDrawSendConfirmSend)
+            }
+            .accessibilityIdentifier("draw.done.confirm")
+            Button(role: .cancel) {} label: {
+                Text(.gamesDrawAndGuessKeepDrawing)
+            }
+        } message: {
+            Text(.gamesDrawAndGuessDrawSendConfirmMessage)
+        }
         .modifier(WidgetDrawingPencilDoubleTap(viewModel: board))
         .gameClearDrawingToolbar(board: board, identifier: "draw.clear")
         .onChange(of: newestWrongGuessID) { _, id in

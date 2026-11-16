@@ -39,6 +39,7 @@ final class GameDrawingDescriptionUITests: XCTestCase {
             scrollTo(send, in: app)
             XCTAssertTrue(send.isEnabled, "A recovered description read must allow the drawing to finish")
             send.tap()
+            confirmSendIfAsked(scenario, in: app)
             XCTAssertTrue(send.waitForNonExistence(timeout: 5))
             app.terminate()
         }
@@ -81,6 +82,7 @@ final class GameDrawingDescriptionUITests: XCTestCase {
             scrollTo(send, in: app)
             XCTAssertTrue(send.isEnabled)
             send.tap()
+            confirmSendIfAsked(scenario, in: app)
             let sent = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: send)
             XCTAssertEqual(XCTWaiter.wait(for: [sent], timeout: 5), .completed)
             if scenario == "draw-drawing" {
@@ -93,6 +95,15 @@ final class GameDrawingDescriptionUITests: XCTestCase {
             }
             app.terminate()
         }
+    }
+
+    /// Draw & Guess asks before it sends the drawing. The creature game does not.
+    @MainActor
+    private func confirmSendIfAsked(_ scenario: String, in app: XCUIApplication) {
+        guard scenario == "draw-drawing" else { return }
+        let confirm = app.alerts.buttons.matching(identifier: "draw.done.confirm").firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
     }
 
     @MainActor

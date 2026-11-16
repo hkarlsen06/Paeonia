@@ -1,14 +1,15 @@
 import Foundation
 
-/// One letter tile. The id is its position in the shuffled set, so two tiles
-/// with the same letter stay different.
+/// One letter tile. The id is its position in the set, so two tiles with the
+/// same letter stay different.
 nonisolated struct DrawAndGuessTile: Identifiable, Hashable, Sendable {
     let id: Int
     let letter: Character
 }
 
-/// The tiles under the answer slots: the answer's letters plus decoys, shuffled.
-/// Both phones get the same tiles for the same answer, language, and seed.
+/// The tiles under the answer slots: the answer's letters plus decoys, in
+/// alphabetical order so a letter is quick to find. Both phones get the same
+/// tiles for the same answer, language, and seed.
 nonisolated enum DrawAndGuessTiles {
     static let rowSize = 6
     static let maxShortWordTiles = 18
@@ -20,13 +21,16 @@ nonisolated enum DrawAndGuessTiles {
         let letters = DrawAndGuessAnswer.letters(of: answer)
         var generator = DrawAndGuessSeededGenerator(seed: seed)
         let decoyCount = tileCount(forLetterCount: letters.count) - letters.count
-        var letterPool = letters + decoys(count: decoyCount, language: language, using: &generator)
-        // Fisher-Yates with our own index draw, because `shuffled(using:)` may
-        // change between OS versions.
-        for index in letterPool.indices.dropFirst().reversed() {
-            letterPool.swapAt(index, generator.nextIndex(below: index + 1))
-        }
+        let letterPool = (letters + decoys(count: decoyCount, language: language, using: &generator))
+            .sorted { alphabeticalPlace($0) < alphabeticalPlace($1) }
         return letterPool.enumerated().map { DrawAndGuessTile(id: $0.offset, letter: $0.element) }
+    }
+
+    /// A to Z, then Æ, Ø and Å, as the Norwegian alphabet ends.
+    private static let alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ")
+
+    private static func alphabeticalPlace(_ letter: Character) -> Int {
+        alphabet.firstIndex(of: letter) ?? alphabet.count
     }
 
     /// The smallest multiple of 6 that is at least letters + 4, capped at 18.

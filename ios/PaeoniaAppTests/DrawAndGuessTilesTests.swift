@@ -38,6 +38,16 @@ struct DrawAndGuessTilesTests {
         #expect(!letters(tiles).contains(" "))
     }
 
+    @Test func tilesAreInAlphabeticalOrderWithTheNorwegianLettersLast() {
+        let tiles = letters(DrawAndGuessTiles.make(answer: "blåbærsyltetøy", language: .nb, seed: "a"))
+        let alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ")
+        let places = tiles.compactMap { alphabet.firstIndex(of: $0) }
+
+        #expect(places.count == tiles.count)
+        #expect(places == places.sorted())
+        #expect(tiles.last == "Å")
+    }
+
     @Test(arguments: [
         (2, 6), (3, 12), (4, 12), (8, 12), (9, 18), (10, 18), (13, 18), (14, 18),
         (15, 18), (17, 18), (18, 24), (20, 24)
