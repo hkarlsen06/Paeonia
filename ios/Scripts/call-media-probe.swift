@@ -28,17 +28,17 @@ enum CallMediaProbe {
             decoderFactory: LKRTCDefaultVideoDecoderFactory(),
             audioDevice: microphone
         )
-        let caller = Peer(name: "caller", factory: factory)
-        let partner = Peer(name: "partner", factory: factory)
+        let caller = Peer(name: "caller", factory: factory, tuned: tuned)
+        let partner = Peer(name: "partner", factory: factory, tuned: tuned)
         await connect(caller, partner, factory: tuned ? factory : nil)
         say("Connected. Sending a voice-like sound and silence by turns of 1 s, and panning 1080p noise at 30 fps, "
             + "for \(Int(directSeconds)) s on the path the stats show, then \(Int(turnSeconds)) s on TURN's limits.")
 
         let peers = [caller, partner]
         let (direct, turn) = await run(peers, tuned: tuned, microphone)
-        say("Sharing the caller's \(ScreenSource.width)x\(ScreenSource.height) screen of scrolling text at 60 fps "
-            + "beside its camera, for \(Int(screenSeconds)) s on the direct path's limits, then on TURN's, "
-            + "then on the direct path's for a hot phone.")
+        say("Sharing the caller's \(ScreenSource.width)x\(ScreenSource.height) screen of scrolling text with a video "
+            + "playing on it, at 60 fps, beside its camera, for \(Int(screenSeconds)) s on the direct path's limits, "
+            + "then on TURN's, then on the direct path's for a warm phone and for a hot one.")
         let screenPhases = await shareScreen(caller, tuned: tuned, microphone)
 
         let offer = caller.connection.localDescription?.sdp ?? ""
@@ -268,7 +268,12 @@ extension CallMediaProbe {
     ) async -> [(ScreenPhase, [Timed])] {
         caller.screenSender.track = caller.screenTrack
         caller.screen.start()
-        defer { caller.screen.stop() }
+        let statsLog = CallStatsLog { say("CallStatsLog caller: \($0)") }
+        statsLog.start(caller.connection)
+        defer {
+            statsLog.stop()
+            caller.screen.stop()
+        }
         var phases: [(ScreenPhase, [Timed])] = []
         for phase in ScreenPhase.all {
             if tuned {
@@ -293,43 +298,88 @@ extension CallMediaProbe {
     }
 
     static func screenChecks(_ phase: ScreenPhase, _ samples: [Timed]) -> [Check] {
-        let screenBudget = phase.screenBudget
-        let cameraBudget = phase.cameraBudget
-        let settled = samples.filter { $0.sample.seconds - (samples.first?.sample.seconds ?? 0) >= 2 }
-        let screens = settled.map(\.sample.screen)
-        let screenTarget = screens.compactMap(\.sent.targetBitsPerSecond).max() ?? 0
-        let cameraTarget = settled.compactMap(\.sample.camera.sent.targetBitsPerSecond).max() ?? 0
-        let widths = screens.compactMap(\.frameWidth)
-        let fastest = screens.compactMap(\.framesPerSecond).max() ?? 0
-        let codec = screens.last?.sent.codec
-        say("caller screen on \(phase.name): \(codec ?? "-"), highest encoder target "
-            + "\(Int(screenTarget / 1_000)) kbps, frames \(widths.min() ?? 0) to \(widths.max() ?? 0) wide, "
-            + "up to \(Int(fastest)) fps; camera beside it: highest encoder target \(Int(cameraTarget / 1_000)) kbps")
+        let run = ScreenRun(samples)
+        say("caller screen on \(phase.name): \(run.summary)")
         let caller = "the caller's screen on \(phase.name)"
         let camera = "the caller's camera beside its screen on \(phase.name)"
-        return [
-            Check("\(caller) goes as video/H265", .tuning, holds: codec == "video/H265"),
+        let checks = [
+            Check("\(caller) goes as video/H265", .tuning, holds: run.codec == "video/H265"),
             Check(
-                "\(caller) keeps its full \(ScreenSource.width)-wide picture",
-                .tunedRunOnly,
-                holds: widths.min() == ScreenSource.width
-            ),
-            Check(
-                "\(caller) sends at most \(phase.maxFramesPerSecond) frames a second",
+                "\(caller) sends about \(phase.framesPerSecond) fps: a median over 80% of it, and never 2 over",
                 .tuning,
-                holds: fastest > 0 && fastest <= Double(phase.maxFramesPerSecond)
+                holds: run.sends(about: phase.framesPerSecond)
             ),
             Check(
-                "\(caller) has an encoder target at or under \(Int(screenBudget / 1_000)) kbps",
+                "\(caller) fits its bits with a picture under \(phase.maxWidth) wide, not with fewer frames",
+                .tuning,
+                holds: (run.widths.min() ?? phase.maxWidth) < phase.maxWidth
+            ),
+            Check(
+                "\(caller) has an encoder target at or under \(Int(phase.screenBudget / 1_000)) kbps",
                 phase.screenBudgetKind,
-                holds: screenTarget > 0 && screenTarget <= screenBudget
+                holds: run.screenTarget > 0 && run.screenTarget <= phase.screenBudget
             ),
             Check(
-                "\(camera) stays at or under \(Int(cameraBudget / 1_000)) kbps",
+                "\(camera) stays at or under \(Int(phase.cameraBudget / 1_000)) kbps",
                 .tuning,
-                holds: cameraTarget > 0 && cameraTarget <= cameraBudget
+                holds: run.cameraTarget > 0 && run.cameraTarget <= phase.cameraBudget
+            ),
+            Check("\(camera) sends at most 16 frames a second", .tuning, holds: run.cameraFastestRate <= 16),
+            Check(
+                "the caller's screen and camera on \(phase.name) send under \(Int(phase.totalCap * 1.1 / 1_000)) kbps "
+                    + "together over every 5 s",
+                phase.totalCapKind,
+                holds: run.peakTogether < phase.totalCap * 1.1
             ),
         ]
+        guard phase.heat != .normal else { return checks }
+        return checks + [Check(
+            "\(caller) is never over \(phase.maxWidth) wide, the size the heat allows",
+            .tuning,
+            holds: !run.widths.isEmpty && run.widths.allSatisfy { $0 <= phase.maxWidth }
+        )]
+    }
+}
+
+/// What the caller's screen and the camera beside it sent in one phase, from 2 s in, once the
+/// encoders follow the phase's limits.
+struct ScreenRun {
+    let codec: String?
+    let screenTarget: Double
+    let cameraTarget: Double
+    let widths: [Int]
+    /// The median of the screen's frame rate samples.
+    let typicalRate: Double
+    let fastestRate: Double
+    let cameraFastestRate: Double
+    let peakTogether: Double
+    let limitations: [String]
+
+    init(_ samples: [Timed]) {
+        let settled = samples.filter { $0.sample.seconds - (samples.first?.sample.seconds ?? 0) >= 2 }
+        let screens = settled.map(\.sample.screen)
+        let rates = screens.compactMap(\.framesPerSecond).sorted()
+        codec = screens.last?.sent.codec
+        screenTarget = screens.compactMap(\.sent.targetBitsPerSecond).max() ?? 0
+        cameraTarget = settled.compactMap(\.sample.camera.sent.targetBitsPerSecond).max() ?? 0
+        widths = screens.compactMap(\.frameWidth)
+        typicalRate = rates.isEmpty ? 0 : rates[rates.count / 2]
+        fastestRate = rates.last ?? 0
+        cameraFastestRate = settled.compactMap(\.sample.camera.framesPerSecond).max() ?? 0
+        peakTogether = peakBitsPerSecond(settled, over: 5) { $0.camera.sent.bytesSent + $0.screen.sent.bytesSent }
+        limitations = Set(screens.compactMap(\.qualityLimitation)).sorted()
+    }
+
+    func sends(about rate: Int) -> Bool {
+        typicalRate > 0.8 * Double(rate) && fastestRate <= Double(rate + 1)
+    }
+
+    var summary: String {
+        "\(codec ?? "-"), highest encoder target \(Int(screenTarget / 1_000)) kbps, frames \(widths.min() ?? 0) to "
+            + "\(widths.max() ?? 0) wide, \(Int(typicalRate)) fps typical and \(Int(fastestRate)) at most, limited by "
+            + "\(limitations.isEmpty ? "-" : limitations.joined(separator: ", ")); camera beside it: highest encoder "
+            + "target \(Int(cameraTarget / 1_000)) kbps, up to \(Int(cameraFastestRate)) fps; both together peak at "
+            + "\(Int(peakTogether / 1_000)) kbps over 5 s"
     }
 }
 
@@ -340,23 +390,37 @@ struct ScreenPhase {
     let heat: CallHeat
     let screenBudget: Double
     let screenBudgetKind: Check.Kind
-    /// One over `CallVideoLimits`, because the stats' frame rate wobbles around the limit.
-    let maxFramesPerSecond: Int
+    /// The screen's limit in `CallVideoLimits`.
+    let framesPerSecond: Int
+    /// The widest the screen may be at this heat.
+    let maxWidth: Int
     let cameraBudget: Double
+    /// The camera's own limit, which the screen and the camera share.
+    let totalCap: Double
+    let totalCapKind: Check.Kind
 
     static let all = [
         // WebRTC's own limit for a screen this size is the direct path's 2.5 Mbps already.
         ScreenPhase(
             name: "direct", path: .direct, heat: .normal,
-            screenBudget: 2_500_000, screenBudgetKind: .always, maxFramesPerSecond: 16, cameraBudget: 1_500_000
+            screenBudget: 2_500_000, screenBudgetKind: .always, framesPerSecond: 30, maxWidth: ScreenSource.width,
+            cameraBudget: 1_500_000, totalCap: 4_000_000, totalCapKind: .tunedRunOnly
         ),
         ScreenPhase(
             name: "TURN", path: .turn, heat: .normal,
-            screenBudget: 1_000_000, screenBudgetKind: .tuning, maxFramesPerSecond: 16, cameraBudget: 500_000
+            screenBudget: 1_000_000, screenBudgetKind: .tuning, framesPerSecond: 30, maxWidth: ScreenSource.width,
+            cameraBudget: 500_000, totalCap: 1_500_000, totalCapKind: .tuning
+        ),
+        ScreenPhase(
+            name: "direct when warm", path: .direct, heat: .warm,
+            screenBudget: 1_000_000, screenBudgetKind: .tuning, framesPerSecond: 24,
+            maxWidth: Int((Double(ScreenSource.width) * 2 / 3).rounded()),
+            cameraBudget: 500_000, totalCap: 1_500_000, totalCapKind: .tuning
         ),
         ScreenPhase(
             name: "direct when hot", path: .direct, heat: .hot,
-            screenBudget: 400_000, screenBudgetKind: .tuning, maxFramesPerSecond: 6, cameraBudget: 200_000
+            screenBudget: 400_000, screenBudgetKind: .tuning, framesPerSecond: 15, maxWidth: ScreenSource.width / 2,
+            cameraBudget: 200_000, totalCap: 600_000, totalCapKind: .tuning
         ),
     ]
 }
@@ -439,11 +503,15 @@ struct AudioTurns {
 }
 
 func peakVideoBitsPerSecond(_ samples: [Timed], over window: Double) -> Double {
+    peakBitsPerSecond(samples, over: window) { $0.camera.sent.bytesSent }
+}
+
+func peakBitsPerSecond(_ samples: [Timed], over window: Double, bytes: (CallStatsSample) -> Int) -> Double {
     var peak = 0.0
     for (index, earlier) in samples.enumerated() {
         let windowEnd = samples[index...].first { $0.sample.seconds - earlier.sample.seconds >= window }
         guard let later = windowEnd else { break }
-        let bits = Double(later.sample.camera.sent.bytesSent - earlier.sample.camera.sent.bytesSent) * 8
+        let bits = Double(bytes(later.sample) - bytes(earlier.sample)) * 8
         peak = max(peak, bits / (later.sample.seconds - earlier.sample.seconds))
     }
     return peak
@@ -488,7 +556,7 @@ final class Peer {
     private let camera: NoiseCamera
     private var partnerTracks: [LKRTCVideoTrack] = []
 
-    init(name: String, factory: LKRTCPeerConnectionFactory) {
+    init(name: String, factory: LKRTCPeerConnectionFactory, tuned: Bool) {
         self.name = name
         let configuration = LKRTCConfiguration()
         configuration.sdpSemantics = .unifiedPlan
@@ -508,7 +576,7 @@ final class Peer {
         videoTrack = factory.videoTrack(with: source, trackId: "video")
         camera = NoiseCamera(source: source)
         camera.start()
-        let screenSource = factory.videoSource(forScreenCast: true)
+        let screenSource = tuned ? CallCodecs.screenSource(from: factory) : factory.videoSource(forScreenCast: true)
         screenTrack = factory.videoTrack(with: screenSource, trackId: "screen")
         screen = ScreenSource(source: screenSource)
     }
@@ -646,10 +714,13 @@ nonisolated final class NoiseCamera: @unchecked Sendable {
 }
 
 /// A phone screen at the size `CallScreenCapture` asks ScreenCaptureKit for, of lines of text-like
-/// marks that scroll at 60 fps, the most ScreenCaptureKit sends on iOS.
+/// marks that scroll at 60 fps, the most ScreenCaptureKit sends on iOS, with a video playing in a
+/// 16:9 box across the middle. The video is grain that changes every frame, so the encoder wants
+/// more bits than the limits allow, as a phone screen with a video or a game on it does.
 nonisolated final class ScreenSource: @unchecked Sendable {
-    static let width = 978
-    static let height = 2_120
+    static let width = 652
+    static let height = 1_412
+    static let videoRows = height / 3 ..< height / 3 + width * 9 / 16
 
     private let source: LKRTCVideoSource
     private let capturer: LKRTCVideoCapturer
@@ -659,6 +730,7 @@ nonisolated final class ScreenSource: @unchecked Sendable {
     /// Twice the screen's height, so a screen-sized window can scroll down it.
     private let page: [UInt8]
     private var frameNumber = 0
+    private var random = Random(state: 0x853c_49e6_748f_ea9b)
 
     init(source: LKRTCVideoSource) {
         self.source = source
@@ -709,6 +781,11 @@ nonisolated final class ScreenSource: @unchecked Sendable {
                 guard let start = page.baseAddress else { return }
                 for row in 0..<Self.height {
                     (luma + row * lumaRow).update(from: start + (top + row) * Self.width, count: Self.width)
+                }
+            }
+            for row in Self.videoRows {
+                for column in 0..<Self.width {
+                    luma[row * lumaRow + column] = 64 &+ UInt8(truncatingIfNeeded: random.next()) % 128
                 }
             }
             let chromaBytes = CVPixelBufferGetBytesPerRowOfPlane(buffer, 1) * CVPixelBufferGetHeightOfPlane(buffer, 1)

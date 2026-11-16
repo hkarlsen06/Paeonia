@@ -73,6 +73,11 @@ final class CallScreenCapture {
         }
     }
 
+    /// The most frames a second WebRTC gets of the screen (`CallVideoLimits`).
+    func setMaxFramesPerSecond(_ rate: Int) {
+        frames.setMaxFramesPerSecond(rate)
+    }
+
     fileprivate func picked(_ filter: SCContentFilter) {
         guard case .picking = phase else { return }
         releasePicker()
@@ -126,8 +131,9 @@ final class CallScreenCapture {
         picker.remove(frames)
     }
 
-    /// The screen's own shape, with at most as many pixels as the camera's 1080p, so the encoder
-    /// works no harder than for the camera and text stays sharp on the partner's phone. iOS
+    /// The screen's own shape, with at most as many pixels as 1280x720, which is 652 by 1412 on a
+    /// phone whose screen is 1179 by 2556. That is under half of 1080p's pixels, so the encoder
+    /// has room for 30 frames a second, and text stays readable on the partner's phone. iOS
     /// captures at the screen's full size otherwise, which is 3.8 million pixels on a large iPhone.
     private static func configuration(for filter: SCContentFilter) -> SCStreamConfiguration {
         let configuration = SCStreamConfiguration()
@@ -140,7 +146,7 @@ final class CallScreenCapture {
         return configuration
     }
 
-    private static let maxPixels: CGFloat = 1_920 * 1_080
+    private static let maxPixels: CGFloat = 1_280 * 720
 
     /// Video encoders take only even sizes.
     private static func evenPixels(_ value: CGFloat) -> Int {
@@ -165,6 +171,10 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
     /// Atomic so the stats can read them on the main thread without making `queue` wait.
     private static let picturesCaptured = Atomic(0)
     private static let pixelFormat = Atomic<OSType>(0)
+    private var minFrameGap = Duration.seconds(1) / 30
+    /// A frame came sooner than `minFrameGap` after the last one sent, and the newest frame goes
+    /// once the gap has passed.
+    private var isSendWaiting = false
 
     init(source: LKRTCVideoSource) {
         self.source = source
@@ -178,7 +188,26 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
             Self.pixelFormat.store(CVPixelBufferGetPixelFormatType(buffer), ordering: .relaxed)
         }
         lastFrame = frame
-        send(frame)
+        sendNewest()
+    }
+
+    /// iOS sends up to 60 frames a second, and WebRTC would only drop the extra ones after it
+    /// took them in, so they stop here.
+    func setMaxFramesPerSecond(_ rate: Int) {
+        queue.async { [self] in minFrameGap = .seconds(1) / rate }
+    }
+
+    /// Sends the newest frame now, or when `minFrameGap` has passed since the last send, so the
+    /// last frame of a scroll still goes when no frame follows it.
+    private func sendNewest() {
+        guard !isSendWaiting, let lastFrame else { return }
+        let wait = minFrameGap - (ContinuousClock.now - lastSent)
+        guard wait > .zero else { return send(lastFrame) }
+        isSendWaiting = true
+        queue.asyncAfter(deadline: .now() + .nanoseconds(Int(wait / .nanoseconds(1)))) { [self] in
+            isSendWaiting = false
+            sendNewest()
+        }
     }
 
     static var captured: CallStatsSample.Captured {
@@ -304,6 +333,8 @@ final class CallScreenCapture {
     static let captured = CallStatsSample.Captured()
 
     init(source _: LKRTCVideoSource) {}
+
+    func setMaxFramesPerSecond(_: Int) {}
 
     func start() {}
 

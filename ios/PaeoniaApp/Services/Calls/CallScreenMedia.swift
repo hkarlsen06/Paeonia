@@ -15,8 +15,7 @@ final class CallScreenMedia {
     private var partnerTrack: LKRTCVideoTrack?
 
     init(factory: LKRTCPeerConnectionFactory, partnerFeed: CallVideoFeed) {
-        // A screen source tells the encoder the frames are a screen, which it compresses for text.
-        let source = factory.videoSource(forScreenCast: true)
+        let source = CallCodecs.screenSource(from: factory)
         track = factory.videoTrack(with: source, trackId: "screen")
         capture = CallScreenCapture(source: source)
         self.partnerFeed = partnerFeed
@@ -26,7 +25,7 @@ final class CallScreenMedia {
     func use(_ transceiver: LKRTCRtpTransceiver, limits: CallVideoLimits) {
         self.transceiver = transceiver
         transceiver.sender.track = isSharing ? track : nil
-        CallCodecs.limitScreen(transceiver.sender, to: limits)
+        limit(to: limits)
         partnerTrack = transceiver.receiver.track as? LKRTCVideoTrack
         partnerTrack?.add(partnerFeed)
     }
@@ -41,6 +40,7 @@ final class CallScreenMedia {
     }
 
     func limit(to limits: CallVideoLimits) {
+        capture.setMaxFramesPerSecond(limits.maxFramesPerSecond)
         if let sender = transceiver?.sender {
             CallCodecs.limitScreen(sender, to: limits)
         }

@@ -22,10 +22,10 @@ nonisolated enum CallCodecs {
         }
     }
 
-    /// Sets the video's largest bitrate, picture size and frame rate. The camera captures 1080p.
-    /// WebRTC can change them during a call without a new offer, and still goes lower on its own
-    /// for the network estimate or a busy encoder (`qualityLimitationReason`), so these are
-    /// ceilings that never fight its adaptation.
+    /// Sets the video's largest bitrate, picture size and frame rate. WebRTC can change them
+    /// during a call without a new offer, and still goes lower on its own for the network
+    /// estimate or a busy encoder (`qualityLimitationReason`), so these are ceilings that never
+    /// fight its adaptation.
     static func limitVideo(_ sender: LKRTCRtpSender, to limits: CallVideoLimits) {
         let parameters = sender.parameters
         for encoding in parameters.encodings {
@@ -36,11 +36,24 @@ nonisolated enum CallCodecs {
         sender.parameters = parameters
     }
 
-    /// The shared screen keeps its full size and sends fewer frames when bits run short, because
-    /// a smaller picture blurs text.
+    /// The shared screen's video source. WebRTC's screen-sharing mode (`forScreenCast: true`)
+    /// caps the H.265 and H.264 encoders' quantizer at 39 (`MaxAllowedFrameQP`), so VideoToolbox
+    /// drops frames to stay under it, and turns off the quality scaler that lowers the picture
+    /// size when the quantizer runs high. The share then plays like stop motion.
+    static func screenSource(from factory: LKRTCPeerConnectionFactory) -> LKRTCVideoSource {
+        factory.videoSource(forScreenCast: false)
+    }
+
+    /// The shared screen keeps its frame rate when bits or the encoder run short and sends a
+    /// smaller picture instead, because softer text is easier to watch than a picture that jumps.
+    /// It gets four times the camera's share of a network too slow for both, because the partner
+    /// shows it large and the camera small.
     static func limitScreen(_ sender: LKRTCRtpSender, to limits: CallVideoLimits) {
         let parameters = sender.parameters
-        parameters.degradationPreference = NSNumber(value: LKRTCDegradationPreference.maintainResolution.rawValue)
+        parameters.degradationPreference = NSNumber(value: LKRTCDegradationPreference.maintainFramerate.rawValue)
+        for encoding in parameters.encodings {
+            encoding.bitratePriority = 4
+        }
         sender.parameters = parameters
         limitVideo(sender, to: limits)
     }
@@ -119,16 +132,21 @@ nonisolated enum CallHeat: Equatable, Sendable {
 /// place the limits live.
 nonisolated struct CallVideoLimits: Equatable, Sendable {
     var maxBitsPerSecond: Int
-    /// How much WebRTC shrinks the picture before it encodes it. The camera captures 1080p.
+    /// How much WebRTC shrinks the picture before it encodes it. The camera captures 1080p, or
+    /// about 640x480 beside a shared screen (`CallCamera`), and the screen about 1280x720's
+    /// pixel count (`CallScreenCapture`).
     var scaleDown: Double
-    /// Also the camera's capture rate, because capturing costs heat too.
+    /// Also the camera's capture rate, because capturing costs heat too, and the most frames a
+    /// second the shared screen hands WebRTC.
     var maxFramesPerSecond: Int
 
-    /// The camera's limits. Beside a shared screen it keeps what the screen leaves.
+    /// The camera's limits. Beside a shared screen it keeps the bits the screen leaves, and
+    /// sends at most 15 frames a second, because the partner shows it small then.
     init(path: CallMediaPath, heat: CallHeat = .normal, besideScreen: Bool = false) {
         self = Self.limits(for: path).lowered(to: Self.limits(for: heat))
         if besideScreen {
             maxBitsPerSecond -= Self.screen(path: path, heat: heat).maxBitsPerSecond
+            maxFramesPerSecond = min(maxFramesPerSecond, 15)
         }
     }
 
@@ -173,22 +191,24 @@ nonisolated struct CallVideoLimits: Equatable, Sendable {
 
     /// The partner shows a shared screen large and the camera small, so the screen gets most of
     /// the camera's bits for the path and the heat, and the two together stay inside them and
-    /// TURN's 1.5 Mbps. The screen keeps its full size, up to 1080p's pixel count, because a
-    /// smaller picture blurs text. It sends at most 15 frames a second, which is enough for
-    /// scrolling and moving between apps, and fewer as the phone heats up. ScreenCaptureKit
-    /// sends up to 60 a second on iOS, where its frame interval cannot be set.
+    /// TURN's 1.5 Mbps. The screen sends up to 30 frames a second on either path, so scrolling
+    /// and moving between apps look smooth. ScreenCaptureKit sends up to 60 a second on iOS,
+    /// where its frame interval cannot be set.
     private static func screenLimits(for path: CallMediaPath) -> CallVideoLimits {
         switch path {
-        case .direct: CallVideoLimits(2_500_000, 1, 15)
-        case .turn: CallVideoLimits(1_000_000, 1, 15)
+        case .direct: CallVideoLimits(2_500_000, 1, 30)
+        case .turn: CallVideoLimits(1_000_000, 1, 30)
         }
     }
 
+    /// Heat lowers the screen's picture size before its frame rate: a warm phone sends two thirds
+    /// of the size at 24 frames a second, a third of the pixels each second, and a hot one half
+    /// the size at 15, an eighth, the same steps the camera takes.
     private static func screenLimits(for heat: CallHeat) -> CallVideoLimits {
         switch heat {
-        case .normal: CallVideoLimits(2_500_000, 1, 15)
-        case .warm: CallVideoLimits(1_000_000, 1, 10)
-        case .hot: CallVideoLimits(400_000, 1, 5)
+        case .normal: CallVideoLimits(2_500_000, 1, 30)
+        case .warm: CallVideoLimits(1_000_000, 1.5, 24)
+        case .hot: CallVideoLimits(400_000, 2, 15)
         }
     }
 }
