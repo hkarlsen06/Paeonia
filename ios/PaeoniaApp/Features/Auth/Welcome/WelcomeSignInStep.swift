@@ -344,13 +344,9 @@ private struct SignInProviderLabel<Icon: View>: View {
     @ViewBuilder let icon: Icon
 
     /// Apple's button sets its title in Medium at 0.4 of the button's height (20.8 pt
-    /// at 52 pt, measured from its cap height). The same size here keeps the three
-    /// titles alike, and it still grows with the person's text size.
-    @ScaledMetric(relativeTo: .headline) private var titleSize = PaeoniaSpacing.buttonHeight * 0.4
-
-    private var titleFont: UIFont {
-        .systemFont(ofSize: titleSize, weight: .medium)
-    }
+    /// at 52 pt, measured from its cap height) and ignores the person's text size, so
+    /// these titles do the same and the three always match.
+    private let titleFont = UIFont.systemFont(ofSize: PaeoniaSpacing.buttonHeight * 0.4, weight: .medium)
 
     var body: some View {
         Group {
