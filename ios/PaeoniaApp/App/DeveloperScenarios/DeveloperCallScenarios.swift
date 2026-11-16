@@ -365,7 +365,7 @@
         if game {
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: .connectFourPartnerTurn, launchLink: "paeonia://games/connect-four",
-            avatarStories: .noStory, partnerMovesAfter: partnerMoves ? .seconds(2) : nil)
+            avatarStories: .noStory, partnerMovesAfter: partnerMoves ? .seconds(5) : nil)
         } else if coupleCalls {
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: .mindMeldWrite, coupleCalls: true, launchLink: "paeonia://chat",

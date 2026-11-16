@@ -258,13 +258,15 @@ struct CallScreen: View {
         isEnded ? nil : callout
     }
 
-    /// Above the controls, with no height of its own, so nothing on the screen moves for it.
+    /// Above the controls, with no height of its own, so nothing on the screen moves for it. While the
+    /// controls are hidden it moves down into their room, like your own camera, and back up when they
+    /// show again.
     @ViewBuilder
     private var calloutView: some View {
         if let shownCallout {
             CallCallout(callout: shownCallout, partnerName: participants.partnerName, open: openCallout)
                 .frame(height: 0, alignment: .bottom)
-                .offset(y: -PaeoniaSpacing.space16)
+                .offset(y: showsHUD || reduceMotion ? -PaeoniaSpacing.space16 : bottomHeight ?? 0)
                 .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
         }
     }
