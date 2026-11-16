@@ -11,7 +11,8 @@
       callActiveVoiceAirPods, callActiveVideo, callVideoOwnCamera, callVideoBackCamera, callMicrophoneWaiting,
       callReconnecting,
       callEnded, callEndedNoAnswer, callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame,
-      callBubblePartnerOpenedGame, callScreenPartnerOpenedGame, callScreenGameYourTurn, callScreenPartnerMessage,
+      callBubblePartnerOpenedGame, callScreenPartnerOpenedGame, callScreenGameYourTurn, callScreenGameYourTurnZoom,
+      callScreenPartnerMessage,
       callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
     ]
 
@@ -140,6 +141,23 @@
           $0.partnerVideoAspectRatio = 9.0 / 16
         },
         game: true, partnerMoves: true)
+    }
+
+    static let callScreenGameYourTurnZoom = DeveloperScenario(
+      "call-screen-game-your-turn-zoom", "Call · your turn with the back camera's zoom slider",
+      "Robin plays in Four in a Row while your back camera is on. The call keeps saying so, and a tap brings the "
+        + "zoom slider up under it",
+      .calls
+    ) { _ in
+      DeveloperCallLocalFlow(
+        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
+          $0.isCameraOn = true
+          $0.isPartnerCameraOn = true
+          $0.partnerVideoAspectRatio = 9.0 / 16
+          $0.isUsingFrontCamera = false
+        },
+        backCameraZoom: CallCameraZoom(range: 0.5...10, factor: 1), game: true, partnerMoves: true,
+        keepsNews: true)
     }
 
     static let callScreenPartnerMessage = DeveloperScenario(
@@ -330,6 +348,8 @@
 
   /// The real paired app from a local flow, with a call center of its own. `game` opens Four in a
   /// Row on Robin's turn, and with `partnerMoves` Robin plays a disc a moment after the app shows.
+  /// `backCameraZoom` puts the back camera's zoom slider above the call's buttons, and with `keepsNews`
+  /// what the call says stays until the scenario closes (`DeveloperPresenceFixture`).
   /// `coupleCalls` opens "Just us" with its call rows, and `nightPrompt` has the night question up.
   /// With `partnerDoes`, Robin is in the app, playing Mind Meld, and does it a moment after the app
   /// shows.
@@ -343,16 +363,18 @@
     private let partnerDoes: PresenceNotice?
 
     init(
-      session: CallSession? = nil, presentation: CallPresentation = .full, game: Bool = false,
-      partnerMoves: Bool = false, coupleCalls: Bool = false, nightPrompt: CallStarter.NightPrompt? = nil,
-      partnerDoes: PresenceNotice? = nil
+      session: CallSession? = nil, presentation: CallPresentation = .full,
+      backCameraZoom: CallCameraZoom? = nil, game: Bool = false,
+      partnerMoves: Bool = false, keepsNews: Bool = false, coupleCalls: Bool = false,
+      nightPrompt: CallStarter.NightPrompt? = nil, partnerDoes: PresenceNotice? = nil
     ) {
       self.partnerDoes = partnerDoes
       _presence = State(initialValue: partnerDoes.map { _ in
         DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.mindMeld]))
-      })
+      } ?? (keepsNews ? DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.connectFour])) : nil))
       let center = CallCenter(engine: DeveloperCallEngine(), session: session)
       center.presentation = presentation
+      center.backCameraZoom = backCameraZoom
       _center = State(initialValue: center)
       _starter = State(initialValue: CallStarter(center: center, nightPrompt: nightPrompt))
       self.game = game
@@ -365,7 +387,7 @@
         if game {
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: .connectFourPartnerTurn, launchLink: "paeonia://games/connect-four",
-            avatarStories: .noStory, partnerMovesAfter: partnerMoves ? .seconds(5) : nil)
+            avatarStories: .noStory, presence: presence, partnerMovesAfter: partnerMoves ? .seconds(5) : nil)
         } else if coupleCalls {
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: .mindMeldWrite, coupleCalls: true, launchLink: "paeonia://chat",
