@@ -11,7 +11,7 @@
       callActiveVoiceAirPods, callActiveVideo, callVideoOwnCamera, callVideoBackCamera, callMicrophoneWaiting,
       callReconnecting,
       callEnded, callEndedNoAnswer, callFailedOffline, callBusy, callBubbleVoiceGame, callBubbleVideoGame,
-      callBubblePartnerOpenedGame, callScreenPartnerOpenedGame, callScreenPartnerMessage,
+      callBubblePartnerOpenedGame, callScreenPartnerOpenedGame, callScreenGameYourTurn, callScreenPartnerMessage,
       callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
     ]
 
@@ -127,6 +127,19 @@
           $0.partnerVideoAspectRatio = 9.0 / 16
         },
         partnerDoes: .openedGame(.mindMeld))
+    }
+
+    static let callScreenGameYourTurn = DeveloperScenario(
+      "call-screen-game-your-turn", "Call · your turn during a full-screen video call",
+      "Robin plays in Four in a Row while the video call covers it, and the call says it is your turn", .calls
+    ) { _ in
+      DeveloperCallLocalFlow(
+        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
+          $0.isCameraOn = true
+          $0.isPartnerCameraOn = true
+          $0.partnerVideoAspectRatio = 9.0 / 16
+        },
+        game: true, partnerMoves: true)
     }
 
     static let callScreenPartnerMessage = DeveloperScenario(
@@ -316,20 +329,23 @@
   }
 
   /// The real paired app from a local flow, with a call center of its own. `game` opens Four in a
-  /// Row on Robin's turn, `coupleCalls` opens "Just us" with its call rows, and `nightPrompt` has
-  /// the night question up. With `partnerDoes`, Robin is in the app, playing Mind Meld, and does
-  /// it a moment after the app shows.
+  /// Row on Robin's turn, and with `partnerMoves` Robin plays a disc a moment after the app shows.
+  /// `coupleCalls` opens "Just us" with its call rows, and `nightPrompt` has the night question up.
+  /// With `partnerDoes`, Robin is in the app, playing Mind Meld, and does it a moment after the app
+  /// shows.
   private struct DeveloperCallLocalFlow: View {
     @State private var center: CallCenter
     @State private var starter: CallStarter
     @State private var presence: PartnerPresenceModel?
     private let game: Bool
+    private let partnerMoves: Bool
     private let coupleCalls: Bool
     private let partnerDoes: PresenceNotice?
 
     init(
       session: CallSession? = nil, presentation: CallPresentation = .full, game: Bool = false,
-      coupleCalls: Bool = false, nightPrompt: CallStarter.NightPrompt? = nil, partnerDoes: PresenceNotice? = nil
+      partnerMoves: Bool = false, coupleCalls: Bool = false, nightPrompt: CallStarter.NightPrompt? = nil,
+      partnerDoes: PresenceNotice? = nil
     ) {
       self.partnerDoes = partnerDoes
       _presence = State(initialValue: partnerDoes.map { _ in
@@ -340,6 +356,7 @@
       _center = State(initialValue: center)
       _starter = State(initialValue: CallStarter(center: center, nightPrompt: nightPrompt))
       self.game = game
+      self.partnerMoves = partnerMoves
       self.coupleCalls = coupleCalls
     }
 
@@ -348,7 +365,7 @@
         if game {
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: .connectFourPartnerTurn, launchLink: "paeonia://games/connect-four",
-            avatarStories: .noStory)
+            avatarStories: .noStory, partnerMovesAfter: partnerMoves ? .seconds(2) : nil)
         } else if coupleCalls {
           DeveloperLocalFlowHost(
             seed: .paired, gameConversation: .mindMeldWrite, coupleCalls: true, launchLink: "paeonia://chat",

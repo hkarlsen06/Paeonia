@@ -10,6 +10,7 @@
     @State private var pendingInviteCode: String?
     @State private var environment: DeveloperLocalFlowEnvironment
     private let partnerWritesAfter: Duration?
+    private let partnerMovesAfter: Duration?
     private let presence: PartnerPresenceModel?
 
     /// `gameConversation` is a game scenario. The Games tab then shows its state, and game
@@ -18,14 +19,16 @@
     /// lands in "Just us" (`DeveloperAnsweringCallEngine`). With `.callsIn` the partner also calls.
     /// `launchLink` opens when the flow starts, unless the app was launched with one. `presence`
     /// puts the partner's avatar over the app (`DeveloperPresenceFixture`). That long after
-    /// the avatar shows, `partnerWritesAfter`, the partner writes in the game's chat.
+    /// the avatar shows, `partnerWritesAfter`, the partner writes in the game's chat. That long after
+    /// the games are first read, `partnerMovesAfter`, the partner moves in the scenario's board game.
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil,
          gameConversation: DeveloperScenario? = nil, finishedGameRuns: Bool = false, coupleCalls: Bool = false,
          callPartner: DeveloperCallPartner? = nil, launchLink: String? = nil,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
          mail: DeveloperMailSeed = .none, presence: PartnerPresenceModel? = nil,
-         partnerWritesAfter: Duration? = nil) {
+         partnerWritesAfter: Duration? = nil, partnerMovesAfter: Duration? = nil) {
       self.partnerWritesAfter = partnerWritesAfter
+      self.partnerMovesAfter = partnerMovesAfter
       self.presence = presence
       // A link the app was launched with, such as a push tapped while the app was not running.
       _deepLink = State(
@@ -64,6 +67,13 @@
         try? await Task.sleep(for: partnerWritesAfter)
         guard !Task.isCancelled else { return }
         await gameFlow.receivePartnerMessage()
+      }
+      .task {
+        guard let partnerMovesAfter, let gameFlow = environment.gameConversationFlow else { return }
+        while gameFlow.games.needs == nil, !Task.isCancelled { try? await Task.sleep(for: .milliseconds(200)) }
+        try? await Task.sleep(for: partnerMovesAfter)
+        guard !Task.isCancelled else { return }
+        await gameFlow.playPartnerBoardMove()
       }
       .overlay(alignment: .topTrailing) {
         if let gameFlow = environment.gameConversationFlow,

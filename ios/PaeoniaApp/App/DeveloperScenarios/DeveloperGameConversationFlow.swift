@@ -8,6 +8,8 @@
     let sync: PaeoniaSyncService
     let games: GamesViewModel
     private let gateway: DeveloperGameConversationGateway
+    private let boardGamesCache: any BoardGamesCaching
+    private let boardGame: DeveloperBoardGameSetup?
 
     /// `games` is the game scenario whose state the Games tab shows. `finishedGameRuns` adds
     /// two runs of quick finished games to the Mind Meld chat, with a message between them.
@@ -33,7 +35,19 @@
         pendingOperationStore: pending,
         localPrivacyPurger: NoOpLocalPrivacyPurger()
       )
-      games = GamesViewModel(dependencies: DeveloperGamesScenarioFactory.dependencies(for: scenario))
+      let dependencies = DeveloperGamesScenarioFactory.dependencies(for: scenario)
+      games = GamesViewModel(dependencies: dependencies)
+      boardGamesCache = dependencies.boardGamesCache
+      boardGame = DeveloperBoardGamesFixture.setups(for: scenario).first
+    }
+
+    /// Plays the partner's next move in the scenario's board game, and tells the screens to read it
+    /// again, as the board games feed does when a move arrives from the server.
+    func playPartnerBoardMove() async {
+      guard var setup = boardGame, let move = setup.partnerMove() else { return }
+      setup.moves.append(move)
+      await boardGamesCache.saveGame(setup.remoteGame(), ownerUserID: DeveloperGamesFixture.me)
+      LocalStoreChanges.post(.games, ownerUserID: DeveloperGamesFixture.me)
     }
 
     func receivePartnerMessage() async {

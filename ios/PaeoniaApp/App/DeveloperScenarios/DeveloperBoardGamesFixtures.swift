@@ -90,6 +90,13 @@
       Board.replay(moves).map { Replayed(next: $0.next, outcome: $0.outcome) }
     }
 
+    /// A move of Robin's after `moves` that the rules allow and that does not end the game. Nil when
+    /// it is not Robin's turn.
+    func partnerMove() -> Int? {
+      guard let next = replayed(moves)?.next, user(next) == DeveloperGamesFixture.partner else { return nil }
+      return (0..<100).first { replayed(moves + [$0]).map { $0.outcome == nil } ?? false }
+    }
+
     /// The game as the server shows it to Alex.
     func remoteGame() -> RemoteBoardGame {
       let rules = replayed(moves)
