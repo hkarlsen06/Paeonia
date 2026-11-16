@@ -97,6 +97,37 @@ final class PaeoniaAppUITests: XCTestCase {
         XCTAssertTrue(app.buttons["inviter.questions"].waitForExistence(timeout: 5))
     }
 
+    /// Email sign-in: the address, then the 6-digit code, then profile setup.
+    @MainActor
+    func testEmailCodeSignInReachesProfileSetup() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+
+        let returning = app.buttons["welcome.returning"]
+        XCTAssertTrue(returning.waitForExistence(timeout: 8))
+        returning.tap()
+
+        let emailButton = app.buttons["auth.signIn.email"]
+        XCTAssertTrue(emailButton.waitForExistence(timeout: 5))
+        emailButton.tap()
+
+        let emailField = app.textFields["auth.email.field"]
+        XCTAssertTrue(emailField.waitForExistence(timeout: 5))
+        emailField.tap()
+        emailField.typeText("alex@example.com")
+        app.buttons["auth.email.send"].tap()
+
+        // The code field is invisible under its cells and has the keyboard as soon as it shows.
+        XCTAssertTrue(app.buttons["auth.email.codeField"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Check your email"].exists)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        app.typeText("123456")
+
+        XCTAssertTrue(app.textFields["auth.onboarding.displayName"].waitForExistence(timeout: 10))
+    }
+
     /// Welcome, Start our space, the date with its days count, then a drawing that lands
     /// on a picture of a Home Screen.
     @MainActor
