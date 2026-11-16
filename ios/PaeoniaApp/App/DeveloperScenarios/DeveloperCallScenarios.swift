@@ -46,7 +46,7 @@
       "call-active-video", "Call · video", "Both cameras on", phase: DeveloperCallFixture.active
     ) {
       $0.isCameraOn = true
-      $0.isPartnerCameraOn = true
+      $0.partnerCamera = .on
       $0.partnerVideoAspectRatio = 9.0 / 16
     }
     static let callVideoOwnCamera = screen(
@@ -58,7 +58,7 @@
       phase: DeveloperCallFixture.active, backCameraZoom: CallCameraZoom(range: 0.5...10, factor: 1)
     ) {
       $0.isCameraOn = true
-      $0.isPartnerCameraOn = true
+      $0.partnerCamera = .on
       $0.partnerVideoAspectRatio = 9.0 / 16
       $0.isUsingFrontCamera = false
     }
@@ -97,7 +97,7 @@
       DeveloperCallLocalFlow(
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
           $0.isCameraOn = true
-          $0.isPartnerCameraOn = true
+          $0.partnerCamera = .on
           $0.partnerVideoAspectRatio = 9.0 / 16
         },
         presentation: .bubble, game: true)
@@ -110,7 +110,7 @@
       DeveloperCallLocalFlow(
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
           $0.isCameraOn = true
-          $0.isPartnerCameraOn = true
+          $0.partnerCamera = .on
           $0.partnerVideoAspectRatio = 9.0 / 16
         },
         presentation: .bubble, partnerDoes: .openedGame(.mindMeld))
@@ -124,7 +124,7 @@
       DeveloperCallLocalFlow(
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
           $0.isCameraOn = true
-          $0.isPartnerCameraOn = true
+          $0.partnerCamera = .on
           $0.partnerVideoAspectRatio = 9.0 / 16
         },
         partnerDoes: .openedGame(.mindMeld))
@@ -137,7 +137,7 @@
       DeveloperCallLocalFlow(
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
           $0.isCameraOn = true
-          $0.isPartnerCameraOn = true
+          $0.partnerCamera = .on
           $0.partnerVideoAspectRatio = 9.0 / 16
         },
         game: true, partnerMoves: true)
@@ -152,7 +152,7 @@
       DeveloperCallLocalFlow(
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
           $0.isCameraOn = true
-          $0.isPartnerCameraOn = true
+          $0.partnerCamera = .on
           $0.partnerVideoAspectRatio = 9.0 / 16
           $0.isUsingFrontCamera = false
         },
@@ -299,6 +299,8 @@
     func partnerTimeZone() async -> TimeZone? {
       TimeZone(identifier: "Europe/Oslo")
     }
+
+    func stopScreenShare() {}
 
     func makeVideoView(_ source: CallVideoSource) -> UIView {
       let photo = source == .partner ? DeveloperAvatarFixture.partnerPhoto : DeveloperAvatarFixture.ownPhoto

@@ -11,11 +11,24 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     var isMuted = false
     var audioRoute: CallAudioRoute = .receiver
     var isCameraOn = false
-    var isPartnerCameraOn = false
+    /// The partner's camera as their phone reports it (`CallCameraState`).
+    var partnerCamera = CallCameraState.off
     /// The width of the partner's video over its height, as their phone is held. Nil until the
     /// first frame arrives. The bubble takes this shape, so it shows the whole picture.
     var partnerVideoAspectRatio: CGFloat?
     var isUsingFrontCamera = true
+    /// This person shares their screen through the broadcast extension.
+    var isSharingScreen = false
+    var isPartnerSharingScreen = false
+    /// The width of the partner's shared screen over its height. Nil until its first frame arrives.
+    var partnerScreenAspectRatio: CGFloat?
+    /// Set while the call's connection is weak, and says whose end is weak. Nil while it is fine.
+    var weakConnection: CallWeakSide?
+    /// The partner's camera is on, but no new frame has arrived for a moment, so the last one would
+    /// stand still. The screens show it blurred instead.
+    var isPartnerVideoStalled = false
+    /// Why the call screen offers to turn this person's camera off, or nil when it does not.
+    var cameraOffSuggestion: CallCameraOffSuggestion?
     /// The call was answered before the person said whether Paeonia may use the microphone, so
     /// the partner cannot hear them until they open the app and allow it.
     var isWaitingForMicrophone = false
@@ -23,6 +36,11 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     /// Paeonia was open on screen when it came in. It stays set when that ring ends unanswered, so
     /// the ring says why where it rang. Answering it, or handing it to the system, clears it.
     var ringsInApp = false
+
+    /// The partner's video has a window: their camera sends, or iOS paused it for a moment.
+    var isPartnerCameraOn: Bool {
+        partnerCamera != .off
+    }
 
     /// A voice call on the earpiece, which the person holds to their ear, so the screen turns off
     /// and their cheek cannot press anything. An incoming ring is not held to the ear.
@@ -100,6 +118,31 @@ nonisolated enum CallAudioRoute: Equatable, Sendable {
 nonisolated enum CallVideoSource: Equatable, Sendable {
     case local
     case partner
+    /// The partner's shared screen.
+    case partnerScreen
+}
+
+/// The partner's camera, as their phone reports it over the relay.
+nonisolated enum CallCameraState: Equatable, Sendable {
+    case off
+    case on
+    /// The camera is on, but iOS stopped it for now, such as when the partner left the app without
+    /// Picture in Picture or another app took the camera. It sends again by itself.
+    case paused
+}
+
+/// Whose end of the call has the weak connection.
+nonisolated enum CallWeakSide: Equatable, Sendable {
+    case mine
+    case partners
+}
+
+/// Why the call screen offers to turn this person's camera off.
+nonisolated enum CallCameraOffSuggestion: Equatable, Sendable {
+    /// The battery is low and the phone is not charging.
+    case lowBattery
+    /// The phone is hot, and iOS will slow it down.
+    case hot
 }
 
 /// How the call shows inside the app: the full call screen, or small over the other screens, as the
@@ -107,4 +150,10 @@ nonisolated enum CallVideoSource: Equatable, Sendable {
 nonisolated enum CallPresentation: Equatable, Sendable {
     case full
     case bubble
+}
+
+/// Screen sharing goes through a broadcast upload extension, which sends the screen to the app
+/// while the call runs.
+nonisolated enum CallScreenShare {
+    static let extensionBundleID = "no.paeonia.app.broadcast"
 }

@@ -59,6 +59,7 @@ final class CallEngine {
     let system: any CallSystem
     let partnerVideo = CallVideoFeed()
     let localVideo = CallVideoFeed()
+    let partnerScreen = CallVideoFeed()
     let sounds = CallSoundPlayer()
     private(set) lazy var pictureInPicture = CallPictureInPicture(feed: partnerVideo)
     var run: CallRun?
@@ -333,6 +334,7 @@ final class CallEngine {
         CallAudio.stopEngine()
         partnerVideo.clear()
         localVideo.clear()
+        partnerScreen.clear()
     }
 }
 

@@ -160,6 +160,8 @@
 
     func refreshCallContext() {}
 
+    func stopScreenShare() {}
+
     func makeVideoView(_ source: CallVideoSource) -> UIView {
       stills.makeVideoView(source)
     }

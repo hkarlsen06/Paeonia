@@ -17,6 +17,10 @@ protocol CallEngineActions: AnyObject {
     func toggleSpeaker()
     func setCameraOn(_ isOn: Bool)
     func flipCamera()
+    /// Ends this person's screen share. The broadcast extension stops, and the system's red
+    /// recording indicator goes away. Starting one goes through the system's broadcast picker
+    /// (`CallScreenShare.extensionBundleID`), because only the person can start a broadcast.
+    func stopScreenShare()
     /// Zooms the back camera. `factor` counts the way `CallCameraZoom` does.
     func setBackCameraZoom(_ factor: Double)
     /// The partner's time zone for the night check, or nil when it is not known.

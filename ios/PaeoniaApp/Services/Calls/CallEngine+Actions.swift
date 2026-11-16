@@ -111,6 +111,8 @@ extension CallEngine: CallEngineActions {
         }
     }
 
+    func stopScreenShare() {}
+
     func makeVideoView(_ source: CallVideoSource) -> UIView {
         switch source {
         case .local:
@@ -119,6 +121,8 @@ extension CallEngine: CallEngineActions {
             let view = partnerVideo.makeView()
             pictureInPicture.track(view)
             return view
+        case .partnerScreen:
+            return partnerScreen.makeView()
         }
     }
 
@@ -154,7 +158,7 @@ extension CallEngine: CallEngineActions {
 
     func partnerCameraChanged(_ isOn: Bool, in run: CallRun) {
         guard run === self.run, let center, center.session?.isPartnerCameraOn != isOn else { return }
-        center.session?.isPartnerCameraOn = isOn
+        center.session?.partnerCamera = isOn ? .on : .off
         updatePictureInPicture()
         reportCapabilities(of: run)
     }
