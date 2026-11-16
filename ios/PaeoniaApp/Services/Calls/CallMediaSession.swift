@@ -199,40 +199,6 @@ final class CallMediaSession {
         audioTrack.isEnabled = !isMuted
     }
 
-    func setCamera(isOn: Bool, front: Bool) {
-        isCameraOn = isOn
-        if isOn {
-            startCamera(front: front)
-        } else {
-            camera.stop()
-            onBackCameraZoom?(nil)
-        }
-        videoTransceiver?.sender.track = isOn ? videoTrack : nil
-        send(.camera(cameraState))
-    }
-
-    /// Returns the zoom the back camera took, or nil when it is not running.
-    func setBackCameraZoom(_ factor: Double) -> Double? {
-        camera.setZoom(factor)
-    }
-
-    /// The local video keeps the old camera's last frame and mirroring until the new camera
-    /// sends, so flipping never shows the old picture mirrored the new way.
-    ///
-    /// The start in `init` reports its zoom after the engine has set `onBackCameraZoom`, because
-    /// the camera reports from a later turn of the main queue.
-    private func startCamera(front: Bool) {
-        cameraStarts += 1
-        let start = cameraStarts
-        localFeed.cameraWillStart()
-        onBackCameraZoom?(nil)
-        camera.start(front: front) { [weak self] zoom in
-            guard let self, start == cameraStarts else { return }
-            localFeed.cameraStarted(isMirrored: front)
-            onBackCameraZoom?(zoom)
-        }
-    }
-
     // MARK: Signaling
 
     // swiftlint:disable:next cyclomatic_complexity
@@ -505,7 +471,52 @@ extension CallMediaSession {
         onWeakConnection?(health.weakSide)
     }
 
+    private func networkChanged(_ path: NWPath) {
+        let interface = path.availableInterfaces.first?.type
+        defer { lastInterface = interface }
+        // The first update is the network the call started on.
+        guard pathMonitorHasReported, path.status == .satisfied, interface != lastInterface else {
+            pathMonitorHasReported = true
+            return
+        }
+        restart()
+    }
+
     // MARK: Camera and heat
+
+    func setCamera(isOn: Bool, front: Bool) {
+        isCameraOn = isOn
+        if isOn {
+            startCamera(front: front)
+        } else {
+            camera.stop()
+            onBackCameraZoom?(nil)
+        }
+        videoTransceiver?.sender.track = isOn ? videoTrack : nil
+        send(.camera(cameraState))
+    }
+
+    /// Returns the zoom the back camera took, or nil when it is not running.
+    func setBackCameraZoom(_ factor: Double) -> Double? {
+        camera.setZoom(factor)
+    }
+
+    /// The local video keeps the old camera's last frame and mirroring until the new camera
+    /// sends, so flipping never shows the old picture mirrored the new way.
+    ///
+    /// The start in `init` reports its zoom after the engine has set `onBackCameraZoom`, because
+    /// the camera reports from a later turn of the main queue.
+    private func startCamera(front: Bool) {
+        cameraStarts += 1
+        let start = cameraStarts
+        localFeed.cameraWillStart()
+        onBackCameraZoom?(nil)
+        camera.start(front: front) { [weak self] zoom in
+            guard let self, start == cameraStarts else { return }
+            localFeed.cameraStarted(isMirrored: front)
+            onBackCameraZoom?(zoom)
+        }
+    }
 
     /// Lowers or restores what the video sends as the phone heats up or cools down.
     func setHeat(_ heat: CallHeat) {
@@ -523,17 +534,6 @@ extension CallMediaSession {
         guard isInterrupted != isCameraInterrupted else { return }
         isCameraInterrupted = isInterrupted
         send(.camera(cameraState))
-    }
-
-    private func networkChanged(_ path: NWPath) {
-        let interface = path.availableInterfaces.first?.type
-        defer { lastInterface = interface }
-        // The first update is the network the call started on.
-        guard pathMonitorHasReported, path.status == .satisfied, interface != lastInterface else {
-            pathMonitorHasReported = true
-            return
-        }
-        restart()
     }
 }
 
