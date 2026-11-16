@@ -1136,6 +1136,24 @@
         }
       }
     },
+    "admin.provider.email" : {
+      "comment" : "Admin label for an account that signs in with a code sent by email.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-post"
+          }
+        }
+      }
+    },
     "admin.provider.google" : {
       "comment" : "Name of the Google sign-in method.",
       "extractionState" : "manual",

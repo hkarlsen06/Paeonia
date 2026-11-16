@@ -8,6 +8,8 @@ actor AuthServiceSpy: AuthServicing {
         case restoreSession
         case signInWithApple
         case signInWithGoogle
+        case sendEmailCode
+        case signInWithEmailCode
         case completeOnboarding
         case updateProfile
         case signOut
@@ -57,6 +59,25 @@ actor AuthServiceSpy: AuthServicing {
         let session = AuthSession(
             id: "google-test-user",
             provider: .google,
+            displayName: nil,
+            timeZoneID: nil,
+            profilePhotoAssetID: nil,
+            profileStatus: .needsOnboarding
+        )
+        self.session = session
+        return session
+    }
+
+    func sendEmailCode(to emailAddress: String) async throws {
+        try failIfNeeded(.sendEmailCode)
+    }
+
+    func signInWithEmailCode(_ code: String) async throws -> AuthSession {
+        try failIfNeeded(.signInWithEmailCode)
+
+        let session = AuthSession(
+            id: "email-test-user",
+            provider: .email,
             displayName: nil,
             timeZoneID: nil,
             profilePhotoAssetID: nil,
@@ -178,6 +199,21 @@ actor BlockingDeleteAuthService: AuthServicing {
         let session = AuthSession(
             id: "google-test-user",
             provider: .google,
+            displayName: nil,
+            timeZoneID: nil,
+            profilePhotoAssetID: nil,
+            profileStatus: .needsOnboarding
+        )
+        self.session = session
+        return session
+    }
+
+    func sendEmailCode(to emailAddress: String) async throws {}
+
+    func signInWithEmailCode(_ code: String) async throws -> AuthSession {
+        let session = AuthSession(
+            id: "email-test-user",
+            provider: .email,
             displayName: nil,
             timeZoneID: nil,
             profilePhotoAssetID: nil,

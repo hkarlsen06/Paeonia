@@ -56,6 +56,7 @@ nonisolated struct AuthSession: Equatable, Identifiable, Sendable {
 nonisolated enum AuthProvider: String, Codable, Equatable, Sendable {
     case apple
     case google
+    case email
     case development
     case unknown
 }

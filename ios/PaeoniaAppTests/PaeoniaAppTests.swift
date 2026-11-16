@@ -1095,6 +1095,19 @@ private actor OrderedAuthService: AuthServicing {
         )
     }
 
+    func sendEmailCode(to emailAddress: String) async throws {}
+
+    func signInWithEmailCode(_ code: String) async throws -> AuthSession {
+        AuthSession(
+            id: "ordered-email-user",
+            provider: .email,
+            displayName: nil,
+            timeZoneID: nil,
+            profilePhotoAssetID: nil,
+            profileStatus: .needsOnboarding
+        )
+    }
+
     func completeOnboarding(
         displayName: String,
         timeZoneID: String,

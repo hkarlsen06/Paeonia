@@ -177,6 +177,12 @@ actor FlowAuthService: AuthServicing {
         try signIn()
     }
 
+    func sendEmailCode(to _: String) async throws {}
+
+    func signInWithEmailCode(_: String) async throws -> AuthSession {
+        try signIn()
+    }
+
     private func signIn() throws -> AuthSession {
         guard let signInSession else {
             throw FlowTestError.unavailable

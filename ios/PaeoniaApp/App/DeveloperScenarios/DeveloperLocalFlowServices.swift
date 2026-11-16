@@ -208,6 +208,10 @@
     func signInWithGoogle() async throws -> AuthSession {
       await store.signIn(provider: .google)
     }
+    func sendEmailCode(to _: String) async throws {}
+    func signInWithEmailCode(_: String) async throws -> AuthSession {
+      await store.signIn(provider: .email)
+    }
     func completeOnboarding(
       displayName: String,
       timeZoneID: String,

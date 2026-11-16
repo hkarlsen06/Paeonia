@@ -79,6 +79,7 @@ extension AuthProvider {
         switch self {
         case .apple: .adminProviderApple
         case .google: .adminProviderGoogle
+        case .email: .adminProviderEmail
         case .development, .unknown: .adminProviderUnknown
         }
     }

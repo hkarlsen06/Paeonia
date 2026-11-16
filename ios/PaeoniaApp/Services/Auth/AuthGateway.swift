@@ -61,6 +61,9 @@ protocol AuthGateway: Actor {
     func localSession() async -> RemoteAuthSession?
     func signInWithApple(idToken: String) async throws -> RemoteAuthSession
     func signInWithGoogle() async throws -> RemoteAuthSession
+    func sendEmailCode(to emailAddress: String) async throws
+    /// Signs in with the code from the last `sendEmailCode`.
+    func signInWithEmailCode(_ code: String) async throws -> RemoteAuthSession
     func loadProfile() async throws -> RemoteProfile
     func loadLaunch() async throws -> RemoteLaunch
     func uploadProfilePhoto(
@@ -87,6 +90,15 @@ protocol AuthGateway: Actor {
 /// Clerk owns the sign-in session. Convex owns the profile and every other row.
 actor LiveAuthGateway: AuthGateway {
     private let client: PaeoniaConvexClient
+    /// The Clerk attempt that the last emailed code belongs to.
+    private var pendingEmailCode: PendingEmailCode?
+
+    enum PendingEmailCode: Sendable {
+        /// A returning address.
+        case signIn(SignIn)
+        /// A new address, which gets its account once the code checks out.
+        case signUp(SignUp)
+    }
 
     init(client: PaeoniaConvexClient) {
         self.client = client
@@ -113,6 +125,35 @@ actor LiveAuthGateway: AuthGateway {
     func signInWithGoogle() async throws -> RemoteAuthSession {
         try await Self.signInWithClerk(fallbackProvider: .google) {
             try await Clerk.shared.auth.signInWithOAuth(provider: .google)
+        }
+    }
+
+    func sendEmailCode(to emailAddress: String) async throws {
+        pendingEmailCode = nil
+        do {
+            pendingEmailCode = try await Self.startEmailCode(to: emailAddress)
+        } catch {
+            throw Self.emailSignInError(from: error)
+        }
+    }
+
+    func signInWithEmailCode(_ code: String) async throws -> RemoteAuthSession {
+        guard let pending = pendingEmailCode else {
+            throw EmailSignInError.codeExpired
+        }
+        do {
+            let session = try await Self.signInWithClerk(fallbackProvider: .email) {
+                switch pending {
+                case let .signIn(signIn):
+                    _ = try await signIn.verifyCode(code)
+                case let .signUp(signUp):
+                    _ = try await signUp.verifyEmailCode(code)
+                }
+            }
+            pendingEmailCode = nil
+            return session
+        } catch {
+            throw Self.emailSignInError(from: error)
         }
     }
 
@@ -323,73 +364,6 @@ actor LiveAuthGateway: AuthGateway {
         await MainActor.run {
             SyncClientOperationFactory.shared.makeOperation()
         }
-    }
-}
-
-// MARK: - Clerk
-
-private extension LiveAuthGateway {
-    @MainActor
-    static func signInWithClerk(
-        fallbackProvider: AuthProvider,
-        _ signIn: () async throws -> TransferFlowResult
-    ) async throws -> RemoteAuthSession {
-        // The app only starts a sign-in while signed out. A session left over
-        // from an earlier failed attempt would make Clerk refuse the new one.
-        if Clerk.shared.session != nil {
-            // Bounded, so a stalled connection cannot hold up the sign-in sheet.
-            _ = try? await AuthNetworkDeadline.run(within: AuthNetworkDeadline.cleanup) { @MainActor in
-                try await Clerk.shared.auth.signOut()
-            }
-        }
-        _ = try await signIn()
-        // A flow that needs more steps leaves no active session behind.
-        guard let session = activeClerkSession(fallbackProvider: fallbackProvider) else {
-            throw AuthServiceError.noActiveSession
-        }
-        return session
-    }
-
-    @MainActor
-    static func signOutOfClerk() async throws {
-        try await Clerk.shared.auth.signOut()
-    }
-
-    @MainActor
-    static func clerkSessionIsGone() async -> Bool {
-        _ = try? await Clerk.shared.refreshClient()
-        return Clerk.shared.session == nil
-    }
-
-    /// The cached Clerk session. It needs no network, so the app can restore
-    /// the signed-in user while offline.
-    @MainActor
-    static func activeClerkSession(
-        fallbackProvider: AuthProvider = .unknown
-    ) -> RemoteAuthSession? {
-        let clerk = Clerk.shared
-        guard let session = clerk.session, session.status == .active, let user = clerk.user else {
-            return nil
-        }
-
-        let account = user.externalAccounts.first { provider(of: $0) != .unknown }
-        return RemoteAuthSession(
-            accountID: user.id,
-            provider: account.map(provider(of:)) ?? fallbackProvider,
-            displayName: (user.firstName ?? account?.firstName)?.trimmedNonEmpty,
-            providerAvatarURL: account?.imageUrl.flatMap(URL.init(string:))
-        )
-    }
-
-    static func provider(of account: ExternalAccount) -> AuthProvider {
-        let name = account.provider.lowercased()
-        if name.contains("apple") {
-            return .apple
-        }
-        if name.contains("google") {
-            return .google
-        }
-        return .unknown
     }
 }
 

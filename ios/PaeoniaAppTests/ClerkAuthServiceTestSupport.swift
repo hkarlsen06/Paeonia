@@ -81,6 +81,12 @@ actor FakeAuthGateway: AuthGateway {
         return remoteSession ?? .test(provider: .google)
     }
 
+    func sendEmailCode(to emailAddress: String) async throws {}
+
+    func signInWithEmailCode(_ code: String) async throws -> RemoteAuthSession {
+        remoteSession ?? .test(provider: .email)
+    }
+
     func loadProfile() async throws -> RemoteProfile {
         if let loadProfileDelay {
             try await Task.sleep(for: loadProfileDelay)

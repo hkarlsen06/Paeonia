@@ -131,6 +131,30 @@ actor ClerkAuthService: AuthServicing {
         )
     }
 
+    func sendEmailCode(to emailAddress: String) async throws {
+        let gateway = gateway
+        try await AuthNetworkDeadline.run(within: signInTimeout) {
+            try await gateway.sendEmailCode(to: emailAddress)
+        }
+    }
+
+    func signInWithEmailCode(_ code: String) async throws -> AuthSession {
+        let deadline = ContinuousClock.now + signInTimeout
+        let gateway = gateway
+        let remoteSession = try await AuthNetworkDeadline.run(until: deadline) {
+            try await gateway.signInWithEmailCode(code)
+        }
+        return try await finishSignIn(
+            remoteSession: RemoteAuthSession(
+                accountID: remoteSession.accountID,
+                provider: .email,
+                displayName: remoteSession.displayName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
+            ),
+            fallbackDisplayName: nil,
+            deadline: deadline
+        )
+    }
+
     /// Loads the profile for a fresh Clerk session. When this fails, the Clerk
     /// session is signed out again so the next attempt starts clean instead of
     /// failing with "already signed in".

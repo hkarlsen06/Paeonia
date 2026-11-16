@@ -8,6 +8,21 @@ enum AuthServiceError: Error, Equatable {
     case invalidProfilePhoto
 }
 
+/// Why an email sign-in step did not go through, in the cases the email sheet
+/// has words for.
+nonisolated enum EmailSignInError: Error, Equatable, Sendable {
+    case invalidEmail
+    case wrongCode
+    /// The code expired, was used up, or no code is waiting on this phone.
+    case codeExpired
+    case tooManyTries
+    case failed(PaeoniaFailure)
+
+    init(_ error: any Error) {
+        self = error as? EmailSignInError ?? .failed(PaeoniaFailure(error))
+    }
+}
+
 // swiftlint:disable async_without_await
 
 /// A signed-in session restored at launch, with the access state the server
@@ -26,6 +41,11 @@ protocol AuthServicing: Actor {
     func savedSession() async -> AuthSession?
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession
     func signInWithGoogle() async throws -> AuthSession
+    /// Emails a 6-digit code to the address. A new address gets an account
+    /// once its code is entered.
+    func sendEmailCode(to emailAddress: String) async throws
+    /// Signs in with the code from the last `sendEmailCode`.
+    func signInWithEmailCode(_ code: String) async throws -> AuthSession
     func completeOnboarding(
         displayName: String,
         timeZoneID: String,
@@ -75,6 +95,21 @@ actor DevelopmentAuthService: AuthServicing {
         let session = AuthSession(
             id: "development-google-user",
             provider: .google,
+            displayName: nil,
+            timeZoneID: nil,
+            profilePhotoAssetID: nil,
+            profileStatus: .needsOnboarding
+        )
+        self.session = session
+        return session
+    }
+
+    func sendEmailCode(to emailAddress: String) async throws {}
+
+    func signInWithEmailCode(_ code: String) async throws -> AuthSession {
+        let session = AuthSession(
+            id: "development-email-user",
+            provider: .email,
             displayName: nil,
             timeZoneID: nil,
             profilePhotoAssetID: nil,
@@ -161,6 +196,14 @@ actor UnavailableAuthService: AuthServicing {
     }
 
     func signInWithGoogle() async throws -> AuthSession {
+        throw error
+    }
+
+    func sendEmailCode(to emailAddress: String) async throws {
+        throw error
+    }
+
+    func signInWithEmailCode(_ code: String) async throws -> AuthSession {
         throw error
     }
 

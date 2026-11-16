@@ -21,10 +21,41 @@ extension RootViewModel {
         }
     }
 
+    /// Emails a sign-in code. Returns nil once the code is on its way, or what
+    /// the email sheet should say instead.
+    func sendEmailSignInCode(to emailAddress: String) async -> EmailSignInError? {
+        do {
+            try await authService.sendEmailCode(to: emailAddress)
+            return nil
+        } catch {
+            logAuthError(error, notice: nil)
+            return EmailSignInError(error)
+        }
+    }
+
+    /// Signs in with the emailed code. Returns nil once signed in, or what the
+    /// email sheet should say instead. The sheet shows the failure, so no banner.
+    func signInWithEmailCode(_ code: String) async -> EmailSignInError? {
+        // Stays set when another account action is running and this one never starts.
+        var failure: EmailSignInError? = .failed(.other)
+        await performSignIn(with: .email, failureNotice: { _ in nil }) {
+            do {
+                let session = try await authService.signInWithEmailCode(code)
+                failure = nil
+                return session
+            } catch {
+                failure = EmailSignInError(error)
+                throw error
+            }
+        }
+        return failure
+    }
+
     /// Runs one sign-in. The sign-in screen stays up with a spinner on the
     /// tapped button until the next screen is ready (see `RootRoute.resolvingAccess`).
     private func performSignIn(
         with provider: AuthProvider,
+        failureNotice: (PaeoniaFailure) -> RootNotice? = RootNotice.signInFailed,
         signIn: () async throws -> AuthSession
     ) async {
         guard !isWorking else {
@@ -33,7 +64,7 @@ extension RootViewModel {
 
         signingInWith = provider
         defer { signingInWith = nil }
-        await performAuthAction(failureNotice: RootNotice.signInFailed) {
+        await performAuthAction(failureNotice: failureNotice) {
             let session = try await signIn()
             PaeoniaHaptics.signedIn()
             welcomeFlow.signedIn()
@@ -269,8 +300,9 @@ extension RootViewModel {
         return true
     }
 
+    /// `failureNotice` returns nil when the screen shows the failure itself.
     private func performAuthAction(
-        failureNotice: (PaeoniaFailure) -> RootNotice,
+        failureNotice: (PaeoniaFailure) -> RootNotice?,
         action: () async throws -> Void
     ) async {
         guard !isWorking else {
