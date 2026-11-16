@@ -35687,6 +35687,42 @@
         }
       }
     },
+    "presence.notice.gameWith" : {
+      "comment" : "Second line of the note on the full call screen when a game now waits for this person, under \"Your turn\". First argument is the game's name, second is what the person calls their partner. Example: Four in a Row with Robin",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ with %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ med %2$@"
+          }
+        }
+      }
+    },
+    "presence.notice.gameYourTurn" : {
+      "comment" : "Title of the note above the buttons on the full call screen when a game now waits for this person to play. Same words as the game's Live Activity on the Lock Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur"
+          }
+        }
+      }
+    },
     "presence.notice.message.accessibilityLabel" : {
       "comment" : "VoiceOver label of the partner's new message shown beside their floating picture. %1$@ is the partner's name, %2$@ is the message.",
       "extractionState" : "manual",

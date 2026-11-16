@@ -40,6 +40,13 @@ extension MainTabView {
             .onChange(of: presenceModel.openRequest) { _, request in
                 if request != nil { openPresenceRequest() }
             }
+            // The full call screen covers the game, so it says when a game newly needs this person.
+            .onChange(of: gamesViewModel.needs) { previous, current in
+                let openGame = presenceModel.viewer.openGame
+                guard let news = GameNeed.newlyNeeded(previous: previous, current: current, openGame: openGame)
+                else { return }
+                presenceModel.gameNeedsYou(news.kind, news.need)
+            }
     }
 
     /// A short trip to Control Center or a system alert keeps the session. Leaving for the

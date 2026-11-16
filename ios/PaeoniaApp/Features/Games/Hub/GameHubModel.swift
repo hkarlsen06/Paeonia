@@ -8,6 +8,8 @@ protocol GameHubModel: AnyObject {
     var kind: GameKind { get }
     /// The game waits for this person to move. The hub card shows it.
     var isYourTurn: Bool { get }
+    /// What the game needs from this person, which the full call screen tells them about.
+    var need: GameNeed? { get }
     /// The game's list of finished games. The game's menu and its card's
     /// long-press menu open it. Nil for a game without one.
     var historyLink: GameHistoryLink? { get }
@@ -30,6 +32,10 @@ protocol GameHubModel: AnyObject {
 }
 
 extension GameHubModel {
+    var need: GameNeed? {
+        isYourTurn ? .yourTurn : nil
+    }
+
     var hasBoardMark: Bool {
         false
     }
@@ -39,6 +45,27 @@ extension GameHubModel {
     // swiftlint:disable:next async_without_await
     func takeNotice() async -> GamesNotice? {
         nil
+    }
+}
+
+/// What a game has for this person that the call screen tells them about.
+nonisolated enum GameNeed: Equatable, Sendable {
+    /// A move, a guess, a reveal or an ending waits for this person.
+    case yourTurn
+    /// A board game ended. Its ending waits for nobody on the server, so it is told separately.
+    case ended(BoardGameWinner)
+
+    /// The game that newly needs this person between two readings of `GamesViewModel.needs`: the
+    /// game on screen when it is one of them, or else the first in the hub's catalog order. Nil when
+    /// nothing new waits, or when either reading came before the games were first read.
+    static func newlyNeeded(
+        previous: [GameKind: GameNeed]?, current: [GameKind: GameNeed]?, openGame: GameKind?
+    ) -> (kind: GameKind, need: GameNeed)? {
+        guard let previous, let current else { return nil }
+        let changed = GameKind.allCases.filter { current[$0] != nil && current[$0] != previous[$0] }
+        let kind = changed.contains { $0 == openGame } ? openGame : changed.first
+        guard let kind, let need = current[kind] else { return nil }
+        return (kind, need)
     }
 }
 

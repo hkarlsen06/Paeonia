@@ -70,15 +70,17 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
     /// A notification from the partner that arrived while the app is open, such as a letter or a
     /// story.
     case update(PaeoniaForegroundNotice)
+    /// A game newly needs this person. Only the full call screen says it, because it covers the game.
+    case game(GameKind, GameNeed)
 
     /// True when the notice tells this person something new. A message must come from a chat they
-    /// don't have on screen, and a game must be one they don't have open.
+    /// don't have on screen, and a game the partner opened must be one they don't have open.
     func concerns(_ viewer: PresenceViewerPlace) -> Bool {
         switch self {
         case let .message(message): message.chat != viewer.visibleChat
         case let .openedGame(kind): kind != viewer.openGame
         case .openedDrawing: !viewer.isDrawing
-        case .update: true
+        case .update, .game: true
         }
     }
 
@@ -87,8 +89,14 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
         switch self {
         case let .openedGame(kind): partner?.games.contains(kind) == true
         case .openedDrawing: partner?.isDrawing == true
-        case .message, .update: true
+        case .message, .update, .game: true
         }
+    }
+
+    /// False for a game that needs this person. That is the game's news, so it stays when the
+    /// partner leaves or hides their presence, and goes when the call no longer covers the game.
+    var isAboutPartner: Bool {
+        if case .game = self { false } else { true }
     }
 
     var callout: PresenceCallout {
@@ -97,6 +105,7 @@ nonisolated enum PresenceNotice: Equatable, Sendable {
         case let .openedGame(kind): .openedGame(kind)
         case .openedDrawing: .openedDrawing
         case let .update(update): .update(update)
+        case let .game(kind, need): .game(kind, need)
         }
     }
 }
@@ -125,11 +134,12 @@ nonisolated enum PresenceCallout: Equatable, Sendable {
     case openedDrawing
     case typing(ThreadChatSubject)
     case update(PaeoniaForegroundNotice)
+    case game(GameKind, GameNeed)
 
     var destination: PresenceDestination? {
         switch self {
         case let .message(message): .chat(message.chat)
-        case let .openedGame(kind): .game(kind)
+        case let .openedGame(kind), let .game(kind, _): .game(kind)
         case .openedDrawing: .drawing
         case let .typing(chat): .chat(chat)
         case let .update(update): update.deepLink.map(PresenceDestination.link)

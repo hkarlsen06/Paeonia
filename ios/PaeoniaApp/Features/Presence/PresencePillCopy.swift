@@ -10,15 +10,23 @@ extension PresenceCallout {
         case .openedDrawing: String(localized: .presenceStatusOpenedDrawing)
         case let .typing(chat): String(localized: Self.typing(in: chat))
         case let .update(update): update.title ?? update.message
+        case .game(_, .yourTurn): String(localized: .presenceNoticeGameYourTurn)
+        case let .game(kind, .ended): String(localized: kind.name)
         }
     }
 
-    /// The message, or a notification's text under its title.
-    var detail: String? {
+    /// The message, a notification's text under its title, or the game and how it ended. A turn
+    /// reads like the game's Live Activity on the Lock Screen.
+    func detail(partnerName: String) -> String? {
         switch self {
         case let .message(message): message.preview
         case .openedGame, .openedDrawing, .typing: nil
         case let .update(update): update.title == nil ? nil : update.message
+        case let .game(kind, .yourTurn):
+            String(localized: .presenceNoticeGameWith(String(localized: kind.name), partnerName))
+        case .game(_, .ended(.me)): String(localized: .boardGamesTurnYouWon)
+        case .game(_, .ended(.partner)): String(localized: .boardGamesTurnPartnerWon(partnerName))
+        case .game(_, .ended(.draw)): String(localized: .boardGamesResultTitleDraw)
         }
     }
 
@@ -28,6 +36,8 @@ extension PresenceCallout {
             String(localized: .presenceNoticeMessageAccessibilityLabel(partnerName, message.preview))
         case let .update(update):
             [update.title, update.message].compactMap(\.self).joined(separator: ". ")
+        case .game:
+            [title, detail(partnerName: partnerName)].compactMap(\.self).joined(separator: ". ")
         case .openedGame, .openedDrawing, .typing:
             title
         }

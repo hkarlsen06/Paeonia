@@ -455,6 +455,20 @@ extension GamesViewModel {
     private var yourTurnKinds: Set<GameKind> {
         Set(games.filter(\.isYourTurn).map(\.kind)).subtracting(hiddenKinds)
     }
+
+    /// What each game has for this person, for the full call screen. A turn in a game put aside with
+    /// "Not now" is left out, as `yourTurnKinds` leaves it out. Nil until the first read has finished,
+    /// so the games the cache already held at launch are not news.
+    var needs: [GameKind: GameNeed]? {
+        guard screen == .hub else { return nil }
+        var needs: [GameKind: GameNeed] = [:]
+        for game in games {
+            guard let need = game.need else { continue }
+            if need == .yourTurn, hiddenKinds.contains(game.kind) { continue }
+            needs[game.kind] = need
+        }
+        return needs
+    }
 }
 
 extension GamesViewModel {

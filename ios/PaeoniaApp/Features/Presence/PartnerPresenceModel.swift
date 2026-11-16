@@ -25,7 +25,11 @@ final class PartnerPresenceModel {
     }
     /// The call that shows in the avatar's place. The call overlay keeps it current.
     var callCover = PresenceCallCover.none {
-        didSet { if callCover == .none { setCallNotice(nil) } }
+        didSet {
+            if callCover == .none || (callCover == .small && callNotice?.isAboutPartner == false) {
+                setCallNotice(nil)
+            }
+        }
     }
     /// What the partner just did, which the call says for a few seconds while it covers the avatar.
     private(set) var callNotice: PresenceNotice?
@@ -168,7 +172,7 @@ final class PartnerPresenceModel {
         feed = next
         if next.partner == nil {
             choose(pill.chosen.partnerLeft)
-            setCallNotice(nil)
+            if callNotice?.isAboutPartner == true { setCallNotice(nil) }
         }
     }
 
@@ -202,6 +206,14 @@ final class PartnerPresenceModel {
         case .fullScreen: break
         }
         return receive(notice)
+    }
+
+    /// Says on the full call screen that `kind` newly needs this person, because the call covers the
+    /// game. Without a call, or beside a small one, the game, the Games tab and the badges say it.
+    /// It is the game's news, not the avatar's, so it shows while either partner hides their presence.
+    func gameNeedsYou(_ kind: GameKind, _ need: GameNeed) {
+        guard callCover == .fullScreen else { return }
+        setCallNotice(.game(kind, need))
     }
 
     func clearNotice() {

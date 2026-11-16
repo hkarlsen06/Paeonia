@@ -45,6 +45,16 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
         game.summary?.isYourTurn == true
     }
 
+    var need: GameNeed? {
+        switch game.summary?.status {
+        case .yourTurn: .yourTurn
+        case .youWon: .ended(.me)
+        case .partnerWon: .ended(.partner)
+        case .draw: .ended(.draw)
+        case .notStarted, .partnerTurn, nil: nil
+        }
+    }
+
     var historyLink: GameHistoryLink? {
         history == nil ? nil : .boardGame(kind)
     }

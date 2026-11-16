@@ -127,7 +127,7 @@ struct PresenceCalloutContent: View {
                         Text(verbatim: callout.title)
                             .font(PaeoniaTypography.caption.weight(.semibold))
                             .foregroundStyle(.paeoniaTextSecondary)
-                        if let detail = callout.detail {
+                        if let detail = callout.detail(partnerName: partnerName) {
                             Text(verbatim: detail)
                                 .font(PaeoniaTypography.body)
                                 .foregroundStyle(.paeoniaTextPrimary)
@@ -156,7 +156,7 @@ struct PresenceCalloutContent: View {
     @ViewBuilder
     private var icon: some View {
         switch callout {
-        case let .openedGame(kind):
+        case let .openedGame(kind), let .game(kind, _):
             PaeoniaBannerGameIcon(kind: kind)
                 .frame(width: 28, height: 28)
         case .openedDrawing:
