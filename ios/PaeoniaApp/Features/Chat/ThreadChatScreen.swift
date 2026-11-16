@@ -10,7 +10,8 @@ struct ThreadChatScreen: View {
         /// A sheet, with a navigation stack of its own and a close button in its bar.
         case sheet
         /// The panel under a game (`GameChatPanel`). It has no navigation bar, so the
-        /// messages get the height, and its close button floats over them.
+        /// messages get the height, and its close button floats over them. It came up from
+        /// below, so a swipe right does not close it.
         case panel
         /// Pulled in from the right edge over any tab (`CoupleChatSlideOver`), with a
         /// navigation stack of its own and a back button that slides it away again.
@@ -91,6 +92,7 @@ struct ThreadChatScreen: View {
             participants: context.participants,
             onReport: { reportTarget = $0 },
             onClose: onClose,
+            swipeRightCloses: presentation != .panel,
             onOpenHeader: onOpenHeader
         )
         .toolbar {

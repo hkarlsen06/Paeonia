@@ -8,9 +8,10 @@ import UIKit
 extension View {
     /// Lets a swipe in from the right edge of the screen pull the couple chat ("Just us")
     /// over this view, on any tab. The chat follows the finger, and lets go open past a
-    /// third of the screen or on a flick. Its back button and a swipe right slide it away
-    /// again, back to the screen it covered. `isPresented` is true while it is open, and setting
-    /// it slides the chat in, such as from Message on the partner's avatar.
+    /// third of the screen or on a flick. A finger at the chat's left edge drags it away the
+    /// same way, back to the screen it covered, and its back button and a swipe right on the
+    /// messages slide it away too. `isPresented` is true while it is open, and setting it
+    /// slides the chat in, such as from Message on the partner's avatar.
     ///
     /// While `peeks` is true the chat's edge peeks in from the right a moment and goes back,
     /// the way the swipe pulls it, as `SwipeLessons` allows.
@@ -24,15 +25,16 @@ private enum CoupleChatSlidePosition: Equatable {
     case hidden
     /// Just its edge, for a moment, so the person finds the swipe.
     case peeking
-    /// Following a finger that has come this far in from the edge.
-    case dragging(CGFloat)
+    /// Following a finger, with the chat this far in from the right edge. The finger came in
+    /// from the screen's right edge to open it, or from the chat's left edge to close it.
+    case dragging(CGFloat, from: EdgeSwipe.Edge)
     case shown
 }
 
 private struct CoupleChatSlideOver: ViewModifier {
-    /// Past this share of the screen, counting where the finger's speed would carry it,
-    /// the chat stays open when the finger lets go.
-    private static let openFraction: CGFloat = 1 / 3
+    /// Past this share of the screen, counting where the finger's speed would carry it, the
+    /// chat ends up where the finger was taking it when the finger lets go.
+    private static let settleFraction: CGFloat = 1 / 3
     /// How much of the chat shows while it peeks in.
     private static let peekWidth: CGFloat = 64
 
@@ -60,16 +62,21 @@ private struct CoupleChatSlideOver: ViewModifier {
         reduceMotion ? nil : .spring(duration: PaeoniaMotion.motionDefault, bounce: 0)
     }
 
-    private var isDragging: Bool {
-        if case .dragging = position { return true }
-        return false
+    private var draggingEdge: EdgeSwipe.Edge? {
+        if case .dragging(_, let edge) = position { return edge }
+        return nil
+    }
+
+    /// The chat is open, or a finger is taking it away.
+    private var isOpen: Bool {
+        position == .shown || draggingEdge == .left
     }
 
     private var offset: CGFloat {
         switch position {
         case .hidden: width
         case .peeking: width - Self.peekWidth
-        case .dragging(let distance): max(0, width - distance)
+        case .dragging(let distance, _): max(0, width - distance)
         case .shown: 0
         }
     }
@@ -83,18 +90,7 @@ private struct CoupleChatSlideOver: ViewModifier {
             .ignoresSafeArea(.keyboard, edges: keyboardIsChats ? .bottom : [])
             .accessibilityHidden(position == .shown)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-            .background {
-                // Off while the chat is open, so its own swipes near the edge work, but on
-                // for the whole of a swipe, which shows the chat and so ends the screen's
-                // `isEnabled`.
-                RightEdgeSwipe(
-                    isEnabled: isDragging || position == .peeking
-                        || (isEnabled && chatContext.isAvailable && !isMounted),
-                    onBegan: begin,
-                    onChanged: { position = .dragging($0) },
-                    onEnded: end(projectedDistance:)
-                )
-            }
+            .background { edgeSwipes }
             .overlay { if isMounted { slideOver } }
             .task(id: peeks && isEnabled && chatContext.isAvailable) { await peek() }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -110,10 +106,33 @@ private struct CoupleChatSlideOver: ViewModifier {
             .onChange(of: isPresented) { _, isPresented in
                 if isPresented, position != .shown {
                     slideIn()
-                } else if !isPresented, position == .shown {
+                } else if !isPresented, isOpen {
                     hide()
                 }
             }
+    }
+
+    private var edgeSwipes: some View {
+        ZStack {
+            // Off while the chat is open, so its own swipes near the edge work, but on for the
+            // whole of a swipe, which shows the chat and so ends the screen's `isEnabled`.
+            EdgeSwipe(
+                edge: .right,
+                isEnabled: draggingEdge == .right || position == .peeking
+                    || (isEnabled && chatContext.isAvailable && !isMounted),
+                onBegan: begin,
+                onChanged: { position = .dragging($0, from: .right) },
+                onEnded: end(projectedDistance:)
+            )
+            // Like the system's back swipe, which a chat at the root of its stack doesn't have.
+            EdgeSwipe(
+                edge: .left,
+                isEnabled: isOpen,
+                onBegan: { position = .dragging(width, from: .left) },
+                onChanged: { position = .dragging(width - $0, from: .left) },
+                onEnded: endClosing(projectedDistance:)
+            )
+        }
     }
 
     private var slideOver: some View {
@@ -175,7 +194,7 @@ private struct CoupleChatSlideOver: ViewModifier {
         PaeoniaKeyboard.dismiss()
         showsPeek = false
         isMounted = true
-        position = .dragging(0)
+        position = .dragging(0, from: .right)
         guard chat == nil, let coupleID = chatContext.coupleID else { return }
         Task {
             let model = await chatContext.makeViewModel(subject: .couple, header: nil)
@@ -206,7 +225,7 @@ private struct CoupleChatSlideOver: ViewModifier {
     }
 
     private func end(projectedDistance: CGFloat) {
-        guard projectedDistance > width * Self.openFraction else {
+        guard projectedDistance > width * Self.settleFraction else {
             hide()
             return
         }
@@ -214,6 +233,14 @@ private struct CoupleChatSlideOver: ViewModifier {
         withAnimation(slide) { position = .shown }
         isPresented = true
         AccessibilityNotification.ScreenChanged().post()
+    }
+
+    private func endClosing(projectedDistance: CGFloat) {
+        if projectedDistance > width * Self.settleFraction {
+            close()
+        } else {
+            withAnimation(slide) { position = .shown }
+        }
     }
 
     /// The person closed the chat. Someone who keeps opening it with a tap gets one tip about the
@@ -227,7 +254,7 @@ private struct CoupleChatSlideOver: ViewModifier {
 
     private func hide(then done: @escaping () -> Void = {}) {
         guard isMounted else { return }
-        let wasShown = position == .shown
+        let wasShown = isOpen
         PaeoniaKeyboard.dismiss()
         isPresented = false
         withAnimation(slide) {
@@ -265,21 +292,28 @@ private struct CoupleChatPeekStrip: View {
     }
 }
 
-/// A swipe that starts at the right edge of the screen and moves in. It sits on the window,
+/// A swipe that starts at one edge of the screen and moves away from it. It sits on the window,
 /// because the tabs are UIKit containers with SwiftUI inside, and takes only touches on the
 /// screens under this view, never on a sheet over them. At the edge it wins over the
-/// scrolling, dragging and buttons under the finger, as the system's back swipe does at
-/// the left edge.
-private struct RightEdgeSwipe: UIViewRepresentable {
+/// scrolling, dragging and buttons under the finger, as the system's back swipe does.
+private struct EdgeSwipe: UIViewRepresentable {
+    enum Edge {
+        /// Opens the chat over the screens.
+        case right
+        /// Closes the chat that covers them.
+        case left
+    }
+
+    let edge: Edge
     let isEnabled: Bool
     let onBegan: () -> Void
-    /// How far in from the edge the finger has come.
+    /// How far from the edge the finger has come.
     let onChanged: (CGFloat) -> Void
-    /// The finger left. Says how far in it was, counting where its speed would carry it.
+    /// The finger left. Says how far from the edge it was, counting where its speed would carry it.
     let onEnded: (CGFloat) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(edge: edge)
     }
 
     func makeUIView(context _: Context) -> UIView {
@@ -305,10 +339,11 @@ private struct RightEdgeSwipe: UIViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        /// A touch this close to the right edge can start the swipe. The finger lands
-        /// about this far in when it comes in from the side of the phone.
+        /// A touch this close to the edge can start the swipe. The finger lands about this far
+        /// in when it comes in from the side of the phone.
         private static let edgeWidth: CGFloat = 24
 
+        let edge: Edge
         var onBegan: () -> Void = {}
         var onChanged: (CGFloat) -> Void = { _ in }
         var onEnded: (CGFloat) -> Void = { _ in }
@@ -318,6 +353,13 @@ private struct RightEdgeSwipe: UIViewRepresentable {
         /// The screens this swipe works on. A sheet or cover is outside it.
         private weak var screens: UIView?
         private var recognizer: UIPanGestureRecognizer?
+
+        /// Moving away from the right edge is moving left.
+        private var away: CGFloat { edge == .right ? -1 : 1 }
+
+        init(edge: Edge) {
+            self.edge = edge
+        }
 
         func install(from view: UIView) {
             guard recognizer == nil, let window = view.window else { return }
@@ -337,7 +379,7 @@ private struct RightEdgeSwipe: UIViewRepresentable {
         }
 
         @objc private func handle(_ recognizer: UIPanGestureRecognizer) {
-            let distance = -recognizer.translation(in: nil).x
+            let distance = away * recognizer.translation(in: nil).x
             switch recognizer.state {
             case .began:
                 onBegan()
@@ -345,7 +387,7 @@ private struct RightEdgeSwipe: UIViewRepresentable {
             case .changed:
                 onChanged(max(0, distance))
             case .ended:
-                onEnded(distance - recognizer.velocity(in: nil).x * 0.15)
+                onEnded(distance + away * recognizer.velocity(in: nil).x * 0.15)
             case .cancelled, .failed:
                 onEnded(0)
             default:
@@ -353,27 +395,36 @@ private struct RightEdgeSwipe: UIViewRepresentable {
             }
         }
 
-        /// Only a finger at the right edge of the tabs. A drawing, a map, a game's 3D scene or
-        /// board, and a slider keep a drag that starts on them, even there.
         func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
             let point = touch.location(in: nil)
             guard touch.type == .direct, let screens, let window = screens.window, let view = touch.view,
-                view.isDescendant(of: screens), point.x >= window.bounds.maxX - Self.edgeWidth,
-                !GameDragRegionView.holds(point)
+                view.isDescendant(of: screens)
             else { return false }
-            return !touch.startsInView { view in
-                (view is PKCanvasView && view.isUserInteractionEnabled) || view is MKMapView || view is MLNMapView
-                    || view is ARView || view is UISlider
+            switch edge {
+            case .right:
+                // A drawing, a map, a game's 3D scene or board, and a slider keep a drag that
+                // starts on them, even at the edge.
+                guard point.x >= window.bounds.maxX - Self.edgeWidth, !GameDragRegionView.holds(point)
+                else { return false }
+                return !touch.startsInView { view in
+                    (view is PKCanvasView && view.isUserInteractionEnabled) || view is MKMapView
+                        || view is MLNMapView || view is ARView || view is UISlider
+                }
+            case .left:
+                // A screen pushed inside the chat, such as a report, keeps the system's back swipe.
+                let stack = sequence(first: view as UIResponder, next: \.next)
+                    .first { $0 is UINavigationController } as? UINavigationController
+                return point.x <= window.bounds.minX + Self.edgeWidth && (stack?.viewControllers.count ?? 0) <= 1
             }
         }
 
-        /// The finger moves mostly left. A drag up or down at the edge still scrolls.
+        /// The finger moves mostly away from the edge. A drag up or down at the edge still scrolls.
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }
             let velocity = pan.velocity(in: nil)
             return ThreadChatPanGestureResolver.hasDirectionalHorizontalIntent(
                 velocity: CGSize(width: velocity.x, height: velocity.y),
-                direction: .left
+                direction: edge == .right ? .left : .right
             )
         }
 

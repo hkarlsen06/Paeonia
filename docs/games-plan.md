@@ -39,7 +39,7 @@ Decisions and rules for the Games tab. Each game has its own doc in `docs/games/
 ### Game chat
 
 - One ongoing chat per game type, available before, during and after play, opened from a toolbar button over the game rather than switching to Chats.
-- On an upright iPhone it is a panel over the lower screen with the game still visible above, opened by a swipe up (except where the game needs the swipe, such as a canvas or map). A tap on the game, the close button, a swipe right or a drag down closes it. On iPad and a phone on its side it is a sheet.
+- On an upright iPhone it is a panel over the lower screen with the game still visible above, opened by a swipe up (except where the game needs the swipe, such as a canvas or map). A tap on the game, the close button or a drag down closes it. A swipe right does not, because the panel came up from below. On iPad and a phone on its side it is a sheet.
 - The app shows the swipe up instead of explaining it, at most once a day.
 - A game's chat opened from another tab, by a row in Chats, a banner, a push or `paeonia://daily/game-chat`, still opens over its game on the Games tab. Backing out returns the person to the tab they came from, with that tab as they left it and Games as it was (2026-11-16, the developer's decision). Closing the chat returns once the panel is down. A tap on the game keeps the person in it, and the game's Back then returns. Switching tabs, going deeper in Games, or opening another chat or game drops the way back.
 - In a game, Message on the partner's floating avatar opens the game's chat too. With the game's chat open, Message opens "Just us". The swipe in from the right edge is off while any chat is on screen, so it opens "Just us" over the game again once the game's chat is closed.

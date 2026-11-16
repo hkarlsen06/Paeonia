@@ -33,6 +33,8 @@ struct ThreadChatView: View {
     var sendingAnswer: DailySendingPreview?
     /// Swiping right calls this instead of `dismiss`, for a page that owns its cover.
     var onClose: (() -> Void)?
+    /// False where the chat came up from below, which a sideways swipe should not close.
+    var swipeRightCloses = true
     /// Opens the memory or story the header card shows. Nil leaves the card without a tap.
     var onOpenHeader: (() -> Void)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -64,6 +66,7 @@ struct ThreadChatView: View {
         onReport: ((PrivacyReportTarget) -> Void)? = nil,
         sendingAnswer: DailySendingPreview? = nil,
         onClose: (() -> Void)? = nil,
+        swipeRightCloses: Bool = true,
         onOpenHeader: (() -> Void)? = nil
     ) {
         _viewModel = State(initialValue: viewModel)
@@ -72,6 +75,7 @@ struct ThreadChatView: View {
         self.onReport = onReport
         self.sendingAnswer = sendingAnswer
         self.onClose = onClose
+        self.swipeRightCloses = swipeRightCloses
         self.onOpenHeader = onOpenHeader
     }
 
@@ -254,7 +258,7 @@ struct ThreadChatView: View {
         .overlay { gameChatEmptyState }
         .overlay {
             ZStack {
-                ThreadChatNavigationGestureBridge { close() }
+                if swipeRightCloses { ThreadChatNavigationGestureBridge { close() } }
                 ThreadChatTimestampRevealGestureBridge(
                     isEnabled: true,
                     onChanged: handleBackgroundTimestampRevealChanged,
