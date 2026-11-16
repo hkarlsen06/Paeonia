@@ -148,13 +148,14 @@ enum CallMediaProbe {
         guard let last = samples.last?.sample else { fail("no stats from \(peer.name)") }
         let name = peer.name
         let audio = AudioTurns(samples)
-        let target = samples.compactMap(\.sample.video.targetBitsPerSecond).max() ?? 0
+        let target = samples.compactMap(\.sample.camera.sent.targetBitsPerSecond).max() ?? 0
         let peak = (two: peakVideoBitsPerSecond(samples, over: 2), ten: peakVideoBitsPerSecond(samples, over: 10))
-        let widest = samples.compactMap(\.sample.frameWidth).max() ?? 0
+        let widest = samples.compactMap(\.sample.camera.frameWidth).max() ?? 0
         let shown = peer.partnerVideo.snapshot()
         say("\(name) audio: \(Int(audio.speech.packetsPerSecond)) packets/s and \(Int(audio.speech.bytesPerPacket)) "
             + "bytes a packet in speech, \(Int(audio.silence.packetsPerSecond)) packets/s in silence")
-        say("\(name) video on the \(last.mediaPath.map { "\($0)" } ?? "unknown") path: \(last.video.codec ?? "-"), "
+        let path = last.mediaPath.map { "\($0)" } ?? "unknown"
+        say("\(name) video on the \(path) path: \(last.camera.sent.codec ?? "-"), "
             + "highest encoder target \(Int(target / 1_000)) kbps, peak sent \(Int(peak.two / 1_000)) kbps over 2 s "
             + "and \(Int(peak.ten / 1_000)) kbps over 10 s, widest frame \(widest); it showed \(shown.frames) "
             + "partner frames, last \(shown.size)")
@@ -171,7 +172,7 @@ enum CallMediaProbe {
                 .tuning,
                 holds: audio.silence.packetsPerSecond < 0.3 * audio.speech.packetsPerSecond
             ),
-            Check("\(name) sends video as video/H265", .tuning, holds: last.video.codec == "video/H265"),
+            Check("\(name) sends video as video/H265", .tuning, holds: last.camera.sent.codec == "video/H265"),
             Check(
                 "\(name)'s video encoder target on the direct path goes over WebRTC's own 2.5 Mbps",
                 .tuning,
@@ -188,9 +189,9 @@ enum CallMediaProbe {
         let name = peer.name
         // The encoder and the packets already sent take a moment to follow the new limits.
         let settled = samples.filter { $0.sample.seconds - (samples.first?.sample.seconds ?? 0) >= 2 }
-        let target = settled.compactMap(\.sample.video.targetBitsPerSecond).max() ?? 0
+        let target = settled.compactMap(\.sample.camera.sent.targetBitsPerSecond).max() ?? 0
         let peak = peakVideoBitsPerSecond(settled, over: 5)
-        let widest = settled.compactMap(\.sample.frameWidth).max() ?? 0
+        let widest = settled.compactMap(\.sample.camera.frameWidth).max() ?? 0
         say("\(name) video on TURN's limits: highest encoder target \(Int(target / 1_000)) kbps, peak sent "
             + "\(Int(peak / 1_000)) kbps over 5 s, widest frame \(widest)")
         return [
@@ -297,7 +298,7 @@ extension CallMediaProbe {
         let settled = samples.filter { $0.sample.seconds - (samples.first?.sample.seconds ?? 0) >= 2 }
         let screens = settled.map(\.sample.screen)
         let screenTarget = screens.compactMap(\.sent.targetBitsPerSecond).max() ?? 0
-        let cameraTarget = settled.compactMap(\.sample.video.targetBitsPerSecond).max() ?? 0
+        let cameraTarget = settled.compactMap(\.sample.camera.sent.targetBitsPerSecond).max() ?? 0
         let widths = screens.compactMap(\.frameWidth)
         let fastest = screens.compactMap(\.framesPerSecond).max() ?? 0
         let codec = screens.last?.sent.codec
@@ -442,7 +443,7 @@ func peakVideoBitsPerSecond(_ samples: [Timed], over window: Double) -> Double {
     for (index, earlier) in samples.enumerated() {
         let windowEnd = samples[index...].first { $0.sample.seconds - earlier.sample.seconds >= window }
         guard let later = windowEnd else { break }
-        let bits = Double(later.sample.video.bytesSent - earlier.sample.video.bytesSent) * 8
+        let bits = Double(later.sample.camera.sent.bytesSent - earlier.sample.camera.sent.bytesSent) * 8
         peak = max(peak, bits / (later.sample.seconds - earlier.sample.seconds))
     }
     return peak

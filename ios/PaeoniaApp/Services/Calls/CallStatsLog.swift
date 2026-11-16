@@ -1,12 +1,14 @@
 import Foundation
 import OSLog
+import Synchronization
 @preconcurrency import LiveKitWebRTC
 
 /// Reads the call's media stats every 2 seconds while the phones are connected, and logs one line
 /// about them every 10 seconds: codecs, bitrates, losses, round trip time and whether the media
-/// goes direct or through TURN. Read it in Console with the `CallStats` category. Each sample also
-/// goes to `onSample`, the first one as soon as the phones connect, so the call can notice a weak
-/// connection within seconds (`CallConnectionHealth`).
+/// goes direct or through TURN, and how the camera and the shared screens keep up. Read it in
+/// Console with the `CallStats` category. Each sample also goes to `onSample`, the first one as
+/// soon as the phones connect, so the call can notice a weak connection within seconds
+/// (`CallConnectionHealth`).
 final class CallStatsLog {
     private static let logger = Logger(subsystem: "no.paeonia.app", category: "CallStats")
 
@@ -19,6 +21,8 @@ final class CallStatsLog {
     private let lineInterval: Duration
     private let write: (String) -> Void
     private var task: Task<Void, Never>?
+    private let encoderTrouble = CallEncoderTrouble()
+    private let webRTCLog = LKRTCCallbackLogger()
 
     init(
         sampleInterval: Duration = .seconds(2),
@@ -30,16 +34,30 @@ final class CallStatsLog {
         self.write = write
     }
 
-    func start(_ peerConnection: LKRTCPeerConnection, onSample: @escaping (CallStatsSample) -> Void = { _ in }) {
+    /// `screenCaptured` reads what ScreenCaptureKit has handed this phone's share so far.
+    func start(
+        _ peerConnection: LKRTCPeerConnection,
+        screenCaptured: @escaping () -> CallStatsSample.Captured = { CallStatsSample.Captured() },
+        onSample: @escaping (CallStatsSample) -> Void = { _ in }
+    ) {
         guard task == nil else { return }
         let lineSeconds = Double(lineInterval.components.seconds)
-        task = Task { [sampleInterval, write] in
-            var lastLine = await CallStatsSample.read(peerConnection)
+        // The H.265 encoder logs its resets and dropped frames as info.
+        webRTCLog.severity = .info
+        webRTCLog.start(encoderTrouble.countHandler)
+        task = Task { [sampleInterval, write, encoderTrouble] in
+            func read() async -> CallStatsSample {
+                var sample = await CallStatsSample.read(peerConnection)
+                sample.screenCaptured = screenCaptured()
+                sample.encoderTrouble = encoderTrouble.counts
+                return sample
+            }
+            var lastLine = await read()
             onSample(lastLine)
             while true {
                 try? await Task.sleep(for: sampleInterval)
                 guard !Task.isCancelled else { return }
-                let current = await CallStatsSample.read(peerConnection)
+                let current = await read()
                 onSample(current)
                 // Stats timestamps drift a little from the sleep, so a line goes out once most of
                 // the interval has passed.
@@ -54,6 +72,43 @@ final class CallStatsLog {
     func stop() {
         task?.cancel()
         task = nil
+        webRTCLog.stop()
+    }
+}
+
+/// Counts the video encoders' trouble in WebRTC's own log, for the whole call. The lines come
+/// from VideoToolbox's encoders in webrtc-sdk m150 (`RTCVideoEncoderH265.mm` and
+/// `RTCVideoEncoderH264.mm`). WebRTC calls the handler on the thread that logs, which can be the
+/// encoder's, so it only compares and adds.
+private nonisolated final class CallEncoderTrouble: Sendable {
+    private let resets = Atomic(0)
+    private let failedFrames = Atomic(0)
+    private let droppedFrames = Atomic(0)
+
+    var counts: CallStatsSample.EncoderTrouble {
+        CallStatsSample.EncoderTrouble(
+            resets: resets.load(ordering: .relaxed),
+            failedFrames: failedFrames.load(ordering: .relaxed),
+            droppedFrames: droppedFrames.load(ordering: .relaxed)
+        )
+    }
+
+    /// Made here, outside the main actor, so WebRTC's threads may call it.
+    var countHandler: @Sendable (String) -> Void {
+        { [self] message in count(message) }
+    }
+
+    private func count(_ message: String) {
+        // WebRTC's own encoder wrapper logs "Failed to encode frame. Error code:" for the same
+        // failure, so only VideoToolbox's wording counts.
+        if message.contains("Resetting compression session") || message.contains("Invalid compression session") {
+            resets.add(1, ordering: .relaxed)
+        } else if message.contains("Failed to encode frame with code") || message.contains("h265 encode failed")
+            || message.contains("H264 encode failed") {
+            failedFrames.add(1, ordering: .relaxed)
+        } else if message.contains("dropped a frame") || message.contains("H264 encode dropped frame") {
+            droppedFrames.add(1, ordering: .relaxed)
+        }
     }
 }
 
@@ -90,24 +145,59 @@ nonisolated struct CallStatsSample: Sendable {
         }
     }
 
-    nonisolated struct Screen: Sendable {
+    /// One video stream this phone sends, the camera's or the screen's.
+    nonisolated struct SentVideo: Sendable {
         var sent = Outbound()
         var frameWidth: Int?
         var frameHeight: Int?
         var framesPerSecond: Double?
+        /// `none`, `cpu`, `bandwidth` or `other`: what keeps the encoder from sending more.
         var qualityLimitation: String?
+        var framesEncoded = 0
+        var encodeSeconds = 0.0
+        /// The frames a second going into the encoder, from the stream's `media-source`.
+        var sourceFramesPerSecond: Double?
+        var keyFramesEncoded = 0
+        /// The sum of the frames' quantizers. Higher means coarser pictures.
+        var qpSum = 0
+        var encoderImplementation: String?
+        var isPowerEfficientEncoder: Bool?
+        /// The seconds each `qualityLimitation` held since the stream began.
+        var limitationSeconds: [String: Double] = [:]
+    }
+
+    /// How often the phone's video encoders reset, failed a frame or dropped one, since the call
+    /// started. These count the camera and the screen together.
+    nonisolated struct EncoderTrouble: Sendable {
+        var resets = 0
+        var failedFrames = 0
+        var droppedFrames = 0
+    }
+
+    /// The partner's shared screen as this phone receives it, since the call started.
+    nonisolated struct ReceivedScreen: Sendable {
+        var bytesReceived = 0
+        var framesPerSecond: Double?
+        var framesDropped = 0
+        var freezes = 0
+        var framesDecoded = 0
+        var decodeSeconds = 0.0
+    }
+
+    /// The pictures ScreenCaptureKit handed this phone's shares since the app started.
+    nonisolated struct Captured: Sendable {
+        var frames = 0
+        /// The pixel format of its buffers as a four-character code, such as `420f`.
+        var pixelFormat: String?
     }
 
     var seconds: Double
     var audio = Outbound()
-    /// The camera's video.
-    var video = Outbound()
+    var camera = SentVideo()
     /// This phone's shared screen, which has its own video stream.
-    var screen = Screen()
-    var frameWidth: Int?
-    var frameHeight: Int?
-    var framesPerSecond: Double?
-    var qualityLimitation: String?
+    var screen = SentVideo()
+    var screenCaptured = Captured()
+    var encoderTrouble = EncoderTrouble()
     /// Video packets the partner's phone asked for again, so they were lost on the way.
     var videoNacks = 0
     var videoBytesResent = 0
@@ -117,6 +207,8 @@ nonisolated struct CallStatsSample: Sendable {
     var audioReceived = Inbound()
     /// The partner's camera, and their shared screen while they share it.
     var videoReceived = Inbound()
+    /// The partner's shared screen alone. It counts in `videoReceived` too.
+    var screenReceived = ReceivedScreen()
     /// What the partner's phone reports it never got of what this phone sent, audio, camera and
     /// screen together, from their receiver reports. It lags `packetsSent` by up to a report
     /// interval.
@@ -160,16 +252,14 @@ nonisolated struct CallStatsSample: Sendable {
         for stat in stats.values {
             switch stat.type {
             case "outbound-rtp":
-                readSent(stat, codec: stats[stat.string("codecId") ?? ""]?.string("mimeType"), screenMid: screenMid)
+                readSent(stat, in: stats, screenMid: screenMid)
             case "remote-inbound-rtp":
                 packetsLostAtPartner += Int(stat.number("packetsLost") ?? 0)
                 let isCamera = stat.string("kind") == "video"
                     && (screenMid == nil || stats[stat.string("localId") ?? ""]?.string("mid") != screenMid)
                 partnerJitterSeconds = isCamera ? stat.number("jitter") : partnerJitterSeconds
             case "inbound-rtp":
-                let kind: WritableKeyPath<Self, Inbound> =
-                    stat.string("kind") == "video" ? \.videoReceived : \.audioReceived
-                self[keyPath: kind].add(Inbound(stat))
+                readReceived(stat, screenMid: screenMid)
             case "transport":
                 guard let pair = stats[stat.string("selectedCandidatePairId") ?? ""] else { continue }
                 roundTripSeconds = pair.number("currentRoundTripTime")
@@ -183,9 +273,9 @@ nonisolated struct CallStatsSample: Sendable {
     }
 
     /// Sorts one sent stream into the audio, the camera or the screen.
-    private mutating func readSent(_ stat: LKRTCStatistics, codec: String?, screenMid: String?) {
+    private mutating func readSent(_ stat: LKRTCStatistics, in stats: [String: LKRTCStatistics], screenMid: String?) {
         let sent = Outbound(
-            codec: codec,
+            codec: stats[stat.string("codecId") ?? ""]?.string("mimeType"),
             bytesSent: Int(stat.number("bytesSent") ?? 0),
             packetsSent: Int(stat.number("packetsSent") ?? 0),
             targetBitsPerSecond: stat.number("targetBitrate")
@@ -194,55 +284,114 @@ nonisolated struct CallStatsSample: Sendable {
             audio = sent
             return
         }
+        let video = SentVideo(
+            sent: sent,
+            frameWidth: stat.number("frameWidth").map { Int($0) },
+            frameHeight: stat.number("frameHeight").map { Int($0) },
+            framesPerSecond: stat.number("framesPerSecond"),
+            qualityLimitation: stat.string("qualityLimitationReason"),
+            framesEncoded: Int(stat.number("framesEncoded") ?? 0),
+            encodeSeconds: stat.number("totalEncodeTime") ?? 0,
+            sourceFramesPerSecond: stats[stat.string("mediaSourceId") ?? ""]?.number("framesPerSecond"),
+            keyFramesEncoded: Int(stat.number("keyFramesEncoded") ?? 0),
+            qpSum: Int(stat.number("qpSum") ?? 0),
+            encoderImplementation: stat.string("encoderImplementation"),
+            isPowerEfficientEncoder: (stat.values["powerEfficientEncoder"] as? NSNumber)?.boolValue,
+            limitationSeconds: (stat.values["qualityLimitationDurations"] as? [String: NSNumber])?
+                .mapValues(\.doubleValue) ?? [:]
+        )
         if let screenMid, stat.string("mid") == screenMid {
-            screen = Screen(
-                sent: sent,
-                frameWidth: stat.number("frameWidth").map { Int($0) },
-                frameHeight: stat.number("frameHeight").map { Int($0) },
-                framesPerSecond: stat.number("framesPerSecond"),
-                qualityLimitation: stat.string("qualityLimitationReason")
-            )
+            screen = video
             return
         }
-        video = sent
-        frameWidth = stat.number("frameWidth").map { Int($0) }
-        frameHeight = stat.number("frameHeight").map { Int($0) }
-        framesPerSecond = stat.number("framesPerSecond")
-        qualityLimitation = stat.string("qualityLimitationReason")
+        camera = video
         videoNacks = Int(stat.number("nackCount") ?? 0)
         videoBytesResent = Int(stat.number("retransmittedBytesSent") ?? 0)
+    }
+
+    /// Adds one received stream to the audio or the video, and keeps the partner's screen apart too.
+    private mutating func readReceived(_ stat: LKRTCStatistics, screenMid: String?) {
+        guard stat.string("kind") == "video" else {
+            audioReceived.add(Inbound(stat))
+            return
+        }
+        videoReceived.add(Inbound(stat))
+        if let screenMid, stat.string("mid") == screenMid {
+            screenReceived = ReceivedScreen(stat)
+        }
+    }
+
+    /// The milliseconds each frame took on average, from the growth of two running totals, or nil
+    /// when no frame was done.
+    static func millisecondsPerFrame(seconds: Double, frames: Int) -> Double? {
+        frames > 0 ? max(seconds, 0) / Double(frames) * 1_000 : nil
     }
 
     /// One log line with the rates since `previous`.
     func line(since previous: CallStatsSample) -> String {
         let elapsed = max(seconds - previous.seconds, 0.001)
-        func kbps(_ bytes: Int, _ earlier: Int) -> Int {
-            Int((Double(bytes - earlier) * 8 / elapsed / 1_000).rounded())
-        }
-        func show<Value>(_ value: Value?) -> String {
-            value.map { "\($0)" } ?? "-"
-        }
-        let frame = frameWidth.flatMap { width in frameHeight.map { "\(width)x\($0)" } }
-        let screenFrame = screen.frameWidth.flatMap { width in screen.frameHeight.map { "\(width)x\($0)" } }
+        let captured = Double(screenCaptured.frames - previous.screenCaptured.frames) / elapsed
         return [
-            "audio \(show(audio.codec)) \(kbps(audio.bytesSent, previous.audio.bytesSent)) kbps",
-            "video \(show(video.codec)) \(kbps(video.bytesSent, previous.video.bytesSent)) kbps"
-                + " (target \(show(video.targetBitsPerSecond.map { Int(($0 / 1_000).rounded()) })))"
-                + " \(show(frame)) \(show(framesPerSecond.map { Int($0.rounded()) })) fps"
-                + " limit \(show(qualityLimitation))"
-                + ", resent \(kbps(videoBytesResent, previous.videoBytesResent)) kbps"
+            "audio \(show(audio.codec)) \(kbps(audio.bytesSent, previous.audio.bytesSent, elapsed)) kbps",
+            "video \(show(camera.sent.codec)) \(camera.line(since: previous.camera, elapsed: elapsed))"
+                + ", resent \(kbps(videoBytesResent, previous.videoBytesResent, elapsed)) kbps"
                 + " (\(videoNacks - previous.videoNacks) asked)"
-                + ", jitter at partner \(show(partnerJitterSeconds.map { Int(($0 * 1_000).rounded()) })) ms",
-            "screen \(kbps(screen.sent.bytesSent, previous.screen.sent.bytesSent)) kbps"
-                + " (target \(show(screen.sent.targetBitsPerSecond.map { Int(($0 / 1_000).rounded()) })))"
-                + " \(show(screenFrame)) \(show(screen.framesPerSecond.map { Int($0.rounded()) })) fps",
-            "receive \(kbps(bytesReceived, previous.bytesReceived)) kbps",
+                + ", jitter at partner \(whole(partnerJitterSeconds.map { $0 * 1_000 })) ms",
+            "screen \(screen.line(since: previous.screen, elapsed: elapsed))"
+                + ", captured \(whole(captured)) fps \(show(screenCaptured.pixelFormat))",
+            "partner screen \(screenReceived.line(since: previous.screenReceived, elapsed: elapsed))",
+            "encoder resets \(encoderTrouble.resets - previous.encoderTrouble.resets)"
+                + " failed \(encoderTrouble.failedFrames - previous.encoderTrouble.failedFrames)"
+                + " dropped \(encoderTrouble.droppedFrames - previous.encoderTrouble.droppedFrames)",
+            "receive \(kbps(bytesReceived, previous.bytesReceived, elapsed)) kbps",
             "lost \(packetsLost - previous.packetsLost)",
-            "rtt \(show(roundTripSeconds.map { Int(($0 * 1_000).rounded()) })) ms",
-            "available \(show(availableOutgoingBitsPerSecond.map { Int(($0 / 1_000).rounded()) })) kbps",
+            "rtt \(whole(roundTripSeconds.map { $0 * 1_000 })) ms",
+            "available \(whole(availableOutgoingBitsPerSecond.map { $0 / 1_000 })) kbps",
             "path \(show(localCandidateType))/\(show(remoteCandidateType))",
         ].joined(separator: ", ")
     }
+}
+
+private nonisolated extension CallStatsSample.SentVideo {
+    func line(since earlier: Self, elapsed: Double) -> String {
+        let frame = frameWidth.flatMap { width in frameHeight.map { "\(width)x\($0)" } }
+        let frames = framesEncoded - earlier.framesEncoded
+        let encode = CallStatsSample.millisecondsPerFrame(
+            seconds: encodeSeconds - earlier.encodeSeconds,
+            frames: frames
+        )
+        let quantizer = frames > 0 ? Double(qpSum - earlier.qpSum) / Double(frames) : nil
+        let encoder = show(encoderImplementation) + (isPowerEfficientEncoder == true ? " efficient" : "")
+        return "\(kbps(sent.bytesSent, earlier.sent.bytesSent, elapsed)) kbps"
+            + " (target \(whole(sent.targetBitsPerSecond.map { $0 / 1_000 })))"
+            + " \(show(frame)) \(whole(sourceFramesPerSecond)) fps in \(whole(framesPerSecond)) out"
+            + " encode \(whole(encode)) ms qp \(whole(quantizer)) key \(keyFramesEncoded - earlier.keyFramesEncoded)"
+            + " by \(encoder) limit \(show(qualityLimitation))"
+    }
+}
+
+private nonisolated extension CallStatsSample.ReceivedScreen {
+    func line(since earlier: Self, elapsed: Double) -> String {
+        let decode = CallStatsSample.millisecondsPerFrame(
+            seconds: decodeSeconds - earlier.decodeSeconds,
+            frames: framesDecoded - earlier.framesDecoded
+        )
+        return "\(kbps(bytesReceived, earlier.bytesReceived, elapsed)) kbps \(whole(framesPerSecond)) fps"
+            + " decode \(whole(decode)) ms"
+            + ", dropped \(framesDropped - earlier.framesDropped) froze \(freezes - earlier.freezes)"
+    }
+}
+
+private nonisolated func kbps(_ bytes: Int, _ earlier: Int, _ elapsed: Double) -> Int {
+    Int((Double(bytes - earlier) * 8 / elapsed / 1_000).rounded())
+}
+
+private nonisolated func show(_ value: (some Any)?) -> String {
+    value.map { "\($0)" } ?? "-"
+}
+
+private nonisolated func whole(_ value: Double?) -> String {
+    show(value.map { Int($0.rounded()) })
 }
 
 private nonisolated extension CallStatsSample.Inbound {
@@ -250,6 +399,17 @@ private nonisolated extension CallStatsSample.Inbound {
         bytesReceived = Int(stat.number("bytesReceived") ?? 0)
         packetsReceived = Int(stat.number("packetsReceived") ?? 0)
         packetsLost = Int(stat.number("packetsLost") ?? 0)
+    }
+}
+
+private nonisolated extension CallStatsSample.ReceivedScreen {
+    init(_ stat: LKRTCStatistics) {
+        bytesReceived = Int(stat.number("bytesReceived") ?? 0)
+        framesPerSecond = stat.number("framesPerSecond")
+        framesDropped = Int(stat.number("framesDropped") ?? 0)
+        freezes = Int(stat.number("freezeCount") ?? 0)
+        framesDecoded = Int(stat.number("framesDecoded") ?? 0)
+        decodeSeconds = stat.number("totalDecodeTime") ?? 0
     }
 }
 

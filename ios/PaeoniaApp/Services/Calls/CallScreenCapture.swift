@@ -4,6 +4,7 @@
 import CoreMedia
 import ImageIO
 import ScreenCaptureKit
+import Synchronization
 
 /// This phone's whole screen, other apps included, while the person shares it during a call.
 /// ScreenCaptureKit captures it inside the app and the frames go to the call's screen video source.
@@ -30,6 +31,12 @@ final class CallScreenCapture {
     init(source: LKRTCVideoSource) {
         frames = CallScreenFrames(source: source)
         frames.capture = self
+    }
+
+    /// What ScreenCaptureKit has handed this app's shares so far, for the call's stats. One picker
+    /// serves the whole app, so one share runs at a time.
+    static var captured: CallStatsSample.Captured {
+        CallScreenFrames.captured
     }
 
     func start() {
@@ -155,6 +162,9 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
     private var lastFrame: LKRTCVideoFrame?
     private var lastSent = ContinuousClock.now
     private var resendTimer: DispatchSourceTimer?
+    /// Atomic so the stats can read them on the main thread without making `queue` wait.
+    private static let picturesCaptured = Atomic(0)
+    private static let pixelFormat = Atomic<OSType>(0)
 
     init(source: LKRTCVideoSource) {
         self.source = source
@@ -163,8 +173,31 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .screen, let frame = Self.frame(from: sampleBuffer) else { return }
+        Self.picturesCaptured.add(1, ordering: .relaxed)
+        if Self.pixelFormat.load(ordering: .relaxed) == 0, let buffer = sampleBuffer.imageBuffer {
+            Self.pixelFormat.store(CVPixelBufferGetPixelFormatType(buffer), ordering: .relaxed)
+        }
         lastFrame = frame
         send(frame)
+    }
+
+    static var captured: CallStatsSample.Captured {
+        let format = pixelFormat.load(ordering: .relaxed)
+        return CallStatsSample.Captured(
+            frames: picturesCaptured.load(ordering: .relaxed),
+            pixelFormat: format == 0 ? nil : Self.fourCharacters(format)
+        )
+    }
+
+    /// `420f` for full-range 4:2:0, `BGRA` for 32-bit color. A code with an unprintable byte
+    /// shows in hexadecimal.
+    private static func fourCharacters(_ code: OSType) -> String {
+        let bytes = [24, 16, 8, 0].map { UInt8(truncatingIfNeeded: code >> $0) }
+        guard bytes.allSatisfy({ (0x20...0x7E).contains($0) }), let text = String(bytes: bytes, encoding: .ascii)
+        else {
+            return String(code, radix: 16)
+        }
+        return text
     }
 
     /// A screen that stands still sends no frames, and the encoder can only repair a lost frame
@@ -267,6 +300,8 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
 /// The simulator's SDK has no ScreenCaptureKit, so a share never starts there.
 final class CallScreenCapture {
     var onSharingChange: ((Bool) -> Void)?
+
+    static let captured = CallStatsSample.Captured()
 
     init(source _: LKRTCVideoSource) {}
 

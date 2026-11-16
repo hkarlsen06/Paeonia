@@ -423,7 +423,7 @@ extension CallMediaSession {
         case .connected:
             guard !isConnected else { return }
             isConnected = true
-            statsLog.start(peerConnection) { [weak self] sample in
+            statsLog.start(peerConnection, screenCaptured: { CallScreenCapture.captured }) { [weak self] sample in
                 self?.useVideoPath(sample.mediaPath)
                 self?.onStatsSample?(sample)
                 self?.checkSendingHealth(sample)

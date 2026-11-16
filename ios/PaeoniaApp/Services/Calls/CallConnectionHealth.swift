@@ -90,12 +90,12 @@ nonisolated struct CallConnectionHealth {
     }
 
     private static func packetsSent(_ sample: CallStatsSample) -> Int {
-        sample.audio.packetsSent + sample.video.packetsSent + sample.screen.sent.packetsSent
+        sample.audio.packetsSent + sample.camera.sent.packetsSent + sample.screen.sent.packetsSent
     }
 
     private static func isVideoShortOfBits(_ sample: CallStatsSample, previous: CallStatsSample) -> Bool {
-        if sample.video.bytesSent > previous.video.bytesSent {
-            return sample.qualityLimitation == "bandwidth"
+        if sample.camera.sent.bytesSent > previous.camera.sent.bytesSent {
+            return sample.camera.qualityLimitation == "bandwidth"
         }
         return sample.screen.sent.bytesSent > previous.screen.sent.bytesSent
             && sample.screen.qualityLimitation == "bandwidth"

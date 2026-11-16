@@ -35,8 +35,8 @@ struct CallConnectionHealthTests {
             sample.roundTripSeconds = roundTrip
             if let available {
                 videoBytes += 10_000
-                sample.video.bytesSent = videoBytes
-                sample.qualityLimitation = "bandwidth"
+                sample.camera.sent.bytesSent = videoBytes
+                sample.camera.qualityLimitation = "bandwidth"
                 sample.availableOutgoingBitsPerSecond = available
             }
             if let screenAvailable {
