@@ -8,6 +8,10 @@ final class CallRun {
     let conversationID: UUID
     var role: CallMediaSession.Role
     var media: CallMediaSession?
+    /// Starts `media` while it fetches the network servers. Nil once `media` exists or the start failed.
+    var mediaStart: Task<Void, Never>?
+    /// What this phone measured about the connection, for the report sent when the call ends.
+    var quality = CallQualityTally()
     var timers: [CallTimer: Task<Void, Never>] = [:]
     var heartbeat: Task<Void, Never>?
     /// Reads the server's row while the call rings (`CallEngine.updateRingWatch`).
@@ -66,6 +70,8 @@ final class CallRun {
         heartbeat = nil
         ringWatch?.cancel()
         ringWatch = nil
+        mediaStart?.cancel()
+        mediaStart = nil
         media?.close()
         media = nil
         goodbye?.cancel()

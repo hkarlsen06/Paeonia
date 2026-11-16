@@ -64,7 +64,13 @@ nonisolated enum CallGoodbye: Equatable, Sendable {
 nonisolated enum CallEffect: Equatable, Sendable {
     case startTimer(CallTimer, fireAt: Date)
     case cancelTimer(CallTimer)
-    /// Fetch the network servers, join the relay and open the peer connection.
+    /// Start the media session while the call rings: fetch the network servers, open the peer
+    /// connection and join the relay. A ringing phone takes the caller's offer but sends nothing
+    /// back. Nothing happens when a session exists or is starting, and a failure waits for
+    /// `connectMedia` to try again.
+    case prepareMedia
+    /// The call was answered. Start the media session if it has none, and let this phone answer
+    /// the caller's offer. A failure now ends the call.
     case connectMedia
     /// Reconnect the relay and restart the connection between the phones.
     case restartConnection
@@ -117,7 +123,8 @@ nonisolated struct CallMachine: Equatable, Sendable {
         return (machine, [.startTimer(.ring, fireAt: ringDeadline)])
     }
 
-    /// An incoming call. The server sends the push and the live row only after the call exists.
+    /// An incoming call. The server sends the push and the live row only after the call exists,
+    /// so the media can start connecting while it rings.
     static func incoming(
         callID: UUID,
         deviceID: UUID,
@@ -130,7 +137,7 @@ nonisolated struct CallMachine: Equatable, Sendable {
             isRegistered: true,
             hasSeenLiveCall: true
         )
-        return (machine, [.startTimer(.ring, fireAt: ringDeadline)])
+        return (machine, [.startTimer(.ring, fireAt: ringDeadline), .prepareMedia])
     }
 
     /// The caller hears the ringback while the partner's phone rings, once the system has
@@ -212,6 +219,12 @@ nonisolated struct CallMachine: Equatable, Sendable {
             isConnectedSoundDue = true
             // The system has activated an outgoing call's audio by the time it connects.
             return [.cancelTimer(.connect)] + (direction == .outgoing ? audioTimer(now: now) : [])
+        case .ringing where direction == .outgoing:
+            // A ringing phone answers only after its person did, and its answer can reach the
+            // caller before the server's row says so.
+            phase = .active(since: now)
+            isConnectedSoundDue = true
+            return [.cancelTimer(.ring)] + audioTimer(now: now)
         case let .reconnecting(since):
             phase = .active(since: since)
             return [.cancelTimer(.reconnect)]
@@ -236,7 +249,7 @@ nonisolated struct CallMachine: Equatable, Sendable {
         guard !isRegistered else { return [] }
         isRegistered = true
         self.callID = callID
-        guard answeredIncoming else { return [] }
+        guard answeredIncoming else { return [.prepareMedia] }
         hasSeenLiveCall = true
         return beginConnecting(now: now)
     }

@@ -125,6 +125,13 @@ nonisolated struct CallBackend: Sendable {
         )
     }
 
+    func reportQuality(callID: UUID, report: CallQualityReport) async throws {
+        try await client().mutation(
+            "calls:report_call_quality",
+            args: QualityArgs(callID: callID.uuidString, report: report)
+        )
+    }
+
     func iceServers(callID: UUID) async throws -> CallIceServers {
         try await client().action(
             "calls:get_call_ice_servers",
@@ -137,6 +144,16 @@ nonisolated struct CallBackend: Sendable {
     func liveCalls() -> AsyncStream<LiveResult<LiveCall?>> {
         LiveQueryService(transport: ConvexLiveTransport(connection: .shared))
             .subscribe("calls:get_live_call", as: LiveCall?.self)
+    }
+
+    private nonisolated struct QualityArgs: Encodable {
+        let callID: String
+        let report: CallQualityReport
+
+        enum CodingKeys: String, CodingKey {
+            case callID = "p_call_id"
+            case report = "p_report"
+        }
     }
 
     private nonisolated struct CallContext: Decodable {

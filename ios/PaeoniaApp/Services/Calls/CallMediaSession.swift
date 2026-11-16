@@ -8,6 +8,11 @@ import Network
 /// sender's track and never needs a new offer. The caller offers whenever the partner's phone is
 /// in the relay room and the phones are not connected. A later offer restarts the network path
 /// (an ICE restart), which is how the call recovers after a drop or a network change.
+///
+/// Both phones start the session while the call rings. A ringing phone takes the caller's
+/// newest offer but holds its answer, and sends nothing at all, until its person answers on it
+/// (`answer()`). So no sound or picture leaves it before then, and only the device that answered
+/// ever answers the offer when the partner has several.
 final class CallMediaSession {
     nonisolated enum Role: Sendable {
         /// Sends the offers. The phone that started the call.
@@ -20,6 +25,8 @@ final class CallMediaSession {
     var onPartnerCamera: ((Bool) -> Void)?
     /// The back camera's zoom once it sends, and nil while any other camera or none runs.
     var onBackCameraZoom: ((CallCameraZoom?) -> Void)?
+    /// Each `CallStatsLog` sample while the phones are connected.
+    var onStatsSample: ((CallStatsSample) -> Void)?
 
     private let role: Role
     private let relay: CallRelay
@@ -39,8 +46,11 @@ final class CallMediaSession {
     private var isConnected = false
     /// The path the video's limits were last set for. `CallCodecs.configure` starts at TURN's.
     private var videoPath = CallMediaPath.turn
-    /// The number of the newest offer this phone sent. Only its answer applies.
+    /// The number of the newest offer: the one this phone sent, whose answer alone applies, or on
+    /// the answering phone the one it took.
     private var offerNumber = 0
+    /// A ringing phone whose person has not answered on it. It sends nothing to the relay.
+    private var isHeld: Bool
     /// An offer waits in `work`, so another reason to offer needs no second one.
     private var isOfferQueued = false
     /// Candidates that arrived before a session description they belong to.
@@ -57,6 +67,7 @@ final class CallMediaSession {
         case signal(CallSignal.Message)
         case partnerPresent
         case offer
+        case answer
     }
 
     init(
@@ -78,6 +89,7 @@ final class CallMediaSession {
         self.partnerFeed = partnerFeed
         self.localFeed = localFeed
         self.isCameraOn = isCameraOn
+        isHeld = role == .answerer
         relay = CallRelay(callID: callID, backend: backend)
         audioTrack = factory.audioTrack(
             with: factory.audioSource(with: LKRTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)),
@@ -120,6 +132,8 @@ final class CallMediaSession {
         configuration.bundlePolicy = .maxBundle
         configuration.rtcpMuxPolicy = .require
         configuration.continualGatheringPolicy = .gatherContinually
+        // A ringing phone gathers its candidates before it answers, and they go out at the answer.
+        configuration.iceCandidatePoolSize = 1
         guard let peerConnection = CallMediaFactory.shared.peerConnection(
             with: configuration,
             constraints: LKRTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil),
@@ -149,6 +163,12 @@ final class CallMediaSession {
         remoteVideoTrack?.remove(partnerFeed)
         observer.session = nil
         peerConnection.close()
+    }
+
+    /// The person answered on this phone. It answers the caller's newest offer, now or when one
+    /// arrives, and from here on sends like any phone in the call.
+    func answer() {
+        work.yield(.answer)
     }
 
     /// Reconnects the relay now. When the partner is back in the room, the caller offers again.
@@ -196,9 +216,11 @@ final class CallMediaSession {
 
     // MARK: Signaling
 
+    // swiftlint:disable:next cyclomatic_complexity
     private func handle(_ item: Work) async {
         switch item {
         case .partnerPresent:
+            guard !isHeld else { return }
             // The partner may have missed the last camera message while their phone reconnected.
             relay.send(.camera(isOn: isCameraOn))
             guard !isConnected else { return }
@@ -215,6 +237,10 @@ final class CallMediaSession {
         case .offer:
             isOfferQueued = false
             await sendOffer()
+        case .answer:
+            guard isHeld else { return }
+            isHeld = false
+            await sendAnswer()
         }
     }
 
@@ -225,6 +251,7 @@ final class CallMediaSession {
         work.yield(.offer)
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private func receive(_ message: CallSignal.Message) async {
         switch message {
         case let .offer(sdp, number) where role == .answerer:
@@ -233,6 +260,8 @@ final class CallMediaSession {
             guard number == offerNumber, peerConnection.signalingState == .haveLocalOffer else { return }
             try? await peerConnection.setRemoteDescription(LKRTCSessionDescription(type: .answer, sdp: sdp))
             await addPendingCandidates()
+            // The answering phone ignored the camera messages it heard while it rang.
+            relay.send(.camera(isOn: isCameraOn))
         case let .candidate(candidate):
             let iceCandidate = LKRTCIceCandidate(
                 sdp: candidate.sdp,
@@ -245,6 +274,7 @@ final class CallMediaSession {
                 try? await peerConnection.add(iceCandidate)
             }
         case let .camera(isOn):
+            guard !isHeld else { return }
             onPartnerCamera?(isOn)
         case .restart where role == .offerer:
             queueOffer()
@@ -273,23 +303,6 @@ final class CallMediaSession {
         }
     }
 
-    private func acceptOffer(_ sdp: String, number: Int) async {
-        do {
-            try await peerConnection.setRemoteDescription(LKRTCSessionDescription(type: .offer, sdp: sdp))
-            if videoTransceiver == nil {
-                attachAnswererTracks()
-            }
-            await addPendingCandidates()
-            let answer = try await CallCodecs.withOpusDTX(peerConnection.answer(
-                for: LKRTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
-            ))
-            try await peerConnection.setLocalDescription(answer)
-            relay.send(.answer(sdp: answer.sdp, number: number))
-        } catch {
-            // The caller offers again when the connection does not come up.
-        }
-    }
-
     private func addPendingCandidates() async {
         let candidates = pendingCandidates
         pendingCandidates = []
@@ -299,6 +312,44 @@ final class CallMediaSession {
     }
 
     private static let streamID = "paeonia"
+}
+
+// MARK: Answering
+
+extension CallMediaSession {
+    /// A ringing phone only takes the offer. Setting its answer would start the network checks
+    /// and the encryption handshake with the caller, and the caller keeps only one early
+    /// handshake, which could be the one from the partner's other ringing device.
+    private func acceptOffer(_ sdp: String, number: Int) async {
+        do {
+            try await peerConnection.setRemoteDescription(LKRTCSessionDescription(type: .offer, sdp: sdp))
+        } catch {
+            // The caller offers again when the connection does not come up.
+            return
+        }
+        offerNumber = number
+        if videoTransceiver == nil {
+            attachAnswererTracks()
+        }
+        await addPendingCandidates()
+        if !isHeld {
+            await sendAnswer()
+        }
+    }
+
+    /// Answers the offer that waits, if one does.
+    private func sendAnswer() async {
+        guard peerConnection.signalingState == .haveRemoteOffer else { return }
+        do {
+            let answer = try await CallCodecs.withOpusDTX(peerConnection.answer(
+                for: LKRTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
+            ))
+            try await peerConnection.setLocalDescription(answer)
+            relay.send(.answer(sdp: answer.sdp, number: offerNumber))
+        } catch {
+            // The caller offers again when the connection does not come up.
+        }
+    }
 }
 
 // MARK: Tracks
@@ -358,6 +409,7 @@ extension CallMediaSession {
             isConnected = true
             statsLog.start(peerConnection) { [weak self] sample in
                 self?.useVideoPath(sample.mediaPath)
+                self?.onStatsSample?(sample)
             }
             onConnectionChange?(true)
         case .disconnected, .failed:

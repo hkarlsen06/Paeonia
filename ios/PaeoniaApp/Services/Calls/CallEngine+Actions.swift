@@ -11,6 +11,7 @@ extension CallEngine: CallEngineActions {
     /// call that rang only inside the app.
     func answer() {
         guard let run, !run.isFinished else { return }
+        run.quality.noteAnswer(at: .now)
         center?.presentation = .full
         let unreportedHandle = run.takeUnreportedRing()
         requestSystem { system in

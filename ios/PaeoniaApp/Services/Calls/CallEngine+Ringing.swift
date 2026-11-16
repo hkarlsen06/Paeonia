@@ -244,6 +244,7 @@ extension CallEngine {
             request.fail()
             return
         }
+        run.quality.noteAnswer(at: .now)
         // Answering from a closed app before the first unlock after a restart: the sign-in
         // cannot be read, so the server cannot be told.
         guard ClerkKeychainState.current() != .locked else {

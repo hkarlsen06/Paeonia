@@ -9,6 +9,11 @@ import OSLog
 final class CallStatsLog {
     private static let logger = Logger(subsystem: "no.paeonia.app", category: "CallStats")
 
+    /// Logs one line about the call next to the samples, such as how long it took to connect.
+    static func note(_ line: String) {
+        logger.notice("\(line, privacy: .public)")
+    }
+
     private let interval: Duration
     private let write: (String) -> Void
     private var task: Task<Void, Never>?
@@ -54,6 +59,28 @@ nonisolated struct CallStatsSample: Sendable {
         var targetBitsPerSecond: Double?
     }
 
+    /// What this phone received of one kind of the partner's media since the call started.
+    nonisolated struct Inbound: Sendable {
+        var bytesReceived = 0
+        var packetsReceived = 0
+        /// Counted from the sequence numbers, so a resent packet that arrives twice can make it
+        /// negative (RFC 3550, section 6.4.1).
+        var packetsLost = 0
+
+        /// The share of the packets the partner sent that never arrived, or nil before any did.
+        var lossPercent: Double? {
+            let lost = max(packetsLost, 0)
+            guard lost + packetsReceived > 0 else { return nil }
+            return Double(lost) / Double(lost + packetsReceived) * 100
+        }
+
+        mutating func add(_ other: Inbound) {
+            bytesReceived += other.bytesReceived
+            packetsReceived += other.packetsReceived
+            packetsLost += other.packetsLost
+        }
+    }
+
     var seconds: Double
     var audio = Outbound()
     var video = Outbound()
@@ -67,8 +94,9 @@ nonisolated struct CallStatsSample: Sendable {
     /// How unevenly the video packets reach the partner's phone. WebRTC sends less when the
     /// delay grows, even when nothing is lost.
     var partnerJitterSeconds: Double?
-    var bytesReceived = 0
-    var packetsLost = 0
+    var audioReceived = Inbound()
+    /// The partner's camera, and their shared screen while they share it.
+    var videoReceived = Inbound()
     var roundTripSeconds: Double?
     var availableOutgoingBitsPerSecond: Double?
     /// `host`, `srflx`, `prflx` or `relay` for each end of the path in use. Never an address.
@@ -76,6 +104,14 @@ nonisolated struct CallStatsSample: Sendable {
     /// A partner's candidate that answers before its description arrives starts as `prflx`.
     /// WebRTC corrects it once the description comes, so a later sample shows `relay`.
     var remoteCandidateType: String?
+
+    var bytesReceived: Int {
+        audioReceived.bytesReceived + videoReceived.bytesReceived
+    }
+
+    var packetsLost: Int {
+        audioReceived.packetsLost + videoReceived.packetsLost
+    }
 
     /// Nil until the phones have picked a path.
     var mediaPath: CallMediaPath? {
@@ -114,8 +150,9 @@ nonisolated struct CallStatsSample: Sendable {
             case "remote-inbound-rtp" where stat.string("kind") == "video":
                 partnerJitterSeconds = stat.number("jitter")
             case "inbound-rtp":
-                bytesReceived += Int(stat.number("bytesReceived") ?? 0)
-                packetsLost += Int(stat.number("packetsLost") ?? 0)
+                let kind: WritableKeyPath<Self, Inbound> =
+                    stat.string("kind") == "video" ? \.videoReceived : \.audioReceived
+                self[keyPath: kind].add(Inbound(stat))
             case "transport":
                 guard let pair = stats[stat.string("selectedCandidatePairId") ?? ""] else { continue }
                 roundTripSeconds = pair.number("currentRoundTripTime")
@@ -153,6 +190,14 @@ nonisolated struct CallStatsSample: Sendable {
             "available \(show(availableOutgoingBitsPerSecond.map { Int(($0 / 1_000).rounded()) })) kbps",
             "path \(show(localCandidateType))/\(show(remoteCandidateType))",
         ].joined(separator: ", ")
+    }
+}
+
+private nonisolated extension CallStatsSample.Inbound {
+    init(_ stat: LKRTCStatistics) {
+        bytesReceived = Int(stat.number("bytesReceived") ?? 0)
+        packetsReceived = Int(stat.number("packetsReceived") ?? 0)
+        packetsLost = Int(stat.number("packetsLost") ?? 0)
     }
 }
 

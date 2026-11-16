@@ -105,6 +105,9 @@ extension CallEngine: CallSystemDelegate {
             system.reportConnecting(run.conversationID)
         case (.connecting, .active):
             system.reportConnected(run.conversationID)
+        case (.ringing, .active):
+            system.reportConnecting(run.conversationID)
+            system.reportConnected(run.conversationID)
         default:
             break
         }

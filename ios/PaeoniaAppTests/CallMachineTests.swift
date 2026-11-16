@@ -42,6 +42,49 @@ struct CallMachineTests {
         #expect(connected.contains(.startTimer(.audioActivation, fireAt: start + 12)))
     }
 
+    @Test func bothPhonesStartTheirMediaWhileTheCallRingsAndAnswerOnlyAfterTheAnswer() {
+        // The relay ticket and the network servers need the server's call, so the caller waits for it.
+        #expect(CallMachine.outgoing(callID: callID, deviceID: deviceID, ringDeadline: start + 50).1 == [
+            .startTimer(.ring, fireAt: start + 50),
+        ])
+        var calling = outgoing()
+        #expect(calling.reduce(.registered(callID: callID, answeredIncoming: false), now: start) == [.prepareMedia])
+
+        let (ringing, effects) = CallMachine.incoming(callID: callID, deviceID: deviceID, ringDeadline: start + 50)
+        #expect(effects.contains(.prepareMedia))
+        #expect(!effects.contains(.connectMedia))
+        var answering = ringing
+        #expect(answering.reduce(.answered, now: start + 3).contains(.connectMedia))
+
+        // Calling while the partner's call rings answers it at once.
+        var joining = outgoing()
+        let joined = joining.reduce(.registered(callID: UUID(), answeredIncoming: true), now: start)
+        #expect(joined.contains(.connectMedia))
+        #expect(!joined.contains(.prepareMedia))
+    }
+
+    @Test func anOutgoingCallThatConnectsBeforeTheServerSaysSoWasAnswered() {
+        var machine = outgoing()
+        _ = machine.reduce(.registered(callID: callID, answeredIncoming: false), now: start)
+        _ = machine.reduce(.liveCall(row(.ringing)), now: start + 1)
+        _ = machine.reduce(.audioActivated, now: start + 2)
+
+        let connected = machine.reduce(.connected, now: start + 6)
+        #expect(machine.phase == .active(since: start + 6))
+        #expect(connected.first == .ringback(isOn: false))
+        #expect(connected.contains(.cancelTimer(.ring)))
+        #expect(connected.contains(.playConnected(haptic: true)))
+
+        // The live query catches up later and changes nothing.
+        #expect(machine.reduce(.liveCall(row(.active, answeredOn: UUID())), now: start + 9).isEmpty)
+        #expect(machine.phase == .active(since: start + 6))
+
+        // A ringing phone holds its answer, so a connection there is not an answer.
+        var ringing = incoming()
+        #expect(ringing.reduce(.connected, now: start + 1).isEmpty)
+        #expect(ringing.phase == .ringing)
+    }
+
     @Test func reconnectingKeepsTheCallTimeAndGivesUpAfterTheTimer() {
         var machine = outgoing()
         _ = machine.reduce(.registered(callID: callID, answeredIncoming: false), now: start)
@@ -180,7 +223,7 @@ struct CallMachineTests {
 
     @Test func theCallerHearsTheRingbackOnlyWhileRingingInTheCallsAudio() {
         var machine = outgoing()
-        #expect(machine.reduce(.registered(callID: callID, answeredIncoming: false), now: start).isEmpty)
+        #expect(machine.reduce(.registered(callID: callID, answeredIncoming: false), now: start) == [.prepareMedia])
         #expect(machine.reduce(.audioActivated, now: start + 1).first == .ringback(isOn: true))
         #expect(machine.reduce(.audioDeactivated, now: start + 2) == [.ringback(isOn: false)])
         _ = machine.reduce(.audioActivated, now: start + 3)

@@ -141,6 +141,7 @@ final class CallEngine {
         guard run === self.run else { return }
         let previous = run.machine.phase
         let effects = run.machine.reduce(event, now: .now)
+        noteQuality(of: run, from: previous)
         publish(run, previous: previous)
         for effect in effects {
             perform(effect, for: run)
@@ -173,7 +174,7 @@ final class CallEngine {
             }
         case let .cancelTimer(timer):
             run.timers.removeValue(forKey: timer)?.cancel()
-        case .connectMedia:
+        case .prepareMedia, .connectMedia:
             connectMedia(run)
         case .restartConnection:
             run.media?.restart()
@@ -184,20 +185,6 @@ final class CallEngine {
             sounds.setRingback(isOn)
         case let .playConnected(haptic):
             playConnected(haptic: haptic)
-        }
-    }
-
-    private func connectMedia(_ run: CallRun) {
-        Task {
-            do {
-                let servers = try await backend.iceServers(callID: run.callID)
-                guard run === self.run, !run.isFinished else { return }
-                let media = try makeMedia(for: run, servers: servers)
-                run.media = media
-                media.start()
-            } catch {
-                send(.failed(CallFailure(error)), to: run)
-            }
         }
     }
 
@@ -226,6 +213,9 @@ final class CallEngine {
             guard let self, let run, run === self.run else { return }
             center?.backCameraZoom = zoom
         }
+        media.onStatsSample = { [weak run] sample in
+            run?.quality.add(sample, thermalState: ProcessInfo.processInfo.thermalState)
+        }
         return media
     }
 
@@ -245,6 +235,7 @@ final class CallEngine {
 
     private func finish(_ run: CallRun, reason: CallEndReason, server: CallServerEnd?, goodbye: CallGoodbye?) {
         run.stop()
+        sendQualityReport(of: run, reason: reason)
         sounds.stopAll()
         CallAudio.stopEngine()
         sayGoodbye(goodbye, in: run)
@@ -335,6 +326,49 @@ final class CallEngine {
         partnerVideo.clear()
         localVideo.clear()
         partnerScreen.clear()
+    }
+}
+
+// MARK: Media
+
+private extension CallEngine {
+    /// Starts the call's media session once, while the call rings or after the answer, and lets
+    /// this phone answer the caller's offer once the call is answered. A start that fails while
+    /// the call rings leaves the answer to try again. A start that fails after the answer ends
+    /// the call.
+    func connectMedia(_ run: CallRun) {
+        if let media = run.media {
+            if run.machine.phase.isAnswered {
+                media.answer()
+            }
+        } else if run.mediaStart == nil {
+            run.mediaStart = startMedia(run)
+        }
+    }
+
+    func startMedia(_ run: CallRun) -> Task<Void, Never> {
+        let isAnswered = run.machine.phase.isAnswered
+        return Task {
+            do {
+                let servers = try await backend.iceServers(callID: run.callID)
+                run.mediaStart = nil
+                guard run === self.run, !run.isFinished else { return }
+                let media = try makeMedia(for: run, servers: servers)
+                run.media = media
+                media.start()
+                if run.machine.phase.isAnswered {
+                    media.answer()
+                }
+            } catch {
+                run.mediaStart = nil
+                guard run === self.run, !run.isFinished else { return }
+                if isAnswered {
+                    send(.failed(CallFailure(error)), to: run)
+                } else if run.machine.phase.isAnswered {
+                    connectMedia(run)
+                }
+            }
+        }
     }
 }
 
