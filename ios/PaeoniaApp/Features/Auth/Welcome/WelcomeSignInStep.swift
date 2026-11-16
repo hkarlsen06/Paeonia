@@ -344,16 +344,9 @@ private struct WelcomeLegalLinks: View {
     }
 }
 
-/// The Google and email buttons. Google's branding rules allow the colored "G" only on
-/// a white, near-black or light gray button, so both use Google's dark colors
-/// (developers.google.com/identity/branding-guidelines). The label stays in place under
-/// the spinner during sign-in.
+/// The Google and email buttons. The label stays in place under the spinner during sign-in.
 private struct WelcomeSignInButtonStyle: ButtonStyle {
     let isLoading: Bool
-
-    private static let fill = Color(red: 0x13 / 255, green: 0x13 / 255, blue: 0x14 / 255)
-    private static let stroke = Color(red: 0x8E / 255, green: 0x91 / 255, blue: 0x8F / 255)
-    private static let label = Color(red: 0xE3 / 255, green: 0xE3 / 255, blue: 0xE3 / 255)
 
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -368,18 +361,18 @@ private struct WelcomeSignInButtonStyle: ButtonStyle {
             .padding(.horizontal, PaeoniaSpacing.space16)
             .padding(.vertical, PaeoniaSpacing.space12)
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
-            .foregroundStyle(Self.label)
+            .foregroundStyle(.paeoniaTextPrimary)
             .opacity(isLoading ? 0 : 1)
             .overlay {
                 if isLoading {
                     ProgressView()
-                        .tint(Self.label)
+                        .tint(.paeoniaTextPrimary)
                         .accessibilityHidden(true)
                 }
             }
-            .background(Self.fill, in: shape)
+            .background(Color.paeoniaSurfacePrimary, in: shape)
             .overlay {
-                shape.strokeBorder(Self.stroke, lineWidth: PaeoniaRadius.strokeDefault)
+                shape.strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
             }
             .opacity(configuration.isPressed ? 0.85 : 1)
             .opacity(isEnabled || isLoading ? 1 : 0.5)
