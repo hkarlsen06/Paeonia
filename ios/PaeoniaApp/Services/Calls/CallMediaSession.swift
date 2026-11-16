@@ -48,6 +48,8 @@ final class CallMediaSession {
     private var videoTransceiver: LKRTCRtpTransceiver?
     private var remoteVideoTrack: LKRTCVideoTrack?
     private var isCameraOn: Bool
+    /// The camera the newest start asked for, so a share can start it again in a new size.
+    private var isFrontCamera = true
     /// iOS stopped the camera for now, so the partner sees it as paused.
     private var isCameraInterrupted = false
     /// Counts camera starts, so only the newest one ends the wait in `localFeed`.
@@ -171,13 +173,14 @@ final class CallMediaSession {
     }
 
     func close() {
+        // Stops before the share ends, so the share's end does not start it again at full size.
+        camera.stop()
         screen.close()
         statsLog.stop()
         pathMonitor.cancel()
         work.finish()
         workTask?.cancel()
         relay.stop()
-        camera.stop()
         videoTrack.remove(localFeed)
         remoteVideoTrack?.remove(partnerFeed)
         observer.session = nil
@@ -507,6 +510,7 @@ extension CallMediaSession {
     /// The start in `init` reports its zoom after the engine has set `onBackCameraZoom`, because
     /// the camera reports from a later turn of the main queue.
     private func startCamera(front: Bool) {
+        isFrontCamera = front
         cameraStarts += 1
         let start = cameraStarts
         localFeed.cameraWillStart()
@@ -534,6 +538,16 @@ extension CallMediaSession {
         guard isInterrupted != isCameraInterrupted else { return }
         isCameraInterrupted = isInterrupted
         send(.camera(cameraState))
+        restartCameraInNewSize()
+    }
+
+    /// The camera captures smaller beside a shared screen (`CallCamera.isBesideScreen`), so it
+    /// starts again when a share starts or ends. While iOS has it stopped, such as when the
+    /// person ends the share from another app, it waits until iOS lets it run, because a start
+    /// would show the partner the camera as on for a moment.
+    private func restartCameraInNewSize() {
+        guard camera.needsRestart, !isCameraInterrupted else { return }
+        startCamera(front: isFrontCamera)
     }
 }
 
@@ -550,7 +564,9 @@ extension CallMediaSession {
     }
 
     fileprivate func screenSharingChanged(_ isOn: Bool) {
+        camera.isBesideScreen = isOn
         applyVideoLimits()
+        restartCameraInNewSize()
         send(.screen(isOn: isOn))
         onScreenShare?(isOn)
     }

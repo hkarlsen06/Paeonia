@@ -6,12 +6,17 @@ final class CallCamera {
     /// Sharp full screen on the partner's iPad. Through TURN, on a hot phone and on a weak
     /// connection, WebRTC sends it smaller (`CallVideoLimits`).
     private static let targetPixels = 1_920 * 1_080
+    /// The partner shows the camera small beside a shared screen.
+    private static let besideScreenPixels = 640 * 480
     /// Past this the picture is too soft to be worth sending.
     private static let maxZoom = 10.0
 
     /// True when iOS stops the running camera for now, such as when the app leaves the screen
     /// without Picture in Picture or another app takes the camera, and false when it sends again.
     var onInterruption: ((Bool) -> Void)?
+    /// Captures about 640x480 instead of 1080p, in the same shape, so the viewfinder and the
+    /// partner's picture keep theirs. A running camera takes a change at its next start.
+    var isBesideScreen = false
 
     private let capturer: LKRTCCameraVideoCapturer
     private var isCapturing = false
@@ -20,7 +25,8 @@ final class CallCamera {
     private var device: AVCaptureDevice?
     /// The back camera while it runs, so the call screen can zoom it.
     private var backCamera: AVCaptureDevice?
-    /// Lowered while the phone is hot (`CallVideoLimits`).
+    private var startedBesideScreen = false
+    /// Lowered while the phone is hot or beside a shared screen (`CallVideoLimits`).
     private var maxFramesPerSecond = 30
     private var observers: [any NSObjectProtocol] = []
 
@@ -55,10 +61,11 @@ final class CallCamera {
     /// it is starting, so starting over a running one leaves the old connection on the shared
     /// multi-camera session, and adding the new one throws.
     func start(front: Bool, onStarted: @escaping @MainActor @Sendable (CallCameraZoom?) -> Void) {
-        guard case let (device, format)? = Self.camera(front: front) else { return }
+        guard case let (device, format)? = Self.camera(front: front, besideScreen: isBesideScreen) else { return }
         stop()
         isCapturing = true
         self.device = device
+        startedBesideScreen = isBesideScreen
         backCamera = front ? nil : device
         capturer.startCapture(
             with: device,
@@ -73,6 +80,12 @@ final class CallCamera {
                 }
             }
         )
+    }
+
+    /// The running camera captures at the size it had before `isBesideScreen` changed. False
+    /// while `stop()` reports the end of an interruption, because no camera runs then.
+    var needsRestart: Bool {
+        device != nil && startedBesideScreen != isBesideScreen
     }
 
     func stop() {
@@ -137,14 +150,14 @@ final class CallCamera {
 
     /// The front camera, or the back camera that joins the most lenses, so zooming out reaches the
     /// ultra wide. A camera with no format the capturer can use is skipped.
-    private static func camera(front: Bool) -> (AVCaptureDevice, AVCaptureDevice.Format)? {
+    private static func camera(front: Bool, besideScreen: Bool) -> (AVCaptureDevice, AVCaptureDevice.Format)? {
         let devices = LKRTCCameraVideoCapturer.captureDevices()
         let matching = devices.filter { $0.position == (front ? .front : .back) }
         let candidates = front
             ? Array(matching.prefix(1))
             : matching.sorted { $0.constituentDevices.count > $1.constituentDevices.count }
         for device in candidates.isEmpty ? Array(devices.prefix(1)) : candidates {
-            if let format = format(for: device) {
+            if let format = format(for: device, besideScreen: besideScreen) {
                 return (device, format)
             }
         }
@@ -159,9 +172,23 @@ final class CallCamera {
         return lower < upper ? lower...upper : nil
     }
 
-    private static func format(for device: AVCaptureDevice) -> AVCaptureDevice.Format? {
-        LKRTCCameraVideoCapturer.supportedFormats(for: device).min { lhs, rhs in
-            abs(pixels(lhs) - targetPixels) < abs(pixels(rhs) - targetPixels)
+    /// The format nearest 1080p, or beside a shared screen the one nearest 640x480 in that
+    /// format's shape.
+    private static func format(for device: AVCaptureDevice, besideScreen: Bool) -> AVCaptureDevice.Format? {
+        let formats = LKRTCCameraVideoCapturer.supportedFormats(for: device)
+        let full = nearest(targetPixels, in: formats)
+        guard besideScreen, let full else { return full }
+        let shape = CMVideoFormatDescriptionGetDimensions(full.formatDescription)
+        let sameShape = formats.filter { format in
+            let size = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            return Int(size.width) * Int(shape.height) == Int(size.height) * Int(shape.width)
+        }
+        return nearest(besideScreenPixels, in: sameShape)
+    }
+
+    private static func nearest(_ target: Int, in formats: [AVCaptureDevice.Format]) -> AVCaptureDevice.Format? {
+        formats.min { lhs, rhs in
+            abs(pixels(lhs) - target) < abs(pixels(rhs) - target)
         }
     }
 
