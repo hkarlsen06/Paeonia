@@ -115,6 +115,8 @@ extension CallEngine: CallSystemDelegate {
 
     func reportCapabilities(of run: CallRun) {
         guard let session = center?.session else { return }
-        system.reportUpdated(run.conversationID, hasVideo: session.isCameraOn || session.isPartnerCameraOn)
+        let hasVideo = session.isCameraOn || session.isPartnerCameraOn
+            || session.isSharingScreen || session.isPartnerSharingScreen
+        system.reportUpdated(run.conversationID, hasVideo: hasVideo)
     }
 }

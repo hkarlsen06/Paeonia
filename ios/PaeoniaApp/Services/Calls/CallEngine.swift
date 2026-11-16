@@ -61,7 +61,7 @@ final class CallEngine {
     let localVideo = CallVideoFeed()
     let partnerScreen = CallVideoFeed()
     let sounds = CallSoundPlayer()
-    private(set) lazy var pictureInPicture = CallPictureInPicture(feed: partnerVideo)
+    private(set) lazy var pictureInPicture = CallPictureInPicture(partner: partnerVideo, partnerScreen: partnerScreen)
     var run: CallRun?
     /// Calls that rang on this phone in this run of the app. The push and the live query can both
     /// announce one call, and only the first counts.
@@ -87,6 +87,7 @@ final class CallEngine {
         system.start(delegate: self)
         partnerVideo.onFrameSize = { [weak self] size in self?.partnerVideoSizeChanged(size) }
         partnerVideo.onStallChange = { [weak self] isStalled in self?.partnerVideoStallChanged(isStalled) }
+        partnerScreen.onFrameSize = { [weak self] size in self?.partnerScreenSizeChanged(size) }
         pushRegistry = CallPushRegistry(
             onToken: { token in
                 Task { await PushRegistrationServiceFactory.shared.updateVoIPPushToken(token) }
@@ -199,6 +200,7 @@ final class CallEngine {
             backend: backend,
             partnerFeed: partnerVideo,
             localFeed: localVideo,
+            partnerScreenFeed: partnerScreen,
             isMuted: session?.isMuted ?? false,
             isCameraOn: session?.isCameraOn ?? false,
             isFrontCamera: session?.isUsingFrontCamera ?? true,
@@ -213,6 +215,7 @@ final class CallEngine {
             partnerCameraChanged(state, in: run)
         }
         watchConnection(of: media, in: run)
+        watchScreens(of: media, in: run)
         media.onBackCameraZoom = { [weak self, weak run] zoom in
             guard let self, let run, run === self.run else { return }
             center?.backCameraZoom = zoom

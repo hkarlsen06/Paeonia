@@ -132,6 +132,24 @@
         }
       }
     },
+    "NSScreenCaptureUsageDescription" : {
+      "comment" : "Privacy - Screen Capture Usage Description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia shows your screen to your partner during a call, only when you choose to share it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia viser skjermen din til partneren din under en samtale, bare når du velger å dele den."
+          }
+        }
+      }
+    },
     "NSUserNotificationsUsageDescription" : {
       "comment" : "iOS notification permission prompt shown before enabling alerts for partner activity and relationship reminders.",
       "extractionState" : "manual",

@@ -300,6 +300,7 @@
       TimeZone(identifier: "Europe/Oslo")
     }
 
+    func startScreenShare() {}
     func stopScreenShare() {}
 
     func dismissCameraOffSuggestion() {

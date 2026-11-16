@@ -53,6 +53,8 @@
 	<string>Paeonia saves a picture to your photo library when you tap Save to Photos.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Paeonia shows your screen to your partner during a call, only when you choose to share it.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>INSendMessageIntent</string>
@@ -77,6 +79,7 @@
 	<array>
 		<string>audio</string>
 		<string>remote-notification</string>
+		<string>screen-capture</string>
 		<string>voip</string>
 	</array>
 	<key>UILaunchScreen</key>

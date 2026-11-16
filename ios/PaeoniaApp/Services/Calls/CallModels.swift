@@ -17,7 +17,7 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     /// first frame arrives. The bubble takes this shape, so it shows the whole picture.
     var partnerVideoAspectRatio: CGFloat?
     var isUsingFrontCamera = true
-    /// This person shares their screen through the broadcast extension.
+    /// This person shares their screen (`CallScreenCapture`).
     var isSharingScreen = false
     var isPartnerSharingScreen = false
     /// The width of the partner's shared screen over its height. Nil until its first frame arrives.
@@ -45,7 +45,8 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     /// A voice call on the earpiece, which the person holds to their ear, so the screen turns off
     /// and their cheek cannot press anything. An incoming ring is not held to the ear.
     var usesProximitySensor: Bool {
-        guard audioRoute == .receiver, !isCameraOn, !isPartnerCameraOn else { return false }
+        guard audioRoute == .receiver, !isCameraOn, !isPartnerCameraOn, !isSharingScreen, !isPartnerSharingScreen
+        else { return false }
         return switch phase {
         case .ringing: direction == .outgoing
         case .connecting, .active, .reconnecting: true
@@ -150,10 +151,4 @@ nonisolated enum CallCameraOffSuggestion: Equatable, Sendable {
 nonisolated enum CallPresentation: Equatable, Sendable {
     case full
     case bubble
-}
-
-/// Screen sharing goes through a broadcast upload extension, which sends the screen to the app
-/// while the call runs.
-nonisolated enum CallScreenShare {
-    static let extensionBundleID = "no.paeonia.app.broadcast"
 }

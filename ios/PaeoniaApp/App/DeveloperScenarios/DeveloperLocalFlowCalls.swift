@@ -160,6 +160,7 @@
 
     func refreshCallContext() {}
 
+    func startScreenShare() {}
     func stopScreenShare() {}
 
     func dismissCameraOffSuggestion() {

@@ -17,9 +17,10 @@ protocol CallEngineActions: AnyObject {
     func toggleSpeaker()
     func setCameraOn(_ isOn: Bool)
     func flipCamera()
-    /// Ends this person's screen share. The broadcast extension stops, and the system's red
-    /// recording indicator goes away. Starting one goes through the system's broadcast picker
-    /// (`CallScreenShare.extensionBundleID`), because only the person can start a broadcast.
+    /// Shows the system's screen sharing picker. Sharing starts once the person chooses there,
+    /// and `CallSession.isSharingScreen` turns on when it does. Nothing else can start a share.
+    func startScreenShare()
+    /// Ends this person's screen share, and the system's sharing indicator goes away.
     func stopScreenShare()
     /// Hides `CallSession.cameraOffSuggestion` for the rest of the call. The same reason does not
     /// come back, though the other reason can.

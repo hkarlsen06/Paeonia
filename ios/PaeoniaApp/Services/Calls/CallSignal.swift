@@ -16,6 +16,8 @@ nonisolated struct CallSignal: Equatable, Sendable {
         case camera(CallCameraState)
         /// Whether what the sender sends reaches this phone badly (`CallConnectionHealth`).
         case connection(isWeak: Bool)
+        /// The sender started or stopped sharing their screen.
+        case screen(isOn: Bool)
         /// From the answering phone: its connection dropped, so the caller should offer again.
         case restart
     }
@@ -64,6 +66,7 @@ nonisolated extension CallSignal: Codable {
         case sdpMLineIndex = "sdp_m_line_index"
         case cameraState = "state"
         case isWeak = "weak"
+        case isOn = "on"
     }
 
     init(from decoder: any Decoder) throws {
@@ -91,6 +94,8 @@ nonisolated extension CallSignal: Codable {
             message = try .camera(container.decode(CallCameraState.self, forKey: .cameraState))
         case "connection":
             message = try .connection(isWeak: container.decode(Bool.self, forKey: .isWeak))
+        case "screen":
+            message = try .screen(isOn: container.decode(Bool.self, forKey: .isOn))
         case "restart":
             message = .restart
         default:
@@ -125,6 +130,9 @@ nonisolated extension CallSignal: Codable {
         case let .connection(isWeak):
             try container.encode("connection", forKey: .type)
             try container.encode(isWeak, forKey: .isWeak)
+        case let .screen(isOn):
+            try container.encode("screen", forKey: .type)
+            try container.encode(isOn, forKey: .isOn)
         case .restart:
             try container.encode("restart", forKey: .type)
         }

@@ -90,9 +90,19 @@ nonisolated struct CallStatsSample: Sendable {
         }
     }
 
+    nonisolated struct Screen: Sendable {
+        var sent = Outbound()
+        var frameWidth: Int?
+        var frameHeight: Int?
+        var framesPerSecond: Double?
+    }
+
     var seconds: Double
     var audio = Outbound()
+    /// The camera's video.
     var video = Outbound()
+    /// This phone's shared screen, which has its own video stream.
+    var screen = Screen()
     var frameWidth: Int?
     var frameHeight: Int?
     var framesPerSecond: Double?
@@ -100,14 +110,15 @@ nonisolated struct CallStatsSample: Sendable {
     /// Video packets the partner's phone asked for again, so they were lost on the way.
     var videoNacks = 0
     var videoBytesResent = 0
-    /// How unevenly the video packets reach the partner's phone. WebRTC sends less when the
+    /// How unevenly the camera's packets reach the partner's phone. WebRTC sends less when the
     /// delay grows, even when nothing is lost.
     var partnerJitterSeconds: Double?
     var audioReceived = Inbound()
     /// The partner's camera, and their shared screen while they share it.
     var videoReceived = Inbound()
-    /// What the partner's phone reports it never got of what this phone sent, audio and video
-    /// together, from their receiver reports. It lags `packetsSent` by up to a report interval.
+    /// What the partner's phone reports it never got of what this phone sent, audio, camera and
+    /// screen together, from their receiver reports. It lags `packetsSent` by up to a report
+    /// interval.
     var packetsLostAtPartner = 0
     var roundTripSeconds: Double?
     var availableOutgoingBitsPerSecond: Double?
@@ -135,37 +146,25 @@ nonisolated struct CallStatsSample: Sendable {
     }
 
     static func read(_ peerConnection: LKRTCPeerConnection) async -> CallStatsSample {
-        await withCheckedContinuation { continuation in
-            peerConnection.statistics { continuation.resume(returning: CallStatsSample($0)) }
+        // The screen's transceiver is the second video one (`CallMediaSession.addTransceivers`).
+        let screenMid = peerConnection.transceivers.filter { $0.mediaType == .video }.dropFirst().first?.mid
+        return await withCheckedContinuation { continuation in
+            peerConnection.statistics { continuation.resume(returning: CallStatsSample($0, screenMid: screenMid)) }
         }
     }
 
-    init(_ report: LKRTCStatisticsReport) {
+    init(_ report: LKRTCStatisticsReport, screenMid: String?) {
         let stats = report.statistics
         seconds = report.timestamp_us / 1_000_000
         for stat in stats.values {
             switch stat.type {
             case "outbound-rtp":
-                let sent = Outbound(
-                    codec: stats[stat.string("codecId") ?? ""]?.string("mimeType"),
-                    bytesSent: Int(stat.number("bytesSent") ?? 0),
-                    packetsSent: Int(stat.number("packetsSent") ?? 0),
-                    targetBitsPerSecond: stat.number("targetBitrate")
-                )
-                if stat.string("kind") == "video" {
-                    video = sent
-                    frameWidth = stat.number("frameWidth").map { Int($0) }
-                    frameHeight = stat.number("frameHeight").map { Int($0) }
-                    framesPerSecond = stat.number("framesPerSecond")
-                    qualityLimitation = stat.string("qualityLimitationReason")
-                    videoNacks = Int(stat.number("nackCount") ?? 0)
-                    videoBytesResent = Int(stat.number("retransmittedBytesSent") ?? 0)
-                } else {
-                    audio = sent
-                }
+                readSent(stat, codec: stats[stat.string("codecId") ?? ""]?.string("mimeType"), screenMid: screenMid)
             case "remote-inbound-rtp":
                 packetsLostAtPartner += Int(stat.number("packetsLost") ?? 0)
-                partnerJitterSeconds = stat.string("kind") == "video" ? stat.number("jitter") : partnerJitterSeconds
+                let isCamera = stat.string("kind") == "video"
+                    && (screenMid == nil || stats[stat.string("localId") ?? ""]?.string("mid") != screenMid)
+                partnerJitterSeconds = isCamera ? stat.number("jitter") : partnerJitterSeconds
             case "inbound-rtp":
                 let kind: WritableKeyPath<Self, Inbound> =
                     stat.string("kind") == "video" ? \.videoReceived : \.audioReceived
@@ -182,6 +181,36 @@ nonisolated struct CallStatsSample: Sendable {
         }
     }
 
+    /// Sorts one sent stream into the audio, the camera or the screen.
+    private mutating func readSent(_ stat: LKRTCStatistics, codec: String?, screenMid: String?) {
+        let sent = Outbound(
+            codec: codec,
+            bytesSent: Int(stat.number("bytesSent") ?? 0),
+            packetsSent: Int(stat.number("packetsSent") ?? 0),
+            targetBitsPerSecond: stat.number("targetBitrate")
+        )
+        guard stat.string("kind") == "video" else {
+            audio = sent
+            return
+        }
+        if let screenMid, stat.string("mid") == screenMid {
+            screen = Screen(
+                sent: sent,
+                frameWidth: stat.number("frameWidth").map { Int($0) },
+                frameHeight: stat.number("frameHeight").map { Int($0) },
+                framesPerSecond: stat.number("framesPerSecond")
+            )
+            return
+        }
+        video = sent
+        frameWidth = stat.number("frameWidth").map { Int($0) }
+        frameHeight = stat.number("frameHeight").map { Int($0) }
+        framesPerSecond = stat.number("framesPerSecond")
+        qualityLimitation = stat.string("qualityLimitationReason")
+        videoNacks = Int(stat.number("nackCount") ?? 0)
+        videoBytesResent = Int(stat.number("retransmittedBytesSent") ?? 0)
+    }
+
     /// One log line with the rates since `previous`.
     func line(since previous: CallStatsSample) -> String {
         let elapsed = max(seconds - previous.seconds, 0.001)
@@ -192,6 +221,7 @@ nonisolated struct CallStatsSample: Sendable {
             value.map { "\($0)" } ?? "-"
         }
         let frame = frameWidth.flatMap { width in frameHeight.map { "\(width)x\($0)" } }
+        let screenFrame = screen.frameWidth.flatMap { width in screen.frameHeight.map { "\(width)x\($0)" } }
         return [
             "audio \(show(audio.codec)) \(kbps(audio.bytesSent, previous.audio.bytesSent)) kbps",
             "video \(show(video.codec)) \(kbps(video.bytesSent, previous.video.bytesSent)) kbps"
@@ -201,6 +231,9 @@ nonisolated struct CallStatsSample: Sendable {
                 + ", resent \(kbps(videoBytesResent, previous.videoBytesResent)) kbps"
                 + " (\(videoNacks - previous.videoNacks) asked)"
                 + ", jitter at partner \(show(partnerJitterSeconds.map { Int(($0 * 1_000).rounded()) })) ms",
+            "screen \(kbps(screen.sent.bytesSent, previous.screen.sent.bytesSent)) kbps"
+                + " (target \(show(screen.sent.targetBitsPerSecond.map { Int(($0 / 1_000).rounded()) })))"
+                + " \(show(screenFrame)) \(show(screen.framesPerSecond.map { Int($0.rounded()) })) fps",
             "receive \(kbps(bytesReceived, previous.bytesReceived)) kbps",
             "lost \(packetsLost - previous.packetsLost)",
             "rtt \(show(roundTripSeconds.map { Int(($0 * 1_000).rounded()) })) ms",

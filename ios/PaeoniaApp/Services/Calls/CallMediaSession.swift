@@ -4,10 +4,11 @@ import Network
 
 /// The audio and video connection between the two phones for one call, set up over the relay.
 ///
-/// Both media sections are in the first offer, so turning a camera on or off swaps the video
-/// sender's track and never needs a new offer. The caller offers whenever the partner's phone is
-/// in the relay room and the phones are not connected. A later offer restarts the network path
-/// (an ICE restart), which is how the call recovers after a drop or a network change.
+/// Audio, the camera and the shared screen are all in the first offer, so turning a camera or a
+/// screen share on or off swaps a video sender's track and never needs a new offer. The caller
+/// offers whenever the partner's phone is in the relay room and the phones are not connected. A
+/// later offer restarts the network path (an ICE restart), which is how the call recovers after a
+/// drop or a network change.
 ///
 /// Both phones start the session while the call rings. A ringing phone takes the caller's
 /// newest offer but holds its answer, and sends nothing at all, until its person answers on it
@@ -23,6 +24,9 @@ final class CallMediaSession {
     /// True when the phones reached each other, false when the connection dropped.
     var onConnectionChange: ((Bool) -> Void)?
     var onPartnerCamera: ((CallCameraState) -> Void)?
+    var onPartnerScreen: ((Bool) -> Void)?
+    /// True once this phone's screen sends, false when the share stops.
+    var onScreenShare: ((Bool) -> Void)?
     /// Whose end of the call is weak, or nil while both are fine (`CallConnectionHealth`).
     var onWeakConnection: ((CallWeakSide?) -> Void)?
     /// The back camera's zoom once it sends, and nil while any other camera or none runs.
@@ -37,6 +41,7 @@ final class CallMediaSession {
     private let audioTrack: LKRTCAudioTrack
     private let videoTrack: LKRTCVideoTrack
     private let camera: CallCamera
+    private let screen: CallScreenMedia
     private let partnerFeed: CallVideoFeed
     private let localFeed: CallVideoFeed
     private let statsLog = CallStatsLog()
@@ -83,6 +88,7 @@ final class CallMediaSession {
         backend: CallBackend,
         partnerFeed: CallVideoFeed,
         localFeed: CallVideoFeed,
+        partnerScreenFeed: CallVideoFeed,
         isMuted: Bool,
         isCameraOn: Bool,
         isFrontCamera: Bool,
@@ -107,6 +113,7 @@ final class CallMediaSession {
         let videoSource = factory.videoSource()
         videoTrack = factory.videoTrack(with: videoSource, trackId: "video")
         camera = CallCamera(source: videoSource)
+        screen = CallScreenMedia(factory: factory, partnerFeed: partnerScreenFeed)
         let (stream, continuation) = AsyncStream.makeStream(of: Work.self)
         work = continuation
 
@@ -117,6 +124,7 @@ final class CallMediaSession {
         observer.session = self
         camera.onInterruption = { [weak self] in self?.cameraInterrupted($0) }
         camera.setMaxFramesPerSecond(CallVideoLimits(path: videoPath, heat: heat).maxFramesPerSecond)
+        screen.onSharingChange = { [weak self] isOn in self?.screenSharingChanged(isOn) }
         if isCameraOn {
             startCamera(front: isFrontCamera)
         }
@@ -163,6 +171,7 @@ final class CallMediaSession {
     }
 
     func close() {
+        screen.close()
         statsLog.stop()
         pathMonitor.cancel()
         work.finish()
@@ -231,9 +240,10 @@ final class CallMediaSession {
         switch item {
         case .partnerPresent:
             guard !isHeld else { return }
-            // The partner may have missed the last camera and connection messages while their
-            // phone reconnected.
+            // The partner may have missed the last camera, screen and connection messages while
+            // their phone reconnected.
             relay.send(.camera(cameraState))
+            relay.send(.screen(isOn: screen.isSharing))
             relay.send(.connection(isWeak: health.isMineWeak))
             guard !isConnected else { return }
             switch role {
@@ -272,22 +282,17 @@ final class CallMediaSession {
             guard number == offerNumber, peerConnection.signalingState == .haveLocalOffer else { return }
             try? await peerConnection.setRemoteDescription(LKRTCSessionDescription(type: .answer, sdp: sdp))
             await addPendingCandidates()
-            // The answering phone ignored the camera messages it heard while it rang.
+            // The answering phone ignored the camera and screen messages it heard while it rang.
             relay.send(.camera(cameraState))
+            relay.send(.screen(isOn: screen.isSharing))
         case let .candidate(candidate):
-            let iceCandidate = LKRTCIceCandidate(
-                sdp: candidate.sdp,
-                sdpMLineIndex: candidate.sdpMLineIndex,
-                sdpMid: candidate.sdpMid
-            )
-            if peerConnection.remoteDescription == nil || peerConnection.signalingState == .haveLocalOffer {
-                pendingCandidates.append(iceCandidate)
-            } else {
-                try? await peerConnection.add(iceCandidate)
-            }
+            await receive(candidate)
         case let .camera(state):
             guard !isHeld else { return }
             onPartnerCamera?(state)
+        case let .screen(isOn):
+            guard !isHeld else { return }
+            onPartnerScreen?(isOn)
         case let .connection(isWeak):
             guard !isHeld else { return }
             health.isPartnersWeak = isWeak
@@ -371,7 +376,8 @@ extension CallMediaSession {
 // MARK: Tracks
 
 extension CallMediaSession {
-    /// The caller's first offer carries audio and video both ways.
+    /// The caller's first offer carries audio, the camera and the screen both ways. The camera's
+    /// transceiver comes before the screen's, which is how the answering phone tells them apart.
     private func addTransceivers() {
         let audioInit = LKRTCRtpTransceiverInit()
         audioInit.direction = .sendRecv
@@ -386,6 +392,10 @@ extension CallMediaSession {
         guard let transceiver = peerConnection.addTransceiver(of: .video, init: videoInit) else { return }
         CallCodecs.configure(transceiver, factory: CallMediaFactory.shared)
         useVideoTransceiver(transceiver)
+
+        guard let screenTransceiver = peerConnection.addTransceiver(of: .video, init: videoInit) else { return }
+        CallCodecs.configure(screenTransceiver, factory: CallMediaFactory.shared)
+        screen.use(screenTransceiver, limits: screenLimits)
     }
 
     /// The answering phone uses the transceivers the offer created, so nothing needs a new offer.
@@ -397,8 +407,10 @@ extension CallMediaSession {
             switch transceiver.mediaType {
             case .audio:
                 transceiver.sender.track = audioTrack
-            case .video:
+            case .video where videoTransceiver == nil:
                 useVideoTransceiver(transceiver)
+            case .video:
+                screen.use(transceiver, limits: screenLimits)
             default:
                 break
             }
@@ -417,6 +429,19 @@ extension CallMediaSession {
 
     fileprivate func sendCandidate(_ candidate: CallIceCandidate) {
         relay.send(.candidate(candidate))
+    }
+
+    fileprivate func receive(_ candidate: CallIceCandidate) async {
+        let iceCandidate = LKRTCIceCandidate(
+            sdp: candidate.sdp,
+            sdpMLineIndex: candidate.sdpMLineIndex,
+            sdpMid: candidate.sdpMid
+        )
+        if peerConnection.remoteDescription == nil || peerConnection.signalingState == .haveLocalOffer {
+            pendingCandidates.append(iceCandidate)
+        } else {
+            try? await peerConnection.add(iceCandidate)
+        }
     }
 
     fileprivate func connectionStateChanged(_ state: LKRTCPeerConnectionState) {
@@ -448,17 +473,22 @@ extension CallMediaSession {
 
     /// The phones pick a new path after a network change, so this runs for every stats sample.
     private func useVideoPath(_ path: CallMediaPath?) {
-        guard let path, path != videoPath, videoTransceiver != nil else { return }
+        guard let path, path != videoPath else { return }
         videoPath = path
         applyVideoLimits()
     }
 
     private func applyVideoLimits() {
-        let limits = CallVideoLimits(path: videoPath, heat: heat)
+        let limits = CallVideoLimits(path: videoPath, heat: heat, besideScreen: screen.isSharing)
         camera.setMaxFramesPerSecond(limits.maxFramesPerSecond)
         if let sender = videoTransceiver?.sender {
             CallCodecs.limitVideo(sender, to: limits)
         }
+        screen.limit(to: screenLimits)
+    }
+
+    private var screenLimits: CallVideoLimits {
+        .screen(path: videoPath, heat: heat)
     }
 
     private func checkSendingHealth(_ sample: CallStatsSample) {
@@ -499,23 +529,27 @@ extension CallMediaSession {
     }
 }
 
-nonisolated enum CallMediaError: Error {
-    case couldNotCreateConnection
+// MARK: Screen sharing
+
+extension CallMediaSession {
+    /// Shows the system's picker. Sharing starts once the person picks there (`onScreenShare`).
+    func startScreenShare() {
+        screen.start()
+    }
+
+    func stopScreenShare() {
+        screen.stop()
+    }
+
+    fileprivate func screenSharingChanged(_ isOn: Bool) {
+        applyVideoLimits()
+        relay.send(.screen(isOn: isOn))
+        onScreenShare?(isOn)
+    }
 }
 
-/// One factory for the app's lifetime, with WebRTC's `AVAudioEngine` audio (`CallAudio`).
-/// `CallAudio.queue` reaches its audio module, so it is not tied to the main actor.
-nonisolated enum CallMediaFactory {
-    nonisolated(unsafe) static let shared: LKRTCPeerConnectionFactory = {
-        LKRTCInitializeSSL()
-        return LKRTCPeerConnectionFactory(
-            audioDeviceModuleType: .audioEngine,
-            bypassVoiceProcessing: false,
-            encoderFactory: CallVideoEncoderFactory(),
-            decoderFactory: LKRTCDefaultVideoDecoderFactory(),
-            audioProcessingModule: nil
-        )
-    }()
+nonisolated enum CallMediaError: Error {
+    case couldNotCreateConnection
 }
 
 /// WebRTC calls its delegate on its own thread. This moves each event to the main thread.

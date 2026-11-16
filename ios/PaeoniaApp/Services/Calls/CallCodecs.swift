@@ -36,6 +36,15 @@ nonisolated enum CallCodecs {
         sender.parameters = parameters
     }
 
+    /// The shared screen keeps its full size and sends fewer frames when bits run short, because
+    /// a smaller picture blurs text.
+    static func limitScreen(_ sender: LKRTCRtpSender, to limits: CallVideoLimits) {
+        let parameters = sender.parameters
+        parameters.degradationPreference = NSNumber(value: LKRTCDegradationPreference.maintainResolution.rawValue)
+        sender.parameters = parameters
+        limitVideo(sender, to: limits)
+    }
+
     /// Asks the partner's phone to stop sending audio while this person is silent (Opus DTX).
     /// WebRTC has no setting for it, so it goes into the Opus line of the session description.
     static func withOpusDTX(_ description: LKRTCSessionDescription) -> LKRTCSessionDescription {
@@ -105,27 +114,41 @@ nonisolated enum CallHeat: Equatable, Sendable {
     }
 }
 
-/// The most one video sender may send. The path and the phone's heat each set limits, and the
-/// video takes the lower of each. These two tables are the only place the limits live.
+/// The most one video sender may send. The camera and the shared screen each have a table for
+/// the path and one for the phone's heat, and take the lower of each. These tables are the only
+/// place the limits live.
 nonisolated struct CallVideoLimits: Equatable, Sendable {
     var maxBitsPerSecond: Int
-    /// How much WebRTC shrinks the camera's 1080p picture before it encodes it.
+    /// How much WebRTC shrinks the picture before it encodes it. The camera captures 1080p.
     var scaleDown: Double
     /// Also the camera's capture rate, because capturing costs heat too.
     var maxFramesPerSecond: Int
 
-    init(path: CallMediaPath, heat: CallHeat = .normal) {
-        let path = Self.limits(for: path)
-        let heat = Self.limits(for: heat)
-        maxBitsPerSecond = min(path.maxBitsPerSecond, heat.maxBitsPerSecond)
-        scaleDown = max(path.scaleDown, heat.scaleDown)
-        maxFramesPerSecond = min(path.maxFramesPerSecond, heat.maxFramesPerSecond)
+    /// The camera's limits. Beside a shared screen it keeps what the screen leaves.
+    init(path: CallMediaPath, heat: CallHeat = .normal, besideScreen: Bool = false) {
+        self = Self.limits(for: path).lowered(to: Self.limits(for: heat))
+        if besideScreen {
+            maxBitsPerSecond -= Self.screen(path: path, heat: heat).maxBitsPerSecond
+        }
     }
 
     private init(_ maxBitsPerSecond: Int, _ scaleDown: Double, _ maxFramesPerSecond: Int) {
         self.maxBitsPerSecond = maxBitsPerSecond
         self.scaleDown = scaleDown
         self.maxFramesPerSecond = maxFramesPerSecond
+    }
+
+    /// The shared screen's limits.
+    static func screen(path: CallMediaPath, heat: CallHeat = .normal) -> CallVideoLimits {
+        screenLimits(for: path).lowered(to: screenLimits(for: heat))
+    }
+
+    private func lowered(to other: CallVideoLimits) -> CallVideoLimits {
+        CallVideoLimits(
+            min(maxBitsPerSecond, other.maxBitsPerSecond),
+            max(scaleDown, other.scaleDown),
+            min(maxFramesPerSecond, other.maxFramesPerSecond)
+        )
     }
 
     /// A direct call sends 1080p at up to 4 Mbps, which looks sharp full screen on an iPad. H.265
@@ -148,10 +171,25 @@ nonisolated struct CallVideoLimits: Equatable, Sendable {
         }
     }
 
-    /// The part of the bitrate for one of several video senders, such as the camera next to a
-    /// shared screen.
-    func share(_ fraction: Double) -> CallVideoLimits {
-        CallVideoLimits(Int(Double(maxBitsPerSecond) * fraction), scaleDown, maxFramesPerSecond)
+    /// The partner shows a shared screen large and the camera small, so the screen gets most of
+    /// the camera's bits for the path and the heat, and the two together stay inside them and
+    /// TURN's 1.5 Mbps. The screen keeps its full size, up to 1080p's pixel count, because a
+    /// smaller picture blurs text. It sends at most 15 frames a second, which is enough for
+    /// scrolling and moving between apps, and fewer as the phone heats up. ScreenCaptureKit
+    /// sends up to 60 a second on iOS, where its frame interval cannot be set.
+    private static func screenLimits(for path: CallMediaPath) -> CallVideoLimits {
+        switch path {
+        case .direct: CallVideoLimits(2_500_000, 1, 15)
+        case .turn: CallVideoLimits(1_000_000, 1, 15)
+        }
+    }
+
+    private static func screenLimits(for heat: CallHeat) -> CallVideoLimits {
+        switch heat {
+        case .normal: CallVideoLimits(2_500_000, 1, 15)
+        case .warm: CallVideoLimits(1_000_000, 1, 10)
+        case .hot: CallVideoLimits(400_000, 1, 5)
+        }
     }
 }
 

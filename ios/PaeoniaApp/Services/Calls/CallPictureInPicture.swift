@@ -2,11 +2,19 @@ import AVKit
 import UIKit
 
 /// Keeps the partner's video going in system Picture in Picture when the app goes to the
-/// background during a video call. Inside the app the floating bubble shows the call instead.
+/// background during a video call, or their shared screen while they share it. Inside the app the
+/// floating bubble shows the call instead.
 final class CallPictureInPicture {
     private let contentController = AVPictureInPictureVideoCallViewController()
     private var controller: AVPictureInPictureController?
-    /// Every view showing the partner's video, such as the call screen's and the bubble's.
+    /// The window's content. Showing the other one keeps the running Picture in Picture and its
+    /// source, which a new source would end.
+    private let cameraView: UIView
+    private let screenView: UIView
+    private var shown = CallVideoSource.partner
+    /// The upright size of each one's latest frame.
+    private var videoSizes: [CallVideoSource: CGSize] = [:]
+    /// Every view showing the partner's video or screen, such as the call screen's and the bubble's.
     private var partnerViews: [WeakView] = []
     /// The partner's video the person sees, which the system animates into Picture in Picture.
     private weak var sourceView: UIView?
@@ -14,16 +22,20 @@ final class CallPictureInPicture {
     private var resignObserver: (any NSObjectProtocol)?
     private var activeObserver: (any NSObjectProtocol)?
 
-    init(feed: CallVideoFeed) {
-        let video = feed.makeView()
-        video.translatesAutoresizingMaskIntoConstraints = false
-        contentController.view.addSubview(video)
-        NSLayoutConstraint.activate([
-            video.leadingAnchor.constraint(equalTo: contentController.view.leadingAnchor),
-            video.trailingAnchor.constraint(equalTo: contentController.view.trailingAnchor),
-            video.topAnchor.constraint(equalTo: contentController.view.topAnchor),
-            video.bottomAnchor.constraint(equalTo: contentController.view.bottomAnchor),
-        ])
+    init(partner: CallVideoFeed, partnerScreen: CallVideoFeed) {
+        cameraView = partner.makeView()
+        screenView = partnerScreen.makeView()
+        screenView.isHidden = true
+        for video in [cameraView, screenView] {
+            video.translatesAutoresizingMaskIntoConstraints = false
+            contentController.view.addSubview(video)
+            NSLayoutConstraint.activate([
+                video.leadingAnchor.constraint(equalTo: contentController.view.leadingAnchor),
+                video.trailingAnchor.constraint(equalTo: contentController.view.trailingAnchor),
+                video.topAnchor.constraint(equalTo: contentController.view.topAnchor),
+                video.bottomAnchor.constraint(equalTo: contentController.view.bottomAnchor),
+            ])
+        }
         // The call screen and the bubble swap with animations that end after the last change
         // to window membership, so the source is chosen once more just before the app leaves.
         resignObserver = NotificationCenter.default.addObserver(
@@ -47,13 +59,27 @@ final class CallPictureInPicture {
         }
     }
 
-    /// The upright size of the partner's frames, which Picture in Picture's window takes.
-    func setVideoSize(_ size: CGSize) {
-        contentController.preferredContentSize = size
+    /// The upright size of the partner's frames, which Picture in Picture's window takes while it
+    /// shows them.
+    func setVideoSize(_ size: CGSize, of source: CallVideoSource) {
+        videoSizes[source] = size
+        if source == shown {
+            contentController.preferredContentSize = size
+        }
     }
 
-    /// Picture in Picture may start while the partner's camera is on during a call. The engine
-    /// calls this on every change to the call, which also chooses the source again.
+    /// Shows the partner's camera or their shared screen in the window.
+    func show(_ source: CallVideoSource) {
+        guard source != shown else { return }
+        shown = source
+        cameraView.isHidden = source != .partner
+        screenView.isHidden = source != .partnerScreen
+        contentController.preferredContentSize = videoSizes[source] ?? .zero
+    }
+
+    /// Picture in Picture may start while the partner's camera is on, or their screen is shared,
+    /// during a call. The engine calls this on every change to the call, which also chooses the
+    /// source again.
     func setEnabled(_ enabled: Bool) {
         if isEnabled, !enabled {
             // `stopPictureInPicture()` does nothing while the app is in the background, where
@@ -65,7 +91,7 @@ final class CallPictureInPicture {
         update()
     }
 
-    /// A new view showing the partner's video. Its source follows the views on screen.
+    /// A new view showing the partner's video or screen. Its source follows the views on screen.
     func track(_ view: CallVideoLayerView) {
         partnerViews.removeAll { $0.view == nil }
         partnerViews.append(WeakView(view: view))

@@ -113,8 +113,6 @@ extension CallEngine: CallEngineActions {
         }
     }
 
-    func stopScreenShare() {}
-
     func makeVideoView(_ source: CallVideoSource) -> UIView {
         switch source {
         case .local:
@@ -124,7 +122,9 @@ extension CallEngine: CallEngineActions {
             pictureInPicture.track(view)
             return view
         case .partnerScreen:
-            return partnerScreen.makeView()
+            let view = partnerScreen.makeView()
+            pictureInPicture.track(view)
+            return view
         }
     }
 
@@ -170,7 +170,7 @@ extension CallEngine: CallEngineActions {
     /// The partner's frames changed size, such as when they turn their phone. A new resolution in
     /// the same shape changes nothing on screen.
     func partnerVideoSizeChanged(_ size: CGSize) {
-        pictureInPicture.setVideoSize(size)
+        pictureInPicture.setVideoSize(size, of: .partner)
         guard size.width > 0, size.height > 0, let center, center.session != nil else { return }
         let ratio = size.width / size.height
         if let current = center.session?.partnerVideoAspectRatio, abs(current - ratio) < 0.01 { return }
@@ -186,6 +186,8 @@ extension CallEngine: CallEngineActions {
         case .active, .reconnecting: true
         default: false
         }
-        pictureInPicture.setEnabled(isTalking && session.isPartnerCameraOn)
+        // The partner's shared screen is what a person wants to keep watching in another app.
+        pictureInPicture.show(session.isPartnerSharingScreen ? .partnerScreen : .partner)
+        pictureInPicture.setEnabled(isTalking && (session.isPartnerCameraOn || session.isPartnerSharingScreen))
     }
 }
