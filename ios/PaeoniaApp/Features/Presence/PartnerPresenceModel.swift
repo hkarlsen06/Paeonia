@@ -33,9 +33,9 @@ final class PartnerPresenceModel {
     }
     /// What the partner just did, which the call says for a few seconds while it covers the avatar.
     private(set) var callNotice: PresenceNotice?
-    /// The chats with a message from the partner this person has not read, which the avatar counts
-    /// once its notice has gone. `MainTabView` keeps it current.
-    var unreadChats = 0
+    /// The chats with a message from the partner this person has not read, newest first, which the
+    /// avatar counts once its notice has gone. `MainTabView` keeps it current.
+    var unreadChats: [ThreadChatSubject] = []
     /// Grows each time the partner opens "Just us" while this person is here, so its edge can
     /// peek in.
     private(set) var partnerOpenedCoupleChat = 0
@@ -92,6 +92,13 @@ final class PartnerPresenceModel {
         if let game = partner.game, game != viewer.openGame { return .game(game) }
         if partner.isDrawing, !viewer.isDrawing { return .drawing }
         return nil
+    }
+
+    /// What Message opens: the chat with the partner's newest unread message, or else
+    /// `viewer.messageChat`. Nil while that chat is already on screen.
+    var messageTarget: ThreadChatSubject? {
+        let chat = unreadChats.first ?? viewer.messageChat
+        return chat == viewer.visibleChat ? nil : chat
     }
 
     // MARK: - Running

@@ -17,8 +17,11 @@
 
     static let presencePlaying = DeveloperScenario(
       "presence-playing", "Presence · Robin plays Mind Meld",
-      "Robin is in Mind Meld, and the toolbar is open with Call, Message and Join", .presence
-    ) { _ in DeveloperPresenceFlow(partner: PartnerPresence(games: [.mindMeld]), mode: .expanded(pending: nil)) }
+      "Robin is in Mind Meld and writes there, and the toolbar is open with Call, Message and Join", .presence
+    ) { _ in
+      DeveloperPresenceFlow(
+        partner: PartnerPresence(games: [.mindMeld]), mode: .expanded(pending: nil), partnerWrites: true)
+    }
 
     static let presenceMessage = DeveloperScenario(
       "presence-message", "Presence · Robin's message",

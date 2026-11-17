@@ -119,8 +119,9 @@ nonisolated struct PresenceViewerPlace: Equatable, Sendable {
     /// The couple's widget drawing is open on the Us tab.
     var isDrawing = false
 
-    /// Where the avatar's Message button goes. In a game it opens that game's chat, whose swipe up
-    /// is easy to miss, and "Just us" once that chat is open. Elsewhere it opens "Just us".
+    /// Where the avatar's Message button goes while no chat waits unread. In a game it opens that
+    /// game's chat, whose swipe up is easy to miss, and "Just us" once that chat is open. Elsewhere
+    /// it opens "Just us".
     var messageChat: ThreadChatSubject {
         if let gameChat, visibleChat != .game(gameChat) { return .game(gameChat) }
         return .couple

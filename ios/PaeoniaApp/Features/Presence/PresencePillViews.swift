@@ -87,8 +87,9 @@ struct PresenceAvatar: View {
     }
 }
 
-/// The count at the avatar's top corner of the chats with something from the partner this person
-/// has not read. It stays after the notice about it has gone.
+/// The count of the chats with something from the partner this person has not read, at the
+/// avatar's top corner, or on Message while the buttons show. It stays after the notice about it
+/// has gone.
 struct PresenceUnreadBadge: View {
     let count: Int
 
@@ -175,46 +176,76 @@ struct PresenceCalloutContent: View {
     }
 }
 
-/// Call, Message, and Join while the partner is in a game or the drawing that this person does not
-/// have open, as round buttons inside the avatar's capsule. They are smaller than the face, so they
-/// read as the avatar's own controls rather than things beside it.
+/// Where the partner is, then Call, Message, and Join while the partner is in a game or the drawing
+/// that this person does not have open, as round buttons inside the avatar's capsule. The place
+/// sits next to the face and puts its badge into words. The buttons are smaller than the face, so
+/// they read as the avatar's own controls rather than things beside it.
 struct PresenceActions: View {
     static let buttonSize: CGFloat = 32
+    /// Leaves room for the face and three buttons on a 375 point wide phone.
+    static let placeWidthCap: CGFloat = 120
 
     let partnerName: String
-    /// The chat Message opens, the game's own chat in a game. Nil hides Message while that chat is
-    /// already on screen.
+    let place: PresencePlace?
+    /// The end of the capsule the face is at, which the place sits next to.
+    let faceEdge: HorizontalEdge
+    /// The chat Message opens (`PartnerPresenceModel.messageTarget`). Nil hides Message.
     let messageChat: ThreadChatSubject?
+    let unreadChats: Int
     /// A game or the drawing.
     let join: PresenceDestination?
     let call: () -> Void
-    let message: () -> Void
+    let message: (ThreadChatSubject) -> Void
     let open: (PresenceDestination) -> Void
 
     var body: some View {
         HStack(spacing: 0) {
+            if faceEdge == .leading { placeCaption }
             PresenceActionButton(label: .callsCallPartner(partnerName), identifier: "presence.call", action: call) {
                 Image(systemName: "phone.fill")
                     .accessibilityHidden(true)
             }
             if let messageChat {
                 PresenceActionButton(
-                    label: messageLabel(messageChat), identifier: "presence.message", action: message
+                    label: messageLabel(messageChat), identifier: "presence.message", badgeCount: unreadChats,
+                    action: { message(messageChat) }
                 ) {
                     Image(systemName: "bubble.left.fill")
                         .accessibilityHidden(true)
                 }
+                .accessibilityValue(
+                    unreadChats > 0 ? Text(.presenceAvatarUnreadChats(unreadChats)) : Text(verbatim: ""))
             }
             joinButton
+            if faceEdge == .trailing { placeCaption }
         }
         .padding(.horizontal, PaeoniaSpacing.space4)
     }
 
-    private func messageLabel(_ chat: ThreadChatSubject) -> LocalizedStringResource {
-        if case let .game(game) = chat {
-            return .presenceToolbarMessageGameAccessibilityLabel(partnerName, String(localized: game.kind.name))
+    /// The avatar's own VoiceOver label already says where the partner is.
+    @ViewBuilder
+    private var placeCaption: some View {
+        if let place, place != .here {
+            WidthCap(Self.placeWidthCap) {
+                Text(place.title)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, PaeoniaSpacing.space8)
+            .accessibilityHidden(true)
         }
-        return .presenceToolbarMessageAccessibilityLabel(partnerName)
+    }
+
+    private func messageLabel(_ chat: ThreadChatSubject) -> LocalizedStringResource {
+        switch chat {
+        case let .game(game):
+            .presenceToolbarMessageGameAccessibilityLabel(partnerName, String(localized: game.kind.name))
+        case .question: .presenceToolbarMessageQuestionAccessibilityLabel(partnerName)
+        case .memory: .presenceToolbarMessageMemoryAccessibilityLabel(partnerName)
+        case .story: .presenceToolbarMessageStoryAccessibilityLabel(partnerName)
+        case .couple: .presenceToolbarMessageAccessibilityLabel(partnerName)
+        }
     }
 
     @ViewBuilder
@@ -246,6 +277,7 @@ private struct PresenceActionButton<Icon: View>: View {
     let label: LocalizedStringResource
     let identifier: String
     var fill: Color = .white.opacity(0.12)
+    var badgeCount = 0
     let action: () -> Void
     @ViewBuilder let icon: Icon
 
@@ -256,6 +288,13 @@ private struct PresenceActionButton<Icon: View>: View {
                 .foregroundStyle(.paeoniaTextPrimary)
                 .frame(width: PresenceActions.buttonSize, height: PresenceActions.buttonSize)
                 .background(fill, in: Circle())
+                .overlay(alignment: .topTrailing) {
+                    if badgeCount > 0 {
+                        PresenceUnreadBadge(count: badgeCount)
+                            .offset(x: PaeoniaSpacing.space4, y: -PaeoniaSpacing.space4)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
                 // The touch target stays the size of the capsule's height.
                 .frame(
                     width: PresenceActions.buttonSize + PaeoniaSpacing.space8, height: PresenceAvatar.outerSize.height)

@@ -30,7 +30,7 @@ extension MainTabView {
             .environment(presenceModel)
             .task(id: presenceRunKey) { await runPresence(presenceRunKey) }
             .onChange(of: presenceViewer, initial: true) { _, viewer in presenceModel.viewer = viewer }
-            .onChange(of: unreadPartnerChats, initial: true) { _, count in presenceModel.unreadChats = count }
+            .onChange(of: unreadPartnerChats, initial: true) { _, chats in presenceModel.unreadChats = chats }
             // A notification from the partner that arrives while the app is open shows in the avatar.
             .onAppear {
                 PaeoniaNotificationRouter.shared.takePartnerNotices(for: presenceModel) { [presenceModel] notice in
@@ -62,9 +62,16 @@ extension MainTabView {
     }
 
     /// The chats where the partner wrote something this person has not read, as the Chats list counts
-    /// them, leaving out the one on screen, which reads it.
-    private var unreadPartnerChats: Int {
-        chatSummaries.summaries.keys.count { $0 != visibleChatSubject && chatSummaries.isUnread($0) }
+    /// them, newest first, leaving out the one on screen, which reads it. The thread breaks a tie, so
+    /// the order stays put between reads.
+    private var unreadPartnerChats: [ThreadChatSubject] {
+        chatSummaries.summaries.values
+            .filter { $0.subject != visibleChatSubject && chatSummaries.isUnread($0.subject) }
+            .sorted {
+                ($0.lastMessageAt ?? .distantPast, $0.threadID.uuidString)
+                    > ($1.lastMessageAt ?? .distantPast, $1.threadID.uuidString)
+            }
+            .map(\.subject)
     }
 
     /// What this person has on screen, so the avatar leaves out the chat and the game they are in.

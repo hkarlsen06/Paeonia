@@ -37217,6 +37217,60 @@
         }
       }
     },
+    "presence.toolbar.messageMemory.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the Message button beside the partner's floating picture when it opens the unread comments on a memory. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write to %@ about a memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv til %@ om et minne"
+          }
+        }
+      }
+    },
+    "presence.toolbar.messageQuestion.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the Message button beside the partner's floating picture when it opens the unread chat about a daily question. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write to %@ about a question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv til %@ om et spørsmål"
+          }
+        }
+      }
+    },
+    "presence.toolbar.messageStory.accessibilityLabel" : {
+      "comment" : "VoiceOver label of the Message button beside the partner's floating picture when it opens the unread replies to a story. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write to %@ about a story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv til %@ om en story"
+          }
+        }
+      }
+    },
     "privacySafety.correction.action" : {
       "comment" : "Button that opens the personal data correction form",
       "extractionState" : "manual",

@@ -38,7 +38,7 @@ struct PresencePillLayer: View {
                 }
                 if let status = model.status {
                     if case let .tucked(edge, pending) = model.mode {
-                        tab(edge: edge, hasWaitingNotice: pending != nil || model.unreadChats > 0, in: placement)
+                        tab(edge: edge, hasWaitingNotice: pending != nil || !model.unreadChats.isEmpty, in: placement)
                     } else {
                         pill(status, in: placement)
                     }
@@ -47,7 +47,7 @@ struct PresencePillLayer: View {
         }
         .animation(motion, value: model.mode)
         .animation(motion, value: model.status)
-        .animation(motion, value: model.unreadChats)
+        .animation(motion, value: model.unreadChats.count)
         // A chat's composer comes on screen, or the keyboard lifts it, and the avatar moves above it.
         .animation(motion, value: overlay.controlsTop)
         .task { await followCovers() }
@@ -89,8 +89,9 @@ struct PresencePillLayer: View {
             face(status, hasOwnGlass: content == .none, in: placement)
         }
         .overlay(alignment: spot.isLeading ? .topLeading : .topTrailing) {
-            if model.unreadChats > 0 {
-                PresenceUnreadBadge(count: model.unreadChats)
+            // Message carries the count while the buttons show.
+            if !model.unreadChats.isEmpty, !content.showsActions {
+                PresenceUnreadBadge(count: model.unreadChats.count)
                     .frame(width: PresenceAvatar.outerSize.width, alignment: .trailing)
                     .offset(x: PaeoniaSpacing.space4, y: -PaeoniaSpacing.space4)
                     .transition(.scale.combined(with: .opacity))
@@ -111,6 +112,10 @@ struct PresencePillLayer: View {
         /// Where the partner is, for an open toolbar over a sheet that holds unsaved work, which
         /// nothing here may close.
         case place
+
+        var showsActions: Bool {
+            if case .actions = self { true } else { false }
+        }
     }
 
     /// The open toolbar shows the buttons. So does the partner opening a game or the drawing, so Join
@@ -139,10 +144,10 @@ struct PresencePillLayer: View {
                 if let destination = callout.destination { open(destination, clearingNotice: true) }
             }
         case let .actions(join):
-            let messageChat = model.viewer.messageChat
             PresenceActions(
-                partnerName: partnerName, messageChat: model.viewer.visibleChat == messageChat ? nil : messageChat,
-                join: join, call: call, message: { open(.chat(messageChat)) },
+                partnerName: partnerName, place: model.status?.place, faceEdge: overlay.spot.edge,
+                messageChat: model.messageTarget, unreadChats: model.unreadChats.count,
+                join: join, call: call, message: { open(.chat($0)) },
                 open: { open($0, clearingNotice: true) }
             )
             .accessibilityAction(.escape) { model.collapse() }
@@ -165,7 +170,8 @@ struct PresencePillLayer: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(status.accessibilityLabel(partnerName: partnerName)))
             .accessibilityValue(
-                model.unreadChats > 0 ? Text(.presenceAvatarUnreadChats(model.unreadChats)) : Text(verbatim: ""))
+                model.unreadChats.isEmpty
+                    ? Text(verbatim: "") : Text(.presenceAvatarUnreadChats(model.unreadChats.count)))
             .accessibilityHint(Text(.presenceAvatarAccessibilityHint))
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { model.toggleToolbar() }
