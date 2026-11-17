@@ -6,6 +6,9 @@
     private var isEntitled: Bool
     private var isPaired: Bool
     private var acceptedInvite = false
+    private var restoreRequest: RemoteRestoreRequest?
+    /// The couple came back, so both finished its first day long ago.
+    private var restored = false
     private let avatarScenario: Bool
     private var avatarDecoration: AvatarDecoration
 
@@ -29,6 +32,16 @@
         session = Self.session(provider: .apple, complete: true)
         isEntitled = true
         isPaired = false
+      case .restoreRequested:
+        session = Self.session(provider: .apple, complete: true)
+        isEntitled = true
+        isPaired = false
+        restoreRequest = RemoteRestoreRequest(
+          inviteID: DeveloperLocalFlowIDs.pairID,
+          partnerUserID: DeveloperScenarioFixture.partnerUserID,
+          partnerName: "Robin",
+          requestedAt: DeveloperScenarioFixture.now
+        )
       case .paired:
         session = Self.session(provider: .apple, complete: true, avatarScenario: avatarScenario)
         isEntitled = true
@@ -100,6 +113,13 @@
       acceptedInvite = false
     }
 
+    func answerRestore(restore: Bool) -> RelationshipRestoreAnswer {
+      restoreRequest = nil
+      isPaired = true
+      restored = restore
+      return RelationshipRestoreAnswer(coupleID: DeveloperScenarioFixture.coupleID, restored: restore)
+    }
+
     func resolveAccess(hasPendingInvite: Bool) -> AccessRouteResolution {
       if hasPendingInvite, isEntitled, !isPaired {
         isPaired = true
@@ -110,6 +130,7 @@
         userEntitlement: userEntitlement,
         coupleEntitlement: coupleEntitlement,
         relationshipState: relationship,
+        restoreRequest: isPaired ? nil : restoreRequest,
         hasPendingInvite: hasPendingInvite
       )
       return AccessRouteResolution(
@@ -151,7 +172,7 @@
 
     private var relationship: RemoteRelationshipState? {
       guard isPaired else { return nil }
-      return RemoteRelationshipState(
+      var state = RemoteRelationshipState(
         coupleID: DeveloperScenarioFixture.coupleID,
         pairID: DeveloperLocalFlowIDs.pairID,
         relationshipStatus: .active,
@@ -168,6 +189,8 @@
         deleteAfter: nil,
         endedNoticeSeenAt: nil
       )
+      state.firstDayFinishedAt = restored ? DeveloperScenarioFixture.now : nil
+      return state
     }
 
     private nonisolated static func session(
@@ -244,7 +267,7 @@
     func markFirstDayFinished(coupleID _: UUID) async throws {}
   }
 
-  actor DeveloperLocalFlowPairingService: PairingServicing {
+  actor DeveloperLocalFlowPairingService: PairingServicing, RelationshipRestoreAnswering {
     let store: DeveloperLocalFlowStore
     init(store: DeveloperLocalFlowStore) { self.store = store }
 
@@ -283,14 +306,22 @@
     func acceptInvite(
       codeInput _: String,
       operation _: PairingClientOperation,
-      startedOn _: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
+      startedOn _: PairingStartDate?,
+      restore _: Bool
+    ) async throws -> PairingJoinResult {
       await store.acceptInvite()
-      return PairingAcceptedRelationship(coupleID: DeveloperScenarioFixture.coupleID)
+      return .paired(coupleID: DeveloperScenarioFixture.coupleID)
     }
     func leaveRelationship(operation _: PairingClientOperation) async throws -> Bool {
       await store.leaveRelationship()
       return true
+    }
+    func answerRestore(
+      inviteID _: UUID,
+      restore: Bool,
+      operation _: PairingClientOperation
+    ) async throws -> RelationshipRestoreAnswer {
+      await store.answerRestore(restore: restore)
     }
   }
 

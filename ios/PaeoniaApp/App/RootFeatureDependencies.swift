@@ -11,6 +11,7 @@ struct RootFeatureDependencies {
     var pairingInviteViewModel: PairingInviteViewModel?
     var inviterFirstDayModel: InviterFirstDayModel?
     var pairingJoinViewModel: PairingJoinViewModel?
+    var restoreRequestModel: RelationshipRestoreRequestModel?
     var dailyChallengeViewModel: DailyChallengeViewModel?
     var milestoneViewModel: RelationshipMilestoneViewModel?
     var memoriesViewModel: MemoriesViewModel?
@@ -35,6 +36,7 @@ struct RootFeatureDependencies {
         pairingInviteViewModel: PairingInviteViewModel? = nil,
         inviterFirstDayModel: InviterFirstDayModel? = nil,
         pairingJoinViewModel: PairingJoinViewModel? = nil,
+        restoreRequestModel: RelationshipRestoreRequestModel? = nil,
         dailyChallengeViewModel: DailyChallengeViewModel? = nil,
         milestoneViewModel: RelationshipMilestoneViewModel? = nil,
         memoriesViewModel: MemoriesViewModel? = nil,
@@ -58,6 +60,7 @@ struct RootFeatureDependencies {
         self.pairingInviteViewModel = pairingInviteViewModel
         self.inviterFirstDayModel = inviterFirstDayModel
         self.pairingJoinViewModel = pairingJoinViewModel
+        self.restoreRequestModel = restoreRequestModel
         self.dailyChallengeViewModel = dailyChallengeViewModel
         self.milestoneViewModel = milestoneViewModel
         self.memoriesViewModel = memoriesViewModel

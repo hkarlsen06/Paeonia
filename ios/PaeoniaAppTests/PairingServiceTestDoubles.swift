@@ -94,12 +94,21 @@ actor FakePairingGateway: PairingGateway {
     func acceptInvite(
         inviteCode: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> UUID {
+        startedOn: PairingStartDate?,
+        restore _: Bool
+    ) async throws -> UUID? {
         acceptedInviteCode = inviteCode
         acceptedOperation = operation
         acceptedStartedOn = startedOn
         return acceptedCoupleID
+    }
+
+    func answerRestore(
+        inviteID _: UUID,
+        restore _: Bool,
+        operation _: PairingClientOperation
+    ) async throws -> RelationshipRestoreAnswer {
+        RelationshipRestoreAnswer(coupleID: acceptedCoupleID, restored: true)
     }
 
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
@@ -203,8 +212,9 @@ actor CachedInviteRecoveryPairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) throws -> PairingAcceptedRelationship {
+        startedOn: PairingStartDate?,
+        restore _: Bool
+    ) throws -> PairingJoinResult {
         fatalError("unused")
     }
 
@@ -277,10 +287,11 @@ actor PendingCreatePairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
+        startedOn: PairingStartDate?,
+        restore _: Bool
+    ) async throws -> PairingJoinResult {
         await Task.yield()
-        return PairingAcceptedRelationship(coupleID: UUID())
+        return .paired(coupleID: UUID())
     }
 
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {

@@ -7,6 +7,8 @@ enum RootFramedScreen: Hashable {
     case pairing
     /// Joining a partner through their code, in place of the paywall or pairing.
     case join
+    /// A former partner used this person's code and asked to bring back what they had.
+    case restoreRequest
     case relationshipEnded
     case accountClosed
     case deletingAccount
@@ -55,6 +57,11 @@ extension RootView {
             return .pairing
         }
 
+        // The answer to a former partner comes before anything else the invite screen offers.
+        if viewModel.state == .unpaired || viewModel.state == .invitePending, viewModel.currentRestoreRequest != nil {
+            return .restoreRequest
+        }
+
         // A partner's code takes the place of the paywall and the invite screen.
         if PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
             for: viewModel.state,
@@ -94,7 +101,7 @@ extension RootView {
             .access
         case .pairing:
             .invite
-        case .relationshipEnded, .accountClosed, .deletingAccount:
+        case .restoreRequest, .relationshipEnded, .accountClosed, .deletingAccount:
             nil
         }
         guard let stage else {
@@ -123,6 +130,17 @@ extension RootView {
             pairingScreen
         case .join:
             joinScreen
+        case .restoreRequest:
+            restoreRequestScreen
+        case .relationshipEnded, .accountClosed, .deletingAccount:
+            accountNoticeScreen(screen)
+        }
+    }
+
+    /// The single-purpose notices about the account or the relationship.
+    @ViewBuilder
+    private func accountNoticeScreen(_ screen: RootFramedScreen) -> some View {
+        switch screen {
         case .relationshipEnded:
             RelationshipEndedNoticeView(
                 isWorking: viewModel.isWorking,
@@ -134,8 +152,20 @@ extension RootView {
                 onSignOut: signOut,
                 onDeleteAccount: deleteAccount
             )
-        case .deletingAccount:
+        default:
             AuthDeletingAccountView()
+        }
+    }
+
+    /// A former partner used this person's code and asked to bring back what they had.
+    @ViewBuilder
+    private var restoreRequestScreen: some View {
+        if let request = viewModel.currentRestoreRequest {
+            RelationshipRestoreRequestView(
+                request: request,
+                model: featureDependencies.restoreRequestModel,
+                onAnswered: refreshPairing
+            )
         }
     }
 

@@ -7,6 +7,7 @@ final class LocalAccessSyncSnapshot {
     var userEntitlementData: Data?
     var coupleEntitlementData: Data?
     var relationshipStateData: Data?
+    var restoreRequestData: Data?
     var isBanned: Bool = false
     var refreshedAt: Date
 

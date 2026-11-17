@@ -86,6 +86,7 @@ struct PairedHomeView: View {
 
     private static let alertTypesSeenOnHome: Set<String> = [
         "widget_updated", "streak_reminder", "story_posted", "date_reminder", "partner_joined", "letter_arrived",
+        "relationship_restore",
     ]
 
     init(

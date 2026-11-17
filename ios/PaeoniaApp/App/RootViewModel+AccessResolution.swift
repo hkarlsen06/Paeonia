@@ -229,6 +229,7 @@ extension RootViewModel {
             userEntitlement: snapshot.userEntitlement,
             coupleEntitlement: snapshot.coupleEntitlement,
             relationshipState: snapshot.relationshipState,
+            restoreRequest: snapshot.restoreRequest,
             hasPendingInvite: hasPendingInvite,
             isBanned: snapshot.isBanned
         )

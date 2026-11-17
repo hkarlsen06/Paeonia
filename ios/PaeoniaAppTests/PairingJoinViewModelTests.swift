@@ -94,6 +94,20 @@ struct PairingJoinViewModelTests {
         #expect(operations.first == operations.last)
     }
 
+    /// The server hashes the restore choice with the operation, so a lost "bring it
+    /// back" cannot be replayed as "start fresh".
+    @Test func aLostAnswerIsReplayedOnlyForTheSameRestoreChoice() async throws {
+        let pairing = LostAnswerPairing()
+        let viewModel = PairingJoinViewModel(pairingService: pairing, operationProvider: CountingOperationProvider())
+        _ = await viewModel.checkCode(partnerCode, currentUserID: userID)
+        _ = await viewModel.acceptCheckedCode(partnerCode, restore: true)
+        _ = await viewModel.acceptCheckedCode(partnerCode, restore: false)
+
+        let operations = await pairing.acceptOperations
+        #expect(operations.count == 2)
+        #expect(operations.first != operations.last)
+    }
+
     @Test func serverRejectionStartsTheNextAcceptFresh() async throws {
         let pairing = LostAnswerPairing(firstFailure: .server(code: "53300", message: "too many invite attempts"))
         let viewModel = PairingJoinViewModel(pairingService: pairing, operationProvider: CountingOperationProvider())
@@ -199,10 +213,11 @@ private actor JoinFlowPairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
+        startedOn: PairingStartDate?,
+        restore _: Bool
+    ) async throws -> PairingJoinResult {
         acceptedJoins.append(JoinFlowAcceptedJoin(code: codeInput, startedOn: startedOn))
-        return PairingAcceptedRelationship(coupleID: UUID())
+        return .paired(coupleID: UUID())
     }
 
     func createInvite(operation: PairingClientOperation, expiresAt: Date) async throws -> PairingInvite {
@@ -256,14 +271,15 @@ private actor LostAnswerPairing: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
+        startedOn: PairingStartDate?,
+        restore _: Bool
+    ) async throws -> PairingJoinResult {
         acceptOperations.append(operation)
         if let pairedOperation {
             guard pairedOperation == operation else {
                 throw PaeoniaConvexError.server(code: "22023", message: "pairing invite is not pending")
             }
-            return PairingAcceptedRelationship(coupleID: UUID())
+            return .paired(coupleID: UUID())
         }
         if let firstFailure, acceptOperations.count == 1 {
             throw firstFailure

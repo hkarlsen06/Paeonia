@@ -6,6 +6,7 @@ nonisolated struct AccessSyncSnapshot: Equatable, Sendable {
     let userEntitlement: RemoteUserEntitlement?
     let coupleEntitlement: RemoteCoupleEntitlement?
     let relationshipState: RemoteRelationshipState?
+    let restoreRequest: RemoteRestoreRequest?
     /// Paeonia banned this account. The other fields are then empty.
     let isBanned: Bool
     let refreshedAt: Date
@@ -15,6 +16,7 @@ nonisolated struct AccessSyncSnapshot: Equatable, Sendable {
         userEntitlement: RemoteUserEntitlement?,
         coupleEntitlement: RemoteCoupleEntitlement?,
         relationshipState: RemoteRelationshipState?,
+        restoreRequest: RemoteRestoreRequest? = nil,
         isBanned: Bool = false,
         refreshedAt: Date = Date()
     ) {
@@ -22,6 +24,7 @@ nonisolated struct AccessSyncSnapshot: Equatable, Sendable {
         self.userEntitlement = userEntitlement
         self.coupleEntitlement = coupleEntitlement
         self.relationshipState = relationshipState
+        self.restoreRequest = restoreRequest
         self.isBanned = isBanned
         self.refreshedAt = refreshedAt
     }
@@ -50,6 +53,7 @@ extension AccessSyncSnapshotPersisting {
                 userEntitlement: existing.userEntitlement,
                 coupleEntitlement: existing.coupleEntitlement,
                 relationshipState: relationshipState.replacingStartedOn(startedOn),
+                restoreRequest: existing.restoreRequest,
                 isBanned: existing.isBanned,
                 refreshedAt: refreshedAt
             )
@@ -89,6 +93,7 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
         localSnapshot.userEntitlementData = try encode(snapshot.userEntitlement)
         localSnapshot.coupleEntitlementData = try encode(snapshot.coupleEntitlement)
         localSnapshot.relationshipStateData = try encode(snapshot.relationshipState)
+        localSnapshot.restoreRequestData = try encode(snapshot.restoreRequest)
         localSnapshot.isBanned = snapshot.isBanned
         localSnapshot.refreshedAt = snapshot.refreshedAt
 
@@ -131,6 +136,10 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
             relationshipState: try decode(
                 RemoteRelationshipState.self,
                 from: snapshot.relationshipStateData
+            ),
+            restoreRequest: try decode(
+                RemoteRestoreRequest.self,
+                from: snapshot.restoreRequestData
             ),
             isBanned: snapshot.isBanned,
             refreshedAt: snapshot.refreshedAt

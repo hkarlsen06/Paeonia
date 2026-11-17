@@ -18,11 +18,19 @@ protocol PairingGateway: Actor {
         expiresAt: Date
     ) async throws -> UUID
 
+    /// Nil when the inviter is asked to bring back what the two had.
     func acceptInvite(
         inviteCode: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> UUID
+        startedOn: PairingStartDate?,
+        restore: Bool
+    ) async throws -> UUID?
+
+    func answerRestore(
+        inviteID: UUID,
+        restore: Bool,
+        operation: PairingClientOperation
+    ) async throws -> RelationshipRestoreAnswer
 
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool
 }
@@ -101,15 +109,28 @@ actor LivePairingGateway: PairingGateway {
     func acceptInvite(
         inviteCode: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> UUID {
+        startedOn: PairingStartDate?,
+        restore: Bool
+    ) async throws -> UUID? {
         try await client.mutation(
             "pairing:accept_pairing_invite",
             args: AcceptPairingInviteRequest(
                 inviteCode: inviteCode,
                 operation: operation,
-                startedOn: startedOn
+                startedOn: startedOn,
+                restore: restore
             )
+        )
+    }
+
+    func answerRestore(
+        inviteID: UUID,
+        restore: Bool,
+        operation: PairingClientOperation
+    ) async throws -> RelationshipRestoreAnswer {
+        try await client.mutation(
+            "pairing:answer_relationship_restore",
+            args: AnswerRelationshipRestoreRequest(inviteID: inviteID, restore: restore, operation: operation)
         )
     }
 
@@ -221,11 +242,13 @@ nonisolated private struct AcceptPairingInviteRequest: Encodable {
     let clientSequence: Int64
     let localCreatedAt: Date
     let startedOn: String?
+    let restore: Bool
 
     init(
         inviteCode: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
+        startedOn: PairingStartDate?,
+        restore: Bool
     ) {
         self.inviteCode = inviteCode
         self.clientOperationID = operation.id
@@ -233,6 +256,7 @@ nonisolated private struct AcceptPairingInviteRequest: Encodable {
         self.clientSequence = operation.clientSequence
         self.localCreatedAt = operation.localCreatedAt
         self.startedOn = startedOn?.rawValue
+        self.restore = restore
     }
 
     enum CodingKeys: String, CodingKey {
@@ -242,6 +266,34 @@ nonisolated private struct AcceptPairingInviteRequest: Encodable {
         case clientSequence = "p_client_sequence"
         case localCreatedAt = "p_local_created_at"
         case startedOn = "p_started_on"
+        case restore = "p_restore"
+    }
+}
+
+nonisolated private struct AnswerRelationshipRestoreRequest: Encodable {
+    let inviteID: UUID
+    let restore: Bool
+    let clientOperationID: UUID
+    let clientID: UUID
+    let clientSequence: Int64
+    let localCreatedAt: Date
+
+    init(inviteID: UUID, restore: Bool, operation: PairingClientOperation) {
+        self.inviteID = inviteID
+        self.restore = restore
+        self.clientOperationID = operation.id
+        self.clientID = operation.clientID
+        self.clientSequence = operation.clientSequence
+        self.localCreatedAt = operation.localCreatedAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case inviteID = "p_invite_id"
+        case restore = "p_restore"
+        case clientOperationID = "p_client_operation_id"
+        case clientID = "p_client_id"
+        case clientSequence = "p_client_sequence"
+        case localCreatedAt = "p_local_created_at"
     }
 }
 

@@ -31,11 +31,23 @@ struct PairingJoinView: View {
     /// The join went through. The button keeps its spinner until the next screen
     /// arrives.
     @State private var didJoin = false
+    /// Which of the two restore buttons shows the spinner.
+    @State private var restoreChosen = false
+    /// `isWaitingForPartner` as shown, changed inside an animation.
+    @State private var showsWaiting = false
 
     var body: some View {
         ZStack {
             PaeoniaScreenScroll {
-                PairingJoinInviterContent(preview: shownPreview, showsCoverage: replacesPaywall)
+                // Waiting for the inviter is a new step, so the screen fades to it whole
+                // instead of reflowing text in place.
+                PairingJoinInviterContent(
+                    preview: shownPreview,
+                    showsCoverage: replacesPaywall,
+                    isWaitingForPartner: showsWaiting
+                )
+                .id(showsWaiting)
+                .transition(.opacity)
             }
 
             if shownPreview == nil {
@@ -46,8 +58,16 @@ struct PairingJoinView: View {
         // A fade only, so Reduce Motion needs no branch.
         .animation(PaeoniaMotion.meaningfulMoment, value: shownPreview == nil)
         .animation(PaeoniaMotion.stateChange, value: viewModel.checkFailure)
+        // In one animated transaction, so the bottom bar's height changes with the fade.
+        .onChange(of: viewModel.isWaitingForPartner, initial: true) { _, waiting in
+            withAnimation(PaeoniaMotion.stateChange) {
+                showsWaiting = waiting
+            }
+        }
         .paeoniaBottomBar(spacing: 0) {
             actions
+                .id(showsWaiting)
+                .transition(.opacity)
                 .padding(.top, PaeoniaSpacing.space12)
                 .onboardingBottomBarFade()
                 .screenEntrance(order: 4)
@@ -115,24 +135,56 @@ struct PairingJoinView: View {
 
     private var actions: some View {
         VStack(spacing: PaeoniaSpacing.space4) {
-            Button(action: join) {
-                Text(PairingJoinCopy.title(for: shownPreview))
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isAccepting || didJoin))
-            .disabled(viewModel.preview(for: code) == nil || viewModel.isChecking)
-            .accessibilityIdentifier("pairing.join.accept")
+            joinButtons
 
-            quietButton(.pairingJoinOtherCode) {
-                isEnteringCode = true
-            }
+            if !showsWaiting {
+                quietButton(.pairingJoinOtherCode) {
+                    isEnteringCode = true
+                }
 
-            quietButton(.pairingJoinNoCode, action: onForgetCode)
+                quietButton(.pairingJoinNoCode, action: onForgetCode)
+            }
 
             if replacesPaywall {
                 accountActions
             }
         }
         .disabled(viewModel.isAccepting || didJoin)
+    }
+
+    /// One Join button, or the two restore choices when the two can bring back what
+    /// they had, or only "Start fresh instead" while the inviter decides.
+    @ViewBuilder
+    private var joinButtons: some View {
+        let isFreshLoading = (viewModel.isAccepting && !restoreChosen) || didJoin
+        if showsWaiting {
+            joinButton(.pairingRestoreWaitingStartFresh, restore: false, id: "pairing.join.restore.startFreshInstead")
+                .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: isFreshLoading))
+        } else if shownPreview?.canRestore == true {
+            joinButton(.pairingRestoreBringBack, restore: true, id: "pairing.join.restore.bringBack")
+                .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isAccepting && restoreChosen))
+                .disabled(!canJoin)
+            joinButton(.pairingRestoreStartFresh, restore: false, id: "pairing.join.restore.startFresh")
+                .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: isFreshLoading))
+                .disabled(!canJoin)
+        } else {
+            joinButton(PairingJoinCopy.title(for: shownPreview), restore: false, id: "pairing.join.accept")
+                .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isAccepting || didJoin))
+                .disabled(!canJoin)
+        }
+    }
+
+    private func joinButton(_ title: LocalizedStringResource, restore: Bool, id: String) -> some View {
+        Button {
+            join(restore: restore)
+        } label: {
+            Text(title)
+        }
+        .accessibilityIdentifier(id)
+    }
+
+    private var canJoin: Bool {
+        viewModel.preview(for: code) != nil && !viewModel.isChecking
     }
 
     private func quietButton(_ title: LocalizedStringResource, action: @escaping () -> Void) -> some View {
@@ -188,15 +240,21 @@ struct PairingJoinView: View {
         onForgetCode()
     }
 
-    private func join() {
+    /// With `restore`, asks the inviter to bring back what the two had. The screen then
+    /// waits for their answer, and either answer pairs the two.
+    private func join(restore: Bool) {
         guard !viewModel.isBusy, !didJoin else {
             return
         }
 
+        restoreChosen = restore
         PaeoniaHaptics.partnerJoinSent()
         Task {
-            if await viewModel.acceptCheckedCode(code) {
+            if await viewModel.acceptCheckedCode(code, restore: restore) {
                 bannerCenter.dismiss()
+                guard !viewModel.isWaitingForPartner else {
+                    return
+                }
                 // The root forgets the code once the paired screen is in place.
                 // Forgetting it here would show the previous screen for a moment.
                 didJoin = true

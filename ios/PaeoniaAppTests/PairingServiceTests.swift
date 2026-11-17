@@ -312,10 +312,11 @@ struct RemotePairingServiceTests {
         let relationship = try await service.acceptInvite(
             codeInput: "https://paeonia.no/join/01-ab-cd",
             operation: operation,
-            startedOn: nil
+            startedOn: nil,
+            restore: false
         )
 
-        #expect(relationship.coupleID == acceptedCoupleID)
+        #expect(relationship == .paired(coupleID: acceptedCoupleID))
         #expect(await gateway.acceptedInviteCode == canonicalCode)
         #expect(await gateway.acceptedOperation == operation)
         #expect(await gateway.acceptedStartedOn == nil)

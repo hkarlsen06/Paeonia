@@ -34,6 +34,8 @@ nonisolated struct AccessRouteSnapshot: Equatable, Sendable {
     let userEntitlement: RemoteUserEntitlement?
     let coupleEntitlement: RemoteCoupleEntitlement?
     let relationshipState: RemoteRelationshipState?
+    /// A former partner asked through this person's invite to bring back what the two had.
+    let restoreRequest: RemoteRestoreRequest?
     let hasPendingInvite: Bool
     let isBanned: Bool
 
@@ -41,12 +43,14 @@ nonisolated struct AccessRouteSnapshot: Equatable, Sendable {
         userEntitlement: RemoteUserEntitlement?,
         coupleEntitlement: RemoteCoupleEntitlement?,
         relationshipState: RemoteRelationshipState?,
+        restoreRequest: RemoteRestoreRequest? = nil,
         hasPendingInvite: Bool,
         isBanned: Bool = false
     ) {
         self.userEntitlement = userEntitlement
         self.coupleEntitlement = coupleEntitlement
         self.relationshipState = relationshipState
+        self.restoreRequest = restoreRequest
         self.hasPendingInvite = hasPendingInvite
         self.isBanned = isBanned
     }
@@ -121,6 +125,7 @@ nonisolated struct AccessRouteResolver: Sendable {
             userEntitlement: access.userEntitlement,
             coupleEntitlement: access.coupleEntitlement,
             relationshipState: access.relationshipState,
+            restoreRequest: access.restoreRequest,
             hasPendingInvite: hasPendingInvite,
             isBanned: access.isBanned
         )

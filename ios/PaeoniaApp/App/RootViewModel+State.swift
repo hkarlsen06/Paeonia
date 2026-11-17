@@ -23,6 +23,11 @@ extension RootViewModel {
         currentPartnerName?.display
     }
 
+    /// A former partner's wish to bring back what the two had, waiting for this person's answer.
+    var currentRestoreRequest: RemoteRestoreRequest? {
+        route.accessResolution?.snapshot.restoreRequest
+    }
+
     var currentPartnerUserID: UUID? {
         route.accessResolution?.partnerUserID
     }

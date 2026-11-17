@@ -22,16 +22,27 @@ protocol PairingServicing: Actor {
         expiresAt: Date
     ) async throws -> PairingInvite
 
+    /// With `restore`, asks to bring back what the two had, when they were a couple before.
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship
+        startedOn: PairingStartDate?,
+        restore: Bool
+    ) async throws -> PairingJoinResult
 
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool
 }
 
-actor RemotePairingService: PairingServicing {
+/// The inviter's side of bringing back an ended relationship.
+protocol RelationshipRestoreAnswering: Actor {
+    func answerRestore(
+        inviteID: UUID,
+        restore: Bool,
+        operation: PairingClientOperation
+    ) async throws -> RelationshipRestoreAnswer
+}
+
+actor RemotePairingService: PairingServicing, RelationshipRestoreAnswering {
     private let gateway: any PairingGateway
     private let generateInviteCode: PairingInviteCodeGenerator
     private let maxCreateInviteAttempts = 3
@@ -132,16 +143,26 @@ actor RemotePairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
+        startedOn: PairingStartDate?,
+        restore: Bool
+    ) async throws -> PairingJoinResult {
         let inviteCode = try PairingInviteCode.normalized(codeInput)
         let coupleID = try await gateway.acceptInvite(
             inviteCode: inviteCode,
             operation: operation,
-            startedOn: startedOn
+            startedOn: startedOn,
+            restore: restore
         )
 
-        return PairingAcceptedRelationship(coupleID: coupleID)
+        return coupleID.map { .paired(coupleID: $0) } ?? .waitingForPartner
+    }
+
+    func answerRestore(
+        inviteID: UUID,
+        restore: Bool,
+        operation: PairingClientOperation
+    ) async throws -> RelationshipRestoreAnswer {
+        try await gateway.answerRestore(inviteID: inviteID, restore: restore, operation: operation)
     }
 
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {

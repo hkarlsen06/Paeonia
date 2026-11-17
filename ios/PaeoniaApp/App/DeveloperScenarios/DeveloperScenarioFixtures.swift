@@ -247,59 +247,6 @@
     func clearInvite(for _: String) { invite = nil }
   }
 
-  actor DeveloperScenarioPairingService: PairingServicing {
-    enum Mode: Equatable { case ready, expired, failing, safetyWarning }
-    private let mode: Mode
-
-    init(mode: Mode) { self.mode = mode }
-
-    func createInvite(operation _: PairingClientOperation, expiresAt: Date) throws
-      -> PairingInvite
-    {
-      guard mode != .failing else { throw PairingInviteCreationError.inviteCodeCollision }
-      guard let joinURL = URL(string: "https://paeonia.no/join/LOVE26") else {
-        throw URLError(.badURL)
-      }
-      return PairingInvite(
-        id: UUID(uuidString: "55555555-5555-5555-5555-555555555555") ?? UUID(),
-        code: "LOVE26",
-        joinURL: joinURL,
-        expiresAt: expiresAt
-      )
-    }
-
-    func validateInvite(_ invite: PairingInvite) throws -> PairingInviteValidation {
-      PairingInviteValidation(
-        inviteID: invite.id,
-        status: mode == .expired ? .expired : .pending,
-        expiresAt: invite.expiresAt
-      )
-    }
-
-    func previewInvite(codeInput _: String) throws -> PairingInvitePreview? {
-      guard mode != .failing else { throw URLError(.notConnectedToInternet) }
-      guard mode != .expired else { return nil }
-      return PairingInvitePreview(
-        inviteID: UUID(uuidString: "55555555-5555-5555-5555-555555555555") ?? UUID(),
-        inviterUserID: DeveloperScenarioFixture.partnerUserID,
-        inviterDisplayName: "Robin",
-        expiresAt: DeveloperScenarioFixture.now.addingTimeInterval(86_400),
-        hasSafetyWarning: mode == .safetyWarning
-      )
-    }
-    func rotateInvite(
-      currentInvite _: PairingInvite, operation: PairingClientOperation, expiresAt: Date
-    ) throws -> PairingInvite {
-      try createInvite(operation: operation, expiresAt: expiresAt)
-    }
-    func acceptInvite(
-      codeInput _: String, operation _: PairingClientOperation, startedOn _: PairingStartDate?
-    ) throws -> PairingAcceptedRelationship {
-      PairingAcceptedRelationship(coupleID: DeveloperScenarioFixture.coupleID)
-    }
-    func leaveRelationship(operation _: PairingClientOperation) throws -> Bool { true }
-  }
-
   actor DeveloperScenarioMemoryDataService: MemoryDataServicing {
     private let repository: InMemoryMemoryRecordRepository
     private let service: MemoryDataService

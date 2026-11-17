@@ -30,7 +30,7 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
         guard let relationshipCoupleID = session.relationshipCoupleID else {
             return
         }
-        let privacyRelevantEvents = events.filter { $0.coupleID == relationshipCoupleID }
+        let privacyRelevantEvents = Self.eventsSinceLastStart(events.filter { $0.coupleID == relationshipCoupleID })
 
         if let purgeScope = relationshipPurgeScope(for: privacyRelevantEvents),
            let localPrivacyPurger {
@@ -46,8 +46,20 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
         }
     }
 
+    /// A couple that ended and came back starts again with `relationship_started`. A phone
+    /// that was away the whole time gets the end and the start together, and the end must
+    /// not purge what the couple has again. Events arrive oldest first.
+    private static func eventsSinceLastStart(
+        _ events: [RemoteRelationshipSyncEvent]
+    ) -> ArraySlice<RemoteRelationshipSyncEvent> {
+        guard let lastStart = events.lastIndex(where: { $0.eventKind == "relationship_started" }) else {
+            return events[...]
+        }
+        return events[events.index(after: lastStart)...]
+    }
+
     private func relationshipPurgeScope(
-        for events: [RemoteRelationshipSyncEvent]
+        for events: ArraySlice<RemoteRelationshipSyncEvent>
     ) -> LocalPrivacyPurgeScope? {
         guard events.contains(where: requiresRelationshipContentPurge) else {
             return nil
@@ -77,7 +89,7 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
             || Self.widgetClearingEventKinds.contains(event.eventKind)
     }
 
-    private func shouldClearWidgetCache(for events: [RemoteRelationshipSyncEvent]) -> Bool {
+    private func shouldClearWidgetCache(for events: ArraySlice<RemoteRelationshipSyncEvent>) -> Bool {
         events.contains { event in
             if event.localPurgeScope["widget_cache"] == "purge" {
                 return true

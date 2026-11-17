@@ -63,8 +63,24 @@
         )
           .frame(maxWidth: .infinity, maxHeight: .infinity)
           .background(.paeoniaBackgroundPrimary)
-      case .pairingJoinPartner, .pairingSafetyWarning:
-        DeveloperJoinScenarioView(hasSafetyWarning: scenario == .pairingSafetyWarning)
+      case .pairingJoinPartner, .pairingSafetyWarning, .pairingJoinRestore, .pairingJoinRestoreWaiting:
+        DeveloperJoinScenarioView(mode: joinMode)
+      case .pairingRestoreRequest:
+        PaeoniaScreenFrame {
+          RelationshipRestoreRequestView(
+            request: RemoteRestoreRequest(
+              inviteID: DeveloperLocalFlowIDs.pairID,
+              partnerUserID: DeveloperScenarioFixture.partnerUserID,
+              partnerName: "Robin",
+              requestedAt: DeveloperScenarioFixture.now
+            ),
+            model: RelationshipRestoreRequestModel(
+              service: DeveloperScenarioPairingService(mode: .ready),
+              operationProvider: DeveloperScenarioOperationProvider()
+            ),
+            onAnswered: {}
+          )
+        }
       case .pairingCelebration, .pairingCelebrationSettled:
         PairingCelebrationView(
           currentDisplayName: "Alex",
@@ -85,6 +101,15 @@
             onRefreshAccess: {}
           )
         }
+      }
+    }
+
+    private var joinMode: DeveloperScenarioPairingService.Mode {
+      switch scenario {
+      case .pairingSafetyWarning: .safetyWarning
+      case .pairingJoinRestore: .restorable
+      case .pairingJoinRestoreWaiting: .restoreWaiting
+      default: .ready
       }
     }
 
@@ -121,10 +146,10 @@
   private struct DeveloperJoinScenarioView: View {
     @State private var viewModel: PairingJoinViewModel
 
-    init(hasSafetyWarning: Bool) {
+    init(mode: DeveloperScenarioPairingService.Mode) {
       _viewModel = State(
         initialValue: PairingJoinViewModel(
-          pairingService: DeveloperScenarioPairingService(mode: hasSafetyWarning ? .safetyWarning : .ready),
+          pairingService: DeveloperScenarioPairingService(mode: mode),
           operationProvider: DeveloperScenarioOperationProvider()
         )
       )

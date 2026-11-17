@@ -109,6 +109,8 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         "daily_challenge_completed",
         // The open app plays the pairing celebration the moment the partner joins.
         "partner_joined",
+        // The open app shows the question to bring a relationship back, and the answer pairs it at once.
+        "relationship_restore",
         // The call rang in the open app, which said it was missed, and Just us keeps its row.
         "missed_call",
     ]

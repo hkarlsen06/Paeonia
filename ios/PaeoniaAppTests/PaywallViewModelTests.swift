@@ -148,8 +148,9 @@ private actor PaywallTestPairing: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
+        startedOn: PairingStartDate?,
+        restore _: Bool
+    ) async throws -> PairingJoinResult {
         fatalError("unused")
     }
 

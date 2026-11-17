@@ -6,16 +6,35 @@ nonisolated struct RemoteAccessSnapshot: Codable, Equatable, Sendable {
     let relationshipState: RemoteRelationshipState?
     /// A banned account gets `.banned` and nothing else.
     var accountStatus: RemoteAccountStatus = .active
+    /// Someone used this person's invite and asked to bring back what the two had.
+    var restoreRequest: RemoteRestoreRequest?
 
     enum CodingKeys: String, CodingKey {
         case userEntitlement = "user_entitlement"
         case coupleEntitlement = "couple_entitlement"
         case relationshipState = "relationship_state"
         case accountStatus = "account_status"
+        case restoreRequest = "restore_request"
     }
 
     var isBanned: Bool {
         accountStatus == .banned
+    }
+}
+
+/// A former partner's wish to bring back what the two had, waiting for this person's answer.
+nonisolated struct RemoteRestoreRequest: Codable, Equatable, Sendable {
+    let inviteID: UUID
+    let partnerUserID: UUID
+    /// The name this person sees for the former partner, resolved by the server.
+    let partnerName: String?
+    let requestedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case inviteID = "invite_id"
+        case partnerUserID = "partner_user_id"
+        case partnerName = "partner_name"
+        case requestedAt = "requested_at"
     }
 }
 

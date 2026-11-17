@@ -7,7 +7,7 @@
     static let app: [DeveloperScenario] = [
       launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled, onboardingUsage,
       relationshipEnded, accountClosed, deletingAccount,
-      localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
+      localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowRestoreRequest, localFlowPaired,
       localFlowGameConversation, localFlowGameChatDrawing, localFlowGameChatBoard, localFlowGameChatFinishedRuns,
       localFlowCall, localFlowIncomingCall,
       avatarStoriesNew, avatarStoriesSeen, avatarStoriesEmpty,
@@ -16,7 +16,7 @@
       mailComposerChange, mailReader, mailReaderSealedSent, mailReaderGone, homeMailDraft, homeMailWaiting,
       homeLaunchDuringReveal, homeLaunchLocationFirst, homeLaunchCalendarFirst, homeLaunchOverlapping,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
-      pairingInviteError,
+      pairingInviteError, pairingJoinRestore, pairingJoinRestoreWaiting, pairingRestoreRequest,
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayJoinedWaiting, firstDayInvited,
       firstDayInvitedNoDate,
       paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallPairedEnded, paywallPairedPaymentFailed,
@@ -113,6 +113,10 @@
       "local-flow-pairing", "Local flow · pairing",
       "Create and share an invite", seed: .pairing
     )
+    static let localFlowRestoreRequest = localFlow(
+      "local-flow-restore-request", "Local flow · bring it back",
+      "A former partner used the invite and asked to bring back what you had", seed: .restoreRequested
+    )
     static let localFlowPaired = localFlow(
       "local-flow-paired", "Local flow · paired app",
       "Use the real tabs with local questions, memories, settings, and widget data", seed: .paired
@@ -140,6 +144,18 @@
     )
     static let pairingSafetyWarning = pairing(
       "pairing-safety-warning", "Pairing · safety warning", "Join screen for a flagged invite"
+    )
+    static let pairingJoinRestore = pairing(
+      "pairing-join-restore", "Pairing · join a former partner",
+      "Join screen when the two can still bring back what they had"
+    )
+    static let pairingJoinRestoreWaiting = pairing(
+      "pairing-join-restore-waiting", "Pairing · waiting to bring it back",
+      "Join screen after asking to bring it back, waiting for the inviter's answer"
+    )
+    static let pairingRestoreRequest = pairing(
+      "pairing-restore-request", "Pairing · answer a former partner",
+      "The inviter's screen when a former partner asked to bring back what they had"
     )
     static let pairingInviteError = pairing(
       "pairing-invite-error", "Pairing invite · error", "Invite creation failure and retry"

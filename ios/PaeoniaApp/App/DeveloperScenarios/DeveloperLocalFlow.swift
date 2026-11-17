@@ -123,6 +123,8 @@
     case onboarding
     case paywall
     case pairing
+    /// Unpaired, and a former partner used the invite and asked to bring back what they had.
+    case restoreRequested
     case paired
   }
 
@@ -300,6 +302,10 @@
         ),
         pairingJoinViewModel: PairingJoinViewModel(
           pairingService: pairingService,
+          operationProvider: operationProvider
+        ),
+        restoreRequestModel: RelationshipRestoreRequestModel(
+          service: pairingService,
           operationProvider: operationProvider
         ),
         dailyChallengeViewModel: dailyViewModel,

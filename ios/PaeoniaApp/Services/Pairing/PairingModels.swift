@@ -174,6 +174,10 @@ nonisolated struct PairingInvitePreview: Decodable, Equatable, Sendable {
     let hasSafetyWarning: Bool
     /// A signed link to the inviter's profile photo. It works for about 15 minutes.
     var inviterPhotoURL: URL?
+    /// The two were a couple before, and what they shared can still come back if both say yes.
+    var canRestore = false
+    /// This person already asked to bring it back and waits for the inviter's answer.
+    var restoreRequested = false
 
     enum CodingKeys: String, CodingKey {
         case inviteID = "invite_id"
@@ -182,9 +186,26 @@ nonisolated struct PairingInvitePreview: Decodable, Equatable, Sendable {
         case expiresAt = "expires_at"
         case hasSafetyWarning = "has_safety_warning"
         case inviterPhotoURL = "inviter_photo_url"
+        case canRestore = "can_restore"
+        case restoreRequested = "restore_requested"
     }
 }
 
-nonisolated struct PairingAcceptedRelationship: Equatable, Sendable {
-    let coupleID: UUID
+nonisolated enum PairingJoinResult: Equatable, Sendable {
+    case paired(coupleID: UUID)
+    /// The inviter is asked whether the two bring back what they had. Either answer pairs them.
+    case waitingForPartner
+}
+
+/// The inviter's answer to bringing back what the two had.
+nonisolated struct RelationshipRestoreAnswer: Decodable, Equatable, Sendable {
+    /// Nil when the question no longer stands, such as when the other person deleted their account.
+    let coupleID: UUID?
+    /// The old couple came back. False for a fresh start, chosen or because it was too late.
+    let restored: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case coupleID = "couple_id"
+        case restored
+    }
 }

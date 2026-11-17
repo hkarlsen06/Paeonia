@@ -34319,6 +34319,366 @@
         }
       }
     },
+    "pairing.restore.answerFailed" : {
+      "comment" : "Banner when the answer to the restore question could not be sent because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't send your answer. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke sende svaret ditt. Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "pairing.restore.answerFailed.later" : {
+      "comment" : "Banner when the answer to the restore question could not be sent while the phone is online. Something went wrong on our side.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't send your answer. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke sende svaret ditt. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "pairing.restore.bringBack" : {
+      "comment" : "Main button on both restore screens. Brings back the couple's shared things from before.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring it back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hent det tilbake"
+          }
+        }
+      }
+    },
+    "pairing.restore.gone" : {
+      "comment" : "Line on both restore screens. Says what was deleted when the relationship ended and never comes back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locations, hearts, call history, nicknames and recaps don't come back."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjoner, hjerter, anropslogg, kallenavn og tilbakeblikk kommer ikke tilbake."
+          }
+        }
+      }
+    },
+    "pairing.restore.offer.message" : {
+      "comment" : "Join screen line under the restore heading. %@ is the partner's name. They must agree too before anything comes back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answers, chats, memories, drawings, photos and voice messages come back if %@ says yes too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar, samtaler, minner, tegninger, bilder og talemeldinger kommer tilbake hvis %@ også sier ja."
+          }
+        }
+      }
+    },
+    "pairing.restore.offer.message.fallback" : {
+      "comment" : "Join screen line under the restore heading when the partner's name is not available.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answers, chats, memories, drawings, photos and voice messages come back if your partner says yes too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar, samtaler, minner, tegninger, bilder og talemeldinger kommer tilbake hvis partneren din også sier ja."
+          }
+        }
+      }
+    },
+    "pairing.restore.offer.title" : {
+      "comment" : "Heading on the join screen when the person and the code's owner were a couple before and their shared things can still come back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring back what you had?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hente tilbake det dere hadde?"
+          }
+        }
+      }
+    },
+    "pairing.restore.request.either" : {
+      "comment" : "Small note on the restore answer screen. Both buttons pair the two people. %@ is the former partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Either way, you and %@ are paired."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uansett blir du og %@ koblet sammen."
+          }
+        }
+      }
+    },
+    "pairing.restore.request.either.fallback" : {
+      "comment" : "Small note on the restore answer screen when the former partner's name is not available. Both buttons pair the two people.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Either way, you and your partner are paired."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uansett blir du og partneren din koblet sammen."
+          }
+        }
+      }
+    },
+    "pairing.restore.request.message" : {
+      "comment" : "Line on the restore answer screen. Says what comes back if the person says yes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you say yes, your answers, chats, memories, drawings, photos and voice messages come back."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sier du ja, kommer svar, samtaler, minner, tegninger, bilder og talemeldinger tilbake."
+          }
+        }
+      }
+    },
+    "pairing.restore.request.title" : {
+      "comment" : "Title of the screen where the person answers their former partner's wish to get their shared things back. %@ is the former partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wants to bring back what you had"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ vil hente tilbake det dere hadde"
+          }
+        }
+      }
+    },
+    "pairing.restore.request.title.fallback" : {
+      "comment" : "Title of the restore answer screen when the former partner's name is not available.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner wants to bring back what you had"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din vil hente tilbake det dere hadde"
+          }
+        }
+      }
+    },
+    "pairing.restore.requestGone" : {
+      "comment" : "Banner when the person answers a restore question that no longer stands, for example because the other person deleted their account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That question isn't open anymore."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det spørsmålet er ikke åpent lenger."
+          }
+        }
+      }
+    },
+    "pairing.restore.startFresh" : {
+      "comment" : "Second button on both restore screens. Pairs the two as a new couple, with nothing from before.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start fresh"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start på nytt"
+          }
+        }
+      }
+    },
+    "pairing.restore.tooLate" : {
+      "comment" : "Banner after the person said yes to bringing things back, but the 30 days had run out, so the couple starts fresh instead.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It was too late to bring it back, so you're starting fresh."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det var for sent å hente det tilbake, så dere starter på nytt."
+          }
+        }
+      }
+    },
+    "pairing.restore.waiting.message" : {
+      "comment" : "Join screen line while waiting for the partner to answer the restore question. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We asked %@ if you can bring back what you had. You'll be paired as soon as they answer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi har spurt %@ om dere kan hente tilbake det dere hadde. Dere blir koblet sammen så snart du får svar."
+          }
+        }
+      }
+    },
+    "pairing.restore.waiting.message.fallback" : {
+      "comment" : "Join screen line while waiting for the partner to answer, when the partner's name is not available.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We asked your partner if you can bring back what you had. You'll be paired as soon as they answer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi har spurt partneren din om dere kan hente tilbake det dere hadde. Dere blir koblet sammen så snart du får svar."
+          }
+        }
+      }
+    },
+    "pairing.restore.waiting.startFresh" : {
+      "comment" : "Button on the join screen while waiting for the partner's answer. Stops waiting and pairs the two as a new couple right away.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start fresh instead"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start på nytt i stedet"
+          }
+        }
+      }
+    },
+    "pairing.restore.waiting.title" : {
+      "comment" : "Join screen title while waiting for the partner to answer the restore question. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      }
+    },
+    "pairing.restore.waiting.title.fallback" : {
+      "comment" : "Join screen title while waiting for the partner to answer, when the partner's name is not available.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på partneren din"
+          }
+        }
+      }
+    },
     "pairing.unpair.confirm.action" : {
       "comment" : "Destructive confirm button that ends the pairing. Shared by the paywall footer and the You-tab leave action.",
       "extractionState" : "manual",
@@ -34362,13 +34722,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. You can pair again later."
+            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. You can pair again later. If you two pair again within 30 days, you can both choose to get your shared things back."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. Du kan koble deg til noen igjen senere."
+            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. Du kan koble deg til noen igjen senere. Blir dere koblet sammen igjen innen 30 dager, kan dere begge velge å få tilbake det dere delte."
           }
         }
       }
@@ -34380,13 +34740,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. To pair with someone again, you'll need your own subscription."
+            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. To pair with someone again, you'll need your own subscription. If you two pair again within 30 days, you can both choose to get your shared things back."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. For å koble deg til noen igjen trenger du ditt eget abonnement."
+            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. For å koble deg til noen igjen trenger du ditt eget abonnement. Blir dere koblet sammen igjen innen 30 dager, kan dere begge velge å få tilbake det dere delte."
           }
         }
       }
@@ -34398,13 +34758,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. You can pair again later. Your subscription keeps running, and you can cancel it in the App Store."
+            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. You can pair again later. If you two pair again within 30 days, you can both choose to get your shared things back. Your subscription keeps running, and you can cancel it in the App Store."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. Du kan koble deg til noen igjen senere. Abonnementet ditt fortsetter, og du kan si det opp i App Store."
+            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. Du kan koble deg til noen igjen senere. Blir dere koblet sammen igjen innen 30 dager, kan dere begge velge å få tilbake det dere delte. Abonnementet ditt fortsetter, og du kan si det opp i App Store."
           }
         }
       }

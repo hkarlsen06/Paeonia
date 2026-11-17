@@ -231,9 +231,10 @@ private actor JoinTestPairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
-        PairingAcceptedRelationship(coupleID: UUID())
+        startedOn: PairingStartDate?,
+        restore _: Bool
+    ) async throws -> PairingJoinResult {
+        .paired(coupleID: UUID())
     }
 
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {

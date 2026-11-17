@@ -12,6 +12,9 @@ final class PairingJoinViewModel {
     private(set) var checkedCode: String?
     private(set) var isChecking = false
     private(set) var isAccepting = false
+    /// This person asked to bring back what the two had, and the inviter has not answered yet.
+    /// Either answer pairs them, and the root then leaves this screen.
+    private(set) var isWaitingForPartner = false
     /// The newest problem. The caller decides whether it goes to the banner.
     private(set) var lastError: PairingJoinError?
 
@@ -101,8 +104,10 @@ final class PairingJoinViewModel {
 
     /// Joins `code` only when `checkCode` found it, so nobody joins a code without
     /// seeing who it belongs to. The preview stays after a join, so the screen keeps
-    /// showing it while the app moves on.
-    func acceptCheckedCode(_ code: String?) async -> Bool {
+    /// showing it while the app moves on. With `restore`, it asks the inviter to bring
+    /// back what the two had, and true then means the question was sent and
+    /// `isWaitingForPartner` is set.
+    func acceptCheckedCode(_ code: String?, restore: Bool = false) async -> Bool {
         guard !isBusy, let pairingService, let invitePreview, let checkedCode,
               preview(for: code) != nil
         else {
@@ -113,19 +118,18 @@ final class PairingJoinViewModel {
         lastError = nil
         defer { isAccepting = false }
 
-        let userID = checkedUserID
-        let operation = unconfirmedAccept
-            .flatMap { $0.matches(code: checkedCode, userID: userID) ? $0.operation : nil }
-            ?? operationProvider.makeOperation()
-        let attempt = UnconfirmedJoin(code: checkedCode, userID: userID, preview: invitePreview, operation: operation)
+        let attempt = joinAttempt(code: checkedCode, restore: restore, preview: invitePreview)
+        let operation = attempt.operation
 
         do {
-            _ = try await pairingService.acceptInvite(
+            let result = try await pairingService.acceptInvite(
                 codeInput: checkedCode,
                 operation: operation,
-                startedOn: nil
+                startedOn: nil,
+                restore: restore
             )
             unconfirmedAccept = nil
+            isWaitingForPartner = result == .waitingForPartner
             return true
         } catch let error as PaeoniaConvexError {
             // The server answered, so nothing was saved and the next try starts
@@ -149,6 +153,17 @@ final class PairingJoinViewModel {
         }
     }
 
+    /// The join to send. It reuses the operation of an earlier join of the same code and
+    /// choice whose answer never arrived, so the server replays that result.
+    private func joinAttempt(code: String, restore: Bool, preview: PairingInvitePreview) -> UnconfirmedJoin {
+        let operation = unconfirmedAccept
+            .flatMap { $0.matches(code: code, userID: checkedUserID, restore: restore) ? $0.operation : nil }
+            ?? operationProvider.makeOperation()
+        return UnconfirmedJoin(
+            code: code, userID: checkedUserID, restore: restore, preview: preview, operation: operation
+        )
+    }
+
     /// Forgets the checked code. An unconfirmed join is kept, so entering the same
     /// code again still replays it.
     func clearCheckedCode() {
@@ -156,6 +171,7 @@ final class PairingJoinViewModel {
         checkedCode = nil
         checkedUserID = nil
         lastError = nil
+        isWaitingForPartner = false
     }
 
     /// The server's answers for an invite that was used, ran out, was replaced, or
@@ -177,7 +193,7 @@ final class PairingJoinViewModel {
             return invitePreview
         }
 
-        if let unconfirmedAccept, unconfirmedAccept.matches(code: code, userID: userID) {
+        if let unconfirmedAccept, unconfirmedAccept.code == code, unconfirmedAccept.userID == userID {
             return unconfirmedAccept.preview
         }
 
@@ -188,6 +204,7 @@ final class PairingJoinViewModel {
         invitePreview = preview
         checkedCode = code
         checkedUserID = userID
+        isWaitingForPartner = preview.restoreRequested
     }
 
     private func fail(_ error: PairingJoinError) -> Bool {
@@ -199,10 +216,12 @@ final class PairingJoinViewModel {
 private struct UnconfirmedJoin {
     let code: String
     let userID: String?
+    /// The server hashes the choice with the operation, so the other choice needs a new one.
+    let restore: Bool
     let preview: PairingInvitePreview
     let operation: PairingClientOperation
 
-    func matches(code: String, userID: String?) -> Bool {
-        self.code == code && self.userID == userID
+    func matches(code: String, userID: String?, restore: Bool) -> Bool {
+        self.code == code && self.userID == userID && self.restore == restore
     }
 }

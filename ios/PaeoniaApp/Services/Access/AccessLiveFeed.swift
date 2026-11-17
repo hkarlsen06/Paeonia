@@ -36,6 +36,7 @@ nonisolated struct AccessLiveFeed: LiveFeed {
            stored.userEntitlement == remote.userEntitlement,
            stored.coupleEntitlement == remote.coupleEntitlement,
            stored.relationshipState == remote.relationshipState,
+           stored.restoreRequest == remote.restoreRequest,
            stored.isBanned == remote.isBanned {
             return
         }
@@ -51,6 +52,7 @@ nonisolated struct AccessLiveFeed: LiveFeed {
                 userEntitlement: remote.userEntitlement,
                 coupleEntitlement: remote.coupleEntitlement,
                 relationshipState: remote.relationshipState,
+                restoreRequest: remote.restoreRequest,
                 isBanned: remote.isBanned,
                 refreshedAt: Date()
             )
