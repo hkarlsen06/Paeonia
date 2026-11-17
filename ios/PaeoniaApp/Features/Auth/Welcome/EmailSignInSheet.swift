@@ -180,6 +180,7 @@ struct EmailSignInSheet: View {
                 .tint(.clear)
                 .frame(height: 1)
                 .opacity(0.01)
+                .allowsHitTesting(false)
                 .onChange(of: code) { _, newValue in
                     let digits = String(newValue.filter { $0.isASCII && $0.isNumber }.prefix(Self.codeLength))
                     if digits != newValue {
@@ -200,8 +201,7 @@ struct EmailSignInSheet: View {
             }
             .allowsHitTesting(false)
         }
-        .contentShape(Rectangle())
-        .onTapGesture { focusedField = .code }
+        .focusesCodeFieldOnTap(isFocused: focusedField == .code) { focusedField = $0 ? .code : nil }
         .onAppear { focusedField = .code }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.authEmailCodeLabel))

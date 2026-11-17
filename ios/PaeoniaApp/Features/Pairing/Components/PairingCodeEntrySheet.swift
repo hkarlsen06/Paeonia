@@ -76,6 +76,7 @@ struct PairingCodeEntrySheet: View {
                 .tint(.clear)
                 .frame(height: 1)
                 .opacity(0.01)
+                .allowsHitTesting(false)
                 .onChange(of: code) { _, newValue in
                     let cleaned = PairingInviteCode.entryText(newValue)
                     if cleaned != newValue {
@@ -89,8 +90,7 @@ struct PairingCodeEntrySheet: View {
             }
             .allowsHitTesting(false)
         }
-        .contentShape(Rectangle())
-        .onTapGesture { fieldFocused = true }
+        .focusesCodeFieldOnTap(isFocused: fieldFocused) { fieldFocused = $0 }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.pairingInviteCodeLabel))
         .accessibilityValue(Text(code).speechSpellsOutCharacters())
@@ -177,6 +177,44 @@ struct PairingCodeCell: View {
             return Color.paeoniaAccentPrimary.opacity(0.4)
         }
         return Color.paeoniaTextTertiary.opacity(0.25)
+    }
+}
+
+extension View {
+    /// Focuses the hidden text field under the code cells when someone taps them.
+    func focusesCodeFieldOnTap(isFocused: Bool, setFocused: @escaping (Bool) -> Void) -> some View {
+        modifier(CodeFieldTap(isFocused: isFocused, setFocused: setFocused))
+    }
+}
+
+/// Closing the floating iPad keypad with a tap outside it leaves the field focused, so
+/// focusing it again changes nothing and the keypad stays away. The keypad posts no
+/// keyboard notifications, so when no docked keyboard is up, a tap drops the focus
+/// and gives it back, which brings the keypad back. A docked keyboard is left alone,
+/// because dropping the focus would slide it down and up again.
+private struct CodeFieldTap: ViewModifier {
+    let isFocused: Bool
+    let setFocused: (Bool) -> Void
+
+    @State private var keyboardIsDocked = true
+
+    func body(content: Content) -> some View {
+        content
+            .contentShape(Rectangle())
+            .onTapGesture {
+                guard isFocused, !keyboardIsDocked else {
+                    setFocused(true)
+                    return
+                }
+                setFocused(false)
+                Task { setFocused(true) }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                keyboardIsDocked = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                keyboardIsDocked = false
+            }
     }
 }
 
