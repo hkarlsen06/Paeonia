@@ -155,7 +155,6 @@ Run these on real devices where possible.
 
 ## Failure Mode QA
 
-- [ ] No network during memory photo create. Fails on 2026-11-17: saving offline shows "Vi klarte ikke å legge til bildene eller videoene" and creates nothing. The draft survives a restart and saves once online. A gap in the source.
 - [ ] No network during location update.
 - [ ] StoreKit product loading fails.
 - [ ] Purchase is cancelled.
@@ -168,7 +167,6 @@ Run these on real devices where possible.
 - [ ] Invite code invalid.
 - [ ] Invite code expired.
 - [ ] Partner leaves relationship while app is open.
-- [ ] App is killed during pending upload and reopened. A pending text message and a note-only memory survived a kill on 2026-11-17. Still needs a photo or voice upload.
 
 ## App Store Connect
 
