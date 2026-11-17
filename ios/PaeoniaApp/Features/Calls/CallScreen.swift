@@ -173,13 +173,15 @@ struct CallScreen: View {
             } else {
                 Spacer(minLength: PaeoniaSpacing.space24)
                 CallIdentity(session: session, participants: participants, partnerTimeZone: partnerTimeZone)
+                    .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
                 Spacer(minLength: PaeoniaSpacing.space24)
             }
             bottom
+                .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
         }
+        // The top bar spans the screen, so on an iPad it lines up with the previews in its corners.
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.bottom, PaeoniaSpacing.space24)
-        .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
     }
 
     private var topBar: some View {

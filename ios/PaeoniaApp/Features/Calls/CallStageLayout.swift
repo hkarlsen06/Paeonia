@@ -28,8 +28,9 @@ nonisolated enum CallSharedScreenMode: Equatable, Sendable {
     case full
 }
 
-/// Where each video of the call screen shows. A camera fills the whole stage, and the previews stack
-/// from the person's corner toward the middle, inside the room the controls leave. A fitted shared
+/// Where each video of the call screen shows. A camera fills the whole stage, or shows whole when its
+/// picture is held the other way from the screen. The previews stack from the person's corner toward
+/// the middle, inside the room the controls leave. A fitted shared
 /// screen takes what is left of that room beside the previews, or above or below them, whichever
 /// lets it show larger. A phone on its side lays them out as the person sees the screen, then turns
 /// them onto it.
@@ -93,7 +94,8 @@ nonisolated struct CallStageLayout {
             tiles[.partnerScreen] = Tile(
                 center: onScreen(CGPoint(x: box.midX, y: box.midY)), size: Self.fit(ratio, in: box.size))
         } else if let main = stage.main {
-            tiles[main] = Tile(center: middle, size: seen)
+            let ratio = main == .local ? session.localVideoAspectRatio : session.partnerVideoAspectRatio
+            tiles[main] = Tile(center: middle, size: Self.camera(ratio, on: seen))
         }
         let scaled = sizes.map { CGSize(width: $0.width * plan.scale, height: $0.height * plan.scale) }
         for (source, rect) in zip(stage.previews, Self.place(scaled, as: plan.arrangement, in: room, corner: corner)) {
@@ -177,6 +179,14 @@ nonisolated struct CallStageLayout {
             }
             return rect
         }
+    }
+
+    /// The big camera's size on a stage of size `stage`. It fills the stage, cropped at the edges, while
+    /// its picture is held the same way as the screen. Held the other way, such as an upright phone's
+    /// picture on an iPad on its side, filling showed only a band across the face, so it shows whole.
+    private static func camera(_ aspectRatio: CGFloat?, on stage: CGSize) -> CGSize {
+        guard let aspectRatio, (aspectRatio > 1) != (stage.width > stage.height) else { return stage }
+        return fit(aspectRatio, in: stage)
     }
 
     private static func area(_ aspectRatio: CGFloat, in box: CGRect) -> CGFloat {
