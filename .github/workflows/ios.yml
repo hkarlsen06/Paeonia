@@ -46,13 +46,13 @@ jobs:
             # Download auth outlives the App Store Connect session that xcodes validates.
             # Keep the cookie out of command arguments and remove it on every exit.
             cookie_file="$(mktemp)"
-            archive="$RUNNER_TEMP/Xcode_27.3_beta.xip"
+            archive="$RUNNER_TEMP/Xcode_27.3_beta_2.xip"
             trap 'rm -f "$cookie_file" "$archive"' EXIT
             ruby scripts/xcode-download-cookie.rb > "$cookie_file"
             curl --fail --location --retry 3 --proto '=https' \
               --cookie "$cookie_file" --output "$archive" \
-              'https://download.developer.apple.com/Developer_Tools/Xcode_27.3_beta/Xcode_27.3_beta.xip'
-            xcodes install '27.3 Beta' --path "$archive" --experimental-unxip --empty-trash </dev/null
+              'https://download.developer.apple.com/Developer_Tools/Xcode_27.3_beta_2/Xcode_27.3_beta_2.xip'
+            xcodes install '27.3 Beta 2' --path "$archive" --experimental-unxip --empty-trash </dev/null
           fi
           source scripts/lib/paeonia-xcode.sh
           echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
