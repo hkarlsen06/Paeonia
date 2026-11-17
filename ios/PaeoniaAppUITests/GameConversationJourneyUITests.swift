@@ -51,7 +51,8 @@ final class GameConversationJourneyUITests: XCTestCase {
     }
 
     /// A game's chat opened from the Chats list shows over its game, and closing it brings the
-    /// person back to the list, with the tab bar, instead of leaving them in the game.
+    /// person back to the list, with the tab bar, instead of leaving them in the game. The chat they
+    /// read sits among the conversations further down, where it can be scrolled to.
     @MainActor
     func testGameChatOpenedFromChatsReturnsToChats() throws {
         let app = launchGameFlow()
@@ -74,6 +75,9 @@ final class GameConversationJourneyUITests: XCTestCase {
 
         app.buttons["chat.sheet.close"].tap()
         XCTAssertTrue(tabs.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(tabs.buttons["mainTab.questions"].isSelected, app.debugDescription)
+        // Read now, the chat has left "Waiting for you" for the conversations further down.
+        for _ in 0..<4 where !conversation.isHittable { app.swipeUp() }
         let backInChats = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "hittable == true"), object: conversation)
         XCTAssertEqual(XCTWaiter.wait(for: [backInChats], timeout: 5), .completed, app.debugDescription)
