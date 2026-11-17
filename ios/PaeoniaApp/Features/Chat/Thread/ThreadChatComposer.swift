@@ -267,16 +267,13 @@ struct ThreadChatComposer: View {
         .padding(.leading, PaeoniaSpacing.space16)
         .padding(.trailing, PaeoniaSpacing.space4)
         .frame(minHeight: Self.controlHeight)
+        .background { capsuleTapArea }
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
                 .stroke(Color.paeoniaAccentPrimary.opacity(isFocused ? 0.7 : 0), lineWidth: 1)
                 .allowsHitTesting(false)
         }
-        .contentShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-        // The whole capsule focuses the field, not just the text. VoiceOver focuses the field directly.
-        .onTapGesture { isFocused = true }
-        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Pieces
@@ -299,6 +296,16 @@ struct ThreadChatComposer: View {
 }
 
 extension ThreadChatComposer {
+    /// The whole capsule focuses the field, not just the text. The tap sits behind the field
+    /// and hidden from VoiceOver, so the field stays a text field and VoiceOver focuses it directly.
+    private var capsuleTapArea: some View {
+        Color.clear
+            .contentShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
+            .onTapGesture { isFocused = true }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHidden(true)
+    }
+
     /// The mic while the field is empty, the send button otherwise. A full-height slot
     /// centers it on one line and keeps it at the bottom when the text grows.
     private var trailingButton: some View {
