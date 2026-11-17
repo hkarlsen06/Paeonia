@@ -4,8 +4,8 @@ import Foundation
 /// How a call compresses its audio and video. `scripts/call-media-probe` checks each choice
 /// on two connections in one Mac process.
 nonisolated enum CallCodecs {
-    /// Prefers RED-wrapped Opus for audio and limits the video for TURN until the call knows its
-    /// path. Call it for each transceiver before the offer or answer that first carries it.
+    /// Prefers RED-wrapped Opus for audio and sets the video's limits. Call it for each
+    /// transceiver before the offer or answer that first carries it.
     static func configure(_ transceiver: LKRTCRtpTransceiver, factory: LKRTCPeerConnectionFactory) {
         switch transceiver.mediaType {
         case .audio:
@@ -16,7 +16,7 @@ nonisolated enum CallCodecs {
                 + codecs.filter { !first.contains($0.name.lowercased()) }
             try? transceiver.setCodecPreferences(preferred, error: ())
         case .video:
-            limitVideo(transceiver.sender, to: CallVideoLimits(path: .turn))
+            limitVideo(transceiver.sender, to: CallVideoLimits())
         default:
             break
         }
@@ -65,13 +65,13 @@ nonisolated enum CallCodecs {
 
     /// The shared screen keeps its frame rate when bits or the encoder run short and sends a
     /// smaller picture instead, because softer text is easier to watch than a picture that jumps.
-    /// It gets four times the camera's share of a network too slow for both, because the partner
-    /// shows it large and the camera small.
+    /// It comes first in a share, so it gets sixteen times the camera's share of a network too
+    /// slow for both, and the camera gives way.
     static func limitScreen(_ sender: LKRTCRtpSender, to limits: CallVideoLimits) {
         let parameters = sender.parameters
         parameters.degradationPreference = NSNumber(value: LKRTCDegradationPreference.maintainFramerate.rawValue)
         for encoding in parameters.encodings {
-            encoding.bitratePriority = 4
+            encoding.bitratePriority = 16
         }
         sender.parameters = parameters
         limitVideo(sender, to: limits)
@@ -146,9 +146,9 @@ nonisolated enum CallHeat: Equatable, Sendable {
     }
 }
 
-/// The most one video sender may send. The camera and the shared screen each have a table for
-/// the path and one for the phone's heat, and take the lower of each. These tables are the only
-/// place the limits live.
+/// The most one video sender may send. The camera and the shared screen each have a table for the
+/// phone's heat, the same on every path: TURN costs more than a direct path, and the call spends
+/// it for the picture (2026-11-17). These tables are the only place the limits live.
 nonisolated struct CallVideoLimits: Equatable, Sendable {
     var maxBitsPerSecond: Int
     /// How much WebRTC shrinks the picture before it encodes it. The camera captures 1080p, or
@@ -159,14 +159,10 @@ nonisolated struct CallVideoLimits: Equatable, Sendable {
     /// second the shared screen hands WebRTC.
     var maxFramesPerSecond: Int
 
-    /// The camera's limits. Beside a shared screen it keeps the bits the screen leaves, and
-    /// sends at most 15 frames a second, because the partner shows it small then.
-    init(path: CallMediaPath, heat: CallHeat = .normal, besideScreen: Bool = false) {
-        self = Self.limits(for: path).lowered(to: Self.limits(for: heat))
-        if besideScreen {
-            maxBitsPerSecond -= Self.screen(path: path, heat: heat).maxBitsPerSecond
-            maxFramesPerSecond = min(maxFramesPerSecond, 15)
-        }
+    /// The camera's limits. Beside a shared screen it takes `besideScreen(for:)`'s, because the
+    /// screen comes first in a share and the partner shows the camera small.
+    init(heat: CallHeat = .normal, besideScreen: Bool = false) {
+        self = besideScreen ? Self.besideScreen(for: heat) : Self.limits(for: heat)
     }
 
     private init(_ maxBitsPerSecond: Int, _ scaleDown: Double, _ maxFramesPerSecond: Int) {
@@ -175,30 +171,9 @@ nonisolated struct CallVideoLimits: Equatable, Sendable {
         self.maxFramesPerSecond = maxFramesPerSecond
     }
 
-    /// The shared screen's limits.
-    static func screen(path: CallMediaPath, heat: CallHeat = .normal) -> CallVideoLimits {
-        screenLimits(for: path).lowered(to: screenLimits(for: heat))
-    }
-
-    private func lowered(to other: CallVideoLimits) -> CallVideoLimits {
-        CallVideoLimits(
-            min(maxBitsPerSecond, other.maxBitsPerSecond),
-            max(scaleDown, other.scaleDown),
-            min(maxFramesPerSecond, other.maxFramesPerSecond)
-        )
-    }
-
-    /// A direct call sends 1080p at up to 4 Mbps, which looks sharp full screen on an iPad. H.265
-    /// looks good on a phone at 720p and 1.5 Mbps, so TURN traffic stays there. The limit also
-    /// replaces WebRTC's own, which would hold 1080p at 2.5 Mbps and 320x180 at 600 kbps.
-    private static func limits(for path: CallMediaPath) -> CallVideoLimits {
-        switch path {
-        case .direct: CallVideoLimits(4_000_000, 1, 30)
-        case .turn: CallVideoLimits(1_500_000, 1.5, 30)
-        }
-    }
-
-    /// A warm phone sends 720p at 24 frames a second, a third of the pixels each second that 1080p
+    /// The camera sends 1080p at up to 4 Mbps, which looks sharp full screen on an iPad, and
+    /// replaces WebRTC's own limit, which would hold 1080p at 2.5 Mbps and 320x180 at 600 kbps. A
+    /// warm phone sends 720p at 24 frames a second, a third of the pixels each second that 1080p
     /// at 30 takes, and a hot one 540p at 15, an eighth. Both still show a face well on a phone.
     private static func limits(for heat: CallHeat) -> CallVideoLimits {
         switch heat {
@@ -208,26 +183,28 @@ nonisolated struct CallVideoLimits: Equatable, Sendable {
         }
     }
 
-    /// The partner shows a shared screen large and the camera small, so the screen gets most of
-    /// the camera's bits for the path and the heat, and the two together stay inside them and
-    /// TURN's 1.5 Mbps. The screen sends up to 30 frames a second on either path, so scrolling
-    /// and moving between apps look smooth. ScreenCaptureKit sends up to 60 a second on iOS,
-    /// where its frame interval cannot be set.
-    private static func screenLimits(for path: CallMediaPath) -> CallVideoLimits {
-        switch path {
-        case .direct: CallVideoLimits(2_500_000, 1, 30)
-        case .turn: CallVideoLimits(1_000_000, 1, 30)
+    /// The camera beside a shared screen, which captures about 640x480 (`CallCamera`). It sends
+    /// 15 frames a second, and a warm or hot phone lowers it before the screen: 10 frames a second
+    /// and 400 kbps when warm, and half its size at 150 kbps when hot.
+    private static func besideScreen(for heat: CallHeat) -> CallVideoLimits {
+        switch heat {
+        case .normal: CallVideoLimits(1_500_000, 1, 15)
+        case .warm: CallVideoLimits(400_000, 1, 10)
+        case .hot: CallVideoLimits(150_000, 2, 10)
         }
     }
 
-    /// Heat lowers the screen's picture size before its frame rate: a warm phone sends two thirds
-    /// of the size at 24 frames a second, a third of the pixels each second, and a hot one half
-    /// the size at 15, an eighth, the same steps the camera takes.
-    private static func screenLimits(for heat: CallHeat) -> CallVideoLimits {
+    /// The shared screen comes first in a share. It sends up to 30 frames a second, so scrolling
+    /// and moving between apps look smooth, at up to 4 Mbps, because at 2.5 Mbps an iPhone's busy
+    /// screen dropped a third of its frames while 8.9 Mbps went unused. ScreenCaptureKit sends up
+    /// to 60 a second on iOS, where its frame interval cannot be set. A warm phone keeps the
+    /// screen whole at 30 frames a second and 2.5 Mbps, and a hot one sends two thirds of its
+    /// size at 24, while the camera beside it gives way first.
+    static func screen(heat: CallHeat = .normal) -> CallVideoLimits {
         switch heat {
-        case .normal: CallVideoLimits(2_500_000, 1, 30)
-        case .warm: CallVideoLimits(1_000_000, 1.5, 24)
-        case .hot: CallVideoLimits(400_000, 2, 15)
+        case .normal: CallVideoLimits(4_000_000, 1, 30)
+        case .warm: CallVideoLimits(2_500_000, 1, 30)
+        case .hot: CallVideoLimits(1_000_000, 1.5, 24)
         }
     }
 }

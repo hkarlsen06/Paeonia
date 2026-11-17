@@ -11,10 +11,9 @@ import Foundation
 
 @main
 enum CallMediaProbe {
-    /// How long the call runs on the direct path it finds, then on TURN's limits, then with the
-    /// caller sharing its screen beside its camera in each of `ScreenPhase.all`.
-    static let directSeconds = 20.0
-    static let turnSeconds = 10.0
+    /// How long the call runs, then the caller shares its screen beside its camera in each of
+    /// `ScreenPhase.all`.
+    static let callSeconds = 20.0
     static let screenSeconds = 10.0
     static let sampleInterval = Duration.milliseconds(100)
 
@@ -32,13 +31,13 @@ enum CallMediaProbe {
         let partner = Peer(name: "partner", factory: factory, tuned: tuned)
         await connect(caller, partner, factory: tuned ? factory : nil)
         say("Connected. Sending a voice-like sound and silence by turns of 1 s, and panning 1080p noise at 30 fps, "
-            + "for \(Int(directSeconds)) s on the path the stats show, then \(Int(turnSeconds)) s on TURN's limits.")
+            + "for \(Int(callSeconds)) s.")
 
         let peers = [caller, partner]
-        let (direct, turn) = await run(peers, tuned: tuned, microphone)
+        let call = await run(peers, microphone)
         say("Sharing the caller's \(ScreenSource.width)x\(ScreenSource.height) screen of scrolling text with a video "
-            + "playing on it, at about 48 fps at uneven gaps, beside its camera, for \(Int(screenSeconds)) s on the "
-            + "direct path's limits, then on TURN's, then on the direct path's for a warm phone and for a hot one.")
+            + "playing on it, at about 48 fps at uneven gaps, beside its camera, for \(Int(screenSeconds)) s on a "
+            + "cool phone's limits, then on a warm one's and on a hot one's.")
         let screenPhases = await shareScreen(caller, tuned: tuned, microphone)
         let afterVoice = await shareAfterVoice(factory: factory, tuned: tuned, microphone)
 
@@ -50,7 +49,7 @@ enum CallMediaProbe {
             Check("the offer asks for Opus DTX (usedtx=1)", .tuning, holds: opusAsksForDTX(offer)),
             Check("the answer asks for Opus DTX (usedtx=1)", .tuning, holds: opusAsksForDTX(answer)),
         ]
-            + peers.flatMap { checks($0, direct[$0.name] ?? []) + turnChecks($0, turn[$0.name] ?? []) }
+            + peers.flatMap { checks($0, call[$0.name] ?? []) }
             + screenChecks(caller, shownBy: partner, screenPhases)
             + afterVoiceChecks(afterVoice)
         let passed = report(checks, tuned: tuned)
@@ -59,28 +58,12 @@ enum CallMediaProbe {
         exit(passed ? 0 : 1)
     }
 
-    /// Runs the call on the path the stats show, following it the way CallMediaSession does,
-    /// then on TURN's limits, and returns each phase's samples.
-    static func run(
-        _ peers: [Peer],
-        tuned: Bool,
-        _ microphone: FakeMicrophone
-    ) async -> (direct: [String: [Timed]], turn: [String: [Timed]]) {
+    /// Runs the call and returns each peer's samples.
+    static func run(_ peers: [Peer], _ microphone: FakeMicrophone) async -> [String: [Timed]] {
         let statsLog = CallStatsLog { say("CallStatsLog caller: \($0)") }
         statsLog.start(peers[0].connection)
         defer { statsLog.stop() }
-        let direct = await record(peers, for: directSeconds, microphone) { peer, sample in
-            if tuned, let path = sample.mediaPath, path != peer.videoPath {
-                peer.videoPath = path
-                CallCodecs.limitVideo(peer.videoSender, to: CallVideoLimits(path: path))
-            }
-        }
-        if tuned {
-            for peer in peers {
-                CallCodecs.limitVideo(peer.videoSender, to: CallVideoLimits(path: .turn))
-            }
-        }
-        return (direct, await record(peers, for: turnSeconds, microphone) { _, _ in })
+        return await record(peers, for: callSeconds, microphone) { _, _ in }
     }
 
     /// Samples each peer's stats every `sampleInterval` for `seconds`.
@@ -192,30 +175,6 @@ enum CallMediaProbe {
         ]
     }
 
-    static func turnChecks(_ peer: Peer, _ samples: [Timed]) -> [Check] {
-        let name = peer.name
-        // The encoder and the packets already sent take a moment to follow the new limits.
-        let settled = samples.filter { $0.sample.seconds - (samples.first?.sample.seconds ?? 0) >= 2 }
-        let target = settled.compactMap(\.sample.camera.sent.targetBitsPerSecond).max() ?? 0
-        let peak = peakVideoBitsPerSecond(settled, over: 5)
-        let widest = settled.compactMap(\.sample.camera.frameWidth).max() ?? 0
-        say("\(name) video on TURN's limits: highest encoder target \(Int(target / 1_000)) kbps, peak sent "
-            + "\(Int(peak / 1_000)) kbps over 5 s, widest frame \(widest)")
-        return [
-            Check(
-                "\(name)'s video encoder target on TURN stays at or under 1.5 Mbps",
-                .tuning,
-                holds: target <= 1_500_000
-            ),
-            Check(
-                "\(name)'s sent video on TURN stays under 1.65 Mbps over every 5 s",
-                .tunedRunOnly,
-                holds: peak < 1_650_000
-            ),
-            Check("\(name)'s video on TURN is at most 1280 wide", .tunedRunOnly, holds: widest <= 1_280),
-        ]
-    }
-
     /// Prints each check and returns whether every one came out as this run expects.
     static func report(_ checks: [Check], tuned: Bool) -> Bool {
         var passed = true
@@ -262,7 +221,7 @@ extension CallMediaProbe {
         }
         configure(screen)
         if tuned {
-            CallCodecs.limitScreen(screen.sender, to: .screen(path: .turn))
+            CallCodecs.limitScreen(screen.sender, to: .screen())
         }
     }
 
@@ -286,9 +245,9 @@ extension CallMediaProbe {
             if tuned {
                 CallCodecs.limitVideo(
                     caller.videoSender,
-                    to: CallVideoLimits(path: phase.path, heat: phase.heat, besideScreen: true)
+                    to: CallVideoLimits(heat: phase.heat, besideScreen: true)
                 )
-                let screenLimits = CallVideoLimits.screen(path: phase.path, heat: phase.heat)
+                let screenLimits = CallVideoLimits.screen(heat: phase.heat)
                 CallCodecs.limitScreen(caller.screenSender, to: screenLimits)
                 caller.screen.setMaxFramesPerSecond(screenLimits.maxFramesPerSecond)
             }
@@ -333,7 +292,7 @@ extension CallMediaProbe {
                 .tuning,
                 holds: run.cameraTarget > 0 && run.cameraTarget <= phase.cameraBudget
             ),
-            Check("\(camera) sends at most 16 frames a second", .tuning, holds: run.cameraFastestRate <= 16),
+            Check("\(camera) sends at most \(phase.cameraMax) fps", .tuning, holds: run.cameraRate <= phase.cameraMax),
             Check(
                 "the caller's screen and camera on \(phase.name) send under \(Int(phase.totalCap * 1.1 / 1_000)) kbps "
                     + "together over every 5 s",
@@ -371,7 +330,7 @@ extension CallMediaProbe {
     ) async -> AfterVoice? {
         guard tuned else { return nil }
         say("Starting a new call whose caller sends only its voice, then shares its screen for "
-            + "\(Int(afterVoiceSeconds)) s on the direct path's limits.")
+            + "\(Int(afterVoiceSeconds)) s on a cool phone's limits.")
         let sharer = Peer(name: "sharer", factory: factory, tuned: true)
         let watcher = Peer(name: "watcher", factory: factory, tuned: true)
         defer {
@@ -380,7 +339,7 @@ extension CallMediaProbe {
             watcher.connection.close()
         }
         await connect(sharer, watcher, factory: factory, callerCamera: false)
-        let limits = CallVideoLimits.screen(path: .direct)
+        let limits = CallVideoLimits.screen()
         CallCodecs.limitScreen(sharer.screenSender, to: limits)
         // WebRTC's own probing after the connection ends first, so it cannot lift the estimate.
         _ = await record([sharer], for: 3, microphone) { _, _ in }
@@ -400,7 +359,7 @@ extension CallMediaProbe {
         guard let run else { return [] }
         let widths = run.share.compactMap(\.sample.screen.frameWidth)
         let sent = peakBitsPerSecond(run.share, over: 1) { $0.screen.sent.bytesSent }
-        let start = min(CallCodecs.videoStartBitsPerSecond, CallVideoLimits.screen(path: .direct).maxBitsPerSecond)
+        let start = min(CallCodecs.videoStartBitsPerSecond, CallVideoLimits.screen().maxBitsPerSecond)
         say("screen after voice alone: estimate \(Int((run.voice ?? 0) / 1_000)) kbps after voice, "
             + "\(Int((run.lifted ?? 0) / 1_000)) kbps after the lift; the screen then sent up to "
             + "\(Int(sent / 1_000)) kbps over 1 s, frames \(widths.min() ?? 0) to \(widths.max() ?? 0) wide")
@@ -441,7 +400,7 @@ struct ScreenRun {
     /// The median of the screen's frame rate samples.
     let typicalRate: Double
     let fastestRate: Double
-    let cameraFastestRate: Double
+    let cameraRate: Double
     let peakTogether: Double
     let limitations: [String]
 
@@ -455,7 +414,7 @@ struct ScreenRun {
         widths = screens.compactMap(\.frameWidth)
         typicalRate = rates.isEmpty ? 0 : rates[rates.count / 2]
         fastestRate = rates.last ?? 0
-        cameraFastestRate = settled.compactMap(\.sample.camera.framesPerSecond).max() ?? 0
+        cameraRate = settled.compactMap(\.sample.camera.framesPerSecond).max() ?? 0
         peakTogether = peakBitsPerSecond(settled, over: 5) { $0.camera.sent.bytesSent + $0.screen.sent.bytesSent }
         limitations = Set(screens.compactMap(\.qualityLimitation)).sorted()
     }
@@ -468,7 +427,7 @@ struct ScreenRun {
         "\(codec ?? "-"), highest encoder target \(Int(screenTarget / 1_000)) kbps, frames \(widths.min() ?? 0) to "
             + "\(widths.max() ?? 0) wide, \(Int(typicalRate)) fps typical and \(Int(fastestRate)) at most, limited by "
             + "\(limitations.isEmpty ? "-" : limitations.joined(separator: ", ")); camera beside it: highest encoder "
-            + "target \(Int(cameraTarget / 1_000)) kbps, up to \(Int(cameraFastestRate)) fps; both together peak at "
+            + "target \(Int(cameraTarget / 1_000)) kbps, up to \(Int(cameraRate)) fps; both together peak at "
             + "\(Int(peakTogether / 1_000)) kbps over 5 s"
     }
 }
@@ -476,7 +435,6 @@ struct ScreenRun {
 /// One stretch of the screen share: the limits it runs on, and what the checks expect of it.
 struct ScreenPhase {
     let name: String
-    let path: CallMediaPath
     let heat: CallHeat
     let screenBudget: Double
     let screenBudgetKind: Check.Kind
@@ -485,32 +443,33 @@ struct ScreenPhase {
     /// The widest the screen may be at this heat.
     let maxWidth: Int
     let cameraBudget: Double
-    /// The camera's own limit, which the screen and the camera share.
+    /// What the screen and the camera beside it may send together.
     let totalCap: Double
     let totalCapKind: Check.Kind
 
+    /// One frame a second over the camera's limit beside the screen, for the stats' rounding.
+    var cameraMax: Double {
+        Double(CallVideoLimits(heat: heat, besideScreen: true).maxFramesPerSecond + 1)
+    }
+
     static let all = [
-        // WebRTC's own limit for a screen this size is the direct path's 2.5 Mbps already.
+        // WebRTC's own limit for a screen this size is 2.5 Mbps, under the cool phone's 4 Mbps.
         ScreenPhase(
-            name: "direct", path: .direct, heat: .normal,
+            name: "a cool phone", heat: .normal,
+            screenBudget: 4_000_000, screenBudgetKind: .always, framesPerSecond: 30, maxWidth: ScreenSource.width,
+            cameraBudget: 1_500_000, totalCap: 5_500_000, totalCapKind: .tunedRunOnly
+        ),
+        // The screen stays whole at 30 fps, and the camera beside it gives way.
+        ScreenPhase(
+            name: "a warm phone", heat: .warm,
             screenBudget: 2_500_000, screenBudgetKind: .always, framesPerSecond: 30, maxWidth: ScreenSource.width,
-            cameraBudget: 1_500_000, totalCap: 4_000_000, totalCapKind: .tunedRunOnly
+            cameraBudget: 400_000, totalCap: 2_900_000, totalCapKind: .tuning
         ),
         ScreenPhase(
-            name: "TURN", path: .turn, heat: .normal,
-            screenBudget: 1_000_000, screenBudgetKind: .tuning, framesPerSecond: 30, maxWidth: ScreenSource.width,
-            cameraBudget: 500_000, totalCap: 1_500_000, totalCapKind: .tuning
-        ),
-        ScreenPhase(
-            name: "direct when warm", path: .direct, heat: .warm,
+            name: "a hot phone", heat: .hot,
             screenBudget: 1_000_000, screenBudgetKind: .tuning, framesPerSecond: 24,
             maxWidth: Int((Double(ScreenSource.width) * 2 / 3).rounded()),
-            cameraBudget: 500_000, totalCap: 1_500_000, totalCapKind: .tuning
-        ),
-        ScreenPhase(
-            name: "direct when hot", path: .direct, heat: .hot,
-            screenBudget: 400_000, screenBudgetKind: .tuning, framesPerSecond: 15, maxWidth: ScreenSource.width / 2,
-            cameraBudget: 200_000, totalCap: 600_000, totalCapKind: .tuning
+            cameraBudget: 150_000, totalCap: 1_150_000, totalCapKind: .tuning
         ),
     ]
 }
@@ -641,8 +600,6 @@ final class Peer {
     let screen: ScreenSource
     let partnerVideo = FrameCounter()
     let partnerScreen = FrameCounter()
-    /// The path this peer's video limits were last set for. `CallCodecs.configure` starts at TURN's.
-    var videoPath = CallMediaPath.turn
     private let camera: NoiseCamera
     private var partnerTracks: [LKRTCVideoTrack] = []
 

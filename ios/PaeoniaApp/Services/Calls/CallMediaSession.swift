@@ -55,8 +55,6 @@ final class CallMediaSession {
     /// Counts camera starts, so only the newest one ends the wait in `localFeed`.
     private var cameraStarts = 0
     private var isConnected = false
-    /// The path the video's limits were last set for. `CallCodecs.configure` starts at TURN's.
-    private var videoPath = CallMediaPath.turn
     private var heat: CallHeat
     /// WebRTC's newest estimate of what this phone may send, from the stats.
     private var availableBitsPerSecond: Double?
@@ -129,7 +127,7 @@ final class CallMediaSession {
         }
         observer.session = self
         camera.onInterruption = { [weak self] in self?.cameraInterrupted($0) }
-        camera.setMaxFramesPerSecond(CallVideoLimits(path: videoPath, heat: heat).maxFramesPerSecond)
+        camera.setMaxFramesPerSecond(CallVideoLimits(heat: heat).maxFramesPerSecond)
         screen.onShareChange = { [weak self] share in self?.screenShareChanged(share) }
         if isCameraOn {
             startCamera(front: isFrontCamera)
@@ -435,11 +433,10 @@ extension CallMediaSession {
             guard !isConnected else { return }
             isConnected = true
             if isCameraOn {
-                startVideoEstimate(limits: CallVideoLimits(path: videoPath, heat: heat))
+                startVideoEstimate(limits: CallVideoLimits(heat: heat))
             }
             statsLog.start(peerConnection, screenCaptured: { CallScreenCapture.captured }) { [weak self] sample in
                 self?.availableBitsPerSecond = sample.availableOutgoingBitsPerSecond
-                self?.useVideoPath(sample.mediaPath)
                 self?.onStatsSample?(sample)
                 self?.checkSendingHealth(sample)
             }
@@ -460,15 +457,8 @@ extension CallMediaSession {
         }
     }
 
-    /// The phones pick a new path after a network change, so this runs for every stats sample.
-    private func useVideoPath(_ path: CallMediaPath?) {
-        guard let path, path != videoPath else { return }
-        videoPath = path
-        applyVideoLimits()
-    }
-
     private func applyVideoLimits() {
-        let limits = CallVideoLimits(path: videoPath, heat: heat, besideScreen: screen.isSharing)
+        let limits = CallVideoLimits(heat: heat, besideScreen: screen.isSharing)
         camera.setMaxFramesPerSecond(limits.maxFramesPerSecond)
         if let sender = videoTransceiver?.sender {
             CallCodecs.limitVideo(sender, to: limits)
@@ -482,7 +472,7 @@ extension CallMediaSession {
     }
 
     private var screenLimits: CallVideoLimits {
-        .screen(path: videoPath, heat: heat)
+        .screen(heat: heat)
     }
 
     private func checkSendingHealth(_ sample: CallStatsSample) {
@@ -506,7 +496,7 @@ extension CallMediaSession {
 
     func setCamera(isOn: Bool, front: Bool) {
         if isOn, !isCameraOn {
-            startVideoEstimate(limits: CallVideoLimits(path: videoPath, heat: heat))
+            startVideoEstimate(limits: CallVideoLimits(heat: heat))
         }
         isCameraOn = isOn
         if isOn {
