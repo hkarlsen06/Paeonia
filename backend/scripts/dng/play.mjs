@@ -1,5 +1,5 @@
 // Draw & Guess test helper. Plays as one test account through the admin key.
-// Run from backend/ with Node 22 and CONVEX_SELF_HOSTED_ADMIN_KEY set:
+// Run from backend/ with Node 22 or later and CONVEX_SELF_HOSTED_ADMIN_KEY set:
 //   node scripts/dng/play.mjs state
 //   node scripts/dng/play.mjs pick <easy|medium|hard|custom> [custom word]
 //   node scripts/dng/play.mjs draw <file.pkdrawing>

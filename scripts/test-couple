@@ -33,7 +33,8 @@ from pathlib import Path
 
 ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
 HOSTED_URL = "https://api.paeonia.no"
-NODE_PATH = "/opt/homebrew/opt/node@22/bin"  # The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
+# Run the Convex CLI on the repo's Node version (.node-version), from Homebrew.
+NODE_PATH = f"/opt/homebrew/opt/node@{(ROOT / '.node-version').read_text().strip()}/bin"
 PHOTOS = ROOT / "ios/PaeoniaApp/App/DeveloperScenarios/MemoriesMapPhotos"
 ACCOUNTS = [
     {"external_id": "paeonia-test-first", "name": "Shared", "email": "test-shared@paeonia.no",

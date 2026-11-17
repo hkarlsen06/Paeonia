@@ -223,7 +223,7 @@ A deploy that adds a required field to an existing table fails when old rows lac
 
 A failed deploy regenerates `convex/_generated/api.d.ts`. Commit it before you retry, because `scripts/deploy-backend` refuses a dirty `backend/`.
 
-Use Node 20, 22, or 24 for `convex dev` and `convex deploy`, because Convex Node actions fail on Node 26. On macOS, Homebrew's `node@22` is at `/opt/homebrew/opt/node@22/bin`.
+The repo runs on the Node major in `.node-version`, and CI reads the same file. The scripts that call the Convex CLI put Homebrew's `/opt/homebrew/opt/node@<that major>/bin` first on PATH. A local backend runs `"use node"` actions with the `node` on PATH and accepts Node 22, 24 or 26.
 
 Keep server access to what the task needs. Do not change the docker stack, Caddy, or the server itself unless the task asks for it.
 

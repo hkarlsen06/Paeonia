@@ -48,8 +48,8 @@ for arg in "$@"; do
 done
 
 root=$(git rev-parse --show-toplevel)
-# The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
-export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+# Run the Convex CLI on the repo's Node version (.node-version), from Homebrew.
+export PATH="/opt/homebrew/opt/node@$(<"$root/.node-version")/bin:$PATH"
 cd "$root/backend"
 [[ -d node_modules ]] || npm ci --silent
 

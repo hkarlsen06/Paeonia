@@ -439,7 +439,7 @@ def convex_as(subject, function, args, check=True):
     """Runs a Convex function on the local backend as the account with this Clerk subject."""
     env = {key: value for key, value in os.environ.items()
            if key not in ("CONVEX_SELF_HOSTED_URL", "CONVEX_SELF_HOSTED_ADMIN_KEY", "CONVEX_DEPLOYMENT")}
-    env["PATH"] = f"/opt/homebrew/opt/node@22/bin:{env['PATH']}"
+    env["PATH"] = f"/opt/homebrew/opt/node@{(ROOT / '.node-version').read_text().strip()}/bin:{env['PATH']}"
     result = subprocess.run(["npx", "convex", "run", function, json.dumps(args), "--identity",
                              json.dumps({"subject": subject}), "--codegen", "disable", "--typecheck", "disable"],
                             cwd=ROOT / "backend", env=env, capture_output=True, text=True)

@@ -52,8 +52,8 @@ for p in "$port" "$site_port"; do
   fi
 done
 cd "$root/backend"
-# The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
-export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+# Run the Convex CLI on the repo's Node version (.node-version), from Homebrew.
+export PATH="/opt/homebrew/opt/node@$(<"$root/.node-version")/bin:$PATH"
 [[ -d node_modules ]] || npm ci --silent
 
 admin_key=${CONVEX_SELF_HOSTED_ADMIN_KEY:-$(ssh one-s cat /srv/paeonia/convex/admin-key)}

@@ -1,5 +1,5 @@
 // Exquisite corpse test helper. Plays one test account through the admin key, also live over the relay.
-// Run from backend/ with Node 22 and CONVEX_SELF_HOSTED_ADMIN_KEY set:
+// Run from backend/ with Node 22 or later and CONVEX_SELF_HOSTED_ADMIN_KEY set:
 //   node scripts/corpse/play.mjs ensure                         creates the couple's game (this account starts)
 //   node scripts/corpse/play.mjs state
 //   node scripts/corpse/play.mjs draw <strokes.json> [idea]    sends the next part. idea: a deck index, default none

@@ -24,9 +24,10 @@ if [ "$(git rev-parse HEAD)" != "$(git rev-parse main)" ]; then
   exit 1
 fi
 
-# Convex Node actions fail on Node 26 (backend/AGENTS.md).
-if [ -d /opt/homebrew/opt/node@22/bin ]; then
-  export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+# Run the Convex CLI on the repo's Node version (.node-version), from Homebrew.
+NODE_BIN="/opt/homebrew/opt/node@$(cat .node-version)/bin"
+if [ -d "$NODE_BIN" ]; then
+  export PATH="$NODE_BIN:$PATH"
 fi
 
 deploy() {

@@ -1,6 +1,6 @@
 // Board games test helper. Plays as a test account through the admin key, so
 // one simulator can play against the other partner. Run from backend/ with
-// Node 22 and CONVEX_SELF_HOSTED_ADMIN_KEY set:
+// Node 22 or later and CONVEX_SELF_HOSTED_ADMIN_KEY set:
 //   node scripts/boardGames/play.mjs state [kind]
 //   node scripts/boardGames/play.mjs start <kind>
 //   node scripts/boardGames/play.mjs move <kind> <move> [stake]

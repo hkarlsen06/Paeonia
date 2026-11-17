@@ -6,8 +6,8 @@
 //   CONVEX_SELF_HOSTED_ADMIN_KEY    the admin key. When unset, the helper reads
 //                                   /srv/paeonia/convex/admin-key over `ssh one-s`.
 //
-// The Convex CLI needs Node 20, 22, or 24 on PATH. Never write the admin key to
-// a file in this repository.
+// The Convex CLI needs Node 22 or later on PATH. Never write the admin key to a
+// file in this repository.
 
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";

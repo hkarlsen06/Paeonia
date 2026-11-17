@@ -42,8 +42,8 @@ bundle_id=no.paeonia.app
 root=$(git rev-parse --show-toplevel)
 local_port=$(sed -n 's#^PAEONIA_CONVEX_URL = .*127\.0\.0\.1:\([0-9]*\)$#\1#p' "$root/ios/local.xcconfig" 2>/dev/null || true)
 [[ -n $local_port ]] || { echo "No local backend for this worktree. Start scripts/local-backend first." >&2; exit 1; }
-# The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
-export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+# Run the Convex CLI on the repo's Node version (.node-version), from Homebrew.
+export PATH="/opt/homebrew/opt/node@$(<"$root/.node-version")/bin:$PATH"
 
 if [[ ! -d $root/backend/node_modules ]]; then
   (cd "$root/backend" && npm ci --silent)

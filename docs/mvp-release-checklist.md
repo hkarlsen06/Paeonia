@@ -39,7 +39,7 @@ These block TestFlight/App Review until resolved.
 
 ## Verification Commands
 
-Run these before a release candidate and record any skipped one with the reason: `swiftlint --quiet`, `./scripts/xcode-build-agent.sh --json`, `./scripts/xcode-test-agent.sh --json`, `bun run build`, and `npm run typecheck` and `npm test` in `backend/` (Node 20, 22 or 24, because Convex Node actions fail on Node 26).
+Run these before a release candidate and record any skipped one with the reason: `swiftlint --quiet`, `./scripts/xcode-build-agent.sh --json`, `./scripts/xcode-test-agent.sh --json`, `bun run build`, and `npm run typecheck` and `npm test` in `backend/` on the Node version in `.node-version`.
 
 ## iOS App Configuration
 
