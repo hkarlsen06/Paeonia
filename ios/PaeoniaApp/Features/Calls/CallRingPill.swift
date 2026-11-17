@@ -2,7 +2,8 @@ import SwiftUI
 
 /// Places the ring pill where `CallOverlayModel.ringAnchor` says: grown out of the partner's avatar,
 /// with the photo where the avatar's was, or at the top of the screen under the status bar and the
-/// Dynamic Island.
+/// Dynamic Island. Either way it keeps the screen's side padding, as wide as the tab bar. At the
+/// avatar its end lines up with the avatar's far edge, so it keeps the avatar's gap to the tab bar.
 struct CallRingLayer: View {
     let model: CallOverlayModel
     let session: CallSession
@@ -22,7 +23,8 @@ struct CallRingLayer: View {
                 let rowY = placement.center(of: spot, bubble: PresenceAvatar.outerSize).y
                 let opensDownward = placement.growsDownward(fromY: rowY, rowHeight: CallRingPill.height)
                 pill(photoEdge: spot.edge, opensDownward: opensDownward)
-                    .placed(on: spot.edge, rowY: rowY, rowHeight: CallRingPill.height, in: placement)
+                    .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding - CallBubblePlacement.margin)
+                    .placed(on: spot.edge, rowY: rowY, rowHeight: PresenceAvatar.outerSize.height, in: placement)
             }
         }
     }
