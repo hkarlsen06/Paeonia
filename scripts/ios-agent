@@ -19,13 +19,14 @@ import time
 
 
 # The shared simulators as (name, UDID, scripts/lock slot). The iPhones come first, in the order
-# scripts/lock hands them out. The iPad is taken only by its name, for a check on an iPad's screen,
-# so IOS_AGENT_SIMULATORS leaves it in the pool.
+# scripts/lock hands them out. The iPad and the foldable iPhone Duo are taken only by their names,
+# for a check on their screens, so IOS_AGENT_SIMULATORS leaves them in the pool.
 SIMULATORS = (
     ("Shared iPhone", "8E84ADB0-9092-4EB4-839E-71D62A350146", "simulator"),
     ("Shared iPhone 2", "79EBB58E-1108-4EEE-987D-E193CEA9EA2A", "simulator-2"),
     ("Shared iPhone 3", "4C6FDCA3-E72C-4FA1-B516-4E2CF7A3475C", "simulator-3"),
     ("Shared iPad", "144C1A45-0CAC-4291-A7E5-5F5963677659", "simulator-ipad"),
+    ("Shared iPhone Duo", "C3FD1E40-0050-42B5-A197-37CCE415898A", "simulator-duo"),
 )
 IPHONES = 3
 APPROVED_DEVICES = {"00008150-000230D82E40401C"}

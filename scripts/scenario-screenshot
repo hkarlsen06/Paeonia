@@ -3,8 +3,8 @@
 # simulator, to check how a change looks. scripts/scenario-record records it
 # instead, to check how a change moves.
 #
-#   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--ipad [--landscape]] [--no-build]
-#   scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--ipad [--landscape]] [--no-build]
+#   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--ipad [--landscape] | --duo [--fold <pose>]] [--no-build]
+#   scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--ipad [--landscape] | --duo [--fold <pose>]] [--no-build]
 #
 # It builds the App scheme through the machine-wide build queue, into the
 # derived data folder that scripts/xcode-build-agent.sh and
@@ -23,6 +23,12 @@
 # that, and an iPad app can't turn its own window, so a UI test turns the
 # simulator (SimulatorOrientation) when a screenshot shows it the other way,
 # and the turn stays. Each --ipad run turns it upright or on its side as asked.
+# --duo runs it on the shared foldable iPhone Duo, unfolded, and --fold closed or
+# --fold half-open folds it first (scripts/sim-fold). Unfolded, the app gets a
+# 951x669 point window on the inner screen, like a small iPad on its side.
+# Closed, it gets the 466x678 point outer screen. Half-open, the system splits
+# the inner screen at the hinge. The screenshot or recording shows the screen
+# that is lit.
 #
 # Output goes to ~/agent-shots/paeonia/<date>-<worktree>/, which outlives a
 # restart and the worktree, so an image embedded in a reply keeps showing. An
@@ -56,9 +62,9 @@ if [[ ${1:-} == --record ]]; then
 fi
 usage() {
   if [[ $record == 1 ]]; then
-    echo "usage: scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--ipad [--landscape]] [--no-build]" >&2
+    echo "usage: scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--ipad [--landscape] | --duo [--fold <pose>]] [--no-build]" >&2
   else
-    echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--ipad [--landscape]] [--no-build]" >&2
+    echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--ipad [--landscape] | --duo [--fold <pose>]] [--no-build]" >&2
   fi
   exit 64
 }
@@ -91,6 +97,7 @@ then_command=""
 build=1
 simulator=simulator
 landscape=0
+fold=""
 sim=""
 held_before=""
 RECORDER_PID=""
@@ -130,12 +137,18 @@ while [[ $# -gt 0 ]]; do
     --partner-name) [[ $# -ge 2 ]] || usage; partner_args=(-paeonia-scenario-partner-name "$2"); shift 2 ;;
     --ipad) simulator="Shared iPad"; shift ;;
     --landscape) landscape=1; shift ;;
+    --duo) simulator="Shared iPhone Duo"; fold=${fold:-open}; shift ;;
+    --fold) [[ $# -ge 2 && $2 =~ ^(closed|half-open|open)$ ]] || usage; fold=$2; shift 2 ;;
     --no-build) build=0; shift ;;
     *) usage ;;
   esac
 done
 # An iPhone runs the app upright only.
 [[ $landscape == 0 || $simulator == "Shared iPad" ]] || usage
+[[ -z $fold || $simulator == "Shared iPhone Duo" ]] || usage
+# The Duo has a screen on each side of the fold, so simctl needs to be told which one to capture.
+display_args=()
+[[ -z $fold ]] || display_args=(--display="$([[ $fold == closed ]] && echo LCD || echo LCD-1)")
 [[ $out == */* ]] || out=$shots/$out
 
 # A tap tool is bound to one simulator, and a lock this script takes could be
@@ -145,7 +158,7 @@ if [[ $record == 1 ]]; then
   # Only simulator locks: other locks, such as scripts/devices' device-iphone, name no simulator.
   held_before=$("$root/scripts/lock" status | grep '^simulator' | grep -F ": held by $root (" | grep -v '(stale)$' |
     sed -e 's/^[^(]*(//' -e 's/):.*//' |
-    if [[ $simulator == "Shared iPad" ]]; then grep -x 'Shared iPad'; else grep -vx 'Shared iPad'; fi | head -1 || true)
+    if [[ $simulator == simulator ]]; then grep -vxE 'Shared iPad|Shared iPhone Duo'; else grep -xF "$simulator"; fi | head -1 || true)
   if [ -n "$then_command" ] && [ -z "$held_before" ]; then
     echo "--then needs a simulator this worktree holds, so that the command acts on the one being recorded." >&2
     echo "Take one with: SIM=\"\$(scripts/lock acquire \"$simulator\")\", open that simulator for your tap tool, then run this again." >&2
@@ -225,10 +238,10 @@ wait_for_scenario() {
   local polls=0 shown=0
   rm -f "$previous"
   pause 3
-  xcrun simctl io "$sim" screenshot "$early" >/dev/null 2>&1
+  xcrun simctl io "$sim" screenshot ${display_args[@]+"${display_args[@]}"} "$early" >/dev/null 2>&1
   pause "$(awk -v w="$wait_seconds" 'BEGIN { print (w > 3 ? w - 3 : 0) }')"
   while [ "$polls" -lt 30 ] && [ "$shown" -lt 5 ]; do
-    xcrun simctl io "$sim" screenshot "$current" >/dev/null 2>&1
+    xcrun simctl io "$sim" screenshot ${display_args[@]+"${display_args[@]}"} "$current" >/dev/null 2>&1
     if ! cmp -s "$early" "$current"; then
       cmp -s "$previous" "$current" && return
       shown=$((shown + 1))
@@ -264,12 +277,13 @@ turn_ipad() {
   fi
 }
 [[ $simulator != "Shared iPad" ]] || turn_ipad
+[[ -z $fold ]] || "$root/scripts/sim-fold" "$sim" "$fold"
 
 xcrun simctl install "$sim" "$app"
 if [[ $record == 0 ]]; then
   launch
   wait_for_scenario
-  xcrun simctl io "$sim" screenshot "$out" >/dev/null 2>&1
+  xcrun simctl io "$sim" screenshot ${display_args[@]+"${display_args[@]}"} "$out" >/dev/null 2>&1
   echo "$out"
   exit 0
 fi
@@ -286,7 +300,7 @@ start_recorder() {
   # A job started with & in a script ignores SIGINT, and stop_recorder needs it,
   # so perl restores it before it runs simctl.
   perl -e '$SIG{INT} = "DEFAULT"; exec @ARGV or die' \
-    xcrun simctl io "$sim" recordVideo --codec=h264 --force "$video" >"$recorder_log" 2>&1 &
+    xcrun simctl io "$sim" recordVideo --codec=h264 ${display_args[@]+"${display_args[@]}"} --force "$video" >"$recorder_log" 2>&1 &
   RECORDER_PID=$!
   # simctl prints this once it has the first frame, which is time 0 in the video.
   for _ in $(seq 200); do

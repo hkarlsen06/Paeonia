@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Folds the shared iPhone Duo simulator to a pose and waits until its hinge
+# reports it.
+#
+#   scripts/sim-fold "<simulator name or UDID>" <closed|half-open|open>
+#
+# Take the simulator first with SIM="$(scripts/lock acquire "Shared iPhone Duo")".
+# closed lights the outer screen (466x678 points). open lights the inner screen,
+# where an app gets a 951x669 point window. half-open sets the hinge to 130
+# degrees and lights the inner screen too. Simulator taps and refs from before a
+# fold are wrong after it, so take a new screenshot or snapshot.
+#
+# simctl and Xcode have no fold command, so this builds scripts/lib/sim-hinge.m
+# for the simulator, once per change to it, and runs it with simctl spawn.
+set -euo pipefail
+
+usage() {
+  echo "usage: scripts/sim-fold \"<simulator name or UDID>\" <closed|half-open|open>" >&2
+  exit 64
+}
+[[ $# -eq 2 ]] || usage
+sim=$1
+case $2 in
+  closed) angle=0 ;;
+  half-open) angle=130 ;;
+  open) angle=180 ;;
+  *) usage ;;
+esac
+
+source=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/sim-hinge.m
+helper=${TMPDIR:-/tmp}/paeonia-sim-hinge-$(shasum "$source" | cut -c1-12)
+if [[ ! -x $helper ]]; then
+  xcrun --sdk iphonesimulator clang -fobjc-arc -mios-simulator-version-min=27.0 \
+    -framework Foundation -framework IOKit "$source" -o "$helper.$$"
+  mv "$helper.$$" "$helper"
+fi
+
+xcrun simctl spawn "$sim" "$helper" set "$angle"
+# The hinge moves over about a second, and the first fold after a boot takes longer.
+for _ in $(seq 20); do
+  reading=$(xcrun simctl spawn "$sim" "$helper" read 2>/dev/null || true)
+  if [[ -n $reading ]] && awk -v a="$reading" -v b="$angle" 'BEGIN { exit !(a - b < 1 && b - a < 1) }'; then
+    exit 0
+  fi
+  sleep 0.5
+done
+echo "$sim still reports a hinge angle of ${reading:-nothing} after 10 s, not $angle." >&2
+exit 1
