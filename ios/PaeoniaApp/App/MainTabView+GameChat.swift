@@ -30,11 +30,38 @@ struct GameChatVisit {
     var stage = Stage.chat
 }
 
+/// An iPhone's switch from a game's chat in Chats back to Games. It waits until the keyboard has
+/// gone and the tabs fill the screen, so the game opens full screen.
+struct GameChatReturnTransition {
+    var isPending = false
+    let layout = GameChatReturnLayout()
+
+    var isReady: Bool {
+        guard isPending, !layout.waitsForKeyboard,
+              let containerBottom = layout.containerBottom, let chatBottom = layout.chatBottom
+        else { return false }
+        return abs(containerBottom - chatBottom) < 1
+    }
+}
+
+/// What the return to Games measures as the keyboard and the tabs move. The return reads it on
+/// every frame while it waits, so it is a plain class and a change doesn't redraw the tab view.
+/// A redraw while UIKit switches tabs gives the tab view the tab it is leaving, because SwiftUI
+/// hears of the new tab only after the switch. A tab bar tap with a chat field focused moves the
+/// keyboard during the switch, and the new tab then stayed black on iPad.
+final class GameChatReturnLayout {
+    var isKeyboardDocked = false
+    var waitsForKeyboard = false
+    var containerBottom: CGFloat?
+    var chatBottom: CGFloat?
+    var layoutReadyFrame: Date?
+}
+
 extension MainTabView {
     func resetGameChatNavigation() {
         gameChatReturn.isPending = false
-        gameChatReturn.waitsForKeyboard = false
-        gameChatReturn.layoutReadyFrame = nil
+        gameChatReturn.layout.waitsForKeyboard = false
+        gameChatReturn.layout.layoutReadyFrame = nil
         messageNoticeStartedAt = Date()
         visibleChatSubject = nil
         gameChatDestination = nil

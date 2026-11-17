@@ -125,7 +125,6 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [ ] Small iPhone layout pass.
 - [ ] Large iPhone layout pass.
 - [x] iPad layout pass, in portrait, landscape and split view. Done on 2026-11-17 on the iPad Air 11-inch simulator, with one scenario per screen in both orientations and the tabs in narrow, half-width and short windows.
-- [ ] On an iPad, a tap on another tab while a chat's keyboard is up leaves the new tab black until the person goes back to Chats. Found on the developer's iPad on 2026-11-17. A gap in the source.
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
 - [ ] Dynamic Type pass.

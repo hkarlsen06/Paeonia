@@ -2,20 +2,6 @@ import Foundation
 import SwiftUI
 import UIKit
 
-struct GameChatReturnTransition {
-    var isPending = false
-    var isKeyboardDocked = false
-    var waitsForKeyboard = false
-    var containerBottom: CGFloat?
-    var chatBottom: CGFloat?
-    var layoutReadyFrame: Date?
-
-    var isReady: Bool {
-        guard isPending, !waitsForKeyboard, let containerBottom, let chatBottom else { return false }
-        return abs(containerBottom - chatBottom) < 1
-    }
-}
-
 /// The five tabs and the views they show.
 extension MainTabView {
     var tabNavigation: some View {
@@ -29,7 +15,7 @@ extension MainTabView {
                             $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
                         } action: { bottom in
                             guard tab == .questions else { return }
-                            gameChatReturn.chatBottom = bottom
+                            gameChatReturn.layout.chatBottom = bottom
                         }
                 } label: {
                     Label(tab.title, systemImage: tab.systemImage)
@@ -46,23 +32,23 @@ extension MainTabView {
         .onGeometryChange(for: CGFloat.self) {
             $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
         } action: { bottom in
-            gameChatReturn.containerBottom = bottom
+            gameChatReturn.layout.containerBottom = bottom
         }
-        .onDockedKeyboardChange { gameChatReturn.isKeyboardDocked = $0 }
+        .onDockedKeyboardChange { gameChatReturn.layout.isKeyboardDocked = $0 }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in
-            gameChatReturn.waitsForKeyboard = false
+            gameChatReturn.layout.waitsForKeyboard = false
         }
         .onChange(of: selection.wrappedValue) { _, tab in
             gameChatTabChanged(to: tab)
             gameChatReturn.isPending = false
-            gameChatReturn.waitsForKeyboard = false
-            gameChatReturn.layoutReadyFrame = nil
+            gameChatReturn.layout.waitsForKeyboard = false
+            gameChatReturn.layout.layoutReadyFrame = nil
         }
         .onChange(of: gamesPath) { _, path in gamesPathChanged(to: path) }
         .onChange(of: gameChatDestination?.id) { _, _ in
             gameChatReturn.isPending = false
-            gameChatReturn.waitsForKeyboard = false
-            gameChatReturn.layoutReadyFrame = nil
+            gameChatReturn.layout.waitsForKeyboard = false
+            gameChatReturn.layout.layoutReadyFrame = nil
         }
         .overlay {
             if gameChatReturn.isPending {
@@ -92,14 +78,14 @@ extension MainTabView {
             transaction.disablesAnimations = true
             withTransaction(transaction) {
                 gameChatReturn.isPending = true
-                gameChatReturn.waitsForKeyboard = gameChatReturn.isKeyboardDocked
-                gameChatReturn.layoutReadyFrame = nil
+                gameChatReturn.layout.waitsForKeyboard = gameChatReturn.layout.isKeyboardDocked
+                gameChatReturn.layout.layoutReadyFrame = nil
             }
             PaeoniaKeyboard.dismiss()
             return
         }
         gameChatReturn.isPending = false
-        gameChatReturn.layoutReadyFrame = nil
+        gameChatReturn.layout.layoutReadyFrame = nil
         // A chat waiting for Games to show its game no longer opens.
         if tab != .games { pendingGameChatSheet = nil }
         PaeoniaKeyboard.dismiss()
@@ -114,16 +100,16 @@ extension MainTabView {
 
     private func finishGameChatReturn(after frame: Date) {
         guard gameChatReturn.isReady else {
-            gameChatReturn.layoutReadyFrame = nil
+            gameChatReturn.layout.layoutReadyFrame = nil
             return
         }
-        guard let readyFrame = gameChatReturn.layoutReadyFrame else {
-            gameChatReturn.layoutReadyFrame = frame
+        guard let readyFrame = gameChatReturn.layout.layoutReadyFrame else {
+            gameChatReturn.layout.layoutReadyFrame = frame
             return
         }
         guard frame != readyFrame else { return }
         gameChatReturn.isPending = false
-        gameChatReturn.layoutReadyFrame = nil
+        gameChatReturn.layout.layoutReadyFrame = nil
         var transaction = Transaction(animation: nil)
         transaction.disablesAnimations = true
         withTransaction(transaction) { selection.wrappedValue = .games }
