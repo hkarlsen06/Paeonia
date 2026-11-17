@@ -45,20 +45,20 @@ struct DailyChallengeReadOverviewTests {
 
         let quiet = QuestionsTabContent(
             current: snapshot.questions, topics: [], history: [], conversations: [],
-            messageDate: { _ in nil }
+            messageDate: { _ in nil }, isNew: { _ in false }
         )
         #expect(quiet.waitingForYou.map(\.id) == [awaiting])
         #expect(quiet.recent.map(\.id) == [today, finished])
 
         let withMessage = QuestionsTabContent(
             current: snapshot.questions, topics: [], history: [], conversations: [],
-            messageDate: { $0.id == finished ? t3.addingTimeInterval(60) : nil }
+            messageDate: { $0.id == finished ? t3.addingTimeInterval(60) : nil }, isNew: { _ in false }
         )
         #expect(withMessage.waitingForYou.map(\.id) == [awaiting])
         #expect(withMessage.recent.map(\.id) == [finished, today])
     }
 
-    @Test func allConversationKindsUseActivityOrderBelowUnansweredQuestions() throws {
+    @Test func everythingNewWaitsAboveTheConversationsInActivityOrder() {
         let t0 = TestDailyChallengeIDs.answerDate
         let t1 = t0.addingTimeInterval(600)
         let t2 = t1.addingTimeInterval(600)
@@ -97,19 +97,16 @@ struct DailyChallengeReadOverviewTests {
         let content = QuestionsTabContent(
             current: snapshot.questions, topics: [], history: [],
             conversations: [readStory, earlierStory, unreadStory, readMemory, unreadMemory, earlierMemory],
-            messageDate: { _ in nil }
+            messageDate: { _ in nil },
+            isNew: { $0.attentionDate(seen: [], unreadMessageAt: nil) != nil }
         )
-        #expect(content.waitingForYou.map(\.id) == [awaiting])
-        let rows = content.recent.map(\.id)
-        #expect(rows.prefix(1) == [recent])
-        #expect(Set(rows) == [recent, readStory.id, unreadMemory.id, newAnswer, unreadStory.id,
-                              readMemory.id, earlierStory.id, earlierMemory.id])
-        let answerIndex = try #require(rows.firstIndex(of: newAnswer))
-        let memoryIndex = try #require(rows.firstIndex(of: readMemory.id))
-        #expect(answerIndex < memoryIndex)
+        #expect(content.waitingForYou.map(\.id) == [
+            unreadMemory.id, newAnswer, unreadStory.id, awaiting, earlierStory.id, earlierMemory.id,
+        ])
+        #expect(content.recent.map(\.id) == [recent, readStory.id, readMemory.id])
     }
 
-    @Test func readingAnOlderConversationKeepsItsActivityPosition() {
+    @Test func readingAConversationMovesItIntoTheTimeline() {
         let now = TestDailyChallengeIDs.answerDate
         let unread = storyConversation(postedAt: now.addingTimeInterval(-86_400), isUnread: true)
         let read = SubjectConversation(subject: unread.subject, summary: unread.summary, isUnread: false)
@@ -117,10 +114,11 @@ struct DailyChallengeReadOverviewTests {
         func content(_ conversation: SubjectConversation) -> QuestionsTabContent {
             QuestionsTabContent(
                 current: [], topics: [], history: [], conversations: [conversation],
-                messageDate: { _ in nil }
+                messageDate: { _ in nil }, isNew: { _ in false }
             )
         }
-        #expect(content(unread).recent.map(\.id) == [unread.id])
+        #expect(content(unread).waitingForYou.map(\.id) == [unread.id])
+        #expect(content(unread).recent.isEmpty)
         #expect(content(read).waitingForYou.isEmpty)
         #expect(content(read).recent.map(\.id) == [read.id])
     }

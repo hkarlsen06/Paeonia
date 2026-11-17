@@ -12,7 +12,8 @@ extension DailyChallengeScreen {
             topics: topicsCard?.waitingQuestions ?? [],
             history: (historyViewModel?.questions ?? []).filter { $0.id != heldID },
             conversations: ordinaryConversations,
-            messageDate: { viewModel.threadSummary(for: $0.questionID)?.lastMessageAt }
+            messageDate: { viewModel.threadSummary(for: $0.questionID)?.lastMessageAt },
+            isNew: { viewModel.attentionDate(for: $0) != nil }
         )
     }
 

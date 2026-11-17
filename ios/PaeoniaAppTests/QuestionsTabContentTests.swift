@@ -24,11 +24,12 @@ struct QuestionsTabContentTests {
 
     private func content(
         current: [DailyChallengeQuestion] = [], history: [DailyChallengeQuestion] = [],
-        conversations: [SubjectConversation] = [], unreadMessageAt: Date? = nil
+        conversations: [SubjectConversation] = [], messageAt: Date? = nil, unread: Bool = false
     ) -> QuestionsTabContent {
         QuestionsTabContent(
             current: current, topics: [], history: history, conversations: conversations,
-            messageDate: { _ in unreadMessageAt }
+            messageDate: { _ in messageAt },
+            isNew: { $0.attentionDate(seen: [], unreadMessageAt: unread ? messageAt : nil) != nil }
         )
     }
 
@@ -42,22 +43,25 @@ struct QuestionsTabContentTests {
         )
         let oldWithNewMessage = SubjectConversation(subject: old.subject, summary: summary, isUnread: true)
 
-        #expect(content(conversations: [recent, oldWithNewMessage]).recent.map(\.id)
+        #expect(content(conversations: [recent, oldWithNewMessage]).waitingForYou.map(\.id)
             == [old.id, recent.id])
     }
 
-    @Test func unansweredQuestionsStayAboveNewerAnsweredQuestions() {
+    @Test func aPartnerAnswerWaitsWithUnansweredQuestionsUntilSeen() {
         let awaiting = question(seededAt: now - 600, partnerAnsweredAt: now - 300, ownAnswered: false, current: true)
         let toOpen = question(seededAt: now - 600, partnerAnsweredAt: now, current: true)
-        #expect(content(current: [awaiting, toOpen]).waitingForYou.map(\.id) == [awaiting.id])
-        #expect(content(current: [awaiting, toOpen]).recent.map(\.id) == [toOpen.id])
+        var seen = toOpen
+        seen.partnerAnswerSeenAt = now + 60
+        #expect(content(current: [awaiting, toOpen]).waitingForYou.map(\.id) == [toOpen.id, awaiting.id])
+        #expect(content(current: [awaiting, seen]).waitingForYou.map(\.id) == [awaiting.id])
+        #expect(content(current: [awaiting, seen]).recent.map(\.id) == [toOpen.id])
     }
 
     @Test func aRecurringQuestionHasOneConversationCardFromItsNewestRound() {
         let questionID = UUID()
         let oldLateAnswer = question(questionID: questionID, seededAt: now - 3 * 86_400, partnerAnsweredAt: now)
         let newestRound = question(questionID: questionID, seededAt: now - 86_400, partnerAnsweredAt: now - 600)
-        let result = content(history: [oldLateAnswer, newestRound], unreadMessageAt: now + 60)
+        let result = content(history: [oldLateAnswer, newestRound], messageAt: now + 60)
 
         #expect(result.recent.map(\.id) == [newestRound.id])
         #expect(result.waitingForYou.isEmpty)
@@ -67,7 +71,8 @@ struct QuestionsTabContentTests {
         let old = question(seededAt: now - 86_400, partnerAnsweredAt: now - 600)
         #expect(old.hasNewPartnerAnswer(seen: []))
         #expect(content(history: [old]).waitingForYou.isEmpty)
-        #expect(content(history: [old], unreadMessageAt: now).recent.map(\.id) == [old.id])
+        #expect(content(history: [old], messageAt: now).recent.map(\.id) == [old.id])
+        #expect(content(history: [old], messageAt: now, unread: true).waitingForYou.map(\.id) == [old.id])
     }
 
     @Test func aLateAnswerToAnOlderRoundDeterminesTheConversationCard() {
@@ -94,7 +99,7 @@ struct QuestionsTabContentTests {
         let newer = question(seededAt: now - 600, partnerAnsweredAt: now - 300)
         let result = QuestionsTabContent(
             current: [], topics: [], history: [newer, old], conversations: [],
-            messageDate: { $0.id == old.id ? now : nil }
+            messageDate: { $0.id == old.id ? now : nil }, isNew: { _ in false }
         )
         #expect(result.recent.map(\.id) == [old.id, newer.id])
         #expect(result.waitingForYou.isEmpty)
