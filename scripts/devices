@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
-# Drives the developer's own iPhone and iPad, which are signed in as the two
-# partners of a couple on api.paeonia.no, for what a simulator cannot show:
-# calls, VoIP pushes, the system call UI, screen sharing, the camera and
-# Picture in Picture. docs/agent-guides/two-devices.md says when to use them.
+# Drives the developer's own iPhone and iPad, each on its own, for anything a
+# real device shows better than a simulator. They are signed in as the two
+# partners of a couple on api.paeonia.no. docs/agent-guides/devices.md says
+# when to use them and what to leave alone.
 #
-#   scripts/devices status                     which of the two are connected
-#   scripts/devices install [iphone|ipad]      build this worktree for devices, install, launch
-#   scripts/devices <iphone|ipad> <command...> one agent-device command on that device
-#   scripts/devices logs <iphone|ipad> <start> collect its system log since <start>
-#                                              ("YYYY-MM-DD HH:MM:SS") and print Paeonia's CallStats
-#   scripts/devices release                    close the sessions and give the devices back
+#   scripts/devices status                       which device is connected, and who holds it
+#   scripts/devices install [iphone] [ipad]      build this worktree for devices, then install
+#                                                and launch on the ones named, or on every
+#                                                connected one
+#   scripts/devices <iphone|ipad> <command...>   one agent-device command on that device
+#   scripts/devices logs <iphone|ipad> <start> [category]
+#                                                collect its system log since <start>
+#                                                ("YYYY-MM-DD HH:MM:SS") and print Paeonia's
+#                                                lines, or one category's, such as CallStats
+#   scripts/devices release [iphone] [ipad]      close the sessions and give the devices back
 #
-# Every command except status takes the `devices` lock (scripts/lock), so one
-# worktree drives the devices at a time, and the session frees itself 10
-# minutes after its last command. agent-device commands take points, the
-# screenshot's pixels divided by the screen's scale (3 on the iPhone, 2 on the
-# iPad). `logs` needs a USB cable and opens the macOS password dialog for
-# `log collect`.
+# Each device has its own lock (scripts/lock device-iphone, device-ipad), so two
+# worktrees can each drive one, and a session frees itself 10 minutes after its
+# last command. agent-device commands take points, the screenshot's pixels
+# divided by the screen's scale (3 on the iPhone, 2 on the iPad). `logs` needs
+# a USB cable and opens the macOS password dialog for `log collect`.
 set -euo pipefail
 
 IPHONE_NAME="Cold Harbor"
@@ -29,7 +32,7 @@ ROOT="$(git rev-parse --show-toplevel)"
 STATE_ROOT="$(git rev-parse --path-format=absolute --git-common-dir)/paeonia-devices"
 
 usage() {
-  sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
@@ -49,8 +52,13 @@ is_connected() {
   connected_udids | grep -qx "$1"
 }
 
+# Stops with a clear message when the device is not plugged in or on the network.
+require_connected() {
+  is_connected "$(udid_of "$1")" || { echo "devices: $1 is not connected (scripts/devices status)" >&2; exit 1; }
+}
+
 take_lock() {
-  "$ROOT/scripts/lock" acquire devices 2> >(grep -v "is held by this worktree" >&2) >/dev/null
+  "$ROOT/scripts/lock" acquire "device-$1" 2> >(grep -v "is held by this worktree" >&2) >/dev/null
 }
 
 agent_device() {
@@ -82,14 +90,19 @@ cmd_status() {
     fi
   done
   DevToolsSecurity -status 2>/dev/null | sed 's/^/mac: /'
-  "$ROOT/scripts/lock" status 2>/dev/null | grep -i "devices" || true
+  "$ROOT/scripts/lock" status 2>/dev/null | grep "^device-" || true
 }
 
 cmd_install() {
-  local targets=(iphone ipad)
-  [[ $# -gt 0 ]] && targets=("$@")
+  local targets=("$@")
+  if [[ $# -eq 0 ]]; then
+    for device in iphone ipad; do
+      is_connected "$(udid_of "$device")" && targets+=("$device")
+    done
+    [[ ${#targets[@]} -gt 0 ]] || { echo "devices: neither device is connected" >&2; exit 1; }
+  fi
   for device in "${targets[@]}"; do
-    is_connected "$(udid_of "$device")" || { echo "devices: $device is not connected" >&2; exit 1; }
+    require_connected "$device"
   done
   XCODE_BUILD_AGENT_DESTINATION="generic/platform=iOS" "$ROOT/scripts/xcode-build-agent.sh" | tail -1
   local app=""
@@ -99,8 +112,8 @@ cmd_install() {
     fi
   done
   [[ -d "$app" ]] || { echo "devices: found no device build for $ROOT" >&2; exit 1; }
-  take_lock
   for device in "${targets[@]}"; do
+    take_lock "$device"
     local udid
     udid="$(udid_of "$device")"
     xcrun devicectl device install app --device "$udid" "$app" >/dev/null
@@ -115,7 +128,8 @@ cmd_drive() {
   local udid
   udid="$(udid_of "$device")"
   [[ $# -gt 0 ]] || usage
-  take_lock
+  require_connected "$device"
+  take_lock "$device"
   if [[ "$1" == open ]]; then
     agent_device "$@" --udid "$udid" --session "$device"
   else
@@ -124,25 +138,30 @@ cmd_drive() {
 }
 
 cmd_logs() {
-  [[ $# -eq 2 ]] || usage
-  local device="$1" start="$2"
+  [[ $# -eq 2 || $# -eq 3 ]] || usage
+  local device="$1" start="$2" category="${3:-}"
   local udid
   udid="$(udid_of "$device")"
-  take_lock
+  require_connected "$device"
+  take_lock "$device"
   local out
   out="${TMPDIR:-/tmp}/paeonia-device-logs/$device-$(date +%Y%m%d-%H%M%S).logarchive"
   mkdir -p "$(dirname "$out")"
   osascript -e "do shell script \"/usr/bin/log collect --device-udid $udid --start '$start' --output '$out' && chown -R $(id -un) '$out'\" with administrator privileges" >/dev/null
   echo "archive: $out" >&2
-  /usr/bin/log show "$out" --style compact \
-    --predicate 'subsystem == "no.paeonia.app" AND category == "CallStats"'
+  local predicate='subsystem == "no.paeonia.app"'
+  [[ -n "$category" ]] && predicate+=" AND category == \"$category\""
+  /usr/bin/log show "$out" --style compact --predicate "$predicate"
 }
 
 cmd_release() {
-  for device in iphone ipad; do
+  local targets=(iphone ipad)
+  [[ $# -gt 0 ]] && targets=("$@")
+  for device in "${targets[@]}"; do
+    udid_of "$device" >/dev/null
     agent_device close --session "$device" >/dev/null 2>&1 || true
+    "$ROOT/scripts/lock" release "device-$device" 2>/dev/null || true
   done
-  "$ROOT/scripts/lock" release devices
 }
 
 case "${1:-}" in
@@ -150,6 +169,6 @@ case "${1:-}" in
   install) shift; cmd_install "$@" ;;
   iphone | ipad) cmd_drive "$@" ;;
   logs) shift; cmd_logs "$@" ;;
-  release) cmd_release ;;
+  release) shift; cmd_release "$@" ;;
   *) usage ;;
 esac
