@@ -61,13 +61,14 @@ final class CallPictureInPicture {
         }
         photo.didMove(toParent: contentController)
         // The call screen and the bubble swap with animations that end after the last change
-        // to window membership, so the source is chosen once more just before the app leaves.
+        // to window membership, so just before the app leaves, a source that has left the screen
+        // is replaced.
         resignObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.willResignActiveNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.update() }
+            MainActor.assumeIsolated { self?.update(isLeaving: true) }
         }
         // Inside the app the bubble shows the call. iOS can leave Picture in Picture on screen when
         // the person comes back, next to the bubble, so it closes here.
@@ -164,7 +165,11 @@ final class CallPictureInPicture {
     /// Points Picture in Picture at the partner's video the person sees, or at their photo while the
     /// window shows it. A view can stay in a window while another covers it, or while it fades or
     /// moves away, so being in a window is not enough.
-    private func update() {
+    ///
+    /// iOS starts Picture in Picture as the app leaves only from a controller made before, so
+    /// `isLeaving` keeps the controller while its view is still on screen. A new one made then
+    /// left the camera to stop outside the app (2026-11-17).
+    private func update(isLeaving: Bool = false) {
         guard isEnabled, AVPictureInPictureController.isPictureInPictureSupported() else {
             controller?.canStartPictureInPictureAutomaticallyFromInline = false
             return
@@ -174,6 +179,11 @@ final class CallPictureInPicture {
         partnerViews.removeAll { $0.view == nil }
         photoAnchors.removeAll { $0.view == nil }
         let candidates = shown == .photo ? photoAnchors : partnerViews
+        if isLeaving, controller != nil, let sourceView, Self.isVisible(sourceView),
+           candidates.contains(where: { $0.view === sourceView }) {
+            controller?.canStartPictureInPictureAutomaticallyFromInline = true
+            return
+        }
         guard let visible = candidates.compactMap(\.view).filter(Self.isVisible).max(by: {
             $0.bounds.width * $0.bounds.height < $1.bounds.width * $1.bounds.height
         }) else {
