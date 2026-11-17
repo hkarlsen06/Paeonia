@@ -44,8 +44,13 @@ nonisolated final class CallScreenAudio: @unchecked Sendable {
         lock.withLock { isMicrophoneOnOwnMixer }
     }
 
+    /// The screen's sound under the voice. Apps master their sound near full loudness, and the
+    /// first share with sound drowned the sharer's voice at full volume (2026-11-17).
+    private static let volume: Float = 0.3
+
     func joinCallEngine(_ engine: AVAudioEngine) {
         lock.withLock {
+            player.volume = Self.volume
             engine.attach(player)
             engine.attach(microphone)
             self.engine = engine
