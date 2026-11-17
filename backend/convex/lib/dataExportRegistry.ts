@@ -325,8 +325,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   couple_members: own("user_id", "by_user_id_status_couple_id", {
     group: "relationship",
     about: {
-      en: "Each relationship you have been part of in Paeonia: when you joined, when you left, your birthday if it was added, and the nickname you gave your partner. Only you can see that nickname, and it is only in your download.",
-      nb: "Hvert forhold du har vært med i på Paeonia: når du ble med, når du forlot det, bursdagen din hvis den er lagt til, og kallenavnet du ga partneren din. Bare du ser kallenavnet, og det er bare med i din nedlasting.",
+      en: "Each relationship you have been part of in Paeonia: when you joined, when you finished the first steps together, when you left, your birthday if it was added, and the nickname you gave your partner. Only you can see that nickname, and it is only in your download.",
+      nb: "Hvert forhold du har vært med i på Paeonia: når du ble med, når du var ferdig med de første stegene sammen, når du forlot det, bursdagen din hvis den er lagt til, og kallenavnet du ga partneren din. Bare du ser kallenavnet, og det er bare med i din nedlasting.",
     },
   }),
   couples: child("couple_members", "couple_id", "id", "by_uuid", {

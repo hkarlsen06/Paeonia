@@ -6,7 +6,7 @@ import { isSupersededClientOperation, runClientOperation } from "./lib/clientOpe
 import { assertStartedOnNotInFuture } from "./lib/coupleDays";
 import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
-import { dateArg, optionalTimestampArg, optionalUuidArg } from "./lib/ids";
+import { dateArg, optionalTimestampArg, optionalUuidArg, uuidArg } from "./lib/ids";
 import { deleteCoupleRecaps } from "./lib/recap";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./lib/notifications";
@@ -100,6 +100,25 @@ export const mark_relationship_ended_notice_seen = mutation({
       member._id,
       withUpdatedAt({ status: "ended_notice_seen" as const, ended_notice_seen_at: nowIso() }),
     );
+    return true;
+  },
+});
+
+/** Records that the caller finished the first day sequence in this couple. Returns false for anyone who is not an active member. */
+export const mark_first_day_finished = mutation({
+  args: { p_couple_id: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = uuidArg(args.p_couple_id);
+    const member = await ctx.db
+      .query("couple_members")
+      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
+      .unique();
+    const couple = await getByUuid(ctx, "couples", coupleId);
+    if (!member || member.status !== "active" || couple?.status !== "active") return false;
+    if (!member.first_day_finished_at) {
+      await ctx.db.patch(member._id, withUpdatedAt({ first_day_finished_at: nowIso() }));
+    }
     return true;
   },
 });

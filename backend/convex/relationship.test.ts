@@ -166,6 +166,30 @@ describe("leaving and blocking", () => {
   });
 });
 
+describe("mark_first_day_finished", () => {
+  test("records it for the calling member only, and refuses strangers and ended couples", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const stranger = await createSignedInUser(t, {});
+    await expectFail(t.mutation(api.relationship.mark_first_day_finished, { p_couple_id: couple.coupleId }), "42501");
+    expect(await stranger.as.mutation(api.relationship.mark_first_day_finished, { p_couple_id: couple.coupleId })).toBe(false);
+    expect(await relationshipStateOf(couple.second)).toMatchObject({ first_day_finished_at: null });
+
+    expect(await couple.second.as.mutation(api.relationship.mark_first_day_finished, { p_couple_id: couple.coupleId })).toBe(true);
+    const timestamp = await transactionClock(t);
+    expect(await relationshipStateOf(couple.second)).toMatchObject({ first_day_finished_at: timestamp(NOW) });
+    expect(await relationshipStateOf(couple.first)).toMatchObject({ first_day_finished_at: null });
+
+    // A later call keeps the first time.
+    vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
+    expect(await couple.second.as.mutation(api.relationship.mark_first_day_finished, { p_couple_id: couple.coupleId })).toBe(true);
+    expect(await relationshipStateOf(couple.second)).toMatchObject({ first_day_finished_at: timestamp(NOW) });
+
+    await couple.first.as.mutation(api.relationship.leave_relationship, operation());
+    expect(await couple.first.as.mutation(api.relationship.mark_first_day_finished, { p_couple_id: couple.coupleId })).toBe(false);
+  });
+});
+
 describe("relationship_state in get_access_snapshot", () => {
   test("projects the partner for an active couple and an ended one, and nothing otherwise", async () => {
     const t = newTest();
@@ -191,6 +215,7 @@ describe("relationship_state in get_access_snapshot", () => {
       ended_at: null,
       delete_after: null,
       ended_notice_seen_at: null,
+      first_day_finished_at: null,
     });
 
     await couple.first.as.mutation(api.relationship.leave_relationship, operation());

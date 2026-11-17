@@ -644,6 +644,9 @@ export default defineSchema({
     joined_at: ts,
     left_at: optTs,
     ended_notice_seen_at: optTs,
+    // Set when this member finished the celebration and the first day sequence after pairing.
+    // The app shows that sequence only while it is unset, so signing out or a new phone never replays it.
+    first_day_finished_at: optTs,
     updated_at: ts,
   })
     .index("by_couple_id_user_id", ["couple_id", "user_id"])

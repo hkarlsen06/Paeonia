@@ -60,5 +60,6 @@ export async function getCurrentRelationshipState(ctx: ReaderCtx, userId: string
     ended_at: best.couple.ended_at ?? null,
     delete_after: best.couple.delete_after ?? null,
     ended_notice_seen_at: best.member.ended_notice_seen_at ?? null,
+    first_day_finished_at: best.member.first_day_finished_at ?? null,
   };
 }
