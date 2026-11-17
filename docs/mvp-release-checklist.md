@@ -125,7 +125,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [x] iPad layout pass, in portrait, landscape and split view. Done on 2026-11-17 on the iPad Air 11-inch simulator, with one scenario per screen in both orientations and the tabs in narrow, half-width and short windows.
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
-- [ ] Dynamic Type pass. On 2026-11-17 the iPad at the largest size scaled every tab except Us, where the story row collapsed into one column and the cards stayed in three narrow columns. The iPhone was not checked at that size.
+- [ ] Dynamic Type pass. On 2026-11-17 every iPad tab read well at the largest size after the Us tab fix. The iPhone has not been checked at that size on a device.
 - [ ] Complete the device-specific release gate in [the accessibility report](accessibility-report.md), including real VoiceOver and Voice Control journeys. A smoke check or automated audit does not close this gate.
 - [ ] Reduce Motion pass.
 - [ ] Color contrast is acceptable against plum surfaces.
