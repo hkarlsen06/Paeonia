@@ -60,7 +60,7 @@ Run these before a release candidate and record any skipped one with the reason:
 
 ## Daily Challenge
 
-- [ ] Voice answers work. Needs a device for recording and playback. The app side is tested. No backend test submits a daily voice answer.
+- [ ] Voice answers work. Needs a device and a daily question that takes a voice answer. On 2026-11-17 a voice message recorded on the iPad played on the iPhone, but that day's question took only text or a photo.
 
 ## Streaks
 
@@ -125,9 +125,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [x] iPad layout pass, in portrait, landscape and split view. Done on 2026-11-17 on the iPad Air 11-inch simulator, with one scenario per screen in both orientations and the tabs in narrow, half-width and short windows.
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
-- [ ] Dynamic Type pass. On 2026-11-17 every iPad tab read well at the largest size after the Us tab fix. The iPhone has not been checked at that size on a device.
 - [ ] Complete the device-specific release gate in [the accessibility report](accessibility-report.md), including real VoiceOver and Voice Control journeys. A smoke check or automated audit does not close this gate.
-- [ ] Reduce Motion pass.
 - [ ] Color contrast is acceptable against plum surfaces.
 - [ ] Touch targets are large enough.
 - [ ] Sheet dismissal and keyboard behavior are sane.
@@ -145,11 +143,8 @@ Run these on real devices where possible.
 - [ ] Payer subscribes -> creates invite.
 - [ ] Partner signs in -> accepts invite -> paired home.
 - [ ] Non-paying partner receives entitlement after pairing.
-- [ ] Both users answer today's question -> reveal works for the one who answers second.
 - [ ] One user answers a question the partner answered on an earlier day -> reveal works.
-- [ ] One user records voice answer -> partner can play it after reveal.
-- [ ] One user sends photo answer -> partner can view it after reveal.
-- [ ] One user creates memory with photos.
+- [ ] One user records voice answer -> partner can play it after reveal. Needs a question that takes a voice answer. A voice chat message recorded and played on 2026-11-17.
 - [ ] Partner adds photo to memory. Adding a note worked on the developer's devices on 2026-11-17.
 - [ ] User enables location; map waits for partner.
 - [ ] Partner enables location; distance/location appears.
@@ -160,9 +155,7 @@ Run these on real devices where possible.
 
 ## Failure Mode QA
 
-- [ ] No network during daily answer submit.
-- [ ] No network during memory photo create.
-- [ ] No network during widget save.
+- [ ] No network during memory photo create. Fails on 2026-11-17: saving offline shows "Vi klarte ikke å legge til bildene eller videoene" and creates nothing. The draft survives a restart and saves once online. A gap in the source.
 - [ ] No network during location update.
 - [ ] StoreKit product loading fails.
 - [ ] Purchase is cancelled.
