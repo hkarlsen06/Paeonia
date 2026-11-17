@@ -18,6 +18,7 @@ import { consumeRateLimit, rateLimiter } from "./lib/rateLimits";
 import { addDaysToInstant, nowIso } from "./lib/time";
 import { signMediaUrl } from "./media";
 import { isUsableMediaAsset } from "./lib/mediaAssetState";
+import { findRestorableCouple, isActiveAccount, reopenCouple } from "./lib/relationshipRestore";
 
 const CODE_PATTERN = /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}$/;
 
@@ -259,6 +260,8 @@ export const preview_pairing_invite = mutation({
           inviter_photo_url: await profilePhotoUrl(ctx, partner),
           expires_at: reviewCode.expires_at ?? addDaysToInstant(now, 1),
           has_safety_warning: false,
+          can_restore: false,
+          restore_requested: false,
         },
       ];
     }
@@ -290,6 +293,8 @@ export const preview_pairing_invite = mutation({
           .withIndex("by_pair_id_created_at", (q) => q.eq("pair_id", pairId))
           .first()) !== null
       : false;
+    // Only the two people of the ended couple ever learn that it can come back.
+    const canRestore = pairId !== null && (await findRestorableCouple(ctx, pairId, now)) !== null;
     return [
       {
         invite_id: invite.id,
@@ -298,14 +303,112 @@ export const preview_pairing_invite = mutation({
         inviter_photo_url: await profilePhotoUrl(ctx, inviter),
         expires_at: invite.expires_at,
         has_safety_warning: flagged,
+        can_restore: canRestore,
+        // This person already asked, so the app shows that they are waiting for the answer.
+        restore_requested: canRestore && invite.restore_requested_by_user_id === userId,
       },
     ];
   },
 });
 
+/**
+ * Pairs the invite's creator with `joinerUserId` in a new couple and uses up the invite. The
+ * caller has checked the invite and that neither person has a couple.
+ */
+async function pairAsNewCouple(
+  ctx: MutationCtx,
+  invite: Doc<"pairing_invites">,
+  pairId: string,
+  joinerUserId: string,
+  startedOn: string | undefined,
+): Promise<string> {
+  const now = nowIso();
+  const coupleId = newUuid();
+  await ctx.db.insert("couples", {
+    id: coupleId,
+    pair_id: pairId,
+    status: "active",
+    started_on: startedOn,
+    created_by_user_id: invite.created_by_user_id,
+    created_at: now,
+    updated_at: now,
+  });
+  for (const [memberId, role] of [
+    [invite.created_by_user_id, "creator"],
+    [joinerUserId, "partner"],
+  ] as const) {
+    await ctx.db.insert("couple_members", {
+      couple_id: coupleId,
+      user_id: memberId,
+      role,
+      status: "active",
+      joined_at: now,
+      updated_at: now,
+    });
+  }
+  await markInviteAccepted(ctx, invite, joinerUserId, coupleId);
+  await materializeFirstDayDrafts(ctx, { coupleId, creatorUserId: invite.created_by_user_id, partnerUserId: joinerUserId });
+  for (const memberId of [invite.created_by_user_id, joinerUserId]) {
+    await createRelationshipSyncEvent(ctx, {
+      user_id: memberId,
+      couple_id: coupleId,
+      initiated_by_user_id: joinerUserId,
+      event_kind: "relationship_started",
+      reason: "pairing_invite_accepted",
+      relationship_status: "active",
+      member_status: "active",
+      local_purge_scope: { relationship: "refresh", entitlement: "refresh" },
+    });
+  }
+  return coupleId;
+}
+
+async function markInviteAccepted(
+  ctx: MutationCtx,
+  invite: Doc<"pairing_invites">,
+  joinerUserId: string,
+  coupleId: string,
+): Promise<void> {
+  await ctx.db.patch(
+    invite._id,
+    withUpdatedAt({
+      status: "accepted" as const,
+      accepted_by_user_id: joinerUserId,
+      accepted_at: nowIso(),
+      couple_id: coupleId,
+    }),
+  );
+}
+
+/**
+ * The couple an accepted invite made for `joinerUserId`, while it is still active. A retry of a
+ * join that already went through, or a "start fresh" that lost the race to the creator's answer,
+ * gets it instead of an error.
+ */
+async function coupleJoinedThrough(
+  ctx: ReaderCtx,
+  invite: Doc<"pairing_invites">,
+  joinerUserId: string,
+): Promise<Doc<"couples"> | null> {
+  if (invite.status !== "accepted" || invite.accepted_by_user_id !== joinerUserId) return null;
+  const couple = await getByUuid(ctx, "couples", invite.couple_id);
+  return couple?.status === "active" ? couple : null;
+}
+
+/**
+ * Joins the partner's invite. With `p_restore`, the joiner asks to bring back the ended
+ * relationship of the two (see `lib/relationshipRestore.ts`). When that can happen, the invite
+ * stays pending, its creator is asked, and this returns null. When it can't, the two pair as new,
+ * the same as without `p_restore`, and nobody is told why.
+ */
 export const accept_pairing_invite = mutation({
-  args: { p_invite_code: v.string(), ...clientOperationArgs, p_started_on: v.optional(v.union(v.null(), v.string())) },
-  handler: async (ctx, args) => {
+  args: {
+    p_invite_code: v.string(),
+    ...clientOperationArgs,
+    p_started_on: v.optional(v.union(v.null(), v.string())),
+    p_restore: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<string | null> => {
     const userId = await requireUserId(ctx);
 
     const reviewCode = await findActiveReviewAccessCode(ctx, args.p_invite_code);
@@ -317,11 +420,12 @@ export const accept_pairing_invite = mutation({
     const prefix = codeHash.slice(0, 12);
     await assertPairingInviteAttemptAllowed(ctx, userId, prefix);
     const startedOn = optionalDateArg(args.p_started_on);
+    const restore = args.p_restore === true;
 
     const input = toClientOperation(args, {
       kind: "accept_pairing_invite",
       scope: "pairing_invites",
-      request: { kind: "accept_pairing_invite", code_hash: codeHash, started_on: startedOn ?? "unset" },
+      request: { kind: "accept_pairing_invite", code_hash: codeHash, started_on: startedOn ?? "unset", restore },
     });
     // The SQL logged each rejected attempt and then raised, which rolled the log back.
     // The throws below roll back the rate limiter the same way, so only accepted attempts count.
@@ -329,6 +433,8 @@ export const accept_pairing_invite = mutation({
       const invite = await findInviteByCodeHash(ctx, codeHash);
       if (!invite) fail("22023", "pairing invite is not available");
       if (invite.created_by_user_id === userId) fail("23514", "users cannot accept their own invite");
+      const joined = await coupleJoinedThrough(ctx, invite, userId);
+      if (joined) return { couple_id: joined.id };
       if (invite.status !== "pending") fail("22023", "pairing invite is not pending");
       if (invite.expires_at <= nowIso()) fail("22023", "pairing invite is expired");
       if ((await hasActiveCouple(ctx, userId)) || (await hasActiveCouple(ctx, invite.created_by_user_id))) {
@@ -340,52 +446,13 @@ export const accept_pairing_invite = mutation({
         fail("42501", "pairing is blocked for this pair");
       }
 
-      const now = nowIso();
-      const coupleId = newUuid();
-      await ctx.db.insert("couples", {
-        id: coupleId,
-        pair_id: pairId,
-        status: "active",
-        started_on: startedOn,
-        created_by_user_id: invite.created_by_user_id,
-        created_at: now,
-        updated_at: now,
-      });
-      for (const [memberId, role] of [
-        [invite.created_by_user_id, "creator"],
-        [userId, "partner"],
-      ] as const) {
-        await ctx.db.insert("couple_members", {
-          couple_id: coupleId,
-          user_id: memberId,
-          role,
-          status: "active",
-          joined_at: now,
-          updated_at: now,
-        });
+      if (restore && (await findRestorableCouple(ctx, pairId, nowIso()))) {
+        await askToRestore(ctx, invite, userId);
+        await recordAttempt(ctx, userId, prefix, true);
+        return { couple_id: null };
       }
-      await ctx.db.patch(
-        invite._id,
-        withUpdatedAt({
-          status: "accepted" as const,
-          accepted_by_user_id: userId,
-          accepted_at: now,
-          couple_id: coupleId,
-        }),
-      );
-      await materializeFirstDayDrafts(ctx, { coupleId, creatorUserId: invite.created_by_user_id, partnerUserId: userId });
-      for (const memberId of [invite.created_by_user_id, userId]) {
-        await createRelationshipSyncEvent(ctx, {
-          user_id: memberId,
-          couple_id: coupleId,
-          initiated_by_user_id: userId,
-          event_kind: "relationship_started",
-          reason: "pairing_invite_accepted",
-          relationship_status: "active",
-          member_status: "active",
-          local_purge_scope: { relationship: "refresh", entitlement: "refresh" },
-        });
-      }
+
+      const coupleId = await pairAsNewCouple(ctx, invite, pairId, userId, startedOn);
       await enqueueNotificationForUser(ctx, {
         recipient_user_id: invite.created_by_user_id,
         kind: "partner_joined",
@@ -405,6 +472,106 @@ export const accept_pairing_invite = mutation({
       return { couple_id: coupleId };
     });
     return outcome.couple_id;
+  },
+});
+
+/** Marks the invite with the joiner's request and asks its creator once. Asking again changes nothing. */
+async function askToRestore(ctx: MutationCtx, invite: Doc<"pairing_invites">, joinerUserId: string): Promise<void> {
+  if (invite.restore_requested_by_user_id === joinerUserId) return;
+  await ctx.db.patch(
+    invite._id,
+    withUpdatedAt({ restore_requested_by_user_id: joinerUserId, restore_requested_at: nowIso() }),
+  );
+  await enqueueRestorePush(ctx, invite, invite.created_by_user_id, joinerUserId, "requested");
+}
+
+async function enqueueRestorePush(
+  ctx: MutationCtx,
+  invite: Doc<"pairing_invites">,
+  recipientUserId: string,
+  actorUserId: string,
+  step: "requested" | "restored" | "fresh",
+  coupleId?: string,
+): Promise<void> {
+  await enqueueNotificationForUser(ctx, {
+    recipient_user_id: recipientUserId,
+    kind: "relationship_restore",
+    payload: {
+      type: "relationship_restore",
+      step,
+      invite_id: invite.id,
+      actor_user_id: actorUserId,
+      ...(coupleId ? { couple_id: coupleId } : {}),
+      // Without a couple the root shows the answer screen, and with one Home, so `us` fits both.
+      route: "us",
+      deeplink: "paeonia://us",
+    },
+    dedupe_key: `relationship_restore:${invite.id}:${recipientUserId}:${step}`,
+    redaction_level: "private",
+    apns_push_type: "alert",
+    apns_collapse_id: `relationship-restore:${invite.id}`,
+  });
+}
+
+/**
+ * The invite creator's answer to a request to bring back their ended relationship. With
+ * `p_restore` and while it still can, the old couple opens again. Otherwise, after a "start fresh"
+ * or when it got too late, the two pair as a new couple. Returns the couple and whether it is the
+ * old one. `couple_id` is null when the request no longer stands, such as when the joiner deleted
+ * their account or paired with someone else, and the invite then waits as before.
+ */
+export const answer_relationship_restore = mutation({
+  args: { p_invite_id: v.string(), p_restore: v.boolean(), ...clientOperationArgs },
+  handler: async (ctx, args): Promise<{ couple_id: string | null; restored: boolean }> => {
+    const userId = await requireUserId(ctx);
+    const inviteId = uuidArg(args.p_invite_id);
+    const input = toClientOperation(args, {
+      kind: "answer_relationship_restore",
+      scope: "pairing_invites",
+      request: { kind: "answer_relationship_restore", invite_id: inviteId, restore: args.p_restore },
+    });
+    return await runClientOperation(ctx, userId, input, async () => {
+      const invite = await getByUuid(ctx, "pairing_invites", inviteId);
+      const requesterId = invite?.restore_requested_by_user_id;
+      if (!invite || invite.created_by_user_id !== userId || !requesterId) {
+        return fail("22023", "restore request is not available");
+      }
+      const joined = await coupleJoinedThrough(ctx, invite, requesterId);
+      if (joined) {
+        // A restored couple is older than the invite that brought it back.
+        return { couple_id: joined.id, restored: joined.created_at < invite.created_at };
+      }
+      const now = nowIso();
+      const pairId = await findRelationshipPairId(ctx, userId, requesterId);
+      if (
+        invite.status !== "pending" ||
+        invite.expires_at <= now ||
+        pairId === null ||
+        !(await isActiveAccount(ctx, requesterId)) ||
+        (await hasActiveCouple(ctx, userId)) ||
+        (await hasActiveCouple(ctx, requesterId)) ||
+        (await hasActiveRelationshipBlock(ctx, pairId))
+      ) {
+        await ctx.db.patch(
+          invite._id,
+          withUpdatedAt({ restore_requested_by_user_id: undefined, restore_requested_at: undefined }),
+        );
+        return { couple_id: null, restored: false };
+      }
+
+      const couple = args.p_restore ? await findRestorableCouple(ctx, pairId, now) : null;
+      if (couple) {
+        await reopenCouple(ctx, couple, userId);
+        await markInviteAccepted(ctx, invite, requesterId, couple.id);
+        // What the creator made while waiting for their partner joins the couple's content.
+        await materializeFirstDayDrafts(ctx, { coupleId: couple.id, creatorUserId: userId, partnerUserId: requesterId });
+        await enqueueRestorePush(ctx, invite, requesterId, userId, "restored", couple.id);
+        return { couple_id: couple.id, restored: true };
+      }
+      const coupleId = await pairAsNewCouple(ctx, invite, pairId, requesterId, undefined);
+      await enqueueRestorePush(ctx, invite, requesterId, userId, "fresh", coupleId);
+      return { couple_id: coupleId, restored: false };
+    });
   },
 });
 

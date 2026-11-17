@@ -151,6 +151,7 @@ describe("access snapshot", () => {
         },
         couple_entitlement: null,
         relationship_state: null,
+        restore_request: null,
       },
     ]);
     await expect(t.query(api.access.get_access_snapshot, {})).rejects.toThrow(/42501.*authenticated user required/);

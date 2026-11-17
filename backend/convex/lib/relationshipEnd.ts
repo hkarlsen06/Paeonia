@@ -1,3 +1,4 @@
+import type { Infer } from "convex/values";
 import type { WriterCtx } from "./db";
 import { withUpdatedAt } from "./db";
 import { fail } from "./errors";
@@ -10,6 +11,9 @@ import { enqueueLockScreenRefreshForUser } from "./notifications";
 import { removePresenceRooms } from "./presence";
 import { createRelationshipSyncEvent } from "./syncEvents";
 import { addDaysToInstant, nowIso } from "./time";
+import type { relationshipEndReason } from "./validators";
+
+export type RelationshipEndReason = Infer<typeof relationshipEndReason>;
 
 /**
  * Port of the `delete_latest_locations_on_relationship_end` trigger. Call when
@@ -58,7 +62,7 @@ export async function endRelationshipForPair(
   ctx: WriterCtx,
   pairId: string,
   initiatedByUserId: string,
-  reason: string,
+  reason: RelationshipEndReason,
 ): Promise<boolean> {
   const couples = await ctx.db
     .query("couples")
@@ -84,7 +88,10 @@ export async function endRelationshipForPair(
 
   // The live call ends first, while its row can still go in the couple chat.
   await endLiveCallOfCouple(ctx, couple.id);
-  await ctx.db.patch(couple._id, withUpdatedAt({ status: "ended" as const, ended_at: now, delete_after: cleanupDeadline }));
+  await ctx.db.patch(
+    couple._id,
+    withUpdatedAt({ status: "ended" as const, ended_at: now, end_reason: reason, delete_after: cleanupDeadline }),
+  );
   await deleteLatestLocationsForCouple(ctx, couple.id);
   // The privacy text promises that the dates noted from location and visits go now, not at cleanup.
   await deleteCoupleTogetherDays(ctx, couple.id);

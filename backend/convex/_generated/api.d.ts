@@ -126,6 +126,7 @@ import type * as lib_recap from "../lib/recap.js";
 import type * as lib_relationshipBlock from "../lib/relationshipBlock.js";
 import type * as lib_relationshipCleanup from "../lib/relationshipCleanup.js";
 import type * as lib_relationshipEnd from "../lib/relationshipEnd.js";
+import type * as lib_relationshipRestore from "../lib/relationshipRestore.js";
 import type * as lib_relationshipState from "../lib/relationshipState.js";
 import type * as lib_reportTargets from "../lib/reportTargets.js";
 import type * as lib_reports from "../lib/reports.js";
@@ -309,6 +310,7 @@ declare const fullApi: ApiFromModules<{
   "lib/relationshipBlock": typeof lib_relationshipBlock;
   "lib/relationshipCleanup": typeof lib_relationshipCleanup;
   "lib/relationshipEnd": typeof lib_relationshipEnd;
+  "lib/relationshipRestore": typeof lib_relationshipRestore;
   "lib/relationshipState": typeof lib_relationshipState;
   "lib/reportTargets": typeof lib_reportTargets;
   "lib/reports": typeof lib_reports;

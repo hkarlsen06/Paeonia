@@ -175,6 +175,10 @@ export async function cleanupCoupleContent(
 ): Promise<{ done: boolean; queued_media_count: number; sync_event_count: number }> {
   let queued = 0;
   const unfinished = () => ({ done: false, queued_media_count: queued, sync_event_count: 0 });
+  // Marks the couple before the first row changes, so a restore can never reopen a half-hidden couple.
+  if (couple.cleanup_started_at === undefined) {
+    await ctx.db.patch(couple._id, { cleanup_started_at: now });
+  }
 
   const { instances } = await coupleInstances(ctx, couple.id);
   for (const answer of await coupleAnswers(ctx, couple.id, instances)) {

@@ -7,6 +7,7 @@ import {
 } from "./access";
 import { isCurrentUserBanned, requireUserId } from "./auth";
 import { getCurrentRelationshipState } from "./relationshipState";
+import { restoreRequestFor } from "./relationshipRestore";
 
 /**
  * The row `access:get_access_snapshot` returns and `identity:launch` embeds. A
@@ -15,7 +16,13 @@ import { getCurrentRelationshipState } from "./relationshipState";
  */
 export async function readAccessSnapshot(ctx: QueryCtx) {
   if (await isCurrentUserBanned(ctx)) {
-    return { account_status: "banned", user_entitlement: null, couple_entitlement: null, relationship_state: null };
+    return {
+      account_status: "banned",
+      user_entitlement: null,
+      couple_entitlement: null,
+      relationship_state: null,
+      restore_request: null,
+    };
   }
   const userId = await requireUserId(ctx);
   const own = await resolveUserEntitlement(ctx, userId);
@@ -24,6 +31,8 @@ export async function readAccessSnapshot(ctx: QueryCtx) {
     user_entitlement: own,
     couple_entitlement: forViewer(await resolveCurrentCoupleEntitlement(ctx, userId), own),
     relationship_state: await getCurrentRelationshipState(ctx, userId),
+    // Someone used this person's invite and asked to bring back what the two had.
+    restore_request: await restoreRequestFor(ctx, userId),
   };
 }
 

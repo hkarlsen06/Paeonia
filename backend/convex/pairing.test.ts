@@ -146,6 +146,8 @@ describe("preview_pairing_invite", () => {
         inviter_photo_url: null,
         expires_at: inDays(7),
         has_safety_warning: false,
+        can_restore: false,
+        restore_requested: false,
       },
     ]);
   });
@@ -290,6 +292,8 @@ describe("preview_pairing_invite", () => {
         inviter_photo_url: null,
         expires_at: timestamp(inDays(1)),
         has_safety_warning: false,
+        can_restore: false,
+        restore_requested: false,
       },
     ]);
   });

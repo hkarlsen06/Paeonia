@@ -43,6 +43,15 @@ export const memberStatus = literals(
   "ended_notice_seen",
 );
 export const relationshipStatus = literals("active", "ended", "deleted");
+/** Why `endRelationshipForPair` ended a couple. */
+export const relationshipEndReason = literals(
+  "user_left",
+  "blocked",
+  "reported",
+  "moderation_block",
+  "account_banned",
+  "account_deletion",
+);
 export const locationSource = literals("foreground_open", "manual_refresh", "settings_toggle", "background");
 /** The iOS location access the phone last reported for Paeonia. */
 export const locationPermission = literals("always", "when_in_use", "denied", "restricted", "not_determined");
@@ -91,6 +100,7 @@ export const notificationKind = literals(
   "question_time_reminder",
   "date_reminder",
   "partner_joined",
+  "relationship_restore",
   "pairing_invite_reminder",
   "topics_waiting",
   "reaction_added",

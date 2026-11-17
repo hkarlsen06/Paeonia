@@ -228,7 +228,7 @@ describe("accept_pairing_invite with a first day draft", () => {
     const t = newTest();
     const { creator, partner, draft, drawing } = await inviterWithDraft(t);
 
-    const coupleId = await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" });
+    const coupleId = (await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" }))!;
 
     const state = await t.run(async (ctx) => ({
       couple: await ctx.db.query("couples").withIndex("by_uuid", (q) => q.eq("id", coupleId)).unique(),
@@ -341,14 +341,46 @@ describe("accept_pairing_invite with a first day draft", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
+  test("a couple that comes back on a day it already has a question gets the new draft's answer the next day", async () => {
+    const t = newTest();
+    const { creator, partner } = await inviterWithDraft(t);
+    const coupleId = (await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" }))!;
+    await creator.as.mutation(api.relationship.leave_relationship, op());
+    const draft = await creator.as.mutation(api.firstDay.start_first_day_draft, {});
+    await creator.as.mutation(api.firstDay.save_first_day_answer, {
+      ...op(),
+      p_question_version_id: draft.question!.question_version_id,
+      p_text: "Waiting answer",
+    });
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    const inviteId = await creator.as.mutation(api.pairing.create_pairing_invite, { ...op(), p_invite_code: "DEF456" });
+    expect(await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "DEF456", p_restore: true })).toBeNull();
+
+    expect(
+      await creator.as.mutation(api.pairing.answer_relationship_restore, { ...op(), p_invite_id: inviteId, p_restore: true }),
+    ).toEqual({ couple_id: coupleId, restored: true });
+
+    const state = await t.run(async (ctx) => ({
+      drafts: await ctx.db.query("first_day_drafts").collect(),
+      instances: await ctx.db
+        .query("daily_question_instances")
+        .withIndex("by_couple_id_question_id", (q) => q.eq("couple_id", coupleId))
+        .collect(),
+      texts: await ctx.db.query("daily_answer_text").collect(),
+    }));
+    expect(state.drafts).toEqual([]);
+    expect(new Set(state.instances.map((row) => row.couple_day_id)).size).toBe(state.instances.length);
+    expect(state.texts.map((row) => row.body)).toContain("Waiting answer");
+  });
+
   test("the start date passed to accept wins over the draft's", async () => {
     const t = newTest();
     const { partner } = await inviterWithDraft(t);
-    const coupleId = await partner.as.mutation(api.pairing.accept_pairing_invite, {
+    const coupleId = (await partner.as.mutation(api.pairing.accept_pairing_invite, {
       ...op(),
       p_invite_code: "ABC123",
       p_started_on: "2025-01-01",
-    });
+    }))!;
     const couple = await t.run((ctx) => ctx.db.query("couples").withIndex("by_uuid", (q) => q.eq("id", coupleId)).unique());
     expect(couple?.started_on).toBe("2025-01-01");
     await t.finishAllScheduledFunctions(vi.runAllTimers);

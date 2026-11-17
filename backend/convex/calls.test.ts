@@ -513,7 +513,7 @@ describe("call states", () => {
     const { t, couple } = await setup();
     const callId = await call(couple);
     await couple.second.as.mutation(api.calls.answer_call, { p_call_id: callId, p_device_id: newUuid() });
-    await t.run((ctx) => endRelationshipForPair(ctx, couple.pairId, couple.second.userId, "left"));
+    await t.run((ctx) => endRelationshipForPair(ctx, couple.pairId, couple.second.userId, "user_left"));
     expect(await liveCalls(t)).toEqual([]);
     expect(await callRows(t)).toMatchObject([{ id: callId, couple_id: couple.coupleId, call: { outcome: "completed" } }]);
     expect(await couple.first.as.query(api.calls.get_live_call, {})).toBeNull();
@@ -620,7 +620,7 @@ describe("quality reports", () => {
     expect((await failure(reportCall(couple.first, newUuid()))).code).toBe("42501");
 
     await couple.first.as.mutation(api.calls.end_call, { p_call_id: callId });
-    await t.run((ctx) => endRelationshipForPair(ctx, couple.pairId, couple.second.userId, "left"));
+    await t.run((ctx) => endRelationshipForPair(ctx, couple.pairId, couple.second.userId, "user_left"));
     expect((await failure(reportCall(couple.first, callId))).code).toBe("42501");
     expect(await reports(t)).toEqual([]);
   });

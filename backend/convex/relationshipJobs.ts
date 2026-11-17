@@ -5,6 +5,7 @@ import { optionalTimestampArg } from "./lib/ids";
 import { cleanupCoupleContent, isPurgeable, purgeCoupleContent, ROWS_PER_CHUNK } from "./lib/relationshipCleanup";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { nowIso } from "./lib/time";
+import { relationshipEndReason } from "./lib/validators";
 
 // The relationship jobs that need lib/relationshipEnd.ts (which reaches every game through the badge
 // code) and lib/relationshipCleanup.ts. They live in their own module so relationship.ts, whose
@@ -16,7 +17,7 @@ import { nowIso } from "./lib/time";
  * checked the caller. Returns false when the pair has no active couple.
  */
 export const end_relationship_for_pair = internalMutation({
-  args: { pair_id: v.string(), initiated_by_user_id: v.string(), reason: v.string() },
+  args: { pair_id: v.string(), initiated_by_user_id: v.string(), reason: relationshipEndReason },
   handler: async (ctx, args): Promise<boolean> =>
     await endRelationshipForPair(ctx, args.pair_id, args.initiated_by_user_id, args.reason),
 });

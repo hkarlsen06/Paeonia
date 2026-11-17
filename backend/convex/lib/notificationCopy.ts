@@ -354,6 +354,15 @@ export function notificationAlertBody(
       return nb ? "Kopien din er klar til nedlasting." : "Your copy is ready to download.";
     case "partner_joined":
       return nb ? "Se deres første dag sammen." : "See your first day together.";
+    case "relationship_restore":
+      switch (payload.step) {
+        case "requested":
+          return nb ? "Åpne Paeonia for å si ja eller starte på nytt." : "Open Paeonia to say yes or start fresh.";
+        case "restored":
+          return nb ? "Svarene, samtalene og minnene deres er tilbake." : "Your answers, chats and memories are back.";
+        default:
+          return nb ? "Dere starter på nytt sammen." : "You're starting fresh together.";
+      }
     case "pairing_invite_reminder":
       return nb ? "Kanskje lenken ble borte. Send den til partneren din igjen." : "Maybe the link got lost. Send it to your partner again.";
     case "date_reminder":
@@ -517,6 +526,15 @@ export async function notificationAlertTitle(
       return nb ? "Dataene dine er klare" : "Your data is ready";
     case "partner_joined":
       return nb ? `${name} ble med deg` : `${name} joined you`;
+    case "relationship_restore":
+      switch (payload.step) {
+        case "requested":
+          return nb ? `${name} vil hente tilbake det dere hadde` : `${name} wants to bring back what you had`;
+        case "restored":
+          return nb ? `${name} sa ja` : `${name} said yes`;
+        default:
+          return nb ? `Du og ${inSentence} er koblet sammen` : `You and ${inSentence} are paired`;
+      }
     case "pairing_invite_reminder":
       // Paeonia's own voice. Nobody has joined, so there is no partner to name.
       return nb ? "Invitasjonen din venter fortsatt" : "Your invite is still waiting";

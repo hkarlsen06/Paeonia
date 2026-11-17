@@ -164,6 +164,7 @@ const NOTIFICATION_CATEGORY: Record<
   letter_opened: "partner",
   reaction_added: "partner",
   partner_joined: "partner",
+  relationship_restore: "partner",
   pairing_invite_reminder: "reminder",
   data_export_ready: "account",
   subscription_payment_failed: "account",
@@ -209,6 +210,7 @@ export function notificationThreadId(payload: Record<string, unknown>): string |
     case "reaction_added":
       return "reactions";
     case "partner_joined":
+    case "relationship_restore":
     case "pairing_invite_reminder":
       return "pairing";
     case "streak_reminder":

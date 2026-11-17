@@ -3,7 +3,7 @@ import { findCurrentCouple, userHasDirectEntitlement } from "./access";
 import { assertNoPendingAccountDeletion } from "./accountDeletion";
 import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./coupleDays";
 import { insertDailyAnswer } from "./dailyAnswers";
-import { QuestionContentReader, insertDailyQuestionInstance, pickQuestionVersion } from "./dailyQuestions";
+import { QuestionContentReader, activeInstanceOfDay, insertDailyQuestionInstance, pickQuestionVersion } from "./dailyQuestions";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import { fail } from "./errors";
@@ -229,7 +229,11 @@ export async function materializeFirstDayDrafts(
   );
   let dayStart = now;
   for (const versionId of daysOfQuestions) {
-    const dayId = await getOrCreateCoupleDayAt(ctx, input.coupleId, dayStart);
+    let dayId = await getOrCreateCoupleDayAt(ctx, input.coupleId, dayStart);
+    // A couple that came back may have today's question already, so the draft's takes the next free day.
+    while (await activeInstanceOfDay(ctx, dayId)) {
+      dayId = await getOrCreateCoupleDayAt(ctx, input.coupleId, (await getByUuid(ctx, "couple_days", dayId))!.ends_at);
+    }
     dayStart = (await getByUuid(ctx, "couple_days", dayId))!.ends_at;
     const instanceId = await insertDailyQuestionInstance(ctx, { couple_day_id: dayId, question_version_id: versionId });
     const instance = (await getByUuid(ctx, "daily_question_instances", instanceId))!;

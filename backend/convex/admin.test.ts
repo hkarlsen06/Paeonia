@@ -76,6 +76,7 @@ describe("banning", () => {
       user_entitlement: null,
       couple_entitlement: null,
       relationship_state: null,
+      restore_request: null,
     });
     // Every other function treats the banned person as signed out.
     await expectFail(couple.first.as.query(api.identity.get_notification_preferences, {}), "42501");

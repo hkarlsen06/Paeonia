@@ -90,6 +90,7 @@ describe("profile", () => {
       user_entitlement: expect.objectContaining({ is_entitled: false }),
       couple_entitlement: null,
       relationship_state: null,
+      restore_request: null,
     });
     expect((await as.mutation(api.identity.launch, {})).profile?.user_id).toBe(first.profile?.user_id);
 
@@ -119,6 +120,7 @@ describe("profile", () => {
       user_entitlement: null,
       couple_entitlement: null,
       relationship_state: null,
+      restore_request: null,
     });
   });
 

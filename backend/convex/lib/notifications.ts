@@ -63,6 +63,7 @@ const NOTIFICATION_PAYLOAD_FIELDS = {
     "milestone", "count",
   ],
   partner_joined: ["type", "couple_id", "actor_user_id", "route", "deeplink"],
+  relationship_restore: ["type", "step", "invite_id", "couple_id", "actor_user_id", "route", "deeplink"],
   pairing_invite_reminder: ["type", "route", "deeplink", "invite_id"],
   topics_waiting: ["type", "couple_id", "actor_user_id", "route", "deeplink"],
   reaction_added: [

@@ -19,6 +19,7 @@ import {
   moderationStatus,
   notificationKind,
   reactionTargetKind,
+  relationshipEndReason,
   relationshipStatus,
   reviewScenario,
   storekitEnvironment,
@@ -663,7 +664,11 @@ export default defineSchema({
     created_at: ts,
     updated_at: ts,
     ended_at: optTs,
+    // Why the couple ended. Only a couple that one partner left can come back (`lib/relationshipRestore.ts`).
+    end_reason: v.optional(relationshipEndReason),
     delete_after: optTs,
+    // Set by the first cleanup chunk. From then on the couple can never come back.
+    cleanup_started_at: optTs,
     // Set when the hard purge has removed the couple's content. The couple row stays.
     purged_at: optTs,
   })
@@ -1305,6 +1310,10 @@ export default defineSchema({
     couple_id: optUuid,
     // When the reminder cron dealt with this invite, whether or not it sent the push. See pairingReminders.ts.
     reminded_at: optTs,
+    // Someone used this invite and asked to bring back their ended relationship with its creator.
+    // The invite stays pending until the creator answers (`pairing:answer_relationship_restore`).
+    restore_requested_by_user_id: optUuid,
+    restore_requested_at: optTs,
     created_at: ts,
     updated_at: ts,
   })
