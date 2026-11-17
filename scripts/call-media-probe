@@ -54,6 +54,6 @@ xcrun swiftc -O \
   -enable-upcoming-feature MemberImportVisibility \
   -F "$FRAMEWORKS" -Xlinker -rpath -Xlinker "$FRAMEWORKS" \
   -o "$BUILD_DIR/call-media-probe" \
-  "$ROOT_DIR/ios/Scripts/call-media-probe.swift" "$CALLS/CallCodecs.swift" "$CALLS/CallStatsLog.swift"
+  "$ROOT_DIR/ios/Scripts/call-media-probe.swift" "$CALLS/CallCodecs.swift" "$CALLS/CallStatsLog.swift" "$CALLS/CallFrameGate.swift"
 
 "$BUILD_DIR/call-media-probe" "$@"

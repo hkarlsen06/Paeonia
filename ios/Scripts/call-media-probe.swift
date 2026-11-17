@@ -37,8 +37,8 @@ enum CallMediaProbe {
         let peers = [caller, partner]
         let (direct, turn) = await run(peers, tuned: tuned, microphone)
         say("Sharing the caller's \(ScreenSource.width)x\(ScreenSource.height) screen of scrolling text with a video "
-            + "playing on it, at 60 fps, beside its camera, for \(Int(screenSeconds)) s on the direct path's limits, "
-            + "then on TURN's, then on the direct path's for a warm phone and for a hot one.")
+            + "playing on it, at about 48 fps at uneven gaps, beside its camera, for \(Int(screenSeconds)) s on the "
+            + "direct path's limits, then on TURN's, then on the direct path's for a warm phone and for a hot one.")
         let screenPhases = await shareScreen(caller, tuned: tuned, microphone)
         let afterVoice = await shareAfterVoice(factory: factory, tuned: tuned, microphone)
 
@@ -288,7 +288,9 @@ extension CallMediaProbe {
                     caller.videoSender,
                     to: CallVideoLimits(path: phase.path, heat: phase.heat, besideScreen: true)
                 )
-                CallCodecs.limitScreen(caller.screenSender, to: .screen(path: phase.path, heat: phase.heat))
+                let screenLimits = CallVideoLimits.screen(path: phase.path, heat: phase.heat)
+                CallCodecs.limitScreen(caller.screenSender, to: screenLimits)
+                caller.screen.setMaxFramesPerSecond(screenLimits.maxFramesPerSecond)
             }
             let samples = await record([caller], for: screenSeconds, microphone) { _, _ in }[caller.name] ?? []
             phases.append((phase, samples))
@@ -802,17 +804,18 @@ nonisolated final class NoiseCamera: @unchecked Sendable {
 }
 
 /// A phone screen at the size `CallScreenCapture` asks ScreenCaptureKit for, of lines of text-like
-/// marks that scroll at 60 fps, the most ScreenCaptureKit sends on iOS, with a video playing in a
-/// 16:9 box across the middle. The video is grain that changes every frame, so the encoder wants
-/// more bits than the limits allow, as a phone screen with a video or a game on it does.
+/// marks that scroll, with a video playing in a 16:9 box across the middle. Its frames come on a
+/// 120 Hz display's ticks, about 48 a second at uneven gaps, as an iPhone's ScreenCaptureKit sent
+/// them on 2026-11-17, and go to WebRTC through the app's `CallFrameGate`. The video is grain that
+/// changes every frame, so the encoder wants more bits than the limits allow, as a phone screen
+/// with a video or a game on it does.
 nonisolated final class ScreenSource: @unchecked Sendable {
     static let width = 652
     static let height = 1_412
     static let videoRows = height / 3 ..< height / 3 + width * 9 / 16
 
-    private let source: LKRTCVideoSource
-    private let capturer: LKRTCVideoCapturer
-    private let queue = DispatchQueue(label: "screen-source")
+    private let gate: CallFrameGate
+    private var queue: DispatchQueue { gate.queue }
     private var timer: DispatchSourceTimer?
     private var pool: CVPixelBufferPool?
     /// Twice the screen's height, so a screen-sized window can scroll down it.
@@ -821,8 +824,7 @@ nonisolated final class ScreenSource: @unchecked Sendable {
     private var random = Random(state: 0x853c_49e6_748f_ea9b)
 
     init(source: LKRTCVideoSource) {
-        self.source = source
-        capturer = LKRTCVideoCapturer(delegate: source)
+        gate = CallFrameGate(source: source, queue: DispatchQueue(label: "screen-source"))
         let attributes: [CFString: Any] = [
             kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
             kCVPixelBufferWidthKey: Self.width,
@@ -843,15 +845,29 @@ nonisolated final class ScreenSource: @unchecked Sendable {
 
     func start() {
         let timer = DispatchSource.makeTimerSource(queue: queue)
-        timer.schedule(deadline: .now(), repeating: .nanoseconds(1_000_000_000 / 60))
-        timer.setEventHandler { [weak self] in self?.sendFrame() }
+        timer.schedule(deadline: .now(), repeating: .nanoseconds(1_000_000_000 / 120))
+        timer.setEventHandler { [weak self] in self?.tick() }
         timer.resume()
         self.timer = timer
+        gate.startResending()
     }
 
     func stop() {
         timer?.cancel()
         timer = nil
+        gate.stopResending()
+    }
+
+    /// As `CallScreenMedia.limit(to:)` sets it.
+    func setMaxFramesPerSecond(_ rate: Int) {
+        gate.setMaxFramesPerSecond(rate)
+    }
+
+    /// Two ticks in five bring a frame.
+    private func tick() {
+        if random.next() % 5 < 2 {
+            sendFrame()
+        }
     }
 
     private func sendFrame() {
@@ -880,12 +896,7 @@ nonisolated final class ScreenSource: @unchecked Sendable {
             memset(chroma, 128, chromaBytes)
         }
         CVPixelBufferUnlockBaseAddress(buffer, [])
-        let frame = LKRTCVideoFrame(
-            buffer: LKRTCCVPixelBuffer(pixelBuffer: buffer),
-            rotation: ._0,
-            timeStampNs: Int64(CMClockGetTime(CMClockGetHostTimeClock()).seconds * 1_000_000_000)
-        )
-        source.capturer(capturer, didCapture: frame)
+        gate.take(LKRTCCVPixelBuffer(pixelBuffer: buffer), rotation: ._0)
     }
 }
 

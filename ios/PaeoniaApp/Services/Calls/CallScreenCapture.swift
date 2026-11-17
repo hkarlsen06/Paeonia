@@ -66,7 +66,7 @@ final class CallScreenCapture {
         let previous = phase
         phase = .idle
         releasePicker()
-        frames.stopResending()
+        frames.gate.stopResending()
         switch previous {
         case .idle, .picking:
             break
@@ -78,7 +78,7 @@ final class CallScreenCapture {
 
     /// The most frames a second WebRTC gets of the screen (`CallVideoLimits`).
     func setMaxFramesPerSecond(_ rate: Int) {
-        frames.setMaxFramesPerSecond(rate)
+        frames.gate.setMaxFramesPerSecond(rate)
     }
 
     fileprivate func picked(_ filter: SCContentFilter) {
@@ -86,7 +86,7 @@ final class CallScreenCapture {
         releasePicker()
         let stream = SCStream(filter: filter, configuration: Self.configuration(for: filter), delegate: frames)
         do {
-            try stream.addStreamOutput(frames, type: .screen, sampleHandlerQueue: frames.queue)
+            try stream.addStreamOutput(frames, type: .screen, sampleHandlerQueue: frames.gate.queue)
         } catch {
             phase = .idle
             onShareChange?(.failed)
@@ -110,7 +110,7 @@ final class CallScreenCapture {
                 return
             }
             phase = .sharing(stream)
-            frames.startResending()
+            frames.gate.startResending()
             onShareChange?(.on)
         }
     }
@@ -162,60 +162,30 @@ final class CallScreenCapture {
     }
 }
 
-/// ScreenCaptureKit's callbacks, which arrive on its own threads. Frames go straight to WebRTC on
-/// `queue`, and the rest moves to the main thread.
+/// ScreenCaptureKit's callbacks, which arrive on its own threads. Frames go to WebRTC through
+/// `gate` on `queue`, and the rest moves to the main thread.
 private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCStreamDelegate,
     SCContentSharingPickerObserver, @unchecked Sendable {
-    let queue = DispatchQueue(label: "no.paeonia.call-screen", qos: .userInteractive)
+    let gate: CallFrameGate
     /// Set and read on the main thread only.
     nonisolated(unsafe) weak var capture: CallScreenCapture?
 
-    private let source: LKRTCVideoSource
-    private let capturer: LKRTCVideoCapturer
-    /// The rest is only touched on `queue`.
-    private var lastFrame: LKRTCVideoFrame?
-    private var lastSent = ContinuousClock.now
-    private var resendTimer: DispatchSourceTimer?
-    /// Atomic so the stats can read them on the main thread without making `queue` wait.
+    /// Atomic so the stats can read them on the main thread without making the gate's queue wait.
     private static let picturesCaptured = Atomic(0)
     private static let pixelFormat = Atomic<OSType>(0)
-    private var minFrameGap = Duration.seconds(1) / 30
-    /// A frame came sooner than `minFrameGap` after the last one sent, and the newest frame goes
-    /// once the gap has passed.
-    private var isSendWaiting = false
 
     init(source: LKRTCVideoSource) {
-        self.source = source
-        capturer = LKRTCVideoCapturer(delegate: source)
+        gate = CallFrameGate(
+            source: source, queue: DispatchQueue(label: "no.paeonia.call-screen", qos: .userInteractive))
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        guard type == .screen, let frame = Self.frame(from: sampleBuffer) else { return }
+        guard type == .screen, let (buffer, rotation) = Self.picture(from: sampleBuffer) else { return }
         Self.picturesCaptured.add(1, ordering: .relaxed)
-        if Self.pixelFormat.load(ordering: .relaxed) == 0, let buffer = sampleBuffer.imageBuffer {
-            Self.pixelFormat.store(CVPixelBufferGetPixelFormatType(buffer), ordering: .relaxed)
+        if Self.pixelFormat.load(ordering: .relaxed) == 0 {
+            Self.pixelFormat.store(CVPixelBufferGetPixelFormatType(buffer.pixelBuffer), ordering: .relaxed)
         }
-        lastFrame = frame
-        sendNewest()
-    }
-
-    /// iOS sends up to 60 frames a second, and WebRTC would only drop the extra ones after it
-    /// took them in, so they stop here.
-    func setMaxFramesPerSecond(_ rate: Int) {
-        queue.async { [self] in minFrameGap = .seconds(1) / rate }
-    }
-
-    /// Sends the newest frame now, or when `minFrameGap` has passed since the last send, so the
-    /// last frame of a scroll still goes when no frame follows it.
-    private func sendNewest() {
-        guard !isSendWaiting, let lastFrame else { return }
-        let wait = minFrameGap - (ContinuousClock.now - lastSent)
-        guard wait > .zero else { return send(lastFrame) }
-        isSendWaiting = true
-        queue.asyncAfter(deadline: .now() + .nanoseconds(Int(wait / .nanoseconds(1)))) { [self] in
-            isSendWaiting = false
-            sendNewest()
-        }
+        gate.take(buffer, rotation: rotation)
     }
 
     static var captured: CallStatsSample.Captured {
@@ -237,40 +207,9 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
         return text
     }
 
-    /// A screen that stands still sends no frames, and the encoder can only repair a lost frame
-    /// with a new one, so the last frame goes again every second until the screen changes.
-    func startResending() {
-        queue.async { [self] in
-            let timer = DispatchSource.makeTimerSource(queue: queue)
-            timer.schedule(deadline: .now() + 1, repeating: 1)
-            timer.setEventHandler { [weak self] in self?.resendIfStill() }
-            timer.resume()
-            resendTimer?.cancel()
-            resendTimer = timer
-        }
-    }
-
-    func stopResending() {
-        queue.async { [self] in
-            resendTimer?.cancel()
-            resendTimer = nil
-            lastFrame = nil
-        }
-    }
-
-    private func resendIfStill() {
-        guard let lastFrame, ContinuousClock.now - lastSent >= .seconds(1) else { return }
-        send(LKRTCVideoFrame(buffer: lastFrame.buffer, rotation: lastFrame.rotation, timeStampNs: Self.now()))
-    }
-
-    private func send(_ frame: LKRTCVideoFrame) {
-        lastSent = .now
-        source.capturer(capturer, didCapture: frame)
-    }
-
     /// A new picture, turned the way the person holds the phone. Frames that only say the screen
     /// did not change carry no picture.
-    private static func frame(from sampleBuffer: CMSampleBuffer) -> LKRTCVideoFrame? {
+    private static func picture(from sampleBuffer: CMSampleBuffer) -> (LKRTCCVPixelBuffer, LKRTCVideoRotation)? {
         guard let attachments = (CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false)
             as? [[SCStreamFrameInfo: Any]])?.first,
             let status = (attachments[.status] as? Int).flatMap(SCFrameStatus.init(rawValue:)),
@@ -280,11 +219,7 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
             return nil
         }
         let orientation = (attachments[.videoOrientation] as? UInt32).flatMap(CGImagePropertyOrientation.init)
-        return LKRTCVideoFrame(
-            buffer: LKRTCCVPixelBuffer(pixelBuffer: pixelBuffer),
-            rotation: rotation(for: orientation ?? .up),
-            timeStampNs: now()
-        )
+        return (LKRTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation(for: orientation ?? .up))
     }
 
     /// The turns LiveKit applies to ReplayKit's frames, which carry the same orientation values.
@@ -295,10 +230,6 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
         case .right: ._270
         default: ._0
         }
-    }
-
-    private static func now() -> Int64 {
-        Int64(CMClockGetTime(CMClockGetHostTimeClock()).seconds * 1_000_000_000)
     }
 
     func stream(_ stream: SCStream, didStopWithError error: any Error) {
