@@ -52,7 +52,9 @@ nonisolated final class CallH265Encoder: LKRTCVideoEncoderH265 {
     var appliedLimits: [Double]?? {
         guard let session else { return nil }
         var limits: CFTypeRef?
-        VTSessionCopyProperty(session, key: kVTCompressionPropertyKey_DataRateLimits, allocator: nil, valueOut: &limits)
+        _ = withUnsafeMutablePointer(to: &limits) {
+            VTSessionCopyProperty(session, key: kVTCompressionPropertyKey_DataRateLimits, allocator: nil, valueOut: $0)
+        }
         return .some((limits as? [NSNumber])?.map(\.doubleValue))
     }
 

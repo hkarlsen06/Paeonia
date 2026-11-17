@@ -155,8 +155,9 @@ nonisolated final class CallScreenAudio: @unchecked Sendable {
     }
 
     private static func buffer(from sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
-        guard let description = sampleBuffer.formatDescription else { return nil }
-        let format = AVAudioFormat(cmAudioFormatDescription: description)
+        guard let description = sampleBuffer.formatDescription,
+              let format = AVAudioFormat(formatDescription: description)
+        else { return nil }
         let frames = AVAudioFrameCount(sampleBuffer.numSamples)
         guard frames > 0, let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else { return nil }
         buffer.frameLength = frames
