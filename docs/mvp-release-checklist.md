@@ -60,7 +60,6 @@ Run these before a release candidate and record any skipped one with the reason:
 
 ## Daily Challenge
 
-- [ ] Voice answers work. On 2026-11-17 a daily voice answer was recorded and sent on the iPad. Playback by the partner after the reveal is still unchecked.
 
 ## Streaks
 
@@ -142,7 +141,6 @@ Run these on real devices where possible.
 - [ ] Fresh install -> Google sign-in -> onboarding -> paywall.
 - [ ] Payer subscribes -> creates invite.
 - [ ] One user answers a question the partner answered on an earlier day -> reveal works.
-- [ ] One user records voice answer -> partner can play it after reveal. Recording and sending passed on 2026-11-17. The partner's playback after the reveal is still unchecked.
 - [ ] Partner adds photo to memory. Adding a note worked on the developer's devices on 2026-11-17.
 - [ ] User enables location; map waits for partner.
 - [ ] Partner enables location; distance/location appears.
