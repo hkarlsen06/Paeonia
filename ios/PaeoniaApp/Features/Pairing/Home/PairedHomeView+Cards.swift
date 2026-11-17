@@ -272,7 +272,9 @@ extension PairedHomeView {
 
     var cardsLayout: AnyLayout {
         isWideLayout
-            ? AnyLayout(HomeWideLayout(spacing: PaeoniaSpacing.space16))
+            ? AnyLayout(HomeWideLayout(
+                columns: dynamicTypeSize.isAccessibilitySize ? 2 : 3, spacing: PaeoniaSpacing.space16
+            ))
             : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
     }
 

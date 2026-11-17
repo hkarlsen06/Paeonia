@@ -4,7 +4,8 @@ extension PairedHomeView {
     var milestoneAndWidget: some View {
         // One layout keeps the cards' identity, so a text size change doesn't
         // reset them or close the milestone sheet. On a wide iPad each tile is a
-        // column wide, so they stay side by side at every text size.
+        // column wide, or half of one at accessibility sizes, where the grid has two
+        // columns, so they stay side by side at every text size.
         let layout = if dynamicTypeSize.isAccessibilitySize && !isWideLayout {
             AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
         } else {

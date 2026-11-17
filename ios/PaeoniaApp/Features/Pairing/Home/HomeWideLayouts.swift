@@ -4,18 +4,21 @@ import SwiftUI
 nonisolated enum HomeWideRole: LayoutValueKey {
     /// One column wide.
     case card
-    /// The milestone and drawing tiles, side by side across two columns.
+    /// The milestone and drawing tiles, side by side across two of three columns, or in
+    /// one column when there are fewer.
     case tiles
 
     static let defaultValue = HomeWideRole.card
 }
 
-/// The Us tab on a wide iPad: three columns about phone width. The cards keep the
+/// The Us tab on a wide iPad: three columns about phone width, or two at accessibility
+/// text sizes, so large text has room beside a card's buttons. The cards keep the
 /// phone's order and fill in the way people read, left to right and then down. Each card
 /// goes in the column that ends highest, and ties go left, so today's questions start at
 /// the top left. The tile pair takes the two neighboring columns that end highest, so its
 /// squares line up with the columns and with the square map.
 struct HomeWideLayout: Layout {
+    var columns = 3
     var spacing: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
@@ -34,10 +37,10 @@ struct HomeWideLayout: Layout {
     }
 
     private func frames(width: CGFloat, subviews: Subviews) -> [CGRect] {
-        let columnWidth = (width - 2 * spacing) / 3
-        var columnTops: [CGFloat] = [0, 0, 0]
+        let columnWidth = (width - CGFloat(columns - 1) * spacing) / CGFloat(columns)
+        var columnTops = [CGFloat](repeating: 0, count: columns)
         return subviews.map { subview in
-            let span = subview[HomeWideRole.self] == .tiles ? 2 : 1
+            let span = subview[HomeWideRole.self] == .tiles && columns > 2 ? 2 : 1
             let starts = Array(0...(columnTops.count - span))
             let top = { (start: Int) in columnTops[start..<(start + span)].max() ?? 0 }
             // `min(by:)` keeps the first of equal elements, so ties go left.

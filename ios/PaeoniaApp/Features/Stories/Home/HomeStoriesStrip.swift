@@ -45,6 +45,10 @@ struct HomeStoriesStrip: View {
     @Environment(\.avatarStyling) private var avatarStyling
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// A marker's width in the row at accessibility sizes, so its name and the add button fit
+    /// on one line. 66 points at the default size is about 220 at the largest.
+    @ScaledMetric(relativeTo: .caption) private var accessibleRowMarkerWidth: CGFloat = 66
+
     /// Center to center, wide enough that the two bubbles never touch, and narrow enough
     /// that the partner's bubble stays clear of the streak in the corner.
     private var avatarSpacing: CGFloat { StoryNoteBubble.maxWidth - avatarSize + PaeoniaSpacing.space8 }
@@ -166,21 +170,30 @@ struct HomeStoriesStrip: View {
                     AnyView(partnerView.frame(height: diameter, alignment: alignment))
                 )
             } else if dynamicTypeSize.isAccessibilitySize {
-                VStack(spacing: PaeoniaSpacing.space24) {
-                    ownView
-                    partnerView
+                // Side by side while the wider markers fit, as on a wide iPad, and one
+                // above the other on a phone.
+                ViewThatFits(in: .horizontal) {
+                    sideBySide(ownView, partnerView)
+                    VStack(spacing: PaeoniaSpacing.space24) {
+                        ownView
+                        partnerView
+                    }
                 }
                 .frame(maxWidth: .infinity)
             } else {
-                HStack(alignment: .storyAvatarMiddle, spacing: middle == nil ? avatarSpacing : -middleOverlap) {
-                    ownView
-                    if let middle {
-                        middle
-                    }
-                    partnerView
-                }
-                .frame(maxWidth: .infinity)
+                sideBySide(ownView, partnerView)
+                    .frame(maxWidth: .infinity)
             }
+        }
+    }
+
+    private func sideBySide(_ own: some View, _ partner: some View) -> some View {
+        HStack(alignment: .storyAvatarMiddle, spacing: middle == nil ? avatarSpacing : -middleOverlap) {
+            own
+            if let middle {
+                middle
+            }
+            partner
         }
     }
 
@@ -227,7 +240,10 @@ extension HomeStoriesStrip {
         let width = max(
             StoryNoteBubble.maxWidth, avatarSize + 2 * max(StoryRingAvatar.ringGap, avatarSize * decoration.outset)
         )
-        return dynamicTypeSize.isAccessibilitySize ? max(width, avatarSize + 2 * PaeoniaSpacing.space32) : width
+        guard dynamicTypeSize.isAccessibilitySize else { return width }
+        let accessibleWidth = max(width, avatarSize + 2 * PaeoniaSpacing.space32)
+        // The map places the markers itself and leaves out the names, so only the row widens.
+        return arrange == nil ? max(accessibleWidth, accessibleRowMarkerWidth) : accessibleWidth
     }
 
     private var actionClearance: CGFloat {
@@ -380,12 +396,13 @@ extension HomeStoriesStrip {
         }
     }
 
+    /// One line, shrinking for a long name, so a name never breaks in the middle of a word.
     private func name(_ text: Text) -> some View {
         text
             .font(PaeoniaTypography.caption)
             .foregroundStyle(.paeoniaTextSecondary)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
             .accessibilityHidden(true)
     }
 

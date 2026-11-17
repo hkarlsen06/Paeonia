@@ -38,13 +38,24 @@ struct StoryBadgeStyle: ViewModifier {
 private struct StoryActionLabelStyle: LabelStyle {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    /// At accessibility sizes the icon goes above the text only when the marker is too
+    /// narrow for one line, as on the map. A stacked label in a capsule reads as a tall circle.
+    @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space4))
-            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space4))
-        layout {
+        let row = HStack(spacing: PaeoniaSpacing.space4) {
             configuration.icon
             configuration.title
+        }
+        if dynamicTypeSize.isAccessibilitySize {
+            ViewThatFits(in: .horizontal) {
+                row
+                VStack(spacing: PaeoniaSpacing.space4) {
+                    configuration.icon
+                    configuration.title
+                }
+            }
+        } else {
+            row
         }
     }
 }
