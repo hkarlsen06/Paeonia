@@ -271,11 +271,16 @@ extension RecordingSyncStream: SyncStream {}
 
 actor RetryThenSucceedPendingOperationHandler {
     nonisolated let operationKind: SyncPendingOperationKind
+    private let firstFailure: any Error
     private var sendCount = 0
     private var waiters: [CheckedContinuation<Void, Never>] = []
 
-    init(operationKind: SyncPendingOperationKind) {
+    init(
+        operationKind: SyncPendingOperationKind,
+        firstFailure: any Error = RecordingSyncStreamError.requestedFailure
+    ) {
         self.operationKind = operationKind
+        self.firstFailure = firstFailure
     }
 
     func waitForSendCount(_ expectedCount: Int) async {
@@ -297,7 +302,7 @@ actor RetryThenSucceedPendingOperationHandler {
         waiters.removeAll()
 
         if sendCount == 1 {
-            throw RecordingSyncStreamError.requestedFailure
+            throw firstFailure
         }
 
         return .succeeded

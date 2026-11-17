@@ -56,8 +56,10 @@ extension PaeoniaSyncService {
         return result
     }
 
-    /// The phone has a connection again. Writes that failed only because it had none
-    /// go now instead of after their retry delay.
+    /// The phone may have a connection again (`NetworkPathSnapshot.mayHaveReconnected`).
+    /// Writes that failed only because it had none go now instead of after their retry
+    /// delay. A run in progress takes it as a follow-up, so a burst of path changes makes
+    /// at most one more run.
     func connectionCameBack() {
         guard hasStarted else {
             return

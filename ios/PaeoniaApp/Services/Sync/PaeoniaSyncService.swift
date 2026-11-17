@@ -1,5 +1,4 @@
 import Foundation
-import Network
 
 /// Who holds the sync service's single run slot. A run, a session handover and a
 /// privacy purge each need every other run to wait.
@@ -22,6 +21,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     let syncTimeout: Duration
     let failedRunRetryDelay: TimeInterval
     private let liveSync: (any LiveSyncCoordinating)?
+    private let networkPaths: @Sendable () -> AsyncStream<NetworkPathSnapshot>
 
     var session: SyncSession?
     var hasStarted = false
@@ -51,7 +51,8 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         minimumForegroundSyncInterval: TimeInterval = 60,
         syncTimeout: Duration = .seconds(30),
         failedRunRetryDelay: TimeInterval = 60,
-        liveSync: (any LiveSyncCoordinating)? = nil
+        liveSync: (any LiveSyncCoordinating)? = nil,
+        networkPaths: @escaping @Sendable () -> AsyncStream<NetworkPathSnapshot> = NetworkPathSnapshot.updates
     ) {
         let needsDefaultStreamStores = streams.isEmpty
         && (
@@ -94,6 +95,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         self.syncTimeout = syncTimeout
         self.failedRunRetryDelay = failedRunRetryDelay
         self.liveSync = liveSync
+        self.networkPaths = networkPaths
     }
 
     private static func resolveLocalPrivacyPurger(
@@ -183,14 +185,14 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     func start() {
         // Before the guard, because `runOnce` also marks the service started.
         if connectionTask == nil {
+            let paths = networkPaths()
             connectionTask = Task { [weak self] in
-                var wasOffline = false
-                for await path in NWPathMonitor() {
-                    let isOnline = path.status == .satisfied
-                    if wasOffline, isOnline {
+                var previous: NetworkPathSnapshot?
+                for await path in paths {
+                    if path.mayHaveReconnected(since: previous) {
                         await self?.connectionCameBack()
                     }
-                    wasOffline = !isOnline
+                    previous = path
                 }
             }
         }

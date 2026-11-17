@@ -155,6 +155,50 @@ struct PaeoniaSyncServiceTests {
         #expect(readyOperations.isEmpty)
     }
 
+    /// The developer's iPad runs an always-on VPN. In airplane mode the tunnel kept the
+    /// path online, so only its route changed when Wi-Fi came back, and a chat message
+    /// sent offline kept waiting for its retry date.
+    @Test(.timeLimit(.minutes(1)))
+    func aWriteThatFailedOfflineGoesWhenTheNetworkChangesWhileOnline() async throws {
+        let operation = SyncClientOperation(clientID: UUID(), clientSequence: 1, localCreatedAt: Date())
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        try await pendingStore.enqueue(
+            PendingSyncOperationRequest(
+                ownerUserID: .testUserID,
+                operation: operation,
+                operationKind: .submitDailyAnswer,
+                idempotencyScope: "daily:\(operation.id)"
+            )
+        )
+        let handler = RetryThenSucceedPendingOperationHandler(
+            operationKind: .submitDailyAnswer,
+            firstFailure: URLError(.notConnectedToInternet)
+        )
+        let (paths, network) = AsyncStream.makeStream(of: NetworkPathSnapshot.self)
+        let coordinator = PaeoniaSyncService(
+            streams: [
+                PendingSyncOperationDrainStream(
+                    handlers: [handler],
+                    // Far enough out that only the network change can send it in time.
+                    retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 3_600)
+                ),
+            ],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: pendingStore,
+            networkPaths: { paths }
+        )
+        await coordinator.configure(session: .test())
+        network.yield(NetworkPathSnapshot(isOnline: true, route: ["utun4:other"]))
+        await coordinator.start()
+        await handler.waitForSendCount(1)
+
+        network.yield(NetworkPathSnapshot(isOnline: true, route: ["utun4:other", "en0:wifi", "uses:wifi"]))
+        await handler.waitForSendCount(2)
+
+        await coordinator.stop()
+        network.finish()
+    }
+
     @Test func failedRunSchedulesRetry() async {
         let stream = FailOnceSyncStream(streamKey: .relationship)
         let coordinator = PaeoniaSyncService(
