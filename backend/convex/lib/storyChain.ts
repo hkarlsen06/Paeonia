@@ -17,16 +17,13 @@ export type StoryOpening = { id: string; text: string };
 export type StoryWord = { id: string; text: string };
 
 /** A line is 2 to 240 characters after normalizing. Characters are code points. */
-export const MIN_LINE_LENGTH = 2;
-export const MAX_LINE_LENGTH = 240;
+const MIN_LINE_LENGTH = 2;
+const MAX_LINE_LENGTH = 240;
 /** The writer may end the story from this line number on. */
-export const END_FROM_LINE = 8;
+const END_FROM_LINE = 8;
 /** The story always ends with this line number. */
-export const MAX_LINES = 20;
-export const MAX_TITLE_LENGTH = 40;
-/** A dare word is one word of 2 to 20 letters. */
-export const MIN_DARE_LENGTH = 2;
-export const MAX_DARE_LENGTH = 20;
+const MAX_LINES = 20;
+const MAX_TITLE_LENGTH = 40;
 /** How many openings or dare words Paeonia suggests at once. */
 export const CHOICE_COUNT = 3;
 

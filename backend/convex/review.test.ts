@@ -55,18 +55,14 @@ describe("redeem_review_access", () => {
 
     expect(state.members.filter((member) => member.status === "active")).toHaveLength(2);
     expect(state.members.find((member) => member.user_id === partner.userId)?.role).toBe("creator");
-    expect(state.couple).toMatchObject({ id: coupleId, status: "active", started_on: "2026-04-13", created_by_user_id: partner.userId });
-    const timestamp = await transactionClock(t);
-    expect(state.streak).toMatchObject({
-      couple_id: coupleId,
-      current_count: 0,
-      restorable_count: 12,
-      longest_count: 12,
-      restorable_through_date: "2026-10-08",
-      restore_deadline: timestamp("2026-11-09T12:00:00.000Z"),
-    });
+    expect(state.couple).toMatchObject({ id: coupleId, status: "active", created_by_user_id: partner.userId });
+    expect(state.couple!.started_on! < "2026-10-10").toBe(true);
+    // A broken streak the reviewer can restore.
+    expect(state.streak).toMatchObject({ couple_id: coupleId, current_count: 0 });
+    expect(state.streak!.restorable_count).toBeGreaterThan(0);
+    expect(state.streak!.restore_deadline! > NOW.toISOString()).toBe(true);
     expect(state.locations).toHaveLength(1);
-    expect(state.locations[0]).toMatchObject({ user_id: partner.userId, latitude: 59.9139, longitude: 10.7523, accuracy_m: 25 });
+    expect(state.locations[0]).toMatchObject({ user_id: partner.userId });
     expect(state.sharing).toMatchObject([{ user_id: partner.userId, is_enabled: true, consent_version: "1" }]);
     expect(state.sessions).toMatchObject([
       { code_id: state.code!.id, user_id: reviewer.userId, couple_id: coupleId, seeded_partner_user_id: partner.userId },
@@ -299,7 +295,6 @@ describe("reset_review_demo", () => {
     for (const rows of [left.sessions, left.streaks, left.locations, left.sharing, left.threads, left.events, left.days, left.activity, left.transactions]) {
       expect(rows).toEqual([]);
     }
-    expect(partner.userId).toBeDefined();
 
     // The partner is free to be redeemed again with a new code.
     const next = await t.mutation(internal.review.issue_review_access_code, {

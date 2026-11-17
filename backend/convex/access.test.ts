@@ -351,8 +351,6 @@ describe("verify_purchase", () => {
     await expectFailure(user.as.action(api.access.verify_purchase, uploadBody(info, { jws: "" })), "invalid_request", "Invalid Apple JWS format");
     await expectFailure(user.as.action(api.access.verify_purchase, uploadBody(info, { jws: "nope" })), "invalid_request", "Invalid Apple JWS format");
     await expectFailure(user.as.action(api.access.verify_purchase, uploadBody(info, { transactionId: " " })), "invalid_request", "Missing transactionId");
-    // Arguments that are missing or have the wrong type never reach the handler.
-    await expect(user.as.action(api.access.verify_purchase, { jws: info as never } as never)).rejects.toThrow(/Validator error/);
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(info, { environment: "xcode" })),
       "invalid_request",

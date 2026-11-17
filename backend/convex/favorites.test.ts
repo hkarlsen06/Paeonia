@@ -73,11 +73,11 @@ describe("set_favorite", () => {
       favorited: true,
     });
     await favorite(couple.first, "daily_question", question.id);
-    expect(await rows(t)).toMatchObject([{ couple_id: couple.coupleId, user_id: couple.first.userId, kind: "daily_question", target_id: question.id, ordinal: 0 }]);
+    expect((await list(couple.first)).map((item) => [item.kind, item.target_id])).toEqual([["daily_question", question.id]]);
 
     await favorite(couple.first, "daily_question", question.id, false);
     await favorite(couple.first, "daily_question", question.id, false);
-    expect(await rows(t)).toEqual([]);
+    expect(await list(couple.first)).toEqual([]);
   });
 
   test("a favorite is private: the partner has their own list", async () => {

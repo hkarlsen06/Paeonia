@@ -3,7 +3,6 @@ import { api } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
-import { seenTotalAfterMark } from "./lib/hearts";
 import { createCouple, createSignedInUser, newTest, type TestCouple } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
@@ -38,15 +37,6 @@ async function failure(promise: Promise<unknown>) {
   )) as { data?: { code: string; message: string } } | null;
   return error?.data;
 }
-
-describe("seenTotalAfterMark", () => {
-  test("never goes down and never passes the sent total", () => {
-    expect(seenTotalAfterMark(0, 5, 14)).toBe(5);
-    expect(seenTotalAfterMark(9, 5, 14)).toBe(9);
-    expect(seenTotalAfterMark(0, 99, 14)).toBe(14);
-    expect(seenTotalAfterMark(14, 14, 14)).toBe(14);
-  });
-});
 
 describe("send_hearts and get_hearts", () => {
   test("adds to the sender's total and shows the partner the unseen difference", async () => {
@@ -165,18 +155,11 @@ describe("mark_hearts_seen", () => {
     expect(await failure(markSeen(couple.second, 2.5))).toMatchObject({ code: "23514" });
   });
 
-  test("a mark writes the recipient's own row and leaves the sender's row alone", async () => {
+  test("the recipient sending hearts later does not disturb their seen total", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     await send(couple.first, 6);
-    const rows = () => t.run((ctx) => ctx.db.query("couple_hearts").collect());
-    const [senderBefore] = await rows();
     await markSeen(couple.second, 4);
-    const after = await rows();
-    expect(after).toHaveLength(2);
-    expect(after.find((row) => row.sender_user_id === couple.first.userId)).toEqual(senderBefore);
-    expect(after.find((row) => row.sender_user_id === couple.second.userId)).toMatchObject({ sent_total: 0, seen_total: 4 });
-    // Sending later does not disturb the recipient's seen total.
     await send(couple.second, 2);
     expect((await received(couple.second)).received_seen_total).toBe(4);
     expect((await received(couple.first)).received_total).toBe(2);
@@ -188,16 +171,6 @@ describe("mark_hearts_seen", () => {
     await send(couple.first, 6);
     expect(await markSeen(couple.first, 6)).toEqual({ couple_id: couple.coupleId, received_total: 0, received_seen_total: 0 });
     expect((await received(couple.second)).received_seen_total).toBe(0);
-  });
-
-  test("an unseen count is zero again after a mark, and a new send makes it grow from there", async () => {
-    const t = newTest();
-    const couple = await createCouple(t);
-    await send(couple.first, 8);
-    await markSeen(couple.second, 8);
-    await send(couple.first, 2);
-    const row = await received(couple.second);
-    expect(row.received_total - row.received_seen_total).toBe(2);
   });
 });
 

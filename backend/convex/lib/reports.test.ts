@@ -1,12 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { createCouple, newTest } from "../test.setup";
+import { newTest } from "../test.setup";
 import { newUuid } from "./ids";
 import { tombstoneReportTargets } from "./reports";
 
 describe("tombstoneReportTargets", () => {
   test("clears the live reference and stamps the deletion time once", async () => {
     const t = newTest();
-    const couple = await createCouple(t);
     const memoryId = newUuid();
     const otherMemoryId = newUuid();
     const reportId = newUuid();
@@ -24,7 +23,6 @@ describe("tombstoneReportTargets", () => {
     expect(cleared.live_target_deleted_at).toBeDefined();
     expect(untouched.memory_id).toBe(otherMemoryId);
     expect(untouched.live_target_deleted_at).toBeUndefined();
-    expect(couple.coupleId).toBeDefined();
   });
 
   test("handles thread message media by message and asset", async () => {

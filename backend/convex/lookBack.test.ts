@@ -3,7 +3,7 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { seedCatalog, textQuestions } from "./daily.setup";
 import { getByUuid } from "./lib/db";
-import { hashString, isOnThisDay, sameDayYearsAgo } from "./lib/lookBack";
+import { isOnThisDay, sameDayYearsAgo } from "./lib/lookBack";
 import { newUuid } from "./lib/ids";
 import { nowIso } from "./lib/time";
 import { failure } from "./media.testing";
@@ -33,11 +33,6 @@ describe("helpers", () => {
     expect(isOnThisDay("2025-10-14", "2026-10-14")).toBe(true);
     expect(isOnThisDay("2026-10-14", "2026-10-14")).toBe(false);
     expect(isOnThisDay("2025-10-13", "2026-10-14")).toBe(false);
-  });
-
-  test("hashString is stable", () => {
-    expect(hashString("a:2026-10-14")).toBe(hashString("a:2026-10-14"));
-    expect(hashString("a:2026-10-14")).not.toBe(hashString("a:2026-10-15"));
   });
 });
 
@@ -460,7 +455,9 @@ describe("question rounds", () => {
   test("cuts a long answer", async () => {
     const { t, couple, versionId } = await readyCouple();
     await insertRound(t, couple, "2026-09-01", versionId, { ownText: "x".repeat(500) });
-    expect((await lookBack(couple.first))!.question!.own_answer.text).toHaveLength(200);
+    const text = (await lookBack(couple.first))!.question!.own_answer.text!;
+    expect(text.length).toBeLessThan(500);
+    expect("x".repeat(500).startsWith(text)).toBe(true);
   });
 
   test("skips a round the partner has not answered", async () => {

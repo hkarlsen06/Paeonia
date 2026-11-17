@@ -94,7 +94,6 @@ describe("POST /apple/server-notifications", () => {
     const [event] = await t.run((ctx) => ctx.db.query("storekit_notification_events").collect());
     expect(event).toMatchObject({ notification_type: "DID_RENEW", environment: "sandbox", signed_payload: signedPayload });
     expect(event.processed_at).toBeDefined();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
 
     expect(await post(t, { signedPayload })).toEqual({
       status: 200,

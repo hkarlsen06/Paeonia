@@ -16,7 +16,7 @@ describe("auth", () => {
     expect(await as.run((ctx) => getCurrentUserId(ctx))).toBeNull();
   });
 
-  test("first call creates the user, profile, and default notification preferences", async () => {
+  test("first call creates the user, profile, and private notification preferences", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {
       subject: "user_ada",
@@ -35,12 +35,7 @@ describe("auth", () => {
       email: "ada@example.com",
     });
     expect(rows.profile).toMatchObject({ user_id: user.userId, display_name: "Ada Lovelace", revision: 1 });
-    expect(rows.preferences).toMatchObject({
-      user_id: user.userId,
-      location_updates_enabled: true,
-      streak_reminders_enabled: true,
-      lock_screen_detail_level: "private",
-    });
+    expect(rows.preferences).toMatchObject({ user_id: user.userId, lock_screen_detail_level: "private" });
     expect(await user.as.run((ctx) => requireUserId(ctx))).toBe(user.userId);
   });
 

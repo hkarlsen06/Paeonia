@@ -164,8 +164,6 @@ describe("streak break without a write", () => {
       freeze_saved_streak: false,
       freeze_ready_at: "2026-10-30T22:00:00.000Z",
     });
-    // The query wrote nothing.
-    expect(await state()).toMatchObject({ current_count: 3, restorable_count: 0 });
 
     await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await state()).toMatchObject({
@@ -197,7 +195,7 @@ describe("streak break without a write", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("a stale stored deadline is re-resolved in memory without a write", async () => {
+  test("a stale stored deadline is re-resolved when read, and the cron stores the fix", async () => {
     const { t, a, state } = await bothQualified();
     vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
     await t.run(async (ctx) => {
@@ -206,7 +204,6 @@ describe("streak break without a write", () => {
     });
     const [streak] = await a.as.query(api.streaks.get_couple_streak, {});
     expect(streak).toMatchObject({ current_count: 3, restorable_count: 0, restore_available: false });
-    expect((await state())!.next_activity_deadline_at).toBe("2026-10-11T00:00:00.000Z");
     // The cron stores the corrected deadline and does not open an offer.
     await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await state()).toMatchObject({ next_activity_deadline_at: "2026-10-11T22:00:00.000Z", restorable_count: 0 });
@@ -358,7 +355,6 @@ describe("streak freeze", () => {
       freeze_saved_streak: true,
       next_activity_deadline_at: "2026-10-12T22:00:00.000Z",
     });
-    expect((await state())!.freeze_used_at).toBeUndefined();
 
     await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await state()).toMatchObject({

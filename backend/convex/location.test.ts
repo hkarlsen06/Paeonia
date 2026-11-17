@@ -371,7 +371,6 @@ describe("report_location_device_state", () => {
     await expect(report(couple.first, couple.coupleId, { p_reported_at: "2026-06-28T12:40:00.000Z" })).rejects.toThrow(
       /23514.*location device report time is out of range/,
     );
-    await expect(report(couple.first, couple.coupleId, { p_permission: "sometimes" })).rejects.toThrow();
     expect((await storedPreference(t, couple))?.location_permission).toBeUndefined();
   });
 

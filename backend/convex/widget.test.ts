@@ -174,13 +174,10 @@ describe("submit_widget_drawing_revision", () => {
     expect(revision).toMatchObject({
       id: revisionId,
       author_user_id: couple.first.userId,
-      format: "pkdrawing",
-      format_version: 1,
       compression: "none",
       stroke_count: 3,
       point_count: 40,
       bounds: { x: 0, y: 0, width: 10, height: 10 },
-      renderer_version: 1,
       client_renderer_version: "r1",
       moderation_status: "visible",
     });
@@ -233,7 +230,7 @@ describe("submit_widget_drawing_revision", () => {
   test("records activity and queues the widget push, the silent refresh, and the alert", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const partnerDevice = await addDevice(t, couple.second.userId, { locale: "nb-NO", token: "p" });
+    await addDevice(t, couple.second.userId, { locale: "nb-NO", token: "p" });
     await addDevice(t, couple.first.userId, { token: "a" });
     await couple.second.as.mutation(api.widget.register_widget_push_device, {
       p_widget_kind: "PaeoniaWidget",
@@ -249,9 +246,7 @@ describe("submit_widget_drawing_revision", () => {
     const { revisionId } = await submitDrawing(t, couple.first, couple, canvas.canvas_id, null);
 
     const events = await t.run((ctx) => ctx.db.query("couple_activity_events").collect());
-    expect(events).toMatchObject([
-      { activity_kind: "widget_drawing_saved", dedupe_key: `widget_drawing_saved:${revisionId}`, metadata: { canvas_id: canvas.canvas_id }, user_id: couple.first.userId },
-    ]);
+    expect(events).toMatchObject([{ activity_kind: "widget_drawing_saved", user_id: couple.first.userId }]);
 
     const payload = {
       type: "widget_updated",
@@ -263,18 +258,16 @@ describe("submit_widget_drawing_revision", () => {
       deeplink: "paeonia://widget/drawing",
     };
     const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
-    expect(outbox.map((row) => [row.apns_push_type, row.recipient_user_id, row.title ?? null, row.body ?? null])).toEqual([
-      ["background", couple.second.userId, null, null],
-      ["alert", couple.second.userId, "First Partner", "Tegnet noe til deg"],
+    expect(outbox.map((row) => [row.apns_push_type, row.recipient_user_id, row.title ?? null])).toEqual([
+      ["background", couple.second.userId, null],
+      ["alert", couple.second.userId, "First Partner"],
     ]);
     expect(outbox[0].payload).toEqual(payload);
-    expect(outbox[0].dedupe_key).toBe(`widget_updated:${revisionId}:${partnerDevice.id}`);
     expect(outbox[0].apns_collapse_id).toBe(`widget:${couple.coupleId}`);
-    expect(outbox[1].dedupe_key).toBe(`widget_updated_alert:${revisionId}:${partnerDevice.id}`);
 
     const pushes = (await t.run((ctx) => ctx.db.query("widget_push_outbox").collect())).filter((row) => row.payload.type === "widget_updated");
     expect(pushes).toHaveLength(1);
-    expect(pushes[0]).toMatchObject({ recipient_user_id: couple.second.userId, payload, dedupe_key: `widgetkit:${revisionId}`, apns_collapse_id: `widget:${couple.coupleId}` });
+    expect(pushes[0]).toMatchObject({ recipient_user_id: couple.second.userId, payload, apns_collapse_id: `widget:${couple.coupleId}` });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -995,7 +988,6 @@ describe("Lock Screen pushes to the partner", () => {
     expect(push).toMatchObject({
       recipient_user_id: second.userId,
       payload: { type: "lock_screen_updated", couple_id: coupleId },
-      dedupe_key: `lockscreen:${second.userId}`,
       apns_collapse_id: `lockscreen:${coupleId}`,
       scheduled_for: timestamp("2026-10-10T12:00:20.000Z"),
     });

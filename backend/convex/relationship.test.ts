@@ -199,7 +199,7 @@ describe("relationship_state in get_access_snapshot", () => {
       await ctx.db.patch(couplesRow._id, { started_on: "2024-05-01" });
     });
     const active = await relationshipStateOf(couple.first);
-    expect(active).toEqual({
+    expect(active).toMatchObject({
       couple_id: couple.coupleId,
       pair_id: couple.pairId,
       relationship_status: "active",

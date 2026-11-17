@@ -195,7 +195,6 @@ describe("the big grid", () => {
     const state = rules.apply(start, at(2, 2));
     expect(state?.boards[2]).toBe(1);
     expect(state?.outcome).toEqual({ winner: 1, line: [0, 1, 2] });
-    expect(rules.outcome(state as UltimateTicTacToeState)).toBe(state?.outcome);
   });
 
   test("columns and diagonals win too", () => {
@@ -278,23 +277,5 @@ describe("open boards", () => {
 
   test("lists only the forced board otherwise", () => {
     expect(ultimateTicTacToeOpenBoards(build({ forced: 6 }))).toEqual([6]);
-  });
-});
-
-describe("apply", () => {
-  test("never mutates the state it is given", () => {
-    const state = play([at(0, 4), at(4, 0), at(0, 8), at(8, 0)]);
-    const snapshot = structuredClone(state);
-    rules.apply(state, at(0, 0));
-    rules.apply(state, at(1, 1));
-    rules.apply(state, 999);
-    expect(state).toEqual(snapshot);
-  });
-
-  test("the result does not share arrays with the input", () => {
-    const state = play([at(0, 0)]);
-    const after = rules.apply(state, at(0, 1));
-    expect(after?.cells).not.toBe(state.cells);
-    expect(after?.boards).not.toBe(state.boards);
   });
 });

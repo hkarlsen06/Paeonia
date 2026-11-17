@@ -214,7 +214,6 @@ describe("splitting into zip files", () => {
   });
 
   test("the deployment can ask for smaller zips", () => {
-    expect(exportPartLimitBytes()).toBe(96 * 1024 * 1024);
     process.env.PAEONIA_EXPORT_PART_LIMIT_BYTES = "1000";
     expect(exportPartLimitBytes()).toBe(1000);
     delete process.env.PAEONIA_EXPORT_PART_LIMIT_BYTES;

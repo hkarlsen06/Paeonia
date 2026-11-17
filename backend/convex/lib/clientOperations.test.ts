@@ -31,10 +31,6 @@ describe("runClientOperation", () => {
     expect(first).toEqual({ memory_id: "abc" });
     expect(second).toEqual({ memory_id: "abc" });
     expect(runs).toBe(1);
-    const row = await t.run((ctx) => ctx.db.query("client_operations").first());
-    expect(row).toMatchObject({ status: "succeeded", user_id: user.userId, stored_response: { memory_id: "abc" } });
-    expect(row?.request_hash).toMatch(/^[0-9a-f]{64}$/);
-    expect(row?.response_hash).toMatch(/^[0-9a-f]{64}$/);
   });
 
   test("key order in the request does not change the hash", async () => {

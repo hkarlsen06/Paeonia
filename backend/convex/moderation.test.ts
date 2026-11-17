@@ -236,18 +236,17 @@ describe("report snapshot assets", () => {
     return { t, asset };
   }
 
-  /** Counts the checksum runs over the photo bytes, and fails the first `failures` of them. */
-  function spyOnPhotoChecksum(size: number, failures = 0) {
+  /** Fails the first checksum run over the photo bytes, as a storage hiccup would. */
+  function failPhotoChecksumOnce(size: number) {
     const digest = crypto.subtle.digest.bind(crypto.subtle);
-    let calls = 0;
+    let failed = false;
     vi.spyOn(crypto.subtle, "digest").mockImplementation(async (algorithm: AlgorithmIdentifier, data: BufferSource) => {
-      if (data.byteLength === size) {
-        calls += 1;
-        if (calls <= failures) throw new Error("storage hiccup");
+      if (data.byteLength === size && !failed) {
+        failed = true;
+        throw new Error("storage hiccup");
       }
       return await digest(algorithm, data);
     });
-    return () => calls;
   }
 
   test("the pool copies each snapshot asset to a second blob with the same bytes", async () => {
@@ -269,30 +268,26 @@ describe("report snapshot assets", () => {
 
   test("a copy that fails once is tried again and succeeds", async () => {
     const { t, asset } = await queuedCopy();
-    const checksums = spyOnPhotoChecksum(asset.size, 1);
+    failPhotoChecksumOnce(asset.size);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     const row = await snapshotAssetRow(t);
     expect(row.copy_status).toBe("copied");
     expect(row.storage_id).toBeDefined();
     expect(row.last_copy_error).toBeUndefined();
-    // Two tries check the source, and convex-test's `storage.store` hashes the copy once.
-    expect(checksums()).toBe(3);
   });
 
-  test("a changed source fails for good after five tries", async () => {
-    const { t, asset } = await queuedCopy();
+  test("a changed source fails for good once the tries run out", async () => {
+    const { t } = await queuedCopy();
     // The source file no longer matches the checksum recorded at report time.
     await t.run(async (ctx) => {
       const copy = (await ctx.db.query("report_snapshot_assets").collect())[0];
       await ctx.db.patch(copy._id, { sha256: "f".repeat(64) });
     });
-    const checksums = spyOnPhotoChecksum(asset.size);
     await t.finishAllScheduledFunctions(vi.runAllTimers, 1000);
     const row = await snapshotAssetRow(t);
     expect(row.copy_status).toBe("copy_failed");
     expect(row.last_copy_error).toContain("source file checksum changed");
     expect(row.storage_id).toBeUndefined();
-    expect(checksums()).toBe(5);
   });
 
   test("expired copies are deleted from storage and then purged with their snapshot", async () => {

@@ -23,7 +23,7 @@ export const GAME_ACTIVITY_CHECK_MS = 30_000;
  * With no turn it says the partner is playing, which is no longer true, so it goes after a minute.
  * A turn stays true, so the viewer sees it for ten minutes. The cron ends it at the next check after that.
  */
-export const GAME_ACTIVITY_END_DELAY_MS: Record<GameTurn, number> = { none: 60_000, yours: 10 * 60_000, theirs: 10 * 60_000 };
+const GAME_ACTIVITY_END_DELAY_MS: Record<GameTurn, number> = { none: 60_000, yours: 10 * 60_000, theirs: 10 * 60_000 };
 /**
  * While the activity runs, a quiet update this often moves its stale date
  * (`LIVE_ACTIVITY_STALE_SECONDS` in lib/apns.ts) forward.

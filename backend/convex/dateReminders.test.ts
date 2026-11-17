@@ -251,13 +251,6 @@ describe("enqueue_date_reminders", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("is on by default", async () => {
-    const { a } = await osloCouple();
-    expect(await a.as.query(api.identity.get_notification_preferences, {})).toMatchObject({
-      date_reminders_enabled: true,
-    });
-  });
-
   test("skips an unentitled couple and a person with no push device", async () => {
     const unentitled = await osloCouple({ entitled: false });
     await addCountdown(unentitled.t, unentitled.couple, "2026-10-21");

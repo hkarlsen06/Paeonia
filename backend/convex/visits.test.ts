@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { newUuid } from "./lib/ids";
-import { MAX_TOGETHER_ITEM_TITLE_CODE_POINTS } from "./lib/visits";
 import { cleanupCoupleContent } from "./lib/relationshipCleanup";
 import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple } from "./test.setup";
 
@@ -421,10 +420,8 @@ describe("save_together_item", () => {
   test("a title counts code points after trimming, as the app does, so a long emoji uses up several", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const kiss = "👩‍❤️‍💋‍👨";
-    const perKiss = Array.from(kiss).length;
-    const full = kiss.repeat(Math.floor(MAX_TOGETHER_ITEM_TITLE_CODE_POINTS / perKiss)) +
-      "x".repeat(MAX_TOGETHER_ITEM_TITLE_CODE_POINTS % perKiss);
+    // Eight code points each, so ten of them are the 80 a title may have.
+    const full = "👩‍❤️‍💋‍👨".repeat(10);
     expect(await saveItem(couple.first, newUuid(), ` ${full} `)).toMatchObject({ title: full });
     for (const title of ["   ", `${full}x`]) {
       expect(await failure(saveItem(couple.first, newUuid(), title))).toMatchObject({ code: "23514" });

@@ -144,7 +144,6 @@ test("every finished game supports one shared conversation and refuses another c
     const messages = await couple.second.as.query(api.threads.get_thread_messages, { p_thread_id: first.thread_id, p_limit: 50 });
     expect(messages.messages.map(message => message.body).sort()).toEqual(["I have no idea", "What was that?"]);
   }
-  expect(await t.run(ctx => ctx.db.query("game_threads").collect())).toHaveLength(11);
   const summaries = await couple.first.as.query(api.threads.get_conversation_threads, {});
   expect(summaries.filter(row => row.kind === "game")).toHaveLength(11);
   expect(summaries.every(row => sources.some(source => source.kind === row.game_kind))).toBe(true);
@@ -250,8 +249,6 @@ test("a kind-scoped chat opens before any games and shares the client UUID recip
   const sent = await couple.first.as.mutation(api.threads.create_game_thread_with_message, operation);
   expect(await couple.first.as.mutation(api.threads.create_game_thread_with_message, operation)).toEqual(sent);
   expect(await couple.first.as.query(api.gameConversations.get_game_chat_timeline, args)).toMatchObject({ thread_id: sent[0].thread_id, messages: [{ body: "Ready?" }], results: [], has_more: false });
-  const link = await t.run(ctx => ctx.db.query("game_threads").unique());
-  expect(link?.subject_id).toBe(await gameChatSubjectId(couple.coupleId, "connect_four"));
   expect(await gameChatSubjectId("00000000-0000-0000-0000-000000000001", "connect_four")).toBe("5117096c-484e-52e5-c36f-bb03b8cfaad8");
 });
 

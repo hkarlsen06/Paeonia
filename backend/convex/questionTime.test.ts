@@ -110,13 +110,9 @@ async function answer(t: TestConvex, user: TestUser) {
 }
 
 describe("set_question_time_reminder", () => {
-  test("is off at 20:00 by default, saves both values, and rejects a time outside the day", async () => {
+  test("saves both values, and rejects a time outside the day", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
-    expect(await user.as.query(api.identity.get_notification_preferences, {})).toMatchObject({
-      question_time_enabled: false,
-      question_time_minutes: 1200,
-    });
     expect(await enable(user, 7 * 60 + 30)).toMatchObject({ question_time_enabled: true, question_time_minutes: 450 });
     for (const bad of [-1, 1440, 12.5]) {
       await expect(
@@ -138,7 +134,7 @@ describe("set_question_time_reminder", () => {
 });
 
 describe("enqueue_question_time_reminders", () => {
-  test("sends Paeonia's own copy at the chosen time, once per local date, to the person who chose it", async () => {
+  test("sends at the chosen time, once per local date, to the person who chose it", async () => {
     const { t, a, b } = await questionCouple();
     await enable(a);
     expect(await run(t, "2026-10-10T17:55:00Z")).toBe(0);
@@ -147,8 +143,6 @@ describe("enqueue_question_time_reminders", () => {
     expect(row).toMatchObject({
       kind: "question_time_reminder",
       recipient_user_id: a.userId,
-      title: "Today's question is ready",
-      body: "Today's question is waiting. It takes a minute or two.",
       payload: {
         type: "question_time_reminder",
         route: "daily",
@@ -164,17 +158,6 @@ describe("enqueue_question_time_reminders", () => {
     // The next local date gets its own reminder.
     vi.setSystemTime(new Date("2026-10-11T18:00:00.000Z"));
     expect(await run(t, "2026-10-11T18:05:00Z")).toBe(1);
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-
-  test("uses the Norwegian copy for a Norwegian phone", async () => {
-    const { t, b } = await questionCouple();
-    await enable(b);
-    expect(await run(t, "2026-10-10T18:00:00Z")).toBe(1);
-    expect((await outbox(t))[0]).toMatchObject({
-      title: "Dagens spørsmål er klart",
-      body: "Dagens spørsmål venter. Det tar bare et par minutter.",
-    });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

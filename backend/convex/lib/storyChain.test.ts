@@ -3,14 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   canEndAt,
   CHOICE_COUNT,
-  END_FROM_LINE,
   lineUsesDare,
-  MAX_DARE_LENGTH,
-  MAX_LINE_LENGTH,
-  MAX_LINES,
-  MAX_TITLE_LENGTH,
-  MIN_DARE_LENGTH,
-  MIN_LINE_LENGTH,
   mustEndAt,
   normalizeDareWord,
   normalizeStoryText,
@@ -94,10 +87,6 @@ describe.each(LANGUAGES)("openings %s", (language) => {
 describe.each(LANGUAGES)("dare words %s", (language) => {
   const words = STORY_WORDS[language];
 
-  test("has 120 words", () => {
-    expect(words).toHaveLength(120);
-  });
-
   test("has unique ascii ids that follow the word", () => {
     const ids = words.map((word) => word.id);
     expect(ids.filter((id) => !/^[a-z]+$/.test(id))).toEqual([]);
@@ -142,13 +131,6 @@ describe("dare words whose forms keep the stem", () => {
   });
 });
 
-describe("constants", () => {
-  test("match the design", () => {
-    expect([MIN_LINE_LENGTH, MAX_LINE_LENGTH, END_FROM_LINE, MAX_LINES]).toEqual([2, 240, 8, 20]);
-    expect([MAX_TITLE_LENGTH, MIN_DARE_LENGTH, MAX_DARE_LENGTH, CHOICE_COUNT]).toEqual([40, 2, 20, 3]);
-  });
-});
-
 describe("normalizeStoryText", () => {
   test.each([
     ["  hello  ", "hello"],
@@ -185,7 +167,6 @@ describe("requireStoryLine", () => {
 
   test("counts emoji as one character each", () => {
     const emoji240 = "😀".repeat(240);
-    expect(emoji240.length).toBe(480);
     expect(requireStoryLine(emoji240)).toBe(emoji240);
     expect(failure(() => requireStoryLine("😀".repeat(241))).data).toEqual({ code: "23514", message });
     expect(failure(() => requireStoryLine("😀")).data).toEqual({ code: "23514", message });

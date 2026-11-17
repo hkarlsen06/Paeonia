@@ -1,6 +1,5 @@
 /// <reference types="vite/client" />
 import { describe, expect, test } from "vitest";
-import { normalizePartnerNickname, PARTNER_NICKNAME_MAX_LENGTH } from "./lib/partnerNames";
 
 /**
  * Files that may read `profiles.display_name`, with the reason. Everything else that puts a partner's
@@ -43,18 +42,5 @@ describe("partner names", () => {
   test("every allow-listed file still reads display_name", () => {
     const stale = Object.keys(MAY_READ_DISPLAY_NAME).filter((path) => !READS_DISPLAY_NAME.test(sources[path] ?? ""));
     expect(stale).toEqual([]);
-  });
-});
-
-describe("normalizePartnerNickname", () => {
-  test("trims, collapses whitespace and turns empty input into no nickname", () => {
-    expect(normalizePartnerNickname("  Ellie \n 🌸 ")).toBe("Ellie 🌸");
-    expect(normalizePartnerNickname("   ")).toBeNull();
-    expect(normalizePartnerNickname(null)).toBeNull();
-  });
-
-  test("allows exactly the maximum and refuses one more", () => {
-    expect(normalizePartnerNickname("a".repeat(PARTNER_NICKNAME_MAX_LENGTH))).not.toBeNull();
-    expect(() => normalizePartnerNickname("a".repeat(PARTNER_NICKNAME_MAX_LENGTH + 1))).toThrow(/23514/);
   });
 });

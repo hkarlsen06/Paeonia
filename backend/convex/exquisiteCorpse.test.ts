@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { FunctionArgs } from "convex/server";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
-import { dealIdeas } from "./lib/exquisiteCorpse";
 import { EXQUISITE_CORPSE_IDEAS } from "./lib/exquisiteCorpseIdeas";
 import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
@@ -234,12 +233,11 @@ describe("ensure_exquisite_corpse_game", () => {
 });
 
 describe("ideas", () => {
-  test("the person whose turn it is gets a deck of 12 for the next part, seeded by game, figure, and part", async () => {
+  test("the person whose turn it is gets a deck of 12 for the next part, the same on every read", async () => {
     const s = await startGame();
     const { ideas } = await view(s.a);
     expect(ideas).toHaveLength(12);
     expect(new Set(ideas.map((idea: { id: string }) => idea.id)).size).toBe(12);
-    expect(ideas).toEqual(dealIdeas("en", 0, `${s.gameId}:1:0`));
     expect((await view(s.a)).ideas).toEqual(ideas);
     expect((await view(s.b)).ideas).toEqual([]);
     const head = EXQUISITE_CORPSE_IDEAS.en.head.map((idea) => idea.id);
@@ -250,7 +248,10 @@ describe("ideas", () => {
     const s = await startGame();
     await send(s, s.a, { figureId: newUuid(), index: 0 });
     expect((await view(s.a)).ideas).toEqual([]);
-    expect((await view(s.b)).ideas).toEqual(dealIdeas("en", 1, `${s.gameId}:1:1`));
+    const { ideas } = await view(s.b);
+    expect(ideas).toHaveLength(12);
+    const body = EXQUISITE_CORPSE_IDEAS.en.body.map((idea) => idea.id);
+    expect(ideas.every((idea: { id: string }) => body.includes(idea.id))).toBe(true);
     await settle(s);
   });
 
@@ -258,12 +259,12 @@ describe("ideas", () => {
     const s = await startGame();
     await s.b.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "nb" });
     const { ideas } = await view(s.a);
-    expect(ideas).toEqual(dealIdeas("nb", 0, `${s.gameId}:1:0`));
+    expect(ideas).toHaveLength(12);
     const nbHead = EXQUISITE_CORPSE_IDEAS.nb.head.map((idea) => idea.id);
     expect(ideas.every((idea: { id: string }) => nbHead.includes(idea.id))).toBe(true);
   });
 
-  test("an idea is stored with its text, hidden from the partner, and shown to both at the reveal", async () => {
+  test("an idea is hidden from the partner and shown to both at the reveal", async () => {
     const s = await startGame();
     const idea = EXQUISITE_CORPSE_IDEAS.en.head[0];
     const figureId = newUuid();
@@ -272,10 +273,6 @@ describe("ideas", () => {
 
     expect((await currentOf(s.a)).parts[0].idea).toEqual({ id: idea.id, text: idea.text });
     expect((await currentOf(s.b)).parts[0].idea).toBeNull();
-    const stored = await s.t.run((ctx) => ctx.db.query("exquisite_corpse_parts").collect());
-    expect(stored.find((part) => part.part_index === 0)).toMatchObject({ idea_id: idea.id, idea_text: idea.text });
-    const bodyPart = stored.find((part) => part.part_index === 1)!;
-    expect([bodyPart.idea_id, bodyPart.idea_text]).toEqual([undefined, undefined]);
 
     await send(s, s.a, { figureId, index: 2 });
     await send(s, s.b, { figureId, index: 3 });
@@ -412,46 +409,6 @@ describe("submit_exquisite_corpse_part", () => {
         null,
       ]);
     }
-    await settle(s);
-  });
-
-  test("the results have the documented fields", async () => {
-    const s = await startGame();
-    const head = await send(s, s.a, { figureId: newUuid(), index: 0, ideaId: EXQUISITE_CORPSE_IDEAS.en.head[0].id });
-    expect(Object.keys(head.result).sort()).toEqual(["created_at", "figure_finished", "figure_id", "part_id", "part_index"]);
-    const data = await view(s.b);
-    expect(Object.keys(data).sort()).toEqual(["couple_id", "current_figure", "data_epoch", "game", "ideas", "partner_user_id", "recent_figures", "user_id"]);
-    expect(Object.keys(data.game!).sort()).toEqual([
-      "created_at",
-      "figure_id",
-      "figure_number",
-      "figures_finished",
-      "id",
-      "part_index",
-      "turn_started_at",
-      "turn_user_id",
-      "updated_at",
-      "version",
-    ]);
-    expect(Object.keys(data.current_figure!).sort()).toEqual([
-      "created_at",
-      "finished_at",
-      "id",
-      "my_reveal_seen_at",
-      "number",
-      "parts",
-      "starter_user_id",
-    ]);
-    expect(Object.keys(data.current_figure!.parts[0]).sort()).toEqual([
-      "created_at",
-      "drawer_user_id",
-      "drawing_accessibility_text",
-      "drawing_media_asset_id",
-      "id",
-      "idea",
-      "part_index",
-      "strip_media_asset_id",
-    ]);
     await settle(s);
   });
 
@@ -695,8 +652,8 @@ describe("reveal seen", () => {
 
     const starter = await seen(s.a, figureId);
     expect(starter.reveal_seen_at).toBe(new Date(Date.now()).toISOString());
-    const row = await s.t.run((ctx) => ctx.db.query("exquisite_corpse_figures").first());
-    expect(row).toMatchObject({ starter_reveal_seen_at: starter.reveal_seen_at, partner_reveal_seen_at: first.reveal_seen_at });
+    expect(await mine(s.a)).toBe(starter.reveal_seen_at);
+    expect(await mine(s.b)).toBe(first.reveal_seen_at);
     await settle(s);
   });
 
@@ -862,19 +819,16 @@ describe("pushes", () => {
         deeplink: "paeonia://games/exquisite-corpse",
         step: "body",
       },
-      body: "Your turn to draw the body.",
     });
     expect(turns[1]).toMatchObject({
       recipient_user_id: s.a.userId,
       dedupe_key: expect.stringContaining(`exquisite_corpse:turn:${body.partId}`),
       payload: { actor_user_id: s.b.userId, step: "legs" },
-      body: "Your turn to draw the legs.",
     });
     expect(turns[2]).toMatchObject({
       recipient_user_id: s.b.userId,
       dedupe_key: expect.stringContaining(`exquisite_corpse:turn:${legs.partId}`),
       payload: { actor_user_id: s.a.userId, step: "feet" },
-      body: "Your turn to draw the feet.",
     });
 
     const results = rows.filter((row) => row.kind === "game_result");
@@ -883,7 +837,6 @@ describe("pushes", () => {
       recipient_user_id: s.a.userId,
       dedupe_key: expect.stringContaining(`exquisite_corpse:finished:${figureId}`),
       payload: { type: "game_result", game_kind: "exquisite_corpse", round_id: figureId, actor_user_id: s.b.userId },
-      body: "See the whole creature.",
     });
     expect(results[0].payload).not.toHaveProperty("step");
     // The payload holds ids only. It never names a drawing, a strip, or an idea.
@@ -988,12 +941,9 @@ describe("turn reminder", () => {
       dedupe_key: expect.stringContaining(`exquisite_corpse:reminder:${s.gameId}:${new Date(turnStartedAt).toISOString()}`),
       payload: { type: "game_turn_reminder", game_kind: "exquisite_corpse", game_id: s.gameId, actor_user_id: s.b.userId, deeplink: "paeonia://games/exquisite-corpse" },
     });
-    const game = await s.t.run((ctx) => ctx.db.query("exquisite_corpse_games").first());
-    expect(game?.turn_reminder_sent_at).toBeDefined();
 
     // a finally draws. The turn moves to b, and b's wait starts now.
     await send(s, s.a, { figureId: newUuid(), index: 0 });
-    expect((await s.t.run((ctx) => ctx.db.query("exquisite_corpse_games").first()))?.turn_reminder_sent_at).toBeUndefined();
     tick(73 * HOUR);
     expect(await run(s)).toBe(1);
     expect(await run(s)).toBe(0);

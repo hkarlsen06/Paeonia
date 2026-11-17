@@ -647,15 +647,6 @@ describe("turn reminder", () => {
     expect(stored[0].reminder_sent_at).toBeDefined();
   });
 
-  test("the shared reminder cron sends it too", async () => {
-    const s = await startGame();
-    await lock(s.a, (await openRound(s.a)).id, "ocean");
-    tick(73 * 3600);
-    expect(await s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {})).toBe(1);
-    expect(await reminders(s)).toHaveLength(1);
-    expect(await run(s)).toBe(0);
-  });
-
   test("the next round gets its own reminder", async () => {
     const s = await startGame();
     await playRound(s, "ocean", "sushi");
@@ -892,8 +883,6 @@ describe("version", () => {
     const after = await view(s.b);
     expect(after.current!.version).toBe(2);
     expect(after.previous).toBeNull();
-    const old = (await s.t.run((ctx) => ctx.db.query("mind_meld_games").collect())).find((game) => game.id === s.gameId)!;
-    expect(old.version).toBe(4);
   });
 
   test("a restart bumps the ended game and starts the new one at 1", async () => {
@@ -992,9 +981,6 @@ describe("get_mind_meld_history", () => {
       { round_number: 1, my_word: "ocean", partner_word: "sushi", outcome: "miss", counted_by_user_id: null },
       { round_number: 2, my_word: "fish", partner_word: "fish", outcome: "match", counted_by_user_id: null },
     ]);
-    expect(Object.keys(melded).sort()).toEqual(
-      ["created_at", "end_reason", "ended_at", "ended_by_user_id", "game_number", "id", "meld_number", "rounds", "state"].sort(),
-    );
 
     const theirs = await history(s.b);
     expect(theirs.games[1].rounds[0]).toMatchObject({ my_word: "sushi", partner_word: "ocean" });

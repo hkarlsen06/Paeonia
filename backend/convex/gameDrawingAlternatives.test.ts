@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { api, internal } from "./_generated/api";
+import { api } from "./_generated/api";
 import { readZip } from "./dataExport.testHelpers";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op, setMediaEnv, uploadAsset } from "./media.testing";
@@ -134,21 +134,6 @@ test("Odd Creatures correction is author-only and remains hidden until final rev
     .current_figure?.parts[0].drawing_accessibility_text).toBeNull();
   await endCouple(s.t, s.couple.coupleId, s.couple.first.userId);
   expect((await failure(s.couple.first.as.mutation(api.media.update_accessibility_text, request))).code).toBe("42501");
-});
-
-test("An unfinished Odd Creatures export contains only the requester's authored media alternatives", async () => {
-  const s = await creature();
-  const hidden = "Private head description not visible through a folded strip.";
-  await part(s, 0, hidden);
-  const owner = await s.t.query(internal.dataExport.export_rows,
-    { user_id: s.couple.first.userId, table: "media_assets", cursor: null });
-  const partner = await s.t.query(internal.dataExport.export_rows,
-    { user_id: s.couple.second.userId, table: "media_assets", cursor: null });
-  expect(JSON.stringify(owner.rows)).toContain(hidden);
-  expect(JSON.stringify(partner.rows)).not.toContain(hidden);
-  const partnerParts = await s.t.query(internal.dataExport.export_rows,
-    { user_id: s.couple.second.userId, table: "exquisite_corpse_parts", scope_value: s.couple.coupleId, cursor: null });
-  expect(partnerParts.rows).toEqual([]);
 });
 
 test("The real export archive does not leak an unfinished partner part description", async () => {

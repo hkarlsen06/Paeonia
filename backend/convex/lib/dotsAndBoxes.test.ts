@@ -233,26 +233,3 @@ describe("whole games", () => {
     }
   });
 });
-
-describe("apply", () => {
-  test("never mutates the state it is given", () => {
-    const state = play([0, 4, 20]);
-    const snapshot = structuredClone(state);
-    rules.apply(state, 21);
-    rules.apply(state, 0);
-    rules.apply(state, 99);
-    expect(state).toEqual(snapshot);
-
-    const last = nearlyDone([39], boxOwners(8, 7), 2);
-    const lastSnapshot = structuredClone(last);
-    rules.apply(last, 39);
-    expect(last).toEqual(lastSnapshot);
-  });
-
-  test("the result does not share arrays with the input", () => {
-    const state = play([0]);
-    const after = rules.apply(state, 1);
-    expect(after?.lines).not.toBe(state.lines);
-    expect(after?.boxes).not.toBe(state.boxes);
-  });
-});

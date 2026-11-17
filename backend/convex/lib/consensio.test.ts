@@ -3,11 +3,10 @@ import { END_LENGTH, pickTopics, pointsFor, SUBJECT_LENGTH, TOPIC_CATALOGS, vali
 
 describe("topic catalogs", () => {
   for (const [language, catalog] of Object.entries(TOPIC_CATALOGS)) {
-    test(`${language} has 150 well-formed topics`, () => {
+    test(`${language} has unique, well-formed topics`, () => {
       expect(catalog.language).toBe(language);
-      expect(catalog.topics).toHaveLength(150);
-      expect(new Set(catalog.topics.map((topic) => topic.id)).size).toBe(150);
-      expect(new Set(catalog.topics.map((topic) => topic.subject.toLowerCase())).size).toBe(150);
+      expect(new Set(catalog.topics.map((topic) => topic.id)).size).toBe(catalog.topics.length);
+      expect(new Set(catalog.topics.map((topic) => topic.subject.toLowerCase())).size).toBe(catalog.topics.length);
       for (const topic of catalog.topics) {
         expect(topic.id).toMatch(/^[a-z0-9]+(_[a-z0-9]+)*$/);
         expect(validateOwnTopic(topic.subject, topic.left, topic.right), topic.id).toBeNull();
@@ -31,10 +30,10 @@ describe("topic catalogs", () => {
 describe("pickTopics", () => {
   test("offers three unused topics, and starts over when fewer than three are left", () => {
     const all = TOPIC_CATALOGS.en.topics.map((topic) => topic.id);
-    const fresh = pickTopics("en", new Set(all.slice(0, 140)));
+    const fresh = pickTopics("en", new Set(all.slice(0, -10)));
     expect(fresh.reset).toBe(false);
-    expect(fresh.choices.every((choice) => all.slice(140).includes(choice.topic_id))).toBe(true);
-    expect(pickTopics("en", new Set(all.slice(0, 148))).reset).toBe(true);
+    expect(fresh.choices.every((choice) => all.slice(-10).includes(choice.topic_id))).toBe(true);
+    expect(pickTopics("en", new Set(all.slice(0, -2))).reset).toBe(true);
   });
 });
 

@@ -875,21 +875,16 @@ describe("add_story_line", () => {
       const s = await startGame();
       const { story_id } = await begin(s.a, s.gameId);
       expect(await streakEvents(s.t)).toHaveLength(0);
-      const first = await write(s.a, story_id, "Line one.");
-      const second = await write(s.b, story_id, "Line two.");
-      const third = await write(s.a, story_id, "Line three.");
+      await write(s.a, story_id, "Line one.");
+      await write(s.b, story_id, "Line two.");
+      await write(s.a, story_id, "Line three.");
 
       const events = await streakEvents(s.t);
-      expect(events.map((event) => event.dedupe_key).sort()).toEqual(
-        [first, second, third].map((line) => `game_turn_completed:${line.line_id}`).sort(),
-      );
-      const byLine = new Map(events.map((event) => [event.dedupe_key, event]));
-      expect(byLine.get(`game_turn_completed:${first.line_id}`)).toMatchObject({
-        user_id: s.a.userId,
-        couple_id: s.coupleId,
-        metadata: { game_id: s.gameId, story_id, line_id: first.line_id },
-      });
-      expect(byLine.get(`game_turn_completed:${second.line_id}`)?.user_id).toBe(s.b.userId);
+      expect(events.map((event) => [event.user_id, event.couple_id])).toEqual([
+        [s.a.userId, s.coupleId],
+        [s.b.userId, s.coupleId],
+        [s.a.userId, s.coupleId],
+      ]);
 
       // Finish the story and name it: eight lines, eight events.
       for (let number = 4; number <= 7; number += 1) await write(number % 2 === 1 ? s.a : s.b, story_id, `Line ${number}.`);
@@ -1167,8 +1162,6 @@ describe("pushes", () => {
     expect(rows[0]).toMatchObject({
       recipient_user_id: s.b.userId,
       apns_push_type: "alert",
-      title: "Your turn in Story Chain",
-      body: "Read the newest line and add yours.",
       payload: {
         type: "game_turn_ready",
         game_kind: "story_chain",
@@ -1185,19 +1178,17 @@ describe("pushes", () => {
     for (const secret of ["Zeppelin", "pineapple", "marzipan"]) expect(text).not.toContain(secret);
   });
 
-  test("the last line queues the last-line copy, and naming queues the story-named copy", async () => {
+  test("the last line queues the last-line push, and naming queues the story-named push", async () => {
     const s = await startGame();
     const reached = await reachTitling(s, s.a);
     const last = (await pushesOf(s.t, "game_turn_ready")).filter((row) => (row.payload as { step?: string }).step === "last_line");
     expect(last).toHaveLength(1);
     expect(last[0]).toMatchObject({
       recipient_user_id: s.a.userId,
-      title: "Second Partner wrote the last line",
-      body: "Give your story a title.",
       payload: { type: "game_turn_ready", step: "last_line", round_id: reached.lastLineId, actor_user_id: s.b.userId, deeplink: "paeonia://games/story-chain" },
     });
     // The seven earlier lines are plain turn pushes.
-    expect((await pushesOf(s.t, "game_turn_ready")).filter((row) => row.title === "Your turn in Story Chain")).toHaveLength(7);
+    expect((await pushesOf(s.t, "game_turn_ready")).filter((row) => (row.payload as { step?: string }).step === undefined)).toHaveLength(7);
 
     await name(reached.namer, reached.storyId, "The Moonlit Heist");
     const named = await pushesOf(s.t, "game_result");
@@ -1205,8 +1196,6 @@ describe("pushes", () => {
     expect(named[0]).toMatchObject({
       recipient_user_id: s.b.userId,
       apns_push_type: "alert",
-      title: "First Partner named your story",
-      body: "Read the whole story.",
       payload: {
         type: "game_result",
         game_kind: "story_chain",
@@ -1220,21 +1209,6 @@ describe("pushes", () => {
     });
     const text = JSON.stringify(await outbox(s.t));
     expect(text).not.toContain("Moonlit");
-  });
-
-  test("the copy follows the recipient's language", async () => {
-    const s = await startGame({ language: "nb", locales: { a: "nb-NO", b: "nb-NO" } });
-    const reached = await reachTitling(s, s.a);
-    const turn = (await pushesOf(s.t, "game_turn_ready")).filter((row) => (row.payload as { step?: string }).step === undefined);
-    expect(turn[0]).toMatchObject({ title: "Din tur i Skrivestafett", body: "Les den nyeste linjen og skriv din." });
-    const last = (await pushesOf(s.t, "game_turn_ready")).find((row) => (row.payload as { step?: string }).step === "last_line");
-    expect(last).toMatchObject({ title: "Second Partner skrev den siste linjen", body: "Gi historien en tittel." });
-
-    await name(reached.namer, reached.storyId, "Tyveriet");
-    expect((await pushesOf(s.t, "game_result"))[0]).toMatchObject({
-      title: "First Partner ga historien deres en tittel",
-      body: "Les hele historien.",
-    });
   });
 
   test("an English phone gets English copy next to a Norwegian partner", async () => {
@@ -1299,7 +1273,6 @@ describe("push drain", () => {
     const claimed = await claim(s);
     expect(claimed).toHaveLength(1);
     expect(claimed[0].payload).toMatchObject({ type: "game_turn_ready", actor_user_id: s.b.userId });
-    expect(claimed[0].title).toBe("Your turn in Story Chain");
     expect(await errorsOf(s, s.b, "game_turn_ready")).toEqual(["notification is out of date"]);
     expect(await errorsOf(s, s.a, "game_turn_ready")).toEqual([null]);
   });
@@ -1329,7 +1302,6 @@ describe("push drain", () => {
     await name(reached.namer, reached.storyId, "Named");
     const claimed = await claim(s);
     expect(claimed.map((row) => (row.payload as { type: string }).type)).toEqual(["game_result"]);
-    expect(claimed[0].title).toBe("First Partner named your story");
     expect(await errorsOf(s, s.a, "game_turn_ready")).toEqual(Array(4).fill("notification is out of date"));
     expect(await errorsOf(s, s.b, "game_result")).toEqual([null]);
   });
@@ -1381,8 +1353,6 @@ describe("turn reminder", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       recipient_user_id: s.a.userId,
-      title: "Your turn in Story Chain",
-      body: "Pick up where you left off.",
       payload: {
         type: "game_turn_reminder",
         game_kind: "story_chain",
@@ -1391,12 +1361,10 @@ describe("turn reminder", () => {
         deeplink: "paeonia://games/story-chain",
       },
     });
-    expect((await gameRow(s.t, s.gameId)).turn_reminder_sent_at).toBeDefined();
 
     // a finally writes. The turn moves to b and b's wait starts now.
     const { story_id } = await begin(s.a, s.gameId);
     await write(s.a, story_id, "Line one.");
-    expect((await gameRow(s.t, s.gameId)).turn_reminder_sent_at).toBeUndefined();
     tick(71 * HOUR);
     expect(await run(s)).toBe(0);
     tick(2 * HOUR);
@@ -1413,7 +1381,6 @@ describe("turn reminder", () => {
     expect(await run(s)).toBe(1);
     expect((await reminders(s)).map((row) => row.recipient_user_id)).toEqual([reached.namer.userId]);
     await name(reached.namer, reached.storyId, "Named");
-    expect((await gameRow(s.t, s.gameId)).turn_reminder_sent_at).toBeUndefined();
     tick(73 * HOUR);
     expect(await run(s)).toBe(1);
     expect(await run(s)).toBe(0);

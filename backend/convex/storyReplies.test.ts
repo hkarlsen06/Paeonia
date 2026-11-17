@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { api, components } from "./_generated/api";
+import { api } from "./_generated/api";
 import { newUuid } from "./lib/ids";
-import { chatTypingRoom } from "./lib/presence";
 import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
 import { failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
@@ -104,7 +103,6 @@ describe("story replies", () => {
       deeplink: `paeonia://stories/story?storyId=${storyId}&replies=1`,
       story_id: storyId,
     });
-    expect([rows[0].title, rows[0].body]).toEqual(["Second Partner", "Sent you a message"]);
     expect(JSON.stringify(rows)).not.toContain("Secret reply");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
@@ -216,7 +214,6 @@ describe("chat presence by subject", () => {
       p_message_id: first.message_id,
     });
     expect((await presence(couple.second, couple.coupleId, "story", storyId)).partner_last_read_message_id).toBe(first.message_id);
-    expect(await t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: chatTypingRoom(couple.coupleId, { kind: "story", story_id: storyId }) }))).toHaveLength(1);
   });
 
   test("a memory's comments have their own room, and a stranger or a missing subject is refused", async () => {

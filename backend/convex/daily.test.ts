@@ -71,13 +71,15 @@ async function nextDay(user: TestUser, day: string) {
 }
 
 describe("start_daily_challenge_snapshot", () => {
-  test("stores the instance's couple and question for the chat's index", async () => {
-    const { t, couple, question } = await readyCouple();
-    const version = await t.run((ctx) =>
-      ctx.db.query("question_versions").withIndex("by_uuid", (q) => q.eq("id", question.question_version_id)).unique(),
-    );
-    expect(question.couple_id).toBe(couple.coupleId);
-    expect(question.question_id).toBe(version!.question_id);
+  test("a started and answered question shows up in that question's chat", async () => {
+    const { couple, a, b, question } = await readyCouple();
+    await submit(a, question.id, { text: "mine" });
+    await submit(b, question.id, { text: "yours" });
+    const chat = await b.as.query(api.dailyQuestionChat.get_daily_question_chat, {
+      p_couple_id: couple.coupleId,
+      p_question_id: question.question_id,
+    });
+    expect(chat.questions.map((row) => row.instance_id)).toEqual([question.id]);
   });
 
   test("seeds one question per couple day, and both partners get the same one", async () => {

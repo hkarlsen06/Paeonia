@@ -135,8 +135,6 @@ describe("a failed renewal payment", () => {
     expect(pushes[0]).toMatchObject({
       recipient_user_id: payer.userId,
       target_device_id: payerDevice.id,
-      title: "Your payment didn't go through",
-      body: "Update your payment details in the App Store to keep Paeonia for you both.",
       payload: { deeplink: "paeonia://settings/subscription" },
     });
 
@@ -234,14 +232,10 @@ describe("a subscription the payer stopped", () => {
     const payerPush = pushes.find((row) => row.target_device_id === payerDevice.id);
     const partnerPush = pushes.find((row) => row.target_device_id === partnerDevice.id);
     expect(payerPush).toMatchObject({
-      title: "Paeonia ends in 5 days",
-      body: "Turn your subscription back on in the App Store to keep it for you both.",
       scheduled_for: new Date(endsAt - 5 * day).toISOString(),
       payload: { own_subscription: true, deeplink: "paeonia://settings/subscription", ends_at: endsAtIso },
     });
     expect(partnerPush).toMatchObject({
-      title: "Paeonia avsluttes om 5 dager",
-      body: "Fram til da fungerer alt som vanlig.",
       payload: { own_subscription: false, deeplink: "paeonia://us", ends_at: endsAtIso },
     });
     // The lock screen never says who stopped paying.

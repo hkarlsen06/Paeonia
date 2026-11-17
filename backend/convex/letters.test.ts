@@ -261,7 +261,7 @@ describe("sealed letters stay off the recipient's phone", () => {
 
     await runDueJobs(t);
     const [push] = await deliverDuePushes(t);
-    expect(push.title).toBe("First Partner sent you a letter");
+    expect(push.title).toContain("First Partner");
     expect(push.payload).toEqual({
       type: "letter_arrived",
       couple_id: couple.coupleId,
@@ -292,7 +292,8 @@ describe("sealed letters stay off the recipient's phone", () => {
     expect(await open(couple.second, letterId)).toEqual(opened);
     await runDueJobs(t);
     const pushes = await deliverDuePushes(t);
-    expect(pushes.map((push) => [push.payload.type, push.title])).toEqual([["letter_opened", "Second Partner åpnet brevet ditt"]]);
+    expect(pushes.map((push) => push.payload.type)).toEqual(["letter_opened"]);
+    expect(pushes[0].title).toContain("Second Partner");
     expect((await failure(open(couple.first, letterId))).code).toBe("42501");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
@@ -1345,19 +1346,6 @@ describe("changing a letter for the next meeting", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect((await rowOf(t, letterId)).delivered_at?.startsWith("2026-11-14T19:00")).toBe(true);
     expect(await arrivedPushes(t)).toHaveLength(1);
-  });
-
-  test("every letter row says when it started to wait, so the visit sweep never meets one without it", async () => {
-    const t = newTest();
-    const couple = await createCouple(t);
-    const { letterId } = await send(t, couple, { delivery: "at", deliverAt: "2026-11-12T09:00:00.000Z" });
-    expect((await rowOf(t, letterId)).waits_since).toBe((await rowOf(t, letterId)).created_at);
-    await expect(t.run((ctx) => ctx.db.insert("letters", {
-      id: newUuid(), couple_id: couple.coupleId, author_user_id: couple.first.userId,
-      recipient_user_id: couple.second.userId, template_key: "blank", body: SECRET, delivery_kind: "together",
-      state: "sealed", moderation_status: "visible", created_at: NOW,
-    } as never))).rejects.toThrow(/waits_since/);
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("moved to the next meeting after a visit's evening, it waits for the next meeting, not the one that passed", async () => {

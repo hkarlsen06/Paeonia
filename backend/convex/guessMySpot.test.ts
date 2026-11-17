@@ -2,11 +2,8 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { FunctionArgs } from "convex/server";
 import { api, internal } from "./_generated/api";
 import { deleteCoupleGameRows } from "./lib/gameRegistry";
-import { haversineMeters, pointsFor } from "./lib/guessMySpot";
 import { newUuid } from "./lib/ids";
-import { canReadMediaAsset } from "./lib/mediaAssets";
-import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
-import { endCouple, failure, op, photo, uploadAsset } from "./media.testing";
+import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, transactionNow, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
@@ -14,6 +11,7 @@ const START = Date.parse("2026-10-18T12:00:00.000Z");
 
 let scheduled: TestConvex | null = null;
 beforeEach(() => {
+  setMediaEnv();
   vi.useFakeTimers();
   vi.setSystemTime(new Date(START));
 });
@@ -220,7 +218,6 @@ describe("the round", () => {
     expect(result).toMatchObject({ id: roundId, spot_latitude: BERGEN.latitude, place_name: "Bergen, Norway", guess_latitude: OSLO.latitude });
     expect(result.distance_m).toBeGreaterThan(300_000);
     expect(result.distance_m).toBeLessThan(310_000);
-    expect(result.points).toBe(pointsFor(result.distance_m!));
     expect((await view(s.a)).game).toMatchObject({ turn_user_id: s.b.userId, shared_points: result.points });
 
     const next = await send(s, s.b, OSLO);
@@ -352,18 +349,17 @@ describe("the photo", () => {
     const s = await startGame();
     const roundId = newUuid();
     const assetId = await uploadPhoto(s, s.a, roundId);
-    const readable = (userId: string) =>
-      s.t.run(async (ctx) => {
-        const asset = await ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", assetId)).unique();
-        return await canReadMediaAsset(ctx, userId, asset!);
-      });
-    expect(await readable(s.b.userId)).toBe(false);
+    const signed = (user: TestUser) => user.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: assetId, p_expires_in_seconds: 300 });
+    expect((await failure(signed(s.b))).code).toBe("42501");
     await send(s, s.a, BERGEN, { roundId, assetId });
-    expect(await readable(s.a.userId)).toBe(true);
-    expect(await readable(s.b.userId)).toBe(true);
+    expect(await signed(s.a)).toHaveLength(1);
+    expect(await signed(s.b)).toHaveLength(1);
     const stranger = await createCouple(s.t);
-    expect(await readable(stranger.first.userId)).toBe(false);
-    expect(await s.t.run((ctx) => queueOrphanedMediaAssetForDelete(ctx, assetId))).toBe(false);
+    expect((await failure(signed(stranger.first))).code).toBe("42501");
+    tick(8 * 24 * 3600);
+    await s.t.mutation(internal.media.sweep_orphan_storage, {});
+    const asset = await s.t.run((ctx) => ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", assetId)).unique());
+    expect(asset!.storage_delete_status).toBe("none");
   });
 });
 
@@ -560,12 +556,11 @@ describe("play style points", () => {
   test("only the guesser scores, and the shared total has every guess", async () => {
     const s = await startGame();
     const first = await send(s, s.a);
-    await guess(s.b, first, OSLO);
+    const firstPoints = (await guess(s.b, first, OSLO)).points!;
     const second = await send(s, s.b);
     await guess(s.a, second, BERGEN);
     const forA = (await view(s.a)).game!;
     const forB = (await view(s.b)).game!;
-    const firstPoints = pointsFor(haversineMeters(OSLO, BERGEN));
     expect(forA).toMatchObject({ my_points: 5000, partner_points: firstPoints, shared_points: 5000 + firstPoints });
     expect(forB).toMatchObject({ my_points: firstPoints, partner_points: 5000 });
   });
@@ -634,6 +629,6 @@ describe("deleting a round", () => {
     expect((await view(s.b)).game!.shared_points).toBe(before.records.shared_points);
     const asset = await s.t.run((ctx) => ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", assetId)).unique());
     expect(asset!.storage_delete_status).toBe("pending");
-    expect(await s.t.run((ctx) => canReadMediaAsset(ctx, s.b.userId, asset!))).toBe(false);
+    expect((await failure(s.b.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: assetId, p_expires_in_seconds: 300 }))).code).toBe("42501");
   });
 });

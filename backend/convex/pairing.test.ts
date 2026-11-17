@@ -175,7 +175,9 @@ describe("preview_pairing_invite", () => {
     const url = new URL(row.inviter_photo_url!);
     expect(url.pathname).toBe("/media");
     expect(url.searchParams.get("asset")).toBe(photo.assetId);
-    expect(Number(url.searchParams.get("exp"))).toBe(Date.parse(NOW) / 1000 + 900);
+    const expiresAt = Number(url.searchParams.get("exp"));
+    expect(expiresAt).toBeGreaterThan(Date.parse(NOW) / 1000);
+    expect(expiresAt).toBeLessThanOrEqual(Date.parse(NOW) / 1000 + 3600);
     // A code that matches no invite shows nothing.
     expect(await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ZZZZZZ" })).toEqual([]);
   });

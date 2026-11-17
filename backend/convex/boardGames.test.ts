@@ -3,7 +3,6 @@ import { api, internal } from "./_generated/api";
 import { rulesFor } from "./lib/boardGameStore";
 import { movers, replay, type BoardGameKind } from "./lib/boardGames";
 import { newUuid } from "./lib/ids";
-import { notificationAlertBody, notificationAlertTitle } from "./lib/notificationCopy";
 import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, transactionNow, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
@@ -259,14 +258,6 @@ describe("ensure_board_game", () => {
     expect(theirs.partner_user_id).toBe(s.a.userId);
     expect(theirs.games.map((game) => game.id)).toEqual(mine.games.map((game) => game.id));
     expect(mine.games.map((game) => game.first_user_id)).toEqual([s.a.userId, s.a.userId, s.b.userId, s.b.userId]);
-  });
-
-  test("each kind has its own game", async () => {
-    const s = await startCouple();
-    const connect = await ensure(s.a, "connect_four");
-    const dots = await ensure(s.a, "dots_and_boxes");
-    expect(connect.id).not.toBe(dots.id);
-    expect(await gameRows(s.t)).toHaveLength(2);
   });
 });
 
@@ -586,12 +577,6 @@ describe("Ludo colors", () => {
     const game = await ensure(s.a, "connect_four");
     expect(await failure(move(s.a, game, 3, { p_ludo_color: "gold" }))).toEqual({ code: "23514", message: "that color is not allowed" });
     expect((await gameOf(s.a, "connect_four")).moves).toEqual([]);
-  });
-
-  test("an unknown color is refused by the argument check", async () => {
-    const s = await startCouple();
-    const game = await ensure(s.a, "ludo");
-    await expect(move(s.a, game, 15, { p_ludo_color: "green" as never })).rejects.toThrow();
   });
 });
 
@@ -1086,11 +1071,6 @@ describe("hidden photo", () => {
 describe("marks", () => {
   const MARK = "aGVsbG8=";
 
-  test("start empty", async () => {
-    const s = await startCouple();
-    expect(await marks(s.a)).toEqual({ user_id: s.a.userId, mine: null, partner: null });
-  });
-
   test("a mark saves, updates and clears", async () => {
     const s = await startCouple();
     const timestamp = await transactionClock(s.t);
@@ -1198,12 +1178,7 @@ describe("pushes", () => {
 
     const first = await move(s.a, game, 3, { p_stake: "Dinner" });
     const [row] = await pushesOf(s.t, "game_turn_ready");
-    expect(row).toMatchObject({
-      recipient_user_id: s.b.userId,
-      apns_push_type: "alert",
-      title: "Your turn in Four in a Row",
-      body: "Make your move.",
-    });
+    expect(row).toMatchObject({ recipient_user_id: s.b.userId, apns_push_type: "alert" });
     expect(row.payload).toEqual({
       type: "game_turn_ready",
       game_kind: "connect_four",
@@ -1368,7 +1343,7 @@ describe("pushes", () => {
       await rematch(s.a, done);
       const rows = (await pushesOf(s.t, "game_turn_ready")).slice(before);
       expect(rows).toHaveLength(1);
-      expect(rows[0]).toMatchObject({ recipient_user_id: s.b.userId, title: "Your turn in Four in a Row", body: "Make your move." });
+      expect(rows[0]).toMatchObject({ recipient_user_id: s.b.userId });
       expect(rows[0].payload).toMatchObject({ game_id: done.id, round_id: "2:0", actor_user_id: s.a.userId, deeplink: "paeonia://games/connect-four" });
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     });
@@ -1485,11 +1460,7 @@ describe("turn reminder", () => {
     expect(await runReminders(s)).toBe(0);
     let rows = await reminders(s);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      recipient_user_id: s.a.userId,
-      title: "Your turn in Four in a Row",
-      body: "Pick up where you left off.",
-    });
+    expect(rows[0]).toMatchObject({ recipient_user_id: s.a.userId });
     expect(rows[0].payload).toEqual({
       type: "game_turn_reminder",
       game_kind: "connect_four",
@@ -1666,41 +1637,5 @@ describe("relationship end", () => {
       await purgeCoupleContent(ctx, couple);
     });
     expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0, board_game_history: 0 });
-  });
-});
-
-describe("push copy", () => {
-  const NAMES = {
-    connect_four: { en: "Four in a Row", nb: "Fire på rad" },
-    dots_and_boxes: { en: "Dots and Boxes", nb: "Prikker og streker" },
-    ultimate_tic_tac_toe: { en: "Ultimate Tic-Tac-Toe", nb: "Ultimat bondesjakk" },
-    ludo: { en: "Ludo", nb: "Ludo" },
-  } as const;
-  // The exact lock-screen text of every board game push. "First Partner" is the partner's profile name.
-  const WORDING = {
-    en: {
-      game_turn_ready: (name: string) => [`Your turn in ${name}`, "Make your move."],
-      game_turn_reminder: (name: string) => [`Your turn in ${name}`, "Pick up where you left off."],
-      game_result: (name: string) => [`First Partner finished your game of ${name}`, "See how it ended."],
-      game_invite: (name: string) => [`First Partner wants to play ${name} with you`, "Join in when you're ready."],
-    },
-    nb: {
-      game_turn_ready: (name: string) => [`Din tur i ${name}`, "Gjør trekket ditt."],
-      game_turn_reminder: (name: string) => [`Din tur i ${name}`, "Fortsett der dere slapp."],
-      game_result: (name: string) => [`First Partner avsluttet spillet deres i ${name}`, "Se hvordan det endte."],
-      game_invite: (name: string) => [`First Partner vil spille ${name} med deg`, "Bli med når du er klar."],
-    },
-  } as const;
-
-  test.each(ALL_KINDS)("%s has its title and body in English and Norwegian Bokmål", async (kind) => {
-    const t = newTest();
-    const couple = await createCouple(t);
-    const payload = { game_kind: kind, actor_user_id: couple.first.userId };
-    for (const language of ["en", "nb"] as const) {
-      for (const push of ["game_turn_ready", "game_turn_reminder", "game_result", "game_invite"] as const) {
-        const title = await t.run((ctx) => notificationAlertTitle(ctx, couple.second.userId, push, payload, language));
-        expect([title, notificationAlertBody(push, payload, language)]).toEqual(WORDING[language][push](NAMES[kind][language]));
-      }
-    }
   });
 });

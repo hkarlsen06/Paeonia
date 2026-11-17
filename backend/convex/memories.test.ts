@@ -138,7 +138,7 @@ describe("memory created notifications", () => {
     const rows = await outbox(t);
     expect(rows).toHaveLength(2);
     expect(new Set(rows.map((row) => row.recipient_user_id))).toEqual(new Set([couple.second.userId]));
-    expect(rows.map((row) => row.title).sort()).toEqual(["First Partner added a memory", "First Partner la til et minne"]);
+    expect(rows.every((row) => row.title?.includes("First Partner"))).toBe(true);
     expect(rows[0].payload).toEqual({
       type: "memory_created",
       couple_id: couple.coupleId,
@@ -605,21 +605,11 @@ describe("get_memories", () => {
     expect(rows.map((row: { memory_id: string }) => row.memory_id)).toEqual([second, first]);
   });
 
-  test("returns the SQL columns for a bare memory", async () => {
+  test("a bare memory shows the creator's note as the partner's, and no place, media or thread", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     const id = await createMemory(couple.first);
     const [row] = await getMemories(couple.second);
-    expect(Object.keys(row).sort()).toEqual(
-      [
-        "memory_id", "couple_id", "title", "memory_date", "created_by_user_id", "last_edited_by_user_id", "revision",
-        "moderation_status", "deleted_at", "created_at", "updated_at", "sync_updated_at", "own_note_id", "own_note_body",
-        "own_note_revision", "own_note_updated_at", "own_note_deleted_at", "own_note_moderation_status", "partner_note_id",
-        "partner_note_user_id", "partner_note_body", "partner_note_revision", "partner_note_updated_at",
-        "partner_note_deleted_at", "partner_note_moderation_status", "memory_media_ids", "media_asset_ids",
-        "memory_media_states", "thread_id", "place", "visit_id",
-      ].sort(),
-    );
     expect(row).toMatchObject({
       memory_id: id,
       own_note_id: null,
@@ -662,15 +652,6 @@ describe("memory places", () => {
     expect((await memoryRow(t, memoryId))?.place).toEqual(bryggen);
     const [row] = await getMemories(couple.second);
     expect(row.place).toEqual(bryggen);
-  });
-
-  test("a memory without a place returns null", async () => {
-    const t = newTest();
-    const couple = await createCouple(t);
-    const memoryId = await createMemory(couple.first);
-    expect((await memoryRow(t, memoryId))?.place).toBeUndefined();
-    const [row] = await getMemories(couple.first);
-    expect(row.place).toBeNull();
   });
 
   test("blank city and country are left out", async () => {

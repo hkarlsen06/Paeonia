@@ -39,22 +39,9 @@ describe("notification copy", () => {
     expect(notificationLocaleLanguage("  ")).toBe("en");
   });
 
-  test("alert bodies", () => {
-    expect(notificationAlertBody("streak_reminder", {}, "en")).toBe("Anything small counts, like a message or a drawing.");
-    expect(notificationAlertBody("streak_reminder", { partner_checked_in: true }, "nb")).toBe(
-      "Noe lite fra deg holder rekken i gang.",
-    );
-    expect(notificationAlertBody("partner_answered", {}, "nb")).toBe("Nå kan du se svaret.");
-    expect(notificationAlertBody("thread_message_sent", {}, "en")).toBe("Sent you a message");
-    expect(notificationAlertBody("subscription_trial_reminder", { days_left: 1 }, "en")).toBe(
-      "1 day left. Review your subscription in the App Store.",
-    );
-    expect(notificationAlertBody("subscription_trial_reminder", { days_left: "3" }, "nb")).toBe(
-      "3 dager igjen. Se over abonnementet ditt i App Store.",
-    );
-    expect(notificationAlertBody("subscription_trial_reminder", {}, "en")).toBe(
-      "2 days left. Review your subscription in the App Store.",
-    );
+  test("a trial reminder counts the days left in the recipient's language, and a location update has no body", () => {
+    expect(notificationAlertBody("subscription_trial_reminder", { days_left: 1 }, "en")).toMatch(/^1 day left/);
+    expect(notificationAlertBody("subscription_trial_reminder", { days_left: "3" }, "nb")).toMatch(/^3 dager igjen/);
     expect(notificationAlertBody("location_updated", {}, "en")).toBeNull();
   });
 

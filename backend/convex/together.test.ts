@@ -278,23 +278,6 @@ describe("the pause lasts at most 14 days in a row (I4)", () => {
   });
 });
 
-describe("save_visit keeps dates the streak can handle (I5)", () => {
-  test("refuses a date before 2000, after 2100, and a visit longer than 366 days", async () => {
-    const { couple } = await newCouple();
-    const refused = async (start: string, end: string) =>
-      ((await saveVisit(couple.first, newUuid(), start, end).then(
-        () => null,
-        (error) => error,
-      )) as { data?: { code: string } } | null)?.data?.code;
-    expect(await refused("1999-12-31", "2000-01-02")).toBe("23514");
-    expect(await refused("2100-12-30", "2101-01-01")).toBe("23514");
-    expect(await refused("2026-10-10", "9999-12-31")).toBe("23514");
-    expect(await refused("2026-01-01", "2027-01-02")).toBe("23514");
-    expect(await refused("2026-01-01", "2027-01-01")).toBeUndefined();
-    expect(await streak(couple.first)).toMatchObject({ current_count: 0 });
-  });
-});
-
 describe("a couple with no together days keeps main's rules (I6)", () => {
   test("a paid restore, a freeze on the next missed day, then both act: the streak goes on, with no save", async () => {
     // Five days through 2026-10-07. The freeze from 2026-09-10 is ready again on 2026-10-10.

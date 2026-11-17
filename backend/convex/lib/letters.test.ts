@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { deliverAtFor, LETTER_STATES, nextLetterState, visitLettersWrittenBefore, visitLetterTime } from "./letters";
+import { deliverAtFor, nextLetterState, visitLettersWrittenBefore, visitLetterTime } from "./letters";
 
 const at = (iso: string) => Date.parse(iso);
 
@@ -11,14 +11,6 @@ describe("nextLetterState", () => {
     expect(nextLetterState("delivered", "deliver")).toBeNull();
     expect(nextLetterState("opened", "deliver")).toBeNull();
     expect(nextLetterState("opened", "open")).toBeNull();
-  });
-
-  test("every state answers every event", () => {
-    for (const state of LETTER_STATES) {
-      for (const event of ["deliver", "open"] as const) {
-        expect([null, ...LETTER_STATES]).toContain(nextLetterState(state, event));
-      }
-    }
   });
 });
 

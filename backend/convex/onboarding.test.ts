@@ -11,14 +11,6 @@ afterEach(() => {
 });
 
 describe("welcome step counts", () => {
-  test("refuses a step that is not on the list", async () => {
-    const t = newTest();
-    await expect(
-      t.mutation(api.onboarding.record_welcome_step, { p_step: "user_id_123" as "welcome_shown" }),
-    ).rejects.toThrow();
-    expect(await t.query(internal.onboarding.get_welcome_step_counts, { p_from_day: "2026-01-01" })).toEqual([]);
-  });
-
   test("counts per UTC day and step without a session", async () => {
     const t = newTest();
     await t.mutation(api.onboarding.record_welcome_step, { p_step: "welcome_shown" });

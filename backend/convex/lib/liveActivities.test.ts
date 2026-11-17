@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { buildLiveActivityRequest, type PreparedLiveActivityPush } from "./apns";
 import {
-  GAME_ACTIVITY_END_DELAY_MS,
   GAME_ACTIVITY_REFRESH_MS,
   type GameActivityEvent,
   type GameActivityState,
@@ -116,7 +115,7 @@ describe("nextGameActivity", () => {
       const waiting = ending({ ...running, turn: "yours" }, at(10 * 60_000));
       expect(nextGameActivity(waiting, turn("none"))?.row).toEqual({
         ...running,
-        ends_at: at(30_000 + GAME_ACTIVITY_END_DELAY_MS.none),
+        ends_at: at(30_000 + 60_000),
         pushed_at: at(30_000),
       });
       expect(nextGameActivity(ending(running, at(40_000)), turn("theirs"))?.row).toEqual({

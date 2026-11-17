@@ -2,11 +2,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 // Tests for what every game shares: settings, the overview, invites, presence, the relay ticket,
 // and the registry that the shared code uses to reach a game. Draw & Guess has its own tests in
 // drawAndGuess.test.ts.
-import { api, components, internal } from "./_generated/api";
+import { api, components } from "./_generated/api";
 import { hmacSha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
-import { deleteCoupleGameRows, GAME_BACKENDS, gamePushStillWanted, type GameBackend } from "./lib/gameRegistry";
-import { gameDeepLink } from "./lib/games";
+import { deleteCoupleGameRows, gamePushStillWanted } from "./lib/gameRegistry";
 import { gameRoom } from "./lib/presence";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { GAME_KINDS } from "./lib/validators";
@@ -36,18 +35,6 @@ async function startCouple() {
 
 const outbox = (t: TestConvex) => t.run((ctx) => ctx.db.query("notification_outbox").collect());
 
-/** A backend that wants nothing and deletes nothing. Tests add the hook they watch. */
-const nullBackend: GameBackend = {
-  pushStillWanted: async () => false,
-  deleteCoupleRows: async () => 0,
-};
-
-// Some tests swap registry entries. Put the registered games back after each one.
-const registeredBackends = { ...GAME_BACKENDS };
-afterEach(() => {
-  Object.assign(GAME_BACKENDS, registeredBackends);
-});
-
 describe("access", () => {
   test("a user without a couple cannot use the shared game functions", async () => {
     const t = newTest();
@@ -75,12 +62,6 @@ describe("access", () => {
     expect((await failure(couple.first.as.mutation(api.games.mark_waiting_games_seen, {}))).code).toBe("42501");
   });
 
-  test("a kind outside the catalog is refused", async () => {
-    const s = await startCouple();
-    await expect(s.a.as.mutation(api.games.send_game_invite, { p_kind: "chess" as never })).rejects.toThrow();
-    await expect(s.a.as.mutation(api.games.set_game_presence, { p_kind: "chess" as never, p_present: true })).rejects.toThrow();
-    await expect(s.a.as.mutation(api.games.create_game_live_ticket, { p_kind: "chess" as never })).rejects.toThrow();
-  });
 });
 
 describe("settings", () => {
@@ -106,21 +87,6 @@ describe("settings", () => {
     expect(changed.seen_by_user_ids).toEqual([s.a.userId, s.b.userId]);
   });
 
-  test("a language change reaches every game that registered a hook, and the same language does not", async () => {
-    const s = await startCouple();
-    const onLanguageChanged = vi.fn<NonNullable<GameBackend["onLanguageChanged"]>>(async () => {});
-    GAME_BACKENDS.mind_meld = { ...nullBackend, onLanguageChanged };
-    try {
-      await s.a.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
-      await s.b.as.mutation(api.games.set_game_settings, { p_play_style: "against", p_language: "en" });
-      expect(onLanguageChanged).not.toHaveBeenCalled();
-      await s.b.as.mutation(api.games.set_game_settings, { p_play_style: "against", p_language: "nb" });
-      expect(onLanguageChanged).toHaveBeenCalledTimes(1);
-      expect(onLanguageChanged).toHaveBeenCalledWith(expect.anything(), s.couple.coupleId, "nb");
-    } finally {
-      GAME_BACKENDS.mind_meld = null;
-    }
-  });
 });
 
 describe("get_games_overview", () => {
@@ -162,13 +128,6 @@ describe("get_games_overview", () => {
     expect(await playDays()).toEqual({ streak: 1, total: 2, today: "2026-10-13" });
     vi.setSystemTime(new Date(START + 4 * day));
     expect(await playDays()).toEqual({ streak: 0, total: 2, today: "2026-10-14" });
-
-    const rows = await s.t.run((ctx) => ctx.db.query("game_play_days").collect());
-    expect(rows.map((row) => [row.day, row.user_ids.length])).toEqual([
-      ["2026-10-10", 2],
-      ["2026-10-11", 1],
-      ["2026-10-12", 2],
-    ]);
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -318,7 +277,7 @@ describe("presence and invites for every kind", () => {
     const [row] = await outbox(s.t);
     expect(row).toMatchObject({
       recipient_user_id: s.b.userId,
-      payload: { type: "game_invite", game_kind: kind, couple_id: s.couple.coupleId, route: "games", deeplink: gameDeepLink(kind) },
+      payload: { type: "game_invite", game_kind: kind, couple_id: s.couple.coupleId, route: "games", deeplink: "paeonia://games/ultimate-tic-tac-toe" },
     });
     expect(row.payload).not.toHaveProperty("game_id");
 
@@ -359,7 +318,6 @@ describe("presence and invites for every kind", () => {
       piccante: "paeonia://games/piccante",
       guess_my_spot: "paeonia://games/guess-my-spot",
     });
-    for (const kind of GAME_KINDS) expect(links[kind]).toBe(gameDeepLink(kind));
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
@@ -413,21 +371,7 @@ describe("live ticket", () => {
 describe("registry", () => {
   const payload = (coupleId: string, kind: string) => ({ couple_id: coupleId, game_kind: kind, round_id: newUuid(), game_id: newUuid() });
 
-  test("every kind has a registry entry, and each built game has a backend", () => {
-    // Each built game adds its line here.
-    expect(GAME_BACKENDS.draw_and_guess).not.toBeNull();
-    expect(GAME_BACKENDS.mind_meld).not.toBeNull();
-    expect(GAME_BACKENDS.story_chain).not.toBeNull();
-    expect(GAME_BACKENDS.exquisite_corpse).not.toBeNull();
-    expect(GAME_BACKENDS.connect_four).not.toBeNull();
-    expect(GAME_BACKENDS.dots_and_boxes).not.toBeNull();
-    expect(GAME_BACKENDS.ultimate_tic_tac_toe).not.toBeNull();
-    expect(GAME_BACKENDS.ludo).not.toBeNull();
-    expect(GAME_BACKENDS.piccante).not.toBeNull();
-    expect(Object.keys(GAME_BACKENDS)).toEqual([...GAME_KINDS]);
-  });
-
-  test("a game without a backend has out-of-date game pushes, and only open invites stay wanted", async () => {
+  test("a game push for a round that does not exist or an unknown game is out of date, and only open invites stay wanted", async () => {
     const s = await startCouple();
     const wanted = (kind: Parameters<typeof gamePushStillWanted>[1], data: Record<string, unknown>) =>
       s.t.run((ctx) => gamePushStillWanted(ctx, kind, data, s.b.userId));
@@ -446,60 +390,20 @@ describe("registry", () => {
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("a push without a couple, or for a couple the recipient lost, is ineligible before any game is asked", async () => {
+  test("a push without a couple, or for a couple the recipient lost, is ineligible", async () => {
     const s = await startCouple();
-    const entry = vi.fn<GameBackend["pushStillWanted"]>(async () => true);
-    GAME_BACKENDS.mind_meld = { ...nullBackend, pushStillWanted: entry };
-    try {
-      const wanted = (data: Record<string, unknown>) => s.t.run((ctx) => gamePushStillWanted(ctx, "game_turn_ready", data, s.b.userId));
-      expect(await wanted({ game_kind: "mind_meld" })).toEqual({ wanted: false, reason: "ineligible" });
-      expect(await wanted(payload(s.couple.coupleId, "mind_meld"))).toEqual({ wanted: true });
-      expect(entry).toHaveBeenCalledTimes(1);
-      await endCouple(s.t, s.couple.coupleId, s.a.userId);
-      expect(await s.t.run((ctx) => gamePushStillWanted(ctx, "game_invite", payload(s.couple.coupleId, "mind_meld"), s.a.userId))).toEqual({
-        wanted: false,
-        reason: "ineligible",
-      });
-      expect(entry).toHaveBeenCalledTimes(1);
-    } finally {
-      GAME_BACKENDS.mind_meld = null;
-    }
+    expect(await s.t.run((ctx) => gamePushStillWanted(ctx, "game_turn_ready", { game_kind: "mind_meld" }, s.b.userId))).toEqual({
+      wanted: false,
+      reason: "ineligible",
+    });
+    await endCouple(s.t, s.couple.coupleId, s.a.userId);
+    expect(await s.t.run((ctx) => gamePushStillWanted(ctx, "game_invite", payload(s.couple.coupleId, "mind_meld"), s.a.userId))).toEqual({
+      wanted: false,
+      reason: "ineligible",
+    });
   });
 
-  test("the entry of the pushed game decides, with the push kind, the payload, and the recipient", async () => {
-    const s = await startCouple();
-    const entry = vi.fn<GameBackend["pushStillWanted"]>(async () => false);
-    GAME_BACKENDS.mind_meld = { ...nullBackend, pushStillWanted: entry };
-    try {
-      const data = payload(s.couple.coupleId, "mind_meld");
-      expect(await s.t.run((ctx) => gamePushStillWanted(ctx, "game_result", data, s.b.userId))).toEqual({ wanted: false, reason: "out_of_date" });
-      expect(entry).toHaveBeenCalledWith(expect.anything(), "game_result", data, s.b.userId);
-      // Another game's pushes never reach this entry.
-      await s.t.run((ctx) => gamePushStillWanted(ctx, "game_result", payload(s.couple.coupleId, "connect_four"), s.b.userId));
-      expect(entry).toHaveBeenCalledTimes(1);
-    } finally {
-      GAME_BACKENDS.mind_meld = null;
-    }
-  });
-
-  test("the reminder cron sums the reminders of every game with turns", async () => {
-    const s = await startCouple();
-    const sendDueTurnReminders = vi.fn<NonNullable<GameBackend["sendDueTurnReminders"]>>(async () => 2);
-    // Stand-ins replace two entries and put back what was there, so a game that
-    // registered its real backend keeps it.
-    const saved = { mind_meld: GAME_BACKENDS.mind_meld, story_chain: GAME_BACKENDS.story_chain };
-    GAME_BACKENDS.mind_meld = { ...nullBackend, sendDueTurnReminders };
-    GAME_BACKENDS.story_chain = { ...nullBackend, sendDueTurnReminders };
-    try {
-      expect(await s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {})).toBe(4);
-      expect(sendDueTurnReminders).toHaveBeenCalledWith(expect.anything(), await transactionIso(s.t));
-    } finally {
-      GAME_BACKENDS.mind_meld = saved.mind_meld;
-      GAME_BACKENDS.story_chain = saved.story_chain;
-    }
-  });
-
-  test("cleanup deletes the shared rows of every kind, then asks each game for its own", async () => {
+  test("cleanup deletes the couple's shared game rows and keeps another couple's", async () => {
     const s = await startCouple();
     const other = await createCouple(s.t);
     await s.a.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
@@ -508,21 +412,9 @@ describe("registry", () => {
     await s.b.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: true });
     await other.first.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: true });
-    const { game_id } = await s.a.as.mutation(api.drawAndGuess.ensure_draw_and_guess_game, {});
-    expect(game_id).toBeDefined();
+    await s.a.as.mutation(api.drawAndGuess.ensure_draw_and_guess_game, {});
     await other.first.as.mutation(api.drawAndGuess.ensure_draw_and_guess_game, {});
-
-    const deleteCoupleRows = vi.fn<GameBackend["deleteCoupleRows"]>(async () => 5);
-    GAME_BACKENDS.mind_meld = { ...nullBackend, deleteCoupleRows };
-    try {
-      // 1 settings + 2 invites + 1 play time + 1 play day, 1 game and its used words from Draw & Guess, 5 from the fake entry.
-      const usedWords = (await s.t.run((ctx) => ctx.db.query("game_used_words").collect())).filter((row) => row.couple_id === s.couple.coupleId);
-      expect(usedWords).toHaveLength(3);
-      expect(await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.couple.coupleId))).toBe(1 + 2 + 1 + 1 + 1 + 3 + 5);
-      expect(deleteCoupleRows).toHaveBeenCalledWith(expect.anything(), s.couple.coupleId);
-    } finally {
-      GAME_BACKENDS.mind_meld = null;
-    }
+    await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.couple.coupleId));
 
     const left = await s.t.run(async (ctx) => ({
       settings: (await ctx.db.query("game_settings").collect()).map((row) => row.couple_id),

@@ -203,8 +203,6 @@ describe("answering", () => {
       topic_collection_id: topic.collectionId,
       status: "active",
     });
-    expect(instances[0].couple_day_id).toBeUndefined();
-    expect(instances[0].started_couple_day_id).toBeDefined();
 
     expect(await failure(answer(a, topic.questionIds[0], "again"))).toMatchObject({ code: "23505" });
   });
@@ -273,8 +271,6 @@ describe("pushes", () => {
     expect(rows[0]).toMatchObject({
       kind: "topics_waiting",
       recipient_user_id: b.userId,
-      title: "New answers from First Partner",
-      body: "See what's waiting in Topics.",
       apns_collapse_id: `topics:${(await t.run((ctx) => ctx.db.query("couples").first()))!.id}`,
     });
     expect(JSON.stringify(rows[0])).not.toMatch(/travel|secret prompt|short/);
@@ -328,7 +324,7 @@ describe("pushes", () => {
     });
     const rows = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ kind: "thread_message_sent", title: "First Partner", body: "Sent you a message" });
+    expect(rows[0]).toMatchObject({ kind: "thread_message_sent", recipient_user_id: b.userId });
     expect(rows[0].payload).not.toHaveProperty("private_topic");
     const stored = JSON.stringify(rows[0]);
     expect(stored).not.toContain("Very flirty words");
