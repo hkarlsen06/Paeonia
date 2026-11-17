@@ -22,8 +22,9 @@ enum CallMediaProbe {
         say(tuned ? "Mode: CallCodecs" : "Mode: WebRTC defaults")
         LKRTCInitializeSSL()
         let microphone = FakeMicrophone()
+        let encoders = CallVideoEncoderFactory()
         let factory = LKRTCPeerConnectionFactory(
-            encoderFactory: tuned ? CallVideoEncoderFactory() : LKRTCDefaultVideoEncoderFactory(),
+            encoderFactory: tuned ? encoders : LKRTCDefaultVideoEncoderFactory(),
             decoderFactory: LKRTCDefaultVideoDecoderFactory(),
             audioDevice: microphone
         )
@@ -39,6 +40,7 @@ enum CallMediaProbe {
             + "playing on it, at about 48 fps at uneven gaps, beside its camera, for \(Int(screenSeconds)) s on a "
             + "cool phone's limits, then on a warm one's and on a hot one's.")
         let screenPhases = await shareScreen(caller, tuned: tuned, microphone)
+        let limits = encoders.h265Encoders.allObjects.compactMap(\.appliedLimits)
         let afterVoice = await shareAfterVoice(factory: factory, tuned: tuned, microphone)
 
         let offer = caller.connection.localDescription?.sdp ?? ""
@@ -52,6 +54,7 @@ enum CallMediaProbe {
             + peers.flatMap { checks($0, call[$0.name] ?? []) }
             + screenChecks(caller, shownBy: partner, screenPhases)
             + afterVoiceChecks(afterVoice)
+            + [encoderLimitsCheck(limits)]
         let passed = report(checks, tuned: tuned)
         caller.connection.close()
         partner.connection.close()
@@ -173,6 +176,18 @@ enum CallMediaProbe {
             Check("\(name)'s sent video reaches over 1 Mbps", .always, holds: peak.two > 1_000_000),
             Check("\(name) shows over 100 frames of the partner's video", .always, holds: shown.frames > 100),
         ]
+    }
+
+    /// Every H.265 encoder of the call caps one frame at `CallH265Encoder.framesInOne` frames'
+    /// worth of bits, in a window of one frame's time, and a second at 1.5 seconds' worth.
+    static func encoderLimitsCheck(_ limits: [[Double]?]) -> Check {
+        let shown = limits.map { $0.map { $0.map { String(format: "%g", $0) }.joined(separator: "/") } ?? "-" }
+        say("H.265 encoders' VideoToolbox data rate limits: " + shown.joined(separator: "; "))
+        return Check(
+            "the call's H.265 encoders cap a frame's size in VideoToolbox",
+            .tuning,
+            holds: !limits.isEmpty && limits.allSatisfy { $0?.count == 4 && ($0?[1] ?? 1) <= 0.1 }
+        )
     }
 
     /// Prints each check and returns whether every one came out as this run expects.
@@ -300,7 +315,7 @@ extension CallMediaProbe {
                 holds: run.peakTogether < phase.totalCap * 1.1
             ),
         ]
-        guard phase.heat != .normal else { return checks }
+        guard phase.maxWidth < ScreenSource.width else { return checks }
         return checks + [Check(
             "\(caller) is never over \(phase.maxWidth) wide, the size the heat allows",
             .tuning,

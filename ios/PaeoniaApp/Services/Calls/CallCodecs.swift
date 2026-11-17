@@ -211,12 +211,17 @@ nonisolated struct CallVideoLimits: Equatable, Sendable {
 
 /// Offers H.265 first. Every iPhone that runs iOS 27 encodes it in hardware, and it needs fewer
 /// bits than H.264 for the same picture. LiveKit's default factory leaves it out although the
-/// build has the encoder.
+/// build has the encoder. Its encoder is `CallH265Encoder`, which caps a frame's size.
 nonisolated final class CallVideoEncoderFactory: NSObject, LKRTCVideoEncoderFactory {
     private let defaults = LKRTCDefaultVideoEncoderFactory()
+    /// The H.265 encoders this factory made, for `scripts/call-media-probe`.
+    let h265Encoders = NSHashTable<CallH265Encoder>.weakObjects()
 
     func createEncoder(_ info: LKRTCVideoCodecInfo) -> (any LKRTCVideoEncoder)? {
-        info.name == kLKRTCVideoCodecH265Name ? LKRTCVideoEncoderH265(codecInfo: info) : defaults.createEncoder(info)
+        guard info.name == kLKRTCVideoCodecH265Name else { return defaults.createEncoder(info) }
+        let encoder = CallH265Encoder(codecInfo: info)
+        h265Encoders.add(encoder)
+        return encoder
     }
 
     func supportedCodecs() -> [LKRTCVideoCodecInfo] {
