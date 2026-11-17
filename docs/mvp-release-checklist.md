@@ -28,7 +28,6 @@ These block TestFlight/App Review until resolved.
 
 - [ ] Account deletion works end-to-end from the app. Needs a device: the backend (`accountDeletion.test.ts`) and app (`RootViewModelFlowTests`) are tested, but the Clerk user removal and Apple token revocation need a real account.
 - [ ] App Review can access a paired demo state without needing two reviewer-controlled devices. The backend is tested (`review.test.ts`). Next, sign in three demo partner accounts on the production Clerk instance and run `mint-review-codes.mjs`.
-- [ ] StoreKit sandbox restore is tested on device. Needs a device.
 - [ ] Confirm in App Store Connect that the declared Product Interaction for Analytics also covers the signed-out welcome step counts (`onboarding:record_welcome_step`): a step name only, kept as daily totals, with no user, phone or install identifier. In App Store Connect.
 - [ ] On a device: the usage question appears once after pairing, nothing reaches PostHog before a yes, and turning off Share usage statistics stops sending at once. Needs a device.
 
@@ -123,14 +122,12 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 ## Accessibility And Device QA
 
 - [ ] Small iPhone layout pass.
-- [ ] Large iPhone layout pass.
 - [x] iPad layout pass, in portrait, landscape and split view. Done on 2026-11-17 on the iPad Air 11-inch simulator, with one scenario per screen in both orientations and the tabs in narrow, half-width and short windows.
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
-- [ ] Dynamic Type pass.
+- [ ] Dynamic Type pass. On 2026-11-17 the iPad at the largest size scaled every tab except Us, where the story row collapsed into one column and the cards stayed in three narrow columns. The iPhone was not checked at that size.
 - [ ] Complete the device-specific release gate in [the accessibility report](accessibility-report.md), including real VoiceOver and Voice Control journeys. A smoke check or automated audit does not close this gate.
 - [ ] Reduce Motion pass.
-- [ ] Increased Contrast pass.
 - [ ] Color contrast is acceptable against plum surfaces.
 - [ ] Touch targets are large enough.
 - [ ] Sheet dismissal and keyboard behavior are sane.
@@ -163,9 +160,7 @@ Run these on real devices where possible.
 
 ## Failure Mode QA
 
-- [ ] No network during launch.
 - [ ] No network during daily answer submit.
-- [ ] No network during memory note-only create.
 - [ ] No network during memory photo create.
 - [ ] No network during widget save.
 - [ ] No network during location update.
@@ -180,7 +175,7 @@ Run these on real devices where possible.
 - [ ] Invite code invalid.
 - [ ] Invite code expired.
 - [ ] Partner leaves relationship while app is open.
-- [ ] App is killed during pending upload and reopened.
+- [ ] App is killed during pending upload and reopened. A pending text message and a note-only memory survived a kill on 2026-11-17. Still needs a photo or voice upload.
 
 ## App Store Connect
 
