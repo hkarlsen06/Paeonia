@@ -121,7 +121,9 @@ struct GamesHubView: View {
     }
 
     /// One card per row, two on a wide iPad. A `Grid` rather than a lazy grid, so the
-    /// two cards in a row share the taller one's height.
+    /// two cards in a row share the taller one's height. A grid with one card has one
+    /// column, so on a wide iPad that card gets an empty column beside it and keeps the
+    /// width it has in a full row.
     private func featuredGrid(_ featured: [any GameHubModel]) -> some View {
         let perRow = isWideLayout ? 2 : 1
         let spacing = PaeoniaSpacing.sectionSpacing
@@ -130,6 +132,9 @@ struct GamesHubView: View {
                 GridRow(alignment: .top) {
                     ForEach(featured[start ..< min(start + perRow, featured.count)], id: \.kind) { game in
                         card(for: game)
+                    }
+                    if featured.count < perRow {
+                        Color.clear.frame(height: 0)
                     }
                 }
             }
