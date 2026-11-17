@@ -8,6 +8,8 @@ struct DailyAnswerTextField: View {
     var placeholder: LocalizedStringResource = .dailyChallengeTextAnswerPlaceholder
     var limit = DailyAnswerDraft.maxTextLength
     var isEmbedded = false
+    var lines: ClosedRange<Int>?
+    var accessibilityIdentifier = "daily.answer.text"
 
     @Environment(\.dailyAnswerComposerColors) private var colors
 
@@ -37,12 +39,12 @@ struct DailyAnswerTextField: View {
             label: label,
             prompt: Text(placeholder).foregroundStyle(colors.secondary)
         )
-        .lineLimit(isEmbedded ? 2...4 : 3...8)
+        .lineLimit(lines ?? (isEmbedded ? 2...4 : 3...8))
         .font(PaeoniaTypography.body)
         .foregroundStyle(colors.foreground)
         .tint(colors.accent)
         .focused(isFocused)
-        .accessibilityIdentifier("daily.answer.text")
+        .accessibilityIdentifier(accessibilityIdentifier)
         .paeoniaTextFieldChrome(isFocused: isFocused.wrappedValue, accent: colors.accent, isEmbedded: isEmbedded)
     }
 

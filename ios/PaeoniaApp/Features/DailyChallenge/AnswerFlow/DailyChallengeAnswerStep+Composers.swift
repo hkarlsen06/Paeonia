@@ -97,24 +97,17 @@ extension DailyChallengeAnswerStep {
     }
 
     private func mediaAccessibilityField(isVoice: Bool) -> some View {
-        let title: LocalizedStringResource = isVoice ? .mediaAccessibilityTranscript : .mediaAccessibilityPhotoDescription
         let isTooLong = DailyAnswerDraft.measuredLength(of: viewModel.mediaAccessibilityText(for: question.id)) > 10_000
         return Group {
             if showsMediaAlternatives || isTooLong {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                    Text(title)
-                        .font(PaeoniaTypography.caption)
-                    PaeoniaMultilineTextField(
+                    DailyMediaDescriptionField(
                         text: Binding(
                             get: { viewModel.mediaAccessibilityText(for: question.id) },
                             set: { viewModel.setMediaAccessibilityText($0, for: question.id) }
                         ),
-                        label: title,
-                        prompt: Text(isVoice ? .mediaAccessibilityTranscriptHint : .mediaAccessibilityPhotoHint)
+                        isVoice: isVoice
                     )
-                    .accessibilityIdentifier("daily.answer.mediaAccessibilityText")
-                    .font(PaeoniaTypography.body)
-                    .textFieldStyle(.roundedBorder)
                     if isTooLong {
                         Text(.mediaAccessibilityTooLong)
                             .font(PaeoniaTypography.caption)
@@ -182,5 +175,25 @@ extension DailyChallengeAnswerStep {
         }
         return String(localized: question.answerKinds.contains(.partnerChoice)
             ? .dailyChallengeKindChoice : .dailyChallengeKindPick)
+    }
+}
+
+/// The photo description or voice transcript under a staged answer, in the same field
+/// style as the card's other fields.
+private struct DailyMediaDescriptionField: View {
+    @Binding var text: String
+    let isVoice: Bool
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        DailyAnswerTextField(
+            text: $text,
+            isFocused: $isFocused,
+            label: isVoice ? .mediaAccessibilityTranscript : .mediaAccessibilityPhotoDescription,
+            placeholder: isVoice ? .mediaAccessibilityTranscriptHint : .mediaAccessibilityPhotoHint,
+            limit: 10_000,
+            lines: 1...5,
+            accessibilityIdentifier: "daily.answer.mediaAccessibilityText"
+        )
     }
 }
