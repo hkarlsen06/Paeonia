@@ -34,6 +34,9 @@ protocol CallEngineActions: AnyObject {
     func refreshCallContext()
     /// A view that shows one side's video. The engine keeps it current while the call runs.
     func makeVideoView(_ source: CallVideoSource) -> UIView
+    /// A clear view to put behind the partner's photo, which Picture in Picture grows out of while
+    /// the partner shows no video.
+    func makePictureInPictureAnchor(partnerPhoto: UUID?, partnerName: String) -> UIView
 }
 
 /// The live call for the whole app. The call screen, the bubble and the call buttons read it from

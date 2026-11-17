@@ -55,16 +55,28 @@ struct CallBubble: View {
         .accessibilityAction(named: Text(.presenceActionTuck), tuck)
     }
 
+    /// Picture in Picture grows out of it while the partner shows no video.
+    private var partnerPhoto: some View {
+        PaeoniaProfilePhotoAvatar(
+            mediaAssetID: participants.partnerProfilePhotoAssetID,
+            name: participants.partnerName,
+            tint: .paeoniaPartnerTwo,
+            size: Self.avatarSize
+        )
+        .background {
+            CallPictureInPictureAnchorView(
+                engine: center.engine,
+                partnerPhoto: participants.partnerProfilePhotoAssetID,
+                partnerName: participants.partnerName
+            )
+        }
+        .accessibilityHidden(true)
+    }
+
     private var voice: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
             HStack(spacing: PaeoniaSpacing.space8) {
-                PaeoniaProfilePhotoAvatar(
-                    mediaAssetID: participants.partnerProfilePhotoAssetID,
-                    name: participants.partnerName,
-                    tint: .paeoniaPartnerTwo,
-                    size: Self.avatarSize
-                )
-                .accessibilityHidden(true)
+                partnerPhoto
                 CallStatusLine(phase: session.phase, direction: session.direction, font: PaeoniaTypography.bodyEmphasis)
                     .lineLimit(2)
                     .frame(maxWidth: 132, alignment: .leading)

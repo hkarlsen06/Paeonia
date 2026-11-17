@@ -350,6 +350,10 @@
       view.backgroundColor = .black
       return view
     }
+
+    func makePictureInPictureAnchor(partnerPhoto _: UUID?, partnerName _: String) -> UIView {
+      UIView()
+    }
   }
 
   /// The full call screen over a plain background. A ringing call plays the ringback, or the ring

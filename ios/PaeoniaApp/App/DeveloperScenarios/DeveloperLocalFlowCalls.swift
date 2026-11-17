@@ -173,6 +173,10 @@
     func makeVideoView(_ source: CallVideoSource) -> UIView {
       stills.makeVideoView(source)
     }
+
+    func makePictureInPictureAnchor(partnerPhoto _: UUID?, partnerName _: String) -> UIView {
+      UIView()
+    }
   }
 
   /// Puts a local flow's call center in the environment. Without one, a call center from outside

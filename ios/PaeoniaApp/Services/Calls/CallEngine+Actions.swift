@@ -126,6 +126,12 @@ extension CallEngine: CallEngineActions {
         }
     }
 
+    func makePictureInPictureAnchor(partnerPhoto: UUID?, partnerName: String) -> UIView {
+        let anchor = CallPictureInPictureAnchor()
+        pictureInPicture.trackPhoto(anchor, assetID: partnerPhoto, name: partnerName)
+        return anchor
+    }
+
     /// Asks the system to do something to the call, so its call UI stays in step. The system
     /// hands the request back to `handle(_:)`. `ifRefused` runs when the system has no such call.
     private func requestSystem(
@@ -195,9 +201,17 @@ extension CallEngine: CallEngineActions {
         case .active, .reconnecting: true
         default: false
         }
-        // The partner's shared screen is what a person wants to keep watching in another app.
-        pictureInPicture.show(session.isPartnerSharingScreen ? .partnerScreen : .partner)
+        // The partner's shared screen is what a person wants to keep watching in another app. With
+        // no video from the partner, their photo keeps this phone's camera running outside the app.
+        let content: CallPictureInPicture.Content = if session.isPartnerSharingScreen {
+            .screen
+        } else if session.isPartnerCameraOn {
+            .camera
+        } else {
+            .photo
+        }
+        pictureInPicture.show(content)
         pictureInPicture.setCameraPaused(session.partnerCamera == .paused)
-        pictureInPicture.setEnabled(isTalking && (session.isPartnerCameraOn || session.isPartnerSharingScreen))
+        pictureInPicture.setEnabled(isTalking && (content != .photo || session.isCameraOn))
     }
 }

@@ -3,6 +3,7 @@ import SwiftUI
 /// The partner's face, their name, what the call is doing and their time, in the middle of the call
 /// screen while no video fills it. The photo and the name grow out of the ring pill (`callMorph`).
 struct CallIdentity: View {
+    let engine: any CallEngineActions
     let session: CallSession
     let participants: DailyChallengeParticipants
     let partnerTimeZone: TimeZone?
@@ -48,6 +49,13 @@ struct CallIdentity: View {
         // The photo's own frame, which the pill's and the partner's avatar's photos match. A
         // decoration reaches past it.
         .frame(width: Self.avatarSize, height: Self.avatarSize)
+        .background {
+            CallPictureInPictureAnchorView(
+                engine: engine,
+                partnerPhoto: participants.partnerProfilePhotoAssetID,
+                partnerName: participants.partnerName
+            )
+        }
         // The glow grows and moves with the photo.
         .background { ringingGlow.frame(width: Self.glowSize, height: Self.glowSize) }
         .callMorph(.photo, size: Self.avatarSize)

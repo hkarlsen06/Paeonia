@@ -22,6 +22,20 @@ struct CallVideoView: UIViewRepresentable {
     }
 }
 
+/// A clear view behind the partner's photo, which Picture in Picture grows out of while the
+/// partner shows no video and this phone's camera is on.
+struct CallPictureInPictureAnchorView: UIViewRepresentable {
+    let engine: any CallEngineActions
+    let partnerPhoto: UUID?
+    let partnerName: String
+
+    func makeUIView(context _: Context) -> UIView {
+        engine.makePictureInPictureAnchor(partnerPhoto: partnerPhoto, partnerName: partnerName)
+    }
+
+    func updateUIView(_: UIView, context _: Context) {}
+}
+
 /// The system's picker for AirPods, a headset or a car, which the call screen shows in place of
 /// the speaker button while one is connected.
 struct CallRoutePicker: UIViewRepresentable {

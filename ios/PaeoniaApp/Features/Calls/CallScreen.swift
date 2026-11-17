@@ -172,7 +172,12 @@ struct CallScreen: View {
                 Spacer(minLength: 0)
             } else {
                 Spacer(minLength: PaeoniaSpacing.space24)
-                CallIdentity(session: session, participants: participants, partnerTimeZone: partnerTimeZone)
+                CallIdentity(
+                    engine: center.engine,
+                    session: session,
+                    participants: participants,
+                    partnerTimeZone: partnerTimeZone
+                )
                     .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
                 Spacer(minLength: PaeoniaSpacing.space24)
             }
