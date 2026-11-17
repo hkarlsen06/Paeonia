@@ -55,6 +55,8 @@ nonisolated struct CallStageOrder: Equatable {
 nonisolated extension CallVideoSource {
     /// A preview covers the same area as a 104 by 152 point tile, in the shape of its picture.
     static let previewArea: CGFloat = 104 * 152
+    /// An upright phone's screen, the shape a shared screen takes until its first picture arrives.
+    static let phoneScreenAspectRatio: CGFloat = 9 / 19.5
 
     /// The preview's size, upright as the person holds the phone. Your own camera is wide while the
     /// phone is on its side, because the camera then sends wide pictures.
@@ -63,7 +65,7 @@ nonisolated extension CallVideoSource {
         // Until the first frame, the shape the camera captures in (`CallCamera`, 1080p).
         case .local: session.localVideoAspectRatio ?? (sideways ? 16 / 9 : 9 / 16)
         case .partner: session.partnerVideoAspectRatio ?? 104 / 152
-        case .partnerScreen: session.partnerScreenAspectRatio ?? 9 / 19.5
+        case .partnerScreen: session.partnerScreenAspectRatio ?? Self.phoneScreenAspectRatio
         }
         return CGSize(width: (Self.previewArea * ratio).squareRoot(), height: (Self.previewArea / ratio).squareRoot())
     }

@@ -8,15 +8,24 @@
   nonisolated extension DeveloperScenario {
     static let callVideoScreenShare = screen(
       "call-video-screen-share", "Call · Robin shares their screen",
-      "Robin's screen fills the call, with Robin's camera and yours as previews in the top right",
+      "Robin's screen sits beside Robin's camera and yours in the top right, and a tap makes it fill the call",
       phase: DeveloperCallFixture.active
     ) {
       DeveloperCallFixture.bothCameras(&$0)
       DeveloperCallFixture.partnerShares(&$0)
     }
+    static let callVideoScreenShareWide = screen(
+      "call-video-screen-share-wide", "Call · Robin shares their screen held on its side",
+      "Robin's wide screen sits under Robin's camera and yours in the top right, and a tap makes it fill the call",
+      phase: DeveloperCallFixture.active
+    ) {
+      DeveloperCallFixture.bothCameras(&$0)
+      DeveloperCallFixture.partnerShares(&$0, wide: true)
+    }
     static let callVoiceScreenShare = screen(
       "call-voice-screen-share", "Call · Robin shares their screen in a voice call",
-      "Robin's screen fills the voice call, with no previews", phase: DeveloperCallFixture.active
+      "Robin's screen sits between the top bar and the buttons of the voice call, and a tap makes it fill the call",
+      phase: DeveloperCallFixture.active
     ) { DeveloperCallFixture.partnerShares(&$0) }
     static let callSharingScreen = screen(
       "call-sharing-screen", "Call · you share your screen",
@@ -93,7 +102,7 @@
     ) { DeveloperCallFixture.bothCameras(&$0) }
     static let callScreenShareSideways = screen(
       "call-screen-share-sideways", "Call · Robin's screen with the phone on its side",
-      "Robin's screen fills the call turned, and the previews sit in the person's top right",
+      "Robin's screen turns and sits beside the previews in the person's top right",
       phase: DeveloperCallFixture.active, turn: .right
     ) {
       DeveloperCallFixture.bothCameras(&$0)
@@ -145,20 +154,20 @@
     }
   }
 
-  /// Robin's shared screen in the scenarios: a day's plans in Notes, drawn once.
+  /// Robin's shared screen in the scenarios, a day's plans in Notes, drawn once for each shape.
   @MainActor
   enum DeveloperSharedScreen {
-    private static var cached: UIImage?
+    private static var cached: [Bool: UIImage] = [:]
 
-    static func image() -> UIImage? {
-      if let cached { return cached }
-      let renderer = ImageRenderer(content: content)
+    static func image(wide: Bool) -> UIImage? {
+      if let image = cached[wide] { return image }
+      let renderer = ImageRenderer(content: content(size: DeveloperCallFixture.sharedScreenSize(wide: wide)))
       renderer.scale = 2
-      cached = renderer.uiImage
-      return cached
+      cached[wide] = renderer.uiImage
+      return cached[wide]
     }
 
-    private static var content: some View {
+    private static func content(size: CGSize) -> some View {
       VStack(alignment: .leading, spacing: 14) {
         Text(verbatim: "9:41").font(.system(size: 13, weight: .semibold))
         Text(verbatim: "Saturday in Oslo").font(.system(size: 26, weight: .bold))
@@ -172,8 +181,7 @@
       }
       .foregroundStyle(.black)
       .padding(20)
-      .frame(width: DeveloperCallFixture.sharedScreenSize.width, height: DeveloperCallFixture.sharedScreenSize.height,
-        alignment: .topLeading)
+      .frame(width: size.width, height: size.height, alignment: .topLeading)
       .background(Color(red: 1, green: 0.98, blue: 0.92))
     }
   }

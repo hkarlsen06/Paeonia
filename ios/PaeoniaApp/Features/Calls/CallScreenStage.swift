@@ -1,13 +1,14 @@
 import SwiftUI
 
 /// The call screen's videos (`CallStageView`) over the whole window, with room left for the
-/// chevron's row and the controls.
+/// chevron's row and the controls. The previews and a fitted shared screen keep out of that room.
 struct CallScreenStage: View {
     let engine: any CallEngineActions
     let session: CallSession
     let stage: CallStage
     let partnerName: String
-    /// The previews keep out of the controls' room. While the controls are hidden they move into it.
+    /// The previews and a fitted shared screen keep out of the controls' room. While the controls are
+    /// hidden over a camera, the previews move into it.
     let makesRoomForControls: Bool
     /// From the bottom of the safe area to the top of the controls' stack.
     let controlsHeight: CGFloat
@@ -15,6 +16,8 @@ struct CallScreenStage: View {
     let safeArea: EdgeInsets
     let turn: CallTurn
     @Binding var corner: CallPreviewCorner
+    let sharedScreen: CallSharedScreenMode
+    let toggleSharedScreen: (() -> Void)?
     let bringForward: (CallVideoSource) -> Void
 
     var body: some View {
@@ -22,12 +25,14 @@ struct CallScreenStage: View {
             CallStageView(
                 engine: engine, session: session, stage: stage, partnerName: partnerName,
                 frame: CGRect(origin: .zero, size: proxy.size), margins: previewMargins(safeArea),
-                safeArea: safeArea, turn: turn, corner: $corner, bringForward: bringForward)
+                safeArea: safeArea, turn: turn, corner: $corner, sharedScreen: sharedScreen,
+                toggleSharedScreen: toggleSharedScreen, bringForward: bringForward)
         }
         .ignoresSafeArea()
     }
 
-    /// The room the previews leave for the chevron's row and the controls, on screen.
+    /// The room the previews and a fitted shared screen leave for the chevron's row and the controls, on
+    /// screen.
     private func previewMargins(_ insets: EdgeInsets) -> EdgeInsets {
         let roomy = makesRoomForControls
         let controls = controlsHeight + PaeoniaSpacing.space24

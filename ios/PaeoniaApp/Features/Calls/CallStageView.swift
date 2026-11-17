@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// The videos of the call screen (`CallStage`): one fills the stage, and the others are previews in
-/// the person's corner (`CallPreviewCorner`). A tap on a preview makes it the big one, and the big one
-/// takes the preview's place. A drag moves the previews together to any corner, as in FaceTime. Each
-/// video keeps its one view through every swap, so a paused partner's last frame stays on screen.
+/// The videos of the call screen (`CallStage`). The big one fills the stage, or for the partner's
+/// shared screen fits beside the previews until the call screen asks for it full (`CallSharedScreenMode`).
+/// The others are previews in the person's corner (`CallPreviewCorner`). A tap on a preview makes it the
+/// big one, and the big one takes the preview's place. A drag moves the previews together to any corner,
+/// as in FaceTime, and a fitted shared screen moves to the side they leave. Each video keeps its one view
+/// through every swap, so a paused partner's last frame stays on screen.
 struct CallStageView: View {
     let engine: any CallEngineActions
     let session: CallSession
@@ -17,6 +19,11 @@ struct CallStageView: View {
     let safeArea: EdgeInsets
     let turn: CallTurn
     @Binding var corner: CallPreviewCorner
+    let sharedScreen: CallSharedScreenMode
+    /// Fills the display with the big shared screen, or fits it back beside the previews. VoiceOver and
+    /// Switch Control reach it on that tile. Nil while the controls can't hide, such as while the call
+    /// reconnects.
+    let toggleSharedScreen: (() -> Void)?
     let bringForward: (CallVideoSource) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -32,11 +39,14 @@ struct CallStageView: View {
     var body: some View {
         let layout = CallStageLayout(
             stage: stage, session: session, in: frame, margins: margins, safeArea: safeArea, corner: corner,
-            turn: turn)
+            turn: turn, sharedScreen: sharedScreen)
+        // They stay in place while hidden, because each video keeps its one view.
+        let hidesPreviews = stage.main == .partnerScreen && sharedScreen == .full
         ZStack {
             ForEach(stage.sources, id: \.self) { source in
                 if let tile = layout.tiles[source] {
-                    self.tile(source, at: tile, isMain: source == stage.main)
+                    let isMain = source == stage.main
+                    self.tile(source, at: tile, isMain: isMain, isHidden: !isMain && hidesPreviews)
                 }
             }
         }
@@ -46,10 +56,14 @@ struct CallStageView: View {
 
     /// One structure for the big video and a preview, so a swap moves the same view instead of
     /// building a new one.
-    private func tile(_ source: CallVideoSource, at tile: CallStageLayout.Tile, isMain: Bool) -> some View {
+    private func tile(
+        _ source: CallVideoSource, at tile: CallStageLayout.Tile, isMain: Bool, isHidden: Bool
+    ) -> some View {
         let offset = isMain ? .zero : dragOffset
         let swaps = isMain ? GestureMask.none : .all
-        // A preview gets the button trait below. The big video takes no tap of its own.
+        let toggles = isMain && source == .partnerScreen ? toggleSharedScreen : nil
+        // A preview, and the big shared screen while it can toggle, get the button trait below. The
+        // big video takes no tap of its own.
         // swiftlint:disable:next accessibility_trait_for_button
         return CallStageTile(engine: engine, source: source, session: session, partnerName: partnerName)
             // The video view takes no touches, so the tile needs a shape of its own.
@@ -60,19 +74,31 @@ struct CallStageView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(source.accessibilityLabel(partnerName: partnerName))
             .accessibilityValue(accessibilityValue(of: source))
-            .accessibilityAddTraits(isMain ? [] : .isButton)
-            .accessibilityHint(isMain ? Text(verbatim: "") : Text(.callsPreviewHint))
+            .accessibilityAddTraits(isMain && toggles == nil ? [] : .isButton)
+            .accessibilityHint(accessibilityHint(isMain: isMain, toggles: toggles != nil))
             .accessibilityAction {
-                if !isMain { bringForward(source) }
+                if isMain { toggles?() } else { bringForward(source) }
             }
             .accessibilityIdentifier(source.accessibilityIdentifier)
             .modifier(CallTilePlacement(
                 center: CGPoint(x: tile.center.x + offset.width, y: tile.center.y + offset.height),
                 size: tile.size, degrees: turn.angle.degrees,
                 cornerRadius: radius(source, isMain: isMain, width: tile.size.width), isOutlined: !isMain))
+            .opacity(isHidden ? 0 : 1)
+            .allowsHitTesting(!isHidden)
+            .accessibilityHidden(isHidden)
             .zIndex(isMain ? 0 : 1)
             // A scale here would grow the whole stage around its middle, so a tile only fades.
             .transition(.opacity)
+    }
+
+    private func accessibilityHint(isMain: Bool, toggles: Bool) -> Text {
+        if !isMain { return Text(.callsPreviewHint) }
+        guard toggles else { return Text(verbatim: "") }
+        return switch sharedScreen {
+        case .fitted: Text(.callsPartnerScreenFillHint)
+        case .full: Text(.callsPartnerScreenShowButtonsHint)
+        }
     }
 
     /// What VoiceOver says about the partner's video or screen while it waits for frames.

@@ -20,9 +20,19 @@ nonisolated struct CallPreviewCorner: Equatable, Sendable {
     }
 }
 
-/// Where each video of the call screen shows: the big one over the whole stage, and the previews
-/// stacked from the person's corner toward the middle, inside the room the controls leave. A phone on
-/// its side lays them out as the person sees the screen, then turns them onto it.
+/// How the partner's shared screen shows while it is the big video. Fitted, it keeps its shape in the
+/// room the controls and the previews leave, so nothing covers it. Full, it fills the safe area, and
+/// the previews fade out.
+nonisolated enum CallSharedScreenMode: Equatable, Sendable {
+    case fitted
+    case full
+}
+
+/// Where each video of the call screen shows. A camera fills the whole stage, and the previews stack
+/// from the person's corner toward the middle, inside the room the controls leave. A fitted shared
+/// screen takes what is left of that room beside the previews, or above or below them, whichever
+/// lets it show larger. A phone on its side lays them out as the person sees the screen, then turns
+/// them onto it.
 nonisolated struct CallStageLayout {
     struct Tile: Equatable {
         /// The middle of the tile on screen.
@@ -31,20 +41,36 @@ nonisolated struct CallStageLayout {
         var size: CGSize
     }
 
+    /// The previews stack from the corner along its side, or line up from it along its top or bottom
+    /// edge.
+    private enum Arrangement {
+        case column
+        case row
+    }
+
+    /// How the previews sit, and the box a fitted shared screen gets beside them.
+    private struct Plan {
+        var arrangement: Arrangement
+        var scale: CGFloat
+        var screenBox: CGRect
+    }
+
     static let previewGap = PaeoniaSpacing.space8
-    /// Previews never shrink below this to fit beside each other.
+    /// Between a fitted shared screen and the previews.
+    private static let screenGap = PaeoniaSpacing.space12
+    /// Previews never shrink below this, to fit beside each other or to give a shared screen room.
     private static let smallestScale: CGFloat = 0.6
 
     let tiles: [CallVideoSource: Tile]
 
-    /// `frame` is where the videos show on screen, `margins` the room around the previews inside it,
-    /// and `safeArea` the screen's own edges inside it, all on screen.
+    /// `frame` is where the videos show on screen, `margins` the room around the previews and a fitted
+    /// shared screen inside it, and `safeArea` the screen's own edges inside it, all on screen.
     init(
         stage: CallStage, session: CallSession, in frame: CGRect, margins: EdgeInsets, safeArea: EdgeInsets,
-        corner: CallPreviewCorner, turn: CallTurn
+        corner: CallPreviewCorner, turn: CallTurn, sharedScreen: CallSharedScreenMode
     ) {
         let seen = turn.asSeen(frame.size)
-        let room = turn.asSeen(margins)
+        let room = Self.inset(seen, by: turn.asSeen(margins))
         let middle = CGPoint(x: frame.midX, y: frame.midY)
         func onScreen(_ point: CGPoint) -> CGPoint {
             let turned = turn.onScreen(CGPoint(x: point.x - seen.width / 2, y: point.y - seen.height / 2))
@@ -52,41 +78,115 @@ nonisolated struct CallStageLayout {
         }
 
         var tiles: [CallVideoSource: Tile] = [:]
-        if let main = stage.main {
-            if main == .partnerScreen {
-                // A shared screen is read, not looked at, so it shows whole: cropped like a camera, its
-                // edges went under the status bar and out of sight.
-                let safe = turn.asSeen(safeArea)
-                let box = CGRect(
-                    x: safe.leading, y: safe.top,
-                    width: max(0, seen.width - safe.leading - safe.trailing),
-                    height: max(0, seen.height - safe.top - safe.bottom))
-                tiles[main] = Tile(
-                    center: onScreen(CGPoint(x: box.midX, y: box.midY)),
-                    size: Self.fit(session.partnerScreenAspectRatio, in: box.size))
-            } else {
-                tiles[main] = Tile(center: middle, size: seen)
-            }
-        }
         let sizes = stage.previews.map { $0.previewSize(in: session, sideways: turn.isSideways) }
-        let total = sizes.reduce(0) { $0 + $1.height } + Self.previewGap * CGFloat(max(0, sizes.count - 1))
-        let height = max(0, seen.height - room.top - room.bottom)
-        let scale = total > 0 ? max(Self.smallestScale, min(1, height / total)) : 1
-        var edge = corner.vertical == .top ? room.top : seen.height - room.bottom
-        for (source, size) in zip(stage.previews, sizes) {
-            let scaled = CGSize(width: size.width * scale, height: size.height * scale)
-            let x = corner.horizontal == .leading
-                ? room.leading + scaled.width / 2 : seen.width - room.trailing - scaled.width / 2
-            let y = corner.vertical == .top ? edge + scaled.height / 2 : edge - scaled.height / 2
-            edge += (corner.vertical == .top ? 1 : -1) * (scaled.height + Self.previewGap)
-            tiles[source] = Tile(center: onScreen(CGPoint(x: x, y: y)), size: scaled)
+        var plan = Plan(arrangement: .column, scale: Self.columnScale(sizes, height: room.height), screenBox: room)
+        if stage.main == .partnerScreen {
+            // A shared screen is read, not looked at, so it shows whole. Cropped like a camera, its
+            // edges went under the status bar and out of sight.
+            let ratio = session.partnerScreenAspectRatio ?? CallVideoSource.phoneScreenAspectRatio
+            let plans = [Arrangement.column, .row].compactMap {
+                Self.plan($0, beside: sizes, in: room, corner: corner, screen: ratio)
+            }
+            // On a tie the column wins, the way the previews sit over a camera.
+            plan = plans.max { Self.area(ratio, in: $0.screenBox) < Self.area(ratio, in: $1.screenBox) } ?? plan
+            let box = sharedScreen == .full ? Self.inset(seen, by: turn.asSeen(safeArea)) : plan.screenBox
+            tiles[.partnerScreen] = Tile(
+                center: onScreen(CGPoint(x: box.midX, y: box.midY)), size: Self.fit(ratio, in: box.size))
+        } else if let main = stage.main {
+            tiles[main] = Tile(center: middle, size: seen)
+        }
+        let scaled = sizes.map { CGSize(width: $0.width * plan.scale, height: $0.height * plan.scale) }
+        for (source, rect) in zip(stage.previews, Self.place(scaled, as: plan.arrangement, in: room, corner: corner)) {
+            tiles[source] = Tile(center: onScreen(CGPoint(x: rect.midX, y: rect.midY)), size: rect.size)
         }
         self.tiles = tiles
     }
 
+    /// `size` less `insets`, from its top left corner.
+    private static func inset(_ size: CGSize, by insets: EdgeInsets) -> CGRect {
+        CGRect(
+            x: insets.leading, y: insets.top,
+            width: max(0, size.width - insets.leading - insets.trailing),
+            height: max(0, size.height - insets.top - insets.bottom))
+    }
+
+    /// The scale that fits a column of previews of `sizes` into `height`, never above 1.
+    private static func columnScale(_ sizes: [CGSize], height: CGFloat) -> CGFloat {
+        let total = sizes.reduce(0) { $0 + $1.height } + previewGap * CGFloat(max(0, sizes.count - 1))
+        return total > 0 ? max(smallestScale, min(1, height / total)) : 1
+    }
+
+    /// Previews of `sizes` in `room` arranged as `arrangement`, beside a fitted shared screen of shape
+    /// `ratio`. They never grow past the scale a column over a camera takes, and shrink below it only as
+    /// far as that lets the screen grow. Nil when a row of them can't fit across the room.
+    private static func plan(
+        _ arrangement: Arrangement, beside sizes: [CGSize], in room: CGRect, corner: CallPreviewCorner,
+        screen ratio: CGFloat
+    ) -> Plan? {
+        let largest = columnScale(sizes, height: room.height)
+        guard !sizes.isEmpty else { return Plan(arrangement: arrangement, scale: largest, screenBox: room) }
+        switch arrangement {
+        case .column:
+            let across = sizes.map(\.width).max() ?? 0
+            // At this scale and below, the column leaves the screen room for the room's whole height.
+            let enough = (room.width - screenGap - room.height * ratio) / across
+            let scale = min(largest, max(smallestScale, enough))
+            let taken = across * scale + screenGap
+            return Plan(arrangement: arrangement, scale: scale, screenBox: CGRect(
+                x: corner.horizontal == .leading ? room.minX + taken : room.minX, y: room.minY,
+                width: max(0, room.width - taken), height: room.height))
+        case .row:
+            let along = sizes.reduce(0) { $0 + $1.width }
+            let widest = min(largest, (room.width - previewGap * CGFloat(sizes.count - 1)) / along)
+            guard widest >= smallestScale else { return nil }
+            let across = sizes.map(\.height).max() ?? 0
+            // At this scale and below, the row leaves the screen room for the room's whole width.
+            let enough = (room.height - screenGap - room.width / ratio) / across
+            let scale = min(widest, max(smallestScale, enough))
+            let taken = across * scale + screenGap
+            return Plan(arrangement: arrangement, scale: scale, screenBox: CGRect(
+                x: room.minX, y: corner.vertical == .top ? room.minY + taken : room.minY,
+                width: room.width, height: max(0, room.height - taken)))
+        }
+    }
+
+    /// Where previews of `sizes` sit in `room`, starting in `corner`, one after another toward the
+    /// middle.
+    private static func place(
+        _ sizes: [CGSize], as arrangement: Arrangement, in room: CGRect, corner: CallPreviewCorner
+    ) -> [CGRect] {
+        let top = corner.vertical == .top
+        let leading = corner.horizontal == .leading
+        var edge = switch arrangement {
+        case .column: top ? room.minY : room.maxY
+        case .row: leading ? room.minX : room.maxX
+        }
+        return sizes.map { size in
+            let rect: CGRect
+            switch arrangement {
+            case .column:
+                rect = CGRect(
+                    x: leading ? room.minX : room.maxX - size.width, y: top ? edge : edge - size.height,
+                    width: size.width, height: size.height)
+                edge += (top ? 1 : -1) * (size.height + previewGap)
+            case .row:
+                rect = CGRect(
+                    x: leading ? edge : edge - size.width, y: top ? room.minY : room.maxY - size.height,
+                    width: size.width, height: size.height)
+                edge += (leading ? 1 : -1) * (size.width + previewGap)
+            }
+            return rect
+        }
+    }
+
+    private static func area(_ aspectRatio: CGFloat, in box: CGRect) -> CGFloat {
+        let size = fit(aspectRatio, in: box.size)
+        return size.width * size.height
+    }
+
     /// The largest size of the shape `aspectRatio` (width over height) that fits in `box`.
-    private static func fit(_ aspectRatio: CGFloat?, in box: CGSize) -> CGSize {
-        guard let aspectRatio, aspectRatio > 0, box.width > 0, box.height > 0 else { return box }
+    private static func fit(_ aspectRatio: CGFloat, in box: CGSize) -> CGSize {
+        guard aspectRatio > 0, box.width > 0, box.height > 0 else { return box }
         return box.width / box.height > aspectRatio
             ? CGSize(width: box.height * aspectRatio, height: box.height)
             : CGSize(width: box.width, height: box.width / aspectRatio)

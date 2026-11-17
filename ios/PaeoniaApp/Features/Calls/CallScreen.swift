@@ -8,9 +8,11 @@ import SwiftUI
 /// inside the app. The message button at the top right shrinks the call to its bubble and slides
 /// "Just us" in over the app, as a tap on the partner's message notice does. What the partner just did
 /// and the call's own news show above the controls (`CallNotices`), because the partner's avatar and
-/// the app's banners are under the call. During video the controls fade out after a few seconds without a touch, so
-/// nothing covers the video, and a tap brings them back. With the back camera on, a zoom slider sits
-/// above them (`CallZoomSlider`). A phone held on its side turns the videos and the symbols the way
+/// the app's banners are under the call. During video the controls fade out after a few seconds without
+/// a touch, so nothing covers the video, and a tap brings them back. The partner's shared screen is the
+/// exception. While it is the big video the controls stay until a tap, which hides them and the previews
+/// and lets the screen fill the display (`CallSharedScreenMode`). With the back camera on, a zoom slider
+/// sits above them (`CallZoomSlider`). A phone held on its side turns the videos and the symbols the way
 /// it is held, while the screen stays upright (`CallTurn`).
 struct CallScreen: View {
     let center: CallCenter
@@ -72,23 +74,32 @@ struct CallScreen: View {
         stage.main != nil
     }
 
+    private var isPartnerScreenMain: Bool {
+        stage.main == .partnerScreen
+    }
+
     /// The turn the videos should take: none without video.
     private var wantedTurn: CallTurn {
         stage.sources.isEmpty ? .none : deviceTurn
     }
 
     var body: some View {
-        // The taps only hide and show the controls, which never hide for VoiceOver or Switch Control.
+        // The taps only hide and show the controls. VoiceOver and Switch Control reach the same toggle on
+        // the big shared screen, the only place where they hide the controls.
         // swiftlint:disable:next accessibility_trait_for_button
         ZStack {
             background
             CallScreenStage(
                 engine: center.engine, session: session, stage: stage, partnerName: participants.partnerName,
-                makesRoomForControls: showsHUD || reduceMotion,
+                // Over a shared screen the previews stay at their fitted places while they fade out.
+                makesRoomForControls: showsHUD || reduceMotion || isPartnerScreenMain,
                 controlsHeight: bottomHeight ?? 0, safeArea: safeArea, turn: turn, corner: $previewCorner,
+                sharedScreen: sharedScreen,
+                toggleSharedScreen: isPartnerScreenMain && canToggleHUD ? { toggleHUD() } : nil,
                 bringForward: bringForward)
             .opacity(stageOpacity)
-            if hasMainVideo {
+            // A fitted shared screen leaves the bars nothing to darken.
+            if hasMainVideo, !isPartnerScreenMain {
                 scrims.callHUD(isShown: showsHUD)
             }
             hud
@@ -107,8 +118,16 @@ struct CallScreen: View {
         .task(id: session.id) {
             partnerTimeZone = await center.engine.partnerTimeZone()
         }
-        .task(id: HUDTimer(canHide: canHideHUD, isHidden: isHUDHidden, touches: hudTouches)) {
+        .task(id: HUDTimer(
+            canToggle: canToggleHUD, hidesWhenIdle: hidesHUDWhenIdle, isHidden: isHUDHidden, touches: hudTouches
+        )) {
             await hideHUDWhenIdle()
+        }
+        // Otherwise a share that starts while the controls are hidden opens full, and the partner's
+        // face is gone without a tap.
+        .onChange(of: isPartnerScreenMain) { _, isScreen in
+            guard isScreen else { return }
+            withAnimation(reduceMotion ? nil : Self.hudFade) { isHUDHidden = false }
         }
         .onChange(of: wantedTurn, initial: true) { _, wanted in follow(wanted) }
         .accessibilityAction(.escape) { shrink() }
@@ -346,29 +365,38 @@ extension CallScreen {
     private static let hudDelay = Duration.seconds(4)
     private static let hudFade = PaeoniaMotion.standardCurve(duration: 0.3)
 
-    /// Someone who uses VoiceOver, Switch Control or Extra controls keeps the controls on screen.
-    /// They also stay while a finger zooms.
-    private var canHideHUD: Bool {
+    /// Whether a tap may hide the controls. Someone who uses VoiceOver, Switch Control or Extra
+    /// controls keeps them on screen, except over the partner's shared screen, where hiding them is how
+    /// the screen fills the display. They also stay while a finger zooms.
+    private var canToggleHUD: Bool {
         guard hasMainVideo, case .active = session.phase else { return false }
-        return !session.isWaitingForMicrophone && !showsControls && !isAdjustingZoom
+        return !session.isWaitingForMicrophone && !isAdjustingZoom && (!showsControls || isPartnerScreenMain)
     }
 
-    private var showsHUD: Bool { !canHideHUD || !isHUDHidden }
+    /// The wait never hides them over the partner's shared screen, which would then grow unasked.
+    private var hidesHUDWhenIdle: Bool {
+        canToggleHUD && !showsControls && !isPartnerScreenMain
+    }
+
+    private var showsHUD: Bool { !canToggleHUD || !isHUDHidden }
+
+    private var sharedScreen: CallSharedScreenMode { showsHUD ? .fitted : .full }
 
     /// Any change to these starts the wait over.
     private struct HUDTimer: Equatable {
-        let canHide: Bool
+        let canToggle: Bool
+        let hidesWhenIdle: Bool
         let isHidden: Bool
         let touches: Int
     }
 
     private func hideHUDWhenIdle() async {
-        guard canHideHUD else {
+        guard canToggleHUD else {
             // So they wait the full delay before hiding once hiding is allowed again.
             isHUDHidden = false
             return
         }
-        guard !isHUDHidden else { return }
+        guard hidesHUDWhenIdle, !isHUDHidden else { return }
         do {
             try await Task.sleep(for: Self.hudDelay)
         } catch {
@@ -377,10 +405,15 @@ extension CallScreen {
         withAnimation(Self.hudFade) { isHUDHidden = true }
     }
 
-    /// Like FaceTime, a tap hides shown controls at once and brings hidden ones back.
+    /// Like FaceTime, a tap hides shown controls at once and brings hidden ones back. Over the partner's
+    /// shared screen the screen grows or shrinks with them, so under Reduce Motion it fades instead.
     private func toggleHUD() {
-        guard canHideHUD else { return }
-        withAnimation(Self.hudFade) { isHUDHidden.toggle() }
+        guard canToggleHUD else { return }
+        guard isPartnerScreenMain else {
+            withAnimation(Self.hudFade) { isHUDHidden.toggle() }
+            return
+        }
+        changeStage(Self.hudFade) { isHUDHidden.toggle() }
     }
 }
 

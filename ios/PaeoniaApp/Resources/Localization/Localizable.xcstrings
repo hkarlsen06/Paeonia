@@ -5509,6 +5509,42 @@
         }
       }
     },
+    "calls.partnerScreen.fillHint" : {
+      "comment" : "VoiceOver hint on the partner's shared screen while it sits beside the small videos on the call screen, with the call buttons showing. Activating it makes the shared screen fill the whole screen and hides the buttons and the small videos.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fills the screen and hides the buttons."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fyller skjermen og skjuler knappene."
+          }
+        }
+      }
+    },
+    "calls.partnerScreen.showButtonsHint" : {
+      "comment" : "VoiceOver hint on the partner's shared screen while it fills the whole call screen and the call buttons are hidden. Activating it brings the buttons and the small videos back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows the buttons again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viser knappene igjen."
+          }
+        }
+      }
+    },
     "calls.partnerScreenWaiting" : {
       "comment" : "VoiceOver value of the partner's shared screen during a call while its first picture has not arrived yet, or no new picture has arrived for a moment, and it shows a spinner. %@ is the partner's name.",
       "extractionState" : "manual",

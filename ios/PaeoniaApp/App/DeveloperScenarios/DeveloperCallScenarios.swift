@@ -14,7 +14,8 @@
       callBubblePartnerOpenedGame, callScreenPartnerOpenedGame, callScreenGameYourTurn, callScreenGameYourTurnZoom,
       callScreenPartnerMessage,
       callBubbleJustUs, callNightCheck, callGameToolbar, callUsTab, callJustUsRows,
-      callVideoScreenShare, callVoiceScreenShare, callSharingScreen, callShareStarting, callShareFailed,
+      callVideoScreenShare, callVideoScreenShareWide, callVoiceScreenShare, callSharingScreen, callShareStarting,
+      callShareFailed,
       callPartnerScreenLoading, callPartnerScreenStalled, callVideoPaused, callVideoStalled,
       callWeakConnection, callCameraOffBattery, callCameraOffHot, callVideoSideways, callScreenShareSideways,
       callBubbleScreenShare, callBubbleVoiceScreenShare, callBubbleSharingScreen, callBubblePaused,
@@ -246,13 +247,16 @@
       session.partnerVideoAspectRatio = 9.0 / 16
     }
 
-    /// Robin shares their phone's screen.
-    static func partnerShares(_ session: inout CallSession) {
+    /// Robin shares their phone's screen, held upright or, with `wide`, on its side.
+    static func partnerShares(_ session: inout CallSession, wide: Bool = false) {
+      let size = sharedScreenSize(wide: wide)
       session.isPartnerSharingScreen = true
-      session.partnerScreenAspectRatio = sharedScreenSize.width / sharedScreenSize.height
+      session.partnerScreenAspectRatio = size.width / size.height
     }
 
-    static let sharedScreenSize = CGSize(width: 300, height: 650)
+    static func sharedScreenSize(wide: Bool) -> CGSize {
+      wide ? CGSize(width: 650, height: 300) : CGSize(width: 300, height: 650)
+    }
 
     static func session(
       phase: CallPhase, direction: CallDirection = .outgoing, configure: (inout CallSession) -> Void = { _ in }
@@ -338,8 +342,9 @@
       case .local: DeveloperAvatarFixture.ownPhoto
       case .partnerScreen: nil
       }
+      let wideScreen = (center?.session?.partnerScreenAspectRatio ?? 0) > 1
       let image = photo.map { DeveloperAvatarFixture.photoData(for: $0).flatMap(UIImage.init(data:)) }
-        ?? DeveloperSharedScreen.image()
+        ?? DeveloperSharedScreen.image(wide: wideScreen)
       let view = UIImageView(image: image)
       view.contentMode = .scaleAspectFill
       view.backgroundColor = .black
