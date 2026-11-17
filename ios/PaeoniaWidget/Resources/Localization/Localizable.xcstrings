@@ -850,24 +850,6 @@
         }
       }
     },
-    "widget.liveActivity.playShort" : {
-      "comment" : "Very short label at the right of the Dynamic Island when it is this person's turn in the partner's game. Tapping opens the game. Keep it to one or two short words.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Play"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spill"
-          }
-        }
-      }
-    },
     "widget.liveActivity.playing" : {
       "comment" : "Live Activity on the Lock Screen and in the Dynamic Island while the partner has a game open. First argument is what the person calls their partner, second is the game's name. Example: Robin is playing Mind Meld",
       "extractionState" : "manual",
@@ -882,6 +864,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ spiller %2$@"
+          }
+        }
+      }
+    },
+    "widget.liveActivity.playShort" : {
+      "comment" : "Very short label at the right of the Dynamic Island when it is this person's turn in the partner's game. Tapping opens the game. Keep it to one or two short words.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
           }
         }
       }
@@ -1848,20 +1848,74 @@
         }
       }
     },
-    "widget.title" : {
-      "comment" : "Widget display name.",
+    "widget.sample.firstDateTitle" : {
+      "comment" : "Made-up yearly countdown title in the widget gallery previews, for the couple's first date.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia"
+            "value" : "First date"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia"
+            "value" : "Første date"
+          }
+        }
+      }
+    },
+    "widget.sample.partnerName" : {
+      "comment" : "Made-up partner name in the widget gallery previews. Pick a short first name that is common for any gender.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sam"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kim"
+          }
+        }
+      }
+    },
+    "widget.sample.tripTitle" : {
+      "comment" : "Made-up countdown title in the widget gallery previews, for a trip the couple is looking forward to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Our trip"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turen vår"
+          }
+        }
+      }
+    },
+    "widget.title" : {
+      "comment" : "Gallery name of the Home Screen widget that shows the latest drawing the couple sent each other.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Felles tegning"
           }
         }
       }

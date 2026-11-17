@@ -9,7 +9,9 @@ extension LockScreenSnapshot {
         let startOfToday = calendar.startOfDay(for: now)
         return LockScreenSnapshot(
             generatedAt: now,
-            partner: Partner(name: "Alex", usesNickname: false, timeZoneID: "Asia/Tokyo"),
+            partner: Partner(
+                name: String(localized: .widgetSamplePartnerName), usesNickname: false, timeZoneID: "Asia/Tokyo"
+            ),
             startedOn: LockScreenCalendarDate(containing: now.addingTimeInterval(-412 * dayLength), in: calendar),
             dates: sampleDates(now: now, calendar: calendar),
             distance: Distance(meters: 7_750_000, asOf: now),
@@ -34,11 +36,12 @@ extension LockScreenSnapshot {
         return Dates(
             countdowns: [
                 DatedCountdown(
-                    id: "sample", title: "Trip", targetDate: day(12), repeatsYearly: false, createdAt: created
+                    id: "sample", title: String(localized: .widgetSampleTripTitle), targetDate: day(12),
+                    repeatsYearly: false, createdAt: created
                 ),
                 DatedCountdown(
-                    id: "anniversary", title: "First date", targetDate: day(-300), repeatsYearly: true,
-                    createdAt: created
+                    id: "anniversary", title: String(localized: .widgetSampleFirstDateTitle), targetDate: day(-300),
+                    repeatsYearly: true, createdAt: created
                 ),
             ],
             birthdays: [Birthday(isMine: false, birthday: day(40 - 9_000))]
