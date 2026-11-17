@@ -337,13 +337,13 @@ struct ThreadChatStagedAttachmentsRow: View {
                     VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                         Text(isVideo ? .dailyChatComposerVideoDescription : .mediaAccessibilityPhotoDescription)
                             .font(PaeoniaTypography.caption)
-                        TextField(
-                            String(localized: isVideo ? .dailyChatComposerVideoHint : .mediaAccessibilityPhotoHint),
+                        PaeoniaMultilineTextField(
                             text: Binding(
                                 get: { staging.staged.first { $0.id == item.id }?.attachment.accessibilityText ?? "" },
                                 set: { staging.setDescription($0, for: item.id) }
                             ),
-                            axis: .vertical
+                            label: isVideo ? .dailyChatComposerVideoDescription : .mediaAccessibilityPhotoDescription,
+                            prompt: Text(isVideo ? .dailyChatComposerVideoHint : .mediaAccessibilityPhotoHint)
                         )
                         .lineLimit(1...3)
                         .textFieldStyle(.roundedBorder)

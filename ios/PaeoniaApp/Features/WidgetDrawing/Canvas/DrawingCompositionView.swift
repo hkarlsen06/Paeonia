@@ -73,7 +73,7 @@ private struct DrawingCompositionView: View {
                 compositionSection
                 if let description, showsMedia || description.wrappedValue.unicodeScalars.count > 500 {
                     Section {
-                        TextField(text: description, axis: .vertical) { Text(.drawingDescriptionTitle) }
+                        PaeoniaMultilineTextField(text: description, label: .drawingDescriptionTitle)
                             .accessibilityIdentifier("drawing.description")
                         if description.wrappedValue.unicodeScalars.count > 500 {
                             Text(.drawingDescriptionTooLong)

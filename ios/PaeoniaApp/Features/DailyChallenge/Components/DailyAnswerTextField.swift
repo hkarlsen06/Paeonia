@@ -32,13 +32,11 @@ struct DailyAnswerTextField: View {
     }
 
     private var field: some View {
-        TextField(
+        PaeoniaMultilineTextField(
             text: $text,
-            prompt: Text(placeholder).foregroundStyle(colors.secondary),
-            axis: .vertical
-        ) {
-            Text(label)
-        }
+            label: label,
+            prompt: Text(placeholder).foregroundStyle(colors.secondary)
+        )
         .lineLimit(isEmbedded ? 2...4 : 3...8)
         .font(PaeoniaTypography.body)
         .foregroundStyle(colors.foreground)

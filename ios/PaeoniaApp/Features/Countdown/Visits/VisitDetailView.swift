@@ -208,9 +208,7 @@ struct VisitDetailView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .opacity(visits.itemDraft.isEmpty ? 1 : 0)
                 .accessibilityHidden(true)
-            TextField(text: draft, prompt: Text(verbatim: ""), axis: .vertical) {
-                Text(.visitListAddPlaceholder)
-            }
+            PaeoniaMultilineTextField(text: draft, label: .visitListAddPlaceholder, prompt: Text(verbatim: ""))
             .lineLimit(1...3)
             .focused($isAddFieldFocused)
             .submitLabel(.done)

@@ -41,7 +41,11 @@ extension ThreadChatComposer {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             if showsMediaAlternatives || DailyAnswerDraft.measuredLength(of: voiceTranscript) > 10_000 {
                 Text(.mediaAccessibilityTranscript).font(PaeoniaTypography.caption)
-                TextField(String(localized: .mediaAccessibilityTranscriptHint), text: $voiceTranscript, axis: .vertical)
+                PaeoniaMultilineTextField(
+                    text: $voiceTranscript,
+                    label: .mediaAccessibilityTranscript,
+                    prompt: Text(.mediaAccessibilityTranscriptHint)
+                )
                     .lineLimit(2...4)
                     .textFieldStyle(.roundedBorder)
                 if DailyAnswerDraft.measuredLength(of: voiceTranscript) > 10_000 {

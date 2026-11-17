@@ -242,13 +242,11 @@ struct ThreadChatComposer: View {
 
     private var composerCapsule: some View {
         HStack(alignment: .bottom, spacing: PaeoniaSpacing.space8) {
-            TextField(
+            PaeoniaMultilineTextField(
                 text: text,
-                prompt: Text(.dailyChatComposerPlaceholder),
-                axis: .vertical
-            ) {
-                Text(.dailyChatComposerPlaceholder)
-            }
+                label: .dailyChatComposerPlaceholder,
+                prompt: Text(.dailyChatComposerPlaceholder)
+            )
             .textFieldStyle(.plain)
             .font(PaeoniaTypography.body)
             .foregroundStyle(.paeoniaTextPrimary)

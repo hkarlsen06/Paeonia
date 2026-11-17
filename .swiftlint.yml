@@ -218,3 +218,16 @@ custom_rules:
       a name resolved with nameForViewer instead, or build a PartnerName. Add the file to this rule's
       excluded list only for the signed-in person's own profile, admin tools or the invite preview.
     severity: error
+
+  # On iOS 27.3 a vertical TextField leaves its label out of accessibility, so VoiceOver calls it
+  # "Horizontal scroll bar, 1 page". PaeoniaMultilineTextField sets the label for accessibility too.
+  # The keyboard diagnostics keep a bare system field on purpose.
+  vertical_text_field:
+    name: Multiline text field without an accessibility label
+    regex: '(?<!scrollView\()axis:\s*\.vertical\b'
+    excluded_match_kinds: [comment, doccomment, string]
+    excluded: 'DesignSystem/Components/PaeoniaMultilineTextField\.swift|App/DeveloperScenarios/DeveloperKeyboardDiagnostics\.swift'
+    message: >-
+      VoiceOver reads a vertical TextField as a scroll bar instead of its label. Use
+      PaeoniaMultilineTextField, which sets the label for accessibility.
+    severity: error

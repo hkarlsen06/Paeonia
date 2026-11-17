@@ -34,13 +34,7 @@ struct PrivacySafetyMultilineField: View {
     }
 
     private var field: some View {
-        TextField(
-            text: $text,
-            prompt: Text(placeholder),
-            axis: .vertical
-        ) {
-            Text(label)
-        }
+        PaeoniaMultilineTextField(text: $text, label: label, prompt: Text(placeholder))
         .lineLimit(lineLimit)
         .font(PaeoniaTypography.body)
         .foregroundStyle(.paeoniaTextPrimary)
@@ -56,6 +50,5 @@ struct PrivacySafetyMultilineField: View {
                 )
         }
         .animation(PaeoniaMotion.stateChange, value: isFocused)
-        .accessibilityLabel(Text(label))
     }
 }

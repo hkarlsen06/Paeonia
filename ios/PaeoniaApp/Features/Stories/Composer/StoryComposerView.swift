@@ -162,9 +162,11 @@ struct StoryComposerView: View {
     // MARK: - Caption and share
 
     private var captionField: some View {
-        TextField(text: $caption, prompt: Text(.storiesComposerCaptionPlaceholder), axis: .vertical) {
-            Text(.storiesComposerCaptionPlaceholder)
-        }
+        PaeoniaMultilineTextField(
+            text: $caption,
+            label: .storiesComposerCaptionPlaceholder,
+            prompt: Text(.storiesComposerCaptionPlaceholder)
+        )
         .lineLimit(1...3)
         .font(PaeoniaTypography.body)
         .padding(PaeoniaSpacing.space16)

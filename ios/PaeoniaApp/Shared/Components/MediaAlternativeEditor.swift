@@ -170,7 +170,7 @@ struct MediaAlternativeEditor: View {
                     Text(.mediaAccessibilityLoadFailed)
                     Button(.commonTryAgain) { Task { await model.reloadPending() } }
                 }
-                TextField(text: $model.text, axis: .vertical) { Text(title) }
+                PaeoniaMultilineTextField(text: $model.text, label: title)
                     .lineLimit(4...12)
                     .accessibilityIdentifier("media.alternative.text")
                 if model.isTooLong { Text(model.lengthError).foregroundStyle(.paeoniaErrorText) }

@@ -172,12 +172,11 @@ struct StoryNoteScreen: View {
     private var bubbleField: some View {
         // The tap only focuses the field, which VoiceOver already does.
         // swiftlint:disable:next accessibility_trait_for_button
-        TextField(
+        PaeoniaMultilineTextField(
             text: Binding(get: { text }, set: { text = $0 }),
-            prompt: Text(.storiesNoteFieldPrompt), axis: .vertical
-        ) {
-            Text(.storiesNoteFieldPrompt)
-        }
+            label: .storiesNoteFieldPrompt,
+            prompt: Text(.storiesNoteFieldPrompt)
+        )
         .focused($isFocused)
         .lineLimit(1...Self.maxLines)
         .foregroundStyle(.paeoniaTextPrimary)

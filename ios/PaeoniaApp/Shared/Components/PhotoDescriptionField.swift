@@ -7,9 +7,7 @@ struct PhotoDescriptionField: View {
 
     var body: some View {
         if alwaysVisible || showsMedia || text.unicodeScalars.count > 10_000 {
-            TextField(text: $text, axis: .vertical) {
-                Text(.mediaAccessibilityPhotoDescription)
-            }
+            PaeoniaMultilineTextField(text: $text, label: .mediaAccessibilityPhotoDescription)
             .lineLimit(2...5)
             .font(PaeoniaTypography.body)
             .accessibilityHint(Text(.mediaAccessibilityPhotoHelp))

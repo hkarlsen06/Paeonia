@@ -11,7 +11,7 @@ struct WidgetDrawingDescriptionSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField(text: $text, axis: .vertical) { Text(.drawingDescriptionTitle) }
+                    PaeoniaMultilineTextField(text: $text, label: .drawingDescriptionTitle)
                         .accessibilityIdentifier("widgetDrawing.description.text")
                     if isTooLong {
                         Text(.drawingDescriptionTooLong)

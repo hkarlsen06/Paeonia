@@ -31,13 +31,11 @@ struct MemoryTextField<Field: Hashable>: View {
 
     @ViewBuilder
     private var textInput: some View {
-        let input = TextField(
+        let input = PaeoniaMultilineTextField(
             text: $text,
-            prompt: Text(placeholder).foregroundStyle(.paeoniaTextSecondary),
-            axis: .vertical
-        ) {
-            Text(placeholder)
-        }
+            label: placeholder,
+            prompt: Text(placeholder).foregroundStyle(.paeoniaTextSecondary)
+        )
         if let lineLimit { input.lineLimit(lineLimit) } else { input }
     }
 }

@@ -104,13 +104,13 @@ extension DailyChallengeAnswerStep {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                     Text(title)
                         .font(PaeoniaTypography.caption)
-                    TextField(
-                        isVoice ? String(localized: .mediaAccessibilityTranscriptHint)
-                            : String(localized: .mediaAccessibilityPhotoHint),
+                    PaeoniaMultilineTextField(
                         text: Binding(
                             get: { viewModel.mediaAccessibilityText(for: question.id) },
                             set: { viewModel.setMediaAccessibilityText($0, for: question.id) }
-                        ), axis: .vertical
+                        ),
+                        label: title,
+                        prompt: Text(isVoice ? .mediaAccessibilityTranscriptHint : .mediaAccessibilityPhotoHint)
                     )
                     .accessibilityIdentifier("daily.answer.mediaAccessibilityText")
                     .font(PaeoniaTypography.body)

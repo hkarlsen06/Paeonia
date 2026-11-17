@@ -38,13 +38,11 @@ struct StoryChainNamingBottom: View {
 
     private var titleField: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            TextField(
+            PaeoniaMultilineTextField(
                 text: $viewModel.titleDraft,
-                prompt: Text(.storyChainNamePlaceholder).foregroundStyle(.paeoniaTextTertiary),
-                axis: .vertical
-            ) {
-                Text(.storyChainNamePlaceholder)
-            }
+                label: .storyChainNamePlaceholder,
+                prompt: Text(.storyChainNamePlaceholder).foregroundStyle(.paeoniaTextTertiary)
+            )
             .textFieldStyle(.plain)
             .autocorrectionDisabled(false)
             .font(Self.titleFont)

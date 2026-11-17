@@ -107,9 +107,10 @@ struct GameDrawingDescriptionEditor: View {
                         Button(.commonTryAgain, action: model.load)
                             .accessibilityIdentifier("game.drawing.description.retryLoading")
                     } else {
-                        TextField(text: Binding(get: { model.text }, set: model.update), axis: .vertical) {
-                            Text(.mediaAccessibilityDrawingDescription)
-                        }
+                        PaeoniaMultilineTextField(
+                            text: Binding(get: { model.text }, set: model.update),
+                            label: .mediaAccessibilityDrawingDescription
+                        )
                         .lineLimit(4...12)
                         .disabled(isLocked)
                         .accessibilityIdentifier("game.drawing.description.text")
