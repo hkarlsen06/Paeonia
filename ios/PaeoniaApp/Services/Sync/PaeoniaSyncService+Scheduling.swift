@@ -25,9 +25,7 @@ extension PaeoniaSyncService {
 
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult {
         guard runLock == .free else {
-            if reason == .localChange {
-                needsLocalChangeFollowUp = true
-            }
+            requestFollowUp(for: reason)
             await waitForActiveRunToFinish()
             return .coalesced()
         }
@@ -37,7 +35,7 @@ extension PaeoniaSyncService {
         }
 
         hasStarted = true
-        needsLocalChangeFollowUp = false
+        followUpReason = nil
         runLock = .run
         let generation = sessionGeneration
 
@@ -58,11 +56,33 @@ extension PaeoniaSyncService {
         return result
     }
 
+    /// The phone has a connection again. Writes that failed only because it had none
+    /// go now instead of after their retry delay.
+    func connectionCameBack() {
+        guard hasStarted else {
+            return
+        }
+        scheduleSync(reason: .reconnected)
+    }
+
+    /// Asks for another run after the one in progress, which may already have passed
+    /// the waiting writes. Only a new write and a connection that came back need one.
+    /// Another refresh needs none, since the run in progress reads every stream.
+    private func requestFollowUp(for reason: SyncRequestReason) {
+        switch reason {
+        case .reconnected:
+            // Its run also sends every write a `.localChange` run would.
+            followUpReason = .reconnected
+        case .localChange:
+            followUpReason = followUpReason ?? .localChange
+        case .startup, .foreground, .manualRefresh, .remoteNotification:
+            break
+        }
+    }
+
     func scheduleSync(reason: SyncRequestReason) {
         guard runLock == .free else {
-            if reason == .localChange {
-                needsLocalChangeFollowUp = true
-            }
+            requestFollowUp(for: reason)
             return
         }
 
@@ -71,7 +91,7 @@ extension PaeoniaSyncService {
         }
 
         runLock = .run
-        needsLocalChangeFollowUp = false
+        followUpReason = nil
         scheduleGeneration &+= 1
         let generation = scheduleGeneration
         let sessionGeneration = self.sessionGeneration
@@ -138,14 +158,11 @@ extension PaeoniaSyncService {
                 return result
             }
 
-            let shouldRunFollowUpSync = needsLocalChangeFollowUp
-            needsLocalChangeFollowUp = false
-
-            if shouldRunFollowUpSync {
-                nextReason = .localChange
-            } else {
+            guard let followUpReason else {
                 return result
             }
+            self.followUpReason = nil
+            nextReason = followUpReason
         }
     }
 
@@ -199,7 +216,7 @@ extension PaeoniaSyncService {
         retryTask = nil
         runningPipelines.forEach { $0.cancel() }
         runLock = .privacyPurge
-        needsLocalChangeFollowUp = false
+        followUpReason = nil
 
         for pipeline in runningPipelines {
             _ = await pipeline.value

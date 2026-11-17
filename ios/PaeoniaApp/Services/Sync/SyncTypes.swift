@@ -197,6 +197,8 @@ nonisolated enum SyncRequestReason: String, Codable, CaseIterable, Sendable {
     case localChange = "local_change"
     case manualRefresh = "manual_refresh"
     case remoteNotification = "remote_notification"
+    /// The phone has a connection again after having none.
+    case reconnected
 }
 
 nonisolated enum SyncRunStatus: Equatable, Sendable {

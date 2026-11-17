@@ -246,11 +246,11 @@ struct PendingSyncOperationDrainRunTests {
         let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
         let pendingStore = InMemoryPendingSyncOperationRepository()
         let operation = try await enqueue(1, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
-        // An earlier offline attempt pushed the next try an hour out.
+        // An earlier server error pushed the next try an hour out.
         try await pendingStore.markSending(clientOperationID: operation.id, at: Date())
         try await pendingStore.markRetryableFailure(
             clientOperationID: operation.id,
-            failure: PendingSyncFailure(kind: .offline, description: "offline"),
+            failure: PendingSyncFailure(kind: .other, description: "server error"),
             nextRetryAt: Date().addingTimeInterval(3_600),
             at: Date()
         )

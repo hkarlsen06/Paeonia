@@ -1,4 +1,5 @@
 import Foundation
+import Network
 
 /// Who holds the sync service's single run slot. A run, a session handover and a
 /// privacy purge each need every other run to wait.
@@ -25,17 +26,12 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     var session: SyncSession?
     var hasStarted = false
     var runLock = SyncRunLock.free
-    // A follow-up pass is only needed when a *local write* was requested while a
-    // run was already in flight: that run may have already drained the pending-
-    // operations stream, so the new write needs another push. A foreground /
-    // manual / startup refresh that coalesces onto an in-flight run needs no
-    // second pass — the in-flight run already refreshes every read stream — so
-    // it must not set this flag (that was the source of duplicate pipeline runs
-    // on every scene activation).
-    var needsLocalChangeFollowUp = false
+    /// The run to make once the one in progress ends (`requestFollowUp`).
+    var followUpReason: SyncRequestReason?
     var activeRunWaiters: [CheckedContinuation<Void, Never>] = []
     var scheduledTask: Task<Void, Never>?
     var retryTask: Task<Void, Never>?
+    private var connectionTask: Task<Void, Never>?
     var activePipelineTasks: [UUID: Task<SyncRunResult, Never>] = [:]
     var scheduleGeneration: UInt64 = 0
     var sessionGeneration: UInt64 = 0
@@ -150,7 +146,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         retryTask?.cancel()
         retryTask = nil
         runningPipelines.forEach { $0.cancel() }
-        needsLocalChangeFollowUp = false
+        followUpReason = nil
         lastForegroundSyncAt = nil
 
         guard scheduledRun != nil || !runningPipelines.isEmpty || runLock != .free else {
@@ -185,6 +181,19 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     }
 
     func start() {
+        // Before the guard, because `runOnce` also marks the service started.
+        if connectionTask == nil {
+            connectionTask = Task { [weak self] in
+                var wasOffline = false
+                for await path in NWPathMonitor() {
+                    let isOnline = path.status == .satisfied
+                    if wasOffline, isOnline {
+                        await self?.connectionCameBack()
+                    }
+                    wasOffline = !isOnline
+                }
+            }
+        }
         guard !hasStarted else {
             return
         }
@@ -202,9 +211,11 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         scheduledTask = nil
         retryTask?.cancel()
         retryTask = nil
+        connectionTask?.cancel()
+        connectionTask = nil
         activePipelineTasks.values.forEach { $0.cancel() }
         hasStarted = false
-        needsLocalChangeFollowUp = false
+        followUpReason = nil
         releaseRunLock()
     }
 

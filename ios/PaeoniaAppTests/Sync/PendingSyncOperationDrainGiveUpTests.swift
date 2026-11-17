@@ -213,10 +213,43 @@ struct PendingSyncOperationDrainGiveUpTests {
         #expect(await handler.sentIDs == [waiting.id])
     }
 
-    private func context(_ store: any PendingSyncOperationPersisting) -> SyncContext {
+    /// The developer's iPad sent a chat message offline, and it still showed as sending
+    /// about 90 seconds after the connection came back, until its retry date.
+    @Test(arguments: [SyncRequestReason.startup, .foreground, .reconnected])
+    func aWriteThatFailedOfflineGoesWhenTheConnectionMayBeBack(reason: SyncRequestReason) async throws {
+        let store = InMemoryPendingSyncOperationRepository()
+        let waiting = try await enqueue(1, createdAt: Date(), in: store)
+        let handler = ScriptedHandler(failure: URLError(.notConnectedToInternet))
+        let stream = PendingSyncOperationDrainStream(handlers: [handler])
+
+        try await stream.push(context: context(store))
+        // A run for a new write leaves it to its retry date.
+        try await stream.push(context: context(store))
+        try await stream.push(context: context(store, reason: reason))
+
+        #expect(await handler.sentIDs == [waiting.id, waiting.id])
+    }
+
+    @Test(arguments: [SyncRequestReason.startup, .foreground, .reconnected])
+    func aWriteThatFailedOnTheServerWaitsForItsRetryDate(reason: SyncRequestReason) async throws {
+        let store = InMemoryPendingSyncOperationRepository()
+        let waiting = try await enqueue(1, createdAt: Date(), in: store)
+        let handler = ScriptedHandler(failure: ScriptedFailure.serverError)
+        let stream = PendingSyncOperationDrainStream(handlers: [handler])
+
+        try await stream.push(context: context(store))
+        try await stream.push(context: context(store, reason: reason))
+
+        #expect(await handler.sentIDs == [waiting.id])
+    }
+
+    private func context(
+        _ store: any PendingSyncOperationPersisting,
+        reason: SyncRequestReason = .localChange
+    ) -> SyncContext {
         SyncContext(
             session: SyncSession(userID: owner),
-            reason: .localChange,
+            reason: reason,
             pendingOperationStore: store
         )
     }

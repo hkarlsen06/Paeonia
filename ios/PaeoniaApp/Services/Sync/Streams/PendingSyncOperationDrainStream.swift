@@ -132,37 +132,40 @@ struct PendingSyncOperationDrainStream: SyncStream {
 
     /// Sends every write that is ready, oldest first, in batches until none is left.
     ///
-    /// A write that is waiting out its retry delay stays put, except on a pull to
-    /// refresh, which tries everything. The retry timer starts a run when the delay
-    /// ends. Each write is tried at most once per run. A write that takes longer
-    /// than its time limit fails like any other, so the writes behind it still
-    /// go, and gives up after `retryPolicy.maximumTimeouts` of them that ran with the app
-    /// in front the whole time. When the network is down, the run stops, because every
-    /// other write would only wait out its own timeout.
+    /// A write that is waiting out its retry delay stays put (`waitsForItsRetry`), and
+    /// the retry timer starts a run when the delay ends. Each write is tried at most
+    /// once per run. A write that takes longer than its time limit fails like any
+    /// other, so the writes behind it still go, and gives up after
+    /// `retryPolicy.maximumTimeouts` of them that ran with the app in front the whole
+    /// time. When the network is down, the run stops, because every other write would
+    /// only wait out its own timeout.
     func push(context: SyncContext) async throws {
         let ownerUserID = context.session.userID
         // Writes the server accepted still hold what was sent, and nothing reads
         // them again. A failed cleanup must not stop the sending below.
         try? await context.pendingOperationStore.deleteCompleted(ownerUserID: ownerUserID)
 
-        var attempted = Set<UUID>()
+        var seen = Set<UUID>()
         var unsupportedKind: String?
         var isNetworkDown = false
         while !isNetworkDown {
             try Task.checkCancellation()
+            let now = Date()
             let operations = try await context.pendingOperationStore.readyOperations(
                 ownerUserID: ownerUserID,
-                limit: attempted.count + batchSize,
-                now: context.reason == .manualRefresh ? .distantFuture : Date()
+                limit: seen.count + batchSize,
+                // The store leaves out every write that waits for its retry date, which
+                // suits a run for a new write or the retry timer. Other runs read them all,
+                // and `waitsForItsRetry` decides.
+                now: context.reason == .localChange ? now : .distantFuture
             )
-            .filter { !attempted.contains($0.operation.id) }
+            .filter { seen.insert($0.operation.id).inserted }
             guard !operations.isEmpty else {
                 break
             }
 
-            for operation in operations {
+            for operation in operations where !operation.waitsForItsRetry(in: context.reason, at: now) {
                 try Task.checkCancellation()
-                attempted.insert(operation.operation.id)
 
                 guard let operationKind = operation.operationKind,
                       let handler = handlers[operationKind] else {
@@ -394,6 +397,27 @@ struct PendingSyncOperationDrainStream: SyncStream {
             ),
             at: now
         )
+    }
+}
+
+private extension PendingSyncOperationSnapshot {
+    /// Whether this write sits out a run for `reason` to wait for its retry date. A pull to
+    /// refresh tries every write. A run at launch, on coming back to the app or when the
+    /// connection comes back also tries a write that failed only because the phone had no
+    /// connection, so it goes as soon as the phone is online again. Its retry date still
+    /// paces the retry timer, so a phone that stays offline does not try in a loop, and a
+    /// run for a new write tries that new write first. A write that failed another way,
+    /// such as a server error, waits out its delay, so a failing server is not asked again
+    /// and again.
+    nonisolated func waitsForItsRetry(in reason: SyncRequestReason, at now: Date) -> Bool {
+        guard reason != .manualRefresh,
+              status == .failedRetryable,
+              lastFailureKind != .offline || reason == .localChange,
+              let nextRetryAt
+        else {
+            return false
+        }
+        return nextRetryAt > now
     }
 }
 
