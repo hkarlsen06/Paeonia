@@ -5,7 +5,7 @@ import SwiftUI
 /// buttons at the bottom keeps room for five on the smallest phone. Share asks the system's picker,
 /// and the call shares only once the person picks there. While the share starts the button spins and
 /// takes no tap. While they share the button is white, and a tap stops it. While the partner shares,
-/// the button is dimmed, because one share runs at a time.
+/// a new share takes over and the partner's stops (`CallShareTurns`), so VoiceOver says so.
 struct CallTopBarButtons: View {
     static let shareSymbol = "rectangle.inset.filled.and.person.filled"
 
@@ -15,8 +15,8 @@ struct CallTopBarButtons: View {
     let canOpenChat: Bool
     let openChat: () -> Void
 
-    private var waitsForPartner: Bool {
-        session.isPartnerSharingScreen && !session.isSharingScreen
+    private var takesOverPartnersShare: Bool {
+        session.isPartnerSharingScreen && (session.screenShare == .off || session.screenShare == .failed)
     }
 
     var body: some View {
@@ -61,10 +61,9 @@ struct CallTopBarButtons: View {
         .buttonStyle(PaeoniaGlassCircleButtonStyle(
             face: PaeoniaSpacing.compactButtonHeight,
             glass: session.isSharingScreen ? .regular.tint(.white) : .regular))
-        .disabled(waitsForPartner)
         .accessibilityLabel(Text(shareLabel))
         .accessibilityHint(
-            waitsForPartner ? Text(.callsShareScreenPartnerSharingHint(partnerName)) : Text(verbatim: ""))
+            takesOverPartnersShare ? Text(.callsShareScreenPartnerSharingHint(partnerName)) : Text(verbatim: ""))
         .accessibilityIdentifier("calls.shareScreen")
     }
 

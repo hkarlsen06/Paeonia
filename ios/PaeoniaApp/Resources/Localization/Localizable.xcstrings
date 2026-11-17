@@ -5726,19 +5726,19 @@
       }
     },
     "calls.shareScreen.partnerSharingHint" : {
-      "comment" : "VoiceOver hint of the dimmed share button on the call screen while the partner shares their screen. Only one person can share at a time. %@ is the partner's name.",
+      "comment" : "VoiceOver hint of the share button on the call screen while the partner shares their screen and this person does not. Only one person can share at a time, so starting a share stops the partner's. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is sharing their screen. You can share once they stop."
+            "value" : "%@ stops sharing when you start."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ deler skjermen sin. Du kan dele når de stopper."
+            "value" : "%@ slutter å dele når du starter."
           }
         }
       }

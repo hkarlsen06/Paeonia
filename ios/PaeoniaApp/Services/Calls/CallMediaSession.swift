@@ -59,6 +59,8 @@ final class CallMediaSession {
     private var videoPath = CallMediaPath.turn
     private var heat: CallHeat
     private var health = CallConnectionHealth()
+    /// Which phone's screen share runs when both start one.
+    private var shareTurns = CallShareTurns()
     /// The number of the newest offer: the one this phone sent, whose answer alone applies, or on
     /// the answering phone the one it took.
     private var offerNumber = 0
@@ -212,7 +214,7 @@ final class CallMediaSession {
             // The partner may have missed the last camera, screen and connection messages while
             // their phone reconnected.
             send(.camera(cameraState))
-            send(.screen(isOn: screen.isSharing))
+            send(.screen(turn: shareTurns.own))
             send(.connection(isWeak: health.isMineWeak))
             guard !isConnected else { return }
             switch role {
@@ -233,7 +235,7 @@ final class CallMediaSession {
             isHeld = false
             await sendAnswer()
             send(.camera(cameraState))
-            send(.screen(isOn: screen.isSharing))
+            send(.screen(turn: shareTurns.own))
         }
     }
 
@@ -261,15 +263,19 @@ final class CallMediaSession {
             await addPendingCandidates()
             // The answering phone ignored the camera and screen messages it heard while it rang.
             send(.camera(cameraState))
-            send(.screen(isOn: screen.isSharing))
+            send(.screen(turn: shareTurns.own))
         case let .candidate(candidate):
             await receive(candidate)
         case let .camera(state):
             guard !isHeld else { return }
             onPartnerCamera?(state)
-        case let .screen(isOn):
+        case let .screen(turn):
             guard !isHeld else { return }
-            onPartnerScreen?(isOn)
+            shareTurns.partnerChanged(to: turn)
+            onPartnerScreen?(turn != nil)
+            if shareTurns.ownGivesWay(isCaller: role == .offerer) {
+                screen.stop()
+            }
         case let .connection(isWeak):
             guard !isHeld else { return }
             health.isPartnersWeak = isWeak
@@ -570,7 +576,12 @@ extension CallMediaSession {
             camera.isBesideScreen = screen.isSharing
             applyVideoLimits()
             restartCameraInNewSize()
-            send(.screen(isOn: screen.isSharing))
+            if screen.isSharing {
+                shareTurns.startOwn()
+            } else {
+                shareTurns.stopOwn()
+            }
+            send(.screen(turn: shareTurns.own))
         }
         onScreenShare?(share)
     }

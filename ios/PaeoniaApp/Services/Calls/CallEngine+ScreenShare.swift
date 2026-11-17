@@ -43,8 +43,6 @@ extension CallEngine {
                 screenShareChanged(.off, in: run)
             }
         }
-        // The stop comes back here as `off`.
-        if stopOwnShareBesidePartners(in: run) { return }
         guard wasSharing != (share == .on) else { return }
         // The person looks at the screen they share, so the sound leaves the earpiece.
         if share == .on, CallAudio.currentRoute() == .receiver {
@@ -66,20 +64,7 @@ extension CallEngine {
             partnerScreen.clear()
             center.session?.partnerScreenAspectRatio = nil
         }
-        stopOwnShareBesidePartners(in: run)
         reportCapabilities(of: run)
-    }
-
-    /// Each phone would show the other's screen while both share, so one share at a time. The share
-    /// button waits while the partner shares, and when both start at once, the caller's share stays
-    /// and the other phone stops its own. True when it stopped this phone's share.
-    @discardableResult
-    private func stopOwnShareBesidePartners(in run: CallRun) -> Bool {
-        guard let session = center?.session, session.direction == .incoming, session.isPartnerSharingScreen,
-              session.screenShare == .starting || session.screenShare == .on
-        else { return false }
-        run.media?.stopScreenShare()
-        return true
     }
 
     func partnerScreenStallChanged(_ isStalled: Bool) {
