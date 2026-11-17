@@ -184,9 +184,11 @@ private nonisolated struct SentVideoTally: Sendable {
     ) -> Bool {
         guard now.sent.bytesSent > before.sent.bytesSent else { return false }
         seconds += elapsed
-        if elapsed > 0 {
-            framesPerSecond.append(Double(now.framesEncoded - before.framesEncoded) / elapsed)
-            sourceFramesPerSecond.append(Double(now.sourceFrames - before.sourceFrames) / elapsed)
+        if elapsed > 0, let frames = now.framesEncoded(since: before) {
+            framesPerSecond.append(Double(frames) / elapsed)
+        }
+        if elapsed > 0, let frames = now.sourceFrames(since: before) {
+            sourceFramesPerSecond.append(Double(frames) / elapsed)
         }
         if let width = now.frameWidth, let height = now.frameHeight {
             widths.append(Double(width))
@@ -233,7 +235,7 @@ private nonisolated struct ReceivedScreenTally: Sendable {
     ) {
         guard now.bytesReceived > before.bytesReceived else { return }
         seconds += elapsed
-        if elapsed > 0 {
+        if elapsed > 0, now.framesDecoded >= before.framesDecoded {
             framesPerSecond.append(Double(now.framesDecoded - before.framesDecoded) / elapsed)
         }
         framesDropped += max(now.framesDropped - before.framesDropped, 0)

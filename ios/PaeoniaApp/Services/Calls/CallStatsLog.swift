@@ -160,6 +160,20 @@ nonisolated struct CallStatsSample: Sendable {
         /// The frames that went into WebRTC for the encoder, from the stream's `media-source`.
         /// Those it encoded count in `framesEncoded`, and the rest it dropped on the way.
         var sourceFrames = 0
+        /// The `media-source` that counts `sourceFrames`. A share that starts again gets a new one,
+        /// which counts from its own start.
+        var sourceID: String?
+
+        /// The frames that went in since `earlier`, or nil when the count started again.
+        func sourceFrames(since earlier: Self) -> Int? {
+            guard sourceID == earlier.sourceID, sourceFrames >= earlier.sourceFrames else { return nil }
+            return sourceFrames - earlier.sourceFrames
+        }
+
+        /// The frames encoded since `earlier`, or nil when the count started again.
+        func framesEncoded(since earlier: Self) -> Int? {
+            framesEncoded >= earlier.framesEncoded ? framesEncoded - earlier.framesEncoded : nil
+        }
         var keyFramesEncoded = 0
         /// The sum of the frames' quantizers. Higher means coarser pictures.
         var qpSum = 0
@@ -295,6 +309,7 @@ nonisolated struct CallStatsSample: Sendable {
             framesEncoded: Int(stat.number("framesEncoded") ?? 0),
             encodeSeconds: stat.number("totalEncodeTime") ?? 0,
             sourceFrames: Int(stats[stat.string("mediaSourceId") ?? ""]?.number("frames") ?? 0),
+            sourceID: stat.string("mediaSourceId"),
             keyFramesEncoded: Int(stat.number("keyFramesEncoded") ?? 0),
             qpSum: Int(stat.number("qpSum") ?? 0),
             encoderImplementation: stat.string("encoderImplementation"),
@@ -366,8 +381,8 @@ private nonisolated extension CallStatsSample.SentVideo {
         let encoder = show(encoderImplementation) + (isPowerEfficientEncoder == true ? " efficient" : "")
         return "\(kbps(sent.bytesSent, earlier.sent.bytesSent, elapsed)) kbps"
             + " (target \(whole(sent.targetBitsPerSecond.map { $0 / 1_000 })))"
-            + " \(show(frame)) \(rate(sourceFrames - earlier.sourceFrames, elapsed)) fps in"
-            + " \(rate(frames, elapsed)) out"
+            + " \(show(frame)) \(rate(sourceFrames(since: earlier), elapsed)) fps in"
+            + " \(rate(framesEncoded(since: earlier), elapsed)) out"
             + " encode \(whole(encode)) ms qp \(whole(quantizer)) key \(keyFramesEncoded - earlier.keyFramesEncoded)"
             + " by \(encoder) limit \(show(qualityLimitation))"
     }
@@ -390,8 +405,9 @@ private nonisolated func kbps(_ bytes: Int, _ earlier: Int, _ elapsed: Double) -
     Int((Double(bytes - earlier) * 8 / elapsed / 1_000).rounded())
 }
 
-private nonisolated func rate(_ frames: Int, _ elapsed: Double) -> String {
-    elapsed > 0 ? whole(Double(frames) / elapsed) : "-"
+private nonisolated func rate(_ frames: Int?, _ elapsed: Double) -> String {
+    guard let frames, elapsed > 0 else { return "-" }
+    return whole(Double(frames) / elapsed)
 }
 
 private nonisolated func show(_ value: (some Any)?) -> String {
