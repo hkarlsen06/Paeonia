@@ -48,6 +48,7 @@ final class CallMediaSession {
     private var videoTransceiver: LKRTCRtpTransceiver?
     private var remoteVideoTrack: LKRTCVideoTrack?
     private var isCameraOn: Bool
+    private var isMuted: Bool
     /// The camera the newest start asked for, so a share can start it again in a new size.
     private var isFrontCamera = true
     /// iOS stopped the camera for now, so the partner sees it as paused.
@@ -113,7 +114,7 @@ final class CallMediaSession {
             with: factory.audioSource(with: LKRTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)),
             trackId: "audio"
         )
-        audioTrack.isEnabled = !isMuted
+        self.isMuted = isMuted
         let videoSource = factory.videoSource()
         videoTrack = factory.videoTrack(with: videoSource, trackId: "video")
         camera = CallCamera(source: videoSource)
@@ -167,6 +168,7 @@ final class CallMediaSession {
     }
 
     func start() {
+        applyMute()
         relay.start()
         pathMonitor.pathUpdateHandler = { [weak self] path in
             MainActor.assumeIsolated { self?.networkChanged(path) }
@@ -198,10 +200,6 @@ final class CallMediaSession {
     /// Reconnects the relay now. When the partner is back in the room, the caller offers again.
     func restart() {
         relay.reconnectNow()
-    }
-
-    func setMuted(_ isMuted: Bool) {
-        audioTrack.isEnabled = !isMuted
     }
 
     // MARK: Signaling
@@ -359,6 +357,19 @@ extension CallMediaSession {
 // MARK: Tracks
 
 extension CallMediaSession {
+    func setMuted(_ isMuted: Bool) {
+        self.isMuted = isMuted
+        applyMute()
+    }
+
+    /// A muted person who shares their screen still sends the screen's sound, so then only the
+    /// microphone goes quiet, when it reaches WebRTC on a mixer of its own (`CallScreenAudio`).
+    /// Otherwise mute stops all of this phone's sound in the call.
+    fileprivate func applyMute() {
+        CallScreenAudio.shared.setMicrophoneMuted(isMuted)
+        audioTrack.isEnabled = !isMuted || (screen.isSharing && CallScreenAudio.shared.mutesMicrophoneAlone)
+    }
+
     /// The caller's first offer carries audio, the camera and the screen both ways. The camera's
     /// transceiver comes before the screen's, which is how the answering phone tells them apart.
     private func addTransceivers() {
@@ -586,6 +597,7 @@ extension CallMediaSession {
             camera.isBesideScreen = screen.isSharing
             applyVideoLimits()
             restartCameraInNewSize()
+            applyMute()
             if screen.isSharing {
                 shareTurns.startOwn()
             } else {

@@ -67,6 +67,7 @@ final class CallScreenCapture {
         phase = .idle
         releasePicker()
         frames.gate.stopResending()
+        CallScreenAudio.shared.stop()
         switch previous {
         case .idle, .picking:
             break
@@ -87,6 +88,7 @@ final class CallScreenCapture {
         let stream = SCStream(filter: filter, configuration: Self.configuration(for: filter), delegate: frames)
         do {
             try stream.addStreamOutput(frames, type: .screen, sampleHandlerQueue: frames.gate.queue)
+            try stream.addStreamOutput(frames, type: .audio, sampleHandlerQueue: frames.audioQueue)
         } catch {
             phase = .idle
             onShareChange?(.failed)
@@ -145,6 +147,11 @@ final class CallScreenCapture {
     /// captures at the screen's full size otherwise, which is 3.8 million pixels on a large iPhone.
     private static func configuration(for filter: SCContentFilter) -> SCStreamConfiguration {
         let configuration = SCStreamConfiguration()
+        // The shared apps' sound, without Paeonia's, which plays the partner's voice.
+        configuration.capturesAudio = true
+        configuration.excludesCurrentProcessAudio = true
+        configuration.sampleRate = CallScreenAudio.sampleRate
+        configuration.channelCount = CallScreenAudio.channelCount
         let width = filter.contentRect.width * CGFloat(filter.pointPixelScale)
         let height = filter.contentRect.height * CGFloat(filter.pointPixelScale)
         guard width > 0, height > 0 else { return configuration }
@@ -167,6 +174,8 @@ final class CallScreenCapture {
 private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCStreamDelegate,
     SCContentSharingPickerObserver, @unchecked Sendable {
     let gate: CallFrameGate
+    /// The shared apps' sound, which goes to `CallScreenAudio`.
+    let audioQueue = DispatchQueue(label: "no.paeonia.call-screen-audio", qos: .userInteractive)
     /// Set and read on the main thread only.
     nonisolated(unsafe) weak var capture: CallScreenCapture?
 
@@ -180,6 +189,9 @@ private nonisolated final class CallScreenFrames: NSObject, SCStreamOutput, SCSt
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
+        if type == .audio {
+            return CallScreenAudio.shared.play(sampleBuffer)
+        }
         guard type == .screen, let (buffer, rotation) = Self.picture(from: sampleBuffer) else { return }
         Self.picturesCaptured.add(1, ordering: .relaxed)
         if Self.pixelFormat.load(ordering: .relaxed) == 0 {
