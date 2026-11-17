@@ -40,6 +40,7 @@ enum CallMediaProbe {
             + "playing on it, at 60 fps, beside its camera, for \(Int(screenSeconds)) s on the direct path's limits, "
             + "then on TURN's, then on the direct path's for a warm phone and for a hot one.")
         let screenPhases = await shareScreen(caller, tuned: tuned, microphone)
+        let afterVoice = await shareAfterVoice(factory: factory, tuned: tuned, microphone)
 
         let offer = caller.connection.localDescription?.sdp ?? ""
         let answer = partner.connection.localDescription?.sdp ?? ""
@@ -51,6 +52,7 @@ enum CallMediaProbe {
         ]
             + peers.flatMap { checks($0, direct[$0.name] ?? []) + turnChecks($0, turn[$0.name] ?? []) }
             + screenChecks(caller, shownBy: partner, screenPhases)
+            + afterVoiceChecks(afterVoice)
         let passed = report(checks, tuned: tuned)
         caller.connection.close()
         partner.connection.close()
@@ -103,7 +105,12 @@ enum CallMediaProbe {
 
     /// Offers and answers the way `CallMediaSession` does, and applies `CallCodecs` at the same
     /// points when `factory` is set.
-    static func connect(_ caller: Peer, _ partner: Peer, factory: LKRTCPeerConnectionFactory?) async {
+    static func connect(
+        _ caller: Peer,
+        _ partner: Peer,
+        factory: LKRTCPeerConnectionFactory?,
+        callerCamera: Bool = true
+    ) async {
         let configure: (LKRTCRtpTransceiver) -> Void = { transceiver in
             factory.map { CallCodecs.configure(transceiver, factory: $0) }
         }
@@ -117,7 +124,7 @@ enum CallMediaProbe {
         }
         if let video = caller.connection.addTransceiver(of: .video, init: transceiverInit) {
             configure(video)
-            video.sender.track = caller.videoTrack
+            video.sender.track = callerCamera ? caller.videoTrack : nil
         }
         addScreenTransceiver(to: caller, tuned: factory != nil, configure: configure)
         do {
@@ -339,6 +346,87 @@ extension CallMediaProbe {
             holds: !run.widths.isEmpty && run.widths.allSatisfy { $0 <= phase.maxWidth }
         )]
     }
+}
+
+/// A phone that has sent only its voice starts sharing its screen, as an iPad with its camera off
+/// did on 2026-11-17 (`CallCodecs.startVideoEstimate`). The probe's peers probe their way higher
+/// on the Mac's loopback, so the run sets the iPad's 300 kbps itself, which WebRTC lowers further
+/// while only voice goes. It checks that the lift sets WebRTC's estimate, and that a share started
+/// from it begins near full size, where one started from voice's estimate begins at a quarter of
+/// the width.
+extension CallMediaProbe {
+    static let afterVoiceSeconds = 4.0
+    /// About how long ScreenCaptureKit takes to start capturing after the person picks, which is
+    /// the head start `CallMediaSession` gives the lift.
+    static let captureStart = Duration.milliseconds(300)
+
+    /// A new call whose caller keeps its camera off and shares its screen the way
+    /// `CallMediaSession` starts one.
+    static func shareAfterVoice(
+        factory: LKRTCPeerConnectionFactory,
+        tuned: Bool,
+        _ microphone: FakeMicrophone
+    ) async -> AfterVoice? {
+        guard tuned else { return nil }
+        say("Starting a new call whose caller sends only its voice, then shares its screen for "
+            + "\(Int(afterVoiceSeconds)) s on the direct path's limits.")
+        let sharer = Peer(name: "sharer", factory: factory, tuned: true)
+        let watcher = Peer(name: "watcher", factory: factory, tuned: true)
+        defer {
+            sharer.screen.stop()
+            sharer.connection.close()
+            watcher.connection.close()
+        }
+        await connect(sharer, watcher, factory: factory, callerCamera: false)
+        let limits = CallVideoLimits.screen(path: .direct)
+        CallCodecs.limitScreen(sharer.screenSender, to: limits)
+        // WebRTC's own probing after the connection ends first, so it cannot lift the estimate.
+        _ = await record([sharer], for: 3, microphone) { _, _ in }
+        sharer.connection.setBweMinBitrateBps(nil, currentBitrateBps: NSNumber(value: 300_000), maxBitrateBps: nil)
+        let voice = await record([sharer], for: 2, microphone) { _, _ in }[sharer.name] ?? []
+        let available = voice.last?.sample.availableOutgoingBitsPerSecond
+        CallCodecs.startVideoEstimate(sharer.connection, available: available, limits: limits)
+        try? await Task.sleep(for: captureStart)
+        let lifted = await CallStatsSample.read(sharer.connection).availableOutgoingBitsPerSecond
+        sharer.screenSender.track = sharer.screenTrack
+        sharer.screen.start()
+        let share = await record([sharer], for: afterVoiceSeconds, microphone) { _, _ in }[sharer.name] ?? []
+        return AfterVoice(voice: available, lifted: lifted, share: share)
+    }
+
+    static func afterVoiceChecks(_ run: AfterVoice?) -> [Check] {
+        guard let run else { return [] }
+        let widths = run.share.compactMap(\.sample.screen.frameWidth)
+        let sent = peakBitsPerSecond(run.share, over: 1) { $0.screen.sent.bytesSent }
+        let start = min(CallCodecs.videoStartBitsPerSecond, CallVideoLimits.screen(path: .direct).maxBitsPerSecond)
+        say("screen after voice alone: estimate \(Int((run.voice ?? 0) / 1_000)) kbps after voice, "
+            + "\(Int((run.lifted ?? 0) / 1_000)) kbps after the lift; the screen then sent up to "
+            + "\(Int(sent / 1_000)) kbps over 1 s, frames \(widths.min() ?? 0) to \(widths.max() ?? 0) wide")
+        return [
+            Check(
+                "a phone that sent only its voice estimates its upload under 400 kbps",
+                .tunedRunOnly,
+                holds: (run.voice ?? .infinity) < 400_000
+            ),
+            Check(
+                "a share after voice alone lifts WebRTC's estimate to at least \(start / 1_000) kbps before it starts",
+                .tunedRunOnly,
+                holds: (run.lifted ?? 0) >= Double(start)
+            ),
+            Check(
+                "that share sends over 1 Mbps over a second and is never under 3/4 of its width",
+                .tunedRunOnly,
+                holds: sent > 1_000_000 && !widths.isEmpty
+                    && widths.allSatisfy { $0 >= ScreenSource.width * 3 / 4 - 4 }
+            ),
+        ]
+    }
+}
+
+struct AfterVoice {
+    let voice: Double?
+    let lifted: Double?
+    let share: [Timed]
 }
 
 /// What the caller's screen and the camera beside it sent in one phase, from 2 s in, once the

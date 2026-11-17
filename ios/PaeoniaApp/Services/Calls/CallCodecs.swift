@@ -44,6 +44,25 @@ nonisolated enum CallCodecs {
         factory.videoSource(forScreenCast: false)
     }
 
+    /// The most `startVideoEstimate` lifts WebRTC's estimate to.
+    static let videoStartBitsPerSecond = 2_500_000
+
+    /// Lifts WebRTC's estimate of what this phone may send to `limits`, at most
+    /// `videoStartBitsPerSecond`, just before a video starts sending. The estimate grows only with
+    /// what the phone sends, so after voice alone it sits at WebRTC's 300 kbps start or lower. On
+    /// 2026-11-17 an iPad's first shared frames backed up at that rate, WebRTC took the delay for a
+    /// full network and cut the estimate to 125 kbps, and the screen went at 286x200 while the
+    /// estimate climbed back for most of a minute. WebRTC also picks the picture's size from the
+    /// estimate at the first frames and grows it a step every few seconds after, so the lift has
+    /// to come first. With nothing sending, a lifted estimate falls back within about a second.
+    /// WebRTC lowers it too when the network cannot carry it. `available` is the estimate now,
+    /// which this never lowers.
+    static func startVideoEstimate(_ connection: LKRTCPeerConnection, available: Double?, limits: CallVideoLimits) {
+        let start = min(videoStartBitsPerSecond, limits.maxBitsPerSecond)
+        guard (available ?? 0) < Double(start) else { return }
+        connection.setBweMinBitrateBps(nil, currentBitrateBps: NSNumber(value: start), maxBitrateBps: nil)
+    }
+
     /// The shared screen keeps its frame rate when bits or the encoder run short and sends a
     /// smaller picture instead, because softer text is easier to watch than a picture that jumps.
     /// It gets four times the camera's share of a network too slow for both, because the partner

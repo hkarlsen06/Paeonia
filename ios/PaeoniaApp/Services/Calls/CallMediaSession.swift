@@ -58,6 +58,8 @@ final class CallMediaSession {
     /// The path the video's limits were last set for. `CallCodecs.configure` starts at TURN's.
     private var videoPath = CallMediaPath.turn
     private var heat: CallHeat
+    /// WebRTC's newest estimate of what this phone may send, from the stats.
+    private var availableBitsPerSecond: Double?
     private var health = CallConnectionHealth()
     /// Which phone's screen share runs when both start one.
     private var shareTurns = CallShareTurns()
@@ -432,7 +434,11 @@ extension CallMediaSession {
         case .connected:
             guard !isConnected else { return }
             isConnected = true
+            if isCameraOn {
+                startVideoEstimate(limits: CallVideoLimits(path: videoPath, heat: heat))
+            }
             statsLog.start(peerConnection, screenCaptured: { CallScreenCapture.captured }) { [weak self] sample in
+                self?.availableBitsPerSecond = sample.availableOutgoingBitsPerSecond
                 self?.useVideoPath(sample.mediaPath)
                 self?.onStatsSample?(sample)
                 self?.checkSendingHealth(sample)
@@ -470,6 +476,11 @@ extension CallMediaSession {
         screen.limit(to: screenLimits)
     }
 
+    /// A video that starts sending would otherwise start from WebRTC's estimate after voice alone.
+    private func startVideoEstimate(limits: CallVideoLimits) {
+        CallCodecs.startVideoEstimate(peerConnection, available: availableBitsPerSecond, limits: limits)
+    }
+
     private var screenLimits: CallVideoLimits {
         .screen(path: videoPath, heat: heat)
     }
@@ -494,6 +505,9 @@ extension CallMediaSession {
     // MARK: Camera and heat
 
     func setCamera(isOn: Bool, front: Bool) {
+        if isOn, !isCameraOn {
+            startVideoEstimate(limits: CallVideoLimits(path: videoPath, heat: heat))
+        }
         isCameraOn = isOn
         if isOn {
             startCamera(front: front)
@@ -571,7 +585,13 @@ extension CallMediaSession {
 
     /// The camera, the limits and the partner follow only a share that turns on or off, not one
     /// that is starting or failed to.
+    ///
+    /// The screen joins the call once its capture runs, so the estimate lifts as the person picks
+    /// what to share, and the capture's start gives WebRTC time to take it before the first frame.
     fileprivate func screenShareChanged(_ share: CallScreenShare) {
+        if share == .starting {
+            startVideoEstimate(limits: screenLimits)
+        }
         if camera.isBesideScreen != screen.isSharing {
             camera.isBesideScreen = screen.isSharing
             applyVideoLimits()
