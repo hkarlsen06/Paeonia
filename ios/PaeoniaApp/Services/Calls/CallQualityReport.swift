@@ -142,6 +142,8 @@ nonisolated struct CallQualityTally: Sendable {
 /// What one video stream this phone sends did in the intervals between samples in which it sent.
 private nonisolated struct SentVideoTally: Sendable {
     var seconds = 0.0
+    /// Each interval's frames over its seconds, from WebRTC's counters: those it encoded, and
+    /// those that went into it for the encoder.
     var framesPerSecond: [Double] = []
     var widths: [Double] = []
     var heights: [Double] = []
@@ -182,15 +184,13 @@ private nonisolated struct SentVideoTally: Sendable {
     ) -> Bool {
         guard now.sent.bytesSent > before.sent.bytesSent else { return false }
         seconds += elapsed
-        if let value = now.framesPerSecond {
-            framesPerSecond.append(value)
+        if elapsed > 0 {
+            framesPerSecond.append(Double(now.framesEncoded - before.framesEncoded) / elapsed)
+            sourceFramesPerSecond.append(Double(now.sourceFrames - before.sourceFrames) / elapsed)
         }
         if let width = now.frameWidth, let height = now.frameHeight {
             widths.append(Double(width))
             heights.append(Double(height))
-        }
-        if let value = now.sourceFramesPerSecond {
-            sourceFramesPerSecond.append(value)
         }
         if let reason = now.qualityLimitation {
             samplesPerLimit[CallQualityReport.Limit(reason), default: 0] += 1
@@ -215,6 +215,7 @@ private nonisolated struct SentVideoTally: Sendable {
 /// What this phone received of the partner's shared screen in the intervals in which it arrived.
 private nonisolated struct ReceivedScreenTally: Sendable {
     var seconds = 0.0
+    /// Each interval's decoded frames over its seconds.
     var framesPerSecond: [Double] = []
     var framesDropped = 0
     var freezes = 0
@@ -232,8 +233,8 @@ private nonisolated struct ReceivedScreenTally: Sendable {
     ) {
         guard now.bytesReceived > before.bytesReceived else { return }
         seconds += elapsed
-        if let value = now.framesPerSecond {
-            framesPerSecond.append(value)
+        if elapsed > 0 {
+            framesPerSecond.append(Double(now.framesDecoded - before.framesDecoded) / elapsed)
         }
         framesDropped += max(now.framesDropped - before.framesDropped, 0)
         freezes += max(now.freezes - before.freezes, 0)

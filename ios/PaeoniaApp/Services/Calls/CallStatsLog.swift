@@ -150,13 +150,16 @@ nonisolated struct CallStatsSample: Sendable {
         var sent = Outbound()
         var frameWidth: Int?
         var frameHeight: Int?
+        /// WebRTC's count of the frames encoded in the last second, a snapshot that a screen
+        /// changing in bursts swings. `framesEncoded` over time is the steady rate.
         var framesPerSecond: Double?
         /// `none`, `cpu`, `bandwidth` or `other`: what keeps the encoder from sending more.
         var qualityLimitation: String?
         var framesEncoded = 0
         var encodeSeconds = 0.0
-        /// The frames a second going into the encoder, from the stream's `media-source`.
-        var sourceFramesPerSecond: Double?
+        /// The frames that went into WebRTC for the encoder, from the stream's `media-source`.
+        /// Those it encoded count in `framesEncoded`, and the rest it dropped on the way.
+        var sourceFrames = 0
         var keyFramesEncoded = 0
         /// The sum of the frames' quantizers. Higher means coarser pictures.
         var qpSum = 0
@@ -177,7 +180,6 @@ nonisolated struct CallStatsSample: Sendable {
     /// The partner's shared screen as this phone receives it, since the call started.
     nonisolated struct ReceivedScreen: Sendable {
         var bytesReceived = 0
-        var framesPerSecond: Double?
         var framesDropped = 0
         var freezes = 0
         var framesDecoded = 0
@@ -292,7 +294,7 @@ nonisolated struct CallStatsSample: Sendable {
             qualityLimitation: stat.string("qualityLimitationReason"),
             framesEncoded: Int(stat.number("framesEncoded") ?? 0),
             encodeSeconds: stat.number("totalEncodeTime") ?? 0,
-            sourceFramesPerSecond: stats[stat.string("mediaSourceId") ?? ""]?.number("framesPerSecond"),
+            sourceFrames: Int(stats[stat.string("mediaSourceId") ?? ""]?.number("frames") ?? 0),
             keyFramesEncoded: Int(stat.number("keyFramesEncoded") ?? 0),
             qpSum: Int(stat.number("qpSum") ?? 0),
             encoderImplementation: stat.string("encoderImplementation"),
@@ -364,7 +366,8 @@ private nonisolated extension CallStatsSample.SentVideo {
         let encoder = show(encoderImplementation) + (isPowerEfficientEncoder == true ? " efficient" : "")
         return "\(kbps(sent.bytesSent, earlier.sent.bytesSent, elapsed)) kbps"
             + " (target \(whole(sent.targetBitsPerSecond.map { $0 / 1_000 })))"
-            + " \(show(frame)) \(whole(sourceFramesPerSecond)) fps in \(whole(framesPerSecond)) out"
+            + " \(show(frame)) \(rate(sourceFrames - earlier.sourceFrames, elapsed)) fps in"
+            + " \(rate(frames, elapsed)) out"
             + " encode \(whole(encode)) ms qp \(whole(quantizer)) key \(keyFramesEncoded - earlier.keyFramesEncoded)"
             + " by \(encoder) limit \(show(qualityLimitation))"
     }
@@ -376,7 +379,8 @@ private nonisolated extension CallStatsSample.ReceivedScreen {
             seconds: decodeSeconds - earlier.decodeSeconds,
             frames: framesDecoded - earlier.framesDecoded
         )
-        return "\(kbps(bytesReceived, earlier.bytesReceived, elapsed)) kbps \(whole(framesPerSecond)) fps"
+        return "\(kbps(bytesReceived, earlier.bytesReceived, elapsed)) kbps"
+            + " \(rate(framesDecoded - earlier.framesDecoded, elapsed)) fps"
             + " decode \(whole(decode)) ms"
             + ", dropped \(framesDropped - earlier.framesDropped) froze \(freezes - earlier.freezes)"
     }
@@ -384,6 +388,10 @@ private nonisolated extension CallStatsSample.ReceivedScreen {
 
 private nonisolated func kbps(_ bytes: Int, _ earlier: Int, _ elapsed: Double) -> Int {
     Int((Double(bytes - earlier) * 8 / elapsed / 1_000).rounded())
+}
+
+private nonisolated func rate(_ frames: Int, _ elapsed: Double) -> String {
+    elapsed > 0 ? whole(Double(frames) / elapsed) : "-"
 }
 
 private nonisolated func show(_ value: (some Any)?) -> String {
@@ -405,7 +413,6 @@ private nonisolated extension CallStatsSample.Inbound {
 private nonisolated extension CallStatsSample.ReceivedScreen {
     init(_ stat: LKRTCStatistics) {
         bytesReceived = Int(stat.number("bytesReceived") ?? 0)
-        framesPerSecond = stat.number("framesPerSecond")
         framesDropped = Int(stat.number("framesDropped") ?? 0)
         freezes = Int(stat.number("freezeCount") ?? 0)
         framesDecoded = Int(stat.number("framesDecoded") ?? 0)

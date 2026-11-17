@@ -24,7 +24,7 @@
 # arrived: seconds, frames per second, frames dropped, freezes and milliseconds
 # of decoding per frame. "encoder" counts the resets, failed frames and dropped
 # frames the camera's and the screen's encoders logged. Frame rates are medians
-# of 2-second samples.
+# of each 2-second interval's frames, from WebRTC's frame counters.
 #
 # Without --hosted it reads this worktree's local backend (scripts/local-backend),
 # which the CLI reaches through backend/.env.local. --hosted reads api.paeonia.no
