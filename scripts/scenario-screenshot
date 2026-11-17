@@ -19,8 +19,12 @@
 # the shared simulator's settings. --partner-name gives the partner in the Games
 # scenarios another name than Robin, such as a longer one.
 #
+# Output goes to ~/agent-shots/paeonia/<date>-<worktree>/, which outlives a
+# restart and the worktree, so an image embedded in a reply keeps showing. An
+# --out without a slash, such as before.png, is a name in that folder.
+#
 # For a before and after, run it once with your change stashed and once without,
-# with a different --out each time. Do both in one worktree, because a second
+# with a different --out each time, such as before.png and after.png. Do both in one worktree, because a second
 # worktree compiles the whole app again, which takes about 4 minutes. Scenario
 # ids are in
 # ios/PaeoniaApp/App/DeveloperScenarios/DeveloperScenario+App.swift.
@@ -73,8 +77,9 @@ if [[ $scenario != menu ]] && ! grep -rqF "\"$scenario\"" "$scenarios_dir"; then
 fi
 worktree_key=$(printf '%s' "$root" | shasum | cut -c1-10)
 scratch=/tmp/paeonia-scenario-$worktree_key
-out=$scratch/$scenario.png
-[[ $record == 0 ]] || out=$scratch/$scenario-motion
+shots=$HOME/agent-shots/paeonia/$(date +%F)-$(basename "$root" | tr ' ' '-')
+out=$scenario.png
+[[ $record == 0 ]] || out=$scenario-motion
 wait_seconds=8
 record_seconds=""
 then_command=""
@@ -120,6 +125,7 @@ while [[ $# -gt 0 ]]; do
     *) usage ;;
   esac
 done
+[[ $out == */* ]] || out=$shots/$out
 
 # A tap tool is bound to one simulator, and a lock this script takes could be
 # another one. So --then records on the simulator the caller already holds, and
