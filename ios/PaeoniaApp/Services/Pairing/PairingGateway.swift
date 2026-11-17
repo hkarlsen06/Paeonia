@@ -27,7 +27,7 @@ protocol PairingGateway: Actor {
     ) async throws -> UUID?
 
     func answerRestore(
-        inviteID: UUID,
+        _ request: RemoteRestoreRequest,
         restore: Bool,
         operation: PairingClientOperation
     ) async throws -> RelationshipRestoreAnswer
@@ -124,13 +124,13 @@ actor LivePairingGateway: PairingGateway {
     }
 
     func answerRestore(
-        inviteID: UUID,
+        _ request: RemoteRestoreRequest,
         restore: Bool,
         operation: PairingClientOperation
     ) async throws -> RelationshipRestoreAnswer {
         try await client.mutation(
             "pairing:answer_relationship_restore",
-            args: AnswerRelationshipRestoreRequest(inviteID: inviteID, restore: restore, operation: operation)
+            args: AnswerRelationshipRestoreRequest(request: request, restore: restore, operation: operation)
         )
     }
 
@@ -272,14 +272,16 @@ nonisolated private struct AcceptPairingInviteRequest: Encodable {
 
 nonisolated private struct AnswerRelationshipRestoreRequest: Encodable {
     let inviteID: UUID
+    let requesterUserID: UUID
     let restore: Bool
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
     let localCreatedAt: Date
 
-    init(inviteID: UUID, restore: Bool, operation: PairingClientOperation) {
-        self.inviteID = inviteID
+    init(request: RemoteRestoreRequest, restore: Bool, operation: PairingClientOperation) {
+        self.inviteID = request.inviteID
+        self.requesterUserID = request.partnerUserID
         self.restore = restore
         self.clientOperationID = operation.id
         self.clientID = operation.clientID
@@ -289,6 +291,7 @@ nonisolated private struct AnswerRelationshipRestoreRequest: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case inviteID = "p_invite_id"
+        case requesterUserID = "p_requester_user_id"
         case restore = "p_restore"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"

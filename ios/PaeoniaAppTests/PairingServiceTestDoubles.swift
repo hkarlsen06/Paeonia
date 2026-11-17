@@ -104,7 +104,7 @@ actor FakePairingGateway: PairingGateway {
     }
 
     func answerRestore(
-        inviteID _: UUID,
+        _: RemoteRestoreRequest,
         restore _: Bool,
         operation _: PairingClientOperation
     ) async throws -> RelationshipRestoreAnswer {

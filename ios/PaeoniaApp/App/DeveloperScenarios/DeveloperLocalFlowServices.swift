@@ -317,7 +317,7 @@
       return true
     }
     func answerRestore(
-      inviteID _: UUID,
+      _: RemoteRestoreRequest,
       restore: Bool,
       operation _: PairingClientOperation
     ) async throws -> RelationshipRestoreAnswer {

@@ -56,7 +56,7 @@
     }
     func leaveRelationship(operation _: PairingClientOperation) throws -> Bool { true }
     func answerRestore(
-      inviteID _: UUID, restore: Bool, operation _: PairingClientOperation
+      _: RemoteRestoreRequest, restore: Bool, operation _: PairingClientOperation
     ) throws -> RelationshipRestoreAnswer {
       RelationshipRestoreAnswer(coupleID: DeveloperScenarioFixture.coupleID, restored: restore)
     }

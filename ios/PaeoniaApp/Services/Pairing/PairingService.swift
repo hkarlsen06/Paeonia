@@ -35,8 +35,10 @@ protocol PairingServicing: Actor {
 
 /// The inviter's side of bringing back an ended relationship.
 protocol RelationshipRestoreAnswering: Actor {
+    /// Answers `request`, the one this person saw. The server pairs nobody when someone
+    /// else's request has taken its place.
     func answerRestore(
-        inviteID: UUID,
+        _ request: RemoteRestoreRequest,
         restore: Bool,
         operation: PairingClientOperation
     ) async throws -> RelationshipRestoreAnswer
@@ -158,11 +160,11 @@ actor RemotePairingService: PairingServicing, RelationshipRestoreAnswering {
     }
 
     func answerRestore(
-        inviteID: UUID,
+        _ request: RemoteRestoreRequest,
         restore: Bool,
         operation: PairingClientOperation
     ) async throws -> RelationshipRestoreAnswer {
-        try await gateway.answerRestore(inviteID: inviteID, restore: restore, operation: operation)
+        try await gateway.answerRestore(request, restore: restore, operation: operation)
     }
 
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {

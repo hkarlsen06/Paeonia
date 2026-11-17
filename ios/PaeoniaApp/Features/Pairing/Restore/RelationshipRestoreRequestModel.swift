@@ -41,7 +41,7 @@ final class RelationshipRestoreRequestModel {
         defer { sendingAnswer = nil }
         do {
             let answer = try await service.answerRestore(
-                inviteID: request.inviteID,
+                request,
                 restore: restore,
                 operation: operationProvider.makeOperation()
             )

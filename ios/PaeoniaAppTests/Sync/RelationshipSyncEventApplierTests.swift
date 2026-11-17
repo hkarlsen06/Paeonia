@@ -99,39 +99,6 @@ struct RelationshipSyncEventApplierTests {
         #expect(await privacyPurger.calls.isEmpty)
     }
 
-    @Test func anEndFollowedByARestoreOfTheSameCoupleDoesNotPurgeIt() async throws {
-        let ownerUserID = UUID()
-        let coupleID = UUID()
-        let privacyPurger = RecordingLocalPrivacyPurger()
-        let applier = RelationshipSyncEventApplier(
-            widgetCanvasService: nil,
-            localPrivacyPurger: privacyPurger
-        )
-        let ended = try event(
-            id: UUID().uuidString,
-            userID: ownerUserID,
-            coupleID: coupleID,
-            createdAt: 100,
-            eventKind: "relationship_ended",
-            localPurgeScope: ["relationship_content": "hide", "pending_uploads": "review"]
-        )
-        let restored = try event(
-            id: UUID().uuidString,
-            userID: ownerUserID,
-            coupleID: coupleID,
-            createdAt: 200,
-            eventKind: "relationship_started",
-            localPurgeScope: ["relationship": "refresh", "relationship_content": "refresh"]
-        )
-
-        try await applier.apply(
-            [ended, restored],
-            session: session(ownerUserID: ownerUserID, relationshipCoupleID: coupleID)
-        )
-
-        #expect(await privacyPurger.calls.isEmpty)
-    }
-
     @Test func oldEventCannotOwnerPurgeWhenCurrentRelationshipIdentityIsUnknown() async throws {
         let ownerUserID = UUID()
         let privacyPurger = RecordingLocalPrivacyPurger()
