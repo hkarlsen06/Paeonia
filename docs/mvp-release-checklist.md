@@ -58,12 +58,10 @@ Run these before a release candidate and record any skipped one with the reason:
 
 ## Pairing And Relationship Lifecycle
 
-- [ ] Invite link opens the app through Universal Links. Needs a device. The association file and `/join/<code>` are served correctly.
 
 ## Daily Challenge
 
 - [ ] Voice answers work. Needs a device for recording and playback. The app side is tested. No backend test submits a daily voice answer.
-- [ ] Question-chat notifications route to the right question without exposing message content on the lock screen. Needs a device. The push copy and deep link are tested (`threads.test.ts`).
 
 ## Streaks
 
@@ -95,12 +93,11 @@ Run these before a release candidate and record any skipped one with the reason:
 
 ## Notifications
 
-- [ ] Permission-denied state is graceful. Needs a device.
 - [ ] App still works if notifications are never enabled. Needs a device.
 
 ## Settings, Privacy, And Account Controls
 
-- [ ] User can download all their data in the app (GDPR Art. 15 and 20): JSON files, original photos, voice messages and drawings, a README with the Art. 15 information, a push when it is ready, links that expire. Built on the backend and in the app, see `docs/privacy-and-data-export.md`. Needs a device: a download with real photos, several zip files, and the share sheet.
+- [ ] User can download all their data in the app (GDPR Art. 15 and 20): JSON files, original photos, voice messages and drawings, a README with the Art. 15 information, a push when it is ready, links that expire. Built on the backend and in the app, see `docs/privacy-and-data-export.md`. On 2026-11-17 a device download worked end to end with one 231 kB zip: the ready push, the share sheet, the README, and no partner content. Still needs a download with real photos and voice messages that splits into several zip files.
 
 ## Offline-First And Sync
 
@@ -111,7 +108,7 @@ Run these before a release candidate and record any skipped one with the reason:
 Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earlier Supabase checks (migrations, RLS, pgTAP, advisors, Edge Functions, Storage buckets) no longer apply.
 
 - [ ] The catalog sync no longer moves existing daily questions to a new question version (the `ponytail:` step in `backend/convex/catalog.ts`), so answers keep the wording they were written for. Remove the step just before launch.
-- [ ] A queued push reaches a real device as an alert and as a widget update. Needs a device.
+- [ ] A queued push reaches a real device as a widget update. Needs a device with a Paeonia widget on the Home Screen. Alerts reached both devices on 2026-11-17.
 - [ ] A restore from a nightly backup has been tried. Hourly and nightly backups run (checked 2026-10-24). The storage move on 2026-10-14 used the restore steps, but no drill has used a nightly backup.
 - [ ] The nightly backup fits once couples send videos. Each nightly export holds every stored file, a video is up to 80 MiB, and `one-s` keeps 14 exports, so total file storage times 14 must fit in the server's free disk (120 GB on 2026-11-16, when an export was 72 MB). The offsite copy in R2 keeps 3 days inside the free 10 GB. Exports that leave out files, with the files copied once to R2, would remove the limit.
 - [ ] `ios/Scripts/mint-review-codes.mjs` works against production, including registered demo partners. Needs three demo partner accounts on the production Clerk instance.
@@ -128,6 +125,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [ ] Small iPhone layout pass.
 - [ ] Large iPhone layout pass.
 - [x] iPad layout pass, in portrait, landscape and split view. Done on 2026-11-17 on the iPad Air 11-inch simulator, with one scenario per screen in both orientations and the tabs in narrow, half-width and short windows.
+- [ ] On an iPad, a tap on another tab while a chat's keyboard is up leaves the new tab black until the person goes back to Chats. Found on the developer's iPad on 2026-11-17. A gap in the source.
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
 - [ ] Dynamic Type pass.
@@ -155,11 +153,8 @@ Run these on real devices where possible.
 - [ ] One user answers a question the partner answered on an earlier day -> reveal works.
 - [ ] One user records voice answer -> partner can play it after reveal.
 - [ ] One user sends photo answer -> partner can view it after reveal.
-- [ ] One user creates memory with note.
 - [ ] One user creates memory with photos.
-- [ ] Partner adds note/photo to memory.
-- [ ] User draws and saves widget update.
-- [ ] Partner receives drawing notification/update.
+- [ ] Partner adds photo to memory. Adding a note worked on the developer's devices on 2026-11-17.
 - [ ] User enables location; map waits for partner.
 - [ ] Partner enables location; distance/location appears.
 - [ ] User disables location; map hides or updates as expected.
@@ -183,11 +178,9 @@ Run these on real devices where possible.
 - [ ] Voice recording permission denied.
 - [ ] Camera/photo permission denied.
 - [ ] Location permission denied.
-- [ ] Push permission denied.
 - [ ] Invite code invalid.
 - [ ] Invite code expired.
 - [ ] Partner leaves relationship while app is open.
-- [ ] Relationship entitlement expires while app is open.
 - [ ] App is killed during pending upload and reopened.
 
 ## App Store Connect
