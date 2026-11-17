@@ -51,6 +51,9 @@ extension PairedHomeView {
         .frame(height: Self.headerBarHeight)
         // The cards' screen padding is wider than a navigation bar's edge inset.
         .padding(.horizontal, Self.barEdgeInset - PaeoniaSpacing.screenHorizontalPadding)
+        // In an iPad window the close and resize controls sit in the top leading corner,
+        // where the mark would be. The row starts after them, as a navigation bar's items do.
+        .containerCornerOffset(.leading, sizeToFit: true)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isVisible)
     }
 

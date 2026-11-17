@@ -22,7 +22,8 @@ The app runs on iPhone and iPad, and on iPad it can be any width from a narrow S
 
 - Put `.paeoniaReadableWidth()` on a screen's content inside its scroll view, so content stops at `PaeoniaSpacing.readableContentWidth` and the background still reaches the screen edges. Bottom button bars get the same cap.
 - The welcome, onboarding, paywall, pairing, and pairing celebration screens use the narrower `PaeoniaSpacing.focusedContentWidth`. `PaeoniaScreenFrame` already applies it.
-- Size from the space the view is given, not from `UIScreen` or the device type. Check new screens on an iPad simulator in portrait and landscape.
+- Size from the space the view is given, not from `UIScreen` or the device type. Check new screens on an iPad simulator in portrait and landscape, and in a narrow window. To get one, open the app on the Shared iPad and drag the window's bottom trailing corner, or long-press the green window control and pick a size.
+- In an iPad window the close and resize controls sit in the top leading corner. A navigation bar keeps its items clear of them. A screen that draws its own top row instead puts `.containerCornerOffset(.leading, sizeToFit: true)` on that row, as Home's header does.
 
 ### List rows
 
