@@ -5,10 +5,14 @@
 #   scripts/sim-fold "<simulator name or UDID>" <closed|half-open|open>
 #
 # Take the simulator first with SIM="$(scripts/lock acquire "Shared iPhone Duo")".
-# closed lights the outer screen (466x678 points). open lights the inner screen,
-# where an app gets a 951x669 point window. half-open sets the hinge to 130
-# degrees and lights the inner screen too. Simulator taps and refs from before a
-# fold are wrong after it, so take a new screenshot or snapshot.
+# open lights the inner screen, where an app gets a 951x669 point window.
+# half-open sets the hinge to 130 degrees and lights the inner screen too.
+# closed lights the outer screen (466x678 points). Folding a running Duo shut
+# turns both screens off, as a real one sleeps, and no simulated button wakes
+# it. A Duo starts closed with its outer screen on, so closed restarts the
+# simulator instead, in about 5 s, and the app has to be launched again. Taps
+# and refs from before a fold are wrong after it, so take a new screenshot or
+# snapshot.
 #
 # simctl and Xcode have no fold command, so this builds scripts/lib/sim-hinge.m
 # for the simulator, once per change to it, and runs it with simctl spawn.
@@ -35,14 +39,25 @@ if [[ ! -x $helper ]]; then
   mv "$helper.$$" "$helper"
 fi
 
-xcrun simctl spawn "$sim" "$helper" set "$angle"
+if [[ $angle == 0 ]]; then
+  xcrun simctl shutdown "$sim" 2>/dev/null || true
+  xcrun simctl bootstatus "$sim" -b >/dev/null
+else
+  xcrun simctl spawn "$sim" "$helper" set "$angle"
+fi
 # The hinge moves over about a second, and the first fold after a boot takes longer.
+errors=${TMPDIR:-/tmp}/paeonia-sim-hinge-read.$$
+trap 'rm -f "$errors"' EXIT
 for _ in $(seq 20); do
-  reading=$(xcrun simctl spawn "$sim" "$helper" read 2>/dev/null || true)
+  status=0
+  reading=$(xcrun simctl spawn "$sim" "$helper" read 2>"$errors") || status=$?
+  # 3 is a simulator without a hinge, which no wait fixes.
+  [[ $status != 3 ]] || { cat "$errors" >&2; exit 1; }
   if [[ -n $reading ]] && awk -v a="$reading" -v b="$angle" 'BEGIN { exit !(a - b < 1 && b - a < 1) }'; then
     exit 0
   fi
   sleep 0.5
 done
-echo "$sim still reports a hinge angle of ${reading:-nothing} after 10 s, not $angle." >&2
+cat "$errors" >&2
+echo "$sim still reports a hinge angle of ${reading:-nothing} after 20 reads, not $angle." >&2
 exit 1

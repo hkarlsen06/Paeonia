@@ -57,7 +57,9 @@ static int readAngle(void) {
   };
   ((void (*)(id, SEL, NSOperationQueue *, id))objc_msgSend)(manager, start, queue, handler);
   long timedOut = dispatch_semaphore_wait(sampled, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
-  ((void (*)(id, SEL))objc_msgSend)(manager, @selector(stopAngleUpdates));
+  if ([manager respondsToSelector:@selector(stopAngleUpdates)]) {
+    ((void (*)(id, SEL))objc_msgSend)(manager, @selector(stopAngleUpdates));
+  }
   [queue waitUntilAllOperationsAreFinished];
   if (timedOut) {
     fprintf(stderr, "The hinge reported no angle within 3 seconds\n");

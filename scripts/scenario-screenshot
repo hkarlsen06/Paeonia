@@ -26,7 +26,8 @@
 # --duo runs it on the shared foldable iPhone Duo, unfolded, and --fold closed or
 # --fold half-open folds it first (scripts/sim-fold). Unfolded, the app gets a
 # 951x669 point window on the inner screen, like a small iPad on its side.
-# Closed, it gets the 466x678 point outer screen. Half-open, the system splits
+# Closed, it gets the 466x678 point outer screen, and the Duo restarts first,
+# because folding a running one shut turns its screens off. Half-open, the system splits
 # the inner screen at the hinge. The screenshot or recording shows the screen
 # that is lit.
 #
@@ -146,6 +147,8 @@ done
 # An iPhone runs the app upright only.
 [[ $landscape == 0 || $simulator == "Shared iPad" ]] || usage
 [[ -z $fold || $simulator == "Shared iPhone Duo" ]] || usage
+# Folding closed restarts the simulator, which ends the tap tool's session that --then needs.
+[[ $fold != closed || -z $then_command ]] || { echo "--then can't run on a Duo folded closed, because folding it closed restarts the simulator." >&2; exit 64; }
 # The Duo has a screen on each side of the fold, so simctl needs to be told which one to capture.
 display_args=()
 [[ -z $fold ]] || display_args=(--display="$([[ $fold == closed ]] && echo LCD || echo LCD-1)")
