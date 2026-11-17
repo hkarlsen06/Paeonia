@@ -142,7 +142,8 @@ done
 # another one. So --then records on the simulator the caller already holds, and
 # the caller keeps it afterwards.
 if [[ $record == 1 ]]; then
-  held_before=$("$root/scripts/lock" status | grep -F ": held by $root (" | grep -v '(stale)$' |
+  # Only simulator locks: other locks, such as scripts/devices' device-iphone, name no simulator.
+  held_before=$("$root/scripts/lock" status | grep '^simulator' | grep -F ": held by $root (" | grep -v '(stale)$' |
     sed -e 's/^[^(]*(//' -e 's/):.*//' |
     if [[ $simulator == "Shared iPad" ]]; then grep -x 'Shared iPad'; else grep -vx 'Shared iPad'; fi | head -1 || true)
   if [ -n "$then_command" ] && [ -z "$held_before" ]; then
