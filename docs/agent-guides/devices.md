@@ -29,13 +29,13 @@ scripts/devices iphone open no.paeonia.app    # start the iPhone's session, or b
 scripts/devices ipad snapshot -i              # the iPad's buttons and texts, with @refs
 scripts/devices iphone press 'label="Spill"'
 scripts/devices ipad wait text "Svar" 15000
-scripts/devices iphone screenshot /tmp/iphone.png
+scripts/devices iphone screenshot ~/agent-shots/paeonia/$(date +%F)-ring/iphone.png  # make the folder first
 scripts/devices logs ipad "2026-11-17 15:08:30"            # Paeonia's log lines since then
 scripts/devices logs ipad "2026-11-17 15:08:30" CallStats  # one category
 scripts/devices release                       # or: release ipad
 ```
 
-Start each device's session with `open` before any other command. Everything after the device name goes to `agent-device` (`agent-device help` lists its commands, such as `scroll`, `fill`, `back`, `appstate` and `record`), with that device's session. Coordinates for `press <x> <y>` are points, the screenshot's pixels divided by 3 on the iPhone and 2 on the iPad. System UI, such as a system sheet, an alert or the call banner, is in no snapshot, so tap it by coordinates after a screenshot. `open <bundle id or URL>` opens another app, which then becomes the session's app until you open Paeonia again. Copy screenshots you show the developer to `~/agent-shots/paeonia/`.
+Start each device's session with `open` before any other command. Everything after the device name goes to `agent-device` (`agent-device help` lists its commands, such as `scroll`, `fill`, `back`, `appstate` and `record`), with that device's session. Coordinates for `press <x> <y>` are points, the screenshot's pixels divided by 3 on the iPhone and 2 on the iPad. System UI, such as a system sheet, an alert or the call banner, is in no snapshot, so tap it by coordinates after a screenshot. `open <bundle id or URL>` opens another app, which then becomes the session's app until you open Paeonia again. Save screenshots straight into a `~/agent-shots/paeonia/<date>-<topic>/` folder, not `/tmp`. T3 shows every image you read as a card that loads the file from that path, so a screenshot read from `/tmp` turns into "Image unavailable" once it is deleted, and Claude's Read hook refuses images under `/tmp`.
 
 Both devices show the app in Norwegian. The tabs are "Oss" (Us), "Samtaler" (Chats), "Spill" (Games), "Minner" (Memories) and "Mer" (More).
 

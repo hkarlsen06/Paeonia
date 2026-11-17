@@ -42,22 +42,22 @@ Done when every asset has all five, and every hub card object its camera and bea
 Codex generates with its built-in `image_gen` tool, one call per asset, in transparent background mode.
 
 - Before the first call, load two approved assets with `view_image` and label them as style references, not edit targets. For a hub card object, load an approved hub card object too, for the camera. The prompt is then: the style block, then "Match the material, lighting and finish of the reference images.", then the subject and composition.
-- Copy the chosen output from `$CODEX_HOME/generated_images/` to `/tmp/paeonia-art/<file name>`. Keep originals outside the repository.
+- Copy the chosen output from `$CODEX_HOME/generated_images/` to `~/agent-shots/paeonia/art/<file name>`. Keep originals outside the repository.
 - Regenerate an asset that breaks its composition, such as the wrong view, text in the image, a cropped edge or a misplaced tip, or that does not sit with the references. Two or three tries is normal.
 
-A Claude agent hands this step to Codex with T3 `delegate_task`, on the `codex` provider with the newest Codex model. Paste the style block and every brief into the task, name `/tmp/paeonia-art/` as the output folder, say the repository must not change, and ask for the report from step 3. Run it `async`; one asset takes about a minute.
+A Claude agent hands this step to Codex with T3 `delegate_task`, on the `codex` provider with the newest Codex model. Paste the style block and every brief into the task, name `~/agent-shots/paeonia/art/` as the output folder, say the repository must not change, and ask for the report from step 3. Run it `async`; one asset takes about a minute.
 
-Done when every asset has a file in `/tmp/paeonia-art/`.
+Done when every asset has a file in `~/agent-shots/paeonia/art/`.
 
 ### 3. Check
 
 Run the checker on every file (setup is in the script's header):
 
 ```bash
-/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py check /tmp/paeonia-art/*.png
+/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py check ~/agent-shots/paeonia/art/*.png
 ```
 
-It prints corner alpha, the share of pale fringe on the cutout's edge, and the object's bounds. It also writes `/tmp/paeonia-art-preview.png`, which shows every asset on the app's plum. Open the preview and look at each asset:
+It prints corner alpha, the share of pale fringe on the cutout's edge, and the object's bounds. It also writes `~/agent-shots/paeonia/art-preview/plum.png`, which shows every asset on the app's plum. Open the preview and look at each asset:
 
 - a clean edge on plum, with no grey or white halo;
 - the same finish and light as the references;
@@ -70,7 +70,7 @@ For a hub card, ask for two candidates of the main object and keep the better on
 Game cards need no contrast run, since `GameHubPalette` caps their backdrop's colors. If you change the daily question card's room or where a card's text starts, run `text`. It lays the card frame's shadow and blur over the room and checks every line against the contrast it needs, for a full card and a hub card. It also checks that a cream object stands out 3:1 from the wall. Its numbers follow `GameHubBackdrop` and `PaeoniaIllustratedCardLayout.Scene`:
 
 ```bash
-/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py text /tmp/paeonia-art/backdrop.png
+/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py text ~/agent-shots/paeonia/art/backdrop.png
 ```
 
 Import a new backdrop with `--opaque` at 1536, as `GameHubBackdrop`.
@@ -82,8 +82,8 @@ Done when every file prints `ok` (or passes by eye as a pale object) and looks r
 From the repository root, import each asset at three times its display size. A hub card object is sized in canvas pixels, so import it at 1.5 times its width on the canvas, which covers the widest phone and iPad cards:
 
 ```bash
-/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py import /tmp/paeonia-art/peony-bud.png GameHubPeonyBud 96
-/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py import /tmp/paeonia-art/ludo-board.png GameHubLudoBoard 900
+/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py import ~/agent-shots/paeonia/art/peony-bud.png GameHubPeonyBud 96
+/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py import ~/agent-shots/paeonia/art/ludo-board.png GameHubLudoBoard 900
 ```
 
 Add `--opaque` for a full-bleed picture, which keeps the whole image and writes a JPEG. The size is the longest side. Add `--folder <Group>` for assets outside the games. The import trims the transparent margin, so the image's edges are the object's edges, and prints the final size and aspect ratio. Xcode generates the symbol, such as `Image(.gameHubPeonyBud)`.

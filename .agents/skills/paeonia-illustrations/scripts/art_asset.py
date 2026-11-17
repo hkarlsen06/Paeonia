@@ -9,7 +9,7 @@ Run with a Python that has Pillow, outside the repository:
     /tmp/paeonia-art-venv/bin/python -I art_asset.py selftest
 
 `check` reports each file's size, alpha, corners, edge fringe and the object's
-bounds, and writes a preview on the plum background to /tmp/paeonia-art-preview.png.
+bounds, and writes a preview on the plum background to ~/agent-shots/paeonia/art-preview/plum.png.
 `text` simulates the card's shadow and blur on a 1024 x 1536 card backdrop and checks
 each line of the card's text against the contrast docs/games/hub-artwork.md asks for, with
 the text where a full card and a hub card start it.
@@ -26,7 +26,7 @@ from PIL import Image
 
 PLUM = (0x38, 0x0F, 0x27, 255)
 CATALOG = "ios/PaeoniaApp/Resources/Assets.xcassets"
-PREVIEW = "/tmp/paeonia-art-preview.png"
+PREVIEW = os.path.expanduser("~/agent-shots/paeonia/art-preview/plum.png")
 
 
 def object_bounds(image):
@@ -69,6 +69,7 @@ def check(paths):
     sheet = Image.new("RGBA", (260 * len(tiles), 260), PLUM)
     for index, tile in enumerate(tiles):
         sheet.paste(tile, (260 * index, 0))
+    os.makedirs(os.path.dirname(PREVIEW), exist_ok=True)
     sheet.save(PREVIEW)
     print(f"preview: {PREVIEW}")
     return 1 if failed else 0
