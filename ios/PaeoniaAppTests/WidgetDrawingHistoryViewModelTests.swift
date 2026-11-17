@@ -133,7 +133,6 @@ struct WidgetDrawingHistoryViewModelTests {
 /// Records the cursors it was asked for and replays canned pages in order.
 private nonisolated final class StubGateway: WidgetCanvasGateway, @unchecked Sendable {
     var canvasState: WidgetCanvasState?
-    var stateError: (any Error)?
     var listError: (any Error)?
     private let pages: [[WidgetDrawingRevisionSummary]]
     private var index = 0
@@ -145,7 +144,6 @@ private nonisolated final class StubGateway: WidgetCanvasGateway, @unchecked Sen
     }
 
     func getCanvasState() throws -> WidgetCanvasState? {
-        if let stateError { throw stateError }
         return canvasState
     }
 

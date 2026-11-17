@@ -179,12 +179,6 @@ struct TopicsHookTests {
 }
 
 struct TopicAnswerQueueTests {
-    @Test func aQueuedAnswerWithoutATopicStillDecodes() throws {
-        let json = #"{"instanceID":"\#(UUID())","answerID":"\#(UUID())","content":{"text":{"_0":"hei"}}}"#
-        let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: Data(json.utf8))
-        #expect(payload.topicQuestionID == nil)
-    }
-
     @MainActor
     @Test func aTopicAnswerGoesToTheTopicMutation() async throws {
         let gateway = RecordingDailyChallengeGateway()

@@ -44,7 +44,6 @@ struct WidgetCanvasUploadServiceTests {
         #expect(reserve.canvasID == gateway.canvas.canvasID)
 
         let upload = try #require(gateway.uploadCalls.first)
-        #expect(upload.reservation.bucket == "widget-drawings")
         #expect(upload.payloadData == Self.samplePayload.drawingData)
 
         // The storage id the upload returned reaches finalize as `p_storage_id`.

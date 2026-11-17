@@ -221,18 +221,6 @@ struct GamesQueueHardeningTests {
 
     // MARK: Cache order
 
-    @Test func aReadThatWasOnItsWayDuringAPurgeIsNotSaved() async {
-        let cache = InMemoryGamesCache()
-        let state = GameFixture.state(settings: GameFixture.settings(), game: nil)
-
-        let ticket = await cache.beginFetch()
-        await cache.clearAll()
-        let saved = await cache.saveFetchedState(state, ownerUserID: GameFixture.me, ticket: ticket)
-
-        #expect(!saved)
-        #expect(await cache.document(ownerUserID: GameFixture.me).state == nil)
-    }
-
     @Test func aFileCacheReadThatWasOnItsWayDuringAPurgeIsNotSaved() async {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }

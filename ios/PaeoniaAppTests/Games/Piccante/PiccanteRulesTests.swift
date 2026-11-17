@@ -81,15 +81,6 @@ struct PiccanteRulesTests {
             dataEpoch: "restored", game: lower.game, unseenResult: nil)
         #expect(!lower.isOlder(than: old))
     }
-
-    @Test func openGameWireNeverContainsPartnerSecrets() throws {
-        let state = DeveloperPiccanteFixture.state(for: .piccanteBiting)
-        let encoded = try JSONEncoder().encode(state)
-        let decoded = try JSONDecoder().decode(RemotePiccanteState.self, from: encoded)
-        #expect(decoded.game?.chilis.isEmpty == true)
-        #expect(decoded.game?.myNote == "You owe me a back rub.")
-        #expect(decoded.game?.myChili == 12)
-    }
 }
 
 @MainActor

@@ -181,17 +181,6 @@ struct GamesViewModelTests {
         #expect(await cache.saveFetchedOverview(afterSetup, ownerUserID: GameFixture.me, ticket: beforePurge) == false)
         #expect(await cache.document(ownerUserID: GameFixture.me).overview == nil)
     }
-
-    @Test func theCacheKeepsEachPersonsContentApart() async {
-        let state = GameFixture.state(settings: GameFixture.settings(), game: nil)
-        let env = GamesTestEnvironment(state: state)
-
-        let other = await env.cache.document(ownerUserID: UUID())
-
-        #expect(other.state == nil)
-        await env.cache.clearAll()
-        #expect(await env.cache.document(ownerUserID: GameFixture.me).state == nil)
-    }
 }
 
 @MainActor

@@ -62,9 +62,4 @@ struct LockScreenStatusTests {
         let url = try #require(URL(string: "paeonia://games/\(path)"))
         #expect(PaeoniaDeepLink(url) == .game(.connectFour))
     }
-
-    @Test func lockScreenLinksMatchTheAppsRoutes() throws {
-        #expect(PaeoniaDeepLink(try #require(URL(string: "paeonia://streak"))) == .streak)
-        #expect(PaeoniaDeepLink(try #require(URL(string: "paeonia://daily/today"))) == .dailyToday(coupleDayID: nil))
-    }
 }

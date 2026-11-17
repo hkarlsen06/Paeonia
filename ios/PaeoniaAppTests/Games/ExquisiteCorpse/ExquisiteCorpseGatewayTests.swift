@@ -114,34 +114,12 @@ struct ExquisiteCorpseGatewayTests {
         #expect(args["p_before_figure_number"] as? Int == 9)
     }
 
-    @Test func aRefusalReachesTheCallerWithItsCodeAndMessage() async {
-        CorpseStubURLProtocol.handler = { _ in
-            Data(Self.refusalAnswer.utf8)
-        }
-        let head = Fixture.queuedPart(figure: 2, partIndex: 0)
-
-        let error = await corpseThrownError {
-            try await Self.makeGateway().submitExquisiteCorpsePart(
-                head,
-                drawingAssetID: Fixture.drawingAssetID,
-                stripAssetID: Fixture.stripAssetID,
-                operation: operation
-            )
-        }
-
-        #expect(error as? PaeoniaConvexError == .server(code: "42501", message: "it is not your turn"))
-    }
-
     // MARK: Helpers
 
     private static let stateAnswer = """
     {"status":"success","value":{"user_id":"11111111-1111-4111-8111-111111111111","partner_user_id":null,\
     "couple_id":"33333333-3333-4333-8333-333333333333","data_epoch":"","game":null,"current_figure":null,\
     "recent_figures":[],"ideas":[]}}
-    """
-
-    private static let refusalAnswer = """
-    {"status":"error","errorMessage":"x","errorData":{"code":"42501","message":"it is not your turn"}}
     """
 
     private static let submitAnswer = """

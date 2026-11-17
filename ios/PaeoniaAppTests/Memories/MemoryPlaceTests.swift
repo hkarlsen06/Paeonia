@@ -53,7 +53,8 @@ struct MemoryPlaceTests {
             city: "  ",
             countryCode: "no"
         )))
-        #expect(place.name.count == MemoryDataService.placeNameCharacterLimit)
+        // The server takes a name of up to 160 code points.
+        #expect(place.name.count == 160)
         #expect(place.city == nil)
         // The server only takes a two capital letter code, so anything else is dropped.
         #expect(place.countryCode == nil)

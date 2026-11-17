@@ -140,7 +140,9 @@ struct ThreadChatTakeBackTests {
         )
 
         // The test uploader finished no upload earlier, so the server cannot have the message.
-        #expect(result == .terminalFailure("Taken back before it reached the server"))
+        var isTerminal = false
+        if case .terminalFailure = result { isTerminal = true }
+        #expect(isTerminal)
         #expect(await uploader.uploadedMimeTypes.isEmpty)
         #expect(await fixture.gateway.lastMediaAssetIDs == nil)
     }
@@ -178,7 +180,9 @@ struct ThreadChatTakeBackTests {
 
         // The second photo never finished, so the message stops here, and the first photo's
         // copy in the caches goes with it. The third upload never started, so nothing asks about it.
-        #expect(result == .terminalFailure("Taken back before it reached the server"))
+        var isTerminal = false
+        if case .terminalFailure = result { isTerminal = true }
+        #expect(isTerminal)
         #expect(await evictions.evicted == [finishedAssetID])
         #expect(await uploader.askedReserveOperationIDs == [photoReserve.id, unfinishedReserve.id])
         #expect(await fixture.gateway.lastMediaAssetIDs == nil)

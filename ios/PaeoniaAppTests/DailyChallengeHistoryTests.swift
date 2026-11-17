@@ -125,7 +125,7 @@ struct DailyChallengeHistoryTests {
         #expect(DailyChallengeHistory.parseLocalDate("not-a-date") == nil)
     }
 
-    @Test func serviceLoadHistoryMergesRowsAndDetailsInTwoCalls() async throws {
+    @Test func serviceLoadHistoryAttachesEachAnswersDetail() async throws {
         let ownAnswerID = UUID()
         let gateway = RecordingDailyChallengeReadGateway(
             rows: [],
@@ -146,8 +146,6 @@ struct DailyChallengeHistoryTests {
 
         #expect(questions.count == 1)
         #expect(questions.first?.ownAnswerDetail?.textBody == "A quiet morning together")
-        #expect(await gateway.historyQuestionLoadCount == 1)
-        #expect(await gateway.historyDetailLoadCount == 1)
     }
 
     @MainActor

@@ -124,13 +124,13 @@ struct LocationDisplayRecencyTests {
     private let capturedAt = Date(timeIntervalSince1970: 1_000)
 
     @Test func locationRemainsRecentBeforeTwentyFourHours() {
-        let now = capturedAt.addingTimeInterval(LocationDisplayRecency.staleAfter - 1)
+        let now = capturedAt.addingTimeInterval(24 * 60 * 60 - 1)
 
         #expect(LocationDisplayRecency.resolve(capturedAt: capturedAt, now: now) == .recent)
     }
 
     @Test func locationBecomesStaleAtTwentyFourHours() {
-        let now = capturedAt.addingTimeInterval(LocationDisplayRecency.staleAfter)
+        let now = capturedAt.addingTimeInterval(24 * 60 * 60)
 
         #expect(LocationDisplayRecency.resolve(capturedAt: capturedAt, now: now) == .stale)
     }
@@ -181,7 +181,8 @@ struct RoutineLocationThrottleTests {
     }
 
     @Test func sendsWhenFixIsStaleEvenIfStationary() {
-        let now = oslo.capturedAt.addingTimeInterval(RoutineLocationThrottle.minimumInterval)
+        // Five minutes after the last fix.
+        let now = oslo.capturedAt.addingTimeInterval(5 * 60)
         let sameSpot = LocationPoint(latitude: oslo.latitude, longitude: oslo.longitude, capturedAt: now)
         #expect(RoutineLocationThrottle.shouldSend(lastSent: oslo, current: sameSpot, now: now))
     }

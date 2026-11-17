@@ -121,7 +121,6 @@ final class PaeoniaAppUITests: XCTestCase {
 
         // The code field is invisible under its cells and has the keyboard as soon as it shows.
         XCTAssertTrue(app.buttons["auth.email.codeField"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Check your email"].exists)
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         app.typeText("123456")
 

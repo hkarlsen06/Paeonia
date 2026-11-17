@@ -422,7 +422,6 @@ private extension PendingSyncOperationSnapshot {
 }
 
 nonisolated struct PendingSyncOperationRetryPolicy: Equatable, Sendable {
-    let maximumAttempts: Int?
     /// A write older than this stops retrying after a failure that is not a lost
     /// connection, and shows as not sent.
     let maximumAgeSeconds: TimeInterval?
@@ -434,7 +433,6 @@ nonisolated struct PendingSyncOperationRetryPolicy: Equatable, Sendable {
     let maximumTimeouts: Int
 
     init(
-        maximumAttempts: Int? = nil,
         maximumAgeSeconds: TimeInterval? = 24 * 60 * 60,
         baseDelaySeconds: TimeInterval = 60,
         // Retries only run while the app is open. Five minutes keeps a write made
@@ -442,7 +440,6 @@ nonisolated struct PendingSyncOperationRetryPolicy: Equatable, Sendable {
         maximumDelaySeconds: TimeInterval = 300,
         maximumTimeouts: Int = 3
     ) {
-        self.maximumAttempts = maximumAttempts
         self.maximumAgeSeconds = maximumAgeSeconds
         self.baseDelaySeconds = baseDelaySeconds
         self.maximumDelaySeconds = maximumDelaySeconds
@@ -456,13 +453,8 @@ nonisolated struct PendingSyncOperationRetryPolicy: Equatable, Sendable {
     /// Age alone never ends a write on its first tries, so one bad response after a
     /// long time offline does not discard it.
     func shouldMarkTerminal(attemptNumber: Int, createdAt: Date, now: Date) -> Bool {
-        if let maximumAttempts, attemptNumber >= maximumAttempts {
-            return true
-        }
-        if let maximumAgeSeconds, attemptNumber > 3, now.timeIntervalSince(createdAt) >= maximumAgeSeconds {
-            return true
-        }
-        return false
+        guard let maximumAgeSeconds else { return false }
+        return attemptNumber > 3 && now.timeIntervalSince(createdAt) >= maximumAgeSeconds
     }
 
     func nextRetryDate(attemptNumber: Int, now: Date) -> Date {

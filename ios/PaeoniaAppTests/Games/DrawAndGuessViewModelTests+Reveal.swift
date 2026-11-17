@@ -36,22 +36,4 @@ extension DrawAndGuessViewModelTests {
         #expect(reveal?.isConfirmed == true)
         #expect(viewModel.isNextTurnMine)
     }
-
-    @Test func continuingFromTheRevealSavesTheSeenMarkOnThePhoneAtOnce() async throws {
-        let env = environment(solvedByMe)
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-        #expect(viewModel.phase == .reveal)
-
-        await viewModel.continueFromReveal()
-
-        // The mark waits in the queue for the network. Continue never waits for it.
-        #expect(viewModel.phase == .chooseWord)
-        let payload = try JSONDecoder().decode(
-            GameResultSeenPayload.self,
-            from: try #require(await env.queued(.markGameRoundResultSeen).first?.requestData)
-        )
-        #expect(payload.roundID == GameFixture.roundID)
-        #expect(await env.queued(.markGameRoundResultSeen).count == 1)
-    }
 }

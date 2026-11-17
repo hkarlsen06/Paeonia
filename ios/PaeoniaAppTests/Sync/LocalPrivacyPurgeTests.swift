@@ -192,16 +192,19 @@ struct LocalPrivacyPurgeTests {
     }
 
     @Test func permanentPurgeMergesAccessSnapshotRequirement() async throws {
+        let suiteName = "LocalPrivacyPurgeTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         let ownerUserID = UUID()
-        let retryStore = InMemoryLocalPrivacyPurgeRetryStore()
+        let retryStore = UserDefaultsLocalPrivacyPurgeRetryStore(defaults: defaults)
 
-        await retryStore.enqueue(
+        try await retryStore.enqueue(
             LocalPrivacyPurgeRequest(
                 ownerUserID: ownerUserID,
                 scope: .relationshipContentPurged(clearAccessSnapshot: false)
             )
         )
-        await retryStore.enqueue(
+        try await retryStore.enqueue(
             LocalPrivacyPurgeRequest(
                 ownerUserID: ownerUserID,
                 scope: .relationshipContentPurged(clearAccessSnapshot: true)
@@ -209,7 +212,7 @@ struct LocalPrivacyPurgeTests {
         )
 
         #expect(
-            await retryStore.request(for: ownerUserID)
+            try await retryStore.request(for: ownerUserID)
                 == LocalPrivacyPurgeRequest(
                     ownerUserID: ownerUserID,
                     scope: .relationshipContentPurged(clearAccessSnapshot: true)

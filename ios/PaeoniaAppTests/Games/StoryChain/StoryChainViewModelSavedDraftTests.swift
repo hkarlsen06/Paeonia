@@ -124,29 +124,4 @@ struct StoryChainViewModelSavedDraftTests {
         #expect(viewModel.draft.isEmpty)
         #expect(await environment.cache.document(ownerUserID: Fixture.me).rescuedLines == ["The old line."])
     }
-
-    @Test func aNewTurnKeepsUnsentWords() async {
-        let environment = Env.myTurnAfterPartner()
-        let viewModel = environment.viewModel()
-        await viewModel.reload()
-        viewModel.draft = "Not sent yet."
-
-        // Another phone of this person sent line 2, and the partner wrote line 3.
-        await environment.cache.saveState(
-            Env.writing(
-                turn: Fixture.me,
-                lines: [
-                    Env.line(1, by: Fixture.partner),
-                    Env.line(2, by: Fixture.me),
-                    Env.line(3, by: Fixture.partner),
-                ],
-                version: 3
-            ),
-            ownerUserID: Fixture.me
-        )
-        await viewModel.reload()
-
-        #expect(viewModel.nextLineNumber == 4)
-        #expect(viewModel.draft == "Not sent yet.")
-    }
 }

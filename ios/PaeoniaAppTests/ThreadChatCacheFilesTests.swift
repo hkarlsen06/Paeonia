@@ -113,18 +113,6 @@ struct ThreadChatMessagePagingTests {
         )
     }
 
-    @Test func aPageWithOlderMessagesKeepsTheCachedMessagesBeforeIt() {
-        let fixture = ChatTestFixture()
-        let old = fixture.partnerMessage(body: "Old", at: 1)
-        let inPage = fixture.partnerMessage(body: "In page", at: 10)
-        let newer = fixture.partnerMessage(body: "Newer", at: 11)
-        let result = ThreadChatMessage.keepingOlderCached(
-            page([inPage, newer], hasMore: true), remote: [inPage, newer], cached: [old, inPage]
-        )
-
-        #expect(result.map(\.body).sorted() == ["In page", "Newer", "Old"])
-    }
-
     @Test func aPageThatSkipsPastTheCacheReplacesItSoNoHoleRemains() {
         let fixture = ChatTestFixture()
         let old = fixture.partnerMessage(body: "Old", at: 1)

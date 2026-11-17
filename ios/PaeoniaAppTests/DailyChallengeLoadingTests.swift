@@ -4,7 +4,7 @@ import UIKit
 @testable import PaeoniaApp
 
 struct DailyChallengeLoadingTests {
-    @Test func serviceUsesSnapshotAnswerDetailsWithoutPerDayDetailFetches() async throws {
+    @Test func serviceAttachesEachDaysAnswerDetailsFromTheSnapshot() async throws {
         let currentAnswerID = UUID()
         let previousAnswerID = UUID()
         let previousStart = TestDailyChallengeIDs.startsAt.addingTimeInterval(-86_400)
@@ -35,7 +35,6 @@ struct DailyChallengeLoadingTests {
 
         let result = try await service.loadToday(currentUserID: TestDailyChallengeIDs.currentUser)
 
-        #expect(await gateway.todaySnapshotLoadCount == 1)
         #expect(result.snapshot.questions.map { $0.ownAnswerDetail?.textBody } == [
             "Today",
             "Yesterday",

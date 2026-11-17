@@ -106,11 +106,6 @@ actor RecordingDailyChallengeReadGateway: DailyChallengeGateway {
     private let detailsByCoupleDayID: [UUID: [DailyAnswerDetailRow]]
     private let historyRows: [DailyQuestionRow]
     private let historyDetails: [DailyAnswerDetailRow]
-    private(set) var todaySnapshotLoadCount = 0
-    private(set) var startSnapshotLoadCount = 0
-    private(set) var shuffleSnapshotLoadCount = 0
-    private(set) var historyQuestionLoadCount = 0
-    private(set) var historyDetailLoadCount = 0
 
     init(
         rows: [DailyQuestionRow],
@@ -125,23 +120,19 @@ actor RecordingDailyChallengeReadGateway: DailyChallengeGateway {
     }
 
     func loadTodaySnapshot() throws -> DailyChallengeRemoteSnapshotRow {
-        todaySnapshotLoadCount += 1
-        return snapshotRow(rows: rows)
+        snapshotRow(rows: rows)
     }
 
     func startDailyChallenge(operation _: SyncClientOperation) throws -> DailyChallengeRemoteSnapshotRow {
-        startSnapshotLoadCount += 1
-        return snapshotRow(rows: rows)
+        snapshotRow(rows: rows)
     }
 
     func loadHistoryQuestions() throws -> [DailyQuestionRow] {
-        historyQuestionLoadCount += 1
-        return historyRows
+        historyRows
     }
 
     func loadHistoryAnswerDetails() throws -> [DailyAnswerDetailRow] {
-        historyDetailLoadCount += 1
-        return historyDetails
+        historyDetails
     }
 
     func loadCoupleStreak() throws -> CoupleStreak {
@@ -160,8 +151,7 @@ actor RecordingDailyChallengeReadGateway: DailyChallengeGateway {
     func shuffleQuestion(
         operation _: SyncClientOperation
     ) throws -> DailyChallengeRemoteSnapshotRow {
-        shuffleSnapshotLoadCount += 1
-        return snapshotRow(rows: rows)
+        snapshotRow(rows: rows)
     }
 
     private func snapshotRow(rows: [DailyQuestionRow]) -> DailyChallengeRemoteSnapshotRow {

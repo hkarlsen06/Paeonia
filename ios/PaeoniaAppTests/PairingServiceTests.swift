@@ -100,7 +100,7 @@ struct PairingInviteCodeTests {
         #expect(PairingInviteCode.entryText(PairingInviteCode.entryText("zz zz zz zz")) == "ZZZZZZ")
     }
 
-    @Test func pendingJoinInviteStoreDropsCodesOlderThanSevenDays() throws {
+    @Test func pendingJoinInviteStoreDropsCodesOlderThanAnInviteCanLive() throws {
         let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -114,18 +114,9 @@ struct PairingInviteCodeTests {
 
         currentDate = savedAt.addingTimeInterval(UserDefaultsPairingJoinInviteStore.maximumAge + 1)
         #expect(store.loadInviteCode() == nil)
-        #expect(defaults.string(forKey: "paeonia.pairing.pendingJoinInviteCode") == nil)
-    }
-
-    @Test func pendingJoinInviteStoreDropsCodesSavedWithoutADate() throws {
-        let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set(canonicalCode, forKey: "paeonia.pairing.pendingJoinInviteCode")
-        let store = UserDefaultsPairingJoinInviteStore(defaults: defaults)
-
+        // The expired code is gone, not only hidden.
+        currentDate = savedAt
         #expect(store.loadInviteCode() == nil)
-        #expect(defaults.string(forKey: "paeonia.pairing.pendingJoinInviteCode") == nil)
     }
 
     @Test func pendingJoinInviteStorePersistsNormalizedCode() throws {

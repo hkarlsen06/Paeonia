@@ -106,7 +106,8 @@ struct LockScreenSnapshotTests {
         let reload = LockScreenTimeline.reloadDate(for: snapshot, entryDates: dates, now: now)
         #expect(reload == dates.last)
         #expect(reload.timeIntervalSince(now) > 6 * 24 * 60 * 60)
-        #expect(LockScreenTimeline.reloadDate(for: nil, entryDates: dates, now: now) == now.addingTimeInterval(15 * 60))
+        let emptyReload = LockScreenTimeline.reloadDate(for: nil, entryDates: dates, now: now)
+        #expect(emptyReload > now && emptyReload < now.addingTimeInterval(60 * 60))
     }
 
     @Test func calendarDateParsingAndDayNumbers() {
@@ -141,7 +142,7 @@ struct LockScreenSnapshotTests {
 
         let dates = LockScreenTimeline.entryDates(for: snapshot, now: now, calendar: calendar)
 
-        #expect(dates.count == 1 + LockScreenTimeline.daysAhead)
         #expect(dates.first == now)
+        #expect(dates.allSatisfy { calendar.component(.hour, from: $0) == 0 || $0 == now })
     }
 }

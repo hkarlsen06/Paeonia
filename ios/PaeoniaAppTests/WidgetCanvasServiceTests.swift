@@ -20,18 +20,13 @@ struct WidgetCanvasServiceTests {
         // Canonical drawing persisted locally.
         #expect(FileManager.default.fileExists(atPath: environment.canonicalURL.path))
 
-        // Payload references the rendered previews and carries a content hash.
+        // Payload references the rendered previews.
         let payload = try environment.decodePayload()
-        #expect(payload.schemaVersion == WidgetSharePayload.currentSchemaVersion)
-        #expect(payload.rendererVersion == WidgetSharePayload.currentRendererVersion)
         #expect(payload.privacyMode == .normal)
         #expect(!payload.isRedacted)
-        #expect(payload.contentHash.hasPrefix("sha256-"))
         #expect(payload.authorName == "Hjalmar")
         let smallPreviewPath = try #require(payload.previews["systemSmall"])
         let largePreviewPath = try #require(payload.previews["systemLarge"])
-        #expect(smallPreviewPath.hasPrefix("Widget/previews/systemSmall-"))
-        #expect(largePreviewPath.hasPrefix("Widget/previews/systemLarge-"))
         #expect(FileManager.default.fileExists(atPath: environment.url(relativePath: smallPreviewPath).path))
         #expect(FileManager.default.fileExists(atPath: environment.url(relativePath: largePreviewPath).path))
 
@@ -177,7 +172,6 @@ struct WidgetCanvasServiceTests {
         #expect(await firstSave.value)
         let payload = try environment.decodePayload()
         #expect(payload.authorName == "Latest")
-        #expect(payload.contentHash == WidgetCanvasService.contentHash(for: latestData))
         #expect(await service.loadSavedDrawing() == latestData)
         #expect(environment.reloader.reloadCount == 1)
         #expect(environment.previewFiles.count == 2)

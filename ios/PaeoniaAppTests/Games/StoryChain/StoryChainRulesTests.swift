@@ -176,7 +176,6 @@ struct StoryChainRulesTests {
         #expect(draft.usesDare == nil)
         #expect(!draft.isTooShort)
         #expect(!draft.isTooLong)
-        #expect(!draft.showsCounter)
         #expect(draft.canSend)
         #expect(!StoryChainLineCheck(draft: "").canSend)
         #expect(StoryChainLineCheck(draft: "a").isTooShort)
@@ -196,13 +195,11 @@ struct StoryChainRulesTests {
         #expect(!tooShort.canSend)
     }
 
-    @Test func theCounterShowsAfterTwoHundredAndSendingStopsAfterTwoHundredForty() {
+    @Test func sendingStopsAfterTwoHundredForty() {
         func check(_ count: Int) -> StoryChainLineCheck {
             StoryChainLineCheck(draft: String(repeating: "a", count: count))
         }
 
-        #expect(!check(200).showsCounter)
-        #expect(check(201).showsCounter)
         #expect(check(240).canSend)
         #expect(!check(240).isTooLong)
         #expect(check(241).isTooLong)

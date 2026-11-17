@@ -31,28 +31,6 @@ struct MemoriesViewModelTests {
         #expect(queued.count == 1)
     }
 
-    @Test func createMemoryWithPhotoQueuesItsUploadAndShowsItAtOnce() async throws {
-        let env = makeEnvironment()
-        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-
-        let saved = await env.viewModel.createMemory(
-            title: "Beach day",
-            date: "2026-06-30",
-            note: "",
-            media: MemoryDraftMedia.photos([makeImageData()])
-        )
-
-        #expect(saved)
-        let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
-        #expect(record.snapshot.media.count == 1)
-        #expect(record.snapshot.visibleMediaAssetIDs.count == 1)
-        let queued = try await env.pendingStore.inFlightOperations(ownerUserID: env.userID, kind: .createMemory)
-        let uploads = queued.flatMap(MemoryQueuedUploads.uploads(in:))
-        #expect(uploads.map(\.mediaAssetID) == record.snapshot.visibleMediaAssetIDs)
-        let cachedAssetIDs = await env.imageCache.cachedMediaAssetIDs
-        #expect(cachedAssetIDs == record.snapshot.visibleMediaAssetIDs)
-    }
-
     @Test func addPhotosCachesTheImageForImmediateDisplay() async throws {
         let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)

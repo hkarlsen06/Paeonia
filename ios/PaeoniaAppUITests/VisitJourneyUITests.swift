@@ -19,7 +19,6 @@ final class VisitJourneyUITests: XCTestCase {
         let prompt = app.buttons["home.visit.prompt"]
         XCTAssertTrue(prompt.waitForExistence(timeout: 15))
         scrollUntilHittable(prompt, in: app)
-        XCTAssertTrue(prompt.label.contains("When do you meet next?"), prompt.label)
         prompt.tap()
 
         let plan = app.buttons["visit.detail.plan"]

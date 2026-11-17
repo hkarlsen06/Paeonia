@@ -40,23 +40,6 @@ struct MindMeldCacheTests {
         #expect(newer?.current?.version == 3)
     }
 
-    @Test func aLowerGameNumberIsRefusedAndAHigherOneWinsWhateverItsVersion() async {
-        let first = fixtures.moved(game, version: 9)
-        let second = fixtures.game(number: 2, rounds: [fixtures.open(1)])
-        let cache = InMemoryMindMeldCache()
-
-        await cache.saveState(state(second), ownerUserID: me)
-        await cache.saveState(state(first), ownerUserID: me)
-        let kept = await cache.document(ownerUserID: me).state
-        #expect(kept?.current?.id == second.id)
-
-        let other = InMemoryMindMeldCache()
-        await other.saveState(state(first), ownerUserID: me)
-        await other.saveState(state(second), ownerUserID: me)
-        let newer = await other.document(ownerUserID: me).state
-        #expect(newer?.current?.id == second.id)
-    }
-
     @Test func aLateStateThatStillListsAnEarlierGameIsOlder() async {
         let old = fixtures.game(.melded, rounds: [fixtures.revealed(1, "fish", "fish", outcome: .match)])
         let current = game

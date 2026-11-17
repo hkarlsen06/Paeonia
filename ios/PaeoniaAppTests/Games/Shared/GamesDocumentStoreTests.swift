@@ -8,10 +8,6 @@ struct GamesDocumentStoreTests {
     private let owner = UUID()
     private let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
 
-    private func makeStore() -> GamesDocumentStore<StoryChainLocalDocument> {
-        GamesDocumentStore(directoryURL: directory, schemaVersion: 1)
-    }
-
     @Test func reopeningKeepsGameContentAndInvitesWithoutLivePresence() async {
         defer { try? FileManager.default.removeItem(at: directory) }
         let cache = FileGamesCache(directoryURL: directory)
@@ -42,17 +38,6 @@ struct GamesDocumentStoreTests {
         await cache.clearPresence(ownerUserID: GameFixture.me, overview: true)
         let stopped = await cache.document(ownerUserID: GameFixture.me)
         #expect(stopped.overview?.presence(for: .drawAndGuess)?.partnerPresent == false)
-    }
-
-    @Test func clearingDropsTheCopyInMemoryAndTheFiles() {
-        defer { try? FileManager.default.removeItem(at: directory) }
-        var store = makeStore()
-        store.update(ownerUserID: owner) { $0.draft = "hello" }
-
-        store.clear()
-
-        #expect(!FileManager.default.fileExists(atPath: directory.path))
-        #expect(store.document(ownerUserID: owner) == StoryChainLocalDocument())
     }
 
     @Test func aFileFromAnotherSchemaVersionReadsAsEmpty() {

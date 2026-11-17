@@ -159,7 +159,8 @@ struct CoupleStreakTests {
 
     @Test func pillShowsTheHourglassOnlyCloseToTheEnd() {
         let endsAt = Date.now.addingTimeInterval(24 * 3_600)
-        let atRiskFrom = endsAt.addingTimeInterval(-StreakPillState.atRiskLeadTime)
+        // The hourglass shows for the last six hours.
+        let atRiskFrom = endsAt.addingTimeInterval(-6 * 3_600)
         let state = StreakPillState(count: 12, isRestorable: false, restorableCount: 0, endsAt: endsAt)
 
         #expect(!state.resolved(at: atRiskFrom.addingTimeInterval(-1)).isAtRisk)

@@ -33,7 +33,6 @@ struct StreakMilestoneTests {
     @Test func aRestoreSkipsTheMilestonesItBringsBack() {
         let shown = StreakMilestoneTracker.markRestored(upTo: 30, shown: [])
 
-        #expect(shown == [3, 7, 14, 30])
         #expect(StreakMilestoneTracker.claim(count: 30, shown: shown).milestone == nil)
     }
 

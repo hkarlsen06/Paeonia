@@ -17,7 +17,7 @@
     /// Every scenario, in menu order within each category. A new game adds its
     /// list here.
     static let allCases: [DeveloperScenario] =
-      [gamePresenceControls, accessibilityColors, gameChatPreviews] + keyboardDiagnostics
+      [gamePresenceControls, accessibilityColors, gameChatPreviews]
       + app + visits + accessNotices + firstSteps + topics + memoriesMap + inviter + dailyCard + lookBack + recap
       + banners + drawAndGuess + storyChain + mindMeld + consensio + piccante + guessMySpot + exquisiteCorpse
       + boardGames + calls + presence

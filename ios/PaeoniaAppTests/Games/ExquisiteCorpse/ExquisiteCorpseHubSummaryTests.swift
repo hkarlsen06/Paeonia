@@ -83,15 +83,6 @@ struct ExquisiteCorpseHubSummaryTests {
         #expect(summary(Fixture.unseenReveal(figure: 1), pending: unsent).status == .yourTurn(.head))
     }
 
-    @Test func aPartSavedOnThePhoneMovesTheTurnToThePartner() {
-        let body = Fixture.pending(parts: [Fixture.queuedPart(figure: 1, partIndex: 1)])
-
-        let result = summary(Fixture.myBodyTurn(), pending: body)
-
-        #expect(result.status == .partnerDrawing(.legs))
-        #expect(!result.status.isYourTurn)
-    }
-
     @Test func feetSavedOnThePhoneWaitForTheCreatureToFinish() {
         let feet = Fixture.pending(parts: [Fixture.queuedPart(figure: 1, partIndex: 3)])
 

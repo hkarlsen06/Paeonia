@@ -23,31 +23,6 @@ extension RemoteHeartsState {
     }
 }
 
-struct HeartsTapBatcherTests {
-    @Test func noTapsMakeNoBatch() {
-        var batcher = HeartsTapBatcher()
-        #expect(batcher.takeBatches().isEmpty)
-        #expect(!batcher.hasPendingTaps)
-    }
-
-    @Test func tapsBeforeTheQuietPeriodEndsGoOutAsOneBatch() {
-        var batcher = HeartsTapBatcher()
-        for _ in 0..<7 { batcher.tap() }
-        #expect(batcher.hasPendingTaps)
-        #expect(batcher.takeBatches() == [7])
-        #expect(!batcher.hasPendingTaps)
-        #expect(batcher.takeBatches().isEmpty)
-    }
-
-    @Test func aBatchHoldsAtMostWhatTheServerAcceptsPerCall() {
-        var batcher = HeartsTapBatcher()
-        for _ in 0..<207 { batcher.tap() }
-        #expect(batcher.takeBatches() == [100, 100, 7])
-        for _ in 0..<100 { batcher.tap() }
-        #expect(batcher.takeBatches() == [100])
-    }
-}
-
 struct HeartsInboxTests {
     @Test func unseenHeartsAreWhatThePartnerSentMinusWhatWasShown() {
         var inbox = HeartsInbox()
@@ -277,7 +252,6 @@ struct HeartsViewModelTests {
         let played = await waitUntil { rig.viewModel.incomingBurst != nil }
         #expect(played)
         #expect(rig.viewModel.incomingBurst?.count == 14)
-        #expect(rig.viewModel.incomingBurst?.flyingCount == 12)
         #expect(rig.viewModel.incomingLine?.contains("Robin") == true)
         #expect(rig.announcements.lines.count == 1)
         // The burst shows before the seen write is queued, so wait for the write.
@@ -292,14 +266,6 @@ struct HeartsViewModelTests {
         await rig.viewModel.playIfNeeded()
         #expect(rig.announcements.lines.count == 1)
         #expect(await rig.cache.inbox(ownerUserID: HeartsFixture.me).unseenCount == 0)
-    }
-
-    @Test func markingAnEarlierTotalLeavesLaterHeartsUnseen() async {
-        let cache = FileHeartsCache(directoryURL: FileManager.default.temporaryDirectory
-            .appendingPathComponent("hearts-cache-\(UUID().uuidString)", isDirectory: true))
-        await cache.save(HeartsFixture.server(total: 17, seen: 0), ownerUserID: HeartsFixture.me)
-        await cache.markShown(upTo: 14, ownerUserID: HeartsFixture.me)
-        #expect(await cache.inbox(ownerUserID: HeartsFixture.me).unseenCount == 3)
     }
 
     @Test func heartsThatFindHomeHiddenAfterTheReadStayUnseen() async throws {

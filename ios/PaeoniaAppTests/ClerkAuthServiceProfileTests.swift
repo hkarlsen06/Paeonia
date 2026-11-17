@@ -228,6 +228,8 @@ struct ClerkAuthServiceProfileTests {
             profile: .test(onboardingCompletedAt: Date())
         )
         let profilePhotoCache = FakeProfilePhotoImageCache()
+        let cachedPhotoID = UUID()
+        try await profilePhotoCache.storeProfilePhotoData(ClerkAuthServiceTests.makeJPEGData(), for: cachedPhotoID)
         let service = ClerkAuthService(
             gateway: gateway,
             profilePhotoCache: profilePhotoCache
@@ -236,7 +238,7 @@ struct ClerkAuthServiceProfileTests {
         try await service.signOut()
 
         #expect(await gateway.signOutCallCount == 1)
-        #expect(await profilePhotoCache.removeAllCallCount == 1)
+        #expect(await profilePhotoCache.profilePhotoData(for: cachedPhotoID) == nil)
     }
 
     @Test func requestAccountDeletionRequiresActiveSession() async {

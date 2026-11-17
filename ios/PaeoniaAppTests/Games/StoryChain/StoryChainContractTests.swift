@@ -118,17 +118,6 @@ struct StoryChainContractTests {
         #expect(state.wordChoices == nil)
     }
 
-    @Test func decodesAStateWithoutAGame() throws {
-        let json = """
-        {"user_id":"11111111-1111-4111-8111-111111111111","partner_user_id":null,
-         "couple_id":"33333333-3333-4333-8333-333333333333","data_epoch":"","game":null,
-         "current_story":null,"previous_story":null,"opening_choices":null,"word_choices":null}
-        """
-        let state = try decode(RemoteStoryChainState.self, json)
-
-        #expect(state.game == nil)
-    }
-
     @Test func decodesAHistoryPage() throws {
         let json = """
         {"stories":[

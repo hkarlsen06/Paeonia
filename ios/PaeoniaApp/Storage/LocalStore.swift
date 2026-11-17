@@ -41,7 +41,7 @@ nonisolated final class PaeoniaLocalStore: Sendable {
         )
     }
 
-    static func createStoreDirectory(for storeURL: URL) throws {
+    private static func createStoreDirectory(for storeURL: URL) throws {
         try FileManager.default.createDirectory(
             at: storeURL.deletingLastPathComponent(),
             withIntermediateDirectories: true

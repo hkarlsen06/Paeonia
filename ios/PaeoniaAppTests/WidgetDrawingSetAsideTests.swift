@@ -34,21 +34,6 @@ struct WidgetDrawingSetAsideTests {
         #expect(store.draft(for: setAsideKey) == nil)
     }
 
-    @Test func draftOnTheCurrentWidgetDrawingComesBack() async {
-        let store = InMemoryWidgetDrawingDraftStore()
-        let key = WidgetDrawingDraftKey(ownerUserID: owner, coupleID: couple)
-        let widget = setAsideDrawing(at: 10)
-        let draft = PKDrawing(strokes: widget.strokes + setAsideDrawing(at: 60).strokes)
-        store.setDraft(draft.dataRepresentation(), for: key)
-        store.setDraftBase(widget.paeoniaStrokeFingerprint, for: key)
-
-        let viewModel = makeViewModel(store: store, widget: widget)
-        await viewModel.loadSavedDrawingIfNeeded()
-
-        #expect(viewModel.drawing.paeoniaContentSignature == draft.paeoniaContentSignature)
-        #expect(viewModel.setAsideDrawing == nil)
-    }
-
     @Test func draftWithNoRecordedBaseIsSetAside() async {
         let store = InMemoryWidgetDrawingDraftStore()
         let key = WidgetDrawingDraftKey(ownerUserID: owner, coupleID: couple)
@@ -63,7 +48,7 @@ struct WidgetDrawingSetAsideTests {
         #expect(viewModel.setAsideDrawing?.paeoniaContentSignature == draft.paeoniaContentSignature)
     }
 
-    @Test func savingADraftRecordsTheWidgetDrawingItBuildsOn() async throws {
+    @Test func aDraftOnTheCurrentWidgetDrawingComesBackAfterReopening() async {
         let store = InMemoryWidgetDrawingDraftStore()
         let widget = setAsideDrawing(at: 10)
         let viewModel = makeViewModel(store: store, widget: widget)
@@ -73,8 +58,11 @@ struct WidgetDrawingSetAsideTests {
         viewModel.updateDrawing(edit)
         viewModel.persistDraftIfNeeded()
 
-        let key = WidgetDrawingDraftKey(ownerUserID: owner, coupleID: couple)
-        #expect(store.draftBase(for: key) == widget.paeoniaStrokeFingerprint)
+        let reopened = makeViewModel(store: store, widget: widget)
+        await reopened.loadSavedDrawingIfNeeded()
+
+        #expect(reopened.drawing.paeoniaContentSignature == edit.paeoniaContentSignature)
+        #expect(reopened.setAsideDrawing == nil)
     }
 
     private func makeViewModel(store: InMemoryWidgetDrawingDraftStore, widget: PKDrawing) -> WidgetDrawingViewModel {

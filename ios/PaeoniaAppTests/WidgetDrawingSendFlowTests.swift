@@ -210,12 +210,10 @@ struct WidgetDrawingSendFlowTests {
         #expect(store.draft(for: firstKey) == Data([0x01]))
         #expect(store.draft(for: secondKey) == Data([0x02]))
 
-        let generation = store.purgeGeneration(for: ownerUserID)
         store.clearDraft(for: ownerUserID)
 
         #expect(store.draft(for: firstKey) == nil)
         #expect(store.draft(for: secondKey) == nil)
-        #expect(store.purgeGeneration(for: ownerUserID) == generation + 1)
     }
 }
 

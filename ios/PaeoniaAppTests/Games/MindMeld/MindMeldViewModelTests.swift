@@ -145,7 +145,6 @@ struct MindMeldViewModelTests {
         let viewModel = env.viewModel()
         await viewModel.reload()
         #expect(viewModel.phase == .reveal)
-        #expect(viewModel.revealIdentity == "reveal-\(first.id.uuidString.lowercased())")
 
         viewModel.continueFromReveal()
         await viewModel.moveTask?.value

@@ -1,10 +1,9 @@
 import Foundation
-import SwiftData
 import Testing
 @testable import PaeoniaApp
 
 struct LocalStoreTests {
-    @Test func createsPersistentStoreDirectoryBeforeOpeningStore() throws {
+    @Test func opensAStoreWhoseDirectoryDoesNotExistYet() throws {
         let rootDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("LocalStoreTests-\(UUID().uuidString)", isDirectory: true)
         let storeURL = rootDirectory
@@ -12,14 +11,8 @@ struct LocalStoreTests {
             .appendingPathComponent("default.store")
         defer { try? FileManager.default.removeItem(at: rootDirectory) }
 
-        try PaeoniaLocalStore.createStoreDirectory(for: storeURL)
+        _ = try PaeoniaLocalStore(url: storeURL)
 
-        var isDirectory: ObjCBool = false
-        let directoryExists = FileManager.default.fileExists(
-            atPath: storeURL.deletingLastPathComponent().path,
-            isDirectory: &isDirectory
-        )
-        #expect(directoryExists)
-        #expect(isDirectory.boolValue)
+        #expect(FileManager.default.fileExists(atPath: storeURL.path))
     }
 }

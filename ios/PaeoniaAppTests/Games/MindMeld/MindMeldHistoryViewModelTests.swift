@@ -27,7 +27,11 @@ struct MindMeldHistoryViewModelTests {
     }
 
     private func viewModel(_ env: MindMeldTestEnvironment) -> MindMeldHistoryViewModel {
-        MindMeldHistoryViewModel(dependencies: env.dependencies(), participants: GameFixture.participants)
+        MindMeldHistoryViewModel(
+            dependencies: env.dependencies(),
+            participants: GameFixture.participants,
+            pageSize: 30
+        )
     }
 
     @Test func theCachedPageStaysWhenTheServerCannotBeReached() async {
@@ -52,12 +56,12 @@ struct MindMeldHistoryViewModelTests {
         await viewModel.loadMoreIfNeeded(after: viewModel.games[0])
         #expect(viewModel.games.count == 30)
 
-        await viewModel.loadMoreIfNeeded(after: viewModel.games[24])
+        await viewModel.loadMoreIfNeeded(after: viewModel.games[29])
         #expect(viewModel.games.count == 60)
         #expect(viewModel.hasMore)
         #expect(env.gateway.historyRequests.last == .init(beforeGameNumber: 41, limit: 30))
 
-        await viewModel.loadMoreIfNeeded(after: viewModel.games[54])
+        await viewModel.loadMoreIfNeeded(after: viewModel.games[59])
         #expect(viewModel.games.count == 70)
         #expect(!viewModel.hasMore)
         #expect(Set(viewModel.games.map(\.id)).count == 70)
@@ -67,7 +71,7 @@ struct MindMeldHistoryViewModelTests {
         let env = await environment(games: 70)
         let viewModel = viewModel(env)
         await viewModel.load()
-        await viewModel.loadMoreIfNeeded(after: viewModel.games[24])
+        await viewModel.loadMoreIfNeeded(after: viewModel.games[29])
         #expect(viewModel.games.count == 60)
 
         await viewModel.load()

@@ -136,7 +136,6 @@ struct LudoRollModelTests {
         let passed = await waitUntil { !harness.played.isEmpty }
         #expect(passed)
         #expect(harness.played == [LudoBoard.move(die: 3, choice: .pass)])
-        #expect(harness.sleeps.contains(.milliseconds(1_200)))
         // No pawn is out, so I roll again with two tries left.
         #expect(harness.model.die == .ready)
         #expect(harness.model.hint == .triesLeft(2))

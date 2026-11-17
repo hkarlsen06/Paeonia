@@ -20,7 +20,6 @@ final class CoupleChatJourneyUITests: XCTestCase {
         let card = app.buttons["chats.coupleChat"]
         XCTAssertTrue(card.waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(card.label.contains("Just us"))
-        XCTAssertTrue(card.label.contains("about anything"), card.label)
         card.tap()
 
         let field = app.descendants(matching: .any)["chat.composer.field"].firstMatch

@@ -146,7 +146,8 @@ struct PendingSyncOperationRepositoryTests {
     }
 
     @Test func onlyChangesAScreenCanSeePostToTheStore() async throws {
-        let repository = InMemoryPendingSyncOperationRepository()
+        let store = try PaeoniaLocalStore(inMemory: true)
+        let repository = SwiftDataPendingSyncOperationRepository(container: store.container)
         let operation = try await enqueue(1, in: repository)
         let marker = UUID()
         let stream = LocalStoreChanges.changes(in: .pendingOperations)

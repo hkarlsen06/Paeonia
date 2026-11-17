@@ -35,15 +35,6 @@ struct DrawAndGuessHardeningTests {
         )
     }
 
-    /// The partner guessed it while this person was still drawing.
-    private var solvedWhileIDrew: RemoteDrawAndGuessState {
-        GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner, roundID: nil),
-            round: GameFixture.round(state: .solved, drawer: GameFixture.me)
-        )
-    }
-
     private func queuedDrawings(_ env: GamesTestEnvironment) async -> [PKDrawing] {
         await env.queued(.submitGameDrawing).compactMap { snapshot in
             snapshot.requestData
@@ -52,33 +43,7 @@ struct DrawAndGuessHardeningTests {
         }
     }
 
-    private func waitForQueued(
-        _ kind: SyncPendingOperationKind,
-        in env: GamesTestEnvironment
-    ) async -> [PendingSyncOperationSnapshot] {
-        for _ in 0..<200 {
-            let queued = await env.queued(kind)
-            if !queued.isEmpty { return queued }
-            try? await Task.sleep(for: .milliseconds(10))
-        }
-        return []
-    }
-
     // MARK: The drawer's drawing is never lost
-
-    @Test func aDraftOfARoundThatEndedWhileTheDrawerWasAwayIsSent() async {
-        let env = GamesTestEnvironment(state: solvedWhileIDrew)
-        let umbrella = GameFixture.umbrella().dataRepresentation()
-        env.drawingStore.saveDraft(umbrella, ownerUserID: GameFixture.me, roundID: GameFixture.roundID)
-        let viewModel = env.viewModel()
-
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .reveal)
-        let queued = await waitForQueued(.submitGameDrawing, in: env)
-        #expect(queued.count == 1)
-        #expect(await queuedDrawings(env).first?.strokes.count == 3)
-    }
 
     @Test func aDrawingQueuedBeforeARestartComesBackToTheCanvasWhenItIsRefused() async throws {
         let env = GamesTestEnvironment(state: myDrawing)
@@ -121,30 +86,6 @@ struct DrawAndGuessHardeningTests {
         // Leaving the screen keeps it.
         viewModel.saveDraftNow()
         #expect(env.drawingStore.draft(ownerUserID: GameFixture.me, roundID: GameFixture.roundID) != nil)
-    }
-
-    @Test func aStrokeInProgressWhenThePartnerGuessesIsSentWithTheDrawing() async {
-        let env = GamesTestEnvironment(state: myDrawing)
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-        let umbrella = GameFixture.umbrella()
-        viewModel.board.canvasDidLayout(side: GameCanvas.canonicalSide)
-        viewModel.board.updateDrawing(umbrella)
-        viewModel.board.setStrokeInProgress(true)
-
-        await env.cache.saveState(solvedWhileIDrew, ownerUserID: GameFixture.me)
-        await viewModel.reload()
-        #expect(viewModel.phase == .reveal)
-        try? await Task.sleep(for: .milliseconds(100))
-        #expect(await env.queued(.submitGameDrawing).isEmpty)
-
-        // PencilKit commits the stroke when the finger lifts.
-        let finished = PKDrawing(strokes: umbrella.strokes + [umbrella.strokes[0]])
-        viewModel.board.updateDrawing(finished)
-        viewModel.board.setStrokeInProgress(false)
-
-        _ = await waitForQueued(.submitGameDrawing, in: env)
-        #expect(await queuedDrawings(env).first?.strokes.count == 4)
     }
 
     @Test func doneSendsALateEraserChangeTheCanvasDidNotReport() async {

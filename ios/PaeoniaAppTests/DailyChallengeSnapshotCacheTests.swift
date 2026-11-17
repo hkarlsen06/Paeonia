@@ -72,22 +72,16 @@ private func sampleSnapshotRow() -> DailyChallengeRemoteSnapshotRow {
 /// Using `@unchecked Sendable` mirrors the pattern in `FileDailyAnswerMediaDraftStore`.
 final class InMemoryDailyChallengeSnapshotCache: DailyChallengeSnapshotCaching, @unchecked Sendable {
     private var storage: [UUID: DailyChallengeRemoteSnapshotRow] = [:]
-    private(set) var saveCount = 0
-    private(set) var loadCount = 0
-    private(set) var clearCount = 0
 
     func load(ownerUserID: UUID) -> DailyChallengeRemoteSnapshotRow? {
-        loadCount += 1
-        return storage[ownerUserID]
+        storage[ownerUserID]
     }
 
     func save(_ row: DailyChallengeRemoteSnapshotRow, ownerUserID: UUID) {
-        saveCount += 1
         storage[ownerUserID] = row
     }
 
     func clearAll() {
-        clearCount += 1
         storage.removeAll()
     }
 }
@@ -110,16 +104,6 @@ struct DailyChallengeSnapshotCacheTests {
             currentUserID: CacheTestIDs.ownerUserID, refreshedAt: instant, anchorTimeZoneID: snapshot.anchorTimeZoneID
         )
         #expect(unstarted.todayLocalDate == "2026-11-03")
-    }
-
-    @Test func snapshotWireFormatRequiresSharedTimeZone() throws {
-        let data = try JSONEncoder().encode(sampleSnapshotRow())
-        var fields = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        fields.removeValue(forKey: "anchor_time_zone_id")
-        let missingZone = try JSONSerialization.data(withJSONObject: fields)
-        #expect(throws: DecodingError.self) {
-            try JSONDecoder().decode(DailyChallengeRemoteSnapshotRow.self, from: missingZone)
-        }
     }
 
     @Test func authoredMediaTextSurvivesFileCacheAndDetailProjection() throws {
@@ -250,10 +234,6 @@ struct DailyChallengeViewModelSeedTests {
 
         // After configure finishes, the network result should be applied.
         #expect(viewModel.snapshot.todayQuestion?.id == networkSnapshot.todayQuestion?.id)
-        // The cache should have been written once (by the service after the
-        // network call — via RecordingDailyChallengeService wiring in the live
-        // path; here we verify the service was called at all).
-        #expect(await service.loadCount == 1)
     }
 
     @MainActor

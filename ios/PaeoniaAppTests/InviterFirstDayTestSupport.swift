@@ -9,7 +9,6 @@ actor FirstDayGatewaySpy {
     var draft: FirstDayDraft
     private(set) var steps: [String] = []
     private(set) var savedAnswers: [(questionVersionID: UUID, text: String)] = []
-    private(set) var startedOnValues: [String?] = []
     private var failingStep: String?
     private var failure: any Error = URLError(.notConnectedToInternet)
     private var holdsNextDrawing = false
@@ -47,7 +46,6 @@ actor FirstDayGatewaySpy {
 
     func setStartedOn(_ startedOn: String?, operation _: SyncClientOperation) throws {
         try record("startedOn")
-        startedOnValues.append(startedOn)
     }
 
     func saveAnswer(questionVersionID: UUID, text: String, operation _: SyncClientOperation) throws {

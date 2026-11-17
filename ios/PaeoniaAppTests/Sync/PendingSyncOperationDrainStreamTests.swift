@@ -80,46 +80,6 @@ struct PendingSyncOperationDrainStreamTests {
         #expect(await handler.sentOperationIDs == [first.id])
     }
 
-    @Test func drainStreamFailsOperationsWithoutHandlers() async throws {
-        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let operation = SyncClientOperation(
-            id: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
-            clientID: try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
-            clientSequence: 1,
-            localCreatedAt: Date(timeIntervalSince1970: 100)
-        )
-        let pendingStore = InMemoryPendingSyncOperationRepository()
-        try await pendingStore.enqueue(
-            PendingSyncOperationRequest(
-                ownerUserID: ownerUserID,
-                operation: operation,
-                operationKind: .submitDailyAnswer,
-                idempotencyScope: "daily:\(operation.id)"
-            )
-        )
-        let stream = PendingSyncOperationDrainStream(handlers: [])
-        let context = SyncContext(
-            session: SyncSession(userID: ownerUserID),
-            reason: .localChange,
-            pendingOperationStore: pendingStore
-        )
-
-        do {
-            try await stream.push(context: context)
-            Issue.record("Expected missing handler to fail the drain stream")
-        } catch let error as PendingSyncOperationDrainError {
-            #expect(error == .unsupportedOperationKind("submit_daily_answer"))
-        }
-
-        let readyOperations = try await pendingStore.readyOperations(
-            ownerUserID: ownerUserID,
-            limit: 10,
-            now: Date(timeIntervalSince1970: 200)
-        )
-
-        #expect(readyOperations.map(\.operation.id) == [operation.id])
-    }
-
     @Test func thrownErrorsStayRetryableByDefault() async throws {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let operation = SyncClientOperation(
@@ -159,46 +119,6 @@ struct PendingSyncOperationDrainStreamTests {
         )
         #expect(operations.first?.status == .failedRetryable)
         #expect(operations.first?.attemptCount == 10)
-    }
-
-    @Test func configuredMaximumAttemptsCanStillMarkRetryFailuresTerminal() async throws {
-        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let operation = SyncClientOperation(
-            id: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
-            clientID: try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
-            clientSequence: 1,
-            localCreatedAt: Date(timeIntervalSince1970: 100)
-        )
-        let pendingStore = InMemoryPendingSyncOperationRepository()
-        try await pendingStore.enqueue(
-            PendingSyncOperationRequest(
-                ownerUserID: ownerUserID,
-                operation: operation,
-                operationKind: .submitDailyAnswer,
-                idempotencyScope: "daily:\(operation.id)"
-            )
-        )
-
-        let handler = ThrowingPendingOperationHandler(operationKind: .submitDailyAnswer)
-        let stream = PendingSyncOperationDrainStream(
-            handlers: [handler],
-            retryPolicy: PendingSyncOperationRetryPolicy(maximumAttempts: 2, baseDelaySeconds: 0)
-        )
-        let context = SyncContext(
-            session: SyncSession(userID: ownerUserID),
-            reason: .localChange,
-            pendingOperationStore: pendingStore
-        )
-
-        try await stream.push(context: context)
-        try await stream.push(context: context)
-
-        let readyOperations = try await pendingStore.readyOperations(
-            ownerUserID: ownerUserID,
-            limit: 10,
-            now: Date()
-        )
-        #expect(readyOperations.isEmpty)
     }
 }
 
@@ -240,26 +160,6 @@ struct PendingSyncOperationDrainRunTests {
         try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore))
 
         #expect(await handler.sentOperationIDs == queued)
-    }
-
-    @Test func drainStreamLeavesAWriteThatIsWaitingOutItsRetryDelay() async throws {
-        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
-        let pendingStore = InMemoryPendingSyncOperationRepository()
-        let operation = try await enqueue(1, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
-        // An earlier server error pushed the next try an hour out.
-        try await pendingStore.markSending(clientOperationID: operation.id, at: Date())
-        try await pendingStore.markRetryableFailure(
-            clientOperationID: operation.id,
-            failure: PendingSyncFailure(kind: .other, description: "server error"),
-            nextRetryAt: Date().addingTimeInterval(3_600),
-            at: Date()
-        )
-        let handler = RecordingPendingOperationHandler(operationKind: .submitDailyAnswer)
-        let stream = PendingSyncOperationDrainStream(handlers: [handler])
-
-        try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore, reason: .foreground))
-
-        #expect(await handler.sentOperationIDs.isEmpty)
     }
 
     @Test func pullToRefreshSendsAWriteThatIsWaitingOutItsRetryDelay() async throws {

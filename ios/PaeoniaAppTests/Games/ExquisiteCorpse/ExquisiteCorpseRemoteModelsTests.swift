@@ -137,12 +137,10 @@ struct ExquisiteCorpseRemoteModelsTests {
         )
         let lastJSON = #"{"figures": [], "next_before_figure_number": null}"#
         let last = try decode(RemoteExquisiteCorpseHistoryPage.self, lastJSON)
-        let cached = try PaeoniaConvexClient.encoder.encode(more)
 
         #expect(more.figures.map(\.number) == [2])
         #expect(more.nextBeforeFigureNumber == 2)
         #expect(last.figures.isEmpty && last.nextBeforeFigureNumber == nil)
-        #expect(try PaeoniaConvexClient.decoder.decode(RemoteExquisiteCorpseHistoryPage.self, from: cached) == more)
     }
 
     @Test func decodesTheResultOfSendingAPart() throws {

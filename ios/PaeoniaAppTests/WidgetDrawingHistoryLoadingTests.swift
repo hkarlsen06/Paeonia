@@ -287,8 +287,6 @@ struct WidgetDrawingHistoryLoadingTests {
 /// Records the cursors it was asked for and replays canned pages in order.
 private nonisolated final class StubGateway: WidgetCanvasGateway, @unchecked Sendable {
     var canvasState: WidgetCanvasState?
-    var stateError: (any Error)?
-    var listError: (any Error)?
     private let pages: [[WidgetDrawingRevisionSummary]]
     private var index = 0
     private(set) var listCursors: [(before: Date?, revisionID: UUID?)] = []
@@ -299,7 +297,6 @@ private nonisolated final class StubGateway: WidgetCanvasGateway, @unchecked Sen
     }
 
     func getCanvasState() throws -> WidgetCanvasState? {
-        if let stateError { throw stateError }
         return canvasState
     }
 
@@ -309,7 +306,6 @@ private nonisolated final class StubGateway: WidgetCanvasGateway, @unchecked Sen
         createdBefore: Date?,
         createdBeforeRevisionID: UUID?
     ) throws -> [WidgetDrawingRevisionSummary] {
-        if let listError { throw listError }
         listCursors.append((createdBefore, createdBeforeRevisionID))
         defer { index += 1 }
         return index < pages.count ? pages[index] : []

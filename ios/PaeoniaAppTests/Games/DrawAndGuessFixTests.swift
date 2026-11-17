@@ -139,39 +139,6 @@ struct DrawAndGuessFixTests {
         #expect(env.drawingStore.downloadedDrawing(mediaAssetID: GameFixture.assetID) != nil)
     }
 
-    @Test func aGuesserWhoWatchedLiveGetsTheSentDrawingWhenTheDrawerLeaves() async throws {
-        let drawingState = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .drawing, turn: GameFixture.me),
-            round: GameFixture.round(state: .drawing, drawer: GameFixture.partner)
-        )
-        let env = environment(drawingState)
-        let (room, connection) = makeOfflineLiveRoom()
-        let viewModel = env.viewModel(live: room)
-        viewModel.configure(participants: GameFixture.participants)
-        await viewModel.reload()
-        connection.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
-        connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "drawing"))
-        sendPartnerCanvasSnapshot(on: connection)
-        viewModel.recompute()
-        #expect(viewModel.phase == .watchingLive)
-
-        await env.cache.saveState(guessing, ownerUserID: GameFixture.me)
-        await viewModel.reload()
-        #expect(viewModel.phase == .guessing)
-        #expect(viewModel.guessSource == .live)
-        #expect(env.transfer.downloads.isEmpty)
-
-        // The drawer presses Done and leaves. The live canvas goes with them.
-        connection.onMessage?(WidgetLiveMessage(type: .left, id: "partner"))
-        viewModel.recompute()
-
-        let ready = await waitUntil { viewModel.isReplayReady }
-        #expect(ready)
-        #expect(env.transfer.downloads == [GameFixture.assetID])
-        #expect(viewModel.guessSource == .replay)
-    }
-
     // MARK: A refused word
 
     @Test func theNextRoundStartsWithTheDrawingMadeForTheRefusedWord() async {

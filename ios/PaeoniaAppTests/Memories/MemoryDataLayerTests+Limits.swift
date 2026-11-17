@@ -8,7 +8,6 @@ extension MemoryDataLayerTests {
     @Test func updateMemoryRefusesATitleOverTheServersLimitAndQueuesNothing() async throws {
         let seeded = try await seededMemory()
         let fullTitle = String(repeating: "👍🏽", count: 80)
-        #expect(fullTitle.unicodeScalars.count == MemoryDataService.titleCharacterLimit)
 
         await #expect(throws: MemoryDataServiceError.titleTooLong) {
             try await seeded.service.updateMemory(
@@ -34,6 +33,7 @@ extension MemoryDataLayerTests {
         #expect(try await seeded.queued(.updateMemory).count == 1)
     }
 
+    /// The server takes up to 4,000 code points in a note.
     @Test func upsertMemoryNoteRefusesABodyOverTheServersLimitAndQueuesNothing() async throws {
         let seeded = try await seededMemory()
 
@@ -42,7 +42,7 @@ extension MemoryDataLayerTests {
                 ownerUserID: seeded.ownerUserID,
                 memoryID: seeded.memoryID,
                 expectedRevision: nil,
-                body: String(repeating: "a", count: MemoryDataService.noteCharacterLimit + 1),
+                body: String(repeating: "a", count: 4_001),
                 operation: operation(id: "55555555-5555-5555-5555-555555555555", sequence: 2)
             )
         }
@@ -52,7 +52,7 @@ extension MemoryDataLayerTests {
             ownerUserID: seeded.ownerUserID,
             memoryID: seeded.memoryID,
             expectedRevision: nil,
-            body: String(repeating: "a", count: MemoryDataService.noteCharacterLimit),
+            body: String(repeating: "a", count: 4_000),
             operation: operation(id: "66666666-6666-6666-6666-666666666666", sequence: 3)
         )
         #expect(try await seeded.queued(.upsertMemoryNote).count == 1)

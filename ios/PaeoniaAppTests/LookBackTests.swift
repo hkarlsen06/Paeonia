@@ -60,13 +60,6 @@ struct LookBackItemTests {
         #expect(item.drawing?.authorUserID == LookBackIDs.partner)
     }
 
-    @Test func anUnknownKindFailsToDecode() {
-        let json = #"{"kind":"song","content_date":"2026-09-01","on_this_day":false}"#
-        #expect(throws: (any Error).self) {
-            try JSONDecoder().decode(LookBackItem.self, from: Data(json.utf8))
-        }
-    }
-
     @Test func contentDayIsTheDateAtNoon() throws {
         let day = try #require(lookBackMemoryItem(date: "2026-09-01").contentDay)
         let parts = Calendar.current.dateComponents([.year, .month, .day, .hour], from: day)

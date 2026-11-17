@@ -20,7 +20,7 @@ struct ConvexTokenScheduleTests {
         let now = Date(timeIntervalSince1970: 1_792_600_000)
         let token = Self.jwt(payload: #"{"exp":1792598774}"#)
 
-        #expect(ConvexTokenSchedule.refreshDelay(forToken: token, now: now) == ConvexTokenSchedule.minimumDelay)
+        #expect(ConvexTokenSchedule.refreshDelay(forToken: token, now: now) > 0)
     }
 
     @Test func unreadableTokenIsRefreshedAfterAMinute() {

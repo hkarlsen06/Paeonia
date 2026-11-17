@@ -50,8 +50,8 @@ struct StoryTimelineTests {
 
     @Test func aStoryLeavesHomeExactlyADayAfterItWasPosted() {
         let story = StoryFixture.story(by: StoryFixture.partner, hoursAgo: 0)
-        #expect(story.isOnHome(at: story.createdAt.addingTimeInterval(Story.lifetime - 1)))
-        #expect(!story.isOnHome(at: story.createdAt.addingTimeInterval(Story.lifetime)))
+        #expect(story.isOnHome(at: story.createdAt.addingTimeInterval(24 * 3_600 - 1)))
+        #expect(!story.isOnHome(at: story.createdAt.addingTimeInterval(24 * 3_600)))
     }
 
     @Test func decodesTheServerList() throws {
@@ -86,7 +86,7 @@ struct StoryTimelineTests {
         let snapshot = StoriesSnapshot(notes: [note])
         #expect(snapshot.note(of: StoryFixture.partner, at: StoryFixture.now)?.text == "hi")
         #expect(snapshot.note(of: StoryFixture.me, at: StoryFixture.now) == nil)
-        let later = StoryFixture.now.addingTimeInterval(Story.lifetime)
+        let later = StoryFixture.now.addingTimeInterval(24 * 3_600)
         #expect(snapshot.note(of: StoryFixture.partner, at: later) == nil)
     }
 }

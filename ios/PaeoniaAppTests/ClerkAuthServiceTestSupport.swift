@@ -220,7 +220,6 @@ actor FakeAuthGateway: AuthGateway {
 actor FakeProfilePhotoImageCache {
     private var storedData: [UUID: Data] = [:]
     private(set) var storedMediaAssetIDs: [UUID] = []
-    private(set) var removeAllCallCount = 0
 
     func profilePhotoData(for mediaAssetID: UUID) -> Data? {
         storedData[mediaAssetID]
@@ -236,7 +235,6 @@ actor FakeProfilePhotoImageCache {
     }
 
     func removeAllProfilePhotoData() throws {
-        removeAllCallCount += 1
         storedData.removeAll()
     }
 }
