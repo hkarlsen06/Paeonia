@@ -18,7 +18,7 @@ import { consumeRateLimit, rateLimiter } from "./lib/rateLimits";
 import { addDaysToInstant, nowIso } from "./lib/time";
 import { signMediaUrl } from "./media";
 import { isUsableMediaAsset } from "./lib/mediaAssetState";
-import { findRestorableCouple, isActiveAccount, reopenCouple } from "./lib/relationshipRestore";
+import { findRestorableCouple, reopenCouple, standingRestoreRequest } from "./lib/relationshipRestore";
 
 const CODE_PATTERN = /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}$/;
 
@@ -277,7 +277,7 @@ export const preview_pairing_invite = mutation({
     }
 
     const pairId = await findRelationshipPairId(ctx, userId, invite.created_by_user_id);
-    if (pairId && (await hasActiveRelationshipBlock(ctx, pairId))) {
+    if ((pairId && (await hasActiveRelationshipBlock(ctx, pairId))) || (await reservedForSomeoneElse(ctx, invite, userId))) {
       await recordAttempt(ctx, userId, prefix, false);
       return [];
     }
@@ -437,6 +437,7 @@ export const accept_pairing_invite = mutation({
       if (joined) return { couple_id: joined.id };
       if (invite.status !== "pending") fail("22023", "pairing invite is not pending");
       if (invite.expires_at <= nowIso()) fail("22023", "pairing invite is expired");
+      if (await reservedForSomeoneElse(ctx, invite, userId)) fail("22023", "pairing invite is not available");
       if ((await hasActiveCouple(ctx, userId)) || (await hasActiveCouple(ctx, invite.created_by_user_id))) {
         fail("23505", "one of the users already has an active couple");
       }
@@ -474,6 +475,16 @@ export const accept_pairing_invite = mutation({
     return outcome.couple_id;
   },
 });
+
+/**
+ * True while someone other than `userId` asked to bring their relationship back through this invite
+ * and the request still stands. The creator may already be looking at that person's request, so
+ * nobody else may use the invite until the creator answers or the request lapses.
+ */
+async function reservedForSomeoneElse(ctx: ReaderCtx, invite: Doc<"pairing_invites">, userId: string): Promise<boolean> {
+  if (invite.restore_requested_by_user_id === undefined || invite.restore_requested_by_user_id === userId) return false;
+  return (await standingRestoreRequest(ctx, invite)) !== null;
+}
 
 /** Marks the invite with the joiner's request and asks its creator once. Asking again changes nothing. */
 async function askToRestore(ctx: MutationCtx, invite: Doc<"pairing_invites">, joinerUserId: string): Promise<void> {
@@ -514,26 +525,28 @@ async function enqueueRestorePush(
 }
 
 /**
- * The invite creator's answer to a request to bring back their ended relationship. With
- * `p_restore` and while it still can, the old couple opens again. Otherwise, after a "start fresh"
- * or when it got too late, the two pair as a new couple. Returns the couple and whether it is the
- * old one. `couple_id` is null when the request no longer stands, such as when the joiner deleted
- * their account or paired with someone else, and the invite then waits as before.
+ * The invite creator's answer to `p_requester_user_id`'s request to bring back their ended
+ * relationship. The app sends the requester its access snapshot showed, so the answer never pairs
+ * the creator with someone they were not asked about. With `p_restore` and while it still can,
+ * the old couple opens again. Otherwise, after a "start fresh" or when it got too late, the two
+ * pair as a new couple. Returns the couple and whether it is the old one. `couple_id` is null when
+ * the request no longer stands, such as when the joiner was reported, blocked, deleted their
+ * account or paired with someone else, and the invite then waits as before.
  */
 export const answer_relationship_restore = mutation({
-  args: { p_invite_id: v.string(), p_restore: v.boolean(), ...clientOperationArgs },
+  args: { p_invite_id: v.string(), p_requester_user_id: v.string(), p_restore: v.boolean(), ...clientOperationArgs },
   handler: async (ctx, args): Promise<{ couple_id: string | null; restored: boolean }> => {
     const userId = await requireUserId(ctx);
     const inviteId = uuidArg(args.p_invite_id);
+    const requesterId = uuidArg(args.p_requester_user_id);
     const input = toClientOperation(args, {
       kind: "answer_relationship_restore",
       scope: "pairing_invites",
-      request: { kind: "answer_relationship_restore", invite_id: inviteId, restore: args.p_restore },
+      request: { kind: "answer_relationship_restore", invite_id: inviteId, requester_user_id: requesterId, restore: args.p_restore },
     });
     return await runClientOperation(ctx, userId, input, async () => {
       const invite = await getByUuid(ctx, "pairing_invites", inviteId);
-      const requesterId = invite?.restore_requested_by_user_id;
-      if (!invite || invite.created_by_user_id !== userId || !requesterId) {
+      if (!invite || invite.created_by_user_id !== userId) {
         return fail("22023", "restore request is not available");
       }
       const joined = await coupleJoinedThrough(ctx, invite, requesterId);
@@ -541,17 +554,11 @@ export const answer_relationship_restore = mutation({
         // A restored couple is older than the invite that brought it back.
         return { couple_id: joined.id, restored: joined.created_at < invite.created_at };
       }
+      // Someone else's request, or none, is not the one the creator answers.
+      if (invite.restore_requested_by_user_id !== requesterId) return { couple_id: null, restored: false };
       const now = nowIso();
-      const pairId = await findRelationshipPairId(ctx, userId, requesterId);
-      if (
-        invite.status !== "pending" ||
-        invite.expires_at <= now ||
-        pairId === null ||
-        !(await isActiveAccount(ctx, requesterId)) ||
-        (await hasActiveCouple(ctx, userId)) ||
-        (await hasActiveCouple(ctx, requesterId)) ||
-        (await hasActiveRelationshipBlock(ctx, pairId))
-      ) {
+      const request = await standingRestoreRequest(ctx, invite);
+      if (!request || invite.expires_at <= now) {
         await ctx.db.patch(
           invite._id,
           withUpdatedAt({ restore_requested_by_user_id: undefined, restore_requested_at: undefined }),
@@ -559,7 +566,7 @@ export const answer_relationship_restore = mutation({
         return { couple_id: null, restored: false };
       }
 
-      const couple = args.p_restore ? await findRestorableCouple(ctx, pairId, now) : null;
+      const couple = args.p_restore ? await findRestorableCouple(ctx, request.pairId, now) : null;
       if (couple) {
         await reopenCouple(ctx, couple, userId);
         await markInviteAccepted(ctx, invite, requesterId, couple.id);
@@ -568,7 +575,7 @@ export const answer_relationship_restore = mutation({
         await enqueueRestorePush(ctx, invite, requesterId, userId, "restored", couple.id);
         return { couple_id: couple.id, restored: true };
       }
-      const coupleId = await pairAsNewCouple(ctx, invite, pairId, requesterId, undefined);
+      const coupleId = await pairAsNewCouple(ctx, invite, request.pairId, requesterId, undefined);
       await enqueueRestorePush(ctx, invite, requesterId, userId, "fresh", coupleId);
       return { couple_id: coupleId, restored: false };
     });

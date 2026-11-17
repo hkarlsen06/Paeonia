@@ -6,6 +6,7 @@ import { getByUuid } from "./db";
 import { gamePushStillWanted } from "./gameRegistry";
 import type { GamePushKind } from "./games";
 import { pairingInviteStillWaiting } from "./pairingInviteReminder";
+import { standingRestoreRequest } from "./relationshipRestore";
 import { waitsWhileTogether } from "./notifications";
 import { hasStartedToday } from "./questionTimeStatus";
 import { accessEndingPushStillWanted, paymentProblemPushWanted, subscriptionPushAllowed } from "./subscriptionNotices";
@@ -95,13 +96,13 @@ export async function notificationStillWanted(
   ) {
     return { wanted: false, reason: "out_of_date" };
   }
-  // The question to bring a relationship back goes out only while it is still unanswered.
+  // The question to bring a relationship back goes out only while the asker's request still
+  // stands, so a report or block since then stops it.
   if (row.kind === "relationship_restore" && payload.step === "requested") {
     const invite = typeof payload.invite_id === "string" ? await getByUuid(ctx, "pairing_invites", payload.invite_id) : null;
     if (!invite || invite.created_by_user_id !== recipientUserId) return { wanted: false, reason: "ineligible" };
-    if (invite.status !== "pending" || invite.restore_requested_by_user_id !== payload.actor_user_id) {
-      return { wanted: false, reason: "out_of_date" };
-    }
+    const request = await standingRestoreRequest(ctx, invite);
+    if (!request || request.requesterUserId !== payload.actor_user_id) return { wanted: false, reason: "ineligible" };
   }
   // The invite reminder goes out only while the invite still waits for the partner.
   if (row.kind === "pairing_invite_reminder") {

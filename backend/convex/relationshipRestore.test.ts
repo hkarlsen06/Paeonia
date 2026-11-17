@@ -1,8 +1,10 @@
+import type { FunctionReturnType } from "convex/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { cleanupCoupleContent } from "./lib/relationshipCleanup";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
+import { deliverDuePushes } from "./push.testing";
 import { addDevice, createSignedInUser, grantLifetime, newTest, relationshipStateOf, type TestConvex, type TestUser } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
@@ -38,8 +40,13 @@ async function join(user: TestUser, code: string, restore?: boolean) {
   });
 }
 
-async function answer(user: TestUser, inviteId: string, restore: boolean) {
-  return await user.as.mutation(api.pairing.answer_relationship_restore, { p_invite_id: inviteId, p_restore: restore, ...operation() });
+async function answer(user: TestUser, inviteId: string, requester: TestUser, restore: boolean) {
+  return await user.as.mutation(api.pairing.answer_relationship_restore, {
+    p_invite_id: inviteId,
+    p_requester_user_id: requester.userId,
+    p_restore: restore,
+    ...operation(),
+  });
 }
 
 async function preview(user: TestUser, code: string) {
@@ -79,6 +86,28 @@ async function leftCouple(t: TestConvex) {
   return { alex, robin, coupleId, inviteId };
 }
 
+async function restoreRequestOf(user: TestUser) {
+  return (await user.as.query(api.access.get_access_snapshot, {}))[0].restore_request;
+}
+
+type SyncEvents = FunctionReturnType<typeof api.relationship.get_relationship_sync_events>;
+
+/** Every relationship event of `user`, read the way the app pages through them. */
+async function pagedEvents(user: TestUser, limit: number) {
+  const all: SyncEvents = [];
+  let after: { created_at: string; id: string } | null = null;
+  for (;;) {
+    const page: SyncEvents = await user.as.query(api.relationship.get_relationship_sync_events, {
+      p_limit: limit,
+      p_after_created_at: after?.created_at ?? null,
+      p_after_id: after?.id ?? null,
+    });
+    if (page.length === 0) return all;
+    all.push(...page);
+    after = page[page.length - 1];
+  }
+}
+
 async function coupleRow(t: TestConvex, coupleId: string) {
   return await t.run((ctx) => ctx.db.query("couples").withIndex("by_uuid", (q) => q.eq("id", coupleId)).unique());
 }
@@ -111,7 +140,7 @@ describe("bringing an ended relationship back", () => {
     );
     expect(asked.filter((row) => row.kind === "relationship_restore").map((row) => row.payload.step)).toEqual(["requested"]);
 
-    expect(await answer(alex, inviteId, true)).toEqual({ couple_id: coupleId, restored: true });
+    expect(await answer(alex, inviteId, robin, true)).toEqual({ couple_id: coupleId, restored: true });
 
     expect(await coupleRow(t, coupleId)).toMatchObject({ status: "active" });
     expect((await coupleRow(t, coupleId))?.delete_after).toBeUndefined();
@@ -143,7 +172,7 @@ describe("bringing an ended relationship back", () => {
     expect(await memoryTitles(robin)).toEqual(["Lake day"]);
 
     // A retry of the answer returns the same result.
-    expect(await alex.as.mutation(api.pairing.answer_relationship_restore, { p_invite_id: inviteId, p_restore: true, ...operation() }))
+    expect(await answer(alex, inviteId, robin, true))
       .toEqual({ couple_id: coupleId, restored: true });
   });
 
@@ -151,7 +180,7 @@ describe("bringing an ended relationship back", () => {
     const t = newTest();
     const { alex, robin, coupleId, inviteId } = await leftCouple(t);
     await join(robin, "DEF456", true);
-    const result = await answer(alex, inviteId, false);
+    const result = await answer(alex, inviteId, robin, false);
     expect(result.restored).toBe(false);
     expect(result.couple_id).not.toBe(coupleId);
     expect(await memoryTitles(robin)).toEqual([]);
@@ -164,7 +193,7 @@ describe("bringing an ended relationship back", () => {
     await join(robin, "DEF456", true);
     const fresh = await join(robin, "DEF456");
     expect(fresh).not.toBe(coupleId);
-    expect(await answer(alex, inviteId, true)).toEqual({ couple_id: fresh, restored: false });
+    expect(await answer(alex, inviteId, robin, true)).toEqual({ couple_id: fresh, restored: false });
     // Robin's start fresh after Alex brought it back finds the old couple instead of an error.
     expect(await join(robin, "DEF456")).toBe(fresh);
   });
@@ -174,8 +203,8 @@ describe("bringing an ended relationship back", () => {
     const { alex, robin, inviteId } = await leftCouple(t);
     await join(robin, "DEF456", true);
     const stranger = await createSignedInUser(t, { name: "Sam" });
-    await expect(answer(stranger, inviteId, true)).rejects.toMatchObject({ data: { code: "22023" } });
-    await expect(answer(robin, inviteId, true)).rejects.toMatchObject({ data: { code: "22023" } });
+    await expect(answer(stranger, inviteId, robin, true)).rejects.toMatchObject({ data: { code: "22023" } });
+    await expect(answer(robin, inviteId, robin, true)).rejects.toMatchObject({ data: { code: "22023" } });
     expect((await alex.as.query(api.access.get_access_snapshot, {}))[0].restore_request?.partner_user_id).toBe(robin.userId);
 
     const other = await createSignedInUser(t, { name: "Kim" });
@@ -271,9 +300,91 @@ describe("bringing an ended relationship back", () => {
         updated_at: NOW,
       }),
     );
-    expect(await answer(alex, inviteId, true)).toEqual({ couple_id: null, restored: false });
+    expect(await answer(alex, inviteId, robin, true)).toEqual({ couple_id: null, restored: false });
     expect((await coupleRow(t, coupleId))?.status).toBe("ended");
     expect((await alex.as.query(api.access.get_access_snapshot, {}))[0].restore_request).toBeNull();
+  });
+
+  test("the answer is about the person the inviter saw, and nobody else can use the invite while that request stands", async () => {
+    const t = newTest();
+    // Alex left Robin, then paired with Sam and left Sam too. Both couples can still come back.
+    const { alex, robin, coupleId: robinCouple } = await leftCouple(t);
+    const sam = await createSignedInUser(t, { name: "Sam" });
+    await invite(alex, "GHJ789");
+    const samCouple = (await join(sam, "GHJ789"))!;
+    await alex.as.mutation(api.relationship.leave_relationship, operation());
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    const inviteId = await invite(alex, "KMN234");
+    expect(await preview(sam, "KMN234")).toMatchObject({ can_restore: true });
+
+    expect(await join(robin, "KMN234", true)).toBeNull();
+    expect(await preview(sam, "KMN234")).toBeUndefined();
+    await expect(join(sam, "KMN234", true)).rejects.toMatchObject({ data: { code: "22023" } });
+    await expect(join(sam, "KMN234")).rejects.toMatchObject({ data: { code: "22023" } });
+    expect((await restoreRequestOf(alex))?.partner_user_id).toBe(robin.userId);
+
+    // Had Sam's request replaced Robin's, Alex's yes on Robin's request would not bring Sam back.
+    const setRequester = (userId: string) =>
+      t.run(async (ctx) => {
+        const row = (await ctx.db.query("pairing_invites").withIndex("by_uuid", (q) => q.eq("id", inviteId)).unique())!;
+        await ctx.db.patch(row._id, { restore_requested_by_user_id: userId });
+      });
+    await setRequester(sam.userId);
+    expect(await answer(alex, inviteId, robin, true)).toEqual({ couple_id: null, restored: false });
+    expect((await coupleRow(t, samCouple))?.status).toBe("ended");
+    expect((await restoreRequestOf(alex))?.partner_user_id).toBe(sam.userId);
+
+    await setRequester(robin.userId);
+    expect(await answer(alex, inviteId, robin, true)).toEqual({ couple_id: robinCouple, restored: true });
+    expect((await coupleRow(t, samCouple))?.status).toBe("ended");
+  });
+
+  test("a report, block or ban after the request stops the question, its push and the answer", async () => {
+    for (const change of ["report", "block", "ban"] as const) {
+      const t = newTest();
+      const { alex, robin, coupleId, inviteId } = await leftCouple(t);
+      await addDevice(t, alex.userId);
+      await join(robin, "DEF456", true);
+      expect(await restoreRequestOf(alex)).not.toBeNull();
+
+      if (change === "ban") {
+        await t.run(async (ctx) => {
+          const user = (await ctx.db.query("users").withIndex("by_uuid", (q) => q.eq("id", robin.userId)).unique())!;
+          await ctx.db.patch(user._id, { banned_at: NOW });
+        });
+      } else {
+        await robin.as.mutation(api.reports.submit_leave_and_report, {
+          p_reason: "harassment",
+          p_note: null,
+          p_target_kind: "conduct",
+          p_target_id: alex.userId,
+          p_target_aux_id: null,
+          p_block_reported_user: change === "block",
+          ...operation(),
+        });
+      }
+
+      expect(await restoreRequestOf(alex)).toBeNull();
+      const sent = await deliverDuePushes(t);
+      expect(sent.filter((push) => push.payload.type === "relationship_restore")).toEqual([]);
+      expect(await answer(alex, inviteId, robin, true)).toEqual({ couple_id: null, restored: false });
+      expect((await coupleRow(t, coupleId))?.status).toBe("ended");
+    }
+  });
+
+  test("a phone that missed the end of a couple that came back is never told to purge it, and a later end still reaches it", async () => {
+    const t = newTest();
+    const { alex, robin, coupleId, inviteId } = await leftCouple(t);
+    await join(robin, "DEF456", true);
+    await answer(alex, inviteId, robin, true);
+    const kinds = async () =>
+      (await pagedEvents(robin, 1)).filter((event) => event.couple_id === coupleId).map((event) => event.event_kind);
+
+    expect(await kinds()).toEqual(["relationship_started", "relationship_started"]);
+
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    await alex.as.mutation(api.relationship.leave_relationship, operation());
+    expect(await kinds()).toEqual(["relationship_started", "relationship_started", "relationship_ended"]);
   });
 
   test("a cleanup that started first wins: the answer pairs them new and the old couple stays as the cleanup left it", async () => {
@@ -287,7 +398,7 @@ describe("bringing an ended relationship back", () => {
     });
     expect(done).toBe(false);
 
-    const result = await answer(alex, inviteId, true);
+    const result = await answer(alex, inviteId, robin, true);
     expect(result.restored).toBe(false);
     expect(result.couple_id).not.toBe(coupleId);
     expect(await coupleRow(t, coupleId)).toMatchObject({ status: "ended", cleanup_started_at: expect.any(String) });

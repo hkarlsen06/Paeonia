@@ -1,5 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
-import { hasActiveRelationshipBlock } from "./access";
+import { findCurrentCouple, findRelationshipPairId, hasActiveRelationshipBlock } from "./access";
 import { type ReaderCtx, type WriterCtx, withUpdatedAt } from "./db";
 import { nameForViewer } from "./partnerNames";
 import { createRelationshipSyncEvent } from "./syncEvents";
@@ -37,7 +37,16 @@ export async function findRestorableCouple(ctx: ReaderCtx, pairId: string, now: 
   ) {
     return null;
   }
-  if (await hasActiveRelationshipBlock(ctx, pairId)) return null;
+  if (await pairHasSafetyConcern(ctx, pairId)) return null;
+  for (const member of await membersOf(ctx, couple.id)) {
+    if (!(await isActiveAccount(ctx, member.user_id))) return null;
+  }
+  return couple;
+}
+
+/** True when the pair has a block, a report or a safety warning, at any time. */
+async function pairHasSafetyConcern(ctx: ReaderCtx, pairId: string): Promise<boolean> {
+  if (await hasActiveRelationshipBlock(ctx, pairId)) return true;
   const report = await ctx.db
     .query("content_reports")
     .withIndex("by_pair_id", (q) => q.eq("pair_id", pairId))
@@ -46,11 +55,29 @@ export async function findRestorableCouple(ctx: ReaderCtx, pairId: string, now: 
     .query("pair_safety_warning_flags")
     .withIndex("by_pair_id_created_at", (q) => q.eq("pair_id", pairId))
     .first();
-  if (report || warning) return null;
-  for (const member of await membersOf(ctx, couple.id)) {
-    if (!(await isActiveAccount(ctx, member.user_id))) return null;
+  return report !== null || warning !== null;
+}
+
+/**
+ * The person who asked through this invite and the pair, while their request still stands, or
+ * null. It stands while the invite is pending, both accounts are active, neither person is in a
+ * couple, and nothing in the pair speaks against it: a block, report or safety warning made after
+ * the request ends it at once, before the creator is told or answers. It reads no clock, so the
+ * access snapshot can use it, and the answer checks the invite's expiry itself. A request that
+ * stands while its couple can no longer come back still pairs the two as new.
+ */
+export async function standingRestoreRequest(
+  ctx: ReaderCtx,
+  invite: Doc<"pairing_invites">,
+): Promise<{ requesterUserId: string; pairId: string } | null> {
+  const requesterUserId = invite.restore_requested_by_user_id;
+  if (!requesterUserId || invite.status !== "pending") return null;
+  const pairId = await findRelationshipPairId(ctx, invite.created_by_user_id, requesterUserId);
+  if (pairId === null || (await pairHasSafetyConcern(ctx, pairId))) return null;
+  for (const userId of [invite.created_by_user_id, requesterUserId]) {
+    if (!(await isActiveAccount(ctx, userId)) || (await findCurrentCouple(ctx, userId)) !== null) return null;
   }
-  return couple;
+  return { requesterUserId, pairId };
 }
 
 /** False for a banned person and for one whose account deletion started. */
@@ -104,8 +131,9 @@ export async function reopenCouple(ctx: WriterCtx, couple: Doc<"couples">, initi
 
 /**
  * The request waiting for this person's answer, for the access snapshot, or null. It comes from
- * their newest pending invite that someone asked to bring a relationship back through. An expired
- * invite still shows until the hourly cron marks it, so the answer then pairs nobody.
+ * their newest pending invite with a request that still stands. An expired invite still shows
+ * until the hourly cron marks it, so the answer then pairs nobody. The app sends `invite_id` and
+ * `partner_user_id` back with the answer, so the answer is about the person it showed.
  */
 export async function restoreRequestFor(ctx: ReaderCtx, userId: string) {
   const invites = await ctx.db
@@ -113,13 +141,17 @@ export async function restoreRequestFor(ctx: ReaderCtx, userId: string) {
     .withIndex("by_created_by_user_id_status_expires_at", (q) => q.eq("created_by_user_id", userId).eq("status", "pending"))
     .collect();
   const asked = invites
-    .filter((invite) => invite.restore_requested_by_user_id !== undefined)
-    .sort((a, b) => ((a.restore_requested_at ?? "") < (b.restore_requested_at ?? "") ? 1 : -1))[0];
-  if (!asked?.restore_requested_by_user_id || !asked.restore_requested_at) return null;
-  return {
-    invite_id: asked.id,
-    partner_user_id: asked.restore_requested_by_user_id,
-    partner_name: await nameForViewer(ctx, userId, asked.restore_requested_by_user_id),
-    requested_at: asked.restore_requested_at,
-  };
+    .filter((invite) => invite.restore_requested_at !== undefined)
+    .sort((a, b) => (a.restore_requested_at! < b.restore_requested_at! ? 1 : -1));
+  for (const invite of asked) {
+    const request = await standingRestoreRequest(ctx, invite);
+    if (!request) continue;
+    return {
+      invite_id: invite.id,
+      partner_user_id: request.requesterUserId,
+      partner_name: await nameForViewer(ctx, userId, request.requesterUserId),
+      requested_at: invite.restore_requested_at!,
+    };
+  }
+  return null;
 }

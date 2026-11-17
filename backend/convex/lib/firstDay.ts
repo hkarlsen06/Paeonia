@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import { findCurrentCouple, userHasDirectEntitlement } from "./access";
 import { assertNoPendingAccountDeletion } from "./accountDeletion";
-import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./coupleDays";
+import { findCoupleDayAt, getOrCreateCoupleDayAt, resolveCoupleDayAnchorAt } from "./coupleDays";
 import { insertDailyAnswer } from "./dailyAnswers";
 import { QuestionContentReader, activeInstanceOfDay, insertDailyQuestionInstance, pickQuestionVersion } from "./dailyQuestions";
 import type { ReaderCtx, WriterCtx } from "./db";
@@ -187,6 +187,23 @@ async function materializeDrawing(ctx: WriterCtx, coupleId: string, draft: Draft
 }
 
 /**
+ * The first couple day at or after `from` that has no question yet. A couple that came back may
+ * have today's question already. Its days may follow a zone the members have left, and the end of
+ * such a day can fall on the same local date in the members' zone now, where `getOrCreateCoupleDayAt`
+ * finds that day again. So each step moves to the later of the day's end and the end of the local
+ * day the anchor sees, which always moves forward.
+ */
+async function firstFreeCoupleDay(ctx: WriterCtx, coupleId: string, from: string): Promise<Doc<"couple_days">> {
+  let at = from;
+  for (;;) {
+    const day = (await getByUuid(ctx, "couple_days", await getOrCreateCoupleDayAt(ctx, coupleId, at)))!;
+    if (!(await activeInstanceOfDay(ctx, day.id))) return day;
+    const anchorEnd = (await resolveCoupleDayAnchorAt(ctx, coupleId, at)).ends_at;
+    at = day.ends_at > anchorEnd ? day.ends_at : anchorEnd;
+  }
+}
+
+/**
  * Turns both members' drafts into couple content and deletes them. Runs inside
  * `accept_pairing_invite` after the couple and its members exist. The joining partner is in
  * the app, so they get no visible pushes for this content. Streak activity still counts.
@@ -229,13 +246,9 @@ export async function materializeFirstDayDrafts(
   );
   let dayStart = now;
   for (const versionId of daysOfQuestions) {
-    let dayId = await getOrCreateCoupleDayAt(ctx, input.coupleId, dayStart);
-    // A couple that came back may have today's question already, so the draft's takes the next free day.
-    while (await activeInstanceOfDay(ctx, dayId)) {
-      dayId = await getOrCreateCoupleDayAt(ctx, input.coupleId, (await getByUuid(ctx, "couple_days", dayId))!.ends_at);
-    }
-    dayStart = (await getByUuid(ctx, "couple_days", dayId))!.ends_at;
-    const instanceId = await insertDailyQuestionInstance(ctx, { couple_day_id: dayId, question_version_id: versionId });
+    const day = await firstFreeCoupleDay(ctx, input.coupleId, dayStart);
+    dayStart = day.ends_at;
+    const instanceId = await insertDailyQuestionInstance(ctx, { couple_day_id: day.id, question_version_id: versionId });
     const instance = (await getByUuid(ctx, "daily_question_instances", instanceId))!;
     for (const draft of usable) {
       if (draft.question_version_id !== versionId || !draft.answer) continue;

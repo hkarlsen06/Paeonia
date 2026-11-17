@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { mutation, query, type QueryCtx } from "./_generated/server";
 import { findCurrentCouple, getCurrentEntitledCoupleId } from "./lib/access";
 import { isSupersededClientOperation, runClientOperation } from "./lib/clientOperations";
 import { assertStartedOnNotInFuture } from "./lib/coupleDays";
@@ -37,6 +38,9 @@ export const get_relationship_sync_events = query({
     const rows = [];
     for await (const event of events) {
       if (afterCreatedAt && event.created_at === afterCreatedAt && (!afterId || event.id <= afterId)) continue;
+      // The app purges what it holds of a couple on its end. A couple that came back since has a
+      // later start, and an end the phone missed then must not purge it, wherever the pages split.
+      if (event.event_kind === "relationship_ended" && (await coupleStartedAgainAfter(ctx, event))) continue;
       rows.push({
         id: event.id,
         user_id: event.user_id,
@@ -58,6 +62,16 @@ export const get_relationship_sync_events = query({
     return rows;
   },
 });
+
+async function coupleStartedAgainAfter(ctx: QueryCtx, event: Doc<"relationship_sync_events">): Promise<boolean> {
+  const later = ctx.db
+    .query("relationship_sync_events")
+    .withIndex("by_couple_id_created_at_id", (q) => q.eq("couple_id", event.couple_id).gt("created_at", event.created_at));
+  for await (const row of later) {
+    if (row.user_id === event.user_id && row.event_kind === "relationship_started") return true;
+  }
+  return false;
+}
 
 export const leave_relationship = mutation({
   args: clientOperationArgs,
