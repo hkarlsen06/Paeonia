@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# Drives the developer's own iPhone and iPad, which are signed in as the two
+# partners of a couple on api.paeonia.no, for what a simulator cannot show:
+# calls, VoIP pushes, the system call UI, screen sharing, the camera and
+# Picture in Picture. docs/agent-guides/two-devices.md says when to use them.
+#
+#   scripts/devices status                     which of the two are connected
+#   scripts/devices install [iphone|ipad]      build this worktree for devices, install, launch
+#   scripts/devices <iphone|ipad> <command...> one agent-device command on that device
+#   scripts/devices logs <iphone|ipad> <start> collect its system log since <start>
+#                                              ("YYYY-MM-DD HH:MM:SS") and print Paeonia's CallStats
+#   scripts/devices release                    close the sessions and give the devices back
+#
+# Every command except status takes the `devices` lock (scripts/lock), so one
+# worktree drives the devices at a time, and the session frees itself 10
+# minutes after its last command. agent-device commands take points, the
+# screenshot's pixels divided by the screen's scale (3 on the iPhone, 2 on the
+# iPad). `logs` needs a USB cable and opens the macOS password dialog for
+# `log collect`.
+set -euo pipefail
+
+IPHONE_NAME="Cold Harbor"
+IPHONE_UDID="00008160-0006155E2628000A"
+IPAD_NAME="Allentown"
+IPAD_UDID="00008112-000E04523C06201E"
+BUNDLE_ID="no.paeonia.app"
+
+ROOT="$(git rev-parse --show-toplevel)"
+STATE_ROOT="$(git rev-parse --path-format=absolute --git-common-dir)/paeonia-devices"
+
+usage() {
+  sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+  exit 2
+}
+
+udid_of() {
+  case "$1" in
+    iphone) echo "$IPHONE_UDID" ;;
+    ipad) echo "$IPAD_UDID" ;;
+    *) echo "devices: say iphone or ipad, not '$1'" >&2; exit 2 ;;
+  esac
+}
+
+connected_udids() {
+  xcrun devicectl list devices 2>/dev/null | grep ' connected ' | grep -oE '[0-9A-F]{8}-[0-9A-F]{16}' || true
+}
+
+is_connected() {
+  connected_udids | grep -qx "$1"
+}
+
+take_lock() {
+  "$ROOT/scripts/lock" acquire devices 2> >(grep -v "is held by this worktree" >&2) >/dev/null
+}
+
+agent_device() {
+  local version
+  version="$(ls "$HOME/.t3/tools/agent-device" 2>/dev/null | sort -V | tail -1)"
+  local bin="$HOME/.t3/tools/agent-device/$version/node_modules/agent-device/bin/agent-device.mjs"
+  if [[ -z "$version" || ! -f "$bin" ]]; then
+    echo "devices: agent-device is missing from ~/.t3/tools/agent-device; open a T3 Device panel once to install it" >&2
+    exit 1
+  fi
+  mkdir -p "$STATE_ROOT/agent-device"
+  AGENT_DEVICE_IOS_TEAM_ID=48ZSLD4RMP \
+    AGENT_DEVICE_IOS_BUNDLE_ID=no.hkarlsen.agentdevice.runner \
+    AGENT_DEVICE_STATE_DIR="$STATE_ROOT/agent-device" \
+    node "$bin" "$@"
+}
+
+cmd_status() {
+  local connected
+  connected="$(connected_udids)"
+  for device in iphone ipad; do
+    local udid name
+    udid="$(udid_of "$device")"
+    name=$([[ $device == iphone ]] && echo "$IPHONE_NAME" || echo "$IPAD_NAME")
+    if grep -qx "$udid" <<<"$connected"; then
+      echo "$device: $name connected"
+    else
+      echo "$device: $name not connected"
+    fi
+  done
+  DevToolsSecurity -status 2>/dev/null | sed 's/^/mac: /'
+  "$ROOT/scripts/lock" status 2>/dev/null | grep -i "devices" || true
+}
+
+cmd_install() {
+  local targets=(iphone ipad)
+  [[ $# -gt 0 ]] && targets=("$@")
+  for device in "${targets[@]}"; do
+    is_connected "$(udid_of "$device")" || { echo "devices: $device is not connected" >&2; exit 1; }
+  done
+  XCODE_BUILD_AGENT_DESTINATION="generic/platform=iOS" "$ROOT/scripts/xcode-build-agent.sh" | tail -1
+  local app=""
+  for plist in "$HOME"/Library/Developer/Xcode/DerivedData/Paeonia-*/info.plist; do
+    if [[ "$(/usr/libexec/PlistBuddy -c "Print WorkspacePath" "$plist" 2>/dev/null)" == "$ROOT/"* ]]; then
+      app="$(dirname "$plist")/Build/Products/Debug-iphoneos/PaeoniaApp.app"
+    fi
+  done
+  [[ -d "$app" ]] || { echo "devices: found no device build for $ROOT" >&2; exit 1; }
+  take_lock
+  for device in "${targets[@]}"; do
+    local udid
+    udid="$(udid_of "$device")"
+    xcrun devicectl device install app --device "$udid" "$app" >/dev/null
+    xcrun devicectl device process launch --device "$udid" --terminate-existing "$BUNDLE_ID" >/dev/null
+    echo "$device: installed $(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" "$app/Info.plist") and launched"
+  done
+}
+
+cmd_drive() {
+  local device="$1"
+  shift
+  local udid
+  udid="$(udid_of "$device")"
+  [[ $# -gt 0 ]] || usage
+  take_lock
+  if [[ "$1" == open ]]; then
+    agent_device "$@" --udid "$udid" --session "$device"
+  else
+    agent_device "$@" --session "$device"
+  fi
+}
+
+cmd_logs() {
+  [[ $# -eq 2 ]] || usage
+  local device="$1" start="$2"
+  local udid
+  udid="$(udid_of "$device")"
+  take_lock
+  local out
+  out="${TMPDIR:-/tmp}/paeonia-device-logs/$device-$(date +%Y%m%d-%H%M%S).logarchive"
+  mkdir -p "$(dirname "$out")"
+  osascript -e "do shell script \"/usr/bin/log collect --device-udid $udid --start '$start' --output '$out' && chown -R $(id -un) '$out'\" with administrator privileges" >/dev/null
+  echo "archive: $out" >&2
+  /usr/bin/log show "$out" --style compact \
+    --predicate 'subsystem == "no.paeonia.app" AND category == "CallStats"'
+}
+
+cmd_release() {
+  for device in iphone ipad; do
+    agent_device close --session "$device" >/dev/null 2>&1 || true
+  done
+  "$ROOT/scripts/lock" release devices
+}
+
+case "${1:-}" in
+  status) cmd_status ;;
+  install) shift; cmd_install "$@" ;;
+  iphone | ipad) cmd_drive "$@" ;;
+  logs) shift; cmd_logs "$@" ;;
+  release) cmd_release ;;
+  *) usage ;;
+esac
