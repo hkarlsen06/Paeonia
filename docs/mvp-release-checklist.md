@@ -26,10 +26,10 @@ Paeonia is ready for MVP when:
 
 These block TestFlight/App Review until resolved.
 
-- [ ] Account deletion works end-to-end from the app. Needs a device: the backend (`accountDeletion.test.ts`) and app (`RootViewModelFlowTests`) are tested, but the Clerk user removal and Apple token revocation need a real account.
+- [ ] Account deletion works end-to-end from the app. On 2026-11-17 deleting an email-code account on the iPad finished the deletion job in a second, removed the Clerk user and ended the relationship on the partner's phone. Still needs a Sign in with Apple account, to check the Apple token revocation.
 - [ ] App Review can access a paired demo state without needing two reviewer-controlled devices. The backend is tested (`review.test.ts`). Next, sign in three demo partner accounts on the production Clerk instance and run `mint-review-codes.mjs`.
 - [ ] Confirm in App Store Connect that the declared Product Interaction for Analytics also covers the signed-out welcome step counts (`onboarding:record_welcome_step`): a step name only, kept as daily totals, with no user, phone or install identifier. In App Store Connect.
-- [ ] On a device: the usage question appears once after pairing, nothing reaches PostHog before a yes, and turning off Share usage statistics stops sending at once. Needs a device.
+- [ ] On a device: nothing reaches PostHog before a yes, and turning off Share usage statistics stops sending at once. On 2026-11-17 the usage question appeared once while a new account joined, and "Nei, ikke del" stored `shares_usage=false`. Needs a check in PostHog.
 
 ## Repository And Build Hygiene
 
@@ -60,7 +60,7 @@ Run these before a release candidate and record any skipped one with the reason:
 
 ## Daily Challenge
 
-- [ ] Voice answers work. Needs a device and a daily question that takes a voice answer. On 2026-11-17 a voice message recorded on the iPad played on the iPhone, but that day's question took only text or a photo.
+- [ ] Voice answers work. On 2026-11-17 a daily voice answer was recorded and sent on the iPad. Playback by the partner after the reveal is still unchecked.
 
 ## Streaks
 
@@ -141,17 +141,13 @@ Run these on real devices where possible.
 - [ ] Fresh install -> Apple sign-in -> onboarding -> paywall.
 - [ ] Fresh install -> Google sign-in -> onboarding -> paywall.
 - [ ] Payer subscribes -> creates invite.
-- [ ] Partner signs in -> accepts invite -> paired home.
-- [ ] Non-paying partner receives entitlement after pairing.
 - [ ] One user answers a question the partner answered on an earlier day -> reveal works.
-- [ ] One user records voice answer -> partner can play it after reveal. Needs a question that takes a voice answer. A voice chat message recorded and played on 2026-11-17.
+- [ ] One user records voice answer -> partner can play it after reveal. Recording and sending passed on 2026-11-17. The partner's playback after the reveal is still unchecked.
 - [ ] Partner adds photo to memory. Adding a note worked on the developer's devices on 2026-11-17.
 - [ ] User enables location; map waits for partner.
 - [ ] Partner enables location; distance/location appears.
 - [ ] User disables location; map hides or updates as expected.
-- [ ] User leaves relationship; private content disappears after sync.
-- [ ] User signs out and signs back in; state restores correctly.
-- [ ] User deletes account; state and backend behavior are correct (Clerk user removed, Sign in with Apple token revoked).
+- [ ] User deletes account; Sign in with Apple token revoked. The rest passed on 2026-11-17 with an email-code account.
 
 ## Failure Mode QA
 
@@ -164,9 +160,7 @@ Run these on real devices where possible.
 - [ ] Voice recording permission denied.
 - [ ] Camera/photo permission denied.
 - [ ] Location permission denied.
-- [ ] Invite code invalid.
 - [ ] Invite code expired.
-- [ ] Partner leaves relationship while app is open.
 
 ## App Store Connect
 
