@@ -18,11 +18,16 @@ import tempfile
 import time
 
 
+# The shared simulators as (name, UDID, scripts/lock slot). The iPhones come first, in the order
+# scripts/lock hands them out. The iPad is taken only by its name, for a check on an iPad's screen,
+# so IOS_AGENT_SIMULATORS leaves it in the pool.
 SIMULATORS = (
-    ("Shared iPhone", "8E84ADB0-9092-4EB4-839E-71D62A350146"),
-    ("Shared iPhone 2", "79EBB58E-1108-4EEE-987D-E193CEA9EA2A"),
-    ("Shared iPhone 3", "4C6FDCA3-E72C-4FA1-B516-4E2CF7A3475C"),
+    ("Shared iPhone", "8E84ADB0-9092-4EB4-839E-71D62A350146", "simulator"),
+    ("Shared iPhone 2", "79EBB58E-1108-4EEE-987D-E193CEA9EA2A", "simulator-2"),
+    ("Shared iPhone 3", "4C6FDCA3-E72C-4FA1-B516-4E2CF7A3475C", "simulator-3"),
+    ("Shared iPad", "144C1A45-0CAC-4291-A7E5-5F5963677659", "simulator-ipad"),
 )
+IPHONES = 3
 APPROVED_DEVICES = {"00008150-000230D82E40401C"}
 DEVICE_FEATURES = {"com.apple.coredevice.feature." + name
                    for name in ("installapp", "launchapplication", "processcontrol")}
@@ -62,9 +67,13 @@ def simulator_count():
     return int(value)
 
 
+def shared_simulator(target, simulators=SIMULATORS):
+    """The shared simulator named `target` or with that UDID, or None."""
+    return next((simulator for simulator in simulators if target in simulator[:2]), None)
+
+
 def check_simulator(target):
-    allowed = SIMULATORS[:simulator_count()]
-    if not any(target in pair for pair in allowed):
+    if not shared_simulator(target, SIMULATORS[:simulator_count()] + SIMULATORS[IPHONES:]):
         raise ValueError(f"{target} is outside the shared simulator pool; "
                          "take a simulator through scripts/lock and use the one it names")
 
@@ -79,18 +88,18 @@ def simulator_guard(directory):
 
 def grant_simulator(target, directory=None, lock_root=None, ttl_seconds=None):
     check_simulator(target)
-    slot = next(index for index, pair in enumerate(SIMULATORS) if target in pair)
-    if slot == 0:
+    unused, udid, slot = shared_simulator(target)
+    if slot == SIMULATORS[0][2]:
         return
     directory = directory or STATE / "simulators"
     lock_root = lock_root or Path(os.environ.get("AGENT_SIMULATOR_LOCK_ROOT", "/tmp/agent-locks"))
-    owner_path = lock_root / f"simulator-{slot + 1}" / "owner"
+    owner_path = lock_root / slot / "owner"
     with simulator_guard(directory):
         try:
             owner = owner_path.read_text().strip()
         except FileNotFoundError:
             raise ValueError("take the extra simulator through scripts/lock before booting it")
-        lease = directory / SIMULATORS[slot][1]
+        lease = directory / udid
         inode = owner_path.parent.stat().st_ino
         if ttl_seconds is None:
             ttl_seconds = 60 * int(os.environ.get("PAEONIA_LOCK_TTL_MINUTES", os.environ.get("TIDEX_LOCK_TTL_MINUTES", "10")))
@@ -149,7 +158,7 @@ def enforce_simulators(directory=None):
                                 capture_output=True, text=True, timeout=15, check=True)
         booted = {device["udid"] for devices in json.loads(result.stdout)["devices"].values()
                   for device in devices if device.get("state") == "Booted"}
-        for name, udid in SIMULATORS[1:]:
+        for name, udid, unused in SIMULATORS[1:]:
             # The age of this file is how long the simulator has been booted without a reservation.
             idle = directory / f"{udid}.idle"
             if udid not in booted or simulator_reserved(udid, directory):
@@ -182,7 +191,7 @@ def destinations(arguments):
 def physical(destination):
     """Whether a destination is a phone rather than a simulator."""
     target = destination.get("id") or destination.get("name")
-    if any(target in pair for pair in SIMULATORS) or destination.get("platform") == "iOS Simulator":
+    if shared_simulator(target) or destination.get("platform") == "iOS Simulator":
         return False
     simulator_id = re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", destination.get("id", ""))
     return destination.get("platform") == "iOS" or not simulator_id
@@ -722,25 +731,26 @@ def status(queue_root=None, lock_root=None, library=None):
               for name, tickets in queues.items() if tickets != [] or name == "build"}
     lock_root = Path(lock_root or os.environ.get("AGENT_SIMULATOR_LOCK_ROOT", "/tmp/agent-locks"))
     simulators = []
-    for slot, (name, unused) in enumerate(SIMULATORS):
+    for name, unused, slot in SIMULATORS:
         simulator = {"name": name, "holder": None}
         try:
-            worktree, pid, used = (lock_root / ("simulator" if slot == 0 else f"simulator-{slot + 1}") / "owner").read_text().strip().split("|")
+            worktree, pid, used = (lock_root / slot / "owner").read_text().strip().split("|")
             simulator.update(holder="/".join(Path(worktree).parts[-2:]), kind="process" if pid else "session",
                              minutes=int((now - int(used)) / 60))
         except (OSError, ValueError):
             pass
         simulators.append(simulator)
     # scripts/lock keeps one file per process waiting for a simulator: "owner|locks", named by arrival time.
+    names = {slot: name for name, unused, slot in SIMULATORS}
     waiting = []
     for place in sorted((lock_root / ".waiting").glob("[0-9]*-[0-9]*")):
         try:
             worktree, wanted = place.read_text().strip().split("|")
             if not place.suffix and time.time() - place.stat().st_mtime <= 30:
                 waiting.append({"label": "/".join(Path(worktree).parts[-2:]),
-                                "wants": [SIMULATORS[int(lock[10:] or 1) - 1][0] for lock in wanted.split()],
+                                "wants": [names[lock] for lock in wanted.split()],
                                 "minutes": int((now - int(place.name.split("-")[0])) / 60)})
-        except (OSError, ValueError, IndexError):
+        except (OSError, ValueError, IndexError, KeyError):
             pass
     library = Path(library or Path.home() / ".local/lib/ios-agent")
     controller = {"repo": None, "commit": None, "current": False}

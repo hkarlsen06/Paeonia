@@ -30,6 +30,10 @@ with tempfile.TemporaryDirectory(prefix="ios-agent-policy-") as directory:
         shutil.copy2(SOURCE / name, scripts / name)
     if REPO == "Paeonia":
         shutil.copy2(SOURCE / "scenario-screenshot", scripts / "scenario-screenshot")
+        # scenario-screenshot refuses an id that no scenario file names.
+        scenarios = root / "ios/PaeoniaApp/App/DeveloperScenarios"
+        scenarios.mkdir(parents=True)
+        (scenarios / "Example.swift").write_text('static let example = screen("example")\n')
     shutil.copy2(SOURCE / "lib/xcode-agent-throttle.sh", scripts / "lib/xcode-agent-throttle.sh")
     (scripts / "lib/paeonia-xcode.sh").write_text(":\n")
     executable(scripts / "generate-ios-build-number.sh", "#!/bin/sh\nexit 0\n")
@@ -96,15 +100,15 @@ print("Executed 1 test, with 0 failures")
     executable(tools / "xcrun", common + '''
 if args[:4] == ["simctl", "list", "devices", "available"]:
     print(json.dumps({"devices": {"runtime": [
-        {"name": "Shared iPhone" + suffix, "udid": "sim" + str(i), "state": "Shutdown", "isAvailable": True}
-        for i, suffix in [(1, ""), (2, " 2"), (3, " 3")]
+        {"name": name, "udid": "sim" + str(i), "state": "Shutdown", "isAvailable": True}
+        for i, name in [(1, "Shared iPhone"), (2, "Shared iPhone 2"), (3, "Shared iPhone 3"), (4, "Shared iPad")]
     ]}}))
 elif args[:3] == ["simctl", "list", "devices"]:
     print("Booted")
 elif args and args[0] == "xcresulttool":
     print(json.dumps({"metrics": {"testsCount": {"_value": "1"}, "testsFailedCount": {"_value": "0"}}}))
 elif args[:2] == ["simctl", "uninstall"]:
-    assert args[2].startswith("sim") or args[2].startswith("Shared iPhone"), "physical data was uninstalled"
+    assert args[2].startswith(("sim", "Shared iPhone", "Shared iPad")), "physical data was uninstalled"
 elif args[:2] == ["simctl", "io"] and "screenshot" in args:
     pathlib.Path(args[-1]).write_bytes(b"mock screenshot")
 ''')
@@ -237,6 +241,17 @@ elif args[:2] == ["simctl", "io"] and "screenshot" in args:
     assert ["ios-agent", "simulator-lease", "Shared iPhone 2", "600"] in commands, commands
     run("lock", "release", "simulator")
     assert not (root / "sim-locks/simulator-2").exists()
+
+    # The iPad is taken only by its name, stays in a smaller pool, and is apart from the iPhones.
+    result, commands = run("lock", "acquire", "Shared iPad", IOS_AGENT_SIMULATORS="1")
+    assert result.stdout.strip() == "Shared iPad", result.stdout
+    assert ["ios-agent", "simulator-lease", "Shared iPad", "600"] in commands, commands
+    result, _ = run("lock", "acquire", "simulator", IOS_AGENT_SIMULATORS="1")
+    assert result.stdout.strip() == "Shared iPhone", result.stdout
+    result, _ = run("lock", "status")
+    assert "simulator-ipad (Shared iPad): held by" in result.stdout, result.stdout
+    run("lock", "release", "simulator")
+    assert not (root / "sim-locks/simulator-ipad").exists() and not (root / "sim-locks/simulator").exists()
 
     # The line is easiest to watch on a pool of one.
     base_env["IOS_AGENT_SIMULATORS"] = "1"

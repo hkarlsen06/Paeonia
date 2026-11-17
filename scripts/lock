@@ -20,7 +20,10 @@
 # SIM="$(scripts/lock acquire simulator)" && xcrun simctl install "$SIM" ...
 # `run simulator` passes AGENT_SIMULATOR_NAME and AGENT_SIMULATOR_UDID to its
 # command. A simulator's own name, such as "Shared iPhone 2", takes that slot
-# only. `release simulator` releases the slot this worktree's session holds.
+# only. Shared iPad is taken only by its name, as in
+# SIM="$(scripts/lock acquire "Shared iPad")", and IOS_AGENT_SIMULATORS leaves
+# it in. ios-agent shuts it down like Shared iPhone 2 and 3.
+# `release simulator` releases every slot this worktree's session holds.
 #
 # The simulator locks are machine-wide, in /tmp/agent-locks (AGENT_SIMULATOR_LOCK_ROOT
 # overrides it), because agents from every repo on this Mac share the simulators.
@@ -63,10 +66,12 @@ RESERVED_SECONDS=900
 
 # The shared simulators, as slot lock name|simulator name. The first slot keeps
 # the lock name `simulator`, so older copies of this script, which know only
-# that lock and Shared iPhone, still stay off it.
+# that lock and Shared iPhone, still stay off it. `simulator` takes the first
+# IOS_AGENT_SIMULATORS iPhones, never the iPad after them.
 SIMULATOR_POOL="simulator|Shared iPhone
 simulator-2|Shared iPhone 2
-simulator-3|Shared iPhone 3"
+simulator-3|Shared iPhone 3
+simulator-ipad|Shared iPad"
 
 SIMULATOR_COUNT="${IOS_AGENT_SIMULATORS:-3}"
 case "$SIMULATOR_COUNT" in
@@ -108,7 +113,7 @@ lock_dir() {
 }
 
 usage() {
-  sed -n '2,39p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '2,42p' "$0" | sed 's/^# \{0,1\}//' >&2
   exit 2
 }
 
@@ -371,7 +376,7 @@ release_run() {
 release() {
   local name="$1" dir lock locks
   locks="$(candidates "$name")"
-  [ "$name" != simulator ] || locks="simulator simulator-2 simulator-3"
+  [ "$name" != simulator ] || locks="simulator simulator-2 simulator-3 simulator-ipad"
   if [ -n "$(slot_simulator "${locks%% *}")" ] || [ "$name" = simulator ]; then
     # A slot this worktree's `run` holds belongs to that run, maybe another
     # agent's in this worktree, so only sessions are released.
@@ -447,7 +452,7 @@ case "${1:-}" in
         describe "$name"
       fi
     done
-    for name in $(candidates simulator); do
+    for name in $(candidates simulator) simulator-ipad; do
       if [ ! -d "$(lock_dir "$name")" ]; then
         echo "$(label "$name"): free"
       elif is_stale "$name"; then

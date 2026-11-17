@@ -60,6 +60,11 @@ class PolicyTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"IOS_AGENT_SIMULATORS": "2"}):
             agent.check_simulator(agent.SIMULATORS[1][1])
 
+    def test_the_ipad_stays_in_a_smaller_pool(self):
+        with mock.patch.dict(os.environ, {"IOS_AGENT_SIMULATORS": "1"}):
+            agent.build_arguments(["test", "-destination", "platform=iOS Simulator,name=Shared iPad"])
+            agent.check_simulator(agent.SIMULATORS[3][1])
+
     def test_xcrun_sdk_prefix_still_uses_host_queue(self):
         with mock.patch.object(agent, "xcodebuild", return_value=0) as build:
             agent.xcrun(["--sdk", "iphoneos", "xcodebuild", "build"])
@@ -373,13 +378,16 @@ raise SystemExit(m["xcodebuild"](sys.argv[1:] or ["build"], {str(self.fake)!r}, 
         (self.root / "locks/.waiting").mkdir()
         (self.root / f"locks/.waiting/{int(time.time()) - 185}-1").write_text("/Users/someone/worktrees/Paeonia/fix|simulator simulator-2")
         (self.root / f"locks/.waiting/{int(time.time()) - 400}-2.reserved").write_text("/Users/someone/worktrees/Paeonia/gone|simulator")
+        (self.root / f"locks/.waiting/{int(time.time()) - 65}-3").write_text("/Users/someone/worktrees/Paeonia/ipad|simulator-ipad")
         document = agent.status(self.queues, self.root / "locks", self.root / "library")
         self.assertEqual([(ticket["action"], ticket["state"]) for ticket in document["queues"]["build"]],
                          [("archive", "running"), ("build-for-testing", "waiting"), ("clean", "waiting")])
         self.assertEqual(document["simulators"][0], {"name": "Shared iPhone", "holder": "Tidex/feature", "kind": "session", "minutes": 2})
         self.assertEqual(document["simulators"][1], {"name": "Shared iPhone 2", "holder": None})
+        self.assertEqual(document["simulators"][3], {"name": "Shared iPad", "holder": None})
         self.assertEqual(document["simulator_waiters"],
-                         [{"label": "Paeonia/fix", "wants": ["Shared iPhone", "Shared iPhone 2"], "minutes": 3}])
+                         [{"label": "Paeonia/fix", "wants": ["Shared iPhone", "Shared iPhone 2"], "minutes": 3},
+                          {"label": "Paeonia/ipad", "wants": ["Shared iPad"], "minutes": 1}])
         self.assertFalse(document["controller"]["current"])
 
     def test_status_answers_while_a_stuck_process_holds_the_line(self):
@@ -531,12 +539,13 @@ class SimulatorLeaseTests(unittest.TestCase):
             self.assertFalse(agent.simulator_reserved(agent.SIMULATORS[1][1], lease_root))
             devices = {"devices": {"runtime": [
                 {"name": name, "udid": udid, "state": "Booted"}
-                for name, udid in agent.SIMULATORS
+                for name, udid, unused in agent.SIMULATORS
             ]}}
+            extras = [udid for name, udid, unused in agent.SIMULATORS[1:]]
             with mock.patch.object(agent, "memory_critical", return_value=True):
-                self.assertEqual(self.shutdowns(lease_root, devices), [agent.SIMULATORS[1][1], agent.SIMULATORS[2][1]])
+                self.assertEqual(self.shutdowns(lease_root, devices), extras)
                 owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
-                self.assertEqual(self.shutdowns(lease_root, devices), [agent.SIMULATORS[2][1]])
+                self.assertEqual(self.shutdowns(lease_root, devices), extras[1:])
             owner.parent.rename(owners / "released")
             owner.parent.mkdir()
             owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
@@ -547,6 +556,19 @@ class SimulatorLeaseTests(unittest.TestCase):
             agent.enforce_simulators(lease_root)
             return [call.args[0][-1] for call in run.call_args_list if "shutdown" in call.args[0]]
 
+    def test_the_ipad_is_leased_through_its_own_lock(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            owners = root / "locks"
+            lease_root = root / "leases"
+            with self.assertRaises(ValueError):
+                agent.grant_simulator("Shared iPad", lease_root, owners)
+            owner = owners / "simulator-ipad/owner"
+            owner.parent.mkdir(parents=True)
+            owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
+            agent.grant_simulator("Shared iPad", lease_root, owners)
+            self.assertTrue(agent.simulator_reserved(agent.SIMULATORS[3][1], lease_root))
+
     def test_a_released_extra_stays_booted_for_the_warm_period(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -556,7 +578,7 @@ class SimulatorLeaseTests(unittest.TestCase):
             owner.parent.mkdir(parents=True)
             owner.write_text(f"checkout|{os.getpid()}|{int(time.time())}")
             agent.grant_simulator("Shared iPhone 2", lease_root, owners)
-            name, udid = agent.SIMULATORS[1]
+            name, udid, unused = agent.SIMULATORS[1]
             devices = {"devices": {"runtime": [{"name": name, "udid": udid, "state": "Booted"}]}}
             idle = lease_root / f"{udid}.idle"
 
