@@ -7,29 +7,17 @@ extension CallEngine: CallEngineActions {
         Task { await startOutgoing(requestedHandle: nil) }
     }
 
-    /// Joins the call through the system, which first hears of a call that rang only inside the app.
+    /// Joins the call through the system, as its own Answer button does.
     func answer() {
         guard let run, !run.isFinished else { return }
         run.quality.noteAnswer(at: .now)
-        let unreportedHandle = run.takeUnreportedRing()
-        requestSystem { system in
-            if let unreportedHandle {
-                try await system.reportIncoming(run.conversationID, from: unreportedHandle)
-            }
-            try await system.requestJoin(run.conversationID)
-        } ifRefused: { [weak self] in
+        requestSystem { try await $0.requestJoin(run.conversationID) } ifRefused: { [weak self] in
             self?.send(.failed(.other), to: run)
         }
     }
 
-    /// A call that rang only inside the app ends here, because the system has nothing to end.
     func decline() {
-        guard let run, !run.isFinished else { return }
-        if run.takeUnreportedRing() != nil {
-            send(.hangUp, to: run)
-        } else {
-            end()
-        }
+        end()
     }
 
     func end() {

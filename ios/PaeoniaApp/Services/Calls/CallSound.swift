@@ -12,9 +12,9 @@ nonisolated enum CallSound: String, CaseIterable, Sendable {
     /// Plays once on both phones when a call they talked on ends. The engine has stopped by then,
     /// so it plays outside it, and the system ends the call once it has played.
     case ended = "Ended"
-    /// The partner's phone rings with it. The system call UI loops it as the ringtone, and
-    /// `CallRinger` plays it inside the open app with System Sound Services, outside the call's
-    /// audio, so `CallSoundPlayer` leaves it out.
+    /// The partner's phone rings with it. The system call UI loops it as the ringtone, also while
+    /// Paeonia is open, and `CallRinger` plays it for developer scenarios, so `CallSoundPlayer`
+    /// leaves it out.
     case ring = "Ring"
 
     var fileName: String {

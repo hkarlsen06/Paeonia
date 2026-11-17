@@ -74,7 +74,6 @@ final class CallEngine {
     var partnerTimeZoneRefresh: Task<Void, Never>?
     private var pushRegistry: CallPushRegistry?
     private var routeObserver: (any NSObjectProtocol)?
-    private var backgroundObserver: (any NSObjectProtocol)?
     private var audioRestartObserver: (any NSObjectProtocol)?
     private var clearTask: Task<Void, Never>?
 
@@ -106,7 +105,6 @@ final class CallEngine {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.refreshAudioRoute() }
         }
-        backgroundObserver = handRingsToSystemInBackground()
         audioRestartObserver = rebuildAudioAfterServiceRestarts()
         watchLiveCalls()
     }

@@ -39,9 +39,9 @@ nonisolated struct CallSession: Equatable, Identifiable, Sendable {
     /// The call was answered before the person said whether Paeonia may use the microphone, so
     /// the partner cannot hear them until they open the app and allow it.
     var isWaitingForMicrophone = false
-    /// The partner's call rings inside the app, as the ring pill or the full call screen, because
-    /// Paeonia was open on screen when it came in. It stays set when that ring ends unanswered, so
-    /// the ring says why where it rang. Answering it, or handing it to the system, clears it.
+    /// The partner's call rings inside the app too, as the ring pill or the full call screen,
+    /// because Paeonia was open on screen when it came in. The system rings for it as well. It stays
+    /// set when that ring ends unanswered, so the ring says why where it rang. Answering clears it.
     var ringsInApp = false
 
     /// This person's screen sends to the partner.

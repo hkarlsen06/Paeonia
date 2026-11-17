@@ -154,18 +154,14 @@ extension CallEngine {
         await reportIncoming(ring, mustReport: false)
     }
 
-    /// Rings for the partner's call. While Paeonia is open on screen and iOS does not require a
-    /// report, it rings inside the app and the system hears of the call only when the person
-    /// answers or leaves the app. Otherwise the call is reported to the system before anything
-    /// slow runs. A call that already rings is dropped, unless iOS requires a report for it. A call
-    /// that already ended, or that arrives during another call, is reported and ended at once when
-    /// iOS requires a report.
+    /// Rings for the partner's call, and reports it to the system before anything slow runs, even
+    /// while Paeonia is open on screen, where the ring pill shows next to the system's banner. A
+    /// call reported only at the answer let a starting iPadOS call UI find it answered and cover
+    /// the app (`docs/calling-plan.md`). A call that already rings is dropped, because the system
+    /// knows it. A call that already ended, or that arrives during another call, is reported and
+    /// ended at once when iOS requires a report.
     func reportIncoming(_ ring: IncomingRing, mustReport: Bool) async {
         if let run, !run.isFinished, run.callID == ring.callID || run.conversationID == ring.callID {
-            if mustReport {
-                // iOS ends an app that does not report such a push.
-                await handRingToSystem(run)
-            }
             return
         }
         guard isIdle, !reportedCallIDs.contains(ring.callID), !finishedCallIDs.contains(ring.callID),
@@ -183,39 +179,11 @@ extension CallEngine {
             deviceID: deviceID,
             ringDeadline: ring.ringExpiresAt + Self.ringGrace
         )
-        let ringsInApp = !mustReport && UIApplication.shared.applicationState == .active
         let run = begin(
             CallRun(machine: machine, conversationID: ring.callID, role: .answerer),
             effects: effects,
-            ringsInApp: ringsInApp
+            ringsInApp: UIApplication.shared.applicationState == .active
         )
-        if ringsInApp {
-            run.ringInApp(from: handle)
-        } else {
-            await reportToSystem(run, from: handle)
-        }
-    }
-
-    /// Hands a ring inside the app to the system once the app is in the background. Not when the
-    /// app only stops being active, as under Control Center, where the ring in the app still shows.
-    func handRingsToSystemInBackground() -> any NSObjectProtocol {
-        NotificationCenter.default.addObserver(
-            forName: UIApplication.didEnterBackgroundNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self, let run = self.run, !run.isFinished else { return }
-                Task { await self.handRingToSystem(run) }
-            }
-        }
-    }
-
-    /// Hands a ring that shows only inside the app to the system, which rings from now on. Does
-    /// nothing once the system knows the call.
-    func handRingToSystem(_ run: CallRun) async {
-        guard run === self.run, let handle = run.takeUnreportedRing() else { return }
-        center?.session?.ringsInApp = false
         await reportToSystem(run, from: handle)
     }
 
