@@ -16,6 +16,12 @@ Each code below pairs one reviewer with a demo partner account, so you do not ne
 
 The demo partner does not reply in real time. The couple starts with a broken streak, so the optional streak restore purchase is offered while its window is open.
 
+REVIEWING WITH TWO DEVICES
+With two devices you can try everything that happens between partners live. Use a different account on each, for example two email addresses.
+1. On the first device, tap "Start our space", sign in, subscribe with your sandbox account and copy the invite code.
+2. On the second device, tap "I was invited", enter that code and sign in. It joins free.
+Now you can call each other with voice or video, watch each other draw live, play the games together, chat, and answer the daily question to see each other's answers.
+
 HOW THE SUBSCRIPTION WORKS
 Paeonia has no free tier. One auto-renewing subscription, monthly or yearly in one subscription group, unlocks every feature for both partners. Either partner can buy it, and the other partner never pays. The subscription is bought only with Apple in-app purchase. The streak restore is the only other purchase. It is optional and consumable.
 
