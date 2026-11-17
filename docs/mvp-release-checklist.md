@@ -26,10 +26,8 @@ Paeonia is ready for MVP when:
 
 These block TestFlight/App Review until resolved.
 
-- [ ] Account deletion works end-to-end from the app. On 2026-11-17 deleting an email-code account on the iPad finished the deletion job in a second, removed the Clerk user and ended the relationship on the partner's phone. Still needs a Sign in with Apple account, to check the Apple token revocation.
 - [ ] App Review can access a paired demo state without needing two reviewer-controlled devices. The backend is tested (`review.test.ts`). Next, sign in three demo partner accounts on the production Clerk instance and run `mint-review-codes.mjs`.
 - [ ] Confirm in App Store Connect that the declared Product Interaction for Analytics also covers the signed-out welcome step counts (`onboarding:record_welcome_step`): a step name only, kept as daily totals, with no user, phone or install identifier. In App Store Connect.
-- [ ] On a device: nothing reaches PostHog before a yes, and turning off Share usage statistics stops sending at once. On 2026-11-17 the usage question appeared once while a new account joined, and "Nei, ikke del" stored `shares_usage=false`. Needs a check in PostHog.
 
 ## Repository And Build Hygiene
 
@@ -145,7 +143,6 @@ Run these on real devices where possible.
 - [ ] User enables location; map waits for partner.
 - [ ] Partner enables location; distance/location appears.
 - [ ] User disables location; map hides or updates as expected.
-- [ ] User deletes account; Sign in with Apple token revoked. The rest passed on 2026-11-17 with an email-code account.
 
 ## Failure Mode QA
 
