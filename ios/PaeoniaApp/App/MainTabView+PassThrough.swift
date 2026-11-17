@@ -9,8 +9,15 @@ import UIKit
 /// up. The tab view stays hidden meanwhile.
 ///
 /// A pass made while the launch overlay covers the tabs leaves the bar where it is, so it
-/// waits until the overlay has gone. Home then moves up into place just after the launch fade.
+/// waits until the overlay has gone. Until the pass is over the tabs stay hidden and their
+/// content holds its launch entrance, so the overlay fades to the plain background and Home
+/// then fades and drops in with its bar already in place.
 extension MainTabView {
+    /// The tabs wait for the pass. Only an iPad makes one.
+    var isWaitingForPassThrough: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && tabPassThrough != .done
+    }
+
     var tabViewSelection: Binding<MainTab> {
         Binding(get: { tabPassThrough.passingTab ?? selection.wrappedValue }, set: selectTabFromTabBar)
     }
@@ -49,5 +56,18 @@ enum TabPassThrough: Equatable {
 
     var passingTab: MainTab? {
         if case let .passing(tab) = self { tab } else { nil }
+    }
+}
+
+extension View {
+    /// Hides the tab view until its pass is over, then fades it in and cues its content's
+    /// launch entrance (`launchEntrance(order:)`).
+    func revealedAfterPassThrough(_ tabs: MainTabView) -> some View {
+        let isWaiting = tabs.isWaitingForPassThrough
+        return environment(\.launchContentRevealed, tabs.launchContentRevealed && !isWaiting)
+            .animation(tabs.reduceMotion ? nil : .easeOut(duration: PaeoniaMotion.motionDefault)) {
+                $0.opacity(isWaiting ? 0 : 1)
+            }
+            .task(id: tabs.launchOverlayShowing) { await tabs.passThroughTab() }
     }
 }

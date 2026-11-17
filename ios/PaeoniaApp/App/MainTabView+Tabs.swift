@@ -38,7 +38,7 @@ extension MainTabView {
                 .accessibilityIdentifier("mainTab.\(tab.rawValue)")
             }
         }
-        .opacity(tabPassThrough.passingTab == nil ? 1 : 0).task(id: launchOverlayShowing) { await passThroughTab() }
+        .revealedAfterPassThrough(self)
         .paeoniaBanner(
             bannerCenter,
             onTap: actions.openWidgetDrawing
