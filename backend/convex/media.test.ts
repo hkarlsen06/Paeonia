@@ -99,6 +99,29 @@ describe("create_pending_media_upload", () => {
     });
   });
 
+  test("takes the asset id the app chose, and refuses a taken id and outsiders", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const outsider = await createSignedInUser(t);
+    const chosen = newUuid();
+    const args = reserveArgs(couple.coupleId, { p_media_asset_id: chosen });
+    await expect(outsider.as.mutation(api.media.create_pending_media_upload, args)).rejects.toThrow(/42501/);
+    const [row] = await couple.first.as.mutation(api.media.create_pending_media_upload, args);
+    expect(row.media_asset_id).toBe(chosen);
+    expect(row.storage_path).toBe(`${couple.coupleId}/image/${chosen}.jpg`);
+    const [replayed] = await couple.first.as.mutation(api.media.create_pending_media_upload, args);
+    expect(replayed.media_asset_id).toBe(chosen);
+    await expect(couple.second.as.mutation(
+      api.media.create_pending_media_upload,
+      reserveArgs(couple.coupleId, { p_media_asset_id: chosen }),
+    )).rejects.toThrow(/23505/);
+    await expect(couple.first.as.mutation(
+      api.media.create_pending_media_upload,
+      reserveArgs(couple.coupleId, { p_media_asset_id: "not-a-uuid" }),
+    )).rejects.toThrow();
+    expect(await t.run((ctx) => ctx.db.query("media_assets").collect())).toHaveLength(1);
+  });
+
   test("a replay returns the same asset with a fresh upload URL", async () => {
     const t = newTest();
     const couple = await createCouple(t);

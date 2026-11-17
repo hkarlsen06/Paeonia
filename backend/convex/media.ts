@@ -70,9 +70,12 @@ export const create_pending_media_upload = mutation({
     p_couple_id: v.optional(v.union(v.null(), v.string())),
     p_upload_expires_at: v.optional(v.union(v.null(), v.string())),
     p_path_context: v.optional(v.union(v.null(), v.any())),
+    /** The asset id to give the upload. A memory saved offline names its photos before they upload. */
+    p_media_asset_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
+    const requestedAssetId = optionalUuidArg(args.p_media_asset_id);
     const accessibilityText = args.p_accessibility_text?.trim();
     if (accessibilityText && Array.from(accessibilityText).length > 10000) {
       fail("23514", "media accessibility text is too long");
@@ -112,11 +115,15 @@ export const create_pending_media_upload = mutation({
           requestedExpiry === undefined ? "server_generated" : expiresAt,
           pathContext,
           accessibilityText ?? "",
+          requestedAssetId ?? "server_generated",
         ],
       }),
       async () => {
         await consumeRateLimit(ctx, "mediaUpload", userId);
-        const assetId = newUuid();
+        if (requestedAssetId !== undefined && (await getByUuid(ctx, "media_assets", requestedAssetId))) {
+          uniqueViolation("media_assets_id_unique_idx");
+        }
+        const assetId = requestedAssetId ?? newUuid();
         let bucket: MediaAsset["bucket"];
         let coupleId: string | undefined;
         let storagePath: string;
