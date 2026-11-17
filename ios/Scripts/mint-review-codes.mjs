@@ -21,7 +21,7 @@
 //
 // Demo partners are ordinary Paeonia users, and Convex only creates users when a
 // Clerk account signs in. To add a partner, sign in once on a spare Clerk
-// account (Apple or Google) in the app, copy that user's `id` from the `users`
+// account (Apple, Google or an email code) in the app, copy that user's `id` from the `users`
 // table in the Convex dashboard, and pass it here:
 //   --partner SLOT=USER_ID     (SLOT is 1, 2, or 3; repeat for each new partner)
 // A slot that is already registered does not need the flag. Passing the flag for

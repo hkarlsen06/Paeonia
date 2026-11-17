@@ -26,7 +26,7 @@ Paeonia is ready for MVP when:
 
 These block TestFlight/App Review until resolved.
 
-- [ ] App Review can access a paired demo state without needing two reviewer-controlled devices. The backend is tested (`review.test.ts`). Next, sign in three demo partner accounts on the production Clerk instance and run `mint-review-codes.mjs`.
+- [ ] App Review can access a paired demo state without needing two reviewer-controlled devices. On 2026-11-17 three demo partners (`review1-3@hkarlsen06.dev`, slots Alex, Sam, Nora) were registered on production, and a minted code paired a fresh email account on the developer's iPad with Alex and showed the paywall, as the review notes describe. Before submission, mint fresh codes (`bun run review-codes:mint`) and paste the notes into App Store Connect.
 - [ ] Confirm in App Store Connect that the declared Product Interaction for Analytics also covers the signed-out welcome step counts (`onboarding:record_welcome_step`): a step name only, kept as daily totals, with no user, phone or install identifier. In App Store Connect.
 
 ## Repository And Build Hygiene

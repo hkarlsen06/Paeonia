@@ -1,7 +1,7 @@
 Paeonia is a private app for two people in a relationship, often living apart. Each day they answer a shared question, draw on each other's Home Screen widget, keep memories, count down to dates and play small games together.
 
 WHY SIGN-IN IS NEEDED
-Everything a couple makes is shared between two accounts, so each person signs in with Apple or Google. There is no other way to create an account. Accounts can be deleted in the app, from Settings and from the subscription screen.
+Everything a couple makes is shared between two accounts, so each person signs in with Apple, Google, or a 6-digit code sent to their email. There is no password, and a new email address gets its account when its first code is entered. Accounts can be deleted in the app, from Settings and from the subscription screen.
 
 HOW TO REVIEW WITHOUT A SECOND DEVICE
 Each code below pairs one reviewer with a demo partner account, so you do not need a second phone. Please use a different code on each device.
@@ -9,7 +9,7 @@ Each code below pairs one reviewer with a demo partner account, so you do not ne
 {{REVIEW_CODES}}
 
 1. Open Paeonia and tap "I was invited".
-2. Type one code, then sign in with Apple or Google.
+2. Type one code, then sign in with Apple, Google, or your email address.
 3. Add your name and a profile photo.
 4. Tap Join. You are now paired with the demo partner.
 5. The demo couple's subscription has ended on purpose, so the subscription screen appears. Subscribe with your sandbox account to test the in-app purchase. The app then opens for you and for the demo partner.
