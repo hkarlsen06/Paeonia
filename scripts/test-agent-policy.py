@@ -335,6 +335,13 @@ elif args[:2] == ["simctl", "io"] and "screenshot" in args:
             _, commands = run("scenario-screenshot", "example", "--wait", "0", "--out", str(image))
             assert image.read_bytes() == b"mock screenshot"
             assert not (root / "sim-locks/simulator").exists()
+            # --ipad takes the iPad and turns it with the UI test, since the mock screenshot shows no orientation.
+            _, commands = run("scenario-screenshot", "example", "--ipad", "--landscape", "--wait", "0", "--out", str(image))
+            assert any("-only-testing:PaeoniaAppUITests/SimulatorOrientation/testTurn" in command
+                       and "test-without-building" in command for command in commands), commands
+            assert any(command[:4] == ["xcrun", "simctl", "install", "Shared iPad"] for command in commands), commands
+            assert not (root / "sim-locks/simulator-ipad").exists()
+            run("scenario-screenshot", "example", "--landscape", expected=64)
             result, _ = run("scenario-screenshot", "example", "--wait", "0", "--out", str(image), POLICY_QUEUE="2.2")
             assert "[scenario-screenshot] queued for build: position 2 of 2" in result.stderr, result.stderr
             result, _ = run("scenario-screenshot", "example", expected=1, POLICY_STOP="1")

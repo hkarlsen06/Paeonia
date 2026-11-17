@@ -159,7 +159,7 @@ if [ -n "$DESTINATION" ]; then
   SIMULATOR_LOCK=""
   DESTINATION_SIMULATOR="$(destination_simulator_name "$DESTINATION" || true)"
   case "$DESTINATION_SIMULATOR" in
-    'Shared iPhone'|'Shared iPhone 2'|'Shared iPhone 3') SIMULATOR_LOCK="$DESTINATION_SIMULATOR" ;;
+    'Shared iPhone'|'Shared iPhone 2'|'Shared iPhone 3'|'Shared iPad') SIMULATOR_LOCK="$DESTINATION_SIMULATOR" ;;
   esac
 fi
 

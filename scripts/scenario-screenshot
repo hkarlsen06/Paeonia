@@ -3,8 +3,8 @@
 # simulator, to check how a change looks. scripts/scenario-record records it
 # instead, to check how a change moves.
 #
-#   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--no-build]
-#   scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--no-build]
+#   scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--ipad [--landscape]] [--no-build]
+#   scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--ipad [--landscape]] [--no-build]
 #
 # It builds the App scheme through the machine-wide build queue, into the
 # derived data folder that scripts/xcode-build-agent.sh and
@@ -17,7 +17,12 @@
 # reuses the last build, from this script or from either wrapper.
 # --language runs the app in another language, such as nb, without changing
 # the shared simulator's settings. --partner-name gives the partner in the Games
-# scenarios another name than Robin, such as a longer one.
+# scenarios another name than Robin, such as a longer one. --ipad runs it on
+# the shared iPad (scripts/lock acquire "Shared iPad") instead of an iPhone,
+# and --landscape turns the iPad on its side first. simctl has no command for
+# that, and an iPad app can't turn its own window, so a UI test turns the
+# simulator (SimulatorOrientation) when a screenshot shows it the other way,
+# and the turn stays. Each --ipad run turns it upright or on its side as asked.
 #
 # Output goes to ~/agent-shots/paeonia/<date>-<worktree>/, which outlives a
 # restart and the worktree, so an image embedded in a reply keeps showing. An
@@ -51,9 +56,9 @@ if [[ ${1:-} == --record ]]; then
 fi
 usage() {
   if [[ $record == 1 ]]; then
-    echo "usage: scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--no-build]" >&2
+    echo "usage: scripts/scenario-record <scenario-id> [--out <dir>] [--wait <seconds>] [--seconds <seconds>] [--then '<command>'] [--language <code>] [--partner-name <name>] [--ipad [--landscape]] [--no-build]" >&2
   else
-    echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--no-build]" >&2
+    echo "usage: scripts/scenario-screenshot <scenario-id> [--out <file.png>] [--wait <seconds>] [--language <code>] [--partner-name <name>] [--ipad [--landscape]] [--no-build]" >&2
   fi
   exit 64
 }
@@ -84,6 +89,8 @@ wait_seconds=8
 record_seconds=""
 then_command=""
 build=1
+simulator=simulator
+landscape=0
 sim=""
 held_before=""
 RECORDER_PID=""
@@ -106,7 +113,7 @@ cleanup() {
   rm -f "${XA_STATUS_FILE:-}"
   if [ -n "$sim" ]; then
     xcrun simctl uninstall "$sim" no.paeonia.app 2>/dev/null || true
-    [ -n "$held_before" ] || "$root/scripts/lock" release simulator >/dev/null 2>&1 || true
+    [ -n "$held_before" ] || "$root/scripts/lock" release "$simulator" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
@@ -121,10 +128,14 @@ while [[ $# -gt 0 ]]; do
     --then) [[ $record == 1 && $# -ge 2 ]] || usage; then_command=$2; shift 2 ;;
     --language) [[ $# -ge 2 ]] || usage; language_args=(-AppleLanguages "($2)" -AppleLocale "$2"); shift 2 ;;
     --partner-name) [[ $# -ge 2 ]] || usage; partner_args=(-paeonia-scenario-partner-name "$2"); shift 2 ;;
+    --ipad) simulator="Shared iPad"; shift ;;
+    --landscape) landscape=1; shift ;;
     --no-build) build=0; shift ;;
     *) usage ;;
   esac
 done
+# An iPhone runs the app upright only.
+[[ $landscape == 0 || $simulator == "Shared iPad" ]] || usage
 [[ $out == */* ]] || out=$shots/$out
 
 # A tap tool is bound to one simulator, and a lock this script takes could be
@@ -132,10 +143,11 @@ done
 # the caller keeps it afterwards.
 if [[ $record == 1 ]]; then
   held_before=$("$root/scripts/lock" status | grep -F ": held by $root (" | grep -v '(stale)$' |
-    sed -e 's/^[^(]*(//' -e 's/):.*//' | head -1 || true)
+    sed -e 's/^[^(]*(//' -e 's/):.*//' |
+    if [[ $simulator == "Shared iPad" ]]; then grep -x 'Shared iPad'; else grep -vx 'Shared iPad'; fi | head -1 || true)
   if [ -n "$then_command" ] && [ -z "$held_before" ]; then
     echo "--then needs a simulator this worktree holds, so that the command acts on the one being recorded." >&2
-    echo "Take one with: SIM=\"\$(scripts/lock acquire simulator)\", open that simulator for your tap tool, then run this again." >&2
+    echo "Take one with: SIM=\"\$(scripts/lock acquire \"$simulator\")\", open that simulator for your tap tool, then run this again." >&2
     exit 64
   fi
 fi
@@ -171,7 +183,7 @@ app=$("${XA_XCODEBUILD[@]}" "${xcode_args[@]}" -showBuildSettings 2>/dev/null |
 [[ -d $app ]] || { echo "No build at $app. Run without --no-build." >&2; exit 1; }
 
 cd "$root"
-sim=$(scripts/lock acquire simulator)
+sim=$(scripts/lock acquire "$simulator")
 if [ -n "$held_before" ] && [ "$sim" != "$held_before" ]; then
   echo "This worktree held $held_before when the build started and now holds $sim, so a tap tool opened on $held_before would act on the wrong simulator. Take a simulator again, open it, and run this again with --no-build." >&2
   held_before=""
@@ -225,6 +237,32 @@ wait_for_scenario() {
     polls=$((polls + 1))
   done
 }
+
+# Turns the shared iPad upright, or on its side with --landscape, unless a
+# screenshot shows it is already.
+turn_ipad() {
+  local probe=$scratch/orientation.png orientation=portrait width height
+  [[ $landscape == 0 ]] || orientation=landscape
+  xcrun simctl io "$sim" screenshot "$probe" >/dev/null 2>&1 || true
+  width=$(sips -g pixelWidth "$probe" 2>/dev/null | awk '/pixelWidth/ { print $2 }' || true)
+  height=$(sips -g pixelHeight "$probe" 2>/dev/null | awk '/pixelHeight/ { print $2 }' || true)
+  if [[ -n $width && -n $height ]]; then
+    if (( width > height )); then
+      [[ $orientation == portrait ]] || return 0
+    else
+      [[ $orientation == landscape ]] || return 0
+    fi
+  fi
+  echo "[scenario-screenshot] turning $sim to $orientation" >&2
+  if ! TEST_RUNNER_PAEONIA_SIMULATOR_ORIENTATION=$orientation "$root/scripts/xcode-test-agent.sh" \
+    -only-testing:PaeoniaAppUITests/SimulatorOrientation/testTurn \
+    -destination "platform=iOS Simulator,name=$sim" >"$scratch/turn.log" 2>&1; then
+    tail -20 "$scratch/turn.log" >&2
+    echo "Could not turn $sim to $orientation. Full log: $scratch/turn.log" >&2
+    exit 1
+  fi
+}
+[[ $simulator != "Shared iPad" ]] || turn_ipad
 
 xcrun simctl install "$sim" "$app"
 if [[ $record == 0 ]]; then
