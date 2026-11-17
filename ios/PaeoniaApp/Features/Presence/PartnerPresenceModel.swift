@@ -36,6 +36,9 @@ final class PartnerPresenceModel {
     /// The chats with a message from the partner this person has not read, which the avatar counts
     /// once its notice has gone. `MainTabView` keeps it current.
     var unreadChats = 0
+    /// Grows each time the partner opens "Just us" while this person is here, so its edge can
+    /// peek in.
+    private(set) var partnerOpenedCoupleChat = 0
 
     private let gateway: any PartnerPresenceGateway
     private let heartbeatInterval: Duration
@@ -159,12 +162,13 @@ final class PartnerPresenceModel {
         choose(pill.chosen.keepingNotice { $0.isTrue(of: partner) })
         if let callNotice, !callNotice.isTrue(of: partner) { setCallNotice(nil) }
         // The first reading of a run finds the partner where they already were. After that, a game
-        // or the drawing that appears was just opened.
+        // or the drawing or "Just us" that appears was just opened.
         guard case let .reading(before) = previous, let partner else { return }
         for kind in partner.games where before?.games.contains(kind) != true {
             receive(.openedGame(kind))
         }
         if partner.isDrawing, before?.isDrawing != true { receive(.openedDrawing) }
+        if partner.chat == .couple, before?.chat != .couple { partnerOpenedCoupleChat += 1 }
     }
 
     /// Whenever the partner goes, their notices go too.

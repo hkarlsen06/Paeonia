@@ -14,16 +14,25 @@ extension View {
     /// slides the chat in, such as from Message on the partner's avatar.
     ///
     /// While `peeks` is true the chat's edge peeks in from the right a moment and goes back,
-    /// the way the swipe pulls it, as `SwipeLessons` allows.
-    func coupleChatSlideOver(isPresented: Binding<Bool>, isEnabled: Bool, peeks: Bool) -> some View {
-        modifier(CoupleChatSlideOver(isPresented: isPresented, isEnabled: isEnabled, peeks: peeks))
+    /// the way the swipe pulls it, as `SwipeLessons` allows. It peeks too each time
+    /// `partnerOpened` grows while `partnerPeeks` is true, however well the person knows the
+    /// swipe, because the partner is in the chat now.
+    func coupleChatSlideOver(
+        isPresented: Binding<Bool>, isEnabled: Bool, peeks: Bool, partnerOpened: Int, partnerPeeks: Bool
+    ) -> some View {
+        modifier(
+            CoupleChatSlideOver(
+                isPresented: isPresented, isEnabled: isEnabled, peeks: peeks, partnerOpened: partnerOpened,
+                partnerPeeks: partnerPeeks
+            )
+        )
     }
 }
 
 /// Where the couple chat is between the right edge and covering the screen.
 private enum CoupleChatSlidePosition: Equatable {
     case hidden
-    /// Just its edge, for a moment, so the person finds the swipe.
+    /// Just its edge, for a moment, so the person finds the swipe or sees the partner is in it.
     case peeking
     /// Following a finger, with the chat this far in from the right edge. The finger came in
     /// from the screen's right edge to open it, or from the chat's left edge to close it.
@@ -41,6 +50,8 @@ private struct CoupleChatSlideOver: ViewModifier {
     @Binding var isPresented: Bool
     let isEnabled: Bool
     let peeks: Bool
+    let partnerOpened: Int
+    let partnerPeeks: Bool
 
     @Environment(\.threadChatContext) private var chatContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -57,6 +68,8 @@ private struct CoupleChatSlideOver: ViewModifier {
     /// The keyboard on screen is the chat's. It stays so until it is gone, which can be
     /// after the chat has slid away.
     @State private var chatHasKeyboard = false
+    /// The peek for the partner opening the chat, which the screen changing ends early.
+    @State private var partnerPeek: Task<Void, Never>?
 
     private var slide: Animation? {
         reduceMotion ? nil : .spring(duration: PaeoniaMotion.motionDefault, bounce: 0)
@@ -92,7 +105,15 @@ private struct CoupleChatSlideOver: ViewModifier {
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
             .background { edgeSwipes }
             .overlay { if isMounted { slideOver } }
-            .task(id: peeks && isEnabled && chatContext.isAvailable) { await peek() }
+            .task(id: peeks && isEnabled && chatContext.isAvailable) { await peek(teaches: true) }
+            .onChange(of: partnerOpened) { _, _ in
+                partnerPeek?.cancel()
+                guard partnerPeeks, isEnabled else { return }
+                partnerPeek = Task { await peek(teaches: false) }
+            }
+            .onChange(of: partnerPeeks && isEnabled) { _, welcome in
+                if !welcome { partnerPeek?.cancel() }
+            }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 if isMounted, !showsPeek { chatHasKeyboard = true }
             }
@@ -163,16 +184,17 @@ private struct CoupleChatSlideOver: ViewModifier {
         }
     }
 
-    /// A moment after a screen that welcomes it settles, the chat's edge peeks in and goes
-    /// back. The screen changing, or a sheet over it, ends the peek early. A swipe that
-    /// starts during the peek takes the chat from where it is.
-    private func peek() async {
-        guard peeks, isEnabled, chatContext.isAvailable, !reduceMotion, !isMounted,
-              SwipeLessons[.justUs].peekIsDue(at: .now, calendar: .current)
+    /// A moment after a screen that welcomes it settles, or the partner opens the chat, the
+    /// chat's edge peeks in and goes back. A peek that `teaches` the swipe is one of the few
+    /// `SwipeLessons` allows. The screen changing, or a sheet over it, ends the peek early. A
+    /// swipe that starts during the peek takes the chat from where it is.
+    private func peek(teaches: Bool) async {
+        guard isEnabled, chatContext.isAvailable, !reduceMotion, !isMounted,
+              !teaches || (peeks && SwipeLessons[.justUs].peekIsDue(at: .now, calendar: .current))
         else { return }
-        do { try await Task.sleep(for: .seconds(1.6)) } catch { return }
+        do { try await Task.sleep(for: teaches ? .seconds(1.6) : .milliseconds(300)) } catch { return }
         guard !isMounted, !PaeoniaAppWindow.isCovered else { return }
-        SwipeLessons[.justUs].peeked(at: .now)
+        if teaches { SwipeLessons[.justUs].peeked(at: .now) }
         showsPeek = true
         isMounted = true
         await Self.waitUntilMounted()

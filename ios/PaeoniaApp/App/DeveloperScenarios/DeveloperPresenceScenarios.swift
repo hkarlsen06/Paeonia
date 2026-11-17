@@ -7,7 +7,7 @@
     static let presence: [DeveloperScenario] = [
       presenceUsTab, presencePlaying, presenceMessage, presenceTyping, presenceTucked, presenceOverCover,
       presenceInChat, presenceLetter, presenceUnread, presenceOpenedGame, presenceOpenedDrawing,
-      localFlowPresence, localFlowPresenceGameChat,
+      presenceOpenedJustUs, localFlowPresence, localFlowPresenceGameChat,
     ]
 
     static let presenceUsTab = DeveloperScenario(
@@ -79,6 +79,11 @@
       "Robin opens your drawing, and the picture opens with Call, Message and Join for a few seconds", .presence
     ) { _ in DeveloperPresenceFlow(partner: PartnerPresence(isDrawing: true), notice: .openedDrawing) }
 
+    static let presenceOpenedJustUs = DeveloperScenario(
+      "presence-opened-just-us", "Presence · Robin opens Just us",
+      "Robin opens Just us a few seconds after the app shows, and its edge peeks in with Robin's face", .presence
+    ) { _ in DeveloperPresenceFlow(partner: PartnerPresence(), later: PartnerPresence(chat: .couple)) }
+
     static let localFlowPresence = DeveloperScenario(
       "local-flow-presence", "Local flow · Robin in Mind Meld",
       "Tap Robin's picture over Us, write in Just us from Message, and join Robin's game", .localFlows
@@ -111,17 +116,18 @@
     /// an hour.
     @MainActor
     static func model(
-      partner: PartnerPresence, mode: PresencePillMode = .avatar(notice: nil),
+      partner: PartnerPresence, later: PartnerPresence? = nil, mode: PresencePillMode = .avatar(notice: nil),
       noticeDuration: Duration = .seconds(3_600)
     ) -> PartnerPresenceModel {
       PartnerPresenceModel(
-        gateway: DeveloperPartnerPresenceGateway(feed: DeveloperPresenceFeed(partner: partner)),
+        gateway: DeveloperPartnerPresenceGateway(feed: DeveloperPresenceFeed(partner: partner, later: later)),
         noticeDuration: noticeDuration, mode: mode)
     }
   }
 
   /// The paired app with the partner's avatar. `notice` arrives a moment after the app shows, as a
-  /// live message does, and `pushNotice` as a push that arrives while the app is open. `launchLink`
+  /// live message does, and `pushNotice` as a push that arrives while the app is open. The partner
+  /// moves to `later` a few seconds after the app shows. `launchLink`
   /// opens as the app starts. Mind Meld is on Games, so Join opens it.
   private struct DeveloperPresenceFlow: View {
     @State private var model: PartnerPresenceModel
@@ -131,13 +137,15 @@
     private let partnerWrites: Bool
 
     init(
-      partner: PartnerPresence, mode: PresencePillMode = .avatar(notice: nil), notice: PresenceNotice? = nil,
+      partner: PartnerPresence, later: PartnerPresence? = nil, mode: PresencePillMode = .avatar(notice: nil),
+      notice: PresenceNotice? = nil,
       pushNotice: PaeoniaForegroundNotice? = nil, noticeDuration: Duration = .seconds(3_600),
       launchLink: String? = nil, partnerWrites: Bool = false
     ) {
       self.partnerWrites = partnerWrites
       _model = State(
-        initialValue: DeveloperPresenceFixture.model(partner: partner, mode: mode, noticeDuration: noticeDuration))
+        initialValue: DeveloperPresenceFixture.model(
+          partner: partner, later: later, mode: mode, noticeDuration: noticeDuration))
       self.notice = notice
       self.pushNotice = pushNotice
       self.launchLink = launchLink
@@ -160,15 +168,17 @@
   }
 
   /// The partner in a scenario. "Show when I'm here" hides them and brings them back as the server
-  /// would.
+  /// would. A partner with somewhere to go `later` goes there a few seconds after the first reading.
   @MainActor
   final class DeveloperPresenceFeed {
-    private let partner: PartnerPresence
+    private var partner: PartnerPresence
+    private var later: PartnerPresence?
     private var showsPresence = true
     private var continuations: [UUID: AsyncStream<PartnerPresenceReading?>.Continuation] = [:]
 
-    init(partner: PartnerPresence) {
+    init(partner: PartnerPresence, later: PartnerPresence? = nil) {
       self.partner = partner
+      self.later = later
     }
 
     private var reading: PartnerPresenceReading {
@@ -178,6 +188,13 @@
     func add(_ continuation: AsyncStream<PartnerPresenceReading?>.Continuation, id: UUID) {
       continuations[id] = continuation
       continuation.yield(reading)
+      guard let later else { return }
+      self.later = nil
+      Task {
+        try? await Task.sleep(for: .seconds(4))
+        partner = later
+        yieldReading()
+      }
     }
 
     func remove(id: UUID) {
@@ -186,6 +203,10 @@
 
     func setShowsPresence(_ shows: Bool) {
       showsPresence = shows
+      yieldReading()
+    }
+
+    private func yieldReading() {
       for continuation in continuations.values {
         continuation.yield(reading)
       }

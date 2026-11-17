@@ -17,7 +17,8 @@ extension MainTabView {
     var tabsUnderOverlays: some View {
         tabNavigation
             .coupleChatSlideOver(
-                isPresented: $isCoupleChatSlidOver, isEnabled: allowsCoupleChatSwipe, peeks: coupleChatPeekIsWelcome
+                isPresented: $isCoupleChatSlidOver, isEnabled: allowsCoupleChatSwipe, peeks: coupleChatPeekIsWelcome,
+                partnerOpened: presenceModel.partnerOpenedCoupleChat, partnerPeeks: coupleChatPartnerPeekIsWelcome
             )
             .callOverlay(participants: dailyChallengeParticipants, presence: presenceModel)
     }

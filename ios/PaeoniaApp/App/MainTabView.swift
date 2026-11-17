@@ -487,8 +487,13 @@ extension MainTabView {
     /// Home is in front with nothing over it, so the couple chat may peek in from the edge to
     /// show its swipe. Games show their own chat's swipe.
     var coupleChatPeekIsWelcome: Bool {
-        selection.wrappedValue == .us && !isModalOpen && !widgetDrawingPresented.wrappedValue
-            && launchIntroComplete && scenePhase == .active
+        selection.wrappedValue == .us && !widgetDrawingPresented.wrappedValue && coupleChatPartnerPeekIsWelcome
+    }
+
+    /// Nothing is over the tabs, so the couple chat may peek in from the edge on any of them when the
+    /// partner opens it.
+    var coupleChatPartnerPeekIsWelcome: Bool {
+        !isModalOpen && launchIntroComplete && scenePhase == .active
     }
 }
 
