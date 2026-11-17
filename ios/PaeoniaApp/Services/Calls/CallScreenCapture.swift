@@ -81,16 +81,13 @@ final class CallScreenCapture {
         frames.gate.setMaxFramesPerSecond(rate)
     }
 
-    /// The picker stays active until the stream runs or fails. The system's sheet waits for the
-    /// stream with a spinner, and it stayed on screen after the share began when the picker was
-    /// let go as soon as the person picked.
     fileprivate func picked(_ filter: SCContentFilter) {
         guard case .picking = phase else { return }
+        releasePicker()
         let stream = SCStream(filter: filter, configuration: Self.configuration(for: filter), delegate: frames)
         do {
             try stream.addStreamOutput(frames, type: .screen, sampleHandlerQueue: frames.gate.queue)
         } catch {
-            releasePicker()
             phase = .idle
             onShareChange?(.failed)
             return
@@ -102,19 +99,16 @@ final class CallScreenCapture {
                 try await stream.startCapture()
             } catch {
                 if case let .starting(current) = phase, current === stream {
-                    releasePicker()
                     phase = .idle
                     onShareChange?(.failed)
                 }
                 return
             }
             guard case let .starting(current) = phase, current === stream else {
-                // Stopped while it started, and a stop before the start ends can be lost. The stop
-                // let go of the picker, which a new share may be using now.
+                // Stopped while it started, and a stop before the start ends can be lost.
                 try? await stream.stopCapture()
                 return
             }
-            releasePicker()
             phase = .sharing(stream)
             frames.gate.startResending()
             onShareChange?(.on)
