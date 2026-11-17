@@ -91,8 +91,12 @@ nonisolated struct CallStageLayout {
             // On a tie the column wins, the way the previews sit over a camera.
             plan = plans.max { Self.area(ratio, in: $0.screenBox) < Self.area(ratio, in: $1.screenBox) } ?? plan
             let box = sharedScreen == .full ? Self.inset(seen, by: turn.asSeen(safeArea)) : plan.screenBox
-            tiles[.partnerScreen] = Tile(
-                center: onScreen(CGPoint(x: box.midX, y: box.midY)), size: Self.fit(ratio, in: box.size))
+            let size = Self.fit(ratio, in: box.size)
+            // In the box's own middle, a screen narrower than a wide room sat off to one side, such as
+            // on an iPad, so it keeps as near the room's middle as the previews let it.
+            let around = sharedScreen == .full ? box : room
+            let center = Self.center(of: size, in: box, nearest: CGPoint(x: around.midX, y: around.midY))
+            tiles[.partnerScreen] = Tile(center: onScreen(center), size: size)
         } else if let main = stage.main {
             let ratio = main == .local ? session.localVideoAspectRatio : session.partnerVideoAspectRatio
             tiles[main] = Tile(center: middle, size: Self.camera(ratio, on: seen))
@@ -187,6 +191,13 @@ nonisolated struct CallStageLayout {
     private static func camera(_ aspectRatio: CGFloat?, on stage: CGSize) -> CGSize {
         guard let aspectRatio, (aspectRatio > 1) != (stage.width > stage.height) else { return stage }
         return fit(aspectRatio, in: stage)
+    }
+
+    /// The middle nearest `point` for a tile of `size` that stays inside `box`.
+    private static func center(of size: CGSize, in box: CGRect, nearest point: CGPoint) -> CGPoint {
+        CGPoint(
+            x: min(max(point.x, box.minX + size.width / 2), box.maxX - size.width / 2),
+            y: min(max(point.y, box.minY + size.height / 2), box.maxY - size.height / 2))
     }
 
     private static func area(_ aspectRatio: CGFloat, in box: CGRect) -> CGFloat {
