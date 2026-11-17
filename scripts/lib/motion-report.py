@@ -14,6 +14,7 @@ frame only when the screen changes.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import re
 import shutil
@@ -185,12 +186,18 @@ def run(command: Sequence[str], **kwargs) -> subprocess.CompletedProcess:
 
 
 def probe(path: Path) -> Tuple[int, int]:
+    """The size of the frames ffmpeg decodes. A recording of an iPad on its side is stored
+    upright with a rotation, which ffmpeg applies, so its width and height swap."""
     result = run(["ffprobe", "-v", "error", "-select_streams", "v:0",
-                  "-show_entries", "stream=width,height", "-of", "csv=p=0", str(path)])
-    fields = result.stdout.decode().strip().split(",")
-    if len(fields) != 2 or not all(field.isdigit() for field in fields):
+                  "-show_entries", "stream=width,height:stream_side_data=rotation", "-of", "json", str(path)])
+    streams = json.loads(result.stdout.decode() or "{}").get("streams", [])
+    if not streams or not isinstance(streams[0].get("width"), int) or not isinstance(streams[0].get("height"), int):
         raise ReportError(f"{path} has no video stream")
-    return int(fields[0]), int(fields[1])
+    stream = streams[0]
+    rotation = next((data["rotation"] for data in stream.get("side_data_list", []) if "rotation" in data), 0)
+    if int(rotation) % 180:
+        return stream["height"], stream["width"]
+    return stream["width"], stream["height"]
 
 
 def decode(path: Path, width: int, height: int, scratch: Path) -> Tuple[Video, Frames]:
