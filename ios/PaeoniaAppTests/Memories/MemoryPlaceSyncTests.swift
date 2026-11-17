@@ -197,7 +197,6 @@ struct MemoriesViewModelPlaceTests {
 
     private func makeEnvironment() -> MemoriesTestEnvironment {
         makeMemoriesTestEnvironment(
-            uploader: nil,
             imageProvider: nil,
             photoSaver: MemoryTestPhotoSaver(result: .saved),
             draftStore: nil

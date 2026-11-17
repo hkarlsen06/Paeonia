@@ -47,6 +47,8 @@ nonisolated struct MemoryUploadMedia: Sendable, Equatable {
     let height: Int?
     let durationMs: Int?
     let accessibilityText: String?
+    /// The id the asset gets. Nil lets the server choose.
+    let mediaAssetID: UUID?
 
     init(
         data: Data,
@@ -56,7 +58,8 @@ nonisolated struct MemoryUploadMedia: Sendable, Equatable {
         width: Int? = nil,
         height: Int? = nil,
         durationMs: Int? = nil,
-        accessibilityText: String? = nil
+        accessibilityText: String? = nil,
+        mediaAssetID: UUID? = nil
     ) {
         self.data = data
         self.purpose = purpose
@@ -66,6 +69,7 @@ nonisolated struct MemoryUploadMedia: Sendable, Equatable {
         self.height = height
         self.durationMs = durationMs
         self.accessibilityText = accessibilityText
+        self.mediaAssetID = mediaAssetID
     }
 }
 
@@ -154,7 +158,8 @@ nonisolated struct LiveMemoryMediaUploadService: MemoryMediaUploading {
                 accessibilityText: media.accessibilityText,
                 width: media.width,
                 height: media.height,
-                durationMs: media.durationMs
+                durationMs: media.durationMs,
+                mediaAssetID: media.mediaAssetID
             ),
             reserveOperation: reserveOperation,
             finalizeOperation: finalizeOperation

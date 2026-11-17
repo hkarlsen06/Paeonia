@@ -12,6 +12,7 @@ extension MemoryDataService {
         memoryDate: String,
         noteBody: String?,
         optimisticMedia: [MemoryMediaSnapshot] = [],
+        uploads: [MemoryQueuedUpload] = [],
         place: MemoryPlace? = nil,
         visitID: UUID? = nil,
         operation: SyncClientOperation
@@ -35,7 +36,8 @@ extension MemoryDataService {
             mediaAssetIDs: optimisticMedia.map(\.mediaAssetID),
             optimisticMedia: optimisticMedia,
             place: normalizedPlace,
-            visitID: visitID
+            visitID: visitID,
+            uploads: uploads
         )
 
         let now = operation.localCreatedAt
@@ -257,6 +259,7 @@ extension MemoryDataService {
         ownerUserID: UUID,
         memoryID: UUID,
         optimisticMedia: [MemoryMediaSnapshot],
+        uploads: [MemoryQueuedUpload] = [],
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
         guard !optimisticMedia.isEmpty else {
@@ -269,7 +272,8 @@ extension MemoryDataService {
         let payload = AttachMemoryMediaOperationPayload(
             memoryID: memoryID,
             mediaAssetIDs: optimisticMedia.map(\.mediaAssetID),
-            optimisticMedia: optimisticMedia
+            optimisticMedia: optimisticMedia,
+            uploads: uploads
         )
         let mergedMedia = (existing.snapshot.media + optimisticMedia)
             .uniquedByMemoryMediaID()

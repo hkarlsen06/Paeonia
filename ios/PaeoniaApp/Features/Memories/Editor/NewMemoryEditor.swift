@@ -17,7 +17,6 @@ struct NewMemoryEditor: View {
         MemoryEditorView(
             draft: Binding(get: { saving ?? viewModel.draft }, set: { viewModel.updateDraft($0) }),
             allowsPhotos: viewModel.canAttachPhotos,
-            uploadProgress: viewModel.mediaUploadProgress,
             knownPlaces: viewModel.knownPlaces,
             draftFailure: viewModel.draftFailure,
             draftNeedsSaving: viewModel.draftNeedsSaving,

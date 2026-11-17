@@ -294,7 +294,7 @@
           records: DeveloperMemoriesMapFixture.records(withPlaces: true)
         ),
         operationProvider: DeveloperScenarioOperationProvider(),
-        mediaUploader: nil,
+        attachesMedia: false,
         mediaImageCache: nil
       ))
       let rounds = GuessMySpotHistoryViewModel(

@@ -31,9 +31,8 @@ struct MemoriesViewModelTests {
         #expect(queued.count == 1)
     }
 
-    @Test func createMemoryWithPhotoUploadsAndAttachesMedia() async throws {
-        let uploader = MemoryTestMediaUploader()
-        let env = makeEnvironment(uploader: uploader)
+    @Test func createMemoryWithPhotoQueuesItsUploadAndShowsItAtOnce() async throws {
+        let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
 
         let saved = await env.viewModel.createMemory(
@@ -47,15 +46,15 @@ struct MemoriesViewModelTests {
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
         #expect(record.snapshot.media.count == 1)
         #expect(record.snapshot.visibleMediaAssetIDs.count == 1)
-        let uploadCount = await uploader.uploadCount
-        #expect(uploadCount == 1)
+        let queued = try await env.pendingStore.inFlightOperations(ownerUserID: env.userID, kind: .createMemory)
+        let uploads = queued.flatMap(MemoryQueuedUploads.uploads(in:))
+        #expect(uploads.map(\.mediaAssetID) == record.snapshot.visibleMediaAssetIDs)
         let cachedAssetIDs = await env.imageCache.cachedMediaAssetIDs
         #expect(cachedAssetIDs == record.snapshot.visibleMediaAssetIDs)
     }
 
-    @Test func addPhotosCachesUploadedImageForImmediateDisplay() async throws {
-        let uploader = MemoryTestMediaUploader()
-        let env = makeEnvironment(uploader: uploader)
+    @Test func addPhotosCachesTheImageForImmediateDisplay() async throws {
+        let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
         _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "First", media: [])
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
@@ -196,10 +195,7 @@ struct MemoriesViewModelTests {
 
     @Test func aFailedSaveKeepsTheSavedDraft() async throws {
         let store = makeIsolatedMemoryDraftStore()
-        let env = makeEnvironment(
-            uploader: MemoryTestMediaUploader(shouldFail: true),
-            draftStore: store
-        )
+        let env = makeEnvironment(draftStore: store)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
         env.viewModel.updateDraft(MemoryDraft(title: "Trip", media: MemoryDraftMedia.photos([makeImageData()])))
 
@@ -207,7 +203,8 @@ struct MemoriesViewModelTests {
             title: "Trip",
             date: "2026-06-30",
             note: "",
-            media: MemoryDraftMedia.photos([makeImageData()])
+            // A photo that cannot be read stops the save.
+            media: MemoryDraftMedia.photos([Data([0, 1, 2])])
         )
 
         #expect(!saved)
@@ -247,12 +244,8 @@ struct MemoriesViewModelTests {
 
     // MARK: - Environment
 
-    private func makeEnvironment(
-        uploader: (any MemoryMediaUploading)? = nil,
-        draftStore: (any MemoryDraftStoring)? = nil
-    ) -> MemoriesTestEnvironment {
+    private func makeEnvironment(draftStore: (any MemoryDraftStoring)? = nil) -> MemoriesTestEnvironment {
         makeMemoriesTestEnvironment(
-            uploader: uploader,
             imageProvider: nil,
             photoSaver: MemoryTestPhotoSaver(result: .saved),
             draftStore: draftStore

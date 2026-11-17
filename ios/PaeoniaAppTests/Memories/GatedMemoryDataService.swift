@@ -11,6 +11,7 @@ actor GatedMemoryDataService {
     private var shouldHoldNextLoad = false
     private var failsReads = false
     private var failingRemovalCall: Int?
+    private var failsNextAttach = false
     private var removalCalls = 0
     private var heldLoad: CheckedContinuation<Void, Never>?
     private var beforeNextNoteWrite: (@Sendable () async throws -> Void)?
@@ -25,6 +26,11 @@ actor GatedMemoryDataService {
 
     func failRemoval(call: Int) {
         failingRemovalCall = call
+    }
+
+    /// The next photo attach fails to save on this phone.
+    func failNextAttach() {
+        failsNextAttach = true
     }
 
     /// Runs `hook` when the next note write starts, after the caller read the memory.
@@ -74,6 +80,7 @@ actor GatedMemoryDataService {
         memoryDate: String,
         noteBody: String?,
         optimisticMedia: [MemoryMediaSnapshot],
+        uploads: [MemoryQueuedUpload],
         place: MemoryPlace?,
         visitID: UUID?,
         operation: SyncClientOperation
@@ -86,6 +93,7 @@ actor GatedMemoryDataService {
             memoryDate: memoryDate,
             noteBody: noteBody,
             optimisticMedia: optimisticMedia,
+            uploads: uploads,
             place: place,
             visitID: visitID,
             operation: operation
@@ -164,12 +172,18 @@ actor GatedMemoryDataService {
         ownerUserID: UUID,
         memoryID: UUID,
         optimisticMedia: [MemoryMediaSnapshot],
+        uploads: [MemoryQueuedUpload],
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
-        try await base.attachMemoryMedia(
+        if failsNextAttach {
+            failsNextAttach = false
+            throw CocoaError(.fileWriteUnknown)
+        }
+        return try await base.attachMemoryMedia(
             ownerUserID: ownerUserID,
             memoryID: memoryID,
             optimisticMedia: optimisticMedia,
+            uploads: uploads,
             operation: operation
         )
     }

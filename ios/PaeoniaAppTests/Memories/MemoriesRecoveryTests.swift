@@ -42,9 +42,10 @@ struct MemoriesRecoveryTests {
     }
 
     @Test func partialSaveReturnsTheSavedBaselineAndRetriesOnlyRemainingPhotos() async throws {
-        let env = makeEnvironment(uploader: MemoryTestMediaUploader(failingCalls: [1]))
+        let env = makeEnvironment()
         await env.model.configure(currentUserID: env.userID, coupleID: env.coupleID)
         _ = await env.model.createMemory(title: "Lake", date: "2026-06-30", note: "First", media: [])
+        await env.service.failNextAttach()
         let record = try #require(env.model.timeline.flatMap(\.memories).first)
         let photo = MemoryDraftMedia(
             content: .photo(makeMemoryTestImageData(color: .blue)), accessibilityText: "Our lake"
@@ -76,9 +77,10 @@ struct MemoriesRecoveryTests {
     }
 
     @Test func partialSaveRebasesUntouchedFieldsWithoutOverwritingThePartnerOnRetry() async throws {
-        let env = makeEnvironment(uploader: MemoryTestMediaUploader(failingCalls: [1]))
+        let env = makeEnvironment()
         await env.model.configure(currentUserID: env.userID, coupleID: env.coupleID)
         _ = await env.model.createMemory(title: "Trip", date: "2026-06-30", note: "First", media: [])
+        await env.service.failNextAttach()
         let original = try #require(env.model.timeline.flatMap(\.memories).first)
         try await env.store.saveRemote([.fixture(
             ownerUserID: env.userID, memoryID: original.snapshot.memoryID, coupleID: env.coupleID,
@@ -93,7 +95,7 @@ struct MemoriesRecoveryTests {
             original, title: draft.title, note: draft.note, media: draft.media
         ))
         guard case .partial(let saved) = result, let saved else {
-            Issue.record("Expected a partial save after the upload failed")
+            Issue.record("Expected a partial save after the photo failed to save")
             return
         }
         draft.rebaseUntouchedFields(from: original, to: saved)
@@ -108,7 +110,7 @@ struct MemoriesRecoveryTests {
     }
 
     @Test func removingOnePhotoBeforeAnotherFailsStillReportsPartialSave() async throws {
-        let env = makeEnvironment(uploader: MemoryTestMediaUploader())
+        let env = makeEnvironment()
         await env.model.configure(currentUserID: env.userID, coupleID: env.coupleID)
         _ = await env.model.createMemory(
             title: "Lake", date: "2026-06-30", note: "First",
@@ -167,16 +169,17 @@ struct MemoriesRecoveryTests {
         let userID = UUID()
         let model = MemoriesViewModel(
             memoryService: service, operationProvider: MemoryTestOperationProvider(),
-            mediaUploader: MemoryTestMediaUploader(), imageProvider: nil, draftStore: makeIsolatedMemoryDraftStore()
+            imageProvider: nil, draftStore: makeIsolatedMemoryDraftStore()
         )
         await model.configure(currentUserID: userID, coupleID: UUID())
         #expect(await model.createMemory(title: "Original", date: "2026-06-30", note: "Cold water", media: []))
         let original = try #require(model.timeline.flatMap(\.memories).first)
         await store.failWrites(true)
         let title = addingPhoto ? "Original" : "Replacement"
-        let photos = addingPhoto ? [makeMemoryTestImageData(color: .blue)] : []
+        // The form keeps the same picks while the person tries again.
+        let photos = MemoryDraftMedia.photos(addingPhoto ? [makeMemoryTestImageData(color: .blue)] : [])
         let kind: SyncPendingOperationKind = addingPhoto ? .attachMemoryMedia : .updateMemory
-        let result = await model.saveEdits(edit(original, title: title, media: MemoryDraftMedia.photos(photos)))
+        let result = await model.saveEdits(edit(original, title: title, media: photos))
         guard case .partial(let saved) = result else {
             Issue.record("Discard must disclose the edit already in the outbox")
             return
@@ -186,9 +189,9 @@ struct MemoriesRecoveryTests {
         let operations = try await pending.inFlightOperations(ownerUserID: userID, kind: kind)
         #expect(operations.count == 1)
         #expect(queued.pendingOperationID == operations.first?.operation.id)
-        #expect(await !model.saveEdits(edit(queued, title: title, media: MemoryDraftMedia.photos(photos))).isSaved)
+        #expect(await !model.saveEdits(edit(queued, title: title, media: photos)).isSaved)
         await store.failWrites(false)
-        #expect(await model.saveEdits(edit(queued, title: title, media: MemoryDraftMedia.photos(photos))).isSaved)
+        #expect(await model.saveEdits(edit(queued, title: title, media: photos)).isSaved)
         let retried = try await pending.inFlightOperations(ownerUserID: userID, kind: kind)
         #expect(retried.map(\.operation.id) == operations.map(\.operation.id))
         #expect(model.record(for: original.snapshot.memoryID)?.snapshot.title == title)
@@ -204,9 +207,7 @@ struct MemoriesRecoveryTests {
         )
     }
 
-    private func makeEnvironment(
-        uploader: (any MemoryMediaUploading)? = nil, draftStore: (any MemoryDraftStoring)? = nil
-    ) -> Environment {
+    private func makeEnvironment(draftStore: (any MemoryDraftStoring)? = nil) -> Environment {
         let pending = InMemoryPendingSyncOperationRepository()
         let store = InMemoryMemoryRecordRepository()
         let service = GatedMemoryDataService(base: MemoryDataService(
@@ -214,7 +215,7 @@ struct MemoriesRecoveryTests {
         ))
         let model = MemoriesViewModel(
             memoryService: service, operationProvider: MemoryTestOperationProvider(),
-            mediaUploader: uploader, imageProvider: nil, draftStore: draftStore ?? makeIsolatedMemoryDraftStore()
+            imageProvider: nil, draftStore: draftStore ?? makeIsolatedMemoryDraftStore()
         )
         return Environment(model: model, service: service, pending: pending, store: store)
     }

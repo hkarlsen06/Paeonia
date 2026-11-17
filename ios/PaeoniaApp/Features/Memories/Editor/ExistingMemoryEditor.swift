@@ -49,7 +49,6 @@ struct ExistingMemoryEditor: View {
             isMemoryRemoved: latest == nil,
             join: join,
             allowsPhotos: viewModel.canAttachPhotos,
-            uploadProgress: viewModel.mediaUploadProgress,
             knownPlaces: viewModel.knownPlaces
         ) { title, date, note, media, removedMedia, place in
             let result = await viewModel.saveEdits(

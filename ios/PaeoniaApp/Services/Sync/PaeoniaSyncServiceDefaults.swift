@@ -120,14 +120,14 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         memoryStore: any MemoryRecordPersisting
     ) -> [any PendingSyncOperationHandling] {
         let memoryGateway = LiveMemoryGateway(client: client)
+        let memoryUploader = LiveMemoryMediaUploadService(client: client)
         return [
             RelationshipDatePendingOperationHandler(
                 gateway: LiveRelationshipStartedOnGateway(client: client),
                 accessSnapshotStore: accessSnapshotStore
             ),
             CreateMemoryPendingOperationHandler(
-                gateway: memoryGateway,
-                memoryStore: memoryStore
+                gateway: memoryGateway, memoryStore: memoryStore, uploader: memoryUploader
             ),
             UpdateMemoryPendingOperationHandler(
                 gateway: memoryGateway,
@@ -150,8 +150,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 memoryStore: memoryStore
             ),
             AttachMemoryMediaPendingOperationHandler(
-                gateway: memoryGateway,
-                memoryStore: memoryStore
+                gateway: memoryGateway, memoryStore: memoryStore, uploader: memoryUploader
             ),
             RemoveMemoryMediaPendingOperationHandler(
                 gateway: memoryGateway,

@@ -113,23 +113,23 @@ extension MemoriesViewModel {
 extension MemoriesViewModel {
     func addMedia(_ edit: MemoryEdit, _ latest: MemoryRecord, _ userID: UUID) async -> StepResult {
         guard !edit.newMedia.isEmpty else { return .unchanged }
-        let coupleID = latest.snapshot.coupleID
-        guard let uploaded = await mediaUploads.upload(
+        guard let prepared = await mediaPreparation.prepare(
             edit.newMedia,
-            coupleID: coupleID,
+            coupleID: latest.snapshot.coupleID,
             ownerUserID: userID,
-            startingSortOrder: (latest.snapshot.media.map(\.sortOrder).max() ?? 0) + 1,
-            attachedMediaAssetIDs: Set(latest.snapshot.visibleMediaAssetIDs)
+            startingSortOrder: (latest.snapshot.media.map(\.sortOrder).max() ?? 0) + 1
         ) else {
             notice = .photoUploadFailed
             return .failed
         }
+        // A retry after the attach was queued finds its photos on the memory already.
         let visibleIDs = Set(latest.snapshot.media.filter(\.isVisible).map(\.memoryMediaID))
-        let remaining = uploaded.filter { !visibleIDs.contains($0.memoryMediaID) }
+        let remaining = prepared.snapshots.filter { !visibleIDs.contains($0.memoryMediaID) }
         guard !remaining.isEmpty else {
-            finishUploads(of: edit.newMedia)
+            mediaPreparation.reset()
             return .unchanged
         }
+        // The queued attach uploads them, and deletes the videos' files once they are sent.
         let attached = await perform(
             "Attaching photos to a memory failed", notice: .photoUploadFailed, memoryID: latest.snapshot.memoryID
         ) {
@@ -137,18 +137,12 @@ extension MemoriesViewModel {
                 ownerUserID: userID,
                 memoryID: latest.snapshot.memoryID,
                 optimisticMedia: remaining,
+                uploads: prepared.uploads.filter { !visibleIDs.contains($0.memoryMediaID) },
                 operation: self.operationProvider.makeOperation()
             )
         }
         guard attached else { return .failed }
-        finishUploads(of: edit.newMedia)
+        mediaPreparation.reset()
         return .saved
-    }
-
-    /// Forgets the sent uploads and deletes the sent videos' files. Before the memory has them,
-    /// a retry may still need both.
-    func finishUploads(of media: [MemoryDraftMedia]) {
-        mediaUploads.reset()
-        MemoryDraftMedia.deleteVideoFiles(of: media)
     }
 }

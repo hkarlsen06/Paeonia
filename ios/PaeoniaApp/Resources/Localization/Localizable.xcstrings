@@ -29211,24 +29211,6 @@
         }
       }
     },
-    "memories.editor.uploadingPhoto" : {
-      "comment" : "Save button label while photos and videos upload. The first value is the number of the photo or video being sent and the second is the total, for example Adding 2 of 3",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adding %1$@ of %2$@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legger til %1$@ av %2$@"
-          }
-        }
-      }
-    },
     "memories.empty.action" : {
       "comment" : "Button on the Memories empty state that opens the new-memory form.",
       "extractionState" : "manual",

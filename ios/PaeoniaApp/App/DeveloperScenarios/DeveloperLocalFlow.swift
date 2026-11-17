@@ -261,7 +261,6 @@
       let memoriesViewModel = MemoriesViewModel(
         memoryService: DeveloperScenarioMemoryDataService(records: memoryRecords),
         operationProvider: operationProvider,
-        mediaUploader: DeveloperLocalFlowMemoryUploader(),
         mediaImageCache: nil
       )
       let visits = ProcessInfo.processInfo.arguments.contains("-paeonia-scenario-visit-ended")
@@ -355,18 +354,6 @@
           return true
         }
       )
-    }
-  }
-
-  nonisolated struct DeveloperLocalFlowMemoryUploader: MemoryMediaUploading {
-    func uploadMedia(
-      _: MemoryUploadMedia,
-      memoryMediaID: UUID,
-      coupleID _: UUID,
-      reserveOperation _: SyncClientOperation,
-      finalizeOperation _: SyncClientOperation
-    ) -> MemoryMediaUploadResult {
-      MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: UUID())
     }
   }
 

@@ -13,7 +13,6 @@ struct MemoriesTestEnvironment {
 
 @MainActor
 func makeMemoriesTestEnvironment(
-    uploader: (any MemoryMediaUploading)?,
     imageProvider: (any MemoryMediaImageProviding)?,
     photoSaver: any PhotoLibrarySaving,
     draftStore: (any MemoryDraftStoring)?
@@ -25,7 +24,6 @@ func makeMemoriesTestEnvironment(
     let viewModel = MemoriesViewModel(
         memoryService: service,
         operationProvider: MemoryTestOperationProvider(),
-        mediaUploader: uploader,
         mediaImageCache: imageCache,
         imageProvider: imageProvider,
         photoSaver: photoSaver,
@@ -82,11 +80,18 @@ actor MemoryTestImageCache {
 extension MemoryTestImageCache: MemoryMediaImageCacheWriting {}
 
 actor MemoryTestMediaUploader {
+    struct Call: Equatable {
+        let mediaAssetID: UUID?
+        let reserveOperationID: UUID
+        let mimeType: String
+    }
+
     private let shouldFail: Bool
     /// 1-based upload calls that fail.
     private let failingCalls: Set<Int>
     private let delay: Duration?
     private(set) var uploadCount = 0
+    private(set) var calls: [Call] = []
 
     init(shouldFail: Bool = false, failingCalls: Set<Int> = [], delay: Duration? = nil) {
         self.shouldFail = shouldFail
@@ -103,13 +108,16 @@ actor MemoryTestMediaUploader {
     ) async throws -> MemoryMediaUploadResult {
         uploadCount += 1
         let call = uploadCount
+        calls.append(Call(
+            mediaAssetID: media.mediaAssetID, reserveOperationID: reserveOperation.id, mimeType: media.mimeType
+        ))
         if let delay {
             try await Task.sleep(for: delay)
         }
         if shouldFail || failingCalls.contains(call) {
             throw MediaUploadError.finalizeFailed
         }
-        return MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: UUID())
+        return MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: media.mediaAssetID ?? UUID())
     }
 }
 

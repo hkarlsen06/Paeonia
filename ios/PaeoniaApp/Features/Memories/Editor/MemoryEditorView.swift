@@ -41,12 +41,10 @@ struct MemoryEditorView: View {
     var isMemoryRemoved = false
     /// Set once the memory joined another memory for the same visit, which the form now edits.
     var join: MemoryJoinNotice?
-    /// Whether photo and video attachment is available (false in previews/tests without an
-    /// uploader, or before the active couple is known). When false the controls are hidden
-    /// and a note is required.
+    /// Whether photo and video attachment is available (false in scenarios that leave it out,
+    /// or before the active couple is known). When false the controls are hidden and a note
+    /// is required.
     let allowsPhotos: Bool
-    /// Which photo or video is being sent while the memory saves, shown on the save button.
-    var uploadProgress: MemoryMediaUploadProgress?
     /// Places on the couple's other memories, for the place sheet.
     var knownPlaces: [MemoryPlace] = []
     var draftFailure: MemoryDraftFailure?
@@ -305,16 +303,8 @@ struct MemoryEditorView: View {
         }
     }
 
-    /// While photos and videos send, the title counts them, since saving can take a while.
     private var navigationTitle: Text {
-        if isSaving, let uploadProgress {
-            Text(.memoriesEditorUploadingPhoto(
-                uploadProgress.current.formatted(),
-                uploadProgress.total.formatted()
-            ))
-        } else {
-            Text(mode.title)
-        }
+        Text(mode.title)
     }
 
     // MARK: - State

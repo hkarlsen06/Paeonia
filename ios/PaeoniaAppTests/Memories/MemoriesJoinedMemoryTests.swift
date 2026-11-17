@@ -60,7 +60,7 @@ struct MemoriesJoinedMemoryTests {
         let pending = InMemoryPendingSyncOperationRepository()
         let viewModel = MemoriesViewModel(
             memoryService: MemoryDataService(memoryStore: store, pendingOperationStore: pending),
-            operationProvider: MemoryTestOperationProvider(), mediaUploader: MemoryTestMediaUploader(),
+            operationProvider: MemoryTestOperationProvider(),
             mediaImageCache: nil, draftStore: makeIsolatedMemoryDraftStore()
         )
         let (userID, partnerID, coupleID, visitID, joinedID) = (UUID(), UUID(), UUID(), UUID(), UUID())

@@ -21,6 +21,9 @@ nonisolated struct MediaUpload: Sendable, Equatable {
     var width: Int?
     var height: Int?
     var durationMs: Int?
+    /// The id the asset gets. Nil lets the server choose. A memory saved offline names its
+    /// photos before they upload.
+    var mediaAssetID: UUID?
 }
 
 nonisolated extension MediaUpload {
@@ -208,6 +211,7 @@ nonisolated private struct ReserveRequest: Encodable {
         case coupleID = "p_couple_id"
         case pathContext = "p_path_context"
         case accessibilityText = "p_accessibility_text"
+        case mediaAssetID = "p_media_asset_id"
     }
 
     func encode(to encoder: any Encoder) throws {
@@ -220,6 +224,7 @@ nonisolated private struct ReserveRequest: Encodable {
         try container.encodeIfPresent(upload.coupleID, forKey: .coupleID)
         try container.encodeIfPresent(upload.pathContext, forKey: .pathContext)
         try container.encodeIfPresent(upload.accessibilityText, forKey: .accessibilityText)
+        try container.encodeIfPresent(upload.mediaAssetID, forKey: .mediaAssetID)
         try ClientOperationFields(operation).encode(to: encoder)
     }
 }

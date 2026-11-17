@@ -366,6 +366,7 @@ actor ScriptedMemoryGateway: MemoryGateway {
     private(set) var updates: [UpdateMemoryOperationPayload] = []
     private(set) var places: [SetMemoryPlaceOperationPayload] = []
     private(set) var hides: [HideMemoryOperationPayload] = []
+    private(set) var creates: [CreateMemoryOperationPayload] = []
     /// The id `createMemory` answers with, when the server added the new memory to another one.
     private let joinedMemoryID: UUID?
 
@@ -392,7 +393,8 @@ actor ScriptedMemoryGateway: MemoryGateway {
     }
 
     func createMemory(_ payload: CreateMemoryOperationPayload, operation: SyncClientOperation) throws -> UUID {
-        joinedMemoryID ?? payload.memoryID
+        creates.append(payload)
+        return joinedMemoryID ?? payload.memoryID
     }
 
     func updateMemory(

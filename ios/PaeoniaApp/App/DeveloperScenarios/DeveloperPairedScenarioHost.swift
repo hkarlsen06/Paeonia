@@ -127,7 +127,7 @@
       MemoriesViewModel(
         memoryService: DeveloperScenarioMemoryDataService(records: memoryRecords(for: scenario)),
         operationProvider: operationProvider,
-        mediaUploader: nil,
+        attachesMedia: false,
         mediaImageCache: nil
       )
     }

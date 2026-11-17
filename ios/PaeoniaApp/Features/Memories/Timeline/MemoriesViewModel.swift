@@ -13,7 +13,8 @@ enum MemoryDraftFailure: Equatable {
 final class MemoriesViewModel {
     let memoryService: any MemoryDataServicing
     let operationProvider: any SyncClientOperationProviding
-    let mediaUploads: MemoryMediaUploads
+    let mediaPreparation: MemoryMediaPreparation
+    private let attachesMedia: Bool
     private let imageProvider: (any MemoryMediaImageProviding)?
     private let photoSaver: any PhotoLibrarySaving
     let draftStore: any MemoryDraftStoring
@@ -68,7 +69,7 @@ final class MemoriesViewModel {
     init(
         memoryService: (any MemoryDataServicing)? = nil,
         operationProvider: (any SyncClientOperationProviding)? = nil,
-        mediaUploader: (any MemoryMediaUploading)? = MemoriesViewModel.makeDefaultUploader(),
+        attachesMedia: Bool = true,
         mediaImageCache: (any MemoryMediaImageCacheWriting)? = MemoryMediaImageDiskCache(),
         imageProvider: (any MemoryMediaImageProviding)? = MemoryMediaImageProviderFactory.shared,
         photoSaver: any PhotoLibrarySaving = PhotoLibrarySaver(),
@@ -77,29 +78,19 @@ final class MemoriesViewModel {
         let operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.memoryService = memoryService ?? MemoryDataServiceFactory.makeDefault()
         self.operationProvider = operationProvider
-        self.mediaUploads = MemoryMediaUploads(
-            uploader: mediaUploader,
-            imageCache: mediaImageCache,
-            operationProvider: operationProvider
+        self.mediaPreparation = MemoryMediaPreparation(
+            imageCache: mediaImageCache, operationProvider: operationProvider
         )
+        self.attachesMedia = attachesMedia
         self.imageProvider = imageProvider
         self.photoSaver = photoSaver
         self.draftStore = draftStore ?? LocalMemoryDraftStore.shared
     }
 
-    private nonisolated static func makeDefaultUploader() -> (any MemoryMediaUploading)? {
-        try? LiveMemoryMediaUploadService.live()
-    }
-
-    /// Whether photo and video attachment is possible. False in previews/tests with no
-    /// uploader, so those surfaces can hide the controls instead of failing on tap.
+    /// Whether photo and video attachment is possible. Scenarios that leave it out pass
+    /// `attachesMedia: false`, so those surfaces hide the controls.
     var canAttachPhotos: Bool {
-        mediaUploads.isAvailable && coupleID != nil
-    }
-
-    /// Which photo or video a running save is sending, for the save button.
-    var mediaUploadProgress: MemoryMediaUploadProgress? {
-        mediaUploads.progress
+        attachesMedia && coupleID != nil
     }
 
     /// Wires the tab to the app's sync engine so a just-saved memory is pushed promptly
@@ -129,7 +120,7 @@ final class MemoriesViewModel {
         joinedMemoryIDs = [:]
         hasLoadedOnce = false
         loadFailure = nil
-        mediaUploads.reset()
+        mediaPreparation.reset()
         restoreDraft()
 
         guard currentUserID != nil else { return }
@@ -215,11 +206,11 @@ final class MemoriesViewModel {
 
     // MARK: - Changes
 
-    /// Saves a new memory. Title is required, plus at least a note or one photo or video (the
-    /// UI enforces both before enabling Save; the guards here are a backstop). Media is
-    /// uploaded first so the created memory references real assets; if any upload fails
-    /// nothing is saved and the form stays put so the user can retry. Content is never
-    /// silently dropped. Returns whether the memory was saved.
+    /// Saves a new memory on this phone and queues it. Title is required, plus at least a note
+    /// or one photo or video (the UI enforces both before enabling Save; the guards here are a
+    /// backstop). The queued create uploads the photos and videos before the memory, so a save
+    /// works without a connection. If a photo cannot be read, nothing is saved and the form
+    /// stays put. Content is never silently dropped. Returns whether the memory was saved.
     func createMemory(
         memoryID: UUID = UUID(),
         title: String,
@@ -240,12 +231,11 @@ final class MemoriesViewModel {
 
         isSaving = true
         defer { isSaving = false }
+        // An earlier failed save's notice is about that try.
+        notice = nil
 
-        guard let uploaded = await mediaUploads.upload(
-            media,
-            coupleID: coupleID,
-            ownerUserID: currentUserID,
-            startingSortOrder: 0
+        guard let prepared = await mediaPreparation.prepare(
+            media, coupleID: coupleID, ownerUserID: currentUserID, startingSortOrder: 0
         ) else {
             notice = .photoUploadFailed
             return false
@@ -258,7 +248,8 @@ final class MemoriesViewModel {
                 title: trimmedTitle,
                 memoryDate: date,
                 noteBody: trimmedNote.isEmpty ? nil : trimmedNote,
-                optimisticMedia: uploaded,
+                optimisticMedia: prepared.snapshots,
+                uploads: prepared.uploads,
                 place: place,
                 visitID: visitID,
                 operation: self.operationProvider.makeOperation()
@@ -266,10 +257,9 @@ final class MemoriesViewModel {
         }
         guard created else { return false }
 
-        // The draft lets go of the videos before their files go, so a draft never names a
-        // file that is gone.
+        // The queued create now owns the videos' files, and deletes them once they are sent.
         updateDraft(MemoryDraft())
-        finishUploads(of: media)
+        mediaPreparation.reset()
         PaeoniaHaptics.memorySaved()
         await load()
         syncInBackground()
@@ -286,6 +276,7 @@ final class MemoriesViewModel {
         guard !isSaving, let currentUserID, !title.isEmpty else { return .failed }
         isSaving = true
         defer { isSaving = false }
+        notice = nil
 
         var changed = false
         defer {

@@ -6,8 +6,8 @@ import Foundation
 /// deleted, such as when the app quits between preparing a video and saving the draft that
 /// names it, or while a memory form held picks.
 ///
-/// A file stays when a queued send, a chat message still sending or failed, or a saved chat
-/// or memory draft names it, and when it changed after this app process started, because
+/// A file stays when a queued send or memory save, a chat message still sending or failed, or a
+/// saved chat or memory draft names it, and when it changed after this app process started, because
 /// something open now may name it. Runs once per launch, for the signed-in account. Signing
 /// out clears the whole folder, so another account's sends and messages name nothing here.
 enum OutgoingMediaSweep {
@@ -35,11 +35,17 @@ enum OutgoingMediaSweep {
                 .compactMap { $0.localFileURL?.lastPathComponent }
         )
         await deleteFiles(in: ThreadChatMediaFiles.directory, except: chatNames, changedBefore: processStart)
-        await deleteFiles(
-            in: MemoryDraftMedia.videoDirectoryURL(),
-            except: memoryDrafts.videoFileNamesInAllDrafts(),
-            changedBefore: processStart
-        )
+        var memoryNames = memoryDrafts.videoFileNamesInAllDrafts()
+        for kind in [SyncPendingOperationKind.createMemory, .attachMemoryMedia] {
+            guard let operations = try? await pendingOperationStore.inFlightOperations(
+                ownerUserID: ownerUserID,
+                kind: kind
+            ) else { return }
+            memoryNames.formUnion(
+                operations.flatMap(MemoryQueuedUploads.uploads(in:)).compactMap { $0.videoFileURL?.lastPathComponent }
+            )
+        }
+        await deleteFiles(in: MemoryDraftMedia.videoDirectoryURL(), except: memoryNames, changedBefore: processStart)
         // Preparing a video never outlives its process, so an older file here is from one that never finished.
         await deleteFiles(in: VideoPreparation.workingDirectoryURL(), except: [], changedBefore: processStart)
     }

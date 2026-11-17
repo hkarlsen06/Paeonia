@@ -20,6 +20,7 @@ nonisolated protocol MemoryDataServicing: Actor {
         memoryDate: String,
         noteBody: String?,
         optimisticMedia: [MemoryMediaSnapshot],
+        uploads: [MemoryQueuedUpload],
         place: MemoryPlace?,
         visitID: UUID?,
         operation: SyncClientOperation
@@ -56,6 +57,7 @@ nonisolated protocol MemoryDataServicing: Actor {
         ownerUserID: UUID,
         memoryID: UUID,
         optimisticMedia: [MemoryMediaSnapshot],
+        uploads: [MemoryQueuedUpload],
         operation: SyncClientOperation
     ) async throws -> MemoryRecord
     func removeMemoryMedia(

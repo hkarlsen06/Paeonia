@@ -142,7 +142,7 @@
       let viewModel = MemoriesViewModel(
         memoryService: DeveloperScenarioMemoryDataService(records: records),
         operationProvider: DeveloperScenarioOperationProvider(),
-        mediaUploader: nil,
+        attachesMedia: false,
         mediaImageCache: nil
       )
       if celebrates { viewModel.celebrationRequestedMemoryID = memoryID }

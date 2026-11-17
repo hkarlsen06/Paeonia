@@ -7,52 +7,40 @@ import UIKit
 /// changing or deleting a memory while this person works on it.
 @MainActor
 struct MemoriesViewModelRaceTests {
-    @Test func aSecondSaveWhileTheFirstIsUploadingIsRefused() async throws {
-        let uploader = MemoryTestMediaUploader(delay: .milliseconds(200))
-        let env = makeEnvironment(uploader: uploader)
-        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+    @Test func aSecondSaveWhileTheFirstIsSavingIsRefused() async throws {
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let service = GatedMemoryDataService(
+            base: MemoryDataService(memoryStore: InMemoryMemoryRecordRepository(), pendingOperationStore: pendingStore)
+        )
+        let viewModel = MemoriesViewModel(
+            memoryService: service, operationProvider: MemoryTestOperationProvider(),
+            mediaImageCache: nil, draftStore: makeIsolatedMemoryDraftStore()
+        )
+        let userID = UUID()
+        await viewModel.configure(currentUserID: userID, coupleID: UUID())
         let photo = makeImageData()
 
+        // The first save holds in the read that follows its write.
+        await service.holdNextLoad()
         let first = Task {
-            await env.viewModel.createMemory(
+            await viewModel.createMemory(
                 title: "Beach", date: "2026-06-30", note: "", media: MemoryDraftMedia.photos([photo])
             )
         }
-        await waitUntil { env.viewModel.isSaving }
-        let second = await env.viewModel.createMemory(
+        await service.waitUntilHolding()
+        let second = await viewModel.createMemory(
             title: "Beach", date: "2026-06-30", note: "", media: MemoryDraftMedia.photos([photo])
         )
+        await service.release()
 
         #expect(!second)
         #expect(await first.value)
-        #expect(env.viewModel.timeline.flatMap(\.memories).count == 1)
-        #expect(await uploader.uploadCount == 1)
-    }
-
-    @Test func retryingAfterAFailedUploadReusesPhotosAlreadySent() async throws {
-        let uploader = MemoryTestMediaUploader(failingCalls: [2])
-        let env = makeEnvironment(uploader: uploader)
-        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        let photos = [makeImageData(color: .systemPink), makeImageData(color: .systemBlue)]
-
-        let failed = await env.viewModel.createMemory(
-            title: "Trip", date: "2026-06-30", note: "", media: MemoryDraftMedia.photos(photos)
-        )
-        let saved = await env.viewModel.createMemory(
-            title: "Trip", date: "2026-06-30", note: "", media: MemoryDraftMedia.photos(photos)
-        )
-
-        #expect(!failed)
-        #expect(saved)
-        // The first photo went up once; only the second is sent again.
-        #expect(await uploader.uploadCount == 3)
-        let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
-        #expect(record.snapshot.visibleMediaAssetIDs.count == 2)
+        #expect(viewModel.timeline.flatMap(\.memories).count == 1)
+        #expect(try await pendingStore.inFlightOperations(ownerUserID: userID, kind: .createMemory).count == 1)
     }
 
     @Test func theSamePhotoPickedTwiceIsUploadedTwice() async throws {
-        let uploader = MemoryTestMediaUploader()
-        let env = makeEnvironment(uploader: uploader)
+        let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
         let photo = makeImageData()
 
@@ -67,7 +55,8 @@ struct MemoriesViewModelRaceTests {
         // The server refuses the same upload twice in one memory, so each pick needs its own.
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
         #expect(Set(record.snapshot.visibleMediaAssetIDs).count == 2)
-        #expect(await uploader.uploadCount == 2)
+        let queued = try await env.pendingStore.inFlightOperations(ownerUserID: env.userID, kind: .createMemory)
+        #expect(Set(queued.flatMap(MemoryQueuedUploads.uploads(in:)).map(\.mediaAssetID)).count == 2)
     }
 
     @Test func editingTheNoteKeepsATitleThePartnerChangedMeanwhile() async throws {
@@ -118,7 +107,6 @@ struct MemoriesViewModelRaceTests {
         let viewModel = MemoriesViewModel(
             memoryService: service,
             operationProvider: MemoryTestOperationProvider(),
-            mediaUploader: nil,
             mediaImageCache: nil,
             draftStore: makeIsolatedMemoryDraftStore()
         )
@@ -144,7 +132,7 @@ struct MemoriesViewModelRaceTests {
             base: MemoryDataService(memoryStore: store, pendingOperationStore: InMemoryPendingSyncOperationRepository())
         )
         let viewModel = MemoriesViewModel(
-            memoryService: service, operationProvider: MemoryTestOperationProvider(), mediaUploader: nil,
+            memoryService: service, operationProvider: MemoryTestOperationProvider(),
             mediaImageCache: nil, draftStore: makeIsolatedMemoryDraftStore()
         )
         let (userID, partnerID, coupleID, visitID, partnersMemory) = (UUID(), UUID(), UUID(), UUID(), UUID())
@@ -214,8 +202,7 @@ struct MemoriesViewModelRaceTests {
     }
 
     @Test func addingPhotosToAMemoryThePartnerDeletedQueuesNothing() async throws {
-        let uploader = MemoryTestMediaUploader()
-        let env = makeEnvironment(uploader: uploader)
+        let env = makeEnvironment()
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
         _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Note", media: [])
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
@@ -247,19 +234,16 @@ struct MemoriesViewModelRaceTests {
         #expect(env.viewModel.notice == .memoryRemoved)
         let attaches = try await env.pendingStore.inFlightOperations(ownerUserID: env.userID, kind: .attachMemoryMedia)
         #expect(attaches.isEmpty)
-        #expect(await uploader.uploadCount == 0)
     }
 
     // MARK: - Environment
 
     private func makeEnvironment(
-        uploader: (any MemoryMediaUploading)? = nil,
         imageProvider: (any MemoryMediaImageProviding)? = nil,
         photoSaver: any PhotoLibrarySaving = MemoryTestPhotoSaver(result: .saved),
         draftStore: (any MemoryDraftStoring)? = nil
     ) -> MemoriesTestEnvironment {
         makeMemoriesTestEnvironment(
-            uploader: uploader,
             imageProvider: imageProvider,
             photoSaver: photoSaver,
             draftStore: draftStore
@@ -268,9 +252,5 @@ struct MemoriesViewModelRaceTests {
 
     private func makeImageData(color: UIColor = .systemPink) -> Data {
         makeMemoryTestImageData(color: color)
-    }
-
-    private func waitUntil(_ condition: @MainActor () -> Bool) async {
-        await waitForMemoryTestCondition(condition)
     }
 }

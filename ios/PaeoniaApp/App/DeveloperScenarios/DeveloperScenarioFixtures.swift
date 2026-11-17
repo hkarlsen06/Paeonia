@@ -338,12 +338,12 @@
     // swiftlint:disable:next function_parameter_count
     func createMemory(
       ownerUserID: UUID, coupleID: UUID, memoryID: UUID, title: String, memoryDate: String,
-      noteBody: String?, optimisticMedia: [MemoryMediaSnapshot], place: MemoryPlace?, visitID: UUID?,
-      operation: SyncClientOperation
+      noteBody: String?, optimisticMedia: [MemoryMediaSnapshot], uploads: [MemoryQueuedUpload],
+      place: MemoryPlace?, visitID: UUID?, operation: SyncClientOperation
     ) async throws -> MemoryRecord {
       try await service.createMemory(
         ownerUserID: ownerUserID, coupleID: coupleID, memoryID: memoryID, title: title,
-        memoryDate: memoryDate, noteBody: noteBody, optimisticMedia: optimisticMedia,
+        memoryDate: memoryDate, noteBody: noteBody, optimisticMedia: optimisticMedia, uploads: uploads,
         place: place, visitID: visitID, operation: operation)
     }
     // swiftlint:disable:next function_parameter_count
@@ -379,11 +379,11 @@
     }
     func attachMemoryMedia(
       ownerUserID: UUID, memoryID: UUID, optimisticMedia: [MemoryMediaSnapshot],
-      operation: SyncClientOperation
+      uploads: [MemoryQueuedUpload], operation: SyncClientOperation
     ) async throws -> MemoryRecord {
       try await service.attachMemoryMedia(
         ownerUserID: ownerUserID, memoryID: memoryID, optimisticMedia: optimisticMedia,
-        operation: operation)
+        uploads: uploads, operation: operation)
     }
     func removeMemoryMedia(
       ownerUserID: UUID, memoryID: UUID, memoryMediaID: UUID, operation: SyncClientOperation

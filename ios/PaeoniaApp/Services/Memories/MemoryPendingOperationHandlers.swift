@@ -17,13 +17,16 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
 
     private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
+    private let uploader: (any MemoryMediaUploading)?
 
     init(
         gateway: any MemoryGateway,
-        memoryStore: any MemoryRecordPersisting
+        memoryStore: any MemoryRecordPersisting,
+        uploader: (any MemoryMediaUploading)? = nil
     ) {
         self.gateway = gateway
         self.memoryStore = memoryStore
+        self.uploader = uploader
     }
 
     func send(
@@ -35,6 +38,7 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
         }
 
         let payload = try JSONDecoder().decodeQueuedPayload(CreateMemoryOperationPayload.self, from: requestData)
+        try await MemoryQueuedUploads.send(payload.uploads, with: uploader)
         let storedID = try await gateway.createMemory(payload, operation: operation.operation)
         if storedID != payload.memoryID {
             try await MemoryPendingOperationRefresh.joined(
@@ -51,6 +55,15 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
             memoryStore: memoryStore,
             context: context
         )
+    }
+
+    // swiftlint:disable:next async_without_await
+    func didRecordSuccess(of operation: PendingSyncOperationSnapshot) async {
+        MemoryQueuedUploads.deleteFiles(of: MemoryQueuedUploads.uploads(in: operation))
+    }
+
+    nonisolated func timeLimit(for operation: PendingSyncOperationSnapshot) -> Duration? {
+        MemoryQueuedUploads.timeLimit(for: MemoryQueuedUploads.uploads(in: operation))
     }
 }
 
@@ -336,13 +349,16 @@ struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
 
     private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
+    private let uploader: (any MemoryMediaUploading)?
 
     init(
         gateway: any MemoryGateway,
-        memoryStore: any MemoryRecordPersisting
+        memoryStore: any MemoryRecordPersisting,
+        uploader: (any MemoryMediaUploading)? = nil
     ) {
         self.gateway = gateway
         self.memoryStore = memoryStore
+        self.uploader = uploader
     }
 
     func send(
@@ -354,6 +370,7 @@ struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
         }
 
         let payload = try JSONDecoder().decodeQueuedPayload(AttachMemoryMediaOperationPayload.self, from: requestData)
+        try await MemoryQueuedUploads.send(payload.uploads, with: uploader)
         do {
             _ = try await gateway.attachMemoryMedia(payload, operation: operation.operation)
         } catch {
@@ -372,6 +389,15 @@ struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
             memoryStore: memoryStore,
             context: context
         )
+    }
+
+    // swiftlint:disable:next async_without_await
+    func didRecordSuccess(of operation: PendingSyncOperationSnapshot) async {
+        MemoryQueuedUploads.deleteFiles(of: MemoryQueuedUploads.uploads(in: operation))
+    }
+
+    nonisolated func timeLimit(for operation: PendingSyncOperationSnapshot) -> Duration? {
+        MemoryQueuedUploads.timeLimit(for: MemoryQueuedUploads.uploads(in: operation))
     }
 }
 

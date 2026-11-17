@@ -12,6 +12,8 @@ nonisolated struct CreateMemoryOperationPayload: Codable, Equatable, Sendable {
     /// The visit the memory is for. The server may add it to the memory the partner already
     /// made for that visit, and then answers with that memory's id.
     var visitID: UUID?
+    /// The photos and videos saved on this phone, sent before the memory.
+    var uploads: [MemoryQueuedUpload] = []
 }
 
 nonisolated struct MemoryPhotoDescription: Codable, Equatable, Sendable {
@@ -63,6 +65,8 @@ nonisolated struct AttachMemoryMediaOperationPayload: Codable, Equatable, Sendab
     let memoryID: UUID
     let mediaAssetIDs: [UUID]
     let optimisticMedia: [MemoryMediaSnapshot]
+    /// The photos and videos saved on this phone, sent before they are attached.
+    var uploads: [MemoryQueuedUpload] = []
 }
 
 nonisolated struct RemoveMemoryMediaOperationPayload: Codable, Equatable, Sendable {
