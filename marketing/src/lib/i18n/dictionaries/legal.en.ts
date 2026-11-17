@@ -108,7 +108,7 @@ export const legalEn = {
       description: 'How Paeonia collects, uses, shares, and protects your personal data.',
     },
     title: 'Privacy Policy',
-    updated: 'Last updated 16 November 2026',
+    updated: 'Last updated 17 November 2026',
     sections: [
       {
         heading: 'Who this policy is for',
@@ -150,7 +150,7 @@ export const legalEn = {
         heading: 'Your partner and shared content',
         paragraphs: [
           'Your active partner can see the profile details and relationship content that the app makes part of your shared space. Some daily answers stay hidden until the matching reveal condition is met. Do not add content you do not want your partner to see when the feature reveals or shares it.',
-          'Paeonia does not automatically restore content from an ended relationship if the same two people pair again later.',
+          'If one of you left the relationship and the same two of you pair again within about 30 days, you can both choose to get back the answers, chats, memories, drawings, photos and voice messages you shared. It only comes back if both of you say yes. Locations, hearts, call history, nicknames and recaps were deleted when the relationship ended and do not come back.',
         ],
       },
       {
@@ -203,7 +203,7 @@ export const legalEn = {
       {
         heading: 'How long we keep data',
         paragraphs: [
-          'We keep active account and relationship data while it is needed to provide Paeonia. When a relationship ends, shared content is hidden immediately and is normally scheduled for deletion after about 30 days. Latest shared locations are deleted immediately. Local private caches are hidden or cleared when access ends.',
+          'We keep active account and relationship data while it is needed to provide Paeonia. When a relationship ends, shared content is hidden immediately and is normally scheduled for deletion after about 30 days. Latest shared locations are deleted immediately. If the same two people pair again before then, they can both choose to get the hidden content back. Content from a relationship that ended because an account was deleted never comes back. Local private caches are hidden or cleared when access ends.',
           'Reported-content snapshots are kept while a report is open and normally for 180 days after it is resolved. The report record, moderation actions, block state, safety warning, subscription records, privacy-request audit records, and limited security or legal records may be kept longer when needed for safety, accounting, dispute handling, fraud prevention, or legal obligations.',
           'Pending uploads and operational records are kept only as long as needed to finish, retry, secure, or clean up the related action. Notification and request records are normally deleted after about 30 days, and call connection reports after 30 days. A copy of your data that you prepare with Download my data is deleted from our servers after three days, or sooner if you delete it. Deleted data can stay in our server backups for up to 14 days before the backups are replaced.',
           'Usage statistics and crash reports are deleted once you have not used Paeonia for a year. They are deleted sooner if you turn off Share usage statistics or delete your account.',

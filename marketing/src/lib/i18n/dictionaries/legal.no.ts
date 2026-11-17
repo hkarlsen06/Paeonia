@@ -108,7 +108,7 @@ export const legalNo = {
       description: 'Slik samler Paeonia inn, bruker, deler og beskytter personopplysninger.',
     },
     title: 'Personvern',
-    updated: 'Sist oppdatert 16. november 2026',
+    updated: 'Sist oppdatert 17. november 2026',
     sections: [
       {
         heading: 'Hvem personvernteksten gjelder for',
@@ -150,7 +150,7 @@ export const legalNo = {
         heading: 'Partneren din og delt innhold',
         paragraphs: [
           'Den aktive partneren din kan se profilopplysningene og forholdsinnholdet som appen gjør til en del av fellesrommet. Enkelte daglige svar forblir skjult til vilkåret for å vise dem er oppfylt. Ikke legg til innhold du ikke vil at partneren skal se når funksjonen viser eller deler det.',
-          'Paeonia gjenoppretter ikke automatisk innhold fra et avsluttet forhold hvis de samme to personene kobler seg sammen igjen senere.',
+          'Hvis en av dere forlot forholdet og dere to kobler dere sammen igjen innen omtrent 30 dager, kan dere begge velge å få tilbake svar, samtaler, minner, tegninger, bilder og talemeldinger dere delte. Det kommer bare tilbake hvis dere begge sier ja. Posisjoner, hjerter, anropslogg, kallenavn og tilbakeblikk ble slettet da forholdet ble avsluttet, og kommer ikke tilbake.',
         ],
       },
       {
@@ -203,7 +203,7 @@ export const legalNo = {
       {
         heading: 'Hvor lenge vi beholder opplysninger',
         paragraphs: [
-          'Vi beholder aktive konto- og forholdsopplysninger så lenge de trengs for å levere Paeonia. Når et forhold avsluttes, skjules delt innhold med en gang og planlegges vanligvis slettet etter omtrent 30 dager. Nyeste delte posisjoner slettes med en gang. Lokale private mellomlagre skjules eller tømmes når tilgangen opphører.',
+          'Vi beholder aktive konto- og forholdsopplysninger så lenge de trengs for å levere Paeonia. Når et forhold avsluttes, skjules delt innhold med en gang og planlegges vanligvis slettet etter omtrent 30 dager. Nyeste delte posisjoner slettes med en gang. Kobler de samme to personene seg sammen igjen før den tid, kan begge velge å få det skjulte innholdet tilbake. Innhold fra et forhold som ble avsluttet fordi en konto ble slettet, kommer aldri tilbake. Lokale private mellomlagre skjules eller tømmes når tilgangen opphører.',
           'Kopier av rapportert innhold beholdes mens en rapport er åpen og vanligvis i 180 dager etter at den er ferdigbehandlet. Selve rapporten, modereringshandlinger, blokkeringer, sikkerhetsvarsler, abonnementsopplysninger, revisjonsspor for personvernforespørsler og begrensede sikkerhets- eller lovopplysninger kan beholdes lenger når det trengs for sikkerhet, regnskap, tvister, svindelforebygging eller rettslige plikter.',
           'Ventende opplastinger og driftsopplysninger beholdes bare så lenge de trengs for å fullføre, prøve på nytt, sikre eller rydde opp handlingen. Varslings- og forespørselsopplysninger slettes vanligvis etter omtrent 30 dager, og rapporter om samtaleforbindelsen etter 30 dager. En kopi av dataene dine som du lager med Last ned dataene mine, slettes fra serverne våre etter tre dager, eller tidligere hvis du sletter den selv. Slettede opplysninger kan bli liggende i sikkerhetskopiene på serveren i opptil 14 dager før kopiene byttes ut.',
           'Bruksstatistikk og krasjrapporter slettes når du ikke har brukt Paeonia på et år. De slettes tidligere hvis du slår av Del bruksstatistikk eller sletter kontoen.',
