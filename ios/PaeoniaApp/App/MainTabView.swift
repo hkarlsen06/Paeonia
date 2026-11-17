@@ -150,6 +150,8 @@ struct MainTabView: View {
     let todaysQuestionOpenings: TodaysQuestionOpeningStore?
 
     @State var models: MainTabModels
+    /// The tab the tab view passes through once on iPad (`MainTabView+PassThrough.swift`).
+    @State var tabPassThrough = TabPassThrough.pending
     @State var isAnswerFlowPresented = false
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
     /// Questions-tab hero card), so the cover grows from the one the user tapped.

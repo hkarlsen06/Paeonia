@@ -19,10 +19,10 @@ struct GameChatReturnTransition {
 /// The five tabs and the views they show.
 extension MainTabView {
     var tabNavigation: some View {
-        TabView(selection: Binding<MainTab>(get: { selection.wrappedValue }, set: selectTabFromTabBar)) {
+        TabView(selection: tabViewSelection) {
             ForEach(tabs) { tab in
                 Tab(value: tab) {
-                    content(for: tab)
+                    tabRoot(for: tab)
                         .paeoniaBannerBottomEdge(at: .bottom, isActive: tab == selection.wrappedValue)
                         .toolbarVisibility(gameTabBarVisibility, for: .tabBar)
                         .onGeometryChange(for: CGFloat.self) {
@@ -38,6 +38,7 @@ extension MainTabView {
                 .accessibilityIdentifier("mainTab.\(tab.rawValue)")
             }
         }
+        .opacity(tabPassThrough.passingTab == nil ? 1 : 0).task(id: launchOverlayShowing) { await passThroughTab() }
         .paeoniaBanner(
             bannerCenter,
             onTap: actions.openWidgetDrawing
