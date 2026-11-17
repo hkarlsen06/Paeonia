@@ -16,14 +16,20 @@ extension AccessRouteResolution {
         )
     )
 
-    static func pairedForFlowTest(ownerUserID: UUID) -> AccessRouteResolution {
-        let snapshot = AccessSyncSnapshot.testPaired(ownerUserID: ownerUserID)
+    static func pairedForFlowTest(
+        ownerUserID: UUID,
+        coupleID: UUID = UUID(),
+        firstDayFinishedAt: Date? = nil
+    ) -> AccessRouteResolution {
+        let snapshot = AccessSyncSnapshot.testPaired(ownerUserID: ownerUserID, coupleID: coupleID)
+        var relationshipState = snapshot.relationshipState
+        relationshipState?.firstDayFinishedAt = firstDayFinishedAt
         return AccessRouteResolution(
             route: .paired,
             snapshot: AccessRouteSnapshot(
                 userEntitlement: snapshot.userEntitlement,
                 coupleEntitlement: snapshot.coupleEntitlement,
-                relationshipState: snapshot.relationshipState,
+                relationshipState: relationshipState,
                 hasPendingInvite: false
             )
         )
@@ -89,6 +95,12 @@ actor ScriptedAccessRouteService: AccessRouteServicing {
     }
 
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
+
+    private(set) var firstDayFinishedCoupleIDs: [UUID] = []
+
+    func markFirstDayFinished(coupleID: UUID) async throws {
+        firstDayFinishedCoupleIDs.append(coupleID)
+    }
 }
 
 enum FlowTestError: Error {

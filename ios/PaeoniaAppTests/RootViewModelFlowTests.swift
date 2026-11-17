@@ -70,6 +70,42 @@ struct RootViewModelFlowTests {
         #expect(viewModel.state == .unauthenticated)
     }
 
+    // MARK: - First day after pairing
+
+    /// Signing out clears this phone's record of the first day, so signing back in
+    /// starts with an empty celebration store. The server's record decides.
+    @Test func returningMemberWhoFinishedTheFirstDayLandsOnHomeAfterSigningIn() async {
+        let access = ScriptedAccessRouteService([
+            .pairedForFlowTest(ownerUserID: userID, firstDayFinishedAt: Date(timeIntervalSince1970: 1_900_000_000)),
+        ])
+        let viewModel = makeViewModel(auth: FlowAuthService(signInSession: completeSession), access: access)
+        await viewModel.start()
+
+        await viewModel.signInWithGoogle()
+
+        #expect(viewModel.state == .paired)
+        #expect(!viewModel.isPairingCelebrationPresented)
+        #expect(!viewModel.isFirstDayPresented)
+    }
+
+    @Test func newMemberSeesTheFirstDayAndFinishingItTellsTheServer() async {
+        let coupleID = UUID()
+        let access = ScriptedAccessRouteService([.pairedForFlowTest(ownerUserID: userID, coupleID: coupleID)])
+        let viewModel = makeViewModel(auth: FlowAuthService(signInSession: completeSession), access: access)
+        await viewModel.start()
+
+        await viewModel.signInWithGoogle()
+        #expect(viewModel.isPairingCelebrationPresented)
+
+        viewModel.dismissPairingCelebration()
+        #expect(viewModel.isFirstDayPresented)
+        #expect(await access.firstDayFinishedCoupleIDs.isEmpty)
+
+        viewModel.finishFirstDay()
+        #expect(!viewModel.isFirstDayPresented)
+        #expect(await waitUntil { await access.firstDayFinishedCoupleIDs == [coupleID] })
+    }
+
     // MARK: - Slow cold launch
 
     @Test func slowColdLaunchShowsTheSavedPairedStateUntilTheServerAnswers() async throws {

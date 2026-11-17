@@ -241,6 +241,7 @@
       await store.resolveAccess(hasPendingInvite: hasPendingInvite)
     }
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
+    func markFirstDayFinished(coupleID _: UUID) async throws {}
   }
 
   actor DeveloperLocalFlowPairingService: PairingServicing {

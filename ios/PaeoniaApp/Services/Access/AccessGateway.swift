@@ -3,6 +3,7 @@ import Foundation
 protocol AccessGateway: Actor {
     func loadAccessSnapshot() async throws -> RemoteAccessSnapshot
     func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws
+    func markFirstDayFinished(coupleID: UUID) async throws
 }
 
 actor LiveAccessGateway: AccessGateway {
@@ -31,12 +32,22 @@ actor LiveAccessGateway: AccessGateway {
 
         try await client.mutation(
             "relationship:mark_relationship_ended_notice_seen",
-            args: MarkRelationshipEndedNoticeSeenRequest(coupleID: coupleID)
+            args: RelationshipCoupleRequest(coupleID: coupleID)
+        )
+    }
+
+    func markFirstDayFinished(coupleID: UUID) async throws {
+        try await PaeoniaSignedIn.require(isSignedIn)
+
+        try await client.mutation(
+            "relationship:mark_first_day_finished",
+            args: RelationshipCoupleRequest(coupleID: coupleID)
         )
     }
 }
 
-nonisolated private struct MarkRelationshipEndedNoticeSeenRequest: Encodable {
+/// The couple a relationship call is about.
+nonisolated private struct RelationshipCoupleRequest: Encodable {
     let coupleID: UUID
 
     enum CodingKeys: String, CodingKey {

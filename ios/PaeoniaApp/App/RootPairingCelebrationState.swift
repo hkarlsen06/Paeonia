@@ -67,12 +67,14 @@ struct RootPairingCelebrationState {
         marksSeenWhenPairIDArrives = false
     }
 
-    /// Applies a committed access resolution. An unseen pair always shows the
-    /// celebration with its intro, whether the couple just linked or the app
-    /// opened into a pair this phone has not celebrated yet. A pair whose first
-    /// day sequence was cut short shows the sequence again.
+    /// Applies a committed access resolution. A person the server says finished
+    /// the first day sequence in this couple sees neither, so signing back in or a
+    /// new phone lands on Home. Otherwise an unseen pair shows the celebration with
+    /// its intro, whether the couple just linked or the app opened into a pair this
+    /// phone has not celebrated yet, and a pair whose first day sequence was cut
+    /// short shows the sequence again.
     mutating func update(for resolution: AccessRouteResolution) {
-        guard resolution.route == .paired else {
+        guard resolution.route == .paired, !resolution.hasFinishedFirstDay else {
             clear()
             return
         }
@@ -97,6 +99,18 @@ struct RootPairingCelebrationState {
         if let pairID, hasSeen, let progress = store.postPairingProgress(forPairID: pairID) {
             isFirstDayPresented = !progress.isFinished
         }
+    }
+
+    /// This phone finished the pair's first day sequence and the server has not
+    /// recorded it yet, for example because the phone was offline when it ended.
+    func needsFirstDayRecorded(for resolution: AccessRouteResolution) -> Bool {
+        guard resolution.route == .paired,
+              !resolution.hasFinishedFirstDay,
+              let pairID = resolution.pairingCelebrationPairID
+        else {
+            return false
+        }
+        return store.postPairingProgress(forPairID: pairID)?.isFinished == true
     }
 
     /// Records the celebration as seen and starts the pair's first day progress.

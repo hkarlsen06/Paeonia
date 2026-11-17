@@ -647,6 +647,8 @@ actor StaticAccessRouteService: AccessRouteServicing {
     }
 
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
+
+    func markFirstDayFinished(coupleID _: UUID) async throws {}
 }
 
 private enum AccessRouteServiceTestError: Error {
@@ -661,6 +663,8 @@ private actor FailingAccessRouteService: AccessRouteServicing {
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {
         throw AccessRouteServiceTestError.unavailable
     }
+
+    func markFirstDayFinished(coupleID _: UUID) async throws {}
 }
 
 private actor BlockingAccessRouteService: AccessRouteServicing {
@@ -713,6 +717,8 @@ private actor BlockingAccessRouteService: AccessRouteServicing {
     }
 
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
+
+    func markFirstDayFinished(coupleID _: UUID) async throws {}
 }
 
 /// Drives the relationship-ended acknowledge flow: resolves to the ended notice
@@ -744,6 +750,8 @@ private actor RelationshipEndedAccessRouteService: AccessRouteServicing {
 
         noticeSeen = true
     }
+
+    func markFirstDayFinished(coupleID _: UUID) async throws {}
 
     private func resolution(route: AccessRoute) -> AccessRouteResolution {
         AccessRouteResolution(

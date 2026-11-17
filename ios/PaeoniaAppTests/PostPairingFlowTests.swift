@@ -135,6 +135,27 @@ struct PostPairingCelebrationStateTests {
         #expect(!relaunched.isFirstDayPresented)
     }
 
+    /// Signing out clears this phone's record, so only the server remembers.
+    @Test func firstDayFinishedOnTheServerShowsNothingOnAPhoneWithoutRecords() {
+        var state = RootPairingCelebrationState(store: TestPairingCelebrationStore())
+
+        state.update(for: .paired(pairID: pairID, firstDayFinishedAt: Date(timeIntervalSince1970: 1_900_000_000)))
+
+        #expect(!state.isPresented)
+        #expect(!state.isFirstDayPresented)
+    }
+
+    @Test func firstDayFinishedOnlyOnThisPhoneStillNeedsTheServer() {
+        let store = TestPairingCelebrationStore(seenPairIDs: [pairID])
+        store.savePostPairingProgress(PostPairingProgress(isFinished: true), forPairID: pairID)
+        let state = RootPairingCelebrationState(store: store)
+
+        #expect(state.needsFirstDayRecorded(for: .paired(pairID: pairID)))
+        #expect(!state.needsFirstDayRecorded(
+            for: .paired(pairID: pairID, firstDayFinishedAt: Date(timeIntervalSince1970: 1_900_000_000))
+        ))
+    }
+
     @Test func pairCelebratedWithoutFirstDayProgressShowsNothing() {
         var state = RootPairingCelebrationState(store: TestPairingCelebrationStore(seenPairIDs: [pairID]))
 
@@ -352,7 +373,7 @@ struct PostPairingFlowModelTests {
 // MARK: - Fakes
 
 private extension AccessRouteResolution {
-    static func paired(pairID: UUID) -> AccessRouteResolution {
+    static func paired(pairID: UUID, firstDayFinishedAt: Date? = nil) -> AccessRouteResolution {
         AccessRouteResolution(
             route: .paired,
             snapshot: AccessRouteSnapshot(
@@ -370,7 +391,8 @@ private extension AccessRouteResolution {
                     startedOn: "2024-03-03",
                     endedAt: nil,
                     deleteAfter: nil,
-                    endedNoticeSeenAt: nil
+                    endedNoticeSeenAt: nil,
+                    firstDayFinishedAt: firstDayFinishedAt
                 ),
                 hasPendingInvite: false
             )

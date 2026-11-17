@@ -256,10 +256,6 @@ final class RootViewModel {
         celebration.dismiss(currentResolution: route.accessResolution)
     }
 
-    func finishFirstDay() {
-        celebration.finishFirstDay(currentResolution: route.accessResolution)
-    }
-
     func refreshAfterInviteAccepted() async {
         guard let session = currentSession else {
             await refreshAuthRoute()
@@ -317,6 +313,7 @@ final class RootViewModel {
         }
         route = .access(session, resolution)
         presentPendingWidgetDrawingIfNeeded(for: resolution.route)
+        recordFinishedFirstDayIfNeeded()
     }
 
     private func showAcceptedInviteCelebration(for session: AuthSession) {
@@ -364,5 +361,30 @@ final class RootViewModel {
     private func clearPendingWidgetDrawingOpen() {
         opensWidgetDrawingWhenPaired = false
         dismissPresentedDestination()
+    }
+}
+
+// MARK: - First day
+
+extension RootViewModel {
+    func finishFirstDay() {
+        celebration.finishFirstDay(currentResolution: route.accessResolution)
+        recordFinishedFirstDayIfNeeded()
+    }
+
+    /// Tells the server this person finished the first day sequence, so signing
+    /// out or another phone never plays it again. A failed call is sent again
+    /// with the next access check.
+    private func recordFinishedFirstDayIfNeeded() {
+        guard let resolution = route.accessResolution,
+              celebration.needsFirstDayRecorded(for: resolution),
+              let coupleID = resolution.activeCoupleID,
+              let accessRouteService
+        else {
+            return
+        }
+        Task {
+            try? await accessRouteService.markFirstDayFinished(coupleID: coupleID)
+        }
     }
 }
