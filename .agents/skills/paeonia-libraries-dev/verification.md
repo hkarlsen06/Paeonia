@@ -4,7 +4,7 @@
 
 The drawing screen's scenario is `widget-drawing` (scenario ids are kebab-case). Its uploader fakes every send as delivered.
 
-1. Take a simulator and open that same one: `SIM="$(scripts/lock acquire simulator)"`, then `device_open` the device named `$SIM`. The lock can hand out Shared iPhone 2 or 3, so read the name every time. On 2026-11-18 a tap tool left on Shared iPhone sent five taps into another agent's simulator while the recording ran on Shared iPhone 3.
+1. Take a simulator and open that same one: `SIM="$(scripts/lock acquire simulator)"`, then `device_open` the device named `$SIM`. The lock can hand out Shared iPhone 2 or 3, so read the name every time. `scenario-record` exits 64 when the `--then` command's `agent-device` targets another simulator than the one this worktree holds.
 2. Run one `agent-device` command, such as `open com.apple.Preferences`, so the first tap of the recording lands.
 3. Record a send. Taps are in points on the iPhone 17 Pro simulator:
 
