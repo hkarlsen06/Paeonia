@@ -34409,6 +34409,96 @@
         }
       }
     },
+    "pairing.join.gifts.answer" : {
+      "comment" : "Row on the join screen: the partner answered a question, and their answer shows once this person answers it too.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An answer to unlock with yours"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et svar du låser opp med ditt"
+          }
+        }
+      }
+    },
+    "pairing.join.gifts.drawing" : {
+      "comment" : "Row on the join screen: the partner made a drawing for this person before they joined.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A drawing for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En tegning til deg"
+          }
+        }
+      }
+    },
+    "pairing.join.gifts.title" : {
+      "comment" : "Heading of the card on the join screen that lists what the partner made before this person joined.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på deg"
+          }
+        }
+      }
+    },
+    "pairing.join.invitedTitle" : {
+      "comment" : "Title of the screen for joining a partner. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ invited you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har invitert deg"
+          }
+        }
+      }
+    },
+    "pairing.join.invitedTitle.fallback" : {
+      "comment" : "Title of the screen for joining a partner whose name is unknown.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner invited you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din har invitert deg"
+          }
+        }
+      }
+    },
     "pairing.join.message" : {
       "comment" : "Line under the join screen title. %@ is the partner's name. The partner made the code the user is about to join.",
       "extractionState" : "manual",
@@ -34459,6 +34549,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inviter partneren min i stedet"
+          }
+        }
+      }
+    },
+    "pairing.join.notYourPartner" : {
+      "comment" : "Quiet button under Join on the join screen. Opens the sheet for typing another invite code, and reminds the person to join only their real partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not your partner? Use a different code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke partneren din? Bruk en annen kode"
           }
         }
       }
@@ -34518,7 +34626,7 @@
       }
     },
     "pairing.join.title" : {
-      "comment" : "Title of the screen for joining a partner, also used on its main button. %@ is the partner's name.",
+      "comment" : "Main button on the screen for joining a partner. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -34536,7 +34644,7 @@
       }
     },
     "pairing.join.title.fallback" : {
-      "comment" : "Title and main button of the join screen when the partner's name is not available.",
+      "comment" : "Main button on the screen for joining a partner whose name is unknown.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

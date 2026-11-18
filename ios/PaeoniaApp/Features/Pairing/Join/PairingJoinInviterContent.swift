@@ -1,16 +1,14 @@
 import SwiftUI
 
-/// The top of the join screen: the inviter's photo, who they are, and the safety
-/// note. It is laid out before the preview arrives and drops in once it does, so
-/// nothing jumps when the name loads. A former partner sees
-/// `PairingJoinRestoreContent` instead.
+/// The top of the join screen: the two photos, who invited the person, what the
+/// inviter made for them, and a warning when there was an earlier safety concern.
+/// It is laid out before the preview arrives and drops in once it does, so nothing
+/// jumps when the name loads. A former partner sees `PairingJoinRestoreContent`
+/// instead.
 struct PairingJoinInviterContent: View {
     let preview: PairingInvitePreview?
-    /// The joiner has no subscription of their own, so the screen says the
-    /// partner's covers them.
-    let showsCoverage: Bool
-
-    private static let avatarSize: CGFloat = 132
+    /// This person, whose photo leans in next to the inviter's.
+    let session: AuthSession?
 
     private var isReady: Bool {
         preview != nil
@@ -22,53 +20,102 @@ struct PairingJoinInviterContent: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space24) {
-            avatar
-                .screenEntrance(order: 1, isReady: isReady)
+            PairingCouplePhotos(
+                ownName: session?.displayName ?? "",
+                ownPhotoAssetID: session?.profilePhotoAssetID,
+                partnerName: inviterName ?? "",
+                partnerPhotoAssetID: nil,
+                partnerPhotoProvider: InviterPhotoProvider(url: preview?.inviterPhotoURL)
+            )
+            // The inviter's photo loads once per invite, so a new code starts a new load.
+            .id(preview?.inviteID)
+            // No crossfade from the placeholder. The entrance brings the new one in.
+            .transition(.identity)
+            .screenEntrance(order: 1, isReady: isReady)
 
-            VStack(spacing: PaeoniaSpacing.space8) {
-                // The name arrives in the same update that starts the entrance, so the
-                // text swaps at once instead of blending with the placeholder copy.
-                Text(PairingJoinCopy.title(for: preview))
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .contentTransition(.identity)
-                    .accessibilityAddTraits(.isHeader)
+            header
+                .screenEntrance(order: 2, isReady: isReady)
 
-                Text(PairingJoinCopy.message(for: preview))
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .contentTransition(.identity)
-
-                if showsCoverage {
-                    Text(.pairingJoinCovered)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
+            if let gifts = preview?.firstDayGifts, !gifts.isEmpty {
+                PairingJoinGifts(gifts: gifts)
+                    .screenEntrance(order: 3, isReady: isReady)
             }
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-            .screenEntrance(order: 2, isReady: isReady)
 
-            PairingJoinSafetyNote(hasWarning: preview?.hasSafetyWarning == true)
-                .screenEntrance(order: 3, isReady: isReady)
+            if preview?.hasSafetyWarning == true {
+                PairingJoinSafetyNote(hasWarning: true)
+                    .screenEntrance(order: 3, isReady: isReady)
+            }
         }
         .frame(maxWidth: .infinity)
     }
 
-    private var avatar: some View {
-        PaeoniaProfilePhotoAvatar(
-            mediaAssetID: nil,
-            name: inviterName ?? "",
-            tint: .paeoniaPartnerTwo,
-            size: Self.avatarSize,
-            profilePhotoProvider: InviterPhotoProvider(url: preview?.inviterPhotoURL)
+    private var header: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            // The name arrives in the same update that starts the entrance, so the
+            // text swaps at once instead of blending with the placeholder copy.
+            Text(inviterName.map { .pairingJoinInvitedTitle($0) } ?? .pairingJoinInvitedTitleFallback)
+                .font(PaeoniaTypography.heroTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .contentTransition(.identity)
+                .accessibilityAddTraits(.isHeader)
+
+            Text(inviterName.map { .pairingJoinMessage($0) } ?? .pairingJoinMessageFallback)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .contentTransition(.identity)
+        }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// What the inviter made before this person joined. It names the things without
+/// showing them, because the person unwraps them after joining.
+private struct PairingJoinGifts: View {
+    let gifts: [PairingInviteGift]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            Text(.pairingJoinGiftsTitle)
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityAddTraits(.isHeader)
+
+            ForEach(gifts, id: \.self) { gift in
+                Label {
+                    Text(gift.title)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                } icon: {
+                    SettingsMenuIcon(systemName: gift.symbol)
+                }
+            }
+        }
+        .multilineTextAlignment(.leading)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(PaeoniaSpacing.cardContentPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .paeoniaCardSurface(
+            in: RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous),
+            fill: .paeoniaSurfacePrimary
         )
-        // The avatar loads once per identity, so a new invite starts a new load.
-        .id(preview?.inviteID)
-        // No crossfade from the placeholder. The entrance brings the new one in.
-        .transition(.identity)
-        // The title right under it already names the person.
-        .accessibilityHidden(true)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private extension PairingInviteGift {
+    var title: LocalizedStringResource {
+        switch self {
+        case .drawing: .pairingJoinGiftsDrawing
+        case .answer: .pairingJoinGiftsAnswer
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .drawing: "scribble.variable"
+        case .answer: "text.bubble.fill"
+        }
     }
 }
 
@@ -100,16 +147,5 @@ struct PairingJoinSafetyNote: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
-    }
-}
-
-enum PairingJoinCopy {
-    /// The screen title, which is also the Join button's label.
-    static func title(for preview: PairingInvitePreview?) -> LocalizedStringResource {
-        preview?.inviterDisplayName?.trimmedNonEmpty.map { .pairingJoinTitle($0) } ?? .pairingJoinTitleFallback
-    }
-
-    static func message(for preview: PairingInvitePreview?) -> LocalizedStringResource {
-        preview?.inviterDisplayName?.trimmedNonEmpty.map { .pairingJoinMessage($0) } ?? .pairingJoinMessageFallback
     }
 }

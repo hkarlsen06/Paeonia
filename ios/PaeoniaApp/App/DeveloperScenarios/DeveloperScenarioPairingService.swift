@@ -41,7 +41,8 @@
         expiresAt: DeveloperScenarioFixture.now.addingTimeInterval(86_400),
         hasSafetyWarning: mode == .safetyWarning,
         canRestore: mode == .restorable || mode == .restoreWaiting,
-        restoreRequested: mode == .restoreWaiting
+        restoreRequested: mode == .restoreWaiting,
+        firstDayGifts: mode == .ready ? [.drawing, .answer] : []
       )
     }
     func rotateInvite(

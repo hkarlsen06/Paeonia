@@ -6,9 +6,6 @@ import SwiftUI
 struct PairingJoinRestoreContent: View {
     let preview: PairingInvitePreview
     let session: AuthSession?
-    /// The joiner has no subscription of their own, so the screen says the
-    /// partner's covers them.
-    let showsCoverage: Bool
     let isWaitingForPartner: Bool
 
     private var partnerName: String? {
@@ -17,7 +14,7 @@ struct PairingJoinRestoreContent: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space24) {
-            RelationshipRestoreCouple(
+            PairingCouplePhotos(
                 ownName: session?.displayName ?? "",
                 ownPhotoAssetID: session?.profilePhotoAssetID,
                 partnerName: partnerName ?? "",
@@ -56,12 +53,6 @@ struct PairingJoinRestoreContent: View {
             Text(message)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
-
-            if showsCoverage, !isWaitingForPartner {
-                Text(.pairingJoinCovered)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-            }
         }
         .multilineTextAlignment(.center)
         .fixedSize(horizontal: false, vertical: true)

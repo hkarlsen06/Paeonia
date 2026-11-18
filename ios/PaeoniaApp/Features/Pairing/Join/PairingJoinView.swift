@@ -12,7 +12,7 @@ struct PairingJoinView: View {
     let session: AuthSession?
     /// The joiner has no subscription of their own, so this screen stands in for
     /// the paywall. It says the partner's subscription covers them and keeps the
-    /// paywall's sign out and delete account links.
+    /// paywall's sign out and delete account actions in its More options menu.
     let replacesPaywall: Bool
     /// Checks a code typed in the code sheet and, if it works, saves it as the
     /// partner code. Returns false to keep the sheet open.
@@ -112,11 +112,10 @@ struct PairingJoinView: View {
             PairingJoinRestoreContent(
                 preview: shownPreview,
                 session: session,
-                showsCoverage: replacesPaywall,
                 isWaitingForPartner: showsWaiting
             )
         } else {
-            PairingJoinInviterContent(preview: shownPreview, showsCoverage: replacesPaywall)
+            PairingJoinInviterContent(preview: shownPreview, session: session)
         }
     }
 
@@ -150,28 +149,45 @@ struct PairingJoinView: View {
         }
     }
 
+    /// The main choice, with the coverage note above it, and the other ways out under
+    /// it in the More options menu. The plain join keeps another code as a link,
+    /// because that link also asks the person to join only their real partner.
     private var actions: some View {
         VStack(spacing: PaeoniaSpacing.space4) {
+            if replacesPaywall, !showsWaiting {
+                Text(.pairingJoinCovered)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, PaeoniaSpacing.space8)
+            }
+
             if isRestoreOffer {
                 restoreButtons
-                moreOptionsMenu
             } else {
-                joinButton(PairingJoinCopy.title(for: shownPreview), restore: false, id: "pairing.join.accept")
+                joinButton(joinTitle, restore: false, id: "pairing.join.accept")
                     .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isAccepting || didJoin))
                     .disabled(!canJoin)
 
-                quietButton(.pairingJoinOtherCode) {
+                Button {
                     isEnteringCode = true
+                } label: {
+                    Text(.pairingJoinNotYourPartner)
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                        .contentShape(Rectangle())
                 }
-
-                quietButton(.pairingJoinNoCode, action: onForgetCode)
-
-                if replacesPaywall {
-                    accountActions
-                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
             }
+
+            moreOptionsMenu
         }
         .disabled(viewModel.isAccepting || didJoin)
+    }
+
+    private var joinTitle: LocalizedStringResource {
+        shownPreview?.inviterDisplayName?.trimmedNonEmpty.map { .pairingJoinTitle($0) } ?? .pairingJoinTitleFallback
     }
 
     private func joinButton(_ title: LocalizedStringResource, restore: Bool, id: String) -> some View {
@@ -186,15 +202,6 @@ struct PairingJoinView: View {
 
     private var canJoin: Bool {
         viewModel.preview(for: code) != nil && !viewModel.isChecking
-    }
-
-    private func quietButton(_ title: LocalizedStringResource, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(PaeoniaQuietButtonStyle())
     }
 
     // MARK: - Actions
@@ -264,19 +271,22 @@ extension PairingJoinView {
         }
     }
 
-    /// The restore offer shows only its two choices. This menu holds the other ways
-    /// out, which the plain join shows as links.
+    /// The other ways out: another code (the plain join has it as a link instead),
+    /// inviting instead, and the paywall's account actions when this screen stands
+    /// in for it. While the inviter decides, only the account actions.
     @ViewBuilder
     private var moreOptionsMenu: some View {
         if !showsWaiting || replacesPaywall {
             Menu {
-                if !showsWaiting {
+                if isRestoreOffer, !showsWaiting {
                     Button {
                         isEnteringCode = true
                     } label: {
                         Label { Text(.pairingJoinOtherCode) } icon: { Image(systemName: "number") }
                     }
+                }
 
+                if !showsWaiting {
                     Button(action: onForgetCode) {
                         Label { Text(.pairingJoinNoCode) } icon: { Image(systemName: "person.badge.plus") }
                     }
@@ -306,34 +316,7 @@ extension PairingJoinView {
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
-            .accessibilityIdentifier("pairing.join.restore.moreOptions")
+            .accessibilityIdentifier("pairing.join.moreOptions")
         }
-    }
-
-    /// The same quiet links the paywall and profile setup have.
-    private var accountActions: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            Button(action: onSignOut) {
-                accountActionLabel(.authSignOutButton)
-            }
-
-            Text(verbatim: "·")
-                .accessibilityHidden(true)
-
-            Button {
-                isConfirmingDelete = true
-            } label: {
-                accountActionLabel(.authDeleteAccountButton)
-            }
-        }
-        .buttonStyle(.plain)
-        .font(PaeoniaTypography.caption)
-        .foregroundStyle(.paeoniaTextTertiary)
-    }
-
-    private func accountActionLabel(_ title: LocalizedStringResource) -> some View {
-        Text(title)
-            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-            .contentShape(Rectangle())
     }
 }

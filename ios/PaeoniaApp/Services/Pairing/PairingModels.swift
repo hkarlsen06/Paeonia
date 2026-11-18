@@ -178,6 +178,9 @@ nonisolated struct PairingInvitePreview: Decodable, Equatable, Sendable {
     var canRestore = false
     /// This person already asked to bring it back and waits for the inviter's answer.
     var restoreRequested = false
+    /// What the inviter made before this person joined, which waits for them to unwrap.
+    /// Empty for a flagged or restorable invite.
+    var firstDayGifts: [PairingInviteGift] = []
 
     enum CodingKeys: String, CodingKey {
         case inviteID = "invite_id"
@@ -188,7 +191,14 @@ nonisolated struct PairingInvitePreview: Decodable, Equatable, Sendable {
         case inviterPhotoURL = "inviter_photo_url"
         case canRestore = "can_restore"
         case restoreRequested = "restore_requested"
+        case firstDayGifts = "first_day_gifts"
     }
+}
+
+/// A kind of first day content the inviter made before the partner joined.
+nonisolated enum PairingInviteGift: String, Decodable, Sendable {
+    case drawing
+    case answer
 }
 
 nonisolated enum PairingJoinResult: Equatable, Sendable {

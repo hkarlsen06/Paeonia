@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The two people at the top of the restore screens: this person's photo and the
-/// former partner's, leaning in toward each other with a heart where they meet.
-/// While the person waits for the answer, the heart beats softly.
-struct RelationshipRestoreCouple: View {
+/// The two people at the top of the join and restore screens: this person's photo
+/// and the partner's, leaning in toward each other with a heart where they meet.
+/// While the person waits for the partner's answer, the heart beats softly.
+struct PairingCouplePhotos: View {
     let ownName: String
     let ownPhotoAssetID: UUID?
     let partnerName: String

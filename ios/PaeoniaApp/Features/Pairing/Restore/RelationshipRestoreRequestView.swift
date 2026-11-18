@@ -33,7 +33,7 @@ struct RelationshipRestoreRequestView: View {
     var body: some View {
         PaeoniaScreenScroll {
             VStack(spacing: PaeoniaSpacing.space24) {
-                RelationshipRestoreCouple(
+                PairingCouplePhotos(
                     ownName: session?.displayName ?? "",
                     ownPhotoAssetID: session?.profilePhotoAssetID,
                     partnerName: partnerName ?? "",
