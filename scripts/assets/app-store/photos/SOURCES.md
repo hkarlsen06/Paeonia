@@ -11,12 +11,11 @@
 | `copenhagen-cafe.jpg` | https://unsplash.com/photos/a-cup-of-coffee-and-some-pastries-on-a-table-G36pUixWrOA | [Simon Follin](https://unsplash.com/@simonfollin) |
 | `beach-dunes.jpg` | https://unsplash.com/photos/a-sandy-beach-next-to-the-ocean-under-a-cloudy-sky-7gsDvwtB_oQ | [Sebastian Puskeiler](https://unsplash.com/@keiler) |
 | `beach-ice-cream.jpg` | https://unsplash.com/photos/a-hand-holding-an-ice-cream-cone-in-front-of-a-blue-sky-QF03mdb14QI | [Yuika Takamura](https://unsplash.com/@blue_hamberts) |
-| `elena-portrait.jpg` | https://unsplash.com/photos/woman-in-white-crew-neck-shirt-6RHjS66Hs-Y | [Artur Rekstad](https://unsplash.com/@arturrekstad) |
 | `question-cat.jpg` | https://unsplash.com/photos/a-fluffy-grey-cat-sits-on-a-windowsill-looking-out-7wNZYV2nHgc | [Sarah Windeler](https://unsplash.com/@hyggepause) |
 | `question-snow.jpg` | https://unsplash.com/photos/a-city-street-is-covered-in-snow-at-night--qv6y0uwihE | [Alexander Fastovets](https://unsplash.com/@darkmoon_afa) |
 | `question-tulips.jpg` | https://unsplash.com/photos/fresh-tulips-are-displayed-in-paper-bags-WYlu98J-oN4 | [Eugenia Pan'kiv](https://unsplash.com/@eugenivy_now) |
 | `question-bike.jpg` | https://unsplash.com/photos/a-bicycle-is-parked-next-to-a-bush-of-flowers-CAG2fOmgrhk | [Anya Chernykh](https://unsplash.com/@anyachernykh) |
 
-`elena-portrait.jpg` is an 801 px square crop of the 1420 px wide original, cut to match `marketing/static/art/elena.webp`. Hjalmar's profile photo is `marketing/static/art/hjalmar.webp`, the developer's own photo.
+`elena-portrait.jpg` is not a photo of a real person. It was generated with Codex `image_gen` on 18 November 2026, because a stock photo licenses the photographer's copyright but not the consent of the person in it, and Elena appears as a partner in ads for the app. `marketing/static/art/elena.webp` is the same image at 160 px. The original is `round2-candidate-1.png` in `~/agent-shots/paeonia/2026-11-18-elena-portrait/`, which expires after 14 days, so this file is the one to keep. Hjalmar's profile photo is `marketing/static/art/hjalmar.webp`, the developer's own photo.
 
 The `question-*.jpg` photos are for the film's question recording (`scripts/app-store-content --question-film`). The script uploads all of them except `question-snow.jpg`, which Hjalmar picks in the recording, so it goes into the simulator's photo library with `xcrun simctl addmedia`.
