@@ -1,11 +1,12 @@
 #if DEBUG
   import Foundation
 
-  /// Home with the notice before access ends (`AccessNotice`), for the person who pays and for the
+  /// Home with a notice about the subscription (`AccessNotice`), for the person who pays and for the
   /// partner. Each one builds what the server sends that person and runs the app's own rule on it.
   nonisolated extension DeveloperScenario {
     static let accessNotices: [DeveloperScenario] = [
       homePaymentProblemPayer, homePaymentProblemPartner, homeAccessEndingPayer, homeAccessEndingPartner,
+      homeSubscriptionRunningPayer, homeSubscriptionRunningPartner,
     ]
 
     static let homePaymentProblemPayer = DeveloperScenario(
@@ -25,6 +26,15 @@
       "Renewal is off and access ends in four days; the partner sees one line", .paywall
     ) { DeveloperPairedScenarioHost(scenario: $0) }
 
+    static let homeSubscriptionRunningPayer = DeveloperScenario(
+      "home-subscription-running-payer", "Home · six-month reminder · payer",
+      "The subscription has run for half a year; the payer is told when it renews and where to cancel", .paywall
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
+    static let homeSubscriptionRunningPartner = DeveloperScenario(
+      "home-subscription-running-partner", "Home · six-month reminder · partner",
+      "Same couple from the partner's side; no notice", .paywall
+    ) { DeveloperPairedScenarioHost(scenario: $0) }
+
     /// The notice Home shows in this scenario, from the entitlements the server would send.
     var accessNotice: AccessNotice? {
       let now = Date.now
@@ -33,13 +43,15 @@
       let me = DeveloperScenarioFixture.currentUserID
       let partner = DeveloperScenarioFixture.partnerUserID
       func entitlements(
-        payer: UUID, status: String, accessEndsAt: Date?
+        payer: UUID, status: String, accessEndsAt: Date?, subscribedDaysAgo: Double = 30
       ) -> (RemoteUserEntitlement, RemoteCoupleEntitlement) {
         let paying = payer == me
+        let subscribedSince = Calendar.current.startOfDay(for: now).addingTimeInterval(-subscribedDaysAgo * 86_400)
         let user = RemoteUserEntitlement(
           userID: me, isEntitled: paying, source: paying ? "storekit" : nil, status: paying ? status : nil,
           productID: nil, billingPeriod: paying ? "yearly" : nil, currentPeriodEnd: paying ? periodEnd : nil,
-          updatedAt: now
+          updatedAt: now, willRenew: paying ? accessEndsAt == nil : nil,
+          subscribedSince: paying ? subscribedSince : nil
         )
         // The server shows the partner a payer's grace period as plain `active`.
         let couple = RemoteCoupleEntitlement(
@@ -55,6 +67,10 @@
       case .homePaymentProblemPartner: pair = entitlements(payer: partner, status: "grace", accessEndsAt: nil)
       case .homeAccessEndingPayer: pair = entitlements(payer: me, status: "active", accessEndsAt: periodEnd)
       case .homeAccessEndingPartner: pair = entitlements(payer: partner, status: "active", accessEndsAt: periodEnd)
+      case .homeSubscriptionRunningPayer:
+        pair = entitlements(payer: me, status: "active", accessEndsAt: nil, subscribedDaysAgo: 181)
+      case .homeSubscriptionRunningPartner:
+        pair = entitlements(payer: partner, status: "active", accessEndsAt: nil, subscribedDaysAgo: 181)
       default: return nil
       }
       return AccessNotice(user: pair.0, couple: pair.1, now: now)

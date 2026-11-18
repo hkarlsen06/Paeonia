@@ -14,6 +14,10 @@ nonisolated protocol AdminGateway: Sendable {
     func unbanUser(id: UUID) async throws
     /// Newest first, up to 100. Pass a user to see only the actions about them.
     func loadAuditLog(targetUserID: UUID?) async throws -> [AdminAuditEntry]
+    /// The reports nobody has acted on yet, the one that has waited longest first, up to 100.
+    func loadOpenReports() async throws -> [AdminOpenReport]
+    /// The open requests to correct something, the one that has waited longest first, up to 100.
+    func loadOpenCorrectionRequests() async throws -> [AdminCorrectionRequest]
 }
 
 nonisolated struct LiveAdminGateway: AdminGateway {
@@ -52,6 +56,14 @@ nonisolated struct LiveAdminGateway: AdminGateway {
             "admin:get_audit_log",
             args: AuditLogRequest(targetUserID: targetUserID)
         )
+    }
+
+    func loadOpenReports() async throws -> [AdminOpenReport] {
+        try await client.query("admin:list_open_reports")
+    }
+
+    func loadOpenCorrectionRequests() async throws -> [AdminCorrectionRequest] {
+        try await client.query("admin:list_open_correction_requests")
     }
 }
 

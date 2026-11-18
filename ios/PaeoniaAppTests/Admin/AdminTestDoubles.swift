@@ -48,6 +48,8 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
         var detailAfterChange: AdminUserDetail?
         var auditEntries: [AdminAuditEntry]
         var auditEntriesAfterChange: [AdminAuditEntry]
+        var openReports = [AdminOpenReport]()
+        var correctionRequests = [AdminCorrectionRequest]()
         var error: (any Error)?
         var changeError: (any Error)?
         var auditError: (any Error)?
@@ -144,6 +146,24 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
                 throw error
             }
             return state.auditEntries
+        }
+    }
+
+    func loadOpenReports() async throws -> [AdminOpenReport] {
+        try locked { state in
+            if let error = state.error {
+                throw error
+            }
+            return state.openReports
+        }
+    }
+
+    func loadOpenCorrectionRequests() async throws -> [AdminCorrectionRequest] {
+        try locked { state in
+            if let error = state.error {
+                throw error
+            }
+            return state.correctionRequests
         }
     }
 

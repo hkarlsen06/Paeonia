@@ -85,6 +85,38 @@ struct AccessNoticeTests {
         #expect(paymentProblem?.id != AccessNotice.paymentProblem(graceEndsAt: endsAt + 30 * day).id)
     }
 
+    @Test func aRunningSubscriptionRemindsOnlyThePayerForTwoWeeksEveryHalfYear() {
+        let since = endsAt - 400 * day
+        let renewing = couple(payer: me, status: "active", accessEndsAt: nil)
+        func notice(daysIn: Double, status: String = "active", willRenew: Bool = true) -> AccessNotice? {
+            var user = own(paying: true, status: status)
+            user.willRenew = willRenew
+            user.subscribedSince = since
+            return AccessNotice(user: user, couple: renewing, now: since + daysIn * day)
+        }
+        let firstReminder = AccessNotice.running(renewsAt: endsAt, dueAt: since + 180 * day)
+
+        #expect(notice(daysIn: 179.9) == nil)
+        #expect(notice(daysIn: 180) == firstReminder)
+        #expect(notice(daysIn: 193.9) == firstReminder)
+        #expect(notice(daysIn: 194) == nil)
+        #expect(notice(daysIn: 361) == .running(renewsAt: endsAt, dueAt: since + 360 * day))
+        // Closing the first reminder leaves the next one to show.
+        #expect(notice(daysIn: 181)?.id != notice(daysIn: 361)?.id)
+
+        // A subscription that will not renew, or whose payment failed, has its own notice.
+        #expect(notice(daysIn: 181, willRenew: false) == nil)
+        #expect(notice(daysIn: 181, status: "grace") == .paymentProblem(graceEndsAt: endsAt))
+        // The partner pays nothing and hears nothing.
+        #expect(
+            AccessNotice(
+                user: own(paying: false, status: nil),
+                couple: couple(payer: partner, status: "active", accessEndsAt: nil),
+                now: since + 181 * day
+            ) == nil
+        )
+    }
+
     private func own(paying: Bool, status: String?) -> RemoteUserEntitlement {
         RemoteUserEntitlement(
             userID: me,

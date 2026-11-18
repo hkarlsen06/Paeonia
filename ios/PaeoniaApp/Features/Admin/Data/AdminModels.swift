@@ -130,3 +130,48 @@ nonisolated struct AdminStatus: Decodable, Equatable, Sendable {
         case isAdmin = "is_admin"
     }
 }
+
+/// One report nobody has acted on yet (`admin:list_open_reports`): who reported whom, why and
+/// when, with the note the reporter wrote to Paeonia. Never what was reported.
+nonisolated struct AdminOpenReport: Decodable, Equatable, Identifiable, Sendable {
+    let id: UUID
+    let reasonCode: String
+    let note: String?
+    let reporterUserID: UUID
+    let reporterDisplayName: String?
+    let reportedUserID: UUID
+    let reportedDisplayName: String?
+    let createdAt: Date
+
+    /// Nil for a reason this app version does not know.
+    var reason: PrivacyReportReason? { PrivacyReportReason(rawValue: reasonCode) }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case reasonCode = "reason"
+        case note
+        case reporterUserID = "reporter_user_id"
+        case reporterDisplayName = "reporter_display_name"
+        case reportedUserID = "reported_user_id"
+        case reportedDisplayName = "reported_display_name"
+        case createdAt = "created_at"
+    }
+}
+
+/// One open request to have something corrected (`admin:list_open_correction_requests`), with
+/// what the person wrote.
+nonisolated struct AdminCorrectionRequest: Decodable, Equatable, Identifiable, Sendable {
+    let id: UUID
+    let userID: UUID
+    let userDisplayName: String?
+    let requesterNote: String?
+    let requestedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userID = "user_id"
+        case userDisplayName = "user_display_name"
+        case requesterNote = "requester_note"
+        case requestedAt = "requested_at"
+    }
+}

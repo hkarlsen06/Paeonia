@@ -344,6 +344,114 @@
         }
       }
     },
+    "admin.cases.copyReportID" : {
+      "comment" : "Menu item on an open report in the admin list. Copies the report's ID so the admin can paste it into a command.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy report ID"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopier rapport-ID"
+          }
+        }
+      }
+    },
+    "admin.cases.correctionsSection" : {
+      "comment" : "Section header above the list of open requests to correct something on the admin screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correction requests"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forespørsler om retting"
+          }
+        }
+      }
+    },
+    "admin.cases.emptyMessage" : {
+      "comment" : "Message shown on the admin screen when no report or correction request waits.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New reports and correction requests show up here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nye rapporter og forespørsler om retting vises her."
+          }
+        }
+      }
+    },
+    "admin.cases.emptyTitle" : {
+      "comment" : "Title shown on the admin screen when no report or correction request waits.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing is waiting"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingenting venter"
+          }
+        }
+      }
+    },
+    "admin.cases.reportsSection" : {
+      "comment" : "Section header above the list of open reports on the admin screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reports"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter"
+          }
+        }
+      }
+    },
+    "admin.cases.reportTitle" : {
+      "comment" : "Title of one open report in the admin list. The first argument is the name of the person who reported, the second the name of the person they reported.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ reported %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ rapporterte %2$@"
+          }
+        }
+      }
+    },
     "admin.detail.accountSection" : {
       "comment" : "Section header for a user's account facts in the admin area.",
       "extractionState" : "manual",
@@ -1010,6 +1118,24 @@
         }
       }
     },
+    "admin.hub.casesSection" : {
+      "comment" : "Section header on the admin screen above the row for reports and correction requests that wait for an admin.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs review"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Må gjennomgås"
+          }
+        }
+      }
+    },
     "admin.hub.logSection" : {
       "comment" : "Section header on the admin screen above the admin log row.",
       "extractionState" : "manual",
@@ -1024,6 +1150,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Logg"
+          }
+        }
+      }
+    },
+    "admin.hub.openCases" : {
+      "comment" : "Admin screen row, and the title of the screen it opens: reports and requests to correct something that nobody has handled yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reports and requests"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter og forespørsler"
           }
         }
       }
@@ -21681,6 +21825,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Betalingen din gikk ikke gjennom"
+          }
+        }
+      }
+    },
+    "home.accessNotice.running.button" : {
+      "comment" : "Button on the six-month subscription reminder on the Us tab. Opens the App Store page where the person manages or cancels their subscription.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage subscription"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Administrer abonnement"
+          }
+        }
+      }
+    },
+    "home.accessNotice.running.message" : {
+      "comment" : "Us tab notice text under the six-month subscription reminder. The argument is the date of the next renewal, like 18 May 2027. Settings and Subscriptions are the names of the iPhone's Settings app and its Subscriptions page.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia renews on %@. You can cancel any time in Settings, under Subscriptions."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia fornyes %@. Du kan si opp når som helst i Innstillinger, under Abonnementer."
+          }
+        }
+      }
+    },
+    "home.accessNotice.running.title" : {
+      "comment" : "Us tab notice title shown only to the person who pays, once every six months, to remind them that their subscription keeps renewing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your subscription is running"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonnementet ditt løper"
           }
         }
       }

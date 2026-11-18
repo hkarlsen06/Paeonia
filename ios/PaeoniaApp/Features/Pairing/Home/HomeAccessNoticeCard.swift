@@ -1,9 +1,9 @@
 import StoreKit
 import SwiftUI
 
-/// The Home notice before access ends (`AccessNotice`). It stays until the payment goes through,
-/// renewal is back on, or this person closes it. The person who pays gets a button to Apple's
-/// subscription page, the same sheet Settings opens.
+/// The Home notice about the subscription (`AccessNotice`). It stays until the payment goes through,
+/// renewal is back on, the reminder's days are over, or this person closes it. The person who pays
+/// gets a button to Apple's subscription page, the same sheet Settings opens.
 struct HomeAccessNoticeCard: View {
     let notice: AccessNotice
     let onDismiss: () -> Void
@@ -70,6 +70,7 @@ struct HomeAccessNoticeCard: View {
         switch notice {
         case .paymentProblem: "creditcard"
         case .ending: "calendar"
+        case .running: "arrow.triangle.2.circlepath"
         }
     }
 
@@ -79,6 +80,8 @@ struct HomeAccessNoticeCard: View {
             .homeAccessNoticePaymentTitle
         case let .ending(endsAt, _):
             .homeAccessNoticeEndingTitle(endsAt.formatted(.dateTime.day().month(.abbreviated)))
+        case .running:
+            .homeAccessNoticeRunningTitle
         }
     }
 
@@ -87,6 +90,8 @@ struct HomeAccessNoticeCard: View {
         case .paymentProblem: .homeAccessNoticePaymentMessage
         case .ending(_, canRenew: true): .homeAccessNoticeEndingPayerMessage
         case .ending(_, canRenew: false): nil
+        case let .running(renewsAt, _):
+            .homeAccessNoticeRunningMessage(renewsAt.formatted(.dateTime.day().month(.wide).year()))
         }
     }
 
@@ -95,6 +100,7 @@ struct HomeAccessNoticeCard: View {
         case .paymentProblem: .homeAccessNoticePaymentButton
         case .ending(_, canRenew: true): .homeAccessNoticeEndingButton
         case .ending(_, canRenew: false): nil
+        case .running: .homeAccessNoticeRunningButton
         }
     }
 }

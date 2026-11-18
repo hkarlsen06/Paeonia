@@ -55,7 +55,8 @@ struct PurchaseSettingsView: View {
         .task(id: viewModel.subscriptionDetailsState) {
             if case .loaded = viewModel.subscriptionDetailsState {
                 await DeliveredNotifications.clear(types: [
-                    "subscription_trial_reminder", "subscription_payment_failed", "subscription_ending"
+                    "subscription_trial_reminder", "subscription_payment_failed", "subscription_ending",
+                    "subscription_running",
                 ])
             }
         }

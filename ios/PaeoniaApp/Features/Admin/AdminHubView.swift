@@ -8,6 +8,7 @@ struct AdminHubView: View {
     var body: some View {
         List {
             Group {
+                casesSection
                 peopleSection
                 logSection
             }
@@ -17,6 +18,22 @@ struct AdminHubView: View {
         .paeoniaGroupedList()
         .navigationTitle(Text(.adminHubTitle))
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var casesSection: some View {
+        Section {
+            NavigationLink {
+                AdminOpenCasesView(gateway: gateway)
+            } label: {
+                Label {
+                    Text(.adminHubOpenCases)
+                } icon: {
+                    Image(systemName: "exclamationmark.bubble.fill")
+                }
+            }
+        } header: {
+            Text(.adminHubCasesSection)
+        }
     }
 
     private var peopleSection: some View {

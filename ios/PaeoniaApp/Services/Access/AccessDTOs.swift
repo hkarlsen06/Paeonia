@@ -56,6 +56,11 @@ nonisolated struct RemoteUserEntitlement: Codable, Equatable, Sendable {
     let billingPeriod: String?
     let currentPeriodEnd: Date?
     let updatedAt: Date?
+    /// True for an App Store subscription that renews by itself.
+    var willRenew: Bool?
+    /// When the App Store subscription was first bought. The six-month reminder counts from it
+    /// (`AccessNotice`). Nil for other access.
+    var subscribedSince: Date?
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
@@ -66,6 +71,8 @@ nonisolated struct RemoteUserEntitlement: Codable, Equatable, Sendable {
         case billingPeriod = "billing_period"
         case currentPeriodEnd = "current_period_end"
         case updatedAt = "updated_at"
+        case willRenew = "will_renew"
+        case subscribedSince = "subscribed_since"
     }
 }
 
