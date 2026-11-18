@@ -116,9 +116,10 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
     /// pass was suspended in network or disk work. All matching callers await
     /// this task, so completion means the coalesced refresh is genuinely done.
     private func runSyncLoop(identity: WidgetSyncIdentity, privacyGeneration expectedGeneration: UInt64) async {
+        var knowsDrawing = false
         repeat {
             pendingRerunIdentities.remove(identity)
-            await performSync(identity: identity)
+            knowsDrawing = await performSync(identity: identity)
         } while !Task.isCancelled
             && privacyResetCount == 0
             && expectedGeneration == privacyGeneration
@@ -131,7 +132,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
             inFlightSync = nil
         }
 
-        if !Task.isCancelled, privacyResetCount == 0, expectedGeneration == privacyGeneration,
+        if knowsDrawing, !Task.isCancelled, privacyResetCount == 0, expectedGeneration == privacyGeneration,
            Self.isAwaitingSync(defaults: defaults) {
             await Self.finishAwaitingSync(defaults: defaults)
         }
@@ -177,21 +178,20 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         defaults.set(true, forKey: awaitingSyncKey)
     }
 
-    private func performSync(identity: WidgetSyncIdentity) async {
-        guard !Task.isCancelled else {
-            return
-        }
+    /// Returns whether this phone now knows the couple's drawing: the server said there is none,
+    /// or this phone shows the one it named. A sync that failed, such as one a push starts while
+    /// the person has no couple, knows nothing.
+    private func performSync(identity: WidgetSyncIdentity) async -> Bool {
+        guard !Task.isCancelled else { return false }
         #if DEBUG
         logger.debug("Widget canvas sync started.")
         #endif
 
         // Don't overwrite a local save that hasn't reached the server yet.
         if let pendingSnapshot = pendingStore.pendingSnapshot {
-            guard await retryPendingUploadIfNeeded(pendingSnapshot) else {
-                return
-            }
+            guard await retryPendingUploadIfNeeded(pendingSnapshot) else { return false }
         } else if pendingStore.hasPending {
-            return
+            return false
         }
 
         do {
@@ -199,12 +199,12 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
                   let revisionID = state.activeRevisionID,
                   let mediaAssetID = state.payloadMediaAssetID
             else {
-                return
+                return true
             }
 
             try await updateDescription(of: state, revisionID: revisionID, identity: identity)
             if await skipsDownload(of: state, revisionID: revisionID, identity: identity) {
-                return
+                return true
             }
 
             try await applyRemoteRevision(
@@ -214,10 +214,12 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
                 identity: identity
             )
             try await updateDescription(of: state, revisionID: revisionID, identity: identity)
+            return await localStore.isShowingSavedDrawing()
         } catch {
             #if DEBUG
             logger.error("Widget sync failed: \(String(describing: error))")
             #endif
+            return false
         }
     }
 
@@ -387,13 +389,13 @@ nonisolated enum WidgetCanvasSyncServiceFactory {
 extension WidgetCanvasSyncService {
     fileprivate nonisolated static let awaitingSyncKey = "paeonia.widgetCanvas.awaitingSync"
 
-    /// The local canvas was cleared and no sync has finished since, so having no drawing on
-    /// this phone says nothing yet about the couple's drawing. Home's tile waits for the sync.
+    /// The local canvas was cleared and no sync has learned the couple's drawing since, so having
+    /// no drawing on this phone says nothing yet about it. Home's tile waits for the sync.
     nonisolated static func isAwaitingSync(defaults: UserDefaults = .standard) -> Bool {
         defaults.bool(forKey: awaitingSyncKey)
     }
 
-    /// A sync finished, whether it found a drawing or not, so the tile can show what is here.
+    /// A sync learned the couple's drawing, or that there is none, so the tile can show what is here.
     nonisolated static func finishAwaitingSync(defaults: UserDefaults = .standard) async {
         defaults.removeObject(forKey: awaitingSyncKey)
         await MainActor.run {

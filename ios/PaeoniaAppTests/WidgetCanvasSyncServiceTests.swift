@@ -24,8 +24,9 @@ struct WidgetCanvasSyncServiceTests {
     }
 
     /// Home's tile shows no sample sketch for a cleared canvas until a sync has looked for the
-    /// couple's drawing, even a sync that finds none.
-    @Test func aClearedCanvasAwaitsTheNextFinishedSync() async {
+    /// couple's drawing, even a sync that finds none. A sync the server refuses, as one a push
+    /// starts before the couple is back, has not looked.
+    @Test func aClearedCanvasAwaitsASyncThatReachesTheCouplesDrawing() async {
         let env = SyncEnvironment()
         let tile = HomeWidgetPreviewLoader(
             containerURL: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString),
@@ -36,6 +37,11 @@ struct WidgetCanvasSyncServiceTests {
         await env.service.clearForPrivacy()
         #expect(tile.load().isAwaitingSync)
 
+        env.gateway.stateError = WidgetCanvasGatewayError.emptyResponse
+        await env.service.sync(identity: Self.identity())
+        #expect(tile.load().isAwaitingSync)
+
+        env.gateway.stateError = nil
         await env.service.sync(identity: Self.identity())
         #expect(!tile.load().isAwaitingSync)
     }
@@ -476,10 +482,12 @@ private nonisolated final class SyncUploadSpy: WidgetCanvasUploading, @unchecked
 private nonisolated final class SyncGatewaySpy: WidgetCanvasGateway, @unchecked Sendable {
     var state: WidgetCanvasState?
     var signedURL: URL?
+    var stateError: (any Error)?
     private(set) var getCanvasStateCallCount = 0
 
-    func getCanvasState() -> WidgetCanvasState? {
+    func getCanvasState() throws -> WidgetCanvasState? {
         getCanvasStateCallCount += 1
+        if let stateError { throw stateError }
         return state
     }
     func signedPayloadURL(mediaAssetID: UUID) -> URL? { signedURL }
