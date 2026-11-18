@@ -11,6 +11,7 @@
     @State private var environment: DeveloperLocalFlowEnvironment
     private let partnerWritesAfter: Duration?
     private let partnerMovesAfter: Duration?
+    private let partnerAnswersAfter: Duration?
     private let presence: PartnerPresenceModel?
 
     /// `gameConversation` is a game scenario. The Games tab then shows its state, and game
@@ -21,14 +22,17 @@
     /// puts the partner's avatar over the app (`DeveloperPresenceFixture`). That long after
     /// the avatar shows, `partnerWritesAfter`, the partner writes in the game's chat. That long after
     /// the games are first read, `partnerMovesAfter`, the partner moves in the scenario's board game.
+    /// That long after the app is paired, `partnerAnswersAfter`, the partner answers today's question.
     init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil,
          gameConversation: DeveloperScenario? = nil, finishedGameRuns: Bool = false, coupleCalls: Bool = false,
          callPartner: DeveloperCallPartner? = nil, launchLink: String? = nil,
          avatarStories: StoryRingState? = nil, mapTiles: DeveloperHomeMapTiles = .live,
          mail: DeveloperMailSeed = .none, presence: PartnerPresenceModel? = nil,
-         partnerWritesAfter: Duration? = nil, partnerMovesAfter: Duration? = nil) {
+         partnerWritesAfter: Duration? = nil, partnerMovesAfter: Duration? = nil,
+         partnerAnswersAfter: Duration? = nil) {
       self.partnerWritesAfter = partnerWritesAfter
       self.partnerMovesAfter = partnerMovesAfter
+      self.partnerAnswersAfter = partnerAnswersAfter
       self.presence = presence
       // A link the app was launched with, such as a push tapped while the app was not running.
       _deepLink = State(
@@ -75,6 +79,13 @@
         try? await Task.sleep(for: partnerMovesAfter)
         guard !Task.isCancelled else { return }
         await gameFlow.playPartnerBoardMove()
+      }
+      .task {
+        guard let partnerAnswersAfter else { return }
+        while environment.rootViewModel.state != .paired, !Task.isCancelled {
+          try? await Task.sleep(for: .milliseconds(200))
+        }
+        await environment.partnerAnswersToday(after: partnerAnswersAfter)
       }
       .overlay(alignment: .topTrailing) {
         if let gameFlow = environment.gameConversationFlow,
@@ -143,6 +154,8 @@
     let mediaAlternativeEditingService: MediaAlternativeEditingService
     let homeDrawing: DeveloperHomeDrawing?
     private let homeLaunch: DeveloperHomeLaunchTiming?
+    private let dailyService: DeveloperDailyChallengeService
+    private let dailyViewModel: DailyChallengeViewModel
     private let visibilityStore = InMemoryLocationVisibilityRepository()
     private let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
 
@@ -239,12 +252,14 @@
         inviteStore: inviteStore,
         now: { DeveloperScenarioFixture.now }
       )
+      let dailyService = DeveloperDailyChallengeService(
+        mode: homeLaunch == nil ? .unanswered : .homeLaunch,
+        pendingOperationStore: pendingOperationStore,
+        initialLoadDelay: homeLaunch?.question ?? .zero
+      )
+      self.dailyService = dailyService
       let dailyViewModel = DailyChallengeViewModel(
-        service: DeveloperDailyChallengeService(
-          mode: homeLaunch == nil ? .unanswered : .homeLaunch,
-          pendingOperationStore: pendingOperationStore,
-          initialLoadDelay: homeLaunch?.question ?? .zero
-        ),
+        service: dailyService,
         operationProvider: operationProvider,
         draftStore: DeveloperLocalFlowDailyDraftStore(),
         mediaDraftStore: DeveloperLocalFlowMediaDraftStore(),
@@ -253,6 +268,7 @@
         chatService: gameFlow?.chat,
         now: { DeveloperScenarioFixture.now }
       )
+      self.dailyViewModel = dailyViewModel
       let milestoneViewModel = RelationshipMilestoneViewModel(
         dataService: DeveloperDelayedStartedOnService(
           base: RelationshipStartedOnDataService(
@@ -331,6 +347,20 @@
         widgetHistoryThumbnailLoader: NoOpWidgetRevisionThumbnailLoader(),
         partnerPresenceModel: presence ?? PartnerPresenceModel(gateway: UnavailablePartnerPresenceGateway())
       )
+    }
+
+    /// The partner answers today's question `delay` after the app is paired. The answer reaches the
+    /// view model the way the live feed brings it, and the push about it arrives a moment later, as
+    /// the server sends it after a short wait.
+    func partnerAnswersToday(after delay: Duration) async {
+      do {
+        try await Task.sleep(for: delay)
+        let result = try await dailyService.partnerAnswersToday(currentUserID: DeveloperScenarioFixture.currentUserID)
+        dailyViewModel.apply(result)
+        try await Task.sleep(for: .seconds(2.5))
+        PaeoniaAppDelegate.presentInForeground(
+          DeveloperForegroundPush.partnerAnsweredToday(coupleDayID: result.snapshot.coupleDayID))
+      } catch { }
     }
 
     func prepareHomeLaunch() async {

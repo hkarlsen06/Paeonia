@@ -20,7 +20,7 @@
       [gamePresenceControls, accessibilityColors, gameChatPreviews]
       + app + visits + accessNotices + firstSteps + topics + memoriesMap + inviter + dailyCard + lookBack + recap
       + banners + drawAndGuess + storyChain + mindMeld + consensio + piccante + guessMySpot + exquisiteCorpse
-      + boardGames + calls + presence + admin
+      + boardGames + calls + presence + foregroundNotices + admin
 
     nonisolated enum Category: String, CaseIterable, Identifiable, Sendable {
       case launchAndAuth = "State · Launch & authentication"

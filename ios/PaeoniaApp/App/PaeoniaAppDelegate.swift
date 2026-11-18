@@ -124,6 +124,17 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         let content = notification.request.content
+        #if DEBUG
+        let detail = "thread=\(content.threadIdentifier) type=\(content.userInfo["type"] as? String ?? "")"
+        logger.debug("willPresent \(detail, privacy: .public)")
+        #endif
+        completionHandler(Self.presentInForeground(content))
+    }
+
+    /// Shows a push that arrived while the app is open the way the open app shows it, and returns
+    /// how the system should present it. Developer scenarios call it with a push they make up.
+    @discardableResult
+    nonisolated static func presentInForeground(_ content: UNNotificationContent) -> UNNotificationPresentationOptions {
         let userInfo = content.userInfo
         // Communication notifications can lose custom fields when rewritten.
         // Their thread identifier survives, so it also identifies drawings and chat.
@@ -137,34 +148,30 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
 
         // Keep this independent of notification type, including future types.
         // Badge-only pushes still update the icon without interrupting the person.
-        defer { completionHandler(type == "badge_update" ? [.badge] : []) }
-
-        #if DEBUG
-        let detail = "widget=\(isWidgetUpdate) thread=\(content.threadIdentifier) type=\(type)"
-        logger.debug("willPresent \(detail, privacy: .public)")
-        #endif
+        let presentation: UNNotificationPresentationOptions = type == "badge_update" ? [.badge] : []
 
         if isGameActivity {
             Task { @MainActor in
                 LiveFeedDemand.shared.touch([.gameTurns])
             }
         }
-        guard type != "badge_update", !isGameActivity, !Self.typesShownLiveInApp.contains(type) else {
-            return
+        guard type != "badge_update", !isGameActivity, !typesShownLiveInApp.contains(type) else {
+            return presentation
         }
         let title = content.title
         let body = content.body
-        guard !title.isEmpty || !body.isEmpty else { return }
+        guard !title.isEmpty || !body.isEmpty else { return presentation }
         let deepLink = isWidgetUpdate ? .widgetDrawing : PaeoniaDeepLink(notificationUserInfo: userInfo)
         let showsPartnerAvatar = isWidgetUpdate || userInfo["actor_user_id"] is String
         let notice = PaeoniaForegroundNotice(
             title: title.isEmpty ? nil : title, message: body, deepLink: deepLink,
             showsPartnerAvatar: showsPartnerAvatar,
-            isPartnersDoing: showsPartnerAvatar && !Self.remindersAboutThePartner.contains(type)
+            isPartnersDoing: showsPartnerAvatar && !remindersAboutThePartner.contains(type)
         )
         Task { @MainActor in
             PaeoniaNotificationRouter.shared.presentForegroundNotice(notice)
         }
+        return presentation
     }
 
     /// Tapping a notification routes through the typed SwiftUI deep-link relay.

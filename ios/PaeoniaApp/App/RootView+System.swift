@@ -247,7 +247,7 @@ extension RootView {
     }
 
     func showForegroundNotice(_ notice: PaeoniaForegroundNotice?) {
-        guard allowsSystemIntegrations, let notice else {
+        guard let notice else {
             return
         }
 

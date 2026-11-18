@@ -276,6 +276,27 @@
   }
 
   extension DeveloperDailyChallengeService {
+    /// The partner answers today's question, as the live feed would bring it: the answer is there
+    /// but stays locked until this person answers too.
+    func partnerAnswersToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
+      let loaded = try await loadToday(currentUserID: currentUserID)
+      let questions = loaded.snapshot.questions.map { question in
+        guard question.isCurrentDay, question.partnerAnswer == nil else { return question }
+        return question.withLockedPartnerAnswer(DailyQuestionAnswerSummary(id: UUID(), answeredAt: Date()))
+      }
+      let result = DailyChallengeLoadResult(
+        snapshot: DailyChallengeSnapshot(
+          currentUserID: currentUserID, coupleDayID: loaded.snapshot.coupleDayID,
+          questions: questions, refreshedAt: Date()
+        ),
+        streak: loaded.streak
+      )
+      today = result
+      return result
+    }
+  }
+
+  extension DeveloperDailyChallengeService {
     /// Swaps today's question for another after a short wait, as the server does, so a
     /// skip shows its spinner and the new question arriving.
     func shuffleQuestion(currentUserID: UUID, operation _: SyncClientOperation)
@@ -340,6 +361,31 @@
   }
 
   private nonisolated extension DailyChallengeQuestion {
+    func withLockedPartnerAnswer(_ partnerAnswer: DailyQuestionAnswerSummary) -> DailyChallengeQuestion {
+      DailyChallengeQuestion(
+        id: id,
+        coupleDayID: coupleDayID,
+        coupleID: coupleID,
+        localDate: localDate,
+        effectiveLocalDate: effectiveLocalDate,
+        startsAt: startsAt,
+        endsAt: endsAt,
+        status: status,
+        questionID: questionID,
+        questionVersionID: questionVersionID,
+        questionKey: questionKey,
+        prompt: prompt,
+        shortPrompt: shortPrompt,
+        answerKinds: answerKinds,
+        ownAnswer: ownAnswer,
+        partnerAnswer: partnerAnswer,
+        canViewPartnerAnswer: ownAnswer != nil,
+        ownAnswerDetail: ownAnswerDetail,
+        partnerAnswerDetail: nil,
+        isCurrentDay: isCurrentDay
+      )
+    }
+
     func answered(
       with ownDetail: DailyQuestionAnswerDetail,
       partnerAnswer: DailyQuestionAnswerSummary?
