@@ -1,7 +1,7 @@
 import { cp, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-const compareVersions = (left, right) => {
+export const compareVersions = (left, right) => {
   const a = left.split('.').map(Number);
   const b = right.split('.').map(Number);
   return (a[0] - b[0]) || (a[1] - b[1]) || ((a[2] ?? 0) - (b[2] ?? 0));

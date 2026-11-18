@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { seedVersionMetadata } from "./appstore-metadata-files.mjs";
+import { compareVersions, seedVersionMetadata } from "./appstore-metadata-files.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -119,7 +119,11 @@ const FIELD_LIMITS = {
   release_notes: 4000
 };
 
-const FIELDS = ["name", "subtitle", "promotional_text", "description", "keywords", "release_notes"];
+// App Store Connect refuses What's New on an app's first version, so it is written only
+// once an earlier version's metadata exists.
+const IS_FIRST_VERSION = !(await fs.readdir(path.join(METADATA_OUTPUT_PATH, "version")).catch(() => []))
+  .some((name) => /^\d+(?:\.\d+){1,2}$/.test(name) && compareVersions(name, VERSION) < 0);
+const FIELDS = ["name", "subtitle", "promotional_text", "description", "keywords", ...(IS_FIRST_VERSION ? [] : ["release_notes"])];
 const STABLE_FIELDS = ["subtitle", "promotional_text"];
 const RELEASE_FIELDS = ["description", "keywords", "release_notes"];
 const TRANSLATED_FIELDS = [...STABLE_FIELDS, ...RELEASE_FIELDS];
@@ -226,7 +230,8 @@ async function writeMetadataFiles(folderName, metadata) {
     const file = path.join(METADATA_OUTPUT_PATH, scope, `${folderName}.json`);
     const data = await readMetadataJSON(file);
     for (const [field, key] of Object.entries(mapping)) {
-      if (field in metadata) data[key] = metadata[field] || "";
+      if (field === "release_notes" && IS_FIRST_VERSION) delete data[key];
+      else if (field in metadata) data[key] = metadata[field] || "";
     }
     await fs.mkdir(path.dirname(file), { recursive: true });
     await fs.writeFile(file, JSON.stringify(data, null, 2) + "\n", "utf8");
