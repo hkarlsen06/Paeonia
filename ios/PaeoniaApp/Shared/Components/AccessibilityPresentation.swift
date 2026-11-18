@@ -2,6 +2,9 @@ import SwiftUI
 import UIKit
 
 /// Optional visible tools, separate from the app's always-on accessibility semantics.
+/// Extra controls follow any assistive technology. Descriptions and transcripts follow
+/// VoiceOver only, because Voice Control, Switch Control and XCTest also set
+/// `accessibilityEnabled`, and none of them need the visible text.
 @propertyWrapper
 struct AccessibilityPresentation: DynamicProperty {
     enum Kind { case controls, media }
@@ -10,6 +13,7 @@ struct AccessibilityPresentation: DynamicProperty {
     @AppStorage("accessibility.alwaysShowControls") private var alwaysShowControls = false
     @AppStorage("accessibility.alwaysShowMediaAlternatives") private var alwaysShowMedia = false
     @Environment(\.accessibilityEnabled) private var assistiveTechnologyEnabled
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     #if DEBUG
     @Environment(\.scenarioAssistiveTechnologyEnabled) private var simulatedEnabled
     #endif
@@ -17,10 +21,14 @@ struct AccessibilityPresentation: DynamicProperty {
     init(_ kind: Kind) { self.kind = kind }
 
     var wrappedValue: Bool {
+        let system = switch kind {
+        case .controls: assistiveTechnologyEnabled
+        case .media: voiceOverEnabled
+        }
         #if DEBUG
-        let automatic = simulatedEnabled ?? assistiveTechnologyEnabled
+        let automatic = simulatedEnabled ?? system
         #else
-        let automatic = assistiveTechnologyEnabled
+        let automatic = system
         #endif
         return automatic || projectedValue.wrappedValue
     }
