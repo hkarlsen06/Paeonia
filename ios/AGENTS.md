@@ -14,6 +14,16 @@ Paths and commands in the linked guides are relative to the repository root. Rea
 
 Before adding or changing game sounds, read [the audio standard](../docs/game-audio.md). Normalize bundled effects with `python3 ios/Scripts/normalize-game-sounds.py --write`, and use the shared `GameSound` levels for playback.
 
+## Distortion waves
+
+`DistortionWavesKit` comes from Libraries.dev (`https://github.com/Jakubantalik/Libraries.dev`, MIT), linked into the app target only. It follows branch `main`, and `Package.resolved` pins the commit, so update it on purpose and look at the wave again after. Docs: `https://libraries.dev/waves.html`. The one use today is `WidgetDrawingSendWave.swift`, which plays a wave from Send on the Us tab's drawing screen.
+
+- Both sides of a `DistortionWave` are pure SwiftUI with an opaque background. SwiftUI cannot pass UIKit-backed views or materials through its Metal shaders, so they drop out of the wave. That rules out every `UIViewRepresentable` (the PencilKit canvas, MapLibre, camera and video previews, the crop view) and `.material` or glass backgrounds. To run a wave over a screen that has them, pass a picture of it from `PaeoniaAppWindow.snapshot(of:)`, as the drawing screen does.
+- The wave mounts each side three times (sharp plus two blurred copies) and once more off screen to compile its shaders. Never pass a live screen whose views own view models, `.task` work, live connections or PencilKit canvases. Pass a picture or a static view.
+- It animates when `isRevealed` changes, so mount it at `false` and flip it after it appears. `onFinish` is where the overlay goes away. Block touches on the real screen while a wave covers it.
+- Skip the wave when Reduce Motion is on. Don't play one on a screen that leaves as soon as the action finishes, such as the onboarding drawing steps, because the wave gets cut off.
+- Xcode's build system compiles the `.metal` shaders. `swift build` alone leaves them out, so check a wave through the Xcode wrappers and `scripts/scenario-record`, never only with `scripts/swift-typecheck`.
+
 ## Partner names
 
 A person can give their partner a nickname, and the server keeps it private to them. Every screen, widget and VoiceOver label shows the nickname where it would show the partner's name.
