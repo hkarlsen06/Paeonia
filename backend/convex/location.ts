@@ -3,6 +3,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { deliverMeetingLetters } from "./letters";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId } from "./lib/access";
+import { consumeRateLimit } from "./lib/rateLimits";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
 import { runClientOperation } from "./lib/clientOperations";
@@ -160,6 +161,7 @@ export const update_latest_partner_location = mutation({
     if (existing && (existing.captured_at > capturedAt || existing.client_operation_id === operationId)) {
       return [locationRow(existing)];
     }
+    await consumeRateLimit(ctx, "locationUpdate", userId);
 
     const now = nowIso();
     const values = {

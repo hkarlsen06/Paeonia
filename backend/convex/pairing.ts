@@ -49,13 +49,17 @@ async function assertPairingInviteAttemptAllowed(ctx: MutationCtx, userId: strin
   if (!(await rateLimiter.check(ctx, "pairingInviteCodeFailure", { key: codeFailureKey(userId, codeHashPrefix) })).ok) {
     fail("53300", "too many invite attempts for this code");
   }
+  if (!(await rateLimiter.check(ctx, "pairingInviteMiss", { key: userId })).ok) {
+    fail("53300", "too many invite attempts");
+  }
 }
 
-/** Only failed attempts count toward the limit for one code. */
+/** Only failed attempts count toward the limit for one code and toward the day's misses. */
 async function recordAttempt(ctx: MutationCtx, userId: string, codeHashPrefix: string, success: boolean): Promise<void> {
   await rateLimiter.limit(ctx, "pairingInviteAttempt", { key: userId });
   if (!success) {
     await rateLimiter.limit(ctx, "pairingInviteCodeFailure", { key: codeFailureKey(userId, codeHashPrefix) });
+    await rateLimiter.limit(ctx, "pairingInviteMiss", { key: userId });
   }
 }
 
@@ -406,11 +410,18 @@ async function coupleJoinedThrough(
   return couple?.status === "active" ? couple : null;
 }
 
+/** The couple the join made, null while the creator decides about a restore, or why the invite could not be joined. */
+type JoinResult = { couple_id: string | null; refusal: string | null };
+
 /**
  * Joins the partner's invite. With `p_restore`, the joiner asks to bring back the ended
  * relationship of the two (see `lib/relationshipRestore.ts`). When that can happen, the invite
- * stays pending, its creator is asked, and this returns null. When it can't, the two pair as new,
+ * stays pending, its creator is asked, and `couple_id` is null. When it can't, the two pair as new,
  * the same as without `p_restore`, and nobody is told why.
+ *
+ * A code that cannot be joined is answered with `refusal` instead of an error. A thrown error
+ * rolls the mutation back, and the counted attempt with it, which would let one account try
+ * every code. The answer commits the attempt, so guessing runs into the limits in `lib/rateLimits.ts`.
  */
 export const accept_pairing_invite = mutation({
   args: {
@@ -419,12 +430,12 @@ export const accept_pairing_invite = mutation({
     p_started_on: v.optional(v.union(v.null(), v.string())),
     p_restore: v.optional(v.boolean()),
   },
-  handler: async (ctx, args): Promise<string | null> => {
+  handler: async (ctx, args): Promise<JoinResult> => {
     const userId = await requireUserId(ctx);
 
     const reviewCode = await findActiveReviewAccessCode(ctx, args.p_invite_code);
     if (reviewCode) {
-      return await redeemReviewAccess(ctx, reviewCode.id, userId);
+      return { couple_id: await redeemReviewAccess(ctx, reviewCode.id, userId), refusal: null };
     }
 
     const codeHash = await hashPairingInviteCode(args.p_invite_code);
@@ -438,31 +449,33 @@ export const accept_pairing_invite = mutation({
       scope: "pairing_invites",
       request: { kind: "accept_pairing_invite", code_hash: codeHash, started_on: startedOn ?? "unset", restore },
     });
-    // The SQL logged each rejected attempt and then raised, which rolled the log back.
-    // The throws below roll back the rate limiter the same way, so only accepted attempts count.
-    const outcome = await runClientOperation(ctx, userId, input, async () => {
+    return await runClientOperation(ctx, userId, input, async (): Promise<JoinResult> => {
+      const refuse = async (refusal: string): Promise<JoinResult> => {
+        await recordAttempt(ctx, userId, prefix, false);
+        return { couple_id: null, refusal };
+      };
       const invite = await findInviteByCodeHash(ctx, codeHash);
-      if (!invite) fail("22023", "pairing invite is not available");
+      if (!invite) return await refuse("pairing invite is not available");
       if (invite.created_by_user_id === userId) fail("23514", "users cannot accept their own invite");
       const joined = await coupleJoinedThrough(ctx, invite, userId);
-      if (joined) return { couple_id: joined.id };
-      if (invite.status !== "pending") fail("22023", "pairing invite is not pending");
-      if (invite.expires_at <= nowIso()) fail("22023", "pairing invite is expired");
-      if (await reservedForSomeoneElse(ctx, invite, userId)) fail("22023", "pairing invite is not available");
+      if (joined) return { couple_id: joined.id, refusal: null };
+      if (invite.status !== "pending") return await refuse("pairing invite is not pending");
+      if (invite.expires_at <= nowIso()) return await refuse("pairing invite is expired");
+      if (await reservedForSomeoneElse(ctx, invite, userId)) return await refuse("pairing invite is not available");
       if ((await hasActiveCouple(ctx, userId)) || (await hasActiveCouple(ctx, invite.created_by_user_id))) {
-        fail("23505", "one of the users already has an active couple");
+        return await refuse("one of the users already has an active couple");
       }
-
-      const pairId = await getOrCreateRelationshipPair(ctx, invite.created_by_user_id, userId);
+      const knownPairId = await findRelationshipPairId(ctx, invite.created_by_user_id, userId);
       // The same answer as for a code that is gone, so a blocked person is not told about the block.
-      if (await hasActiveRelationshipBlock(ctx, pairId)) {
-        fail("22023", "pairing invite is not available");
+      if (knownPairId && (await hasActiveRelationshipBlock(ctx, knownPairId))) {
+        return await refuse("pairing invite is not available");
       }
 
+      const pairId = knownPairId ?? (await getOrCreateRelationshipPair(ctx, invite.created_by_user_id, userId));
       if (restore && (await findRestorableCouple(ctx, pairId, nowIso()))) {
         await askToRestore(ctx, invite, userId);
         await recordAttempt(ctx, userId, prefix, true);
-        return { couple_id: null };
+        return { couple_id: null, refusal: null };
       }
 
       const coupleId = await pairAsNewCouple(ctx, invite, pairId, userId, startedOn);
@@ -482,9 +495,8 @@ export const accept_pairing_invite = mutation({
         apns_collapse_id: `partner_joined:${coupleId}`,
       });
       await recordAttempt(ctx, userId, prefix, true);
-      return { couple_id: coupleId };
+      return { couple_id: coupleId, refusal: null };
     });
-    return outcome.couple_id;
   },
 });
 

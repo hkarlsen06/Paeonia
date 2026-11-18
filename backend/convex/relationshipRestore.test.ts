@@ -33,12 +33,21 @@ async function invite(user: TestUser, code: string) {
   return await user.as.mutation(api.pairing.create_pairing_invite, { p_invite_code: code, ...operation(), p_expires_at: inDays(7) });
 }
 
-async function join(user: TestUser, code: string, restore?: boolean) {
+async function accept(user: TestUser, code: string, restore?: boolean) {
   return await user.as.mutation(api.pairing.accept_pairing_invite, {
     p_invite_code: code,
     ...operation(),
     ...(restore === undefined ? {} : { p_restore: restore }),
   });
+}
+
+async function join(user: TestUser, code: string, restore?: boolean) {
+  return (await accept(user, code, restore)).couple_id;
+}
+
+/** Why the server would not let `user` join `code`. */
+async function refusal(user: TestUser, code: string, restore?: boolean) {
+  return (await accept(user, code, restore)).refusal;
 }
 
 async function answer(user: TestUser, inviteId: string, requester: TestUser, restore: boolean) {
@@ -264,9 +273,7 @@ describe("bringing an ended relationship back", () => {
     );
     expect(await preview(robin, "DEF456")).toBeUndefined();
     // The answer for a code that is gone, so the block is not told.
-    await expect(join(robin, "DEF456", true)).rejects.toMatchObject({
-      data: { code: "22023", message: "pairing invite is not available" },
-    });
+    expect(await refusal(robin, "DEF456", true)).toBe("pairing invite is not available");
   });
 
   test("a couple past its cleanup deadline, or ended by account deletion, can't come back", async () => {
@@ -324,8 +331,8 @@ describe("bringing an ended relationship back", () => {
 
     expect(await join(robin, "KMN234", true)).toBeNull();
     expect(await preview(sam, "KMN234")).toBeUndefined();
-    await expect(join(sam, "KMN234", true)).rejects.toMatchObject({ data: { code: "22023" } });
-    await expect(join(sam, "KMN234")).rejects.toMatchObject({ data: { code: "22023" } });
+    expect(await refusal(sam, "KMN234", true)).toBe("pairing invite is not available");
+    expect(await refusal(sam, "KMN234")).toBe("pairing invite is not available");
     expect((await restoreRequestOf(alex))?.partner_user_id).toBe(robin.userId);
 
     // Had Sam's request replaced Robin's, Alex's yes on Robin's request would not bring Sam back.

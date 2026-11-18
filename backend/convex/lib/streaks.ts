@@ -850,6 +850,8 @@ export async function applyStreakRestore(
     transaction_id: string;
     original_transaction_id?: string | null;
     purchased_at?: string | null;
+    /** Apple took the money back. Such a purchase restores nothing, unless it already did. */
+    revoked?: boolean;
     raw_payload_id?: string | null;
   },
 ): Promise<StreakRestoreResult> {
@@ -861,6 +863,9 @@ export async function applyStreakRestore(
     .unique();
   if (replay) {
     return { ok: true, restoredCount: replay.restored_count, replayed: true };
+  }
+  if (args.revoked) {
+    return { ok: false, error: "Apple refunded this streak restore", status: 409 };
   }
 
   // The offer may not be stored yet if the deadline passed since the last cron run.

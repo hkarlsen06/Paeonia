@@ -372,6 +372,8 @@ export type VerifiedStreakRestoreInput = {
   p_original_transaction_id: string;
   p_transaction_id: string;
   p_purchased_at?: string | null;
+  /** When Apple refunded or revoked the purchase, if it did. */
+  p_revoked_at?: string | null;
   p_signed_payload?: string | null;
   p_payload_json?: unknown;
 };
@@ -419,6 +421,7 @@ export async function recordVerifiedStreakRestore(
     transaction_id: input.p_transaction_id,
     original_transaction_id: input.p_original_transaction_id,
     purchased_at: optionalTimestampArg(input.p_purchased_at) ?? null,
+    revoked: Boolean(input.p_revoked_at),
     raw_payload_id: payloadId,
   })) as StorekitRecordResult;
 }

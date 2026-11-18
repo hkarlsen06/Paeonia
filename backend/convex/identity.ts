@@ -8,6 +8,7 @@ import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { readAccessSnapshot } from "./lib/accessSnapshot";
 import { fetchLinkedSignInProviders } from "./lib/accountDeletionProviders";
 import { authProviderFromIdentity, ensureCurrentUser, requireUserId, requireUserIdIncludingDeleted } from "./lib/auth";
+import { consumeRateLimit } from "./lib/rateLimits";
 import { type ReaderCtx, withTouch } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
@@ -198,6 +199,7 @@ export const register_user_device = mutation({
     }
 
     if (!own) {
+      await consumeRateLimit(ctx, "pushDeviceRegister", userId);
       const id = newUuid();
       await ctx.db.insert("user_devices", {
         id,

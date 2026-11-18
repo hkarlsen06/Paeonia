@@ -65,6 +65,7 @@ export const record_verified_streak_restore = internalMutation({
     p_original_transaction_id: v.string(),
     p_transaction_id: v.string(),
     p_purchased_at: nullableString,
+    p_revoked_at: nullableString,
     p_signed_payload: nullableString,
     p_payload_json: v.optional(v.any()),
   },

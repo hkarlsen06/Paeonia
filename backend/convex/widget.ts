@@ -8,6 +8,7 @@ import {
 } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
+import { consumeRateLimit } from "./lib/rateLimits";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
 import { sha256Hex } from "./lib/crypto";
@@ -413,7 +414,8 @@ export const register_widget_push_device = mutation({
   },
   handler: async (ctx, args): Promise<string> => {
     const userId = await requireUserId(ctx);
-    const kindLength = charLength(btrim(args.p_widget_kind));
+    const widgetKind = btrim(args.p_widget_kind);
+    const kindLength = charLength(widgetKind);
     if (kindLength < 1 || kindLength > 128) fail("23514", "invalid widget kind");
     const tokenLength = charLength(args.p_widget_push_token);
     if (tokenLength < 20 || tokenLength > 4096) fail("23514", "invalid widget push token");
@@ -429,7 +431,7 @@ export const register_widget_push_device = mutation({
     const sameToken = await ctx.db
       .query("widget_push_devices")
       .withIndex("by_token_hash_apns_environment_widget_kind_disabled_at", (q) =>
-        q.eq("widget_push_token_hash", tokenHash).eq("apns_environment", environment).eq("widget_kind", args.p_widget_kind),
+        q.eq("widget_push_token_hash", tokenHash).eq("apns_environment", environment).eq("widget_kind", widgetKind),
       )
       .collect();
 
@@ -463,12 +465,13 @@ export const register_widget_push_device = mutation({
     }
 
     checkWidgetDeviceColumns(locale, timeZone, appVersion);
+    await consumeRateLimit(ctx, "pushDeviceRegister", userId);
     const now = nowIso();
     const id = newUuid();
     await ctx.db.insert("widget_push_devices", {
       id,
       user_id: userId,
-      widget_kind: btrim(args.p_widget_kind),
+      widget_kind: widgetKind,
       widget_push_token: args.p_widget_push_token,
       widget_push_token_hash: tokenHash,
       apns_environment: environment,

@@ -10,10 +10,13 @@ import { fail } from "./errors";
  * up to 5 per partner).
  */
 const LIMITS = {
-  // Replaces the SQL ten-minute window: 30 invite code tries per user, and 10
-  // failed tries of one code. `pairing.ts` consumes them where the SQL logged an attempt.
+  // 30 invite code tries per user in ten minutes, and 10 failed tries of one code.
+  // `pairing.ts` consumes them in `recordAttempt`.
   pairingInviteAttempt: { kind: "token bucket", rate: 30, period: 10 * MINUTE },
   pairingInviteCodeFailure: { kind: "token bucket", rate: 10, period: 10 * MINUTE },
+  // Codes that could not be joined, per user and day. A code has 32^6 values, so the misses an
+  // account may make bound how many couples a guesser can reach. Nobody mistypes a code 20 times a day.
+  pairingInviteMiss: { kind: "token bucket", rate: 20, period: 24 * HOUR, capacity: 20 },
   pairingInviteCreate: { kind: "token bucket", rate: 30, period: HOUR },
   threadMessage: { kind: "token bucket", rate: 600, period: HOUR, capacity: 300 },
   memoryCreate: { kind: "token bucket", rate: 100, period: HOUR, capacity: 100 },
@@ -29,6 +32,13 @@ const LIMITS = {
   dataExportRequest: { kind: "token bucket", rate: 3, period: 24 * HOUR, capacity: 3 },
   // Live Activity tokens and the ends a phone reports. A phone sends a few per launch and per game session.
   liveActivity: { kind: "token bucket", rate: 120, period: HOUR, capacity: 60 },
+  // A new position for the partner's map. The app sends one every five minutes at most, plus one
+  // when the person asks, and each sends the partner's phone a push.
+  locationUpdate: { kind: "token bucket", rate: 120, period: HOUR, capacity: 60 },
+  // A push token the account has not registered before, for the app or its widget. A phone gets a
+  // new one after a reinstall or a restore, so a person uses a few a year. Without it an account
+  // could add device rows without end, and every push to it would go to all of them.
+  pushDeviceRegister: { kind: "token bucket", rate: 20, period: 24 * HOUR, capacity: 20 },
   // Starting a call. A retry of the same call and answering a ringing call count too.
   startCall: { kind: "token bucket", rate: 60, period: HOUR, capacity: 20 },
 } as const;

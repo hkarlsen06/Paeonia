@@ -112,7 +112,7 @@ actor LivePairingGateway: PairingGateway {
         startedOn: PairingStartDate?,
         restore: Bool
     ) async throws -> UUID? {
-        try await client.mutation(
+        let result: AcceptPairingInviteResult = try await client.mutation(
             "pairing:accept_pairing_invite",
             args: AcceptPairingInviteRequest(
                 inviteCode: inviteCode,
@@ -121,6 +121,12 @@ actor LivePairingGateway: PairingGateway {
                 restore: restore
             )
         )
+        // The server answers a code that cannot be joined instead of failing, so that it can
+        // count the try. Callers read it as the server error it stands for.
+        if let refusal = result.refusal {
+            throw PaeoniaConvexError.server(code: nil, message: refusal)
+        }
+        return result.coupleID
     }
 
     func answerRestore(
@@ -232,6 +238,16 @@ nonisolated private struct RotatePairingInviteRequest: Encodable {
         case clientSequence = "p_client_sequence"
         case localCreatedAt = "p_local_created_at"
         case expiresAt = "p_expires_at"
+    }
+}
+
+nonisolated private struct AcceptPairingInviteResult: Decodable {
+    let coupleID: UUID?
+    let refusal: String?
+
+    enum CodingKeys: String, CodingKey {
+        case coupleID = "couple_id"
+        case refusal
     }
 }
 

@@ -477,6 +477,9 @@ describe("redeem_streak_restore", () => {
 
     // Redeeming the same purchase again reports the same count.
     expect(await couple.second.as.action(api.access.redeem_streak_restore, restoreBody(info))).toEqual({ restoredCount: 7 });
+    // A refund after the restore keeps it, so a late retry still gets the count.
+    appleReturns(consumable(token, { revocationDate: NOW.getTime(), revocationReason: 1 }));
+    expect(await couple.second.as.action(api.access.redeem_streak_restore, restoreBody(info))).toEqual({ restoredCount: 7 });
   });
 
   test("fails with the codes the app matches on", async () => {
@@ -487,6 +490,15 @@ describe("redeem_streak_restore", () => {
     await expect(
       couple.first.as.action(api.access.redeem_streak_restore, restoreBody(info)),
     ).rejects.toMatchObject({ data: { code: "purchase_linked_to_another_account", message: "Apple transaction belongs to a different user" } });
+
+    // A purchase Apple refunded before it was used restores nothing, while a streak is still on offer.
+    const refunded = consumable(token, { revocationDate: NOW.getTime(), revocationReason: 1 });
+    appleReturns(refunded);
+    await expect(
+      couple.second.as.action(api.access.redeem_streak_restore, restoreBody(refunded)),
+    ).rejects.toMatchObject({ data: { code: "no_streak_to_restore", message: "Apple refunded this streak restore" } });
+    expect(await t.run((ctx) => ctx.db.query("streak_restorations").collect())).toHaveLength(0);
+    appleReturns(info);
 
     await t.run(async (ctx) => {
       const state = await ctx.db.query("streak_states").first();

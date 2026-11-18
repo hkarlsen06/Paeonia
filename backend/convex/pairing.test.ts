@@ -255,7 +255,7 @@ describe("preview_pairing_invite", () => {
     expect(rows[0].has_safety_warning).toBe(warned);
   });
 
-  test("throttles a user after thirty attempts and ten misses on one code", async () => {
+  test("throttles a user after ten misses on one code and twenty misses in a day", async () => {
     const t = newTest();
     const guest = await createSignedInUser(t, {});
     const preview = (code: string) => guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: code });
@@ -263,15 +263,31 @@ describe("preview_pairing_invite", () => {
       expect(await preview("ZZZZZZ")).toEqual([]);
     }
     await expectFail(preview("ZZZZZZ"), "53300", "too many invite attempts for this code");
-    // Different codes keep counting against the per-user budget of thirty.
-    for (let attempt = 0; attempt < 20; attempt += 1) {
+    // Different codes keep counting against the day's twenty misses.
+    for (let attempt = 0; attempt < 10; attempt += 1) {
       expect(await preview(`Q${String(attempt).padStart(5, "0")}`)).toEqual([]);
     }
     await expectFail(preview("WWWWWW"), "53300", "too many invite attempts");
-    // The budget refills over ten minutes.
+    // Ten minutes bring back the tries on one code, but not the day's misses.
     vi.setSystemTime(new Date("2026-10-10T12:11:00.000Z"));
+    await expectFail(preview("WWWWWW"), "53300", "too many invite attempts");
+    vi.setSystemTime(new Date("2026-10-11T12:11:00.000Z"));
     expect(await preview("WWWWWW")).toEqual([]);
     expect(await preview("ZZZZZZ")).toEqual([]);
+  });
+
+  test("throttles a user after thirty tries in ten minutes, hits included", async () => {
+    const t = newTest();
+    const owner = await inviter(t);
+    await createInvite(owner);
+    const guest = await createSignedInUser(t, {});
+    const preview = () => guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ABC123" });
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      expect(await preview()).toHaveLength(1);
+    }
+    await expectFail(preview(), "53300", "too many invite attempts");
+    vi.setSystemTime(new Date("2026-10-10T12:11:00.000Z"));
+    expect(await preview()).toHaveLength(1);
   });
 
   test("only misses count toward the limit for one code", async () => {
@@ -319,16 +335,31 @@ describe("preview_pairing_invite", () => {
 });
 
 describe("accept_pairing_invite", () => {
-  test("a refused accept rolls back and does not count toward the limits", async () => {
+  test("a wrong code sent straight to accept counts toward the limits", async () => {
     const t = newTest();
     const guest = await createSignedInUser(t, {});
-    for (let attempt = 0; attempt < 15; attempt += 1) {
-      await expectFail(
-        guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ZZZZZZ", ...operation() }),
-        "22023",
-        "pairing invite is not available",
-      );
+    const accept = (code: string) => guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: code, ...operation() });
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      expect(await accept("ZZZZZZ")).toEqual({ couple_id: null, refusal: "pairing invite is not available" });
     }
+    await expectFail(accept("ZZZZZZ"), "53300", "too many invite attempts for this code");
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      expect((await accept(`Q${String(attempt).padStart(5, "0")}`)).refusal).toBe("pairing invite is not available");
+    }
+    await expectFail(accept("WWWWWW"), "53300", "too many invite attempts");
+  });
+
+  test("a guesser who is out of misses cannot join an invite they then hit", async () => {
+    const t = newTest();
+    const owner = await inviter(t);
+    await createInvite(owner);
+    const guest = await createSignedInUser(t, {});
+    const accept = (code: string) => guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: code, ...operation() });
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await accept(`Q${String(attempt).padStart(5, "0")}`);
+    }
+    await expectFail(accept("ABC123"), "53300", "too many invite attempts");
+    expect(await t.run((ctx) => ctx.db.query("couples").collect())).toHaveLength(0);
   });
 
   test("creates the couple, both members, an accepted invite, and refresh events", async () => {
@@ -337,8 +368,10 @@ describe("accept_pairing_invite", () => {
     const guest = await createSignedInUser(t, {});
     const inviteId = await createInvite(owner);
     const op = operation();
-    const coupleId = await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...op, p_started_on: "2024-02-29" });
-    expect(await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...op, p_started_on: "2024-02-29" })).toBe(coupleId);
+    const joined = await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...op, p_started_on: "2024-02-29" });
+    const coupleId = joined.couple_id;
+    expect(joined.refusal).toBeNull();
+    expect(await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...op, p_started_on: "2024-02-29" })).toEqual(joined);
 
     const rows = await t.run(async (ctx) => ({
       couples: await ctx.db.query("couples").collect(),
@@ -377,7 +410,7 @@ describe("accept_pairing_invite", () => {
     const accept = (user: TestUser, code = "ABC123") =>
       user.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: code, ...operation() });
 
-    await expectFail(accept(guest, "ZZZZZZ"), "22023", "pairing invite is not available");
+    expect((await accept(guest, "ZZZZZZ")).refusal).toBe("pairing invite is not available");
     await expectFail(accept(owner), "23514", "users cannot accept their own invite");
     await expectFail(accept(guest, "bad"), "23514", "invalid invite code");
     await expectFail(
@@ -387,11 +420,11 @@ describe("accept_pairing_invite", () => {
     );
 
     vi.setSystemTime(new Date(inDays(8)));
-    await expectFail(accept(guest), "22023", "pairing invite is expired");
+    expect((await accept(guest)).refusal).toBe("pairing invite is expired");
     vi.setSystemTime(new Date(NOW));
 
     await revokeInvite(t, inviteId);
-    await expectFail(accept(guest), "22023", "pairing invite is not pending");
+    expect((await accept(guest)).refusal).toBe("pairing invite is not pending");
     expect(await t.run((ctx) => ctx.db.query("couples").collect())).toHaveLength(0);
   });
 
@@ -400,11 +433,9 @@ describe("accept_pairing_invite", () => {
     const owner = await inviter(t);
     await createInvite(owner);
     const paired = await createCouple(t, { entitled: false });
-    await expectFail(
-      paired.first.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() }),
-      "23505",
-      "one of the users already has an active couple",
-    );
+    expect(
+      (await paired.first.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() })).refusal,
+    ).toBe("one of the users already has an active couple");
 
     // The inviter paired with someone else after creating the invite.
     const t2 = newTest();
@@ -422,11 +453,9 @@ describe("accept_pairing_invite", () => {
       await ctx.db.insert("pairing_invites", invite);
       await ctx.db.insert("pairing_invite_secrets", { invite_id: invite.id, code_hash: await hashPairingInviteCode("MMMMMM"), created_at: NOW });
     });
-    await expectFail(
-      guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "MMMMMM", ...operation() }),
-      "23505",
-      "one of the users already has an active couple",
-    );
+    expect(
+      (await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "MMMMMM", ...operation() })).refusal,
+    ).toBe("one of the users already has an active couple");
   });
 
   test("refuses to pair a blocked pair, and works again after the block is lifted", async () => {
@@ -446,17 +475,15 @@ describe("accept_pairing_invite", () => {
         created_at: NOW,
       });
     });
-    await expectFail(
-      guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() }),
-      "22023",
-      "pairing invite is not available",
-    );
+    expect(
+      (await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() })).refusal,
+    ).toBe("pairing invite is not available");
     await t.run(async (ctx) => {
       const block = (await ctx.db.query("relationship_blocks").first())!;
       await ctx.db.patch(block._id, { revoked_at: NOW, revoked_by_user_id: owner.userId, revoke_reason: "user_unblocked" });
     });
-    const coupleId = await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() });
-    expect(coupleId).toBeDefined();
+    const joined = await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() });
+    expect(joined).toEqual({ couple_id: expect.any(String), refusal: null });
   });
 
   test("an accepted invite cannot be used a second time", async () => {
@@ -466,11 +493,9 @@ describe("accept_pairing_invite", () => {
     const other = await createSignedInUser(t, {});
     await createInvite(owner);
     await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() });
-    await expectFail(
-      other.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() }),
-      "22023",
-      "pairing invite is not pending",
-    );
+    expect(
+      (await other.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() })).refusal,
+    ).toBe("pairing invite is not pending");
   });
 });
 

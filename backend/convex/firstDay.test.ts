@@ -228,7 +228,7 @@ describe("accept_pairing_invite with a first day draft", () => {
     const t = newTest();
     const { creator, partner, draft, drawing } = await inviterWithDraft(t);
 
-    const coupleId = (await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" }))!;
+    const coupleId = (await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" })).couple_id!;
 
     const state = await t.run(async (ctx) => ({
       couple: await ctx.db.query("couples").withIndex("by_uuid", (q) => q.eq("id", coupleId)).unique(),
@@ -344,7 +344,7 @@ describe("accept_pairing_invite with a first day draft", () => {
   test("a couple that comes back on a day it already has a question gets the new draft's answer the next day", async () => {
     const t = newTest();
     const { creator, partner } = await inviterWithDraft(t);
-    const coupleId = (await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" }))!;
+    const coupleId = (await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" })).couple_id!;
     await creator.as.mutation(api.relationship.leave_relationship, op());
     const draft = await creator.as.mutation(api.firstDay.start_first_day_draft, {});
     await creator.as.mutation(api.firstDay.save_first_day_answer, {
@@ -354,7 +354,7 @@ describe("accept_pairing_invite with a first day draft", () => {
     });
     vi.setSystemTime(new Date(Date.now() + 60_000));
     const inviteId = await creator.as.mutation(api.pairing.create_pairing_invite, { ...op(), p_invite_code: "DEF456" });
-    expect(await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "DEF456", p_restore: true })).toBeNull();
+    expect((await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "DEF456", p_restore: true })).couple_id).toBeNull();
 
     expect(
       await creator.as.mutation(api.pairing.answer_relationship_restore, { ...op(), p_invite_id: inviteId, p_requester_user_id: partner.userId, p_restore: true }),
@@ -377,7 +377,7 @@ describe("accept_pairing_invite with a first day draft", () => {
     const t = newTest();
     const { creator, partner } = await inviterWithDraft(t);
     // Today's couple day follows Oslo and ends at 22:00 UTC.
-    const coupleId = (await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" }))!;
+    const coupleId = (await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" })).couple_id!;
     await creator.as.mutation(api.relationship.leave_relationship, op());
     // In Los Angeles, the instant Oslo's day ends is still the same local date.
     await t.run(async (ctx) => {
@@ -420,7 +420,7 @@ describe("accept_pairing_invite with a first day draft", () => {
       ...op(),
       p_invite_code: "ABC123",
       p_started_on: "2025-01-01",
-    }))!;
+    })).couple_id!;
     const couple = await t.run((ctx) => ctx.db.query("couples").withIndex("by_uuid", (q) => q.eq("id", coupleId)).unique());
     expect(couple?.started_on).toBe("2025-01-01");
     await t.finishAllScheduledFunctions(vi.runAllTimers);

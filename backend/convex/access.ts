@@ -100,6 +100,7 @@ const RECORD_FAILURE_CODES: Record<string, string> = {
   "Apple product is not active in Paeonia": "invalid_transaction",
   "No entitled couple for this user": "no_entitled_couple",
   "No streak is available to restore": "no_streak_to_restore",
+  "Apple refunded this streak restore": "no_streak_to_restore",
 };
 
 /** The Convex values accepted by mutations have no `undefined` fields, so round-trip through JSON. */
@@ -261,6 +262,7 @@ async function runRedeemStreakRestore(ctx: ActionCtx, args: PurchaseArgs): Promi
       p_original_transaction_id: transactionInfo.originalTransactionId,
       p_transaction_id: transactionInfo.transactionId,
       p_purchased_at: millisToIsoOrNull(transactionInfo.purchaseDate),
+      p_revoked_at: millisToIsoOrNull(transactionInfo.revocationDate),
       p_signed_payload: verified.signedTransactionInfo,
       p_payload_json: plain({ transactionInfo, uploadedTransactionInfo: uploaded, verifiedAt: nowIso() }),
     });
