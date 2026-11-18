@@ -385,6 +385,23 @@ describe("private topics", () => {
     expect(await failure(answer(outsider, flirt.questionIds[0]))).toMatchObject({ code: "42501" });
   });
 
+  test("someone without a subscription reads and takes back their own yes, and someone signed out reads nothing", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { entitled: false });
+    await seedTopic(t, "flirt", { private: true });
+    await seedTopic(t, "travel", { sortOrder: 2 });
+    const read = (user: TestUser) => user.as.query(api.topics.get_own_private_topics_consent, {});
+    const flirt = [{ title_en: "flirt en", title_nb: "flirt nb" }];
+
+    await consent(couple.first);
+    expect(await read(couple.first)).toEqual({ private_topics_consented: true, topics: flirt });
+    // The partner reads their own answer, never the other's.
+    expect(await read(couple.second)).toEqual({ private_topics_consented: false, topics: flirt });
+    await consent(couple.first, false);
+    expect(await read(couple.first)).toEqual({ private_topics_consented: false, topics: flirt });
+    expect(await failure(t.query(api.topics.get_own_private_topics_consent, {}))).toMatchObject({ code: "42501" });
+  });
+
   test("taking the yes back deletes that person's private answers and chat messages, and nothing of the partner's", async () => {
     const { t, couple, a, b } = await setup();
     const flirt = await seedTopic(t, "flirt", { private: true, count: 2 });

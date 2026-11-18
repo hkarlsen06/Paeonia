@@ -270,6 +270,50 @@ describe("prune_kept_records", () => {
     expect(await left()).toEqual({ invites: ["pending"], codes: [invites[0].id] });
   });
 
+  test("deletes an App Review code 30 days after it expired or was revoked, with who used it", async () => {
+    vi.useFakeTimers();
+    const t = newTest();
+    const endedAt = "2026-10-10T12:00:00.000Z";
+    const code = (ended: { status: "active" | "revoked"; expires_at?: string; revoked_at?: string }) => ({
+      id: newUuid(),
+      code_hash: newUuid(),
+      scenario: "pre_paired_paywalled" as const,
+      max_redemptions: 1,
+      redemption_count: 1,
+      created_at: "2026-09-10T12:00:00.000Z",
+      ...ended,
+    });
+    const ranOut = code({ status: "active", expires_at: endedAt });
+    // Revoked before its expiry, so the 30 days count from the day it was revoked.
+    const revoked = code({ status: "revoked", expires_at: "2026-12-01T00:00:00.000Z", revoked_at: endedAt });
+    const stillWorks = code({ status: "active", expires_at: "2026-12-01T00:00:00.000Z" });
+    const noExpiry = code({ status: "active" });
+    const codes = [ranOut, revoked, stillWorks, noExpiry];
+    await t.run(async (ctx) => {
+      for (const row of codes) {
+        await ctx.db.insert("review_access_codes", row);
+        await ctx.db.insert("review_access_sessions", {
+          id: newUuid(),
+          code_id: row.id,
+          user_id: newUuid(),
+          scenario: row.scenario,
+          auth_verified_at: row.created_at,
+          redeemed_at: row.created_at,
+        });
+      }
+    });
+    const left = () =>
+      t.run(async (ctx) => ({
+        codes: (await ctx.db.query("review_access_codes").collect()).map((row) => row.id),
+        sessions: (await ctx.db.query("review_access_sessions").collect()).map((row) => row.code_id),
+      }));
+
+    await prune(t, "2026-11-09T11:59:59.000Z");
+    expect(await left()).toEqual({ codes: codes.map((row) => row.id), sessions: codes.map((row) => row.id) });
+    await prune(t, "2026-11-09T12:00:01.000Z");
+    expect(await left()).toEqual({ codes: [stillWorks.id, noExpiry.id], sessions: [stillWorks.id, noExpiry.id] });
+  });
+
   test("deletes a purged couple's rows and its pair once no block or report holds the pair", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));

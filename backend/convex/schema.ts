@@ -340,7 +340,8 @@ export default defineSchema({
     .index("by_report_id", ["report_id"])
     .index("by_delete_after", ["delete_after"]),
 
-  // code_hash is unique.
+  // code_hash is unique. Deleted with its sessions 30 days after it expired or was revoked
+  // (`retention.ts`).
   review_access_codes: defineTable({
     id: uuid,
     code_hash: v.string(),
@@ -1545,6 +1546,7 @@ export default defineSchema({
       "blocked_user_id",
     ])
     .index("by_blocked_by_user_id", ["blocked_by_user_id"])
+    .index("by_blocked_user_id", ["blocked_user_id"])
     .index("by_source_report_id", ["source_report_id"]),
 
   // (user_low_id, user_high_id) is unique and user_low_id < user_high_id.

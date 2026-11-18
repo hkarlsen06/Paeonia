@@ -67,7 +67,7 @@ export async function deleteUserRelationshipRecords(ctx: WriterCtx, userId: stri
 
 /**
  * True while a block, a safety warning or a report stands on the pair. Each has its own end: a
- * block when the person who made it takes it back or deletes their account, a warning and a
+ * block when the person who made it takes it back or either of the two deletes their account, a warning and a
  * report three years after the report closed. Until then the pair and its couples stay, so a
  * block still stops the two from pairing and a report still says which relationship it was about.
  */

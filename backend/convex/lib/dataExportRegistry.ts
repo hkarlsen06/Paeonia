@@ -316,8 +316,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   review_access_sessions: own("user_id", "by_user_id_redeemed_at", {
     group: "subscription",
     about: {
-      en: "Use of an App Review access code. Only App Store reviewers have these.",
-      nb: "Bruk av en tilgangskode for App Review. Bare de som vurderer appen for App Store har dem.",
+      en: "Use of an App Review access code. Only App Store reviewers have these. Deleted 30 days after the code stopped working.",
+      nb: "Bruk av en tilgangskode for App Review. Bare de som vurderer appen for App Store har dem. Slettes 30 dager etter at koden sluttet å virke.",
     },
   }),
 

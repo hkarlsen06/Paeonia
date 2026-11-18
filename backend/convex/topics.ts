@@ -270,6 +270,23 @@ export const set_topic_question_skipped = mutation({
 
 
 /**
+ * Whether the caller said yes to answering private topics, and what those topics are called. The
+ * paywall's privacy sheet reads it to offer taking the yes back, so it needs no couple and no
+ * subscription.
+ */
+export const get_own_private_topics_consent = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    const privateTopics = (await activeTopics(ctx)).filter((topic) => topic.private);
+    return {
+      private_topics_consented: await hasPrivateTopicsConsent(ctx, userId),
+      topics: privateTopics.map((topic) => ({ title_en: topic.title_en, title_nb: topic.title_nb })),
+    };
+  },
+});
+
+/**
  * Saves the person's yes to answering private topics such as Flirt, or takes it back. `p_notice`
  * names the version of the question and the privacy policy they saw. Taking it back deletes what
  * they wrote in private topics (`deleteOwnPrivateTopicAnswers`) and needs no couple or

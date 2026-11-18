@@ -91,11 +91,13 @@ export const delete_user_client_operations = internalMutation({
 //   three years too.
 // - A purchase record stays five years after the end of the year of the purchase, which is what
 //   bokføringsloven § 13 asks for.
-// - A block stays until the person who made it takes it back (`unblock_pair`) or deletes their
-//   account (`accountDeletion.ts`).
+// - A block stays until the person who made it takes it back (`unblock_pair`) or either of its
+//   two people deletes their account (`accountDeletion.ts`).
 // - An entitlement grant stays a year after it expired or was revoked. A grant is access given
 //   without a payment, so it is no purchase record and the accounting law does not cover it.
 // - An invite that was used, replaced or ran out stays 30 days after its expiry time.
+// - An App Review access code stays 30 days after it expired or was revoked, with the record of
+//   who used it.
 // - A purged couple's rows and its pair go once no block, safety warning or report stands on
 //   the pair (`lib/relationshipRecords.ts`).
 
@@ -296,6 +298,36 @@ function pruneFinishedInvites(status: "accepted" | "revoked" | "expired") {
 }
 
 /**
+ * An App Review access code goes 30 days after it stopped working, with the sessions that say who
+ * used it. A code works for 30 days, and each App Store submission mints new codes, revokes the
+ * old ones and deletes the demo couples of the round before (`ios/Scripts/mint-review-codes.mjs`).
+ * So 30 days after a code ended, its review round is over and nothing reads the code or its
+ * sessions again. A code minted without an expiry stays until 30 days after it is revoked.
+ */
+async function pruneEndedReviewCodes(ctx: MutationCtx, now: string, page: PageArgs): Promise<Page> {
+  const cutoff = addDaysToInstant(now, -RETENTION_DAYS);
+  const result = await ctx.db.query("review_access_codes").paginate(page);
+  for (const code of result.page) {
+    const endedAt = [code.revoked_at, code.expires_at].filter((at) => at !== undefined).sort()[0];
+    if (endedAt === undefined || endedAt >= cutoff) continue;
+    const sessions = await ctx.db
+      .query("review_access_sessions")
+      .withIndex("by_code_id_redeemed_at", (q) => q.eq("code_id", code.id))
+      .collect();
+    for (const session of sessions) {
+      const grants = await ctx.db
+        .query("entitlement_grants")
+        .withIndex("by_source_review_session_id", (q) => q.eq("source_review_session_id", session.id))
+        .collect();
+      for (const grant of grants) await ctx.db.patch(grant._id, { source_review_session_id: undefined });
+      await ctx.db.delete(session._id);
+    }
+    await ctx.db.delete(code._id);
+  }
+  return result;
+}
+
+/**
  * Walks every pair. A pair that no block, safety warning or report holds loses its purged
  * couples with their member rows, sync events and invites, and then goes itself once it has no
  * couple left. A purged couple is at least 30 days past its end, its content is deleted, and it
@@ -340,6 +372,7 @@ const RECORD_STEPS = [
   pruneFinishedInvites("accepted"),
   pruneFinishedInvites("revoked"),
   pruneFinishedInvites("expired"),
+  pruneEndedReviewCodes,
   pruneFinishedRelationships,
 ];
 
