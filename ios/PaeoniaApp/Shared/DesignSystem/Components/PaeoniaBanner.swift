@@ -169,7 +169,7 @@ private struct PaeoniaBannerPresentation: View {
                 dragOffset = moved >= 0 ? moved : open == nil ? 0 : moved / 3
             }
             .onEnded { value in
-                if value.translation.height > 28 {
+                if value.translation.height > 28 || value.predictedEndTranslation.height > 80 {
                     center.dismiss(id: content.id)
                 } else if let open, value.translation.height < -28 || value.predictedEndTranslation.height < -80 {
                     open()

@@ -48,7 +48,7 @@ struct WelcomeWidgetDoodle: View {
                         .opacity(isDoodling ? 0 : 1)
 
                     WelcomeFingerDoodle(doodle: $doodle) {
-                        withAnimation(.easeOut(duration: 0.15)) {
+                        withAnimation(PaeoniaMotion.easeOut(duration: 0.15)) {
                             isDoodling = true
                         }
                     }

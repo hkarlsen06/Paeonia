@@ -11,7 +11,6 @@ struct ThreadChatMessageRow: View {
     private static let avatarSize: CGFloat = 28
     /// Room above a bubble with reactions, so the badge clears what is above it.
     private static let reactionClearance: CGFloat = 14
-    static let resetAnimationDuration: TimeInterval = 0.18
 
     let row: ThreadChatRow
     let participants: DailyChallengeParticipants

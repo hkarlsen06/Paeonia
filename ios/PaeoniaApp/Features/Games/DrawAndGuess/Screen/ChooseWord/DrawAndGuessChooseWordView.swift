@@ -193,7 +193,7 @@ struct DrawAndGuessWordRow: View {
                     .font(.title3)
                     .foregroundStyle(.paeoniaAccentPrimary)
                     .accessibilityHidden(true)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(.paeoniaPop)
             } else if !dynamicTypeSize.isAccessibilitySize {
                 pips
             }

@@ -233,12 +233,12 @@ struct MilestoneCountdownCard: View {
         celebrationID += 1
         petalShower(seed: milestone.id, hearts: true)
         GameSound.win.play()
-        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : PaeoniaMotion.celebrationReveal) {
+        withAnimation(reduceMotion ? PaeoniaMotion.easeOut(duration: 0.2) : PaeoniaMotion.celebrationReveal) {
             isCelebrating = true
         }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(reduceMotion ? 500 : 1_400))
-            withAnimation(.easeOut(duration: 0.2)) {
+            withAnimation(PaeoniaMotion.easeOut(duration: 0.2)) {
                 isCelebrating = false
             }
         }

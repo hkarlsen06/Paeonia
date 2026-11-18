@@ -21,7 +21,7 @@ struct PresencePillLayer: View {
     private var partnerName: String { overlay.participants.partnerName }
 
     private var motion: Animation {
-        reduceMotion ? .easeInOut(duration: PaeoniaMotion.motionDefault) : PaeoniaMotion.callOverlay
+        reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.callOverlay
     }
 
     var body: some View {
@@ -94,7 +94,7 @@ struct PresencePillLayer: View {
                 PresenceUnreadBadge(count: model.unreadChats.count)
                     .frame(width: PresenceAvatar.outerSize.width, alignment: .trailing)
                     .offset(x: PaeoniaSpacing.space4, y: -PaeoniaSpacing.space4)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(.paeoniaPop)
             }
         }
         // The window passes every touch outside this frame to the app underneath.

@@ -254,7 +254,7 @@ struct GuessMySpotRevealView: View {
                 )
                     // A short fade under the rise, so the card lands rather than cuts in.
                     .opacity(timeline.cardShown ? 1 : 0)
-                    .animation(.easeOut(duration: 0.2), value: timeline.cardShown)
+                    .animation(PaeoniaMotion.easeOut(duration: 0.2), value: timeline.cardShown)
                     .offset(y: timeline.cardShown || reduceMotion ? 0 : 120)
                     .accessibilityHidden(!timeline.cardShown)
             }
@@ -355,7 +355,7 @@ extension GuessMySpotRevealView {
         flight?.cancel()
         // ponytail: MapKit's own animation, which may show gray squares on a long hop.
         // If it does, step the camera along GuessMySpotFlight as the reveal does.
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 1)) { camera = position }
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.standardCurve(duration: 1)) { camera = position }
     }
 }
 

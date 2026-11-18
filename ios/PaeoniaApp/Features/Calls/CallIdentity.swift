@@ -77,7 +77,7 @@ struct CallIdentity: View {
                 glow.phaseAnimator(Self.glowScales) { view, scale in
                     view.scaleEffect(scale)
                 } animation: { _ in
-                    .easeInOut(duration: 1.1)
+                    PaeoniaMotion.standardCurve(duration: 1.1)
                 }
             }
         case .active, .ended:

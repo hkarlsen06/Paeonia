@@ -288,8 +288,8 @@ struct CallScreen: View {
     }
 
     private static let controlsSwap = AnyTransition.asymmetric(
-        insertion: .opacity.animation(.easeOut(duration: 0.2).delay(0.12)),
-        removal: .opacity.animation(.easeIn(duration: 0.12))
+        insertion: .opacity.animation(PaeoniaMotion.easeOut(duration: 0.2).delay(0.12)),
+        removal: .opacity.animation(PaeoniaMotion.easeOut(duration: 0.12))
     )
 
     /// What the person can do about a call that could not go through. Waiting does not help with
@@ -330,7 +330,7 @@ extension CallScreen {
                     || value.predictedEndTranslation.height > Self.minimizeDistance * 2 {
                     shrink()
                 } else {
-                    withAnimation(reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.2)) { dragOffset = 0 }
+                    withAnimation(reduceMotion ? nil : PaeoniaMotion.dragRelease) { dragOffset = 0 }
                 }
             }
     }

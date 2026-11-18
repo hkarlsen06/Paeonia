@@ -24,7 +24,7 @@ struct GameHubFluidBackdrop: View {
                 .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.8), value: palette)
+        .animation(PaeoniaMotion.standardCurve(duration: 0.8), value: palette)
         .accessibilityHidden(true)
     }
 

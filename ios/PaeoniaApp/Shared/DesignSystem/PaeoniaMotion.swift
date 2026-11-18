@@ -9,28 +9,39 @@ enum PaeoniaMotion {
     static let motionCelebration: TimeInterval = 0.55
     static let homeLayoutDuration: TimeInterval = 0.9
 
-    /// Paeonia's house easing: a symmetric cubic bezier (`cubic-bezier(0.65, 0, 0.35,
-    /// 1)`). Every standard, non-spring animation eases in and out along this curve
-    /// rather than running linearly or with a flatter built-in ease, so motion across the
-    /// app feels consistent and deliberate. Prefer `standardCurve(duration:)` — or the
-    /// named tokens below — over raw `.easeInOut` / `.easeOut` / `.linear` in feature code.
-    /// The four control-point values are the single dial for the app-wide feel.
+    /// Paeonia's ease-out, `cubic-bezier(0.23, 1, 0.32, 1)`. It moves most of the way in the
+    /// first third, so a press, a view coming in or going out, or a change of state answers
+    /// at once and then settles. Use it for anything that enters, leaves or changes state.
+    /// The built-in `.easeOut` starts too gently to feel instant.
+    static func easeOut(duration: TimeInterval) -> Animation {
+        .timingCurve(0.23, 1, 0.32, 1, duration: duration)
+    }
+
+    /// Paeonia's ease-in-out, `cubic-bezier(0.65, 0, 0.35, 1)`, for something that travels
+    /// on screen from one place to another, a morph, and a loop that breathes or drifts.
+    /// Home's map camera moves along the same curve. Never use it for a press or for a view
+    /// coming in, because its slow start delays the moment the person is watching.
     static func standardCurve(duration: TimeInterval) -> Animation {
         .timingCurve(0.65, 0, 0.35, 1, duration: duration)
     }
 
-    static let buttonPress = standardCurve(duration: motionFast)
-    static let stateChange = standardCurve(duration: motionDefault)
+    static let buttonPress = easeOut(duration: motionFast)
+    static let stateChange = easeOut(duration: motionDefault)
     /// Follows the keyboard's own slide, for layout that changes as it opens or closes.
     /// Its notification says 0.38 s, but measured frame by frame on iOS 27 it moves
     /// like this spring.
     static let keyboard = Animation.spring(duration: 0.25, bounce: 0)
+    /// Something a finger dragged going back to rest, or on to where the drag sent it. A
+    /// spring keeps the finger's speed when a new drag catches it halfway.
+    static let dragRelease = Animation.spring(duration: motionDefault, bounce: 0.15)
     /// Home's cards and map camera share this timing when the page changes height.
     static let homeLayoutChange = standardCurve(duration: homeLayoutDuration)
     static let cardReveal = Animation.spring(duration: motionDefault, bounce: 0.18)
-    static let meaningfulMoment = standardCurve(duration: motionSlow)
+    /// A screen, step or game phase giving way to the next. Longer than `stateChange`
+    /// because the whole screen changes.
+    static let meaningfulMoment = easeOut(duration: motionSlow)
     /// Text and numbers coming into focus once their data loads (`paeoniaLoadingReveal`).
-    static let loadingReveal = Animation.spring(duration: 0.7, bounce: 0)
+    static let loadingReveal = Animation.spring(duration: 0.5, bounce: 0)
     static let pairedScreenTransition = Animation.spring(duration: motionCelebration, bounce: 0.16)
 
     /// Blooms a celebratory reward surface — the daily-challenge streak screen — into
@@ -56,4 +67,10 @@ enum PaeoniaMotion {
     /// The streak sheet's stem growing out to the couple's day count, opening each
     /// flower it passes.
     static let stemGrowth = standardCurve(duration: 0.9).delay(0.25)
+}
+
+extension AnyTransition {
+    /// A small mark, such as a checkmark or a badge, popping in. It grows from 90% while it
+    /// fades, because a mark that grows from nothing looks like it came from nowhere.
+    static let paeoniaPop = AnyTransition.scale(scale: 0.9).combined(with: .opacity)
 }

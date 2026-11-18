@@ -89,7 +89,7 @@ struct ThreadChatComposer: View {
         .padding(.bottom, PaeoniaSpacing.space8)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.86), value: replyPreview)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.86), value: editingMessage?.id)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: mode)
+        .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: mode)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.86), value: staging.staged)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.86), value: staging.isDrawerOpen)
         // Size every row to its content. ExyteChat offers the input the full screen height.
@@ -261,7 +261,7 @@ struct ThreadChatComposer: View {
 
             trailingButton
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: trimmedText.isEmpty)
+        .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: trimmedText.isEmpty)
         .padding(.leading, PaeoniaSpacing.space16)
         .padding(.trailing, PaeoniaSpacing.space4)
         .frame(minHeight: Self.controlHeight)

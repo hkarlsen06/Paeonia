@@ -102,7 +102,7 @@ extension View {
                 transaction.animation = nil
                 transaction.disablesAnimations = true
             }
-            .animation(tabs.reduceMotion ? nil : .easeOut(duration: PaeoniaMotion.motionDefault)) {
+            .animation(tabs.reduceMotion ? nil : PaeoniaMotion.easeOut(duration: PaeoniaMotion.motionDefault)) {
                 $0.opacity(isWaiting ? 0 : 1)
             }
             .task(id: tabs.launchOverlayShowing) { await tabs.passThroughTab() }

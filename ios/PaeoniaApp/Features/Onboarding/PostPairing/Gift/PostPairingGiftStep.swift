@@ -51,7 +51,7 @@ struct PostPairingGiftStep: View {
             guard !reduceMotion else {
                 return
             }
-            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
+            withAnimation(PaeoniaMotion.standardCurve(duration: 2.4).repeatForever(autoreverses: true)) {
                 float = 1
             }
         }
@@ -153,7 +153,7 @@ struct PostPairingGiftStep: View {
         }
 
         if reduceMotion {
-            withAnimation(.easeOut(duration: PaeoniaMotion.motionSlow)) {
+            withAnimation(PaeoniaMotion.easeOut(duration: PaeoniaMotion.motionSlow)) {
                 stage = .cardFull
             }
             model.startReplay(showsAtOnce: true)
@@ -181,7 +181,7 @@ struct PostPairingGiftStep: View {
         }
         // The flap is past upright, so it can go behind the card.
         guard await sleep(0.22) else { return false }
-        withAnimation(.easeOut(duration: PaeoniaMotion.motionFast)) {
+        withAnimation(PaeoniaMotion.easeOut(duration: PaeoniaMotion.motionFast)) {
             stage = .cardInside
         }
         guard await sleep(0.2) else { return false }
@@ -203,10 +203,10 @@ struct PostPairingGiftStep: View {
         if !reduceMotion {
             finishBloomStart = Date()
         }
-        withAnimation(.easeOut(duration: PaeoniaMotion.motionFast)) {
+        withAnimation(PaeoniaMotion.easeOut(duration: PaeoniaMotion.motionFast)) {
             glow = 0.55
         }
-        withAnimation(.easeInOut(duration: 1.2).delay(PaeoniaMotion.motionFast)) {
+        withAnimation(PaeoniaMotion.standardCurve(duration: 1.2).delay(PaeoniaMotion.motionFast)) {
             glow = 0.25
         }
         AccessibilityNotification.Announcement(

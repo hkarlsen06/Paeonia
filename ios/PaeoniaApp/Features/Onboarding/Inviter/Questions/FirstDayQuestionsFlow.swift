@@ -35,7 +35,7 @@ struct FirstDayQuestionsFlow: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background { PaeoniaGlowBackground() }
         .animation(
-            reduceMotion ? .easeInOut(duration: PaeoniaMotion.motionDefault) : PaeoniaMotion.cardReveal,
+            reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal,
             value: model.step
         )
         .task {

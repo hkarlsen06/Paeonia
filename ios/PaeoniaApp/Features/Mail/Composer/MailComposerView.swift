@@ -81,7 +81,7 @@ struct MailComposerView: View {
             if bannerCenter.content?.style == .error { bannerCenter.dismiss() }
             onSent()
         }
-        .animation(.default, value: step)
+        .animation(PaeoniaMotion.stateChange, value: step)
         .onChange(of: step) { composer.updateStep(step) }
         // The stored draft can arrive after this screen, as when Mail opens while the app starts.
         .onChange(of: composer.draft == nil) { _, hasNoDraft in

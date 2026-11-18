@@ -68,7 +68,7 @@ extension ThreadChatMessageRow {
     private func handleTimestampRevealEnded(_ value: ThreadChatDragValue) {
         handleTimestampRevealChanged(value)
         guard timestampReveal.offset != 0 else { return }
-        withAnimation(reduceMotion ? nil : .easeOut(duration: Self.resetAnimationDuration)) {
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.dragRelease) {
             timestampReveal.offset = 0
         }
     }
@@ -150,7 +150,7 @@ extension ThreadChatMessageRow {
             velocity: value.velocity.width,
             allowedDirection: replyDirection
         )
-        withAnimation(.easeOut(duration: Self.resetAnimationDuration)) {
+        withAnimation(PaeoniaMotion.dragRelease) {
             replySwipeOffset = 0
         } completion: {
             isReplySwipeActive = false

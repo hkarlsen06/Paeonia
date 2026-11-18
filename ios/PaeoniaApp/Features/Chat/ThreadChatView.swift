@@ -561,7 +561,7 @@ extension ThreadChatView {
     private func handleBackgroundTimestampRevealEnded(_ value: ThreadChatDragValue) {
         handleBackgroundTimestampRevealChanged(value)
         guard timestampReveal.offset != 0 else { return }
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) {
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.dragRelease) {
             timestampReveal.offset = 0
         }
     }

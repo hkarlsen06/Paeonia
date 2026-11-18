@@ -64,7 +64,7 @@ private struct StoryChainChoiceRowFrame<Content: View>: View {
                     .font(.title3)
                     .foregroundStyle(.paeoniaAccentPrimary)
                     .accessibilityHidden(true)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(.paeoniaPop)
             } else if let trailingSymbol {
                 Image(systemName: trailingSymbol)
                     .font(.title3)

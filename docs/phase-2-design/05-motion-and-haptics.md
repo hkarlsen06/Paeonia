@@ -1,6 +1,6 @@
 # Motion and haptics
 
-Motion is calm, fast, purposeful, interruptible and respects Reduce Motion. Avoid decorative motion that delays a task. Most interactions stay under 0.3 seconds. Durations live in `PaeoniaMotion.swift`.
+Motion is calm, fast, purposeful, interruptible and respects Reduce Motion. Avoid decorative motion that delays a task. Most interactions stay under 0.3 seconds. Durations and curves live in `PaeoniaMotion.swift`. A press, a view coming in or going out, and a change of state use the ease-out (`easeOut`, `buttonPress`, `stateChange`). Something travelling across the screen, a morph and a breathing loop use the ease-in-out (`standardCurve`). Something a finger lets go of settles on `dragRelease`, a spring, and a flick counts as much as a long drag. A small mark pops in with `.paeoniaPop`, never from nothing. Decorative motion that covers the screen ends on the first touch.
 
 ## Reduce Motion
 

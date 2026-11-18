@@ -18,6 +18,7 @@ struct MemoriesMapScreen: View {
     @State private var homeRegion: MKCoordinateRegion?
     @State private var cluster: MemoriesMapCluster?
     @State private var isShowingUnplaced = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var opened: MemoriesMapDestination?
     /// A memory or round picked in the cluster sheet, opened once the sheet is gone.
     @State private var memoryToOpen: UUID?
@@ -195,7 +196,7 @@ struct MemoriesMapScreen: View {
     private func bottomControls(_ content: MemoriesMapContent, maxPanelHeight: CGFloat) -> some View {
         if showsEmptyPanel(content) {
             MemoriesMapEmptyPanel(viewModel: viewModel, records: content.unplaced, maxHeight: maxPanelHeight)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .transition(panelTransition)
         } else {
             VStack(spacing: PaeoniaSpacing.space12) {
                 HStack(alignment: .bottom) {
@@ -205,7 +206,7 @@ struct MemoriesMapScreen: View {
                     Spacer(minLength: 0)
                     if !isShowingAll {
                         showAllButton
-                            .transition(.scale.combined(with: .opacity))
+                            .transition(.paeoniaPop)
                     }
                 }
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -214,11 +215,15 @@ struct MemoriesMapScreen: View {
                     MemoriesMapCarousel(entries: content.placed, selectedID: $selectedID) { id in
                         open(id, in: content)
                     }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(panelTransition)
                 }
             }
             .padding(.bottom, PaeoniaSpacing.space8)
         }
+    }
+
+    private var panelTransition: AnyTransition {
+        reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
     }
 
     private func unplacedPill(count: Int) -> some View {

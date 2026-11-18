@@ -28,7 +28,7 @@ struct CallControls: View {
                     systemImage: "arrow.triangle.2.circlepath.camera.fill",
                     title: .callsControlFlip, identifier: "calls.flip"
                 ) { engine.flipCamera() }
-                .transition(.scale.combined(with: .opacity))
+                .transition(.paeoniaPop)
             }
 
             CallControlButton(

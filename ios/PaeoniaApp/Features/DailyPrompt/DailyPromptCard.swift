@@ -223,7 +223,7 @@ struct DailyPromptCard: View {
             sealBreak = 1
             try? await Task.sleep(for: .milliseconds(150))
         } else {
-            withAnimation(.easeOut(duration: 0.4)) { sealBreak = 1 }
+            withAnimation(PaeoniaMotion.easeOut(duration: 0.4)) { sealBreak = 1 }
             guard await openEnvelope() else { return }
         }
         guard !Task.isCancelled else { return }
@@ -259,7 +259,7 @@ struct DailyPromptCard: View {
             endOpening()
             return
         }
-        withAnimation(.easeOut(duration: 0.4)) { compactSealBreak = 1 }
+        withAnimation(PaeoniaMotion.easeOut(duration: 0.4)) { compactSealBreak = 1 }
         try? await Task.sleep(for: .milliseconds(250))
         guard !Task.isCancelled else { return }
         withAnimation(.spring(duration: 0.5, bounce: 0.12)) { compactOpening = .flapOpening }

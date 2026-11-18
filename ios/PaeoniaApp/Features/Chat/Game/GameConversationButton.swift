@@ -82,8 +82,8 @@ struct GameConversationButton: View {
                 .variableColor.iterative.dimInactiveLayers, options: .repeat(.continuous), isActive: partnerIsTyping)
             .contentTransition(.symbolEffect(.replace))
             .accessibilityHidden(true)
-            .animation(.default, value: partnerIsTyping)
-            .animation(.default, value: partnerIsInChat)
+            .animation(PaeoniaMotion.stateChange, value: partnerIsTyping)
+            .animation(PaeoniaMotion.stateChange, value: partnerIsInChat)
     }
 
     private var partnerStatus: LocalizedStringResource? {

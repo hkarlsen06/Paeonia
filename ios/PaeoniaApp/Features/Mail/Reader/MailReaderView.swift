@@ -182,10 +182,10 @@ struct MailReaderView: View {
 
     private func open(_ letter: Letter) async {
         isOpeningEnvelope = true
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.45)) { opening = .flapOpening }
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.standardCurve(duration: 0.45)) { opening = .flapOpening }
         let opened = await mail.open(letter)
         guard opened != nil else {
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { opening = .closed }
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.standardCurve(duration: 0.3)) { opening = .closed }
             isOpeningEnvelope = false
             return
         }

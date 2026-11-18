@@ -101,7 +101,7 @@ struct RelationshipDaysReveal: View {
 
         if reduceMotion {
             hasLanded = true
-            withAnimation(.easeOut(duration: PaeoniaMotion.motionSlow)) {
+            withAnimation(PaeoniaMotion.easeOut(duration: PaeoniaMotion.motionSlow)) {
                 isShown = true
             }
             guard await sleep(PaeoniaMotion.motionSlow) else { return }

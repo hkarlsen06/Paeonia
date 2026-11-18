@@ -369,7 +369,7 @@ extension PaeoniaStreakFlame {
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.16)) {
             flameScale = 1
         }
-        withAnimation(.easeOut(duration: 0.9).delay(0.12)) {
+        withAnimation(PaeoniaMotion.easeOut(duration: 0.9).delay(0.12)) {
             glowFlare = 0
         }
     }

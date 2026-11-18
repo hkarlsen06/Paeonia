@@ -48,7 +48,7 @@ struct DailyOptionChoicePicker: View {
                             .font(PaeoniaTypography.sectionTitle)
                             .foregroundStyle(colors.accent)
                             .padding(PaeoniaSpacing.space8)
-                            .transition(.scale.combined(with: .opacity))
+                            .transition(.paeoniaPop)
                             .accessibilityHidden(true)
                     }
                 }

@@ -56,7 +56,7 @@ struct AuthOnboardingPhotoPreview: View {
                     .background(Circle().fill(.paeoniaBackgroundPrimary))
                     .offset(x: -4, y: -4)
                     .accessibilityHidden(true)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(.paeoniaPop)
             }
         }
         .animation(PaeoniaMotion.stateChange, value: isWarm)

@@ -145,7 +145,7 @@ struct GuessMySpotHistoryScreen: View {
         } else if cluster.isOneSpot {
             oneSpot = cluster
         } else {
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.6)) {
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.standardCurve(duration: 0.6)) {
                 // Its spots are over 300 m apart, so a 500 m minimum always splits it.
                 camera = framed(GuessMySpotCamera.framing(cluster.spots, minimumMeters: 500))
             }

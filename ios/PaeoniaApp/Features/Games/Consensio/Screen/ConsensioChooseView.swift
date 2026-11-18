@@ -257,7 +257,7 @@ private struct ConsensioTopicRow: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title3)
                     .foregroundStyle(.paeoniaAccentPrimary)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(.paeoniaPop)
                     .accessibilityHidden(true)
             }
         }

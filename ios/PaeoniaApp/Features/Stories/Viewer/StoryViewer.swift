@@ -290,11 +290,12 @@ struct StoryViewer: View {
             .onEnded { value in
                 let heldFor = touchStart.map { Date.now.timeIntervalSince($0) } ?? 0
                 touchStart = nil
-                if value.translation.height > Self.closeDistance {
+                if value.translation.height > Self.closeDistance
+                    || value.predictedEndTranslation.height > Self.closeDistance * 2 {
                     dismiss()
                     return
                 }
-                withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { dragOffset = 0 }
+                withAnimation(reduceMotion ? nil : PaeoniaMotion.dragRelease) { dragOffset = 0 }
                 // A tap while the keyboard is up puts it away instead of moving on.
                 if isReplyFocused {
                     isReplyFocused = false

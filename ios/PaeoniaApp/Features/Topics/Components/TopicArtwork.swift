@@ -204,7 +204,7 @@ struct TopicArtwork: View {
                 image.phaseAnimator([0.0, 1.0]) { content, phase in
                     content.offset(y: -phase * height * 0.05)
                 } animation: { _ in
-                    .easeInOut(duration: 2.4)
+                    PaeoniaMotion.standardCurve(duration: 2.4)
                 }
             } else {
                 image

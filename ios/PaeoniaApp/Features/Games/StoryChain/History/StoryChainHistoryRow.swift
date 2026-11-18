@@ -33,7 +33,7 @@ struct StoryChainHistoryRow: View {
                 Image(systemName: "star.fill")
                     .foregroundStyle(.paeoniaAccentPrimary)
                     .accessibilityLabel(Text(.favoritesStarred))
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(.paeoniaPop)
             }
         }
         .padding(PaeoniaSpacing.cardContentPadding)

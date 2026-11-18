@@ -276,7 +276,7 @@ struct ChatPanelSurface: View {
                     if closes {
                         close()
                     } else {
-                        withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { dragOffset = 0 }
+                        withAnimation(reduceMotion ? nil : PaeoniaMotion.dragRelease) { dragOffset = 0 }
                     }
                 }
             }

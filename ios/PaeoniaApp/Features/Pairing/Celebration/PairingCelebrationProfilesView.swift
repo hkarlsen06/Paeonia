@@ -235,13 +235,13 @@ struct PairingCelebrationProfilesView: View {
     @MainActor
     private func runHeartbeat() async {
         while !Task.isCancelled {
-            withAnimation(.easeOut(duration: 0.14)) { heartbeatScale = 1.22 }
+            withAnimation(PaeoniaMotion.easeOut(duration: 0.14)) { heartbeatScale = 1.22 }
             try? await Task.sleep(for: .seconds(0.15))
 
             withAnimation(.easeIn(duration: 0.16)) { heartbeatScale = 1 }
             try? await Task.sleep(for: .seconds(0.12))
 
-            withAnimation(.easeOut(duration: 0.12)) { heartbeatScale = 1.12 }
+            withAnimation(PaeoniaMotion.easeOut(duration: 0.12)) { heartbeatScale = 1.12 }
             try? await Task.sleep(for: .seconds(0.12))
 
             withAnimation(.easeIn(duration: 0.2)) { heartbeatScale = 1 }

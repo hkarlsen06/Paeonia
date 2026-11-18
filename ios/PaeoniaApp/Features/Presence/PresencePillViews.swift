@@ -292,7 +292,7 @@ private struct PresenceActionButton<Icon: View>: View {
                     if badgeCount > 0 {
                         PresenceUnreadBadge(count: badgeCount)
                             .offset(x: PaeoniaSpacing.space4, y: -PaeoniaSpacing.space4)
-                            .transition(.scale.combined(with: .opacity))
+                            .transition(.paeoniaPop)
                     }
                 }
                 // The touch target stays the size of the capsule's height.

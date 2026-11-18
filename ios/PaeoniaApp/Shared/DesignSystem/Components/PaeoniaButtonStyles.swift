@@ -175,7 +175,7 @@ struct PaeoniaCircularButtonStyle: ButtonStyle {
             )
             .frame(width: PaeoniaSpacing.compactButtonHeight, height: PaeoniaSpacing.compactButtonHeight)
             .contentShape(Circle())
-            .scaleEffect(configuration.isPressed && showsEnabled && !reduceMotion ? 0.92 : 1)
+            .scaleEffect(configuration.isPressed && showsEnabled && !reduceMotion ? 0.96 : 1)
             .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: configuration.isPressed)
             .allowsHitTesting(!isLoading)
     }

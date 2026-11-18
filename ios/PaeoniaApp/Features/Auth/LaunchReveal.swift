@@ -64,7 +64,7 @@ private enum EntranceCascade {
     static func entrance(order: Int, reduceMotion: Bool) -> Animation {
         guard !reduceMotion else {
             // No positional motion under Reduce Motion — just a gentle fade in.
-            return .easeOut(duration: PaeoniaMotion.motionDefault)
+            return PaeoniaMotion.easeOut(duration: PaeoniaMotion.motionDefault)
         }
 
         return .spring(response: 0.5, dampingFraction: 0.68)

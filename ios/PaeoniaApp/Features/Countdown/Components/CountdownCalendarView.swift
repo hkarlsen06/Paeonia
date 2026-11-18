@@ -29,7 +29,7 @@ struct CountdownCalendarView: View {
     private static let numberWidthShare: CGFloat = 0.88
     /// One roll of the digits when the count changes: the first showing after launch and the
     /// midnight rollover.
-    private static let countAnimation = Animation.easeOut(duration: 0.6)
+    private static let countAnimation = PaeoniaMotion.easeOut(duration: 0.6)
 
     var body: some View {
         Image(.homeCalendar)

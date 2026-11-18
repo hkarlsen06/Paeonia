@@ -61,7 +61,7 @@ struct CallNotices: View {
         }
     }
 
-    private static let arrival = AnyTransition.scale(scale: 0.6).combined(with: .opacity)
+    private static let arrival = AnyTransition.paeoniaPop
 }
 
 /// "You're sharing your screen", with Stop. iOS shows its own red sign as well, but that one is easy

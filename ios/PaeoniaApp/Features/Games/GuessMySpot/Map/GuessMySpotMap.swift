@@ -257,7 +257,7 @@ extension GuessMySpotMap {
             // A moment for the new style's first images to draw.
             try? await Task.sleep(for: .milliseconds(100))
             guard styleCover === cover else { return }
-            withAnimation(.easeInOut(duration: 0.3)) { styleCover = nil }
+            withAnimation(PaeoniaMotion.easeOut(duration: 0.3)) { styleCover = nil }
         }
     }
 

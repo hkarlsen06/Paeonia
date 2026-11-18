@@ -207,7 +207,7 @@ struct ThreadChatTypingDots: View {
             guard !reduceMotion else { return }
             for index in 0..<3 {
                 withAnimation(
-                    .easeInOut(duration: 0.5)
+                    PaeoniaMotion.standardCurve(duration: 0.5)
                         .repeatForever(autoreverses: true)
                         .delay(Double(index) * 0.15)
                 ) {

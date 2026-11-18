@@ -22,7 +22,7 @@ struct AppLockCoverView: View {
                     .transition(.opacity)
             }
         }
-        .animation(.easeOut(duration: 0.2), value: model.isLocked)
+        .animation(PaeoniaMotion.easeOut(duration: 0.2), value: model.isLocked)
         .preferredColorScheme(.dark)
     }
 

@@ -123,7 +123,7 @@ struct WidgetHomeScreenMock: View {
         .overlay(alignment: .topTrailing) {
             if isAdded {
                 addedBadge(side: side)
-                    .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
+                    .transition(reduceMotion ? .opacity : .paeoniaPop)
             }
         }
         .rotationEffect(jiggleAngle(index: 0, time: time))
