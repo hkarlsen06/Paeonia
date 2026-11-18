@@ -111,6 +111,8 @@ const answer = (user: TestUser, questionId: string, text = "an answer", instance
 
 const overview = (user: TestUser) => user.as.query(api.topics.get_topics_overview, {});
 const topicOf = (user: TestUser, key: string) => user.as.query(api.topics.get_topic, { p_topic_key: key });
+const consent = (user: TestUser, consents = true) =>
+  user.as.mutation(api.topics.set_private_topics_consent, { p_consents: consents, p_notice: "2026-11-18" });
 const skip = (user: TestUser, questionId: string, skipped = true) =>
   user.as.mutation(api.topics.set_topic_question_skipped, { p_question_id: questionId, p_skipped: skipped });
 
@@ -310,6 +312,8 @@ describe("pushes", () => {
     const { t, couple, a, b } = await setup();
     await addDevice(t, b.userId, { locale: "en", token: "b" });
     const flirt = await seedTopic(t, "flirt", { private: true });
+    await consent(a);
+    await consent(b);
     await answer(a, flirt.questionIds[0]);
     await answer(b, flirt.questionIds[0]);
     await t.run(async (ctx) => {
@@ -334,6 +338,102 @@ describe("pushes", () => {
 
     const threads = await b.as.query(api.threads.get_conversation_threads, {});
     expect(threads[0]).toMatchObject({ topic_key: "flirt", private_topic: true });
+  });
+});
+
+describe("private topics", () => {
+  test("an answer in a private topic is refused until that person says yes", async () => {
+    const { t, a, b } = await setup();
+    const flirt = await seedTopic(t, "flirt", { private: true });
+    const travel = await seedTopic(t, "travel", { sortOrder: 2 });
+    expect(await failure(answer(a, flirt.questionIds[0]))).toMatchObject({
+      code: "23514",
+      message: "private topics consent is required",
+    });
+    await answer(a, travel.questionIds[0]);
+    expect((await overview(a)).private_topics_consented).toBe(false);
+
+    // The partner's yes covers the partner only. Without their own, `a` can read the topic, cannot
+    // answer in it, and nothing in it counts as waiting for them.
+    await consent(b);
+    await answer(b, flirt.questionIds[0]);
+    expect(await failure(answer(a, flirt.questionIds[0]))).toMatchObject({ code: "23514" });
+    expect((await topicOf(a, "flirt")).questions[0].row).not.toBeNull();
+    expect(await a.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0 });
+
+    await consent(a);
+    expect((await overview(a)).private_topics_consented).toBe(true);
+    expect(await a.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1 });
+    await answer(a, flirt.questionIds[0]);
+    const profile = await t.run(async (ctx) =>
+      (await ctx.db.query("profiles").collect()).find((row) => row.user_id === a.userId),
+    );
+    expect(profile).toMatchObject({ private_topics_consent_notice: "2026-11-18" });
+    expect(profile?.private_topics_consent_at).toBeDefined();
+  });
+
+  test("someone signed out can't give or take back the yes, and a yes lets nobody answer without a couple", async () => {
+    const { t } = await setup();
+    const flirt = await seedTopic(t, "flirt", { private: true });
+    for (const consents of [true, false]) {
+      expect(
+        await failure(t.mutation(api.topics.set_private_topics_consent, { p_consents: consents, p_notice: "2026-11-18" })),
+      ).toMatchObject({ code: "42501" });
+    }
+    const outsider = await createSignedInUser(t);
+    await consent(outsider);
+    expect(await failure(answer(outsider, flirt.questionIds[0]))).toMatchObject({ code: "42501" });
+  });
+
+  test("taking the yes back deletes that person's private answers and chat messages, and nothing of the partner's", async () => {
+    const { t, couple, a, b } = await setup();
+    const flirt = await seedTopic(t, "flirt", { private: true, count: 2 });
+    const travel = await seedTopic(t, "travel", { sortOrder: 2, count: 1 });
+    await consent(a);
+    await consent(b);
+    const shared = newUuid();
+    const own = await answer(a, flirt.questionIds[0], "a flirts", shared);
+    await answer(b, flirt.questionIds[0], "b flirts", shared);
+    await answer(a, flirt.questionIds[1], "only a");
+    await answer(a, travel.questionIds[0], "a travels");
+    for (const [user, body] of [[a, "a writes"], [b, "b writes"]] as const) {
+      await user.as.mutation(api.threads.create_daily_question_thread_with_message, {
+        ...op(), p_couple_id: couple.coupleId, p_question_id: flirt.questionIds[0], p_body: body,
+      });
+    }
+    await b.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: shared });
+    await b.as.mutation(api.reactions.set_reaction, { p_kind: "daily_answer", p_target_id: own.answer_id, p_emoji: "❤️" });
+
+    expect(await consent(a, false)).toEqual({ private_topics_consented: false });
+
+    const stored = await t.run(async (ctx) => ({
+      texts: (await ctx.db.query("daily_answer_text").collect()).map((row) => row.body).sort(),
+      answers: await ctx.db.query("daily_question_answers").collect(),
+      instances: (await ctx.db.query("daily_question_instances").collect()).map((row) => row.question_id).sort(),
+      messages: await ctx.db.query("thread_messages").collect(),
+      seen: await ctx.db.query("daily_answer_seen_states").collect(),
+      reactions: await ctx.db.query("reactions").collect(),
+      profile: (await ctx.db.query("profiles").collect()).find((row) => row.user_id === a.userId),
+    }));
+    expect(stored.texts).toEqual(["a travels", "b flirts"]);
+    expect(stored.answers.map((row) => row.user_id).sort()).toEqual([a.userId, b.userId].sort());
+    // The question only `a` had answered is no longer started.
+    expect(stored.instances).toEqual([flirt.questionIds[0], travel.questionIds[0]].sort());
+    const messageOf = (user: TestUser) => stored.messages.find((row) => row.sender_user_id === user.userId)!;
+    expect(messageOf(a).body).toBeUndefined();
+    expect(messageOf(a).deleted_at).toBeDefined();
+    expect(messageOf(b)).toMatchObject({ body: "b writes" });
+    expect(messageOf(b).deleted_at).toBeUndefined();
+    expect(stored.seen).toEqual([]);
+    expect(stored.reactions).toEqual([]);
+    expect(stored.profile?.private_topics_consent_at).toBeUndefined();
+    expect(stored.profile?.private_topics_consent_notice).toBeUndefined();
+
+    expect((await topicOf(b, "flirt")).answer_details.map((detail) => detail.text_body)).toEqual(["b flirts"]);
+    expect(await failure(answer(a, flirt.questionIds[1]))).toMatchObject({ code: "23514" });
+    // A new yes starts over, under the instance the partner's answer is on.
+    await consent(a);
+    expect(await answer(a, flirt.questionIds[0], "a again")).toMatchObject({ instance_id: shared });
   });
 });
 

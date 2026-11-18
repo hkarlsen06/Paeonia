@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
+import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
@@ -22,9 +23,12 @@ import {
 import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
 import { timestampArg, uuidArg } from "./lib/ids";
+import { deleteOwnPrivateTopicAnswers } from "./lib/privateTopics";
+import { findProfile, updateProfile } from "./lib/profiles";
 import { applyCoupleActivity } from "./lib/streaks";
 import {
   activeTopics,
+  hasPrivateTopicsConsent,
   queueTopicPush,
   requireActiveTopic,
   skippedQuestionIds,
@@ -61,10 +65,13 @@ type TopicQuestionRow = {
   row: DailyQuestionRow | null;
 };
 
-/** The shelf: every topic the couple can see, with its counts. */
+/**
+ * The shelf: every topic the couple can see, with its counts, and whether the viewer said yes to
+ * answering private topics. The app asks before it opens one.
+ */
 export const get_topics_overview = query({
   args: {},
-  handler: async (ctx): Promise<{ topics: TopicSummary[] }> => {
+  handler: async (ctx): Promise<{ topics: TopicSummary[]; private_topics_consented: boolean }> => {
     const userId = await requireUserId(ctx);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const skipped = await skippedQuestionIds(ctx, coupleId);
@@ -72,7 +79,7 @@ export const get_topics_overview = query({
     for (const topic of await activeTopics(ctx)) {
       topics.push(topicSummary(topic, skipped, await topicStates(ctx, topic, coupleId, userId, skipped)));
     }
-    return { topics };
+    return { topics, private_topics_consented: await hasPrivateTopicsConsent(ctx, userId) };
   },
 });
 
@@ -156,6 +163,8 @@ async function requireTopicQuestion(ctx: Parameters<typeof topicOfQuestion>[0], 
 /**
  * Answers a topic question. The first answer starts the question with `p_instance_id`. A partner who
  * answers later joins the same instance, so the returned `instance_id` can differ from the one sent.
+ * An answer in a private topic needs the person's yes (`set_private_topics_consent`) and fails with
+ * `23514` without it. The app treats that code as final and puts the answer back in the composer.
  */
 export const submit_topic_answer = mutation({
   args: {
@@ -191,6 +200,9 @@ export const submit_topic_answer = mutation({
       },
       async () => {
         const { topic } = await requireTopicQuestion(ctx, questionId);
+        if (topic.private === true && !(await hasPrivateTopicsConsent(ctx, userId))) {
+          return fail("23514", "private topics consent is required");
+        }
         const now = nowIso();
         const dayId = await getOrCreateCoupleDayAt(ctx, coupleId, now);
         let instance = await topicInstanceFor(ctx, coupleId, questionId);
@@ -256,3 +268,34 @@ export const set_topic_question_skipped = mutation({
   },
 });
 
+
+/**
+ * Saves the person's yes to answering private topics such as Flirt, or takes it back. `p_notice`
+ * names the version of the question and the privacy policy they saw. Taking it back deletes what
+ * they wrote in private topics (`deleteOwnPrivateTopicAnswers`) and needs no couple or
+ * subscription, so it always works. A second yes keeps the first one's time.
+ */
+export const set_private_topics_consent = mutation({
+  args: { p_consents: v.boolean(), p_notice: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const profile = await findProfile(ctx, userId);
+    if (!profile || profile.deleted_at !== undefined) {
+      return fail("P0002", "active profile was not found");
+    }
+    const notice = args.p_notice.trim();
+    if (notice.length < 1 || notice.length > 64) {
+      return fail("23514", "private topics notice must be 1 to 64 characters");
+    }
+    if (!args.p_consents) {
+      await deleteOwnPrivateTopicAnswers(ctx, userId);
+      if (profile.private_topics_consent_at !== undefined) {
+        await updateProfile(ctx, profile, { private_topics_consent_at: undefined, private_topics_consent_notice: undefined });
+      }
+    } else if (profile.private_topics_consent_at === undefined) {
+      await assertNoPendingAccountDeletion(ctx, userId);
+      await updateProfile(ctx, profile, { private_topics_consent_at: nowIso(), private_topics_consent_notice: notice });
+    }
+    return { private_topics_consented: args.p_consents };
+  },
+});

@@ -116,6 +116,7 @@ import type * as lib_partnerNames from "../lib/partnerNames.js";
 import type * as lib_piccante from "../lib/piccante.js";
 import type * as lib_places from "../lib/places.js";
 import type * as lib_presence from "../lib/presence.js";
+import type * as lib_privateTopics from "../lib/privateTopics.js";
 import type * as lib_profiles from "../lib/profiles.js";
 import type * as lib_pushStatus from "../lib/pushStatus.js";
 import type * as lib_questionTime from "../lib/questionTime.js";
@@ -299,6 +300,7 @@ declare const fullApi: ApiFromModules<{
   "lib/piccante": typeof lib_piccante;
   "lib/places": typeof lib_places;
   "lib/presence": typeof lib_presence;
+  "lib/privateTopics": typeof lib_privateTopics;
   "lib/profiles": typeof lib_profiles;
   "lib/pushStatus": typeof lib_pushStatus;
   "lib/questionTime": typeof lib_questionTime;

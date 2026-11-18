@@ -6,8 +6,8 @@ import { getByUuid, withUpdatedAt } from "./db";
 import { fail } from "./errors";
 import { gameChatSubjectId } from "./gameChatSubjects";
 import { uuidArg } from "./ids";
-import { queueThreadMediaAssetsIfOrphaned } from "./mediaOrphans";
-import { deleteReactionsOfThread } from "./reactions";
+import { queueThreadMediaAssetsIfOrphaned, queueThreadMessageMediaAssetsIfOrphaned } from "./mediaOrphans";
+import { deleteReactionsOf, deleteReactionsOfThread } from "./reactions";
 import { nowIso } from "./time";
 import type { GameKind } from "./games";
 import { GAME_KINDS, threadKind } from "./validators";
@@ -206,4 +206,16 @@ export async function deleteThreadOfSubject(
   await ctx.db.patch(thread._id, withUpdatedAt({ deleted_at: nowIso() }));
   await deleteReactionsOfThread(ctx, thread.id);
   await queueThreadMediaAssetsIfOrphaned(ctx, thread.id);
+}
+
+/**
+ * Takes a message back. The row stays as a tombstone (`deleted_at`), so the chat shows "Message
+ * deleted" where it was and a reply that quoted it still has something to point at. Its text,
+ * its reactions and its media files go.
+ */
+export async function tombstoneThreadMessage(ctx: WriterCtx, message: Doc<"thread_messages">): Promise<void> {
+  await ctx.db.patch(message._id, withUpdatedAt({ deleted_at: nowIso(), body: undefined, edited_at: undefined }));
+  await deleteReactionsOf(ctx, "thread_message", message.id);
+  // After the patch above, so the media no longer counts as shown by a live message.
+  await queueThreadMessageMediaAssetsIfOrphaned(ctx, message.id);
 }

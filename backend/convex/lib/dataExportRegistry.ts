@@ -215,8 +215,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   profiles: own("user_id", "by_user_id", {
     group: "account",
     about: {
-      en: "Your profile: name, profile photo, time zone, when you finished setup, and your answer about sharing usage statistics.",
-      nb: "Profilen din: navn, profilbilde, tidssone, når du var ferdig med oppsettet, og svaret ditt om å dele bruksstatistikk.",
+      en: "Your profile: name, profile photo, time zone, when you finished setup, your answer about sharing usage statistics, and when you said yes to private topics such as Flirt.",
+      nb: "Profilen din: navn, profilbilde, tidssone, når du var ferdig med oppsettet, svaret ditt om å dele bruksstatistikk, og når du sa ja til private temaer som Flørt.",
     },
   }),
   app_account_tokens: own("user_id", "by_user_id", {

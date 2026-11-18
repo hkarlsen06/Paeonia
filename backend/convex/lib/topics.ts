@@ -4,6 +4,7 @@ import { getByUuid } from "./db";
 import { isLive, type QuestionRowContent, visibleAnswersOf } from "./dailyQuestions";
 import { fail } from "./errors";
 import { enqueueNotificationForUser } from "./notifications";
+import { findProfile } from "./profiles";
 import { addMs, nowIso } from "./time";
 import { pushStatus } from "./pushStatus";
 
@@ -16,6 +17,12 @@ import { pushStatus } from "./pushStatus";
  * same instance. A topic marked `private` (Flirt) is kept off the lock screen: its chat pushes name only
  * the sender. The topic reads take a topic's names and questions from its `topic_catalog` row
  * (`lib/topicCatalog.ts`), which the catalog sync rebuilds.
+ *
+ * Answers in a private topic can say something about a person's sex life, so the law asks for a
+ * yes before Paeonia stores one (GDPR Art. 9(2)(a)). The yes is kept on the profile
+ * (`private_topics_consent_at`) with the version of the question the person saw. Each partner
+ * gives their own. Reading the partner's answers needs none, because the partner's yes covers
+ * them. Every rule follows the topic's `private` flag, never its name.
  */
 
 /** At most one "new answers" topic push per person in this window. */
@@ -203,11 +210,22 @@ export async function hasTopicWaiting(ctx: ReaderCtx, coupleId: string, userId: 
   return (await topicsWaitingCount(ctx, coupleId, userId)) > 0;
 }
 
-/** The topic question identities that wait for the viewer, including private topics. */
+/** Whether the person has said yes to answering private topics and has not taken it back. */
+export async function hasPrivateTopicsConsent(ctx: ReaderCtx, userId: string): Promise<boolean> {
+  return (await findProfile(ctx, userId))?.private_topics_consent_at !== undefined;
+}
+
+/**
+ * The topic question identities that wait for the viewer. A private topic counts only for a viewer
+ * who said yes to private topics. Without that they cannot answer there, so a badge or a push
+ * about it would stay until they agreed.
+ */
 export async function topicsWaitingQuestionIds(ctx: ReaderCtx, coupleId: string, userId: string): Promise<Set<string>> {
   const skipped = await skippedQuestionIds(ctx, coupleId);
+  const consented = await hasPrivateTopicsConsent(ctx, userId);
   const waiting = new Set<string>();
   for (const topic of await activeTopics(ctx)) {
+    if (topic.private && !consented) continue;
     for (const [questionId, { own, partner, seen }] of await topicStates(ctx, topic, coupleId, userId, skipped)) {
       if (partner !== null && (own === null || !seen)) waiting.add(questionId);
     }

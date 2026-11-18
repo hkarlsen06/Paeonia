@@ -694,6 +694,34 @@ export async function updateDailyAnswerText(
   return result.answer_id;
 }
 
+/**
+ * Deletes one answer for good: its text, picks and media links, its reactions and the couple's
+ * favorites of it. A report about it keeps its snapshot and loses its live reference. Returns
+ * the media assets the answer showed. A caller that wants their files gone passes them to
+ * `queueOldMediaAssetIfOrphaned` after its last write.
+ */
+export async function deleteAnswer(
+  ctx: WriterCtx,
+  coupleId: string,
+  answer: Doc<"daily_question_answers">,
+): Promise<string[]> {
+  const media = await ctx.db
+    .query("daily_answer_media")
+    .withIndex("by_answer_id_sort_order", (q) => q.eq("answer_id", answer.id))
+    .collect();
+  for (const link of media) await ctx.db.delete(link._id);
+  for (const table of ["daily_answer_text", "daily_answer_partner_choice", "daily_answer_option_choice"] as const) {
+    for (const row of await ctx.db.query(table).withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id)).collect()) {
+      await ctx.db.delete(row._id);
+    }
+  }
+  await deleteReactionsOf(ctx, "daily_answer", answer.id);
+  await deleteFavoritesOfTarget(ctx, coupleId, "daily_answer", answer.id);
+  await tombstoneReportTargets(ctx, "daily_answer", answer.id);
+  await ctx.db.delete(answer._id);
+  return media.map((link) => link.media_asset_id);
+}
+
 /** Port of `public.reset_daily_challenge_for_testing`. Returns how many couple days were reset. */
 export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: string): Promise<number> {
   const now = nowIso();
@@ -753,36 +781,7 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
         .query("daily_question_answers")
         .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id))
         .collect();
-      for (const answer of answers) {
-        for (const link of await ctx.db
-          .query("daily_answer_media")
-          .withIndex("by_answer_id_sort_order", (q) => q.eq("answer_id", answer.id))
-          .collect()) {
-          await ctx.db.delete(link._id);
-        }
-        for (const row of await ctx.db
-          .query("daily_answer_text")
-          .withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id))
-          .collect()) {
-          await ctx.db.delete(row._id);
-        }
-        for (const row of await ctx.db
-          .query("daily_answer_partner_choice")
-          .withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id))
-          .collect()) {
-          await ctx.db.delete(row._id);
-        }
-        for (const row of await ctx.db
-          .query("daily_answer_option_choice")
-          .withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id))
-          .collect()) {
-          await ctx.db.delete(row._id);
-        }
-        await deleteReactionsOf(ctx, "daily_answer", answer.id);
-        await deleteFavoritesOfTarget(ctx, coupleId, "daily_answer", answer.id);
-        await tombstoneReportTargets(ctx, "daily_answer", answer.id);
-        await ctx.db.delete(answer._id);
-      }
+      for (const answer of answers) await deleteAnswer(ctx, coupleId, answer);
     }
 
     // 3. The day's skips.

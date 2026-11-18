@@ -17,10 +17,8 @@ import { getByUuid, withUpdatedAt } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { coupleChatDeepLink, memoryDeepLink, storyDeepLink } from "./lib/deepLinks";
 import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
-import { queueThreadMessageMediaAssetsIfOrphaned } from "./lib/mediaOrphans";
 import { enqueueNotificationForUser, enqueuePartnerNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
-import { deleteReactionsOf } from "./lib/reactions";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
@@ -28,6 +26,7 @@ import {
   isChatSubjectAvailable,
   subjectOfThread,
   threadIdOfSubject,
+  tombstoneThreadMessage,
   type ThreadSubject,
   type ThreadSubjectKind,
 } from "./lib/threadSubjects";
@@ -458,13 +457,7 @@ export const delete_thread_message = mutation({
         }
         if (message.call !== undefined) fail("23514", "calls cannot be deleted");
         if (message.deleted_at !== undefined) return null;
-        await ctx.db.patch(
-          message._id,
-          withUpdatedAt({ deleted_at: nowIso(), body: undefined, edited_at: undefined }),
-        );
-        await deleteReactionsOf(ctx, "thread_message", message.id);
-        // After the patch above, so the media no longer counts as shown by a live message.
-        await queueThreadMessageMediaAssetsIfOrphaned(ctx, message.id);
+        await tombstoneThreadMessage(ctx, message);
         await withdrawMessageAlert(ctx, thread, message);
         return null;
       },

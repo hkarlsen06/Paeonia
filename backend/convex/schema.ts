@@ -1370,6 +1370,11 @@ export default defineSchema({
     shares_usage_notice: optString,
     // False while the person hides when they are in the app (`appPresence.ts`). Missing means shown.
     shows_presence: v.optional(v.boolean()),
+    // When the person said yes to answering private topics such as Flirt, and which version of the
+    // question they saw (`topics:set_private_topics_consent`). Missing before a yes and after they
+    // take it back, which also deletes their answers there.
+    private_topics_consent_at: optTs,
+    private_topics_consent_notice: optString,
   })
     .index("by_user_id", ["user_id"])
     .index("by_moderation_report_id", ["moderation_report_id"])
@@ -1390,8 +1395,9 @@ export default defineSchema({
   question_collections: defineTable({
     id: uuid,
     kind: literals("system", "custom", "mini_game", "topic"),
-    // Topics only: the stable topic key, the shelf order, and whether the topic stays off the lock
-    // screen (Flirt): its chat pushes name only the sender.
+    // Topics only: the stable topic key, the shelf order, and whether the topic is private (Flirt).
+    // A private topic stays off the lock screen, and a person answers it only after saying yes
+    // (`profiles.private_topics_consent_at`).
     key: optString,
     sort_order: v.optional(v.number()),
     private: v.optional(v.boolean()),
