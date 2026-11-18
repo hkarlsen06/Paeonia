@@ -72,6 +72,7 @@
               inviteID: DeveloperLocalFlowIDs.pairID,
               partnerUserID: DeveloperScenarioFixture.partnerUserID,
               partnerName: "Robin",
+              partnerProfilePhotoAssetID: DeveloperAvatarFixture.partnerPhoto,
               requestedAt: DeveloperScenarioFixture.now
             ),
             model: RelationshipRestoreRequestModel(
@@ -81,6 +82,7 @@
             onAnswered: {}
           )
         }
+        .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
       case .pairingCelebration, .pairingCelebrationSettled:
         PairingCelebrationView(
           currentDisplayName: "Alex",

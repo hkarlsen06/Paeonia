@@ -28,12 +28,15 @@ nonisolated struct RemoteRestoreRequest: Codable, Equatable, Sendable {
     let partnerUserID: UUID
     /// The name this person sees for the former partner, resolved by the server.
     let partnerName: String?
+    /// The former partner's profile photo. The server lets this person read it while the request stands.
+    let partnerProfilePhotoAssetID: UUID?
     let requestedAt: Date
 
     enum CodingKeys: String, CodingKey {
         case inviteID = "invite_id"
         case partnerUserID = "partner_user_id"
         case partnerName = "partner_name"
+        case partnerProfilePhotoAssetID = "partner_profile_photo_asset_id"
         case requestedAt = "requested_at"
     }
 }

@@ -32,7 +32,7 @@ struct RelationshipRestoreRequestView: View {
         PaeoniaScreenScroll {
             VStack(spacing: PaeoniaSpacing.space24) {
                 PaeoniaProfilePhotoAvatar(
-                    mediaAssetID: nil,
+                    mediaAssetID: request.partnerProfilePhotoAssetID,
                     name: partnerName ?? "",
                     tint: .paeoniaPartnerTwo,
                     size: Self.avatarSize

@@ -40,6 +40,7 @@
           inviteID: DeveloperLocalFlowIDs.pairID,
           partnerUserID: DeveloperScenarioFixture.partnerUserID,
           partnerName: "Robin",
+          partnerProfilePhotoAssetID: DeveloperAvatarFixture.partnerPhoto,
           requestedAt: DeveloperScenarioFixture.now
         )
       case .paired:
