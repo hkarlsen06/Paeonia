@@ -11,6 +11,7 @@ extension MainTabView {
                     tabRoot(for: tab)
                         .paeoniaBannerBottomEdge(at: .bottom, isActive: tab == selection.wrappedValue)
                         .toolbarVisibility(gameTabBarVisibility, for: .tabBar)
+                        .modifier(TabBarPlacementReporter { tabBarPlacement = $0 })
                         .onGeometryChange(for: CGFloat.self) {
                             $0.frame(in: .global).maxY - $0.safeAreaInsets.bottom
                         } action: { bottom in
@@ -66,13 +67,17 @@ extension MainTabView {
     /// Declare visibility above the tab stacks, before the selected stack appears.
     private var gameTabBarVisibility: Visibility {
         (gameChatReturn.isPending || selection.wrappedValue == .games && !gamesPath.isEmpty)
-            && UIDevice.current.userInterfaceIdiom != .pad
+            && hidesTabBarInGames
             ? .hidden : .automatic
     }
 
+    /// A bar along the top leaves a game its space. A bottom or side bar takes it.
+    private var hidesTabBarInGames: Bool {
+        tabBarPlacement != .topBar
+    }
+
     func selectTab(_ tab: MainTab) {
-        if tab == .games, selection.wrappedValue == .questions, !gamesPath.isEmpty,
-           UIDevice.current.userInterfaceIdiom != .pad {
+        if tab == .games, selection.wrappedValue == .questions, !gamesPath.isEmpty, hidesTabBarInGames {
             guard !gameChatReturn.isPending else { return }
             var transaction = Transaction(animation: nil)
             transaction.disablesAnimations = true
@@ -419,4 +424,17 @@ extension MainTabView {
 struct StoryBadgeKey: Equatable {
     let stories: [Story]
     let partner: UUID?
+}
+
+/// SwiftUI tells only a tab's content where the tab bar sits, so each tab passes it up.
+/// A tab that has no placement, such as one not on screen, leaves the last one in place.
+private struct TabBarPlacementReporter: ViewModifier {
+    let report: (TabBarPlacement) -> Void
+    @Environment(\.tabBarPlacement) private var placement
+
+    func body(content: Content) -> some View {
+        content.onChange(of: placement, initial: true) { _, placement in
+            if let placement { report(placement) }
+        }
+    }
 }

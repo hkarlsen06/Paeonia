@@ -190,6 +190,8 @@ struct MainTabView: View {
     /// The drawing history, opened from the Home look-back card.
     @State var isLookBackDrawingHistoryPresented = false
     @State var lookBackDrawingRevisionID: UUID?
+    /// Where the tab bar sits, which decides whether a game hides it (`MainTabView+Tabs.swift`).
+    @State var tabBarPlacement: TabBarPlacement?
     /// What the Games tab has open. A notification about a game sets it.
     @State var gamesPath: [GamesDestination] = []
     @State var gameChatDestination: GameChatDestination?

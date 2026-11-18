@@ -24,7 +24,7 @@ Decisions and rules for the Games tab. Each game has its own doc in `docs/games/
 - The Games tab opens on the hub so both partners see every game first. The first game a partner opens asks for two couple settings, play style and game language. The other partner sees the choice before their first game and can keep or change it.
 - **Play style.** "Against each other" gives each partner a score and a winner. "Together" gives one shared score. Each game doc says how it plays in each style.
 - **Game language.** The couple picks one language both understand (English or Norwegian Bokmal). Word lists and decoy letters use it regardless of each partner's app language.
-- Games and their histories hide the tab bar on iPhone to keep the play area available.
+- Games and their histories hide the tab bar when it sits at the bottom or the side, as on an iPhone and an iPhone Duo, to keep the play area available. A bar along the top, as on a full-width iPad, stays (`tabBarPlacement` in `MainTabView+Tabs.swift`).
 
 ### Hub, presence and notices
 
