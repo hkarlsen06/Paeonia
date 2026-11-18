@@ -80,9 +80,19 @@ stop_orphaned_daemon() {
   [[ -n "$pid" ]] || return 0
   cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' || true)"
   if [[ -n "$cwd" && ! -d "$cwd" ]]; then
-    kill "$pid" 2>/dev/null || true
+    # Its device runners (xcodebuild under ios-agent) would outlive it and keep
+    # each phone's test queue, so every later command waits behind them.
+    kill "$pid" $(descendants "$pid") 2>/dev/null || true
     echo "devices: restarted agent-device, whose folder $cwd was removed" >&2
   fi
+}
+
+descendants() {
+  local child
+  for child in $(pgrep -P "$1"); do
+    echo "$child"
+    descendants "$child"
+  done
 }
 
 agent_device() {
