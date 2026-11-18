@@ -380,14 +380,14 @@ export function notificationAlertBody(
           if (payload.route === "recap") {
             return nb ? "Se tilbake på det dere har delt." : "Look back at what you've shared.";
           }
-          return nb ? "Ta en stund til å feire." : "Take a moment to celebrate.";
+          return nb ? "Ta dere tid til å feire." : "Take a moment to celebrate.";
         case "countdown":
           return payloadCount(payload.count) > 1
             ? nb
-              ? `${formatCount(payloadCount(payload.count), nb)} datoer dere har talt ned til er her.`
+              ? `${formatCount(payloadCount(payload.count), nb)} datoer dere har telt ned til er her.`
               : `${formatCount(payloadCount(payload.count), nb)} dates you've been counting down to are here.`
             : nb
-              ? "En dato dere har talt ned til er her."
+              ? "En dato dere har telt ned til er her."
               : "A date you've been counting down to is here.";
         case "visit_tomorrow":
           return nb ? "Bare én natt igjen." : "Just one more night to go.";
@@ -415,7 +415,7 @@ export function notificationAlertBody(
             : "One small thing from each of you keeps your streak going.";
         case 2:
           return nb
-            ? "En melding, en tegning eller et svar teller som innsjekk."
+            ? "En melding, en tegning eller et svar er nok."
             : "A message, a drawing or an answer all count as a check-in.";
         default:
           return nb ? "Noe lite holder, som en melding eller en tegning." : "Anything small counts, like a message or a drawing.";
@@ -576,15 +576,15 @@ export async function notificationAlertTitle(
     case "streak_reminder":
       // `actor_user_id` is the partner here (streaks.ts).
       if (payload.partner_checked_in === true) {
-        return nb ? `${name} har sjekket inn i dag` : `${name} checked in today`;
+        return nb ? `${name} har vært med i dag` : `${name} checked in today`;
       }
       switch (dailyVariant(payload.next_activity_deadline_at, STREAK_VARIANTS)) {
         case 1:
-          return nb ? `Sjekk inn med ${inSentence} i dag` : `Check in with ${inSentence} today`;
+          return nb ? `Send noe til ${inSentence} i dag` : `Check in with ${inSentence} today`;
         case 2:
           return nb ? `Si hei til ${inSentence}` : `Say hi to ${inSentence}`;
         default:
-          return nb ? "Tid for å sjekke inn" : "Time for a quick check-in";
+          return nb ? "Tid for et lite hei" : "Time for a quick check-in";
       }
     case "subscription_trial_reminder":
       return nb ? "Prøveperioden avsluttes snart" : "Your free trial ends soon";
@@ -592,7 +592,7 @@ export async function notificationAlertTitle(
       // Paeonia's own voice. Only the person who pays gets it.
       return nb ? "Betalingen din gikk ikke gjennom" : "Your payment didn't go through";
     case "subscription_running":
-      return nb ? "Abonnementet ditt løper" : "Your subscription is running";
+      return nb ? "Abonnementet ditt er aktivt" : "Your subscription is running";
     case "admin_case_opened":
       // Paeonia's own voice, to an admin. Never who filed it, about whom, or what it says.
       if (payload.case_kind === "correction_request") {

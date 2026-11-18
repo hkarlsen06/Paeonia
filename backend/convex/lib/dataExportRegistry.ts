@@ -599,7 +599,7 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
     group: "drawings",
     about: {
       en: "The shared drawing board behind your widget.",
-      nb: "Den delte tegnebrettet bak widgeten deres.",
+      nb: "Det delte tegnebrettet bak widgeten deres.",
     },
   }),
   widget_drawing_revisions: own("author_user_id", "by_author_user_id_created_at", {
