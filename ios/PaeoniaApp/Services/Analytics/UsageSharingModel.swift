@@ -33,8 +33,12 @@ final class UsageSharingModel {
         }
     }
 
-    /// The paired person whose answer this is, or nil while nobody is paired.
+    /// The person whose answer this is: the paired person, or the person on the
+    /// paywall. Nil for anyone else.
     private(set) var userID: String?
+    /// Whether that person's use is counted. False on the paywall, whose privacy
+    /// settings show the answer while nothing is counted.
+    private var counts = false
     /// Their answer, or nil before it is known.
     private(set) var shares: Bool?
     /// The server confirmed that this person has not answered yet.
@@ -54,16 +58,17 @@ final class UsageSharingModel {
 
     /// Asks the question once Home is on screen.
     var needsAnswer: Bool {
-        PaeoniaAnalytics.isAvailable && userID != nil && shares == nil && isUnanswered
+        PaeoniaAnalytics.isAvailable && counts && userID != nil && shares == nil && isUnanswered
     }
 
-    /// Follows the paired person, or nobody when `userID` is nil. Nothing is
-    /// counted until the server's answer, or an unsent one, is known.
-    func follow(_ userID: String?) async {
-        guard userID != self.userID else {
+    /// Follows `userID`, or nobody when it is nil. Nothing is counted until the
+    /// server's answer, or an unsent one, is known, and never while `counts` is false.
+    func follow(_ userID: String?, counts: Bool) async {
+        guard userID != self.userID || counts != self.counts else {
             return
         }
         self.userID = userID
+        self.counts = counts
         generation &+= 1
         shares = nil
         isUnanswered = false
@@ -110,7 +115,7 @@ final class UsageSharingModel {
         isUnanswered = false
         shares = serverShares
         if serverShares {
-            PaeoniaAnalytics.share(as: userID)
+            PaeoniaAnalytics.share(as: counts ? userID : nil)
         } else {
             // This phone may still hold data from a yes withdrawn elsewhere.
             PaeoniaAnalytics.stopSharingAndDeleteQueued()
@@ -171,7 +176,7 @@ final class UsageSharingModel {
             unsent[userID] = nil
             saveUnsent(unsent)
             if answer, userID == self.userID {
-                PaeoniaAnalytics.share(as: userID)
+                PaeoniaAnalytics.share(as: counts ? userID : nil)
             }
         }
     }

@@ -18,6 +18,10 @@ Before adding or changing game sounds, read [the audio standard](../docs/game-au
 
 Before you add, retune, update or verify an effect from Libraries.dev, such as the distortion wave on Send (`DistortionWavesKit`), read the `paeonia-libraries-dev` skill (`.agents/skills/paeonia-libraries-dev/`). It has the shader rules, the screen wave host, the Metal toolchain and model-licence rules, and the recording recipe.
 
+## Package licences
+
+More > Licences shows `PaeoniaApp/Resources/Licences/PackageLicences.txt`. After you add, remove or update a Swift package, build once and run `ios/Scripts/collect-package-licences.py`, then commit the file. `scripts/check-repo-rules.mjs` fails while the file and `Package.resolved` name different packages or versions.
+
 ## Partner names
 
 A person can give their partner a nickname, and the server keeps it private to them. Every screen, widget and VoiceOver label shows the nickname where it would show the partner's name.

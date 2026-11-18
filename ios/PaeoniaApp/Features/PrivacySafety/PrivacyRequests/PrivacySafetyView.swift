@@ -118,13 +118,7 @@ struct PrivacySafetyView: View {
             sectionHeader(.privacySafetyUsageSectionTitle)
 
             PaeoniaCard(surface: .raised) {
-                Toggle(isOn: Binding(
-                    get: { usageSharing.shares == true },
-                    set: { shares in Task { await usageSharing.answer(shares) } }
-                )) {
-                    Text(.privacySafetyUsageToggleTitle)
-                    Text(.privacySafetyUsageToggleDescription)
-                }
+                UsageSharingToggle(usageSharing)
             }
         }
     }

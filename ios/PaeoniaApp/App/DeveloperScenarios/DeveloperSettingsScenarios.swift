@@ -32,6 +32,10 @@
             currentUserID: DeveloperScenarioFixture.currentUserID, coupleID: DeveloperScenarioFixture.coupleID
           )
         }
+      case .licences:
+        NavigationStack {
+          LicencesView()
+        }
       case .reportAndLeave:
         NavigationStack {
           ReportAndLeaveView(

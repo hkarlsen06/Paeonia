@@ -3260,19 +3260,19 @@
       }
     },
     "auth.relationshipEnded.message" : {
-      "comment" : "Message shown when the user no longer has access to a relationship.",
+      "comment" : "Message shown when the user no longer has access to a relationship. The download is the Download my data button under it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You no longer have access to this relationship."
+            "value" : "You no longer have access to this relationship. You can still download what you added for 30 days."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du har ikke lenger tilgang til dette forholdet."
+            "value" : "Du har ikke lenger tilgang til dette forholdet. Du kan fortsatt laste ned det du la inn, i 30 dager."
           }
         }
       }
@@ -3291,6 +3291,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dette forholdet er avsluttet"
+          }
+        }
+      }
+    },
+    "auth.signIn.agreement" : {
+      "comment" : "Sentence under the sign-in buttons. It contains two Markdown links. Translate the words in square brackets, and keep (terms) and (privacy) exactly as they are.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By continuing, you confirm that you are 16 or older and agree to the [Terms](terms). The [Privacy policy](privacy) explains how we handle your data."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når du fortsetter, bekrefter du at du er 16 år eller eldre og godtar [vilkårene](terms). [Personvernteksten](privacy) forklarer hvordan vi behandler opplysningene dine."
           }
         }
       }
@@ -35867,6 +35885,78 @@
         }
       }
     },
+    "paywall.privacy.location.description" : {
+      "comment" : "Under the Share my location switch in the paywall's privacy settings, for a couple without an active subscription. The switch can only be turned off here.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turning this off deletes your last location from Paeonia. You can turn it on again in the app when one of you subscribes."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slår du dette av, sletter Paeonia den siste posisjonen din. Du kan slå det på igjen i appen når en av dere abonnerer."
+          }
+        }
+      }
+    },
+    "paywall.privacy.saveFailed.offlineMessage" : {
+      "comment" : "Banner message when a privacy choice could not be saved because the phone has no internet connection",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "paywall.privacy.saveFailed.title" : {
+      "comment" : "Banner title when turning location sharing off from the paywall's privacy settings failed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your choice"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre valget ditt"
+          }
+        }
+      }
+    },
+    "paywall.privacy.title" : {
+      "comment" : "Link in the paywall footer and title of the sheet it opens, with the switches for location sharing and usage statistics. Not the privacy policy, which has its own link.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy settings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personverninnstillinger"
+          }
+        }
+      }
+    },
     "paywall.products.retry" : {
       "comment" : "Primary action shown when App Store subscription products could not be loaded",
       "extractionState" : "manual",
@@ -38712,7 +38802,7 @@
       }
     },
     "privacySafety.dataExport.title" : {
-      "comment" : "Title of the card where you download a copy of your data, and the link on the paywall",
+      "comment" : "Title of the card where you download a copy of your data, the link on the paywall, and the button on the notice that a relationship ended",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -41281,6 +41371,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Merket ditt i spill"
+          }
+        }
+      }
+    },
+    "settings.licences.intro" : {
+      "comment" : "First line of the Licences screen, above the list of open source projects",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia uses open source software from these projects."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia bruker åpen kildekode fra disse prosjektene."
+          }
+        }
+      }
+    },
+    "settings.licences.title" : {
+      "comment" : "More tab row and title of the screen that lists the open source software Paeonia uses, with each licence",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licences"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lisenser"
           }
         }
       }

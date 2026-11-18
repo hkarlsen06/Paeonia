@@ -50,18 +50,35 @@ struct RelationshipEndedNoticeView: View {
     let onAcknowledge: () -> Void
 
     @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 48
+    @State private var isShowingDataExport = false
 
     var body: some View {
         PaeoniaScreenScroll {
             notice
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            Button(action: onAcknowledge) {
-                Text(.authRelationshipEndedAcknowledgeButton)
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Button(action: onAcknowledge) {
+                    Text(.authRelationshipEndedAcknowledgeButton)
+                }
+                .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: isWorking))
+
+                // The download needs no subscription, and the paywall offers it too
+                // once this notice is gone.
+                Button {
+                    isShowingDataExport = true
+                } label: {
+                    Text(.privacySafetyDataExportTitle)
+                }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+                .disabled(isWorking)
+                .accessibilityIdentifier("relationshipEnded.dataExport")
             }
-            .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: isWorking))
             .padding(.top, PaeoniaSpacing.space12)
             .paeoniaBannerBottomEdge()
+        }
+        .sheet(isPresented: $isShowingDataExport) {
+            DataExportScreen()
         }
     }
 

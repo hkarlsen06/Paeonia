@@ -62,6 +62,26 @@ actor LiveLocationGateway: LocationGateway {
     }
 }
 
+extension LiveLocationGateway: PaywallLocationSharingGateway {
+    func ownLocationSharing() async throws -> OwnLocationSharing? {
+        try await PaeoniaSignedIn.require(isSignedIn)
+        return try await client.query("location:get_own_location_sharing")
+    }
+
+    func turnOffLocationSharing(coupleID: UUID, operation: SyncClientOperation) async throws {
+        _ = try await updateLocationSharingPreference(
+            payload: LocationSharingOperationPayload(
+                coupleID: coupleID,
+                isEnabled: false,
+                consentVersion: nil,
+                source: .settingsToggle,
+                pausedUntil: nil
+            ),
+            operation: operation
+        )
+    }
+}
+
 nonisolated struct LocationSharingOperationPayload: Codable, Equatable, Sendable {
     let coupleID: UUID
     let isEnabled: Bool

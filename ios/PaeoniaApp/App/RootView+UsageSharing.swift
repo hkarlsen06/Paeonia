@@ -11,6 +11,18 @@ extension RootView {
         viewModel.state == .paired ? viewModel.currentSession?.id : nil
     }
 
+    /// Whose answer `UsageSharingModel` holds. The paywall's privacy settings show
+    /// the switch too, so it also holds the answer of the person on the paywall,
+    /// without counting their use.
+    var usageAnswerUserID: String? {
+        switch viewModel.state {
+        case .paired, .pairedPaywalled, .limitedAuthenticated:
+            viewModel.currentSession?.id
+        default:
+            nil
+        }
+    }
+
     /// `offerPrimersAfterSharing` opens the question like a primer: after the
     /// person has shared something, and only on a visit with no other prompt.
     /// It closes once answered, or when the paired surface goes away.

@@ -159,11 +159,11 @@ struct RootView: View {
             .task(id: partnerAvatarIdentity) {
                 await stagePartnerAvatar(partnerAvatarIdentity)
             }
-            .task(id: usageSharingUserID) {
+            .task(id: [usageAnswerUserID, usageSharingUserID]) {
                 guard allowsSystemIntegrations else {
                     return
                 }
-                await usageSharing.follow(usageSharingUserID)
+                await usageSharing.follow(usageAnswerUserID, counts: usageSharingUserID != nil)
             }
             .onReceive(NotificationCenter.default.publisher(for: .paeoniaSubscriptionDidUpdate)) { _ in
                 guard allowsSystemIntegrations else {

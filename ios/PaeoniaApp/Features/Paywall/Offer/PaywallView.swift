@@ -11,6 +11,8 @@ struct PaywallView: View {
     /// The root is checking access after a purchase.
     private let isCheckingAccess: Bool
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    /// Missing in developer scenarios, which then hide the usage switch.
+    @Environment(UsageSharingModel.self) private var usageSharing: UsageSharingModel?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let onPurchaseConfirmed: () -> Void
@@ -25,6 +27,9 @@ struct PaywallView: View {
     @State private var isConfirmingDelete = false
     @State private var isConfirmingUnpair = false
     @State private var isShowingDataExport = false
+    @State private var isShowingPrivacy = false
+    /// The location switch in the privacy settings. It asks the server when the sheet opens.
+    @State private var locationSharing: PaywallLocationSharingModel
     @State private var isEnteringInviteCode = false
     @State private var isManagingSubscription = false
     /// A purchase or restore went through and the next screen is on its
@@ -48,11 +53,14 @@ struct PaywallView: View {
         onUnpaired: @escaping () -> Void,
         onDeleteAccount: @escaping () -> Void,
         viewModel: PaywallViewModel? = nil,
-        presentationOverride: PaywallPresentationOverride? = nil
+        presentationOverride: PaywallPresentationOverride? = nil,
+        locationSharingGateway: (any PaywallLocationSharingGateway)? =
+            PaywallLocationSharingGatewayFactory.makeDefault()
     ) {
         _viewModel = State(
             initialValue: viewModel ?? PaywallViewModel(userID: session?.id)
         )
+        _locationSharing = State(initialValue: PaywallLocationSharingModel(gateway: locationSharingGateway))
         self.presentationOverride = presentationOverride
         self.isCheckingAccess = isCheckingAccess
         self.audience = audience
@@ -109,6 +117,12 @@ struct PaywallView: View {
         }
         .sheet(isPresented: $isShowingDataExport) {
             DataExportScreen()
+        }
+        .sheet(isPresented: $isShowingPrivacy) {
+            PaywallPrivacySheet(
+                location: audience.isPaired ? locationSharing : nil,
+                usageToggle: usageToggle
+            )
         }
         .manageSubscriptionsSheet(isPresented: $isManagingSubscription)
         .modifier(
@@ -262,6 +276,7 @@ private extension PaywallView {
             onRequestUnpair: {
                 isConfirmingUnpair = true
             },
+            onRequestPrivacy: audience.isPaired || usageToggle != nil ? { isShowingPrivacy = true } : nil,
             onRequestDataExport: {
                 isShowingDataExport = true
             },
@@ -269,6 +284,14 @@ private extension PaywallView {
                 isConfirmingDelete = true
             }
         )
+    }
+
+    /// The usage switch, for a signed-in person in a build with usage statistics.
+    var usageToggle: UsageSharingToggle? {
+        guard let usageSharing, PaeoniaAnalytics.isAvailable, usageSharing.userID != nil else {
+            return nil
+        }
+        return UsageSharingToggle(usageSharing)
     }
 
     // MARK: - Store actions

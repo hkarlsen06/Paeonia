@@ -5,8 +5,8 @@ import UIKit
 /// The last signed-out step: Continue with Apple, Google or email, under a headline that says
 /// why this person is signing in (`WelcomeSignInMode`). A picture shows what they sign in
 /// for: the first drawing they made, or the welcome peonies. Someone joining sees that
-/// their invite code is saved and can change it. The privacy, terms and support
-/// links sit under the buttons.
+/// their invite code is saved and can change it. Under the buttons, one sentence
+/// says that continuing agrees to the terms, with Support below it.
 struct WelcomeSignInStep: View {
     let mode: WelcomeSignInMode
     let isWorking: Bool
@@ -91,7 +91,7 @@ struct WelcomeSignInStep: View {
             if mode == .joining {
                 inviteCodeSavedRow
             }
-            WelcomeLegalLinks()
+            WelcomeSignInAgreement()
         }
         .padding(.top, PaeoniaSpacing.space12)
         .screenEntrance(order: 3)
@@ -286,25 +286,36 @@ struct WelcomeSignInStep: View {
     }
 }
 
-/// The privacy, terms and support links, opened in an in-app browser.
-private struct WelcomeLegalLinks: View {
+/// What continuing agrees to, in one sentence where "Terms" and "Privacy policy" are
+/// links, and Support under it. Everyone who signs in or makes an account passes it:
+/// starting, joining with a code, and the email code sheet this step opens. The links
+/// open in an in-app browser.
+private struct WelcomeSignInAgreement: View {
     @State private var activeLink: LegalLink?
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: PaeoniaSpacing.space12) {
-                link(.authSignInLegalPrivacy, .privacy)
-                separator
-                link(.authSignInLegalTerms, .terms)
-                separator
-                link(.authSignInSupport, .support)
-            }
+        VStack(spacing: 0) {
+            Text(sentence)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .tint(.paeoniaTextPrimary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                // The catalog's links name a page (`terms`, `privacy`) instead of a URL.
+                .environment(\.openURL, OpenURLAction { url in
+                    activeLink = LegalLink(rawValue: url.relativeString)
+                    return .handled
+                })
+                .accessibilityIdentifier("welcome.signIn.agreement")
 
-            VStack(spacing: 0) {
-                link(.authSignInLegalPrivacy, .privacy)
-                link(.authSignInLegalTerms, .terms)
-                link(.authSignInSupport, .support)
+            Button {
+                activeLink = .support
+            } label: {
+                Text(.authSignInSupport)
+                    .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                    .contentShape(Rectangle())
             }
+            .foregroundStyle(.paeoniaTextSecondary)
+            .accessibilityAddTraits(.isLink)
         }
         .font(PaeoniaTypography.caption)
         .sheet(item: $activeLink) { link in
@@ -313,22 +324,13 @@ private struct WelcomeLegalLinks: View {
         }
     }
 
-    private func link(_ title: LocalizedStringResource, _ link: LegalLink) -> some View {
-        Button {
-            activeLink = link
-        } label: {
-            Text(title)
-                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-                .contentShape(Rectangle())
+    /// The sentence with its links underlined, so they read as links in any colour.
+    private var sentence: AttributedString {
+        var sentence = AttributedString(localized: .authSignInAgreement)
+        for run in sentence.runs where run.link != nil {
+            sentence[run.range].underlineStyle = .single
         }
-        .foregroundStyle(.paeoniaTextSecondary)
-        .accessibilityAddTraits(.isLink)
-    }
-
-    private var separator: some View {
-        Text(verbatim: "·")
-            .foregroundStyle(.paeoniaTextTertiary)
-            .accessibilityHidden(true)
+        return sentence
     }
 }
 

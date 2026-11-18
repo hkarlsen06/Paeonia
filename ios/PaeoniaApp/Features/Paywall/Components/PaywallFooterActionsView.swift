@@ -13,6 +13,9 @@ struct PaywallFooterActionsView: View {
     let onManageSubscription: (() -> Void)?
     let onSignOut: () -> Void
     let onRequestUnpair: () -> Void
+    /// Opens the privacy settings: stop sharing location, and usage statistics. Nil
+    /// hides the link for someone with neither.
+    let onRequestPrivacy: (() -> Void)?
     /// Opens "Download my data". Everyone has the right to their data, so it sits
     /// here for people who cannot reach the rest of the app without a subscription.
     let onRequestDataExport: () -> Void
@@ -28,6 +31,7 @@ struct PaywallFooterActionsView: View {
                 manageSubscriptionButton(onManageSubscription)
             }
             PaeoniaLegalLinksView()
+            dataActions
             accountActions
         }
         .frame(maxWidth: 430)
@@ -66,6 +70,29 @@ struct PaywallFooterActionsView: View {
         .disabled(isBusy)
     }
 
+    /// What a person can do about their own data without a subscription.
+    private var dataActions: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: PaeoniaSpacing.space12) {
+                if let onRequestPrivacy {
+                    privacyButton(onRequestPrivacy)
+                    separator
+                }
+                dataExportButton
+            }
+
+            VStack(spacing: 0) {
+                if let onRequestPrivacy {
+                    privacyButton(onRequestPrivacy)
+                }
+                dataExportButton
+            }
+        }
+        .font(PaeoniaTypography.caption)
+        .foregroundStyle(.paeoniaTextTertiary)
+        .disabled(isBusy)
+    }
+
     private var accountActions: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: PaeoniaSpacing.space12) {
@@ -75,8 +102,6 @@ struct PaywallFooterActionsView: View {
                     unpairButton
                 }
                 separator
-                dataExportButton
-                separator
                 deleteButton
             }
 
@@ -85,13 +110,20 @@ struct PaywallFooterActionsView: View {
                 if showsUnpair {
                     unpairButton
                 }
-                dataExportButton
                 deleteButton
             }
         }
         .font(PaeoniaTypography.caption)
         .foregroundStyle(.paeoniaTextTertiary)
         .disabled(isBusy)
+    }
+
+    private func privacyButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            footerLabel(.paywallPrivacyTitle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("paywall.privacy")
     }
 
     private var signOutButton: some View {

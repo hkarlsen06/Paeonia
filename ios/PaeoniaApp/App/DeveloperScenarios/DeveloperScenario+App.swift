@@ -21,7 +21,7 @@
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayJoinedWaiting, firstDayInvited,
       firstDayInvitedNoDate,
       paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallPairedEnded, paywallPairedPaymentFailed,
-      paywallLoading,
+      paywallLoading, paywallPrivacy,
       pairedHome, pairedHomeTodayOpens, questions, chatsAttention, chatsAttentionAnswered, questionsPartial,
       questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
@@ -36,6 +36,7 @@
       gamesSetup, gamesPartnerPicked, gamesHubYourTurn, gamesHubWaiting, gamesHubReveal, gamesHubPartnerHere,
       gamesHubBoardGames, gamesHubQuiet, liveActivityGame, liveActivityViews,
       notificationPrimer, settings, settingsPartnerPays, settingsNotificationsDenied, privacySafety, reportAndLeave,
+      licences,
       deepLinkDailyToday, deepLinkDailyReveal, deepLinkWidget, deepLinkStreak, deepLinkSubscription,
     ]
 
@@ -213,6 +214,10 @@
     )
     static let paywallLoading = paywall(
       "paywall-loading", "Paywall · loading", "Stable blank surface while products settle"
+    )
+    static let paywallPrivacy = paywall(
+      "paywall-privacy", "Paywall · privacy settings",
+      "The sheet behind the footer's Privacy settings: stop sharing location, and usage statistics"
     )
 
     // MARK: Questions
@@ -406,6 +411,9 @@
     )
     static let reportAndLeave = settingsScreen(
       "report-and-leave", "Report and leave", "Conduct report form without submitting remotely"
+    )
+    static let licences = settingsScreen(
+      "licences", "Licences", "The open source packages from the bundled licence file"
     )
 
     // MARK: Deep links and notifications

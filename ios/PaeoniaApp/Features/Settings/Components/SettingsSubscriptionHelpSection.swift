@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The More tab's last section: the subscription, privacy and safety, and support,
-/// with the legal links and the app version in its footer.
+/// The More tab's last section: the subscription, privacy and safety, support and
+/// the open source licences, with the legal links and the app version in its footer.
 struct SettingsSubscriptionHelpSection: View {
     let viewModel: SettingsViewModel
     let onPurchasesRestored: @MainActor @Sendable () async -> Void
@@ -42,6 +42,7 @@ struct SettingsSubscriptionHelpSection: View {
             .accessibilityIdentifier("settings.privacy")
 
             supportRow
+            licencesRow
         } header: {
             Text(.settingsSectionSubscriptionHelp)
         } footer: {
@@ -73,6 +74,16 @@ struct SettingsSubscriptionHelpSection: View {
             return nil
         }
         return Text(.settingsVersion(version, build))
+    }
+
+    private var licencesRow: some View {
+        NavigationLink {
+            LicencesView()
+                .analyticsScreen("settings_licences")
+        } label: {
+            SettingsMenuLabel(.settingsLicencesTitle, systemImage: "doc.text.fill")
+        }
+        .accessibilityIdentifier("settings.licences")
     }
 
     @ViewBuilder

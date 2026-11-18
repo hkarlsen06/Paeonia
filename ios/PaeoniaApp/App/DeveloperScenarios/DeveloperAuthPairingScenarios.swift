@@ -184,6 +184,19 @@
     }
   }
 
+  /// Location sharing that is on until the paywall's privacy settings turn it off.
+  actor DeveloperScenarioLocationSharingGateway: PaywallLocationSharingGateway {
+    private var isEnabled = true
+
+    func ownLocationSharing() -> OwnLocationSharing? {
+      OwnLocationSharing(coupleID: DeveloperScenarioFixture.coupleID, isEnabled: isEnabled)
+    }
+
+    func turnOffLocationSharing(coupleID _: UUID, operation _: SyncClientOperation) {
+      isEnabled = false
+    }
+  }
+
   struct DeveloperPaywallScenarioView: View {
     let scenario: DeveloperScenario
 
@@ -200,19 +213,30 @@
     private var trial: PaeoniaFreeTrial? {
       hasTrial ? PaeoniaFreeTrial(value: 14, unit: .day) : nil
     }
+    @State private var locationSharing = PaywallLocationSharingModel(
+      gateway: DeveloperScenarioLocationSharingGateway(),
+      operationProvider: DeveloperScenarioOperationProvider()
+    )
+    @State private var sharesUsage = true
+
     var body: some View {
-      PaeoniaScreenFrame {
-        PaywallView(
-          session: DeveloperScenarioFixture.completeSession,
-          audience: audience,
-          onPurchaseConfirmed: {},
-          onSubmitInviteCode: { _ in true },
-          onSignOut: {},
-          onUnpaired: {},
-          onDeleteAccount: {},
-          viewModel: viewModel,
-          presentationOverride: presentationOverride
-        )
+      if scenario == .paywallPrivacy {
+        PaywallPrivacySheet(location: locationSharing, usageToggle: UsageSharingToggle(shares: $sharesUsage))
+      } else {
+        PaeoniaScreenFrame {
+          PaywallView(
+            session: DeveloperScenarioFixture.completeSession,
+            audience: audience,
+            onPurchaseConfirmed: {},
+            onSubmitInviteCode: { _ in true },
+            onSignOut: {},
+            onUnpaired: {},
+            onDeleteAccount: {},
+            viewModel: viewModel,
+            presentationOverride: presentationOverride,
+            locationSharingGateway: DeveloperScenarioLocationSharingGateway()
+          )
+        }
       }
     }
 
