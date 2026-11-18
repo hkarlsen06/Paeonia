@@ -58,6 +58,10 @@ jobs:
           echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
           xcodebuild -version
 
+      # DistortionWavesKit compiles a Metal shader, and Xcode downloads its Metal toolchain separately.
+      - name: Metal toolchain
+        run: xcodebuild -downloadComponent MetalToolchain
+
       - name: SwiftLint
         run: |
           command -v swiftlint >/dev/null || brew install swiftlint

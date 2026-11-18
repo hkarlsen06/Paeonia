@@ -56,6 +56,15 @@
       }
     },
     {
+      "identity" : "libraries.dev",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Jakubantalik/Libraries.dev",
+      "state" : {
+        "branch" : "main",
+        "revision" : "580ac1f0c9858edd579812fdea40d876217b27cb"
+      }
+    },
+    {
       "identity" : "maplibre-gl-native-distribution",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/maplibre/maplibre-gl-native-distribution",

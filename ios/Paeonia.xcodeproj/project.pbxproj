@@ -20,6 +20,7 @@
 		2A2D08012FE4000000A7BE1A /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D08032FE4000000A7BE1A /* PostHog */; };
 		2A2D09012FE5000000A7BE1A /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D09032FE5000000A7BE1A /* MapLibre */; };
 		2A2D0A012FE6000000A7BE1A /* LiveKitWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D0A032FE6000000A7BE1A /* LiveKitWebRTC */; };
+		2A2D0B012FE7000000A7BE1A /* DistortionWavesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D0B032FE7000000A7BE1A /* DistortionWavesKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -175,6 +176,7 @@
 				2A2D08012FE4000000A7BE1A /* PostHog in Frameworks */,
 				2A2D09012FE5000000A7BE1A /* MapLibre in Frameworks */,
 				2A2D0A012FE6000000A7BE1A /* LiveKitWebRTC in Frameworks */,
+				2A2D0B012FE7000000A7BE1A /* DistortionWavesKit in Frameworks */,
 				2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */,
 				2A2D04142FE0000000A7BE1A /* TOCropViewController in Frameworks */,
 			);
@@ -277,6 +279,7 @@
 				2A2D08032FE4000000A7BE1A /* PostHog */,
 				2A2D09032FE5000000A7BE1A /* MapLibre */,
 				2A2D0A032FE6000000A7BE1A /* LiveKitWebRTC */,
+				2A2D0B032FE7000000A7BE1A /* DistortionWavesKit */,
 				2A2D04132FE0000000A7BE1A /* CropViewController */,
 				2A2D04152FE0000000A7BE1A /* TOCropViewController */,
 			);
@@ -412,6 +415,7 @@
 				2A2D08022FE4000000A7BE1A /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				2A2D09022FE5000000A7BE1A /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */,
 				2A2D0A022FE6000000A7BE1A /* XCRemoteSwiftPackageReference "webrtc-xcframework" */,
+				2A2D0B022FE7000000A7BE1A /* XCRemoteSwiftPackageReference "Libraries.dev" */,
 				2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 			);
 			preferredProjectObjectVersion = 90;
@@ -1069,6 +1073,14 @@
 				version = 150.7871.06;
 			};
 		};
+		2A2D0B022FE7000000A7BE1A /* XCRemoteSwiftPackageReference "Libraries.dev" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Jakubantalik/Libraries.dev";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1111,6 +1123,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A2D0A022FE6000000A7BE1A /* XCRemoteSwiftPackageReference "webrtc-xcframework" */;
 			productName = LiveKitWebRTC;
+		};
+		2A2D0B032FE7000000A7BE1A /* DistortionWavesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A2D0B022FE7000000A7BE1A /* XCRemoteSwiftPackageReference "Libraries.dev" */;
+			productName = DistortionWavesKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
