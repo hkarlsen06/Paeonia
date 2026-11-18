@@ -22,6 +22,7 @@
 		2A2D0A012FE6000000A7BE1A /* LiveKitWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D0A032FE6000000A7BE1A /* LiveKitWebRTC */; };
 		2A2D0B012FE7000000A7BE1A /* DistortionWavesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D0B032FE7000000A7BE1A /* DistortionWavesKit */; };
 		2A2D0B042FE7000000A7BE1A /* ThinkingOrbsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D0B052FE7000000A7BE1A /* ThinkingOrbsKit */; };
+		2A2D0B062FE7000000A7BE1A /* VoiceGlowKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D0B072FE7000000A7BE1A /* VoiceGlowKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -179,6 +180,7 @@
 				2A2D0A012FE6000000A7BE1A /* LiveKitWebRTC in Frameworks */,
 				2A2D0B012FE7000000A7BE1A /* DistortionWavesKit in Frameworks */,
 				2A2D0B042FE7000000A7BE1A /* ThinkingOrbsKit in Frameworks */,
+				2A2D0B062FE7000000A7BE1A /* VoiceGlowKit in Frameworks */,
 				2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */,
 				2A2D04142FE0000000A7BE1A /* TOCropViewController in Frameworks */,
 			);
@@ -283,6 +285,7 @@
 				2A2D0A032FE6000000A7BE1A /* LiveKitWebRTC */,
 				2A2D0B032FE7000000A7BE1A /* DistortionWavesKit */,
 				2A2D0B052FE7000000A7BE1A /* ThinkingOrbsKit */,
+				2A2D0B072FE7000000A7BE1A /* VoiceGlowKit */,
 				2A2D04132FE0000000A7BE1A /* CropViewController */,
 				2A2D04152FE0000000A7BE1A /* TOCropViewController */,
 			);
@@ -1136,6 +1139,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A2D0B022FE7000000A7BE1A /* XCRemoteSwiftPackageReference "Libraries.dev" */;
 			productName = ThinkingOrbsKit;
+		};
+		2A2D0B072FE7000000A7BE1A /* VoiceGlowKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A2D0B022FE7000000A7BE1A /* XCRemoteSwiftPackageReference "Libraries.dev" */;
+			productName = VoiceGlowKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

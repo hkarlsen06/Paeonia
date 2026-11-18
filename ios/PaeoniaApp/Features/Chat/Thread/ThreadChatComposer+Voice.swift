@@ -1,4 +1,5 @@
 import SwiftUI
+import VoiceGlowKit
 
 extension ThreadChatComposer {
     // MARK: - Voice
@@ -35,7 +36,25 @@ extension ThreadChatComposer {
         .padding(.horizontal, PaeoniaSpacing.space4)
         .frame(minHeight: Self.controlHeight)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
+        // The glow rises with the voice, from the recorder's own meter, so no second
+        // microphone tap runs beside the recording.
+        .voiceGlow(
+            levelProvider: recorder.liveLevel,
+            active: recorder.phase == .recording,
+            colorVariant: .sunset,
+            cornerRadius: Self.cornerRadius,
+            options: Self.recordingGlow
+        )
     }
+
+    /// The kit's chat input preset is tuned for a taller field. On this one-line bar it
+    /// fills the whole bar and washes over the clock, so it rises half as far.
+    private static let recordingGlow: VoiceGlowOptions = {
+        var options = VoiceGlowOptions()
+        options.reach = 0.6
+        options.strength = 0.85
+        return options
+    }()
 
     var reviewBar: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {

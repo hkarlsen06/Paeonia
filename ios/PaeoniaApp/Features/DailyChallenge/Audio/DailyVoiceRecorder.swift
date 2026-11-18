@@ -82,6 +82,7 @@ final class DailyVoiceRecorder {
             }
 
             let recorder = try AVAudioRecorder(url: url, settings: Self.recordingSettings)
+            recorder.isMeteringEnabled = true
             guard recorder.record(forDuration: maxDuration) else {
                 abortStart(removing: url)
                 return
@@ -105,6 +106,17 @@ final class DailyVoiceRecorder {
         AVNumberOfChannelsKey: 1,
         AVEncoderBitRateKey: 32_000,
     ]
+
+    /// How loud the microphone is right now, from 0 to 1, for the recording glow. Each
+    /// call reads the recorder's meter again, so call it at most once a frame.
+    func liveLevel() -> Double {
+        guard phase == .recording, let recorder else { return 0 }
+        recorder.updateMeters()
+        // VoiceGlowKit's own meter turns an RMS amplitude into a level with a gain of 15.5,
+        // so a voice at speaking distance (0.03 to 0.2) fills most of the range.
+        let rms = pow(10, Double(recorder.averagePower(forChannel: 0)) / 20)
+        return min(1, rms * 15.5)
+    }
 
     func stopRecording() {
         guard phase == .recording, let recorder else { return }
