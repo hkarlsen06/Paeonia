@@ -57,6 +57,7 @@ struct PaeoniaApp: App {
             appContent
             .modifier(PaeoniaSymbolMotionPreferences())
             .modifier(PaeoniaPetalShowerHost())
+            .modifier(PaeoniaScreenWaveHost())
             .modifier(PaeoniaContrastPreference())
             .environment(CallCenter.shared)
             // A call back from the Phone app's Recents, or a call asked of Siri.

@@ -17,22 +17,20 @@ struct WidgetDrawingView: View {
     /// The "Not sent yet" pill above the canvas.
     private let showsSendStatus: Bool
     private let emptyCanvasHint: LocalizedStringResource?
-    /// Onboarding reuses this screen and moves on once the send finishes, which
-    /// would cut the wave off, so only the Us tab's drawing screen plays it.
+    /// Onboarding reuses this screen and moves on once the send finishes, while the
+    /// wave would still show this screen, so only the Us tab's drawing screen plays it.
     private let showsSendWave: Bool
     @State var isHistoryPresented = false
     @State private var isCompositionPresented = false
     @State private var isDescriptionPresented = false
     /// The width of the controls column beside the canvas, or nil while they sit below it.
     @State private var sideColumnWidth: CGFloat?
-    @State private var sendWave: WidgetDrawingSendWave?
-    @State private var sendWaveArea: CGRect = .zero
     @State private var sendButtonFrame: CGRect = .zero
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(ReactionStore.self) var reactionStore: ReactionStore?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.screenWave) private var screenWave
     @AccessibilityPresentation(.media) private var showsMedia
 
     init(
@@ -80,8 +78,6 @@ struct WidgetDrawingView: View {
                 canvasContent
             }
         }
-        // Nobody draws under the picture the wave plays over.
-        .allowsHitTesting(sendWave == nil)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space8)
@@ -94,7 +90,6 @@ struct WidgetDrawingView: View {
             GameMetrics.isWide(proxy.size) ? GameMetrics.sideColumnWidth(in: proxy.size) : nil
         } action: { sideColumnWidth = $0 }
         .background(.paeoniaBackgroundSecondary)
-        .overlay { WidgetDrawingSendWaveLayer(wave: $sendWave, area: $sendWaveArea) }
         .paeoniaFittingNavigationTitle(Text(title))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -174,7 +169,11 @@ struct WidgetDrawingView: View {
                 PaeoniaHaptics.drawingSaved()
             case .waiting:
                 PaeoniaHaptics.drawingSent()
-            case .idle, .sending:
+            case .sending:
+                // Only a send that starts plays the wave. A drawing too big to send
+                // fails before this, and its error banner must not sit under a wave.
+                if showsSendWave { screenWave(from: sendButtonFrame, style: .widgetDrawingSend) }
+            case .idle:
                 break
             }
         }
@@ -355,9 +354,6 @@ private extension WidgetDrawingView {
             .disabled(!viewModel.canClear)
 
             Button {
-                if showsSendWave, !reduceMotion {
-                    sendWave = WidgetDrawingSendWave(area: sendWaveArea, sendButton: sendButtonFrame)
-                }
                 Task { await viewModel.save() }
             } label: {
                 sendButtonLabel
