@@ -151,24 +151,6 @@ export const FAVORITE_KINDS = [
 export const favoriteKind = literals(...FAVORITE_KINDS);
 
 /**
- * The signed-out welcome steps the app counts (`onboarding:record_welcome_step`). The counts
- * are per day and step only, so a step name is all the app sends.
- */
-export const WELCOME_STEPS = [
-  "welcome_shown",
-  "start_chosen",
-  "joiner_chosen",
-  "returning_chosen",
-  "date_saved",
-  "date_skipped",
-  "drawing_sent",
-  "drawing_skipped",
-  "sign_in_shown",
-  "signed_in",
-] as const;
-export const welcomeStep = literals(...WELCOME_STEPS);
-
-/**
  * What one person's phone measured about a call's connection, sent once when the call ends on it
  * (`calls:report_call_quality`). Facts about the connection only: no content, no location, and no
  * device id. `path` is the last path the media took, and the loss is what this phone lost of what

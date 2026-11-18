@@ -108,6 +108,18 @@ describe("what a shared row shows", () => {
     expect(row).toEqual({ id: "d", locale: "nb" });
   });
 
+  test("a row I wrote does not show the report that got it moderated", () => {
+    const hidden = { id: "m", moderation_status: "hidden", moderated_by: "staff", moderation_report_id: "r" };
+    expect(shapeRow(spec("memories"), hidden, me)).toEqual({ id: "m", moderation_status: "hidden" });
+  });
+
+  test("why a relationship ended is not on the row both partners export", () => {
+    expect(shapeRow(spec("couples"), { id: "c", status: "ended", end_reason: "reported" }, me)).toEqual({
+      id: "c",
+      status: "ended",
+    });
+  });
+
   test("a partner's block on me is not shown, mine is", () => {
     const block = spec("relationship_blocks");
     expect(shapeRow(block, { blocked_by_user_id: partner }, me)).toBeNull();

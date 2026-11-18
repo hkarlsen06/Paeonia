@@ -263,7 +263,10 @@ describe("bringing an ended relationship back", () => {
       }),
     );
     expect(await preview(robin, "DEF456")).toBeUndefined();
-    await expect(join(robin, "DEF456", true)).rejects.toMatchObject({ data: { code: "42501" } });
+    // The answer for a code that is gone, so the block is not told.
+    await expect(join(robin, "DEF456", true)).rejects.toMatchObject({
+      data: { code: "22023", message: "pairing invite is not available" },
+    });
   });
 
   test("a couple past its cleanup deadline, or ended by account deletion, can't come back", async () => {

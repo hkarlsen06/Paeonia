@@ -27,7 +27,6 @@ import {
   locationPermission,
   locationSource,
   wordDifficulty,
-  welcomeStep,
 } from "./lib/validators";
 import { gameChatSource } from "./lib/gameChatSubjects";
 import { LUDO_COLORS } from "./lib/ludo";
@@ -2423,12 +2422,4 @@ export default defineSchema({
       "disabled_at",
     ])
     .index("by_user_id_disabled_at", ["user_id", "disabled_at"]),
-
-  // How many installs reached each signed-out welcome step on a UTC day. One row per day
-  // and step, and nothing else: no user, phone or request detail.
-  welcome_step_counts: defineTable({
-    day: v.string(),
-    step: welcomeStep,
-    count: v.number(),
-  }).index("by_day_step", ["day", "step"]),
 });

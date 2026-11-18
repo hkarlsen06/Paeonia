@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
+import schema from "./schema";
 import { addDevice, createCouple, newTest, transactionClock, type TestConvex, type TestCouple } from "./test.setup";
 
 beforeEach(() => {
@@ -71,11 +72,10 @@ describe("update_latest_partner_location", () => {
   test("a stale update returns the stored newer row and changes nothing", async () => {
     const { t, couple } = await setup();
     await seedLocation(t, couple, "2026-06-28T12:00:00.000Z");
-    const operationArgs = operation(2);
     const rows = await couple.first.as.mutation(api.location.update_latest_partner_location, {
       p_couple_id: couple.coupleId,
       ...update(),
-      ...operationArgs,
+      ...operation(2),
     });
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ captured_at: "2026-06-28T12:00:00.000Z", latitude: 59.95, longitude: 10.75 });
@@ -84,8 +84,6 @@ describe("update_latest_partner_location", () => {
     expect(stored).toHaveLength(1);
     expect(stored[0]).toMatchObject({ captured_at: "2026-06-28T12:00:00.000Z", latitude: 59.95, longitude: 10.75 });
 
-    const op = await t.run((ctx) => ctx.db.query("client_operations").collect());
-    expect(op.find((row) => row.client_operation_id === operationArgs.p_client_operation_id)?.status).toBe("succeeded");
     const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
     expect(outbox.filter((row) => row.kind === "location_updated")).toHaveLength(0);
   });
@@ -164,16 +162,60 @@ describe("update_latest_partner_location", () => {
     expect(await t.run((ctx) => ctx.db.query("notification_outbox").collect())).toHaveLength(0);
   });
 
-  test("replays the stored response for the same operation and rejects a changed request", async () => {
-    const { couple } = await setup();
+  test("a retry of the stored update answers the same and writes nothing", async () => {
+    const { t, couple } = await setup();
     const args = { p_couple_id: couple.coupleId, ...update(), ...operation(2) };
     const first = await couple.first.as.mutation(api.location.update_latest_partner_location, args);
+    const stored = await t.run((ctx) => ctx.db.query("latest_partner_locations").collect());
     vi.setSystemTime(new Date("2026-06-28T12:31:00.000Z"));
     const replay = await couple.first.as.mutation(api.location.update_latest_partner_location, args);
     expect(replay).toEqual(first);
-    await expect(
-      couple.first.as.mutation(api.location.update_latest_partner_location, { ...args, p_latitude: 5 }),
-    ).rejects.toThrow(/23505.*client operation replay hash mismatch/);
+    expect(await t.run((ctx) => ctx.db.query("latest_partner_locations").collect())).toEqual(stored);
+  });
+
+  // The privacy policy promises no location history. `client_operations` keeps a row for 30 days,
+  // so a position in one would outlive the next update, turning sharing off and the relationship.
+  test("keeps each position only in the one latest row", async () => {
+    const { t, couple } = await setup();
+    const fixes = [
+      { p_latitude: 59.911491, p_longitude: 10.757933, p_accuracy_m: 7.25, p_captured_at: "2026-06-28T12:20:00.000Z" },
+      { p_latitude: 60.391263, p_longitude: 5.322054, p_accuracy_m: 9.5, p_captured_at: "2026-06-28T12:25:00.000Z" },
+    ];
+    for (const [index, fix] of fixes.entries()) {
+      const args = { p_couple_id: couple.coupleId, ...update(fix), ...operation(index + 2) };
+      await couple.first.as.mutation(api.location.update_latest_partner_location, args);
+      // A retry whose first answer was lost.
+      await couple.first.as.mutation(api.location.update_latest_partner_location, args);
+    }
+
+    const everyRow = () =>
+      t.run(async (ctx) => {
+        const tables = Object.keys(schema.tables) as (keyof typeof schema.tables)[];
+        return Object.fromEntries(
+          await Promise.all(tables.map(async (table) => [table, await ctx.db.query(table).collect()] as const)),
+        );
+      });
+    const expectNoPosition = (rows: unknown) => {
+      const text = JSON.stringify(rows);
+      for (const fix of fixes) {
+        expect(text).not.toContain(String(fix.p_latitude));
+        expect(text).not.toContain(String(fix.p_longitude));
+      }
+    };
+
+    const { latest_partner_locations: latest, ...elsewhere } = await everyRow();
+    expect(latest).toHaveLength(1);
+    expect(latest[0]).toMatchObject({ latitude: 60.391263, longitude: 5.322054 });
+    expectNoPosition(elsewhere);
+
+    await couple.first.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: couple.coupleId,
+      p_is_enabled: false,
+      p_source: "settings_toggle",
+      ...operation(9),
+    });
+    expectNoPosition(await everyRow());
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("accepts a location sent while the app was closed", async () => {

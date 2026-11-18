@@ -84,8 +84,8 @@ async function endLocationPause(ctx: WriterCtx, preference: Doc<"location_sharin
 }
 
 /**
- * Port of both `update_latest_partner_location` overloads. The overload without
- * `p_accuracy_m` is the same function with the argument omitted.
+ * Stores the caller's latest location over the one before it, so the server holds one position per
+ * person and no history. Returns the stored row, which is the caller's own.
  */
 export const update_latest_partner_location = mutation({
   args: {
@@ -143,130 +143,108 @@ export const update_latest_partner_location = mutation({
       await endLocationPause(ctx, preference);
     }
 
+    // Nothing about a location update goes in `client_operations`, which keeps what it holds for 30
+    // days. The stored row names the operation that wrote it, and that is all a retry needs.
     const operationId = uuidArg(args.p_client_operation_id);
     const clientId = uuidArg(args.p_client_id);
-    const localCreatedAt = optionalTimestampArg(args.p_local_created_at)!;
+    timestampArg(args.p_local_created_at);
 
-    const stored = await runClientOperation(
-      ctx,
-      userId,
-      {
-        client_operation_id: operationId,
-        client_id: clientId,
-        client_sequence: args.p_client_sequence,
-        local_created_at: localCreatedAt,
-        operation_kind: "update_latest_partner_location",
-        idempotency_scope: "location",
-        request: {
-          kind: "update_latest_partner_location",
+    await assertNoPendingAccountDeletion(ctx, userId);
+    const existing = await ctx.db
+      .query("latest_partner_locations")
+      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
+      .unique();
+
+    // A newer stored location wins, and a retry of the stored one changes nothing. Either way the
+    // answer is the stored row.
+    if (existing && (existing.captured_at > capturedAt || existing.client_operation_id === operationId)) {
+      return [locationRow(existing)];
+    }
+
+    const now = nowIso();
+    const values = {
+      latitude: roundTo(latitude, 6),
+      longitude: roundTo(longitude, 6),
+      accuracy_m: accuracy === null ? undefined : roundTo(accuracy, 2),
+      captured_at: capturedAt,
+      received_at: now,
+      source,
+      client_operation_id: operationId,
+      client_id: clientId,
+      client_sequence: args.p_client_sequence,
+    };
+    let row: Doc<"latest_partner_locations">;
+    if (existing) {
+      await ctx.db.patch(existing._id, withUpdatedAt(values));
+      row = (await ctx.db.get(existing._id))!;
+    } else {
+      const id = await ctx.db.insert("latest_partner_locations", {
+        couple_id: coupleId,
+        user_id: userId,
+        ...values,
+        updated_at: now,
+      });
+      row = (await ctx.db.get(id))!;
+    }
+
+    // Tell the partner only when they share their own location too.
+    const members = await ctx.db
+      .query("couple_members")
+      .withIndex("by_couple_id_status", (q) => q.eq("couple_id", coupleId).eq("status", "active"))
+      .collect();
+    let partnerShares = false;
+    let partnerSharesSeen = false;
+    for (const member of members) {
+      if (member.user_id === userId) continue;
+      const partnerPreference = await ctx.db
+        .query("location_sharing_preferences")
+        .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", member.user_id))
+        .unique();
+      if (isSharingNow(partnerPreference)) partnerShares = true;
+      if (sharesLocation(partnerPreference)) partnerSharesSeen = true;
+    }
+    const partner = members.find((member) => member.user_id !== userId);
+    // A paused partner's last fix still counts, as the map still shows it, so a pause changes
+    // no together day and no letter this phone's owner can see.
+    const partnerFix =
+      partnerSharesSeen && partner
+        ? await ctx.db
+            .query("latest_partner_locations")
+            .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", partner.user_id))
+            .unique()
+        : null;
+    // Only the phone of a letter's author can bring its meeting about, since the server cannot
+    // tell a made-up fix from a real one and the recipient must not open a letter early.
+    if (partner && (await noteLocationFix(ctx, coupleId, row, partnerFix, now))) {
+      await deliverMeetingLetters(ctx, coupleId, partner.user_id);
+    }
+    if (partnerShares) {
+      // The distance on the partner's Lock Screen changes with every fix. Updates come often, so this lane sends at most one push per half hour.
+      await enqueueLockScreenRefreshForPartner(ctx, {
+        couple_id: coupleId,
+        actor_user_id: userId,
+        delay_seconds: LOCK_SCREEN_LOCATION_DELAY_SECONDS,
+        lane: "location",
+      });
+      await enqueuePartnerNotification(ctx, {
+        couple_id: coupleId,
+        actor_user_id: userId,
+        kind: "location_updated",
+        payload: {
+          type: "location_updated",
           couple_id: coupleId,
-          user_id: userId,
-          latitude,
-          longitude,
-          accuracy_m: accuracy,
-          captured_at: capturedAt,
-          source,
+          actor_user_id: userId,
+          captured_at: row.captured_at,
+          route: "location",
         },
-      },
-      async () => {
-        await assertNoPendingAccountDeletion(ctx, userId);
-        const existing = await ctx.db
-          .query("latest_partner_locations")
-          .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
-          .unique();
-
-        // A newer stored location wins. The stale write is a successful no-op that returns the stored row.
-        if (existing && existing.captured_at > capturedAt) {
-          return locationRow(existing);
-        }
-
-        const now = nowIso();
-        const values = {
-          latitude: roundTo(latitude, 6),
-          longitude: roundTo(longitude, 6),
-          accuracy_m: accuracy === null ? undefined : roundTo(accuracy, 2),
-          captured_at: capturedAt,
-          received_at: now,
-          source,
-          client_operation_id: operationId,
-          client_id: clientId,
-          client_sequence: args.p_client_sequence,
-        };
-        let row: Doc<"latest_partner_locations">;
-        if (existing) {
-          await ctx.db.patch(existing._id, withUpdatedAt(values));
-          row = (await ctx.db.get(existing._id))!;
-        } else {
-          const id = await ctx.db.insert("latest_partner_locations", {
-            couple_id: coupleId,
-            user_id: userId,
-            ...values,
-            updated_at: now,
-          });
-          row = (await ctx.db.get(id))!;
-        }
-
-        // Tell the partner only when they share their own location too.
-        const members = await ctx.db
-          .query("couple_members")
-          .withIndex("by_couple_id_status", (q) => q.eq("couple_id", coupleId).eq("status", "active"))
-          .collect();
-        let partnerShares = false;
-        let partnerSharesSeen = false;
-        for (const member of members) {
-          if (member.user_id === userId) continue;
-          const partnerPreference = await ctx.db
-            .query("location_sharing_preferences")
-            .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", member.user_id))
-            .unique();
-          if (isSharingNow(partnerPreference)) partnerShares = true;
-          if (sharesLocation(partnerPreference)) partnerSharesSeen = true;
-        }
-        const partner = members.find((member) => member.user_id !== userId);
-        // A paused partner's last fix still counts, as the map still shows it, so a pause changes
-        // no together day and no letter this phone's owner can see.
-        const partnerFix =
-          partnerSharesSeen && partner
-            ? await ctx.db
-                .query("latest_partner_locations")
-                .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", partner.user_id))
-                .unique()
-            : null;
-        // Only the phone of a letter's author can bring its meeting about, since the server cannot
-        // tell a made-up fix from a real one and the recipient must not open a letter early.
-        if (partner && (await noteLocationFix(ctx, coupleId, row, partnerFix, now))) {
-          await deliverMeetingLetters(ctx, coupleId, partner.user_id);
-        }
-        if (partnerShares) {
-          // The distance on the partner's Lock Screen changes with every fix. Updates come often, so this lane sends at most one push per half hour.
-          await enqueueLockScreenRefreshForPartner(ctx, {
-            couple_id: coupleId,
-            actor_user_id: userId,
-            delay_seconds: LOCK_SCREEN_LOCATION_DELAY_SECONDS,
-            lane: "location",
-          });
-          await enqueuePartnerNotification(ctx, {
-            couple_id: coupleId,
-            actor_user_id: userId,
-            kind: "location_updated",
-            payload: {
-              type: "location_updated",
-              couple_id: coupleId,
-              actor_user_id: userId,
-              captured_at: row.captured_at,
-              route: "location",
-            },
-            dedupe_key: `location_updated:${coupleId}:${userId}:${row.captured_at}`,
-            redaction_level: "private",
-            apns_push_type: "background",
-            apns_collapse_id: `location:${coupleId}`,
-            scheduled_for: now,
-          });
-        }
-        return locationRow(row);
-      },
-    );
-    return [stored];
+        dedupe_key: `location_updated:${coupleId}:${userId}:${row.captured_at}`,
+        redaction_level: "private",
+        apns_push_type: "background",
+        apns_collapse_id: `location:${coupleId}`,
+        scheduled_for: now,
+      });
+    }
+    return [locationRow(row)];
   },
 });
 

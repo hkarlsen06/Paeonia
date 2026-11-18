@@ -16,6 +16,20 @@ import type { relationshipEndReason } from "./validators";
 export type RelationshipEndReason = Infer<typeof relationshipEndReason>;
 
 /**
+ * The reason the other partner's records carry. Only the person who blocked or reported knows
+ * that they did, so the other partner reads what an ordinary leave writes. A new reason needs an
+ * entry here, or `tsc` fails.
+ */
+const REASON_FOR_PARTNER: Record<RelationshipEndReason, RelationshipEndReason> = {
+  user_left: "user_left",
+  blocked: "user_left",
+  reported: "user_left",
+  moderation_block: "user_left",
+  account_banned: "account_banned",
+  account_deletion: "account_deletion",
+};
+
+/**
  * Port of the `delete_latest_locations_on_relationship_end` trigger. Call when
  * a couple stops being active.
  */
@@ -57,6 +71,10 @@ export async function clearPartnerNicknames(ctx: WriterCtx, coupleId: string): P
  * marks the initiator as left and the partner as ended_notice_pending, writes a
  * relationship_ended sync event per member, and removes shared locations, together days and presence.
  * Returns false when the pair has no active couple.
+ *
+ * `reason` goes on the couple, which only the server reads, and on the initiator's event. The
+ * partner's event carries `REASON_FOR_PARTNER`, so nothing the partner can read tells a block or
+ * a report from a leave.
  */
 export async function endRelationshipForPair(
   ctx: WriterCtx,
@@ -120,7 +138,7 @@ export async function endRelationshipForPair(
       couple_id: couple.id,
       initiated_by_user_id: initiatedByUserId,
       event_kind: "relationship_ended",
-      reason,
+      reason: member.user_id === initiatedByUserId ? reason : REASON_FOR_PARTNER[reason],
       relationship_status: "ended",
       member_status: member.status,
       ended_at: now,

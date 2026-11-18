@@ -221,19 +221,38 @@ describe("preview_pairing_invite", () => {
     expect(await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ABC123" })).toEqual([]);
   });
 
-  test("warns when the pair has a safety flag", async () => {
+  test.each([
+    { reporter: "guest", warned: true },
+    // A warning would tell the reported person that the invite's owner reported them.
+    { reporter: "owner", warned: false },
+  ] as const)("warns the person who reported about a safety flag: reporter $reporter", async ({ reporter, warned }) => {
     const t = newTest();
     const owner = await inviter(t);
     await createInvite(owner);
     const guest = await createSignedInUser(t, {});
+    const [from, about] = reporter === "guest" ? [guest, owner] : [owner, guest];
     await t.run(async (ctx) => {
       const [low, high] = owner.userId < guest.userId ? [owner.userId, guest.userId] : [guest.userId, owner.userId];
       const pairId = newUuid();
+      const reportId = newUuid();
       await ctx.db.insert("relationship_pairs", { id: pairId, user_low_id: low, user_high_id: high, created_at: NOW });
-      await ctx.db.insert("pair_safety_warning_flags", { id: newUuid(), pair_id: pairId, source_report_id: newUuid(), created_at: NOW });
+      await ctx.db.insert("content_reports", {
+        id: reportId,
+        reporter_user_id: from.userId,
+        reported_user_id: about.userId,
+        couple_id: newUuid(),
+        pair_id: pairId,
+        reason: "harassment",
+        status: "submitted",
+        block_requested: false,
+        leave_requested: true,
+        created_at: NOW,
+        updated_at: NOW,
+      });
+      await ctx.db.insert("pair_safety_warning_flags", { id: newUuid(), pair_id: pairId, source_report_id: reportId, created_at: NOW });
     });
     const rows = await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ABC123" });
-    expect(rows[0].has_safety_warning).toBe(true);
+    expect(rows[0].has_safety_warning).toBe(warned);
   });
 
   test("throttles a user after thirty attempts and ten misses on one code", async () => {
@@ -429,8 +448,8 @@ describe("accept_pairing_invite", () => {
     });
     await expectFail(
       guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() }),
-      "42501",
-      "pairing is blocked for this pair",
+      "22023",
+      "pairing invite is not available",
     );
     await t.run(async (ctx) => {
       const block = (await ctx.db.query("relationship_blocks").first())!;

@@ -66,7 +66,7 @@ Convex has no triggers. A table with side effects on write gets write helpers in
 - A day that ended stays what it was for the streak. Date every together day with `dayOf` on `streakClock`, write only today or later, and call `keepVisitDays` before any write that changes a visit's dates or deletes it.
 - `readCoupleStreak` is the pure streak reader for queries. `getCoupleStreakForCouple` first persists a break with `detectStreakBreak`, so call it only from a mutation. The streak cron and `applyStreakRestore` persist breaks, so `restorable_count` is stored before a restore needs it.
 - Time zone math uses `Intl.DateTimeFormat` and follows the Postgres rules at daylight saving changes: a local time in a spring-forward gap uses the offset from before the gap, and an ambiguous fall-back time resolves to standard time.
-- `lib/rateLimits.ts` holds every rate limit. To add one, add an entry to `LIMITS` and call `consumeRateLimit(ctx, name, userId)` first thing inside the `runClientOperation` callback (`consumeGlobalRateLimit` for a limit with no user), so replays are free and a refusal rolls back. It fails with `53300`, which the app retries later instead of dropping the write. Set the capacity above the backlog an offline phone sends at once.
+- `lib/rateLimits.ts` holds every rate limit. To add one, add an entry to `LIMITS` and call `consumeRateLimit(ctx, name, userId)` first thing inside the `runClientOperation` callback, so replays are free and a refusal rolls back. It fails with `53300`, which the app retries later instead of dropping the write. Set the capacity above the backlog an offline phone sends at once.
 - Every read and serve of a media asset checks `isUsableMediaAsset` (`lib/mediaAssetState.ts`).
 - A chat thread's subject has one case per `conversation_threads.kind` in `lib/threadSubjects.ts`. A new kind of chat adds a link table and one case in each function there.
 - A reaction target kind has an access check in `REACTION_TARGETS` (`lib/reactions.ts`). Deleting a thing's reactions and its favorites (`deleteReactionsOf`, `deleteFavoritesOfTarget`) belong in the same places, and the couple cleanup uses `deleteCoupleReactions` and `deleteCoupleFavorites`.
@@ -87,6 +87,8 @@ The root [Testing](../AGENTS.md#testing) rules say when a change needs a test.
 ## Client operations
 
 Local-first writes from iOS carry `p_client_operation_id`, `p_client_id`, `p_client_sequence`, and `p_local_created_at`. Wrap them with `runClientOperation` from `lib/clientOperations.ts`. Where a late retry must not overwrite a newer write from the same phone, also check `isSupersededClientOperation`. It returns the stored response when the same operation already succeeded, fails with `23505 client operation replay hash mismatch` when the request differs, and stores the new response otherwise. The request hash is the `sha256Hex` of a stable JSON encoding of the request fields the SQL function hashed.
+
+The stored response stays in `client_operations` for 30 days (`retention.ts`), whatever happens to the row it describes. Never return something from the callback that must not outlive its row, such as a position. `location:update_latest_partner_location` writes no operation row for that reason: the newest capture time wins, and a retry is recognised by the `client_operation_id` on the stored location.
 
 ## Media storage
 
@@ -144,7 +146,6 @@ Set them with `npx convex env set`. The names are the `process.env` reads in `co
 - `identity:launch` is the cold-launch call: it provisions the user, then returns `{ profile, access }`. It refuses accounts with a pending or finished deletion and gives a banned account the `banned` access row.
 - `identity:set_notification_preference` refuses `question_time_enabled`. `identity:set_question_time_reminder` saves it.
 - Access and export are not privacy requests. `dataExport:request_data_export` answers both.
-- `onboarding:record_welcome_step` is the only public function that reads no session. It stores a count per day and step and nothing else, behind a shared `welcomeStep` rate limit.
 - `entitlementGrants` is the one way to give or take back access without a purchase. Run `create_entitlement_grant` and `revoke_entitlement_grant` with `npx convex run`. Every kind but `lifetime` needs a future `p_expires_at`, and creating a live grant again returns it with `created: false`.
 - `admin:operator_ban_user` and `operator_unban_user` are the operator commands for bans.
 - A pairing invite lasts 30 days. The server accepts an expiry up to 31 days out, so a phone clock that runs ahead still fits.

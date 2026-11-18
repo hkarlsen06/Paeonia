@@ -205,7 +205,10 @@ describe("apply_report_moderation_action", () => {
       source_report_id: reportId,
     });
     const events = await t.run((ctx) => ctx.db.query("relationship_sync_events").collect());
-    expect(events[0].reason).toBe("moderation_block");
+    const reasonFor = (userId: string) => events.find((event) => event.user_id === userId)?.reason;
+    expect(reasonFor(couple.second.userId)).toBe("moderation_block");
+    // The reported partner reads an ordinary leave.
+    expect(reasonFor(couple.first.userId)).toBe("user_left");
 
     await act(t, reportId, "unblock_pair");
     const revoked = (await t.run((ctx) => ctx.db.query("relationship_blocks").collect()))[0];

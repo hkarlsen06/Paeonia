@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
+import { readZip } from "./dataExport.testHelpers";
 import { newUuid } from "./lib/ids";
+import { setMediaEnv } from "./media.testing";
 import { makeAsset, makeMemory, operation } from "./reports.fixtures";
-import { createCouple, newTest } from "./test.setup";
+import { createCouple, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 // A report with media queues snapshot copies on backgroundWorkpool, whose loop
 // waits on timers. Fake them all, so finishAllScheduledFunctions can move the clock.
@@ -180,7 +182,10 @@ describe("submit_leave_and_report", () => {
     expect(statusOf(couple.first.userId)).toBe("ended_notice_pending");
     expect(state.blocks).toHaveLength(0);
     expect(state.events).toHaveLength(2);
-    expect(state.events[0]).toMatchObject({ event_kind: "relationship_ended", reason: "reported" });
+    expect(state.events.find((event) => event.user_id === couple.second.userId)).toMatchObject({
+      event_kind: "relationship_ended",
+      reason: "reported",
+    });
   });
 
   test("blocks the reported partner when asked, and still lets the ended relationship be reported", async () => {
@@ -200,7 +205,7 @@ describe("submit_leave_and_report", () => {
       source_report_id: reportId,
     });
     const events = await t.run((ctx) => ctx.db.query("relationship_sync_events").collect());
-    expect(events[0].reason).toBe("blocked");
+    expect(events.find((event) => event.user_id === couple.second.userId)?.reason).toBe("blocked");
 
     // The ended couple stays reportable until its retention window closes.
     const second = await couple.second.as.mutation(
@@ -208,5 +213,77 @@ describe("submit_leave_and_report", () => {
       reportArgs({ p_target_kind: "conduct", p_target_id: couple.first.userId }),
     );
     expect(second).not.toBe(reportId);
+  });
+});
+
+// The privacy policy says "We never show your report to the other person." With two people in a
+// couple, anything that tells a report or a block from a leave tells the partner who did it.
+describe("what the reported partner can read", () => {
+  beforeEach(setMediaEnv);
+
+  /** The partner's sync events as their phone gets them, without the ids and times that differ per couple. */
+  async function syncEvents(couple: TestCouple) {
+    const events = await couple.first.as.query(api.relationship.get_relationship_sync_events, { p_limit: 100 });
+    return events
+      .filter((event) => event.event_kind === "relationship_ended")
+      .map((event) => ({
+        reason: event.reason,
+        initiated_by_partner: event.initiated_by_user_id === couple.second.userId,
+        relationship_status: event.relationship_status,
+        member_status: event.member_status,
+        local_purge_scope: event.local_purge_scope,
+      }));
+  }
+
+  /** Every data file of the person's "Download my data", by name. */
+  async function exportFiles(t: TestConvex, user: TestUser) {
+    await user.as.mutation(api.dataExport.request_data_export, { p_include_files: false, p_language: "en" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const status = (await user.as.query(api.dataExportStatus.get_data_export, {}))!;
+    const links = await user.as.mutation(api.dataExport.create_data_export_download_links, { p_export_id: status.id });
+    const files = new Map<string, string>();
+    for (const link of links) {
+      const url = new URL(link.url);
+      const response = await t.fetch(`${url.pathname}${url.search}`);
+      for (const [name, data] of await readZip(new Uint8Array(await response.arrayBuffer()))) {
+        if (name.endsWith(".json") && name.includes("/")) files.set(name, new TextDecoder().decode(data));
+      }
+    }
+    return files;
+  }
+
+  async function afterOrdinaryLeave() {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await couple.second.as.mutation(api.relationship.leave_relationship, operation());
+    return { events: await syncEvents(couple), files: await exportFiles(t, couple.first) };
+  }
+
+  test.each([
+    { ending: "a report", block: false },
+    { ending: "a report with a block", block: true },
+  ])("after $ending, the partner's sync events and download match an ordinary leave", async ({ block }) => {
+    const left = await afterOrdinaryLeave();
+
+    const t = newTest();
+    const couple = await createCouple(t);
+    const reportId = await couple.second.as.mutation(
+      api.reports.submit_leave_and_report,
+      reportArgs({ p_target_kind: "conduct", p_target_id: couple.first.userId, p_block_reported_user: block }),
+    );
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+    expect(await syncEvents(couple)).toEqual(left.events);
+    expect(left.events).toEqual([expect.objectContaining({ reason: "user_left", initiated_by_partner: true })]);
+
+    const files = await exportFiles(t, couple.first);
+    expect([...files.keys()].sort()).toEqual([...left.files.keys()].sort());
+    const rowKeys = (text: string) => (JSON.parse(text) as Record<string, unknown>[]).map((row) => Object.keys(row).sort());
+    for (const [name, text] of files) {
+      expect(rowKeys(text), name).toEqual(rowKeys(left.files.get(name)!));
+      expect(text, name).not.toContain(reportId);
+      expect(text, name).not.toMatch(/"(reported|blocked|moderation_block)"/);
+    }
+    expect(JSON.parse(files.get("relationship/couples.json")!)).toMatchObject([{ id: couple.coupleId, status: "ended" }]);
   });
 });

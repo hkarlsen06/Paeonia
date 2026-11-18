@@ -207,8 +207,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   users: own("id", "by_uuid", {
     group: "account",
     about: {
-      en: "Your account: which sign-in you use (Apple or Google), your email address if they shared it, and when you joined.",
-      nb: "Kontoen din: hvilken innlogging du bruker (Apple eller Google), e-postadressen din hvis de delte den, og når du ble med.",
+      en: "Your account: how you sign in (Apple, Google, or `unknown` for a code sent to your email), your email address when we have it, and when you joined.",
+      nb: "Kontoen din: hvordan du logger inn (Apple, Google eller `unknown` for en kode sendt til e-postadressen din), e-postadressen din når vi har den, og når du ble med.",
     },
     hide: ["banned_by_user_id"],
   }),
@@ -335,6 +335,9 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       en: "Your relationships: the start date, whether it is still active, and when it ended.",
       nb: "Forholdene dine: startdato, om forholdet fortsatt er aktivt, og når det tok slutt.",
     },
+    // Both partners export this row, and the reason can be the other partner's block or report.
+    // Each person's own reason is in their relationship_sync_events.
+    hide: ["end_reason"],
   }),
   relationship_pairs: child("couples", "pair_id", "id", "by_uuid", {
     group: "relationship",
@@ -848,7 +851,7 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
     "A call that rings or runs right now, deleted when it ends. The call's row in the couple chat is exported with the chat.",
   ),
   client_operations: excluded(
-    "Short-lived copies of what the phone sent, kept 30 days to stop a write from running twice. The content is exported from the real tables.",
+    "Short-lived copies of the answers to what the phone sent, kept 30 days to stop a write from running twice. The content is exported from the real tables. Location updates are never stored here.",
   ),
   moderation_actions: excluded(
     "Operator notes about reports. They can name the person who reported, whose rights Art. 15(4) protects.",
@@ -878,7 +881,6 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   question_collections: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
   question_collection_localizations: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
   question_versions: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
-  welcome_step_counts: excluded("Daily counts of how many installs reached each welcome step. They belong to no person."),
   questions: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
   topic_catalog: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
   subscription_products: excluded("Paeonia's list of App Store products. It is the same for everyone."),
@@ -891,10 +893,12 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
 };
 
 const SYSTEM_FIELDS = ["_id", "_creationTime"] as const;
+/** Left out of every row: who on our team moderated it, and the partner's report that led to it. */
+const MODERATION_SOURCE_FIELDS = ["moderated_by", "moderation_report_id"] as const;
 
 /** One stored document as it appears in the export, or null when the export leaves it out. */
 export function shapeRow(spec: ExportedTable, doc: Row, me: string): Row | null {
-  const row = without(doc, SYSTEM_FIELDS);
+  const row = without(doc, [...SYSTEM_FIELDS, ...MODERATION_SOURCE_FIELDS]);
   const kept = spec.select ? spec.select(row, me) : row;
   return kept === null || !spec.hide ? kept : without(kept, spec.hide);
 }

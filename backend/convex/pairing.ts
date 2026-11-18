@@ -287,12 +287,7 @@ export const preview_pairing_invite = mutation({
       .query("profiles")
       .withIndex("by_user_id", (q) => q.eq("user_id", invite.created_by_user_id))
       .unique();
-    const flagged = pairId
-      ? (await ctx.db
-          .query("pair_safety_warning_flags")
-          .withIndex("by_pair_id_created_at", (q) => q.eq("pair_id", pairId))
-          .first()) !== null
-      : false;
+    const flagged = pairId !== null && (await hasSafetyWarningFor(ctx, pairId, userId));
     // Only the two people of the ended couple ever learn that it can come back.
     const canRestore = pairId !== null && (await findRestorableCouple(ctx, pairId, now)) !== null;
     return [
@@ -310,6 +305,22 @@ export const preview_pairing_invite = mutation({
     ];
   },
 });
+
+/**
+ * True when the pair has a safety warning from a report `userId` made. The reported person gets no
+ * warning, because it would tell them that their partner reported them.
+ */
+async function hasSafetyWarningFor(ctx: MutationCtx, pairId: string, userId: string): Promise<boolean> {
+  const flags = await ctx.db
+    .query("pair_safety_warning_flags")
+    .withIndex("by_pair_id_created_at", (q) => q.eq("pair_id", pairId))
+    .collect();
+  for (const flag of flags) {
+    const report = flag.source_report_id ? await getByUuid(ctx, "content_reports", flag.source_report_id) : null;
+    if (report?.reporter_user_id === userId) return true;
+  }
+  return false;
+}
 
 /**
  * Pairs the invite's creator with `joinerUserId` in a new couple and uses up the invite. The
@@ -443,8 +454,9 @@ export const accept_pairing_invite = mutation({
       }
 
       const pairId = await getOrCreateRelationshipPair(ctx, invite.created_by_user_id, userId);
+      // The same answer as for a code that is gone, so a blocked person is not told about the block.
       if (await hasActiveRelationshipBlock(ctx, pairId)) {
-        fail("42501", "pairing is blocked for this pair");
+        fail("22023", "pairing invite is not available");
       }
 
       if (restore && (await findRestorableCouple(ctx, pairId, nowIso()))) {

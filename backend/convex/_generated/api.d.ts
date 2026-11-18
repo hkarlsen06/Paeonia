@@ -159,7 +159,6 @@ import type * as memories from "../memories.js";
 import type * as mindMeld from "../mindMeld.js";
 import type * as moderation from "../moderation.js";
 import type * as notificationState from "../notificationState.js";
-import type * as onboarding from "../onboarding.js";
 import type * as pairing from "../pairing.js";
 import type * as pairingReminders from "../pairingReminders.js";
 import type * as partnerNickname from "../partnerNickname.js";
@@ -343,7 +342,6 @@ declare const fullApi: ApiFromModules<{
   mindMeld: typeof mindMeld;
   moderation: typeof moderation;
   notificationState: typeof notificationState;
-  onboarding: typeof onboarding;
   pairing: typeof pairing;
   pairingReminders: typeof pairingReminders;
   partnerNickname: typeof partnerNickname;
