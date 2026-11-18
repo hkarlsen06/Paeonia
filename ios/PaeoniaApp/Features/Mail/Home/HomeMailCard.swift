@@ -4,8 +4,8 @@ import SwiftUI
 /// envelope that opens it, among the cards on the first screen. Otherwise one short row offers
 /// to write a letter, or to finish the one being written where the person left it. That row
 /// sits under the tiles, so it takes no height from the map.
-/// The mailbox is a tap away in every case. A problem that came up after the Mail sheet closed
-/// shows here.
+/// The mailbox is a tap away in every case: the write row links to it, and a waiting letter opens
+/// on top of it. A problem that came up after the Mail sheet closed shows here.
 struct HomeMailCard: View {
     let mail: MailViewModel
     let partnerName: String
@@ -59,18 +59,15 @@ struct HomeMailCard: View {
 
     private func waitingCard(_ waiting: [Letter]) -> some View {
         PaeoniaCard {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                header
-                Button {
-                    if let letter = waiting.first {
-                        mail.present(MailPresentation(path: [.reader(letter.id)]))
-                    }
-                } label: {
-                    row(waiting: waiting)
+            Button {
+                if let letter = waiting.first {
+                    mail.present(MailPresentation(path: [.reader(letter.id)]))
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("home.mail.open")
+            } label: {
+                row(waiting: waiting)
             }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("home.mail.open")
         }
     }
 
@@ -88,15 +85,6 @@ struct HomeMailCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("home.mail.mailbox")
-    }
-
-    private var header: some View {
-        HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space12) {
-            Text(.mailCardTitle)
-                .paeoniaEyebrowStyle(foreground: .paeoniaAccentPrimary)
-            Spacer(minLength: PaeoniaSpacing.space8)
-            mailboxButton
-        }
     }
 
     private func row(waiting: [Letter]) -> some View {

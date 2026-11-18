@@ -25989,24 +25989,6 @@
         }
       }
     },
-    "mail.card.title" : {
-      "comment" : "Name of the Mail card on the Us tab and of the Mail feature, where partners send each other letters",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mail"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Post"
-          }
-        }
-      }
-    },
     "mail.card.waitingMany" : {
       "comment" : "Title of the Mail card when several letters from the partner wait. %1$lld is how many, at least 2. %2$@ is the partner's name",
       "extractionState" : "manual",
